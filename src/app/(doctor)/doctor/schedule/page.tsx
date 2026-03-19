@@ -54,16 +54,19 @@ export default function DoctorSchedulePage() {
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
-              {clinicConfig.workingHours.map((wh, i) => (
-                <div key={i} className="flex items-center justify-between text-sm">
-                  <span className={wh.enabled ? "" : "text-muted-foreground"}>{dayNames[i]}</span>
-                  {wh.enabled ? (
-                    <span className="font-medium">{wh.start} - {wh.end}</span>
-                  ) : (
-                    <Badge variant="secondary" className="text-xs">Closed</Badge>
-                  )}
-                </div>
-              ))}
+              {dayNames.map((day, i) => {
+                const wh = clinicConfig.workingHours[i];
+                return (
+                  <div key={i} className="flex items-center justify-between text-sm">
+                    <span className={wh.enabled ? "" : "text-muted-foreground"}>{day}</span>
+                    {wh.enabled ? (
+                      <span className="font-medium">{wh.open} - {wh.close}</span>
+                    ) : (
+                      <Badge variant="secondary" className="text-xs">Closed</Badge>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           </CardContent>
         </Card>

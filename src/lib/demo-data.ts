@@ -33,6 +33,8 @@ export interface Patient {
   email: string;
   age: number;
   gender: "M" | "F";
+  dateOfBirth: string;
+  allergies?: string[];
   insurance?: string;
   registeredAt: string;
 }
@@ -59,6 +61,7 @@ export interface Prescription {
   doctorName: string;
   date: string;
   medications: { name: string; dosage: string; duration: string }[];
+  notes?: string;
 }
 
 export interface Review {
@@ -118,12 +121,12 @@ export const services: Service[] = [
 ];
 
 export const patients: Patient[] = [
-  { id: "p1", name: "Karim Mansouri", phone: "+212 6 11 22 33 44", email: "karim@email.com", age: 35, gender: "M", insurance: "CNSS", registeredAt: "2025-01-15" },
-  { id: "p2", name: "Nadia El Fassi", phone: "+212 6 22 33 44 55", email: "nadia@email.com", age: 28, gender: "F", registeredAt: "2025-02-20" },
-  { id: "p3", name: "Omar Tazi", phone: "+212 6 33 44 55 66", email: "omar@email.com", age: 42, gender: "M", insurance: "CNOPS", registeredAt: "2025-03-01" },
-  { id: "p4", name: "Salma Berrada", phone: "+212 6 44 55 66 77", email: "salma@email.com", age: 31, gender: "F", insurance: "CNSS", registeredAt: "2025-03-10" },
-  { id: "p5", name: "Hassan Idrissi", phone: "+212 6 55 66 77 88", email: "hassan@email.com", age: 55, gender: "M", registeredAt: "2025-04-05" },
-  { id: "p6", name: "Amina Chaoui", phone: "+212 6 66 77 88 99", email: "amina@email.com", age: 24, gender: "F", insurance: "CNOPS", registeredAt: "2025-05-12" },
+  { id: "p1", name: "Karim Mansouri", phone: "+212 6 11 22 33 44", email: "karim@email.com", age: 35, gender: "M", dateOfBirth: "1991-03-12", allergies: ["Penicillin"], insurance: "CNSS", registeredAt: "2025-01-15" },
+  { id: "p2", name: "Nadia El Fassi", phone: "+212 6 22 33 44 55", email: "nadia@email.com", age: 28, gender: "F", dateOfBirth: "1998-07-22", registeredAt: "2025-02-20" },
+  { id: "p3", name: "Omar Tazi", phone: "+212 6 33 44 55 66", email: "omar@email.com", age: 42, gender: "M", dateOfBirth: "1984-11-05", allergies: ["Aspirin", "Sulfa"], insurance: "CNOPS", registeredAt: "2025-03-01" },
+  { id: "p4", name: "Salma Berrada", phone: "+212 6 44 55 66 77", email: "salma@email.com", age: 31, gender: "F", dateOfBirth: "1995-01-18", insurance: "CNSS", registeredAt: "2025-03-10" },
+  { id: "p5", name: "Hassan Idrissi", phone: "+212 6 55 66 77 88", email: "hassan@email.com", age: 55, gender: "M", dateOfBirth: "1971-09-30", registeredAt: "2025-04-05" },
+  { id: "p6", name: "Amina Chaoui", phone: "+212 6 66 77 88 99", email: "amina@email.com", age: 24, gender: "F", dateOfBirth: "2002-04-14", allergies: ["Latex"], insurance: "CNOPS", registeredAt: "2025-05-12" },
 ];
 
 export const appointments: Appointment[] = [

@@ -24,17 +24,20 @@ export default function ClinicSettingsPage() {
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {clinicConfig.workingHours.map((wh, i) => (
-                <div key={i} className="flex items-center gap-4">
-                  <span className="w-24 text-sm font-medium">{dayNames[i]}</span>
-                  <Badge variant={wh.enabled ? "default" : "secondary"}>
-                    {wh.enabled ? "Open" : "Closed"}
-                  </Badge>
-                  {wh.enabled && (
-                    <span className="text-sm text-muted-foreground">{wh.start} - {wh.end}</span>
-                  )}
-                </div>
-              ))}
+              {dayNames.map((day, i) => {
+                const wh = clinicConfig.workingHours[i];
+                return (
+                  <div key={i} className="flex items-center gap-4">
+                    <span className="w-24 text-sm font-medium">{day}</span>
+                    <Badge variant={wh.enabled ? "default" : "secondary"}>
+                      {wh.enabled ? "Open" : "Closed"}
+                    </Badge>
+                    {wh.enabled && (
+                      <span className="text-sm text-muted-foreground">{wh.open} - {wh.close}</span>
+                    )}
+                  </div>
+                );
+              })}
             </div>
             <Button variant="outline" size="sm" className="mt-4">Edit Working Hours</Button>
           </CardContent>

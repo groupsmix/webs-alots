@@ -1,3 +1,5 @@
+"use client";
+
 import { Clock, CreditCard } from "lucide-react";
 import Link from "next/link";
 import { services } from "@/lib/demo-data";
