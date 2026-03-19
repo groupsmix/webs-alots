@@ -1,4 +1,4 @@
-import { Users, Calendar, CreditCard, TrendingUp, Star, Activity } from "lucide-react";
+import { Users, Calendar, CreditCard, Star, Activity } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { appointments, patients, doctors, getTotalRevenue, getAverageRating } from "@/lib/demo-data";

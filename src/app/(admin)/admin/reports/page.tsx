@@ -7,7 +7,6 @@ const totalAppts = appointments.length;
 const completedAppts = appointments.filter((a) => a.status === "completed").length;
 const noShowAppts = appointments.filter((a) => a.status === "no-show").length;
 const noShowRate = totalAppts > 0 ? Math.round((noShowAppts / totalAppts) * 100) : 0;
-const cancelledAppts = appointments.filter((a) => a.status === "cancelled").length;
 
 const monthlyData = [
   { month: "Jan", revenue: 12500, patients: 42, appointments: 68 },
