@@ -2,13 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Building2, CreditCard, ToggleRight, LogOut } from "lucide-react";
+import { LayoutDashboard, Building2, CreditCard, ToggleRight, FileText, LogOut } from "lucide-react";
 
 const navItems = [
   { href: "/super-admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/super-admin/clinics", label: "All Clinics", icon: Building2 },
   { href: "/super-admin/billing", label: "Billing", icon: CreditCard },
   { href: "/super-admin/features", label: "Feature Toggles", icon: ToggleRight },
+  { href: "/super-admin/templates", label: "Template Manager", icon: FileText },
 ];
 
 export default function SuperAdminLayout({

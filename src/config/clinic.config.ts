@@ -47,6 +47,15 @@ export interface ClinicConfig {
     { open: string; close: string; enabled: boolean }
   >;
 
+  /** Booking configuration */
+  booking: {
+    slotDuration: number;
+    bufferTime: number;
+    maxAdvanceDays: number;
+    maxPerSlot: number;
+    cancellationHours: number;
+  };
+
   /** Feature flags based on tier */
   features: {
     booking: boolean;
@@ -92,6 +101,14 @@ export const clinicConfig: ClinicConfig = {
     4: { open: "09:00", close: "17:00", enabled: true },
     5: { open: "09:00", close: "17:00", enabled: true },
     6: { open: "09:00", close: "13:00", enabled: true }, // Saturday
+  },
+
+  booking: {
+    slotDuration: 30,
+    bufferTime: 10,
+    maxAdvanceDays: 30,
+    maxPerSlot: 1,
+    cancellationHours: 24,
   },
 
   features: {

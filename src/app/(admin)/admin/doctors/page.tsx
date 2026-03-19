@@ -32,15 +32,18 @@ export default function ManageDoctorsPage() {
                 <p className="font-medium">{doctor.name}</p>
                 <p className="text-sm text-muted-foreground">{doctor.specialty}</p>
                 <div className="flex gap-1 mt-1">
-                  {clinicConfig.workingHours.map((wh, i) => (
-                    <Badge
-                      key={i}
-                      variant={wh.enabled ? "default" : "secondary"}
-                      className="text-[10px] px-1.5"
-                    >
-                      {dayNames[i]}
-                    </Badge>
-                  ))}
+                  {dayNames.map((day, i) => {
+                    const wh = clinicConfig.workingHours[i];
+                    return (
+                      <Badge
+                        key={i}
+                        variant={wh.enabled ? "default" : "secondary"}
+                        className="text-[10px] px-1.5"
+                      >
+                        {day}
+                      </Badge>
+                    );
+                  })}
                 </div>
               </div>
               <div className="text-right text-sm text-muted-foreground">

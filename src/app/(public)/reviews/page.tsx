@@ -30,7 +30,7 @@ export default function ReviewsPage() {
         <div className="flex items-center justify-center gap-2 mb-2">
           <span className="text-4xl font-bold">{avgRating}</span>
           <div>
-            <StarRating rating={Math.round(Number(avgRating))} />
+            <StarRating rating={Math.round(avgRating)} />
             <p className="text-sm text-muted-foreground mt-1">
               Based on {reviews.length} reviews
             </p>
@@ -51,7 +51,7 @@ export default function ReviewsPage() {
                 <div className="flex-1">
                   <p className="font-medium text-sm">{review.patientName}</p>
                   <div className="flex items-center gap-2">
-                    <StarRating rating={review.stars} />
+                    <StarRating rating={review.rating} />
                     <span className="text-xs text-muted-foreground">
                       {review.date}
                     </span>

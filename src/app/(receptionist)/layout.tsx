@@ -2,10 +2,11 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Users, Clock, LogOut } from "lucide-react";
+import { LayoutDashboard, Users, Clock, CalendarDays, LogOut } from "lucide-react";
 
 const navItems = [
   { href: "/receptionist/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/receptionist/bookings", label: "Bookings", icon: CalendarDays },
   { href: "/receptionist/patients", label: "Patients", icon: Users },
   { href: "/receptionist/waiting-room", label: "Waiting Room", icon: Clock },
 ];

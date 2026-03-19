@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, UserCog, Stethoscope, Settings, BarChart3, Star, LogOut } from "lucide-react";
+import { LayoutDashboard, UserCog, Stethoscope, Settings, BarChart3, Star, Users, CalendarOff, LogOut } from "lucide-react";
 
 const navItems = [
   { href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -11,6 +11,8 @@ const navItems = [
   { href: "/admin/settings", label: "Settings", icon: Settings },
   { href: "/admin/reports", label: "Reports", icon: BarChart3 },
   { href: "/admin/reviews", label: "Reviews", icon: Star },
+  { href: "/admin/patients", label: "Patient Database", icon: Users },
+  { href: "/admin/holidays", label: "Holidays / Closures", icon: CalendarOff },
 ];
 
 export default function AdminLayout({

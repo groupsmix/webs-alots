@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Calendar, History, Pill, FileText, CreditCard, Users, LogOut } from "lucide-react";
+import { LayoutDashboard, Calendar, History, Pill, FileText, CreditCard, Users, Bell, MessageSquare, LogOut } from "lucide-react";
 
 const navItems = [
   { href: "/patient/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -12,6 +12,8 @@ const navItems = [
   { href: "/patient/documents", label: "Documents", icon: FileText },
   { href: "/patient/invoices", label: "Invoices", icon: CreditCard },
   { href: "/patient/family", label: "Family Members", icon: Users },
+  { href: "/patient/notifications", label: "Notifications", icon: Bell },
+  { href: "/patient/feedback", label: "Feedback", icon: MessageSquare },
 ];
 
 export default function PatientLayout({
