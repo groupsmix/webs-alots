@@ -9,14 +9,13 @@ import {
   CreditCard,
   ToggleRight,
   FileText,
-  LogOut,
-  Megaphone,
   Menu,
   Bell,
   ChevronDown,
   Shield,
   Settings,
   User,
+  Megaphone,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -30,6 +29,7 @@ import {
   DropdownMenuLabel,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { SignOutButton } from "@/components/sign-out-button";
 
 const navItems = [
   { href: "/super-admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -96,13 +96,7 @@ export default function SuperAdminLayout({
         <SidebarNav pathname={pathname} />
 
         <div className="mt-auto pt-6 border-t">
-          <Link
-            href="/login"
-            className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-muted-foreground hover:bg-muted hover:text-foreground"
-          >
-            <LogOut className="h-4 w-4" />
-            Sign Out
-          </Link>
+          <SignOutButton />
         </div>
       </aside>
 
@@ -172,9 +166,8 @@ export default function SuperAdminLayout({
                 Settings
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem className="text-destructive">
-                <LogOut className="h-4 w-4 mr-2" />
-                Sign Out
+              <DropdownMenuItem className="text-destructive p-0">
+                <SignOutButton />
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
