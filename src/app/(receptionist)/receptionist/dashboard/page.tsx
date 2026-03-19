@@ -3,10 +3,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { appointments, getTodayAppointments, getTotalRevenue } from "@/lib/demo-data";
+import { getTodayAppointments, getTotalRevenue } from "@/lib/demo-data";
 
 const todayAppts = getTodayAppointments("d1");
-const allTodayAppts = appointments.filter((a) => a.date === new Date().toISOString().split("T")[0]);
 const checkedIn = todayAppts.filter((a) => a.status === "confirmed" || a.status === "in-progress").length;
 const totalRevenue = getTotalRevenue();
 
