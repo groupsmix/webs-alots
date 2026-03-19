@@ -193,6 +193,6 @@ export async function requireRole(
 /**
  * Get the dashboard path for a given role.
  */
-export function getDashboardPath(role: UserProfile["role"]): string {
+export async function getDashboardPath(role: UserProfile["role"]): Promise<string> {
   return ROLE_DASHBOARD_MAP[role];
 }
