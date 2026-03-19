@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, UserCog, Stethoscope, Settings, BarChart3, Star, Users, CalendarOff, LogOut } from "lucide-react";
+import { LayoutDashboard, UserCog, Stethoscope, Settings, BarChart3, Star, Users, CalendarOff } from "lucide-react";
+import { SignOutButton } from "@/components/sign-out-button";
 
 const navItems = [
   { href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -46,13 +47,7 @@ export default function AdminLayout({
           })}
         </nav>
         <div className="mt-auto pt-6 border-t mt-6">
-          <Link
-            href="/login"
-            className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-muted-foreground hover:bg-muted hover:text-foreground"
-          >
-            <LogOut className="h-4 w-4" />
-            Sign Out
-          </Link>
+          <SignOutButton />
         </div>
       </aside>
       <main className="flex-1 p-6">{children}</main>
