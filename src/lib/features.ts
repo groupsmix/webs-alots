@@ -24,7 +24,17 @@ export type ClinicFeatureKey =
   | "bed_management"
   | "installments"
   | "certificates"
-  | "sterilization_log";
+  | "sterilization_log"
+  | "dermatology"
+  | "cardiology"
+  | "ent"
+  | "orthopedics"
+  | "psychiatry"
+  | "neurology"
+  | "urology"
+  | "pulmonology"
+  | "endocrinology"
+  | "rheumatology";
 
 /** A features_config object as stored in the DB. */
 export type FeaturesConfig = Partial<Record<ClinicFeatureKey, boolean>>;

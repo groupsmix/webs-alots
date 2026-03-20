@@ -6,6 +6,7 @@ import {
   LayoutDashboard, Users, Calendar, Pill, FileEdit, Clock,
   MessageCircle, CalendarClock, BarChart3, ClipboardList,
   FlaskConical, ShieldCheck, Camera, Package, CreditCard, Award,
+  Heart, Ear, Bone, Brain, Activity, Wind, Droplets, Target,
 } from "lucide-react";
 import { SignOutButton } from "@/components/sign-out-button";
 import { useClinicFeatures } from "@/lib/hooks/use-clinic-features";
@@ -36,6 +37,16 @@ const navItems: NavItem[] = [
   { href: "/doctor/before-after", label: "Before/After", icon: Camera, requiredFeature: "before_after_photos" },
   { href: "/doctor/stock", label: "Material Stock", icon: Package, requiredFeature: "stock" },
   { href: "/doctor/installments", label: "Installments", icon: CreditCard, requiredFeature: "installments" },
+  { href: "/doctor/dermatology", label: "Dermatology", icon: Camera, requiredFeature: "dermatology" },
+  { href: "/doctor/cardiology", label: "Cardiology", icon: Heart, requiredFeature: "cardiology" },
+  { href: "/doctor/ent", label: "ENT", icon: Ear, requiredFeature: "ent" },
+  { href: "/doctor/orthopedics", label: "Orthopedics", icon: Bone, requiredFeature: "orthopedics" },
+  { href: "/doctor/psychiatry", label: "Psychiatry", icon: Brain, requiredFeature: "psychiatry" },
+  { href: "/doctor/neurology", label: "Neurology", icon: Activity, requiredFeature: "neurology" },
+  { href: "/doctor/urology", label: "Urology", icon: ClipboardList, requiredFeature: "urology" },
+  { href: "/doctor/pulmonology", label: "Pulmonology", icon: Wind, requiredFeature: "pulmonology" },
+  { href: "/doctor/endocrinology", label: "Endocrinology", icon: Droplets, requiredFeature: "endocrinology" },
+  { href: "/doctor/rheumatology", label: "Rheumatology", icon: Target, requiredFeature: "rheumatology" },
 ];
 
 export default function DoctorLayout({
