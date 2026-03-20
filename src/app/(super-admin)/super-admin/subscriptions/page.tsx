@@ -19,7 +19,7 @@ import {
   systemTypeLabels,
   tierColors,
   statusColors,
-} from "@/lib/pricing-data";
+} from "@/lib/config/pricing";
 import {
   fetchClientSubscriptions,
   type ClientSubscription,

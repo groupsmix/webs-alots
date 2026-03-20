@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { LabOrdersPanel } from "@/components/dental/lab-orders-panel";
 import { getCurrentUser, fetchLabOrders, type LabOrderView } from "@/lib/data/client";
-import type { LabOrder } from "@/lib/dental-demo-data";
+import type { LabOrder } from "@/lib/types/dental";
 
 export default function DoctorLabOrdersPage() {
   const [orders, setOrders] = useState<LabOrder[]>([]);

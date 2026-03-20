@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { TreatmentPlanBuilder } from "@/components/dental/treatment-plan-builder";
 import { getCurrentUser, fetchTreatmentPlans, type TreatmentPlanView } from "@/lib/data/client";
-import type { TreatmentPlan, TreatmentStep } from "@/lib/dental-demo-data";
+import type { TreatmentPlan, TreatmentStep } from "@/lib/types/dental";
 
 export default function DoctorTreatmentPlansPage() {
   const [plans, setPlans] = useState<TreatmentPlan[]>([]);

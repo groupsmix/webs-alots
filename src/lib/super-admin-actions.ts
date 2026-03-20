@@ -480,6 +480,85 @@ export async function fetchFeatureDefinitions(): Promise<FeatureDefinition[]> {
   }));
 }
 
+// ---------- Pricing Tiers ----------
+
+export interface PricingTierRow {
+  id: string;
+  slug: string;
+  name: string;
+  description: string;
+  popular: boolean;
+  pricing: Record<string, { monthly: number; yearly: number }>;
+  features: { key: string; label: string; included: boolean; limit?: string }[];
+  limits: {
+    maxDoctors: number;
+    maxPatients: number;
+    maxAppointmentsPerMonth: number;
+    storageGB: number;
+    customDomain: boolean;
+    apiAccess: boolean;
+    whiteLabel: boolean;
+  };
+}
+
+export async function fetchPricingTiers(): Promise<PricingTierRow[]> {
+  const supabase = rawClient();
+  const { data, error } = await supabase
+    .from("pricing_tiers")
+    .select("*")
+    .order("created_at", { ascending: true });
+
+  if (error || !data) return [];
+
+  return (data as Record<string, unknown>[]).map((row) => ({
+    id: row.id as string,
+    slug: (row.slug as string) ?? "",
+    name: (row.name as string) ?? "",
+    description: (row.description as string) ?? "",
+    popular: (row.popular as boolean) ?? false,
+    pricing: (row.pricing as Record<string, { monthly: number; yearly: number }>) ?? {},
+    features: (row.features as { key: string; label: string; included: boolean; limit?: string }[]) ?? [],
+    limits: (row.limits as PricingTierRow["limits"]) ?? {
+      maxDoctors: 1, maxPatients: 0, maxAppointmentsPerMonth: 0,
+      storageGB: 1, customDomain: false, apiAccess: false, whiteLabel: false,
+    },
+  }));
+}
+
+// ---------- Feature Toggles ----------
+
+export interface FeatureToggleRow {
+  id: string;
+  key: string;
+  label: string;
+  description: string;
+  category: "core" | "communication" | "integration" | "advanced" | "pharmacy";
+  systemTypes: string[];
+  tiers: string[];
+  enabled: boolean;
+}
+
+export async function fetchFeatureToggles(): Promise<FeatureToggleRow[]> {
+  const supabase = rawClient();
+  const { data, error } = await supabase
+    .from("feature_toggles")
+    .select("*")
+    .order("created_at", { ascending: true });
+
+  if (error || !data) return [];
+
+  return (data as Record<string, unknown>[]).map((row) => ({
+    id: row.id as string,
+    key: (row.key as string) ?? "",
+    label: (row.label as string) ?? "",
+    description: (row.description as string) ?? "",
+    category: ((row.category as string) ?? "core") as FeatureToggleRow["category"],
+    systemTypes: (row.system_types as string[]) ?? [],
+    tiers: (row.tiers as string[]) ?? [],
+    enabled: (row.enabled as boolean) ?? true,
+  }));
+}
+
 // ---------- Client Subscriptions ----------
 
 export interface ClientInvoice {
