@@ -2,19 +2,23 @@
 
 import { ChatbotProvider } from "./chatbot-provider";
 import { ChatbotWidget } from "./chatbot-widget";
-import { clinicConfig } from "@/config/clinic.config";
+import { useTenant } from "@/components/tenant-provider";
 
 /**
  * Self-contained chatbot wrapper.
- * Renders nothing if the chatbot feature is disabled in clinic config.
+ * Tenant-aware: reads clinic info from tenant context (subdomain resolution).
+ * Renders nothing if no tenant context is available (root domain / super-admin).
  */
 export function Chatbot() {
-  if (!clinicConfig.features.chatbot) {
+  const tenant = useTenant();
+
+  // Only show chatbot on tenant subdomains (not root domain or super-admin)
+  if (!tenant?.clinicId) {
     return null;
   }
 
   return (
-    <ChatbotProvider>
+    <ChatbotProvider clinicId={tenant.clinicId}>
       <ChatbotWidget />
     </ChatbotProvider>
   );

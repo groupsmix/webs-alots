@@ -34,7 +34,13 @@ export function useChatbot() {
   return ctx;
 }
 
-export function ChatbotProvider({ children }: { children: ReactNode }) {
+export function ChatbotProvider({
+  clinicId,
+  children,
+}: {
+  clinicId?: string;
+  children: ReactNode;
+}) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -62,7 +68,7 @@ export function ChatbotProvider({ children }: { children: ReactNode }) {
       const response = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: apiMessages }),
+        body: JSON.stringify({ messages: apiMessages, clinicId }),
       });
 
       if (!response.ok) {
@@ -122,7 +128,7 @@ export function ChatbotProvider({ children }: { children: ReactNode }) {
           }
         }
       } else {
-        // Handle JSON response (fallback mode)
+        // Handle JSON response (basic / smart mode)
         const data = await response.json();
         const assistantMsg: ChatMessage = {
           id: `msg-${Date.now()}-assistant`,
@@ -144,7 +150,7 @@ export function ChatbotProvider({ children }: { children: ReactNode }) {
     } finally {
       setIsLoading(false);
     }
-  }, [messages]);
+  }, [messages, clinicId]);
 
   const clearMessages = useCallback(() => {
     setMessages([]);
