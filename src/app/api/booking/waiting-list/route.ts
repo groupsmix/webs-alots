@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { addToWaitingList, removeFromWaitingList, getPatientWaitingList, getWaitingListForSlot } from "@/lib/demo-data";
+import { createClient } from "@/lib/supabase-server";
+import { clinicConfig } from "@/config/clinic.config";
 
 export const runtime = "edge";
 
@@ -26,23 +27,61 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const result = addToWaitingList(
-      body.patientId,
-      body.patientName,
-      body.doctorId,
-      body.preferredDate,
-      body.preferredTime,
-      body.serviceId,
-    );
+    const supabase = await createClient();
 
-    if (!result.success) {
-      return NextResponse.json({ error: result.error }, { status: 400 });
+    // If patientId looks like a temp ID, try to find or create the patient
+    let patientId = body.patientId;
+    if (patientId.startsWith("patient-")) {
+      const { data: existing } = await supabase
+        .from("users")
+        .select("id")
+        .eq("clinic_id", clinicConfig.clinicId)
+        .eq("name", body.patientName)
+        .eq("role", "patient")
+        .limit(1)
+        .single();
+
+      if (existing) {
+        patientId = existing.id;
+      } else {
+        const { data: newPatient, error: createError } = await supabase
+          .from("users")
+          .insert({
+            clinic_id: clinicConfig.clinicId,
+            name: body.patientName,
+            role: "patient",
+          })
+          .select("id")
+          .single();
+        if (createError || !newPatient) {
+          return NextResponse.json({ error: "Failed to create patient" }, { status: 500 });
+        }
+        patientId = newPatient.id;
+      }
+    }
+
+    const { data: entry, error } = await supabase
+      .from("waiting_list")
+      .insert({
+        clinic_id: clinicConfig.clinicId,
+        patient_id: patientId,
+        doctor_id: body.doctorId,
+        preferred_date: body.preferredDate,
+        preferred_time: body.preferredTime ?? null,
+        service_id: body.serviceId ?? null,
+        status: "waiting",
+      })
+      .select("id")
+      .single();
+
+    if (error || !entry) {
+      return NextResponse.json({ error: error?.message ?? "Failed to add to waiting list" }, { status: 400 });
     }
 
     return NextResponse.json({
       status: "added",
       message: "Added to waiting list",
-      entryId: result.entryId,
+      entryId: entry.id,
     });
   } catch {
     return NextResponse.json({ error: "Failed to add to waiting list" }, { status: 500 });
@@ -60,14 +99,34 @@ export async function GET(request: NextRequest) {
   const date = request.nextUrl.searchParams.get("date");
   const time = request.nextUrl.searchParams.get("time");
 
+  const supabase = await createClient();
+  const clinicId = clinicConfig.clinicId;
+
   if (patientId) {
-    const entries = getPatientWaitingList(patientId);
-    return NextResponse.json({ entries });
+    const { data: entries } = await supabase
+      .from("waiting_list")
+      .select("*")
+      .eq("clinic_id", clinicId)
+      .eq("patient_id", patientId)
+      .order("created_at", { ascending: false });
+
+    return NextResponse.json({ entries: entries ?? [] });
   }
 
   if (doctorId && date) {
-    const entries = getWaitingListForSlot(doctorId, date, time ?? undefined);
-    return NextResponse.json({ entries });
+    let q = supabase
+      .from("waiting_list")
+      .select("*")
+      .eq("clinic_id", clinicId)
+      .eq("doctor_id", doctorId)
+      .eq("preferred_date", date);
+
+    if (time) {
+      q = q.eq("preferred_time", time);
+    }
+
+    const { data: entries } = await q.order("created_at", { ascending: true });
+    return NextResponse.json({ entries: entries ?? [] });
   }
 
   return NextResponse.json(
@@ -89,10 +148,14 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: "entryId is required" }, { status: 400 });
     }
 
-    const result = removeFromWaitingList(body.entryId);
+    const supabase = await createClient();
+    const { error } = await supabase
+      .from("waiting_list")
+      .delete()
+      .eq("id", body.entryId);
 
-    if (!result.success) {
-      return NextResponse.json({ error: result.error }, { status: 400 });
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 400 });
     }
 
     return NextResponse.json({ status: "removed", message: "Removed from waiting list" });

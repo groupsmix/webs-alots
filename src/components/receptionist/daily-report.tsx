@@ -1,11 +1,21 @@
 "use client";
 
-import { useRef } from "react";
+import { useRef, useState, useEffect } from "react";
 import { Printer, FileText, Calendar, Users, CreditCard, Clock } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { appointments, doctors, patients, invoices } from "@/lib/demo-data";
+import {
+  getCurrentUser,
+  fetchTodayAppointments,
+  fetchDoctors,
+  fetchPatients,
+  fetchInvoices,
+  type AppointmentView,
+  type DoctorView,
+  type PatientView,
+  type InvoiceView,
+} from "@/lib/data/client";
 
 const statusVariant: Record<string, "default" | "success" | "warning" | "destructive" | "secondary" | "outline"> = {
   scheduled: "outline",
@@ -19,15 +29,37 @@ const statusVariant: Record<string, "default" | "success" | "warning" | "destruc
 
 export function DailyReport() {
   const reportRef = useRef<HTMLDivElement>(null);
+  const [todayAppointments, setTodayAppointments] = useState<AppointmentView[]>([]);
+  const [doctorList, setDoctorList] = useState<DoctorView[]>([]);
+  const [patientList, setPatientList] = useState<PatientView[]>([]);
+  const [todayInvoices, setTodayInvoices] = useState<InvoiceView[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const today = new Date().toISOString().split("T")[0];
-  const todayAppointments = appointments.filter((a) => a.date === today);
+  useEffect(() => {
+    async function load() {
+      const user = await getCurrentUser();
+      if (!user?.clinic_id) { setLoading(false); return; }
+      const today = new Date().toISOString().split("T")[0];
+      const [appts, docs, pts, invs] = await Promise.all([
+        fetchTodayAppointments(user.clinic_id),
+        fetchDoctors(user.clinic_id),
+        fetchPatients(user.clinic_id),
+        fetchInvoices(user.clinic_id),
+      ]);
+      setTodayAppointments(appts);
+      setDoctorList(docs);
+      setPatientList(pts);
+      setTodayInvoices(invs.filter((inv) => inv.date === today));
+      setLoading(false);
+    }
+    load();
+  }, []);
+
   const completed = todayAppointments.filter((a) => a.status === "completed").length;
   const pending = todayAppointments.filter((a) => a.status === "scheduled" || a.status === "confirmed").length;
   const noShows = todayAppointments.filter((a) => a.status === "no-show").length;
   const cancelled = todayAppointments.filter((a) => a.status === "cancelled").length;
 
-  const todayInvoices = invoices.filter((inv) => inv.date === today);
   const totalRevenue = todayInvoices.reduce((sum, inv) => sum + inv.amount, 0);
   const paidCount = todayInvoices.filter((inv) => inv.status === "paid").length;
   const pendingPayments = todayInvoices.filter((inv) => inv.status === "pending").length;
@@ -77,6 +109,14 @@ export function DailyReport() {
     printWindow.document.close();
     printWindow.print();
   };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <p className="text-muted-foreground">Loading report...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -174,7 +214,7 @@ export function DailyReport() {
         </Card>
 
         {/* Appointments by Doctor */}
-        {doctors.map((doctor) => {
+        {doctorList.map((doctor) => {
           const doctorAppts = todayAppointments.filter((a) => a.doctorId === doctor.id);
           if (doctorAppts.length === 0) return null;
 
@@ -200,7 +240,7 @@ export function DailyReport() {
                       {doctorAppts
                         .sort((a, b) => a.time.localeCompare(b.time))
                         .map((apt) => {
-                          const patient = patients.find((p) => p.id === apt.patientId);
+                          const patient = patientList.find((p) => p.id === apt.patientId);
                           return (
                             <tr key={apt.id} className="border-b last:border-0">
                               <td className="py-2 px-3 font-medium">{apt.time}</td>

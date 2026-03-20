@@ -2,19 +2,21 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { BeforeAfterGallery } from "@/components/dental/before-after-gallery";
-import { getCurrentUser } from "@/lib/data/client";
-import type { BeforeAfterPhoto } from "@/lib/dental-demo-data";
+import {
+  getCurrentUser,
+  fetchBeforeAfterPhotos,
+  type BeforeAfterPhotoView,
+} from "@/lib/data/client";
 
 export default function PatientBeforeAfterPage() {
-  const [myPhotos, setMyPhotos] = useState<BeforeAfterPhoto[]>([]);
+  const [myPhotos, setMyPhotos] = useState<BeforeAfterPhotoView[]>([]);
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
     const user = await getCurrentUser();
-    if (!user) { setLoading(false); return; }
-    // Before/after photos are not yet stored in Supabase DB;
-    // will show empty state until R2 image upload is implemented.
-    setMyPhotos([]);
+    if (!user?.clinic_id) { setLoading(false); return; }
+    const photos = await fetchBeforeAfterPhotos(user.clinic_id, user.id);
+    setMyPhotos(photos);
     setLoading(false);
   }, []);
 

@@ -12,6 +12,7 @@
  */
 
 import { createClient } from "@/lib/supabase-client";
+import { clinicConfig } from "@/config/clinic.config";
 
 // ── re-export the browser client for direct use ──
 export { createClient };
@@ -342,6 +343,7 @@ export interface ServiceView {
   price: number;
   currency: string;
   active: boolean;
+  category?: string;
 }
 
 interface ServiceRaw {
@@ -352,6 +354,7 @@ interface ServiceRaw {
   duration_min: number;
   price: number | null;
   is_active: boolean;
+  category: string | null;
 }
 
 function mapService(raw: ServiceRaw): ServiceView {
@@ -363,6 +366,7 @@ function mapService(raw: ServiceRaw): ServiceView {
     price: raw.price ?? 0,
     currency: "MAD",
     active: raw.is_active ?? true,
+    category: raw.category ?? undefined,
   };
 }
 
@@ -484,6 +488,7 @@ export async function fetchPatientPrescriptions(clinicId: string, patientId: str
 export interface InvoiceView {
   id: string;
   patientName: string;
+  appointmentId?: string;
   amount: number;
   currency: string;
   method: string;
@@ -514,6 +519,7 @@ export async function fetchInvoices(clinicId: string): Promise<InvoiceView[]> {
   return rows.map((r) => ({
     id: r.id,
     patientName: _userMap?.get(r.patient_id)?.name ?? "Patient",
+    appointmentId: r.appointment_id ?? undefined,
     amount: r.amount,
     currency: "MAD",
     method: r.method ?? "cash",
@@ -1118,6 +1124,49 @@ export async function fetchInstallments(clinicId: string): Promise<InstallmentVi
 }
 
 // ─────────────────────────────────────────────
+// Dental: Before/After Photos
+// ─────────────────────────────────────────────
+
+export interface BeforeAfterPhotoView {
+  id: string;
+  patientId: string;
+  patientName: string;
+  treatmentPlanId: string;
+  description: string;
+  beforeDate: string;
+  afterDate: string | null;
+  category: string;
+}
+
+export async function fetchBeforeAfterPhotos(clinicId: string, patientId?: string): Promise<BeforeAfterPhotoView[]> {
+  await ensureLookups(clinicId);
+  const eq: [string, unknown][] = [["clinic_id", clinicId]];
+  if (patientId) eq.push(["patient_id", patientId]);
+  const rows = await fetchRows<{
+    id: string;
+    patient_id: string;
+    treatment_plan_id: string | null;
+    description: string | null;
+    before_date: string | null;
+    after_date: string | null;
+    category: string | null;
+  }>("before_after_photos", {
+    eq,
+    order: ["before_date", { ascending: false }],
+  });
+  return rows.map((r) => ({
+    id: r.id,
+    patientId: r.patient_id,
+    patientName: _userMap?.get(r.patient_id)?.name ?? "Patient",
+    treatmentPlanId: r.treatment_plan_id ?? "",
+    description: r.description ?? "",
+    beforeDate: r.before_date ?? "",
+    afterDate: r.after_date ?? null,
+    category: r.category ?? "General",
+  }));
+}
+
+// ─────────────────────────────────────────────
 // Pharmacy: Products / Stock
 // ─────────────────────────────────────────────
 
@@ -1440,48 +1489,6 @@ export interface EmergencySlotView {
   reason?: string;
   isBooked: boolean;
   createdAt: string;
-}
-
-// ─────────────────────────────────────────────
-// Before/After Photos
-// ─────────────────────────────────────────────
-
-export interface BeforeAfterPhotoView {
-  id: string;
-  patientId: string;
-  patientName: string;
-  treatmentPlanId: string;
-  description: string;
-  beforeDate: string;
-  afterDate: string | null;
-  category: string;
-}
-
-export async function fetchBeforeAfterPhotos(clinicId: string): Promise<BeforeAfterPhotoView[]> {
-  await ensureLookups(clinicId);
-  const rows = await fetchRows<{
-    id: string;
-    clinic_id: string;
-    patient_id: string;
-    treatment_plan_id: string | null;
-    description: string | null;
-    before_date: string | null;
-    after_date: string | null;
-    category: string | null;
-  }>("before_after_photos", {
-    eq: [["clinic_id", clinicId]],
-    order: ["before_date", { ascending: false }],
-  });
-  return rows.map((r) => ({
-    id: r.id,
-    patientId: r.patient_id,
-    patientName: _userMap?.get(r.patient_id)?.name ?? "Patient",
-    treatmentPlanId: r.treatment_plan_id ?? "",
-    description: r.description ?? "",
-    beforeDate: r.before_date ?? "",
-    afterDate: r.after_date ?? null,
-    category: r.category ?? "General",
-  }));
 }
 
 // ─────────────────────────────────────────────
@@ -1818,4 +1825,183 @@ export async function fetchAnalytics(clinicId: string): Promise<AnalyticsData> {
     totalPatients: allPatients.length,
     totalAppointments: appts.length,
   };
+}
+
+// ─────────────────────────────────────────────
+// Booking Slot Helpers (client-side via Supabase)
+// ─────────────────────────────────────────────
+
+/**
+ * Generate time-slot strings for a given date and doctor
+ * based on the doctor's configured time_slots for that day of week.
+ */
+export async function fetchGeneratedSlots(
+  clinicId: string,
+  date: string,
+  doctorId: string,
+): Promise<string[]> {
+  const dayOfWeek = new Date(date).getDay();
+  const slots = await fetchTimeSlots(clinicId, doctorId);
+  const daySlots = slots.filter((s) => s.dayOfWeek === dayOfWeek && s.isAvailable);
+
+  const result: string[] = [];
+  const duration = clinicConfig.booking.slotDuration;
+  const buffer = clinicConfig.booking.bufferTime;
+
+  for (const config of daySlots) {
+    const [startH, startM] = config.startTime.split(":").map(Number);
+    const [endH, endM] = config.endTime.split(":").map(Number);
+    const startMinutes = startH * 60 + startM;
+    const endMinutes = endH * 60 + endM;
+
+    let current = startMinutes;
+    while (current + duration <= endMinutes) {
+      const h = Math.floor(current / 60);
+      const m = current % 60;
+      result.push(`${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}`);
+      current += duration + buffer;
+    }
+  }
+
+  return result.sort();
+}
+
+/**
+ * Get existing appointment counts per time slot for a given date and doctor.
+ */
+export async function fetchSlotBookingCounts(
+  clinicId: string,
+  date: string,
+  doctorId: string,
+): Promise<Record<string, number>> {
+  const supabase = createClient();
+
+  const { data, error } = await supabase
+    .from("appointments")
+    .select("start_time, status")
+    .eq("clinic_id", clinicId)
+    .eq("doctor_id", doctorId)
+    .eq("appointment_date", date)
+    .not("status", "in", '("cancelled","no_show")');
+
+  if (error || !data) return {};
+
+  const counts: Record<string, number> = {};
+  for (const appt of data) {
+    const time = (appt.start_time as string)?.slice(0, 5) ?? "";
+    if (time) {
+      counts[time] = (counts[time] ?? 0) + 1;
+    }
+  }
+  return counts;
+}
+
+/**
+ * Get available (non-fully-booked) slots for a date and doctor.
+ */
+export async function fetchAvailableSlots(
+  clinicId: string,
+  date: string,
+  doctorId: string,
+): Promise<string[]> {
+  const [allSlots, bookingCounts] = await Promise.all([
+    fetchGeneratedSlots(clinicId, date, doctorId),
+    fetchSlotBookingCounts(clinicId, date, doctorId),
+  ]);
+
+  const maxPerSlot = clinicConfig.booking.maxPerSlot;
+  return allSlots.filter((slot) => (bookingCounts[slot] ?? 0) < maxPerSlot);
+}
+
+// ─────────────────────────────────────────────
+// Waiting List Mutations
+// ─────────────────────────────────────────────
+
+export async function addToWaitingList(data: {
+  clinic_id: string;
+  patient_id: string;
+  doctor_id: string;
+  preferred_date: string;
+  preferred_time?: string;
+  service_id?: string;
+}): Promise<{ success: boolean; entryId?: string; error?: string }> {
+  const supabase = createClient();
+  const { data: entry, error } = await supabase
+    .from("waiting_list")
+    .insert({
+      ...data,
+      status: "waiting",
+    })
+    .select("id")
+    .single();
+
+  if (error) {
+    console.error("[data] addToWaitingList:", error.message);
+    return { success: false, error: error.message };
+  }
+  return { success: true, entryId: entry?.id };
+}
+
+// ─────────────────────────────────────────────
+// Appointment Creation
+// ─────────────────────────────────────────────
+
+export async function createAppointment(data: {
+  clinic_id: string;
+  patient_id: string;
+  doctor_id: string;
+  service_id?: string;
+  appointment_date: string;
+  start_time: string;
+  end_time?: string;
+  is_first_visit?: boolean;
+  insurance_flag?: boolean;
+  booking_source?: string;
+  notes?: string;
+  is_emergency?: boolean;
+}): Promise<{ success: boolean; id?: string; error?: string }> {
+  const supabase = createClient();
+  const { data: appt, error } = await supabase
+    .from("appointments")
+    .insert({
+      ...data,
+      status: "confirmed",
+    })
+    .select("id")
+    .single();
+
+  if (error) {
+    console.error("[data] createAppointment:", error.message);
+    return { success: false, error: error.message };
+  }
+  return { success: true, id: appt?.id };
+}
+
+// ─────────────────────────────────────────────
+// Dental: Treatment Types (from services with category)
+// ─────────────────────────────────────────────
+
+export interface DentalTreatmentTypeView {
+  id: string;
+  name: string;
+  category: string;
+  durationMinutes: number;
+  price: number;
+  currency: string;
+  description: string;
+}
+
+export async function fetchDentalTreatmentTypes(clinicId: string): Promise<DentalTreatmentTypeView[]> {
+  const services = await fetchServices(clinicId);
+  return services
+    .filter((s) => s.active && s.category)
+    .map((s) => ({
+      id: s.id,
+      name: s.name,
+      category: s.category ?? "General",
+      durationMinutes: s.duration,
+      price: s.price,
+      currency: s.currency,
+      description: s.description,
+    }));
 }

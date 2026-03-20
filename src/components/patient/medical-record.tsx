@@ -1,9 +1,18 @@
 "use client";
 
+import { useState, useEffect, useCallback } from "react";
 import { Activity, Pill, FileText, Stethoscope, AlertTriangle, TrendingUp } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { patients, prescriptions, appointments } from "@/lib/demo-data";
+import {
+  getCurrentUser,
+  fetchPatientAppointments,
+  fetchPatientPrescriptions,
+  fetchPatients,
+  type PatientView,
+  type AppointmentView,
+  type PrescriptionView,
+} from "@/lib/data/client";
 
 /**
  * MedicalRecord
@@ -11,11 +20,50 @@ import { patients, prescriptions, appointments } from "@/lib/demo-data";
  * Displays a patient's medical history: past visits, diagnoses, prescriptions.
  */
 export function MedicalRecord({ patientId }: { patientId?: string }) {
-  const patient = patients.find((p) => p.id === patientId) ?? patients[0];
-  const patientRx = prescriptions.filter((rx) => rx.patientId === patient.id);
-  const patientAppts = appointments
-    .filter((a) => a.patientId === patient.id && a.status === "completed")
-    .slice(0, 5);
+  const [patient, setPatient] = useState<PatientView | null>(null);
+  const [patientRx, setPatientRx] = useState<PrescriptionView[]>([]);
+  const [patientAppts, setPatientAppts] = useState<AppointmentView[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const load = useCallback(async () => {
+    const user = await getCurrentUser();
+    if (!user?.clinic_id) { setLoading(false); return; }
+    const pid = patientId ?? user.id;
+
+    const [patients, appointments, prescriptions] = await Promise.all([
+      fetchPatients(user.clinic_id),
+      fetchPatientAppointments(user.clinic_id, pid),
+      fetchPatientPrescriptions(user.clinic_id, pid),
+    ]);
+
+    const found = patients.find((p) => p.id === pid) ?? null;
+    setPatient(found);
+    setPatientRx(prescriptions);
+    setPatientAppts(
+      appointments
+        .filter((a) => a.status === "completed")
+        .slice(0, 5),
+    );
+    setLoading(false);
+  }, [patientId]);
+
+  useEffect(() => { load(); }, [load]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <p className="text-sm text-muted-foreground">Loading medical record...</p>
+      </div>
+    );
+  }
+
+  if (!patient) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <p className="text-sm text-muted-foreground">Patient not found.</p>
+      </div>
+    );
+  }
 
   const vitals = [
     { label: "Blood Pressure", value: "120/80 mmHg", icon: Activity, trend: "stable" },
@@ -49,7 +97,7 @@ export function MedicalRecord({ patientId }: { patientId?: string }) {
             </div>
             <div>
               <p className="text-sm text-muted-foreground">Insurance</p>
-              <p className="text-sm font-medium">CNSS</p>
+              <p className="text-sm font-medium">{patient.insurance ?? "N/A"}</p>
             </div>
           </div>
           {patient.allergies && patient.allergies.length > 0 && (

@@ -7,12 +7,12 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import type { BeforeAfterPhotoView as BeforeAfterPhoto } from "@/lib/data/client";
+import type { BeforeAfterPhotoView } from "@/lib/data/client";
 
 interface BeforeAfterGalleryProps {
-  photos: BeforeAfterPhoto[];
+  photos: BeforeAfterPhotoView[];
   editable?: boolean;
-  onAddPhoto?: (photo: Omit<BeforeAfterPhoto, "id">) => void;
+  onAddPhoto?: (photo: Omit<BeforeAfterPhotoView, "id">) => void;
 }
 
 export function BeforeAfterGallery({ photos, editable = false, onAddPhoto }: BeforeAfterGalleryProps) {

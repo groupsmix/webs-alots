@@ -1,12 +1,18 @@
 "use client";
 
-import { useState } from "react";
-import { Calendar, Clock, User, MapPin, X, RefreshCw, AlertTriangle, Repeat } from "lucide-react";
+import { useState, useEffect, useCallback } from "react";
+import { Calendar, Clock, User, MapPin, X, RefreshCw, AlertTriangle } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { appointments, canCancelAppointment } from "@/lib/demo-data";
+import {
+  getCurrentUser,
+  fetchPatientAppointments,
+  type AppointmentView,
+} from "@/lib/data/client";
 import { RescheduleDialog } from "./reschedule-dialog";
+
+const CANCELLATION_WINDOW_HOURS = 24;
 
 const statusVariant: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
   scheduled: "default",
@@ -18,6 +24,23 @@ const statusVariant: Record<string, "default" | "secondary" | "destructive" | "o
   "in-progress": "default",
 };
 
+function canCancelAppointment(
+  appt: AppointmentView,
+): { canCancel: boolean; reason?: string } {
+  if (appt.status === "cancelled" || appt.status === "completed" || appt.status === "rescheduled") {
+    return { canCancel: false, reason: "Appointment cannot be cancelled in its current state" };
+  }
+  const appointmentDateTime = new Date(`${appt.date}T${appt.time}:00`);
+  const hoursUntil = (appointmentDateTime.getTime() - Date.now()) / (1000 * 60 * 60);
+  if (hoursUntil < CANCELLATION_WINDOW_HOURS) {
+    return {
+      canCancel: false,
+      reason: `Cancellations must be made at least ${CANCELLATION_WINDOW_HOURS} hours before the appointment`,
+    };
+  }
+  return { canCancel: true };
+}
+
 /**
  * AppointmentList
  *
@@ -25,27 +48,39 @@ const statusVariant: Record<string, "default" | "secondary" | "destructive" | "o
  * Supports cancel and reschedule actions.
  */
 export function AppointmentList({ patientId }: { patientId?: string }) {
+  const [allAppts, setAllAppts] = useState<AppointmentView[]>([]);
+  const [loading, setLoading] = useState(true);
   const [refreshKey, setRefreshKey] = useState(0);
   const [rescheduleAppt, setRescheduleAppt] = useState<string | null>(null);
   const [cancellingId, setCancellingId] = useState<string | null>(null);
   const [cancelError, setCancelError] = useState<string | null>(null);
 
-  // Re-read appointments on refresh
-  void refreshKey;
-  const patientAppts = patientId
-    ? appointments.filter((a) => a.patientId === patientId)
-    : appointments.slice(0, 4);
+  const load = useCallback(async () => {
+    const user = await getCurrentUser();
+    if (!user?.clinic_id) { setLoading(false); return; }
+    const pid = patientId ?? user.id;
+    const appts = await fetchPatientAppointments(user.clinic_id, pid);
+    setAllAppts(appts);
+    setLoading(false);
+  }, [patientId, refreshKey]);
 
-  const upcoming = patientAppts.filter(
+  useEffect(() => { load(); }, [load]);
+
+  const upcoming = allAppts.filter(
     (a) => a.status === "scheduled" || a.status === "confirmed" || a.status === "in-progress",
   );
-  const past = patientAppts.filter(
+  const past = allAppts.filter(
     (a) => a.status === "completed" || a.status === "cancelled" || a.status === "no-show" || a.status === "rescheduled",
   );
 
   const handleCancel = async (appointmentId: string) => {
     setCancelError(null);
-    const check = canCancelAppointment(appointmentId);
+    const appt = allAppts.find((a) => a.id === appointmentId);
+    if (!appt) {
+      setCancelError("Appointment not found");
+      return;
+    }
+    const check = canCancelAppointment(appt);
     if (!check.canCancel) {
       setCancelError(check.reason ?? "Cannot cancel this appointment");
       return;
@@ -73,8 +108,16 @@ export function AppointmentList({ patientId }: { patientId?: string }) {
     }
   };
 
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <p className="text-sm text-muted-foreground">Loading appointments...</p>
+      </div>
+    );
+  }
+
   const apptToReschedule = rescheduleAppt
-    ? appointments.find((a) => a.id === rescheduleAppt)
+    ? allAppts.find((a) => a.id === rescheduleAppt)
     : null;
 
   if (apptToReschedule) {
@@ -122,10 +165,9 @@ export function AppointmentList({ patientId }: { patientId?: string }) {
                             Emergency
                           </Badge>
                         )}
-                        {appt.recurrenceGroupId && (
+                        {appt.notes && (
                           <Badge variant="outline" className="text-xs">
-                            <Repeat className="h-3 w-3 mr-1" />
-                            {appt.recurrencePattern}
+                            {appt.notes}
                           </Badge>
                         )}
                       </div>
