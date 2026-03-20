@@ -1,17 +1,74 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Building2, CreditCard, ToggleRight, FileText } from "lucide-react";
+import {
+  LayoutDashboard,
+  Building2,
+  CreditCard,
+  ToggleRight,
+  FileText,
+  Menu,
+  Bell,
+  ChevronDown,
+  Shield,
+  Settings,
+  User,
+  Megaphone,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuLabel,
+} from "@/components/ui/dropdown-menu";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { SignOutButton } from "@/components/sign-out-button";
 
 const navItems = [
   { href: "/super-admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/super-admin/clinics", label: "All Clinics", icon: Building2 },
   { href: "/super-admin/billing", label: "Billing", icon: CreditCard },
+  { href: "/super-admin/announcements", label: "Announcements", icon: Megaphone },
   { href: "/super-admin/features", label: "Feature Toggles", icon: ToggleRight },
   { href: "/super-admin/templates", label: "Template Manager", icon: FileText },
 ];
+
+const notifications = [
+  { id: "n1", title: "Overdue Payment", message: "Clinique Dentaire Tanger has an overdue invoice", time: "2h ago", unread: true },
+  { id: "n2", title: "New Registration", message: "Cabinet Dr. Youssef signed up for a trial", time: "5h ago", unread: true },
+  { id: "n3", title: "Account Suspended", message: "Pharmacie Ibn Sina suspended for non-payment", time: "1d ago", unread: false },
+];
+
+function SidebarNav({ pathname }: { pathname: string }) {
+  return (
+    <nav className="space-y-1">
+      {navItems.map((item) => {
+        const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
+        return (
+          <Link
+            key={item.href}
+            href={item.href}
+            className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors ${
+              isActive
+                ? "bg-primary/10 text-primary font-medium"
+                : "text-muted-foreground hover:bg-muted hover:text-foreground"
+            }`}
+          >
+            <item.icon className="h-4 w-4" />
+            {item.label}
+          </Link>
+        );
+      })}
+    </nav>
+  );
+}
 
 export default function SuperAdminLayout({
   children,
@@ -19,35 +76,122 @@ export default function SuperAdminLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const unreadCount = notifications.filter((n) => n.unread).length;
 
   return (
     <div className="flex min-h-screen">
-      <aside className="hidden w-64 border-r bg-card p-4 md:block">
-        <h2 className="text-lg font-semibold mb-6">Master Control Panel</h2>
-        <nav className="space-y-1">
-          {navItems.map((item) => {
-            const isActive = pathname === item.href;
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors ${
-                  isActive
-                    ? "bg-primary/10 text-primary font-medium"
-                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                }`}
-              >
-                <item.icon className="h-4 w-4" />
-                {item.label}
-              </Link>
-            );
-          })}
-        </nav>
-        <div className="mt-auto pt-6 border-t mt-6">
+      {/* Desktop Sidebar */}
+      <aside className="hidden w-64 border-r bg-card p-4 md:flex md:flex-col">
+        <div className="flex items-center gap-2 mb-6">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+            <Shield className="h-4 w-4" />
+          </div>
+          <div>
+            <h2 className="text-sm font-semibold">Master Control</h2>
+            <p className="text-[10px] text-muted-foreground">Super Admin Panel</p>
+          </div>
+        </div>
+
+        <SidebarNav pathname={pathname} />
+
+        <div className="mt-auto pt-6 border-t">
           <SignOutButton />
         </div>
       </aside>
-      <main className="flex-1 p-6">{children}</main>
+
+      {/* Main Content */}
+      <div className="flex-1 flex flex-col">
+        {/* Top Bar */}
+        <header className="sticky top-0 z-40 flex h-14 items-center gap-4 border-b bg-background px-4 md:px-6">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="md:hidden"
+            onClick={() => setMobileOpen(true)}
+          >
+            <Menu className="h-5 w-5" />
+          </Button>
+
+          <div className="flex-1" />
+
+          {/* Notifications */}
+          <DropdownMenu>
+            <DropdownMenuTrigger>
+              <Button variant="ghost" size="sm" className="relative">
+                <Bell className="h-4 w-4" />
+                {unreadCount > 0 && (
+                  <span className="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[10px] text-white">
+                    {unreadCount}
+                  </span>
+                )}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="w-80">
+              <DropdownMenuLabel>Notifications</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              {notifications.map((notif) => (
+                <DropdownMenuItem key={notif.id} className="flex flex-col items-start gap-1 py-2">
+                  <div className="flex items-center gap-2 w-full">
+                    <p className="text-sm font-medium">{notif.title}</p>
+                    {notif.unread && <Badge variant="default" className="text-[9px] px-1 py-0 ml-auto">New</Badge>}
+                  </div>
+                  <p className="text-xs text-muted-foreground">{notif.message}</p>
+                  <p className="text-[10px] text-muted-foreground">{notif.time}</p>
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          {/* User Menu */}
+          <DropdownMenu>
+            <DropdownMenuTrigger>
+              <Button variant="ghost" size="sm" className="flex items-center gap-2">
+                <Avatar className="h-7 w-7">
+                  <AvatarFallback className="text-xs">SA</AvatarFallback>
+                </Avatar>
+                <span className="hidden sm:inline text-sm">Super Admin</span>
+                <ChevronDown className="h-3 w-3" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
+              <DropdownMenuLabel>My Account</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem>
+                <User className="h-4 w-4 mr-2" />
+                Profile
+              </DropdownMenuItem>
+              <DropdownMenuItem>
+                <Settings className="h-4 w-4 mr-2" />
+                Settings
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem className="text-destructive p-0">
+                <SignOutButton />
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </header>
+
+        <main className="flex-1 p-4 md:p-6">
+          {children}
+        </main>
+      </div>
+
+      {/* Mobile Sidebar Sheet */}
+      <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
+        <SheetContent side="left" onClose={() => setMobileOpen(false)}>
+          <SheetHeader>
+            <SheetTitle className="flex items-center gap-2">
+              <Shield className="h-4 w-4" />
+              Master Control
+            </SheetTitle>
+          </SheetHeader>
+          <div className="mt-6" onClick={() => setMobileOpen(false)}>
+            <SidebarNav pathname={pathname} />
+          </div>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }
