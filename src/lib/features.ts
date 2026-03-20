@@ -36,7 +36,21 @@ export type ClinicFeatureKey =
   | "speech_reports"
   | "lens_inventory"
   | "frame_catalog"
-  | "optical_prescriptions";
+  | "optical_prescriptions"
+  | "dermatology"
+  | "cardiology"
+  | "ent"
+  | "orthopedics"
+  | "psychiatry"
+  | "neurology"
+  | "urology"
+  | "pulmonology"
+  | "endocrinology"
+  | "rheumatology"
+  | "pregnancy_tracking"
+  | "ultrasound_records"
+  | "vision_tests"
+  | "iop_tracking";
 
 /** A features_config object as stored in the DB. */
 export type FeaturesConfig = Partial<Record<ClinicFeatureKey, boolean>>;

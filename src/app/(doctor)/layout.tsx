@@ -6,6 +6,8 @@ import {
   LayoutDashboard, Users, Calendar, Pill, FileEdit, Clock,
   MessageCircle, CalendarClock, BarChart3, ClipboardList,
   FlaskConical, ShieldCheck, Camera, Package, CreditCard, Award,
+  Heart, Ear, Bone, Brain, Activity, Wind, Droplets, Target,
+  Ruler, Syringe, Baby, Image, Eye,
 } from "lucide-react";
 import { SignOutButton } from "@/components/sign-out-button";
 import { useClinicFeatures } from "@/lib/hooks/use-clinic-features";
@@ -36,6 +38,26 @@ const navItems: NavItem[] = [
   { href: "/doctor/before-after", label: "Before/After", icon: Camera, requiredFeature: "before_after_photos" },
   { href: "/doctor/stock", label: "Material Stock", icon: Package, requiredFeature: "stock" },
   { href: "/doctor/installments", label: "Installments", icon: CreditCard, requiredFeature: "installments" },
+  { href: "/doctor/dermatology", label: "Dermatology", icon: Camera, requiredFeature: "dermatology" },
+  { href: "/doctor/cardiology", label: "Cardiology", icon: Heart, requiredFeature: "cardiology" },
+  { href: "/doctor/ent", label: "ENT", icon: Ear, requiredFeature: "ent" },
+  { href: "/doctor/orthopedics", label: "Orthopedics", icon: Bone, requiredFeature: "orthopedics" },
+  { href: "/doctor/psychiatry", label: "Psychiatry", icon: Brain, requiredFeature: "psychiatry" },
+  { href: "/doctor/neurology", label: "Neurology", icon: Activity, requiredFeature: "neurology" },
+  { href: "/doctor/urology", label: "Urology", icon: ClipboardList, requiredFeature: "urology" },
+  { href: "/doctor/pulmonology", label: "Pulmonology", icon: Wind, requiredFeature: "pulmonology" },
+  { href: "/doctor/endocrinology", label: "Endocrinology", icon: Droplets, requiredFeature: "endocrinology" },
+  { href: "/doctor/rheumatology", label: "Rheumatology", icon: Target, requiredFeature: "rheumatology" },
+  // Pediatrician
+  { href: "/doctor/growth-charts", label: "Growth Charts", icon: Ruler, requiredFeature: "growth_charts" },
+  { href: "/doctor/vaccinations", label: "Vaccinations", icon: Syringe, requiredFeature: "vaccination" },
+  { href: "/doctor/child-info", label: "Child Development", icon: Baby, requiredFeature: "growth_charts" },
+  // Gynecologist
+  { href: "/doctor/pregnancies", label: "Pregnancy Tracking", icon: Heart, requiredFeature: "pregnancy_tracking" },
+  { href: "/doctor/ultrasounds", label: "Ultrasound Records", icon: Image, requiredFeature: "ultrasound_records" },
+  // Ophthalmologist
+  { href: "/doctor/vision-tests", label: "Vision Tests", icon: Eye, requiredFeature: "vision_tests" },
+  { href: "/doctor/iop-tracking", label: "IOP Tracking", icon: Activity, requiredFeature: "iop_tracking" },
 ];
 
 export default function DoctorLayout({
