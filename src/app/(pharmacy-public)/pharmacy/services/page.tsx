@@ -1,7 +1,18 @@
+import type { Metadata } from "next";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Heart, Droplet, Syringe, MessageCircle, Cross, Scale, Truck, Pill } from "lucide-react";
 import { pharmacyServices } from "@/lib/pharmacy-demo-data";
+
+export const metadata: Metadata = {
+  title: "Services Pharmaceutiques",
+  description:
+    "Découvrez nos services pharmaceutiques : injections, prise de tension, livraison à domicile, conseil médical et plus.",
+  openGraph: {
+    title: "Services Pharmaceutiques",
+    description: "Découvrez nos services pharmaceutiques professionnels.",
+  },
+};
 
 const iconMap: Record<string, React.ReactNode> = {
   Heart: <Heart className="h-8 w-8" />,

@@ -16,6 +16,8 @@ import {
   Settings,
   User,
   Megaphone,
+  DollarSign,
+  Receipt,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -36,6 +38,8 @@ const navItems = [
   { href: "/super-admin/clinics", label: "All Clinics", icon: Building2 },
   { href: "/super-admin/billing", label: "Billing", icon: CreditCard },
   { href: "/super-admin/announcements", label: "Announcements", icon: Megaphone },
+  { href: "/super-admin/pricing", label: "Pricing & Tiers", icon: DollarSign },
+  { href: "/super-admin/subscriptions", label: "Subscriptions", icon: Receipt },
   { href: "/super-admin/features", label: "Feature Toggles", icon: ToggleRight },
   { href: "/super-admin/templates", label: "Template Manager", icon: FileText },
 ];
