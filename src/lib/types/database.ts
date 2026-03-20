@@ -745,6 +745,65 @@ export interface PainQuestionnaire {
   created_at: string;
 }
 
+// ---- Custom Fields (Migration 00012) ----
+
+export type CustomFieldType =
+  | "text"
+  | "number"
+  | "date"
+  | "select"
+  | "multi_select"
+  | "file"
+  | "tooth_number";
+
+export type CustomFieldEntityType =
+  | "appointment"
+  | "patient"
+  | "consultation"
+  | "product"
+  | "lab_order";
+
+export interface CustomFieldDefinitionRow {
+  id: string;
+  clinic_type_key: string;
+  entity_type: CustomFieldEntityType;
+  field_key: string;
+  field_type: CustomFieldType;
+  label_fr: string;
+  label_ar: string;
+  description: string | null;
+  placeholder: string | null;
+  is_required: boolean;
+  sort_order: number;
+  options: Record<string, unknown>[];
+  validation: Record<string, unknown>;
+  default_value: unknown;
+  is_active: boolean;
+  is_system: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CustomFieldValuesRow {
+  id: string;
+  clinic_id: string;
+  entity_type: CustomFieldEntityType;
+  entity_id: string;
+  field_values: Record<string, unknown>;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CustomFieldOverrideRow {
+  id: string;
+  clinic_id: string;
+  field_definition_id: string;
+  is_enabled: boolean;
+  is_required: boolean | null;
+  sort_order: number | null;
+  created_at: string;
+}
+
 // ---- Supabase Database Schema (for use with supabase-js typed client) ----
 
 export interface Database {
@@ -795,6 +854,10 @@ export interface Database {
       before_after_photos: { Row: BeforeAfterPhoto; Insert: Partial<BeforeAfterPhoto> & Pick<BeforeAfterPhoto, "clinic_id" | "patient_id">; Update: Partial<BeforeAfterPhoto> };
       pain_questionnaires: { Row: PainQuestionnaire; Insert: Partial<PainQuestionnaire> & Pick<PainQuestionnaire, "clinic_id" | "patient_id" | "pain_level">; Update: Partial<PainQuestionnaire> };
       clinic_types: { Row: ClinicTypeRecord; Insert: Partial<ClinicTypeRecord> & Pick<ClinicTypeRecord, "type_key" | "name_fr" | "name_ar" | "category">; Update: Partial<ClinicTypeRecord> };
+      // Custom Fields (migration 00012)
+      custom_field_definitions: { Row: CustomFieldDefinitionRow; Insert: Partial<CustomFieldDefinitionRow> & Pick<CustomFieldDefinitionRow, "clinic_type_key" | "entity_type" | "field_key" | "field_type" | "label_fr">; Update: Partial<CustomFieldDefinitionRow> };
+      custom_field_values: { Row: CustomFieldValuesRow; Insert: Partial<CustomFieldValuesRow> & Pick<CustomFieldValuesRow, "clinic_id" | "entity_type" | "entity_id">; Update: Partial<CustomFieldValuesRow> };
+      custom_field_overrides: { Row: CustomFieldOverrideRow; Insert: Partial<CustomFieldOverrideRow> & Pick<CustomFieldOverrideRow, "clinic_id" | "field_definition_id">; Update: Partial<CustomFieldOverrideRow> };
     };
   };
 }

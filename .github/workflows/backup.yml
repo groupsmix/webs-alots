@@ -1,0 +1,221 @@
+name: Automated Database Backups
+
+on:
+  schedule:
+    # Run nightly at 2:00 AM UTC
+    - cron: "0 2 * * *"
+  workflow_dispatch:
+    inputs:
+      backup_type:
+        description: "Type of backup to run"
+        required: false
+        default: "daily"
+        type: choice
+        options:
+          - daily
+          - weekly
+          - monthly
+          - verify
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    name: Supabase Backup to R2
+    env:
+      SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+      R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+      R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+      R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+      R2_BACKUP_BUCKET: ${{ secrets.R2_BACKUP_BUCKET }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install PostgreSQL client
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client
+
+      - name: Install AWS CLI (for S3-compatible R2)
+        run: |
+          pip install awscli
+
+      - name: Configure R2 credentials
+        run: |
+          mkdir -p ~/.aws
+          cat > ~/.aws/credentials << EOF
+          [default]
+          aws_access_key_id=${{ secrets.R2_ACCESS_KEY_ID }}
+          aws_secret_access_key=${{ secrets.R2_SECRET_ACCESS_KEY }}
+          EOF
+          cat > ~/.aws/config << EOF
+          [default]
+          region=auto
+          EOF
+
+      - name: Determine backup type
+        id: backup_type
+        run: |
+          if [ "${{ github.event.inputs.backup_type }}" != "" ]; then
+            echo "type=${{ github.event.inputs.backup_type }}" >> $GITHUB_OUTPUT
+          else
+            DOW=$(date +%u)
+            DOM=$(date +%d)
+            if [ "$DOM" -eq "1" ]; then
+              echo "type=monthly" >> $GITHUB_OUTPUT
+            elif [ "$DOW" -eq "7" ]; then
+              echo "type=weekly" >> $GITHUB_OUTPUT
+            else
+              echo "type=daily" >> $GITHUB_OUTPUT
+            fi
+          fi
+
+      - name: Create database dump
+        run: |
+          TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+          BACKUP_TYPE="${{ steps.backup_type.outputs.type }}"
+          FILENAME="backup_${BACKUP_TYPE}_${TIMESTAMP}.sql.gz"
+
+          echo "Creating backup: ${FILENAME}"
+
+          pg_dump "${SUPABASE_DB_URL}" \
+            --no-owner \
+            --no-acl \
+            --clean \
+            --if-exists \
+            --format=plain \
+            | gzip > "/tmp/${FILENAME}"
+
+          echo "filename=${FILENAME}" >> $GITHUB_ENV
+          echo "filepath=/tmp/${FILENAME}" >> $GITHUB_ENV
+
+          SIZE=$(du -h "/tmp/${FILENAME}" | cut -f1)
+          echo "Backup size: ${SIZE}"
+
+      - name: Upload to R2
+        run: |
+          BACKUP_TYPE="${{ steps.backup_type.outputs.type }}"
+          R2_ENDPOINT="https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com"
+
+          aws s3 cp "${filepath}" \
+            "s3://${R2_BACKUP_BUCKET}/backups/${BACKUP_TYPE}/${filename}" \
+            --endpoint-url "${R2_ENDPOINT}"
+
+          echo "Uploaded to R2: backups/${BACKUP_TYPE}/${filename}"
+
+      - name: Rotate old backups
+        run: |
+          R2_ENDPOINT="https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com"
+
+          rotate_backups() {
+            local TYPE=$1
+            local KEEP=$2
+
+            echo "Rotating ${TYPE} backups (keeping last ${KEEP})..."
+
+            aws s3 ls "s3://${R2_BACKUP_BUCKET}/backups/${TYPE}/" \
+              --endpoint-url "${R2_ENDPOINT}" \
+              | sort -r \
+              | tail -n +$((KEEP + 1)) \
+              | while read -r _ _ _ KEY; do
+                  if [ -n "${KEY}" ]; then
+                    echo "Deleting old backup: ${KEY}"
+                    aws s3 rm "s3://${R2_BACKUP_BUCKET}/backups/${TYPE}/${KEY}" \
+                      --endpoint-url "${R2_ENDPOINT}"
+                  fi
+                done
+          }
+
+          # Keep last 7 daily, 4 weekly, 3 monthly
+          rotate_backups "daily" 7
+          rotate_backups "weekly" 4
+          rotate_backups "monthly" 3
+
+      - name: Cleanup
+        if: always()
+        run: rm -f "${filepath}"
+
+  verify:
+    runs-on: ubuntu-latest
+    name: Verify Latest Backup
+    needs: backup
+    if: github.event.inputs.backup_type == 'verify' || github.event.schedule != ''
+    env:
+      R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+      R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+      R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+      R2_BACKUP_BUCKET: ${{ secrets.R2_BACKUP_BUCKET }}
+    steps:
+      - name: Install tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client
+          pip install awscli
+
+      - name: Configure R2 credentials
+        run: |
+          mkdir -p ~/.aws
+          cat > ~/.aws/credentials << EOF
+          [default]
+          aws_access_key_id=${{ secrets.R2_ACCESS_KEY_ID }}
+          aws_secret_access_key=${{ secrets.R2_SECRET_ACCESS_KEY }}
+          EOF
+          cat > ~/.aws/config << EOF
+          [default]
+          region=auto
+          EOF
+
+      - name: Download latest backup
+        run: |
+          R2_ENDPOINT="https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com"
+
+          LATEST=$(aws s3 ls "s3://${R2_BACKUP_BUCKET}/backups/daily/" \
+            --endpoint-url "${R2_ENDPOINT}" \
+            | sort -r | head -1 | awk '{print $4}')
+
+          if [ -z "${LATEST}" ]; then
+            echo "No daily backup found, checking weekly..."
+            LATEST=$(aws s3 ls "s3://${R2_BACKUP_BUCKET}/backups/weekly/" \
+              --endpoint-url "${R2_ENDPOINT}" \
+              | sort -r | head -1 | awk '{print $4}')
+            PREFIX="weekly"
+          else
+            PREFIX="daily"
+          fi
+
+          echo "Downloading: backups/${PREFIX}/${LATEST}"
+          aws s3 cp "s3://${R2_BACKUP_BUCKET}/backups/${PREFIX}/${LATEST}" \
+            /tmp/verify_backup.sql.gz \
+            --endpoint-url "${R2_ENDPOINT}"
+
+      - name: Start local PostgreSQL
+        run: |
+          sudo systemctl start postgresql
+          sudo -u postgres createuser -s runner 2>/dev/null || true
+          createdb backup_verify_test 2>/dev/null || true
+
+      - name: Test restore
+        run: |
+          gunzip -c /tmp/verify_backup.sql.gz | psql backup_verify_test
+
+          # Verify key tables exist
+          TABLES=$(psql backup_verify_test -t -c "SELECT count(*) FROM information_schema.tables WHERE table_schema = 'public';")
+          echo "Tables restored: ${TABLES}"
+
+          if [ "${TABLES}" -lt 5 ]; then
+            echo "ERROR: Too few tables restored (${TABLES}). Backup may be corrupt."
+            exit 1
+          fi
+
+          echo "Backup verification PASSED"
+
+      - name: Cleanup
+        if: always()
+        run: |
+          dropdb backup_verify_test 2>/dev/null || true
+          rm -f /tmp/verify_backup.sql.gz

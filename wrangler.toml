@@ -8,3 +8,17 @@ compatibility_flags = ["nodejs_compat"]
 [assets]
 directory = ".open-next/assets"
 binding = "ASSETS"
+
+# ---- Staging Environment ----
+# Deploy with: wrangler deploy --env staging
+# URL: staging.yourdomain.com
+# Uses separate Supabase project for data isolation
+[env.staging]
+name = "webs-alots-staging"
+main = ".open-next/worker.js"
+compatibility_date = "2025-04-01"
+compatibility_flags = ["nodejs_compat"]
+
+[env.staging.assets]
+directory = ".open-next/assets"
+binding = "ASSETS"

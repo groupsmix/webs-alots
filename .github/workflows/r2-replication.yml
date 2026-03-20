@@ -1,0 +1,99 @@
+name: R2 Backup Replication
+
+on:
+  schedule:
+    # Run every 6 hours
+    - cron: "0 */6 * * *"
+  workflow_dispatch:
+
+jobs:
+  replicate:
+    runs-on: ubuntu-latest
+    name: Replicate R2 to Secondary Bucket
+    env:
+      R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+      R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+      R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+      R2_BUCKET_NAME: ${{ secrets.R2_BUCKET_NAME }}
+      R2_REPLICA_ACCOUNT_ID: ${{ secrets.R2_REPLICA_ACCOUNT_ID }}
+      R2_REPLICA_ACCESS_KEY_ID: ${{ secrets.R2_REPLICA_ACCESS_KEY_ID }}
+      R2_REPLICA_SECRET_ACCESS_KEY: ${{ secrets.R2_REPLICA_SECRET_ACCESS_KEY }}
+      R2_REPLICA_BUCKET_NAME: ${{ secrets.R2_REPLICA_BUCKET_NAME }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install AWS CLI
+        run: pip install awscli
+
+      - name: Configure primary R2 credentials
+        run: |
+          mkdir -p ~/.aws
+          cat > ~/.aws/credentials << EOF
+          [primary]
+          aws_access_key_id=${R2_ACCESS_KEY_ID}
+          aws_secret_access_key=${R2_SECRET_ACCESS_KEY}
+          [replica]
+          aws_access_key_id=${R2_REPLICA_ACCESS_KEY_ID}
+          aws_secret_access_key=${R2_REPLICA_SECRET_ACCESS_KEY}
+          EOF
+          cat > ~/.aws/config << EOF
+          [profile primary]
+          region=auto
+          [profile replica]
+          region=auto
+          EOF
+
+      - name: Sync primary to replica bucket
+        run: |
+          PRIMARY_ENDPOINT="https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com"
+          REPLICA_ENDPOINT="https://${R2_REPLICA_ACCOUNT_ID}.r2.cloudflarestorage.com"
+
+          echo "Starting R2 replication..."
+          echo "Source: s3://${R2_BUCKET_NAME} (${PRIMARY_ENDPOINT})"
+          echo "Target: s3://${R2_REPLICA_BUCKET_NAME} (${REPLICA_ENDPOINT})"
+
+          # Download from primary to temp directory
+          mkdir -p /tmp/r2-sync
+
+          aws s3 sync "s3://${R2_BUCKET_NAME}" /tmp/r2-sync/ \
+            --profile primary \
+            --endpoint-url "${PRIMARY_ENDPOINT}" \
+            --no-progress
+
+          # Count files synced
+          FILE_COUNT=$(find /tmp/r2-sync -type f | wc -l)
+          echo "Files to sync: ${FILE_COUNT}"
+
+          # Upload to replica
+          aws s3 sync /tmp/r2-sync/ "s3://${R2_REPLICA_BUCKET_NAME}" \
+            --profile replica \
+            --endpoint-url "${REPLICA_ENDPOINT}" \
+            --no-progress
+
+          echo "Replication complete: ${FILE_COUNT} files synced"
+
+      - name: Verify replica integrity
+        run: |
+          PRIMARY_ENDPOINT="https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com"
+          REPLICA_ENDPOINT="https://${R2_REPLICA_ACCOUNT_ID}.r2.cloudflarestorage.com"
+
+          PRIMARY_COUNT=$(aws s3 ls "s3://${R2_BUCKET_NAME}" --recursive \
+            --profile primary --endpoint-url "${PRIMARY_ENDPOINT}" | wc -l)
+
+          REPLICA_COUNT=$(aws s3 ls "s3://${R2_REPLICA_BUCKET_NAME}" --recursive \
+            --profile replica --endpoint-url "${REPLICA_ENDPOINT}" | wc -l)
+
+          echo "Primary bucket objects: ${PRIMARY_COUNT}"
+          echo "Replica bucket objects: ${REPLICA_COUNT}"
+
+          if [ "${PRIMARY_COUNT}" -ne "${REPLICA_COUNT}" ]; then
+            echo "WARNING: Object count mismatch! Primary=${PRIMARY_COUNT}, Replica=${REPLICA_COUNT}"
+            exit 1
+          fi
+
+          echo "Replication verification PASSED"
+
+      - name: Cleanup
+        if: always()
+        run: rm -rf /tmp/r2-sync
