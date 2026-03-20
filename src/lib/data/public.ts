@@ -12,6 +12,15 @@ import { clinicConfig } from "@/config/clinic.config";
 
 // ── Types (match existing UI shapes) ──
 
+export interface PublicBlogPost {
+  id: string;
+  title: string;
+  excerpt: string;
+  date: string;
+  readTime: string;
+  category: string;
+}
+
 export interface PublicReview {
   id: string;
   patientName: string;
@@ -307,4 +316,29 @@ export async function getPublicAvailableSlots(
 
   const maxPerSlot = clinicConfig.booking.maxPerSlot;
   return allSlots.filter((slot) => (bookingCounts[slot] ?? 0) < maxPerSlot);
+}
+
+// ── Blog Posts ──
+
+export async function getPublicBlogPosts(): Promise<PublicBlogPost[]> {
+  const clinicId = getClinicId();
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from("blog_posts")
+    .select("id, title, excerpt, published_at, read_time, category")
+    .eq("clinic_id", clinicId)
+    .eq("published", true)
+    .order("published_at", { ascending: false });
+
+  if (error || !data) return [];
+
+  return data.map((p) => ({
+    id: p.id,
+    title: p.title ?? "",
+    excerpt: p.excerpt ?? "",
+    date: p.published_at?.split("T")[0] ?? "",
+    readTime: p.read_time ?? "",
+    category: p.category ?? "",
+  }));
 }

@@ -3,7 +3,6 @@ import { HeroSection } from "@/components/public/hero-section";
 import { ServicesPreview } from "@/components/public/services-preview";
 import { defaultWebsiteConfig } from "@/lib/website-config";
 import { getPublicReviews, getPublicAverageRating } from "@/lib/data/public";
-import { reviews as demoReviews, getAverageRating as demoGetAverageRating } from "@/lib/demo-data";
 import { Star, ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
@@ -28,12 +27,8 @@ const linkBtnPrimary =
 export default async function HomePage() {
   const aboutCfg = defaultWebsiteConfig.about;
 
-  // Fetch from Supabase, fall back to demo data if empty
-  const supabaseReviews = await getPublicReviews();
-  const reviews = supabaseReviews.length > 0 ? supabaseReviews : demoReviews;
-  const avgRating = supabaseReviews.length > 0
-    ? await getPublicAverageRating()
-    : demoGetAverageRating();
+  const reviews = await getPublicReviews();
+  const avgRating = await getPublicAverageRating();
   const topReviews = reviews.filter((r) => r.rating >= 4).slice(0, 3);
 
   return (

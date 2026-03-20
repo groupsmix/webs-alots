@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { Star } from "lucide-react";
 import { getPublicReviews, getPublicAverageRating } from "@/lib/data/public";
-import { reviews as demoReviews, getAverageRating as demoGetAverageRating } from "@/lib/demo-data";
 import { defaultWebsiteConfig } from "@/lib/website-config";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -36,12 +35,8 @@ function StarRating({ rating }: { rating: number }) {
 export default async function ReviewsPage() {
   const cfg = defaultWebsiteConfig.reviews;
 
-  // Fetch from Supabase, fall back to demo data if empty
-  const supabaseReviews = await getPublicReviews();
-  const reviews = supabaseReviews.length > 0 ? supabaseReviews : demoReviews;
-  const avgRating = supabaseReviews.length > 0
-    ? await getPublicAverageRating()
-    : demoGetAverageRating();
+  const reviews = await getPublicReviews();
+  const avgRating = await getPublicAverageRating();
 
   return (
     <div className="container mx-auto px-4 py-12">
