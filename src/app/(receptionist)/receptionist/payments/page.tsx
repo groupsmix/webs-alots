@@ -29,17 +29,17 @@ interface PaymentEntry {
 export default function PaymentsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [paymentEntries, setPaymentEntries] = useState<PaymentEntry[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function load() {
       const user = await getCurrentUser();
-      if (!user?.clinic_id) return;
+      if (!user?.clinic_id) { setLoading(false); return; }
       const clinicId = user.clinic_id;
       const [appts, invoices] = await Promise.all([
         fetchTodayAppointments(clinicId),
         fetchInvoices(clinicId),
       ]);
-      // Build a lookup from appointment id to invoice
       const invoiceByAppt = new Map<string, InvoiceView>();
       for (const inv of invoices) {
         if (inv.appointmentId) invoiceByAppt.set(inv.appointmentId, inv);
@@ -58,6 +58,7 @@ export default function PaymentsPage() {
         };
       });
       setPaymentEntries(entries);
+      setLoading(false);
     }
     load();
   }, []);
@@ -78,6 +79,14 @@ export default function PaymentsPage() {
       )
     );
   };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <p className="text-muted-foreground">Loading payments...</p>
+      </div>
+    );
+  }
 
   return (
     <div>

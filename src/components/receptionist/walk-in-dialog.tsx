@@ -20,8 +20,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { fetchDoctors, fetchServices, fetchPatients, type DoctorView, type ServiceView, type PatientView } from "@/lib/data/client";
-import { clinicConfig } from "@/config/clinic.config";
+import {
+  getCurrentUser,
+  fetchDoctors,
+  fetchServices,
+  fetchPatients,
+  type DoctorView,
+  type ServiceView,
+  type PatientView,
+} from "@/lib/data/client";
 
 interface WalkInDialogProps {
   trigger?: React.ReactNode;
@@ -38,33 +45,33 @@ interface WalkInDialogProps {
 
 export function WalkInDialog({ trigger, onRegister }: WalkInDialogProps) {
   const [open, setOpen] = useState(false);
+  const [doctors, setDoctors] = useState<DoctorView[]>([]);
+  const [services, setServices] = useState<ServiceView[]>([]);
+  const [patients, setPatients] = useState<PatientView[]>([]);
   const [isNewPatient, setIsNewPatient] = useState(false);
+
+  useEffect(() => {
+    async function load() {
+      const user = await getCurrentUser();
+      if (!user?.clinic_id) return;
+      const [docs, svcs, pts] = await Promise.all([
+        fetchDoctors(user.clinic_id),
+        fetchServices(user.clinic_id),
+        fetchPatients(user.clinic_id),
+      ]);
+      setDoctors(docs);
+      setServices(svcs);
+      setPatients(pts);
+    }
+    load();
+  }, []);
+
   const [patientId, setPatientId] = useState("");
   const [newPatientName, setNewPatientName] = useState("");
   const [newPatientPhone, setNewPatientPhone] = useState("");
   const [doctorId, setDoctorId] = useState("");
   const [serviceId, setServiceId] = useState("");
   const [notes, setNotes] = useState("");
-
-  const [doctors, setDoctors] = useState<DoctorView[]>([]);
-  const [services, setServices] = useState<ServiceView[]>([]);
-  const [patients, setPatients] = useState<PatientView[]>([]);
-
-  useEffect(() => {
-    const clinicId = clinicConfig.clinicId;
-    if (!clinicId) return;
-    Promise.all([
-      fetchDoctors(clinicId),
-      fetchServices(clinicId),
-      fetchPatients(clinicId),
-    ]).then(([d, s, p]) => {
-      setDoctors(d);
-      setServices(s);
-      setPatients(p);
-    }).catch((err) => {
-      console.error("[walk-in-dialog] failed to load data:", err);
-    });
-  }, []);
 
   const handleSubmit = () => {
     if (isNewPatient && (!newPatientName || !newPatientPhone)) return;
@@ -176,7 +183,7 @@ export function WalkInDialog({ trigger, onRegister }: WalkInDialogProps) {
                 <SelectContent>
                   {doctors.map((d) => (
                     <SelectItem key={d.id} value={d.id}>
-                      {d.name} - {d.specialty}
+                      {d.name}{d.specialty ? ` - ${d.specialty}` : ""}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -193,8 +200,8 @@ export function WalkInDialog({ trigger, onRegister }: WalkInDialogProps) {
                   {services.filter((s) => s.active).map((s) => (
                     <SelectItem key={s.id} value={s.id}>
                       {s.name} ({s.duration}min - {s.price} {s.currency})
-                    </SelectItem>
-                  ))}
+                    </SelectItem>)
+                  )}
                 </SelectContent>
               </Select>
             </div>

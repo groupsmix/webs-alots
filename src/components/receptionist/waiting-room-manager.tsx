@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import {
   User, Clock, ArrowUp, ArrowDown, CheckCircle2, XCircle, Bell,
   UserPlus, Phone, MessageCircle, Timer, Stethoscope
@@ -8,6 +8,11 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import {
+  getCurrentUser,
+  fetchTodayAppointments,
+  fetchPatients,
+} from "@/lib/data/client";
 import { WalkInDialog } from "./walk-in-dialog";
 
 interface WaitingPatient {
@@ -25,73 +30,52 @@ interface WaitingPatient {
 }
 
 export function WaitingRoomManager() {
-  const [queue, setQueue] = useState<WaitingPatient[]>([
-    {
-      id: "w1",
-      name: "Fatima Zahra",
-      phone: "+212 6 12 34 56 78",
-      arrivalTime: "09:05",
-      appointmentTime: "09:30",
-      doctor: "Dr. Ahmed",
-      service: "General Consultation",
-      status: "in-consultation",
-      priority: 1,
-      isWalkIn: false,
-      estimatedWait: 0,
-    },
-    {
-      id: "w2",
-      name: "Mohammed Ali",
-      phone: "+212 6 23 45 67 89",
-      arrivalTime: "09:15",
-      appointmentTime: "10:00",
-      doctor: "Dr. Ahmed",
-      service: "Follow-up Visit",
-      status: "called",
-      priority: 2,
-      isWalkIn: false,
-      estimatedWait: 5,
-    },
-    {
-      id: "w3",
-      name: "Khadija Benali",
-      phone: "+212 6 33 44 55 66",
-      arrivalTime: "09:30",
-      appointmentTime: "10:30",
-      doctor: "Dr. Ahmed",
-      service: "Blood Test",
-      status: "waiting",
-      priority: 3,
-      isWalkIn: false,
-      estimatedWait: 20,
-    },
-    {
-      id: "w4",
-      name: "Youssef Amrani",
-      phone: "+212 6 44 55 66 77",
-      arrivalTime: "09:45",
-      appointmentTime: "11:00",
-      doctor: "Dr. Ahmed",
-      service: "General Consultation",
-      status: "waiting",
-      priority: 4,
-      isWalkIn: true,
-      estimatedWait: 35,
-    },
-    {
-      id: "w5",
-      name: "Amina Tazi",
-      phone: "+212 6 55 66 77 88",
-      arrivalTime: "10:00",
-      appointmentTime: "11:30",
-      doctor: "Dr. Ahmed",
-      service: "Vaccination",
-      status: "waiting",
-      priority: 5,
-      isWalkIn: false,
-      estimatedWait: 50,
-    },
-  ]);
+  const [queue, setQueue] = useState<WaitingPatient[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function load() {
+      const user = await getCurrentUser();
+      if (!user?.clinic_id) { setLoading(false); return; }
+      const [appts, pts] = await Promise.all([
+        fetchTodayAppointments(user.clinic_id),
+        fetchPatients(user.clinic_id),
+      ]);
+      // Build waiting queue from today's checked-in / confirmed / in-progress appointments
+      const relevantStatuses = new Set(["confirmed", "in-progress", "scheduled"]);
+      const waitingAppts = appts.filter((a) => relevantStatuses.has(a.status));
+      const patientMap = new Map(pts.map((p) => [p.id, p]));
+
+      const initialQueue: WaitingPatient[] = waitingAppts.map((a, i) => {
+        const patient = patientMap.get(a.patientId);
+        const status: WaitingPatient["status"] =
+          a.status === "in-progress" ? "in-consultation" :
+          a.status === "confirmed" ? "called" : "waiting";
+        return {
+          id: a.id,
+          name: a.patientName,
+          phone: patient?.phone ?? "",
+          arrivalTime: a.time,
+          appointmentTime: a.time,
+          doctor: a.doctorName,
+          service: a.serviceName,
+          status,
+          priority: i + 1,
+          isWalkIn: false,
+          estimatedWait: 0,
+        };
+      });
+
+      // Sort: in-consultation first, then called, then waiting
+      const statusOrder = { "in-consultation": 0, called: 1, waiting: 2 };
+      initialQueue.sort((a, b) => statusOrder[a.status] - statusOrder[b.status]);
+
+      setQueue(recalculateWaitTimes(initialQueue.map((p, i) => ({ ...p, priority: i + 1 }))));
+      setLoading(false);
+    }
+    load();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const statusConfig: Record<string, { color: string; label: string; icon: typeof Clock }> = {
     waiting: { color: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200", label: "Waiting", icon: Clock },
@@ -167,6 +151,14 @@ export function WaitingRoomManager() {
   const avgWaitTime = waitingCount > 0
     ? Math.round(queue.filter((p) => p.status === "waiting").reduce((sum, p) => sum + p.estimatedWait, 0) / waitingCount)
     : 0;
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <p className="text-muted-foreground">Loading waiting room...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">

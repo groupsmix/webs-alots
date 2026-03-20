@@ -12,15 +12,17 @@ import { PatientRegistrationDialog } from "@/components/receptionist/patient-reg
 
 export default function ReceptionistPatientsPage() {
   const [patients, setPatients] = useState<PatientView[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [checkedInIds, setCheckedInIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     async function load() {
       const user = await getCurrentUser();
-      if (!user?.clinic_id) return;
+      if (!user?.clinic_id) { setLoading(false); return; }
       const data = await fetchPatients(user.clinic_id);
       setPatients(data);
+      setLoading(false);
     }
     load();
   }, []);
@@ -45,6 +47,14 @@ export default function ReceptionistPatientsPage() {
     const cleaned = phone.replace(/\s/g, "").replace("+", "");
     window.open(`https://wa.me/${cleaned}`, "_blank");
   };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <p className="text-muted-foreground">Loading patients...</p>
+      </div>
+    );
+  }
 
   return (
     <div>

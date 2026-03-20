@@ -31,17 +31,17 @@ export default function ReceptionistDashboardPage() {
   const [todayAppts, setTodayAppts] = useState<AppointmentView[]>([]);
   const [patientMap, setPatientMap] = useState<Map<string, PatientView>>(new Map());
   const [totalRevenue, setTotalRevenue] = useState(0);
+  const [loading, setLoading] = useState(true);
   const [checkedInIds, setCheckedInIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     async function load() {
       const user = await getCurrentUser();
-      if (!user?.clinic_id) return;
-      const clinicId = user.clinic_id;
+      if (!user?.clinic_id) { setLoading(false); return; }
       const [appts, invoices, patients] = await Promise.all([
-        fetchTodayAppointments(clinicId),
-        fetchInvoices(clinicId),
-        fetchPatients(clinicId),
+        fetchTodayAppointments(user.clinic_id),
+        fetchInvoices(user.clinic_id),
+        fetchPatients(user.clinic_id),
       ]);
       setTodayAppts(appts);
       setPatientMap(new Map(patients.map((p) => [p.id, p])));
@@ -49,6 +49,7 @@ export default function ReceptionistDashboardPage() {
         .filter((inv) => inv.status === "paid")
         .reduce((sum, inv) => sum + inv.amount, 0);
       setTotalRevenue(revenue);
+      setLoading(false);
     }
     load();
   }, []);
@@ -74,6 +75,14 @@ export default function ReceptionistDashboardPage() {
     const cleaned = phone.replace(/\s/g, "").replace("+", "");
     window.open(`https://wa.me/${cleaned}`, "_blank");
   };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <p className="text-muted-foreground">Loading dashboard...</p>
+      </div>
+    );
+  }
 
   return (
     <div>
