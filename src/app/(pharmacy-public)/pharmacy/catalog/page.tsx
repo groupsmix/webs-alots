@@ -6,12 +6,48 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Search, Filter, Loader2 } from "lucide-react";
 import { clinicConfig } from "@/config/clinic.config";
-import {
-  type PublicPharmacyProduct,
-  getPublicStockStatus,
-  searchPublicProducts,
-} from "@/lib/data/public";
 import { createClient } from "@/lib/supabase-client";
+
+interface PublicPharmacyProduct {
+  id: string;
+  name: string;
+  genericName?: string;
+  category: string;
+  description: string;
+  price: number;
+  currency: string;
+  requiresPrescription: boolean;
+  stockQuantity: number;
+  minimumStock: number;
+  expiryDate: string;
+  manufacturer?: string;
+  barcode?: string;
+  dosageForm?: string;
+  strength?: string;
+  active: boolean;
+}
+
+function getStockStatus(product: PublicPharmacyProduct): "ok" | "low" | "out" {
+  if (product.stockQuantity === 0) return "out";
+  if (product.stockQuantity <= product.minimumStock) return "low";
+  return "ok";
+}
+
+function searchProducts(
+  products: PublicPharmacyProduct[],
+  query: string,
+): PublicPharmacyProduct[] {
+  const q = query.toLowerCase();
+  return products.filter(
+    (p) =>
+      p.active &&
+      (p.name.toLowerCase().includes(q) ||
+        (p.genericName?.toLowerCase().includes(q) ?? false) ||
+        p.category.toLowerCase().includes(q) ||
+        (p.manufacturer?.toLowerCase().includes(q) ?? false) ||
+        p.description.toLowerCase().includes(q)),
+  );
+}
 
 async function fetchProductsClient(): Promise<PublicPharmacyProduct[]> {
   const clinicId = clinicConfig.clinicId;
@@ -77,7 +113,7 @@ export default function CatalogPage() {
   const filtered = useMemo(() => {
     let results: PublicPharmacyProduct[];
     if (query.trim()) {
-      results = searchPublicProducts(allProducts, query);
+      results = searchProducts(allProducts, query);
     } else {
       results = allProducts.filter((p) => p.active);
     }
@@ -137,7 +173,7 @@ export default function CatalogPage() {
       {/* Product Grid */}
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {filtered.map((product) => {
-          const stock = getPublicStockStatus(product);
+          const stock = getStockStatus(product);
           return (
             <Card key={product.id} className="hover:shadow-md transition-shadow">
               <CardContent className="pt-6">
