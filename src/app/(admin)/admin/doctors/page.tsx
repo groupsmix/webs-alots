@@ -16,7 +16,7 @@ import {
   DialogFooter,
   DialogDescription,
 } from "@/components/ui/dialog";
-import { doctors as initialDoctors } from "@/lib/demo-data";
+import { doctors as initialDoctors, specialties } from "@/lib/demo-data";
 import type { Doctor } from "@/lib/demo-data";
 
 export default function ManageDoctorsPage() {
@@ -31,11 +31,13 @@ export default function ManageDoctorsPage() {
   const [formEmail, setFormEmail] = useState("");
   const [formFee, setFormFee] = useState(0);
   const [formLanguages, setFormLanguages] = useState("");
+  const [formSpecialtyId, setFormSpecialtyId] = useState("");
 
   const openAddDialog = () => {
     setEditingDoctor(null);
     setFormName("");
     setFormSpecialty("");
+    setFormSpecialtyId("");
     setFormPhone("");
     setFormEmail("");
     setFormFee(0);
@@ -47,6 +49,7 @@ export default function ManageDoctorsPage() {
     setEditingDoctor(doctor);
     setFormName(doctor.name);
     setFormSpecialty(doctor.specialty);
+    setFormSpecialtyId(doctor.specialtyId);
     setFormPhone(doctor.phone);
     setFormEmail(doctor.email);
     setFormFee(doctor.consultationFee);
@@ -62,14 +65,14 @@ export default function ManageDoctorsPage() {
       setDoctorsList(
         doctorsList.map((d) =>
           d.id === editingDoctor.id
-            ? { ...d, name: formName, specialty: formSpecialty, phone: formPhone, email: formEmail, consultationFee: formFee, languages: langs }
+            ? { ...d, name: formName, specialty: formSpecialty, specialtyId: formSpecialtyId, phone: formPhone, email: formEmail, consultationFee: formFee, languages: langs }
             : d
         )
       );
     } else {
       setDoctorsList([
         ...doctorsList,
-        { id: `d${Date.now()}`, name: formName, specialty: formSpecialty, phone: formPhone, email: formEmail, consultationFee: formFee, languages: langs },
+        { id: `d${Date.now()}`, name: formName, specialty: formSpecialty, specialtyId: formSpecialtyId, phone: formPhone, email: formEmail, consultationFee: formFee, languages: langs },
       ]);
     }
     setDialogOpen(false);
@@ -150,6 +153,19 @@ export default function ManageDoctorsPage() {
             <div className="space-y-2">
               <Label>Specialty</Label>
               <Input placeholder="General Medicine" value={formSpecialty} onChange={(e) => setFormSpecialty(e.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <Label>Specialty Category</Label>
+              <select
+                className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                value={formSpecialtyId}
+                onChange={(e) => setFormSpecialtyId(e.target.value)}
+              >
+                <option value="">Select category...</option>
+                {specialties.map((s) => (
+                  <option key={s.id} value={s.id}>{s.name}</option>
+                ))}
+              </select>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
