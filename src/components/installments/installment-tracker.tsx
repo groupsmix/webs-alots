@@ -8,7 +8,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import type { InstallmentPlan, InstallmentPayment } from "@/lib/dental-demo-data";
+import type { InstallmentPlan, InstallmentPayment } from "@/lib/types/dental";
 
 const STATUS_CONFIG: Record<InstallmentPayment["status"], { icon: typeof Clock; color: string; variant: "default" | "success" | "destructive" | "outline" }> = {
   pending: { icon: Clock, color: "text-gray-500", variant: "outline" },

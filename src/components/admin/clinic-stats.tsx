@@ -3,28 +3,28 @@
 import { Users, Calendar, TrendingDown, DollarSign, Activity, Clock, UserCheck, AlertTriangle } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { appointments, patients, getTotalRevenue } from "@/lib/demo-data";
+import type { DashboardStats } from "@/lib/data/client";
+
+interface ClinicStatsProps {
+  stats: DashboardStats;
+  todayBookings?: number;
+}
 
 /**
  * ClinicStats
  *
  * Key metrics cards: patient count, no-show rate, booking sources, busiest hours.
  */
-export function ClinicStats() {
-  const totalPatients = patients.length;
-  const todayAppts = appointments.filter((a) => a.date === new Date().toISOString().split("T")[0]);
-  const completedAppts = appointments.filter((a) => a.status === "completed");
-  const noShowAppts = appointments.filter((a) => a.status === "no-show");
-  const noShowRate = appointments.length > 0
-    ? Math.round((noShowAppts.length / appointments.length) * 100)
+export function ClinicStats({ stats, todayBookings = 0 }: ClinicStatsProps) {
+  const noShowRate = stats.totalAppointments > 0
+    ? Math.round((stats.noShowCount / stats.totalAppointments) * 100)
     : 0;
-  const revenue = getTotalRevenue();
 
-  const stats = [
-    { title: "Total Patients", value: totalPatients.toString(), icon: Users, change: "+12%", trend: "up" as const },
-    { title: "Today's Bookings", value: todayAppts.length.toString(), icon: Calendar, change: `${completedAppts.length} completed`, trend: "neutral" as const },
+  const cards = [
+    { title: "Total Patients", value: stats.totalPatients.toString(), icon: Users, change: "+12%", trend: "up" as const },
+    { title: "Today's Bookings", value: todayBookings.toString(), icon: Calendar, change: `${stats.completedAppointments} completed`, trend: "neutral" as const },
     { title: "No-Show Rate", value: `${noShowRate}%`, icon: TrendingDown, change: noShowRate > 10 ? "High" : "Normal", trend: noShowRate > 10 ? ("down" as const) : ("up" as const) },
-    { title: "Revenue (MTD)", value: `${revenue.toLocaleString()} MAD`, icon: DollarSign, change: "+8%", trend: "up" as const },
+    { title: "Revenue (MTD)", value: `${stats.totalRevenue.toLocaleString()} MAD`, icon: DollarSign, change: "+8%", trend: "up" as const },
   ];
 
   const bookingSources = [
@@ -47,7 +47,7 @@ export function ClinicStats() {
   return (
     <div className="space-y-6">
       <div className="grid gap-4 md:grid-cols-4">
-        {stats.map((stat) => (
+        {cards.map((stat) => (
           <Card key={stat.title}>
             <CardContent className="pt-4 pb-4">
               <div className="flex items-center justify-between">
