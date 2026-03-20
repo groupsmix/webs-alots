@@ -1003,6 +1003,64 @@ export interface OpticalPrescriptionRow {
   updated_at: string;
 }
 
+// ---- Custom Fields (Migration 00012) ----
+
+export type CustomFieldType =
+  | "text"
+  | "number"
+  | "date"
+  | "select"
+  | "multi_select"
+  | "file"
+  | "tooth_number";
+
+export type CustomFieldEntityType =
+  | "appointment"
+  | "patient"
+  | "consultation"
+  | "product"
+  | "lab_order";
+
+export interface CustomFieldDefinitionRow {
+  id: string;
+  clinic_type_key: string;
+  entity_type: CustomFieldEntityType;
+  field_key: string;
+  field_type: CustomFieldType;
+  label_fr: string;
+  label_ar: string;
+  description: string | null;
+  placeholder: string | null;
+  is_required: boolean;
+  sort_order: number;
+  options: Record<string, unknown>[];
+  validation: Record<string, unknown>;
+  default_value: unknown;
+  is_active: boolean;
+  is_system: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CustomFieldValuesRow {
+  id: string;
+  clinic_id: string;
+  entity_type: CustomFieldEntityType;
+  entity_id: string;
+  field_values: Record<string, unknown>;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CustomFieldOverrideRow {
+  id: string;
+  clinic_id: string;
+  field_definition_id: string;
+  is_enabled: boolean;
+  is_required: boolean | null;
+  sort_order: number | null;
+  created_at: string;
+}
 // ---- Diagnostic Center: Analysis Lab ----
 
 export interface LabTestCatalog {
@@ -1312,6 +1370,10 @@ export interface Database {
       lens_inventory: { Row: LensInventoryRow; Insert: Partial<LensInventoryRow> & Pick<LensInventoryRow, "clinic_id" | "type">; Update: Partial<LensInventoryRow> };
       frame_catalog: { Row: FrameCatalogRow; Insert: Partial<FrameCatalogRow> & Pick<FrameCatalogRow, "clinic_id" | "brand" | "model">; Update: Partial<FrameCatalogRow> };
       optical_prescriptions: { Row: OpticalPrescriptionRow; Insert: Partial<OpticalPrescriptionRow> & Pick<OpticalPrescriptionRow, "clinic_id" | "patient_id">; Update: Partial<OpticalPrescriptionRow> };
+      // Custom Fields (migration 00012)
+      custom_field_definitions: { Row: CustomFieldDefinitionRow; Insert: Partial<CustomFieldDefinitionRow> & Pick<CustomFieldDefinitionRow, "clinic_type_key" | "entity_type" | "field_key" | "field_type" | "label_fr">; Update: Partial<CustomFieldDefinitionRow> };
+      custom_field_values: { Row: CustomFieldValuesRow; Insert: Partial<CustomFieldValuesRow> & Pick<CustomFieldValuesRow, "clinic_id" | "entity_type" | "entity_id">; Update: Partial<CustomFieldValuesRow> };
+      custom_field_overrides: { Row: CustomFieldOverrideRow; Insert: Partial<CustomFieldOverrideRow> & Pick<CustomFieldOverrideRow, "clinic_id" | "field_definition_id">; Update: Partial<CustomFieldOverrideRow> };
       // Phase 4 & 5 tables
       lab_test_catalog: { Row: LabTestCatalog; Insert: Partial<LabTestCatalog> & Pick<LabTestCatalog, "clinic_id" | "name">; Update: Partial<LabTestCatalog> };
       lab_test_orders: { Row: LabTestOrder; Insert: Partial<LabTestOrder> & Pick<LabTestOrder, "clinic_id" | "patient_id" | "order_number">; Update: Partial<LabTestOrder> };

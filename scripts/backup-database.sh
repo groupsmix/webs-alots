@@ -1,0 +1,102 @@
+#!/usr/bin/env bash
+# ============================================================
+# backup-database.sh — Manual Supabase backup to R2
+#
+# Creates a pg_dump of the Supabase database and uploads to R2.
+# Can be used standalone or called by the GitHub Actions workflow.
+#
+# Required environment variables:
+#   SUPABASE_DB_URL          — PostgreSQL connection string
+#   R2_ACCOUNT_ID            — Cloudflare account ID
+#   R2_ACCESS_KEY_ID         — R2 API token access key
+#   R2_SECRET_ACCESS_KEY     — R2 API token secret key
+#   R2_BACKUP_BUCKET         — R2 bucket name for backups
+#
+# Usage:
+#   ./scripts/backup-database.sh                 # Daily backup
+#   ./scripts/backup-database.sh weekly          # Weekly backup
+#   ./scripts/backup-database.sh monthly         # Monthly backup
+#   ./scripts/backup-database.sh verify          # Verify latest backup
+# ============================================================
+
+set -euo pipefail
+
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+NC='\033[0m'
+
+log_info()  { echo -e "${GREEN}[INFO]${NC} $1"; }
+log_warn()  { echo -e "${YELLOW}[WARN]${NC} $1"; }
+log_error() { echo -e "${RED}[ERROR]${NC} $1"; }
+
+# ---- Validate environment ----
+for VAR in SUPABASE_DB_URL R2_ACCOUNT_ID R2_ACCESS_KEY_ID R2_SECRET_ACCESS_KEY R2_BACKUP_BUCKET; do
+  if [[ -z "${!VAR:-}" ]]; then
+    log_error "Missing required env var: ${VAR}"
+    exit 1
+  fi
+done
+
+BACKUP_TYPE="${1:-daily}"
+TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+FILENAME="backup_${BACKUP_TYPE}_${TIMESTAMP}.sql.gz"
+FILEPATH="/tmp/${FILENAME}"
+R2_ENDPOINT="https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com"
+
+# ---- Configure AWS CLI for R2 ----
+export AWS_ACCESS_KEY_ID="${R2_ACCESS_KEY_ID}"
+export AWS_SECRET_ACCESS_KEY="${R2_SECRET_ACCESS_KEY}"
+export AWS_DEFAULT_REGION="auto"
+
+# ---- Create backup ----
+log_info "Creating ${BACKUP_TYPE} backup: ${FILENAME}"
+
+pg_dump "${SUPABASE_DB_URL}" \
+  --no-owner \
+  --no-acl \
+  --clean \
+  --if-exists \
+  --format=plain \
+  | gzip > "${FILEPATH}"
+
+SIZE=$(du -h "${FILEPATH}" | cut -f1)
+log_info "Backup created: ${SIZE}"
+
+# ---- Upload to R2 ----
+log_info "Uploading to R2: backups/${BACKUP_TYPE}/${FILENAME}"
+
+aws s3 cp "${FILEPATH}" \
+  "s3://${R2_BACKUP_BUCKET}/backups/${BACKUP_TYPE}/${FILENAME}" \
+  --endpoint-url "${R2_ENDPOINT}"
+
+log_info "Upload complete."
+
+# ---- Rotate old backups ----
+rotate_backups() {
+  local TYPE=$1
+  local KEEP=$2
+
+  log_info "Rotating ${TYPE} backups (keeping last ${KEEP})..."
+
+  aws s3 ls "s3://${R2_BACKUP_BUCKET}/backups/${TYPE}/" \
+    --endpoint-url "${R2_ENDPOINT}" 2>/dev/null \
+    | sort -r \
+    | tail -n +$((KEEP + 1)) \
+    | while read -r _ _ _ KEY; do
+        if [[ -n "${KEY}" ]]; then
+          log_warn "Deleting old backup: ${KEY}"
+          aws s3 rm "s3://${R2_BACKUP_BUCKET}/backups/${TYPE}/${KEY}" \
+            --endpoint-url "${R2_ENDPOINT}"
+        fi
+      done
+}
+
+# Keep last 7 daily, 4 weekly, 3 monthly
+rotate_backups "daily" 7
+rotate_backups "weekly" 4
+rotate_backups "monthly" 3
+
+# ---- Cleanup ----
+rm -f "${FILEPATH}"
+log_info "Backup complete: backups/${BACKUP_TYPE}/${FILENAME}"

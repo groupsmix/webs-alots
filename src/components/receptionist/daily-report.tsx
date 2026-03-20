@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState, useEffect } from "react";
-import { Printer, FileText, Calendar, Users, CreditCard, Clock } from "lucide-react";
+import { Printer, FileText, Calendar, Users, CreditCard, Clock, Download } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -16,6 +16,7 @@ import {
   type PatientView,
   type InvoiceView,
 } from "@/lib/data/client";
+import { exportAppointments, exportInvoices } from "@/lib/export-data";
 
 const statusVariant: Record<string, "default" | "success" | "warning" | "destructive" | "secondary" | "outline"> = {
   scheduled: "outline",
@@ -132,10 +133,20 @@ export function DailyReport() {
             })}
           </p>
         </div>
-        <Button onClick={handlePrint}>
-          <Printer className="h-4 w-4 mr-1" />
-          Print Report
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => exportAppointments(todayAppointments)}>
+            <Download className="h-4 w-4 mr-1" />
+            Export Appointments
+          </Button>
+          <Button variant="outline" onClick={() => exportInvoices(todayInvoices)}>
+            <Download className="h-4 w-4 mr-1" />
+            Export Invoices
+          </Button>
+          <Button onClick={handlePrint}>
+            <Printer className="h-4 w-4 mr-1" />
+            Print Report
+          </Button>
+        </div>
       </div>
 
       <div ref={reportRef}>
