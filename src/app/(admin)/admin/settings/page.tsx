@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { CreditCard, MessageCircle, Calendar, Save, Edit, Ban } from "lucide-react";
+import { CreditCard, MessageCircle, Calendar, Save, Edit, Ban, Building2, Phone, MapPin, Globe, RefreshCw } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -19,12 +19,28 @@ interface PaymentSettings {
   cmiSecretKey: string;
 }
 
+interface ClinicProfile {
+  name: string;
+  type: string;
+  phone: string;
+  whatsapp: string;
+  email: string;
+  address: string;
+  city: string;
+  googleMapsUrl: string;
+  website: string;
+}
+
 interface BookingRules {
   slotDuration: number;
   bufferTime: number;
   maxAdvanceDays: number;
   maxPerSlot: number;
   cancellationHours: number;
+  allowRescheduling: boolean;
+  rescheduleHours: number;
+  autoConfirm: boolean;
+  noShowPolicy: string;
 }
 
 interface WhatsAppTemplate {
@@ -71,9 +87,42 @@ const defaultTemplates: WhatsAppTemplate[] = [
     enabled: false,
     template: "Hello {{patient_name}}, we noticed you missed your appointment on {{date}}. Would you like to reschedule? Contact us at {{clinic_phone}}.",
   },
+  {
+    id: "t6",
+    name: "prescription_ready",
+    label: "Prescription Ready",
+    enabled: true,
+    template: "Hello {{patient_name}}, your prescription from {{doctor_name}} is ready. You can collect it at {{clinic_name}} or view it online.",
+  },
+  {
+    id: "t7",
+    name: "payment_receipt",
+    label: "Payment Receipt",
+    enabled: false,
+    template: "Payment received: {{amount}} {{currency}} for your visit with {{doctor_name}} on {{date}}. Thank you! — {{clinic_name}}",
+  },
+  {
+    id: "t8",
+    name: "waitlist_available",
+    label: "Waitlist Availability",
+    enabled: false,
+    template: "Good news {{patient_name}}! A slot has opened with {{doctor_name}} on {{date}} at {{time}}. Reply YES to book or it will be offered to the next patient.",
+  },
 ];
 
 export default function ClinicSettingsPage() {
+  const [clinicProfile, setClinicProfile] = useState<ClinicProfile>({
+    name: clinicConfig.name,
+    type: clinicConfig.type,
+    phone: clinicConfig.contact.phone || "",
+    whatsapp: clinicConfig.contact.whatsapp || "",
+    email: clinicConfig.contact.email || "",
+    address: clinicConfig.contact.address || "",
+    city: clinicConfig.contact.city || "",
+    googleMapsUrl: clinicConfig.contact.googleMapsUrl || "",
+    website: clinicConfig.domain || "",
+  });
+
   const [paymentSettings, setPaymentSettings] = useState<PaymentSettings>({
     currency: clinicConfig.currency,
     methods: [
@@ -92,6 +141,10 @@ export default function ClinicSettingsPage() {
     maxAdvanceDays: clinicConfig.booking.maxAdvanceDays,
     maxPerSlot: clinicConfig.booking.maxPerSlot,
     cancellationHours: clinicConfig.booking.cancellationHours,
+    allowRescheduling: true,
+    rescheduleHours: 12,
+    autoConfirm: false,
+    noShowPolicy: "Patient will be marked as no-show if they do not arrive within 15 minutes of their appointment time.",
   });
 
   const [templates, setTemplates] = useState<WhatsAppTemplate[]>(defaultTemplates);
@@ -124,12 +177,132 @@ export default function ClinicSettingsPage() {
     <div>
       <h1 className="text-2xl font-bold mb-6">Clinic Settings</h1>
 
-      <Tabs defaultValue="payment">
-        <TabsList className="mb-6">
+      <Tabs defaultValue="profile">
+        <TabsList className="mb-6 flex-wrap">
+          <TabsTrigger value="profile">Clinic Profile</TabsTrigger>
           <TabsTrigger value="payment">Payment</TabsTrigger>
           <TabsTrigger value="booking">Booking Rules</TabsTrigger>
           <TabsTrigger value="whatsapp">WhatsApp Templates</TabsTrigger>
         </TabsList>
+
+        {/* Clinic Profile */}
+        <TabsContent value="profile">
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Building2 className="h-4 w-4" />
+                  Clinic Profile
+                </CardTitle>
+                <Button size="sm" onClick={() => handleSave("profile")}>
+                  <Save className="h-4 w-4 mr-1" />
+                  {savedSection === "profile" ? "Saved!" : "Save"}
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-6">
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label>Clinic Name</Label>
+                    <Input
+                      value={clinicProfile.name}
+                      onChange={(e) => setClinicProfile({ ...clinicProfile, name: e.target.value })}
+                      placeholder="My Clinic"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Clinic Type</Label>
+                    <select
+                      value={clinicProfile.type}
+                      onChange={(e) => setClinicProfile({ ...clinicProfile, type: e.target.value })}
+                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                    >
+                      <option value="doctor">Doctor / General Practice</option>
+                      <option value="dentist">Dentist / Dental Clinic</option>
+                      <option value="pharmacy">Pharmacy</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="border-t pt-4">
+                  <h4 className="text-sm font-medium mb-3 flex items-center gap-2">
+                    <Phone className="h-4 w-4" />
+                    Contact Information
+                  </h4>
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div className="space-y-2">
+                      <Label>Phone Number</Label>
+                      <Input
+                        value={clinicProfile.phone}
+                        onChange={(e) => setClinicProfile({ ...clinicProfile, phone: e.target.value })}
+                        placeholder="+212 6 00 00 00 00"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>WhatsApp Number</Label>
+                      <Input
+                        value={clinicProfile.whatsapp}
+                        onChange={(e) => setClinicProfile({ ...clinicProfile, whatsapp: e.target.value })}
+                        placeholder="+212 6 00 00 00 00"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Email</Label>
+                      <Input
+                        type="email"
+                        value={clinicProfile.email}
+                        onChange={(e) => setClinicProfile({ ...clinicProfile, email: e.target.value })}
+                        placeholder="contact@clinic.ma"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="flex items-center gap-1"><Globe className="h-3.5 w-3.5" /> Website / Domain</Label>
+                      <Input
+                        value={clinicProfile.website}
+                        onChange={(e) => setClinicProfile({ ...clinicProfile, website: e.target.value })}
+                        placeholder="www.myclinic.ma"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="border-t pt-4">
+                  <h4 className="text-sm font-medium mb-3 flex items-center gap-2">
+                    <MapPin className="h-4 w-4" />
+                    Location
+                  </h4>
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div className="space-y-2 sm:col-span-2">
+                      <Label>Address</Label>
+                      <Input
+                        value={clinicProfile.address}
+                        onChange={(e) => setClinicProfile({ ...clinicProfile, address: e.target.value })}
+                        placeholder="123 Rue Example, Quartier"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>City</Label>
+                      <Input
+                        value={clinicProfile.city}
+                        onChange={(e) => setClinicProfile({ ...clinicProfile, city: e.target.value })}
+                        placeholder="Casablanca"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Google Maps URL</Label>
+                      <Input
+                        value={clinicProfile.googleMapsUrl}
+                        onChange={(e) => setClinicProfile({ ...clinicProfile, googleMapsUrl: e.target.value })}
+                        placeholder="https://maps.google.com/..."
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
 
         {/* Payment Settings */}
         <TabsContent value="payment">
@@ -256,16 +429,64 @@ export default function ClinicSettingsPage() {
                   <Ban className="h-4 w-4" />
                   Cancellation Policy
                 </h4>
-                <div className="space-y-2 max-w-xs">
-                  <Label>Minimum Hours Before Appointment to Cancel</Label>
-                  <Input
-                    type="number"
-                    value={bookingRules.cancellationHours}
-                    onChange={(e) => setBookingRules({ ...bookingRules, cancellationHours: Number(e.target.value) })}
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Patients must cancel at least {bookingRules.cancellationHours} hours before their appointment.
-                  </p>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label>Minimum Hours Before Appointment to Cancel</Label>
+                    <Input
+                      type="number"
+                      value={bookingRules.cancellationHours}
+                      onChange={(e) => setBookingRules({ ...bookingRules, cancellationHours: Number(e.target.value) })}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Patients must cancel at least {bookingRules.cancellationHours} hours before their appointment.
+                    </p>
+                  </div>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Label>Allow Rescheduling</Label>
+                      <Switch
+                        checked={bookingRules.allowRescheduling}
+                        onCheckedChange={(checked) => setBookingRules({ ...bookingRules, allowRescheduling: checked })}
+                      />
+                    </div>
+                    {bookingRules.allowRescheduling && (
+                      <div className="space-y-2 mt-2">
+                        <Label>Min Hours Before Appointment to Reschedule</Label>
+                        <Input
+                          type="number"
+                          value={bookingRules.rescheduleHours}
+                          onChange={(e) => setBookingRules({ ...bookingRules, rescheduleHours: Number(e.target.value) })}
+                        />
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <div className="border-t pt-4 mt-6">
+                <h4 className="text-sm font-medium mb-3 flex items-center gap-2">
+                  <RefreshCw className="h-4 w-4" />
+                  Additional Policies
+                </h4>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="flex items-center justify-between border rounded-lg p-3">
+                    <div>
+                      <span className="text-sm font-medium">Auto-confirm Bookings</span>
+                      <p className="text-xs text-muted-foreground">Automatically confirm new appointments without manual approval</p>
+                    </div>
+                    <Switch
+                      checked={bookingRules.autoConfirm}
+                      onCheckedChange={(checked) => setBookingRules({ ...bookingRules, autoConfirm: checked })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>No-show Policy</Label>
+                    <Textarea
+                      value={bookingRules.noShowPolicy}
+                      onChange={(e) => setBookingRules({ ...bookingRules, noShowPolicy: e.target.value })}
+                      className="min-h-[80px]"
+                    />
+                  </div>
                 </div>
               </div>
             </CardContent>
