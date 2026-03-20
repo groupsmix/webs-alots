@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -8,25 +9,68 @@ import {
   Check, Eye, AlertCircle,
 } from "lucide-react";
 import Link from "next/link";
+import { clinicConfig } from "@/config/clinic.config";
 import {
-  pharmacyPrescriptions,
-  dailySales,
-  purchaseOrders,
-  loyaltyMembers,
+  fetchProducts,
+  fetchPrescriptionRequests,
+  fetchDailySales,
+  fetchPurchaseOrders,
+  fetchLoyaltyMembers,
   getLowStockProducts,
   getExpiringProducts,
-  getPendingPrescriptions,
   getOutOfStockProducts,
-} from "@/lib/pharmacy-demo-data";
+} from "@/lib/data/client";
+import type {
+  ProductView,
+  PharmacyPrescriptionView,
+  DailySaleView,
+  PurchaseOrderView,
+  LoyaltyMemberView,
+} from "@/lib/data/client";
 
 export default function PharmacistDashboardPage() {
-  const pendingRx = getPendingPrescriptions();
-  const lowStock = getLowStockProducts();
-  const outOfStock = getOutOfStockProducts();
-  const expiring = getExpiringProducts(90);
-  const todaySales = dailySales.filter((s) => s.date === "2026-03-20");
+  const [products, setProducts] = useState<ProductView[]>([]);
+  const [prescriptions, setPrescriptions] = useState<PharmacyPrescriptionView[]>([]);
+  const [sales, setSales] = useState<DailySaleView[]>([]);
+  const [allOrders, setAllOrders] = useState<PurchaseOrderView[]>([]);
+  const [members, setMembers] = useState<LoyaltyMemberView[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const cId = clinicConfig.clinicId;
+    Promise.all([
+      fetchProducts(cId),
+      fetchPrescriptionRequests(cId),
+      fetchDailySales(cId),
+      fetchPurchaseOrders(cId),
+      fetchLoyaltyMembers(cId),
+    ])
+      .then(([p, rx, s, o, l]) => {
+        setProducts(p);
+        setPrescriptions(rx);
+        setSales(s);
+        setAllOrders(o);
+        setMembers(l);
+      })
+      .finally(() => setLoading(false));
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[50vh]">
+        <div className="animate-pulse text-muted-foreground">Loading dashboard...</div>
+      </div>
+    );
+  }
+
+  const pendingRx = prescriptions.filter((p) => p.status === "pending" || p.status === "reviewing");
+  const lowStock = getLowStockProducts(products);
+  const outOfStock = getOutOfStockProducts(products);
+  const expiring = getExpiringProducts(products, 90);
+  const today = new Date().toISOString().split("T")[0];
+  const todaySales = sales.filter((s) => s.date === today);
   const todayRevenue = todaySales.reduce((sum, s) => sum + s.total, 0);
-  const pendingOrders = purchaseOrders.filter((o) => o.status !== "delivered" && o.status !== "cancelled");
+  const pendingOrders = allOrders.filter((o) => o.status !== "delivered" && o.status !== "cancelled");
 
   return (
     <div>
@@ -99,7 +143,7 @@ export default function PharmacistDashboardPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Loyalty Members</p>
-                <p className="text-3xl font-bold">{loyaltyMembers.length}</p>
+                <p className="text-3xl font-bold">{members.length}</p>
               </div>
               <div className="h-12 w-12 rounded-lg bg-purple-100 dark:bg-purple-900/30 text-purple-600 flex items-center justify-center">
                 <Users className="h-6 w-6" />
@@ -123,11 +167,11 @@ export default function PharmacistDashboardPage() {
               </Link>
             </div>
             <div className="space-y-3">
-              {pharmacyPrescriptions.filter((rx) => rx.status !== "picked-up" && rx.status !== "delivered").slice(0, 4).map((rx) => (
+              {prescriptions.filter((rx) => rx.status !== "picked-up" && rx.status !== "delivered").slice(0, 4).map((rx) => (
                 <div key={rx.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
                   <div>
                     <p className="font-medium text-sm">{rx.patientName}</p>
-                    <p className="text-xs text-muted-foreground">{rx.items.length} item{rx.items.length > 1 ? "s" : ""} - {new Date(rx.uploadedAt).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })}</p>
+                    <p className="text-xs text-muted-foreground">{rx.items.length} item{rx.items.length > 1 ? "s" : ""} - {rx.uploadedAt ? new Date(rx.uploadedAt).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" }) : ""}</p>
                   </div>
                   <Badge className={
                     rx.status === "pending" ? "bg-yellow-100 text-yellow-700 border-0" :
@@ -143,6 +187,9 @@ export default function PharmacistDashboardPage() {
                   </Badge>
                 </div>
               ))}
+              {prescriptions.filter((rx) => rx.status !== "picked-up" && rx.status !== "delivered").length === 0 && (
+                <p className="text-sm text-muted-foreground text-center py-4">No active prescriptions</p>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -161,7 +208,7 @@ export default function PharmacistDashboardPage() {
                 <div key={p.id} className="flex items-center justify-between p-3 bg-red-50 dark:bg-red-950/10 rounded-lg">
                   <div>
                     <p className="font-medium text-sm">{p.name}</p>
-                    <p className="text-xs text-muted-foreground">{p.manufacturer}</p>
+                    <p className="text-xs text-muted-foreground">{p.manufacturer ?? p.category}</p>
                   </div>
                   <Badge variant="destructive" className="text-xs">Out of Stock</Badge>
                 </div>
@@ -184,6 +231,9 @@ export default function PharmacistDashboardPage() {
                   <Badge className="bg-yellow-100 text-yellow-700 border-0 text-xs">Expiring Soon</Badge>
                 </div>
               ))}
+              {outOfStock.length === 0 && lowStock.length === 0 && expiring.length === 0 && (
+                <p className="text-sm text-muted-foreground text-center py-4">All stock levels healthy</p>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -210,6 +260,9 @@ export default function PharmacistDashboardPage() {
                   </div>
                 </div>
               ))}
+              {todaySales.length === 0 && (
+                <p className="text-sm text-muted-foreground text-center py-4">No sales recorded today</p>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -242,6 +295,9 @@ export default function PharmacistDashboardPage() {
                   </div>
                 </div>
               ))}
+              {pendingOrders.length === 0 && (
+                <p className="text-sm text-muted-foreground text-center py-4">No pending orders</p>
+              )}
             </div>
           </CardContent>
         </Card>

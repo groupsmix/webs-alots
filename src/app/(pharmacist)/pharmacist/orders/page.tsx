@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -8,10 +8,13 @@ import {
   Plus, Truck, Check, Package,
   Send, X, FileText,
 } from "lucide-react";
-import { purchaseOrders, suppliers } from "@/lib/pharmacy-demo-data";
-import type { PurchaseOrder } from "@/lib/pharmacy-demo-data";
+import { clinicConfig } from "@/config/clinic.config";
+import { fetchPurchaseOrders, fetchSuppliers } from "@/lib/data/client";
+import type { PurchaseOrderView, SupplierView } from "@/lib/data/client";
 
-const statusConfig: Record<PurchaseOrder["status"], { label: string; color: string; icon: React.ReactNode }> = {
+type OrderStatus = "draft" | "sent" | "confirmed" | "shipped" | "delivered" | "cancelled";
+
+const statusConfig: Record<OrderStatus, { label: string; color: string; icon: React.ReactNode }> = {
   draft: { label: "Draft", color: "bg-gray-100 text-gray-700", icon: <FileText className="h-3 w-3" /> },
   sent: { label: "Sent", color: "bg-blue-100 text-blue-700", icon: <Send className="h-3 w-3" /> },
   confirmed: { label: "Confirmed", color: "bg-emerald-100 text-emerald-700", icon: <Check className="h-3 w-3" /> },
@@ -21,11 +24,29 @@ const statusConfig: Record<PurchaseOrder["status"], { label: string; color: stri
 };
 
 export default function OrdersPage() {
+  const [allOrders, setAllOrders] = useState<PurchaseOrderView[]>([]);
+  const [allSuppliers, setAllSuppliers] = useState<SupplierView[]>([]);
+  const [loading, setLoading] = useState(true);
   const [filterStatus, setFilterStatus] = useState<string>("all");
 
+  useEffect(() => {
+    const cId = clinicConfig.clinicId;
+    Promise.all([fetchPurchaseOrders(cId), fetchSuppliers(cId)])
+      .then(([o, s]) => { setAllOrders(o); setAllSuppliers(s); })
+      .finally(() => setLoading(false));
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[50vh]">
+        <div className="animate-pulse text-muted-foreground">Loading orders...</div>
+      </div>
+    );
+  }
+
   const filtered = filterStatus === "all"
-    ? purchaseOrders
-    : purchaseOrders.filter((o) => o.status === filterStatus);
+    ? allOrders
+    : allOrders.filter((o) => o.status === filterStatus);
 
   return (
     <div>
@@ -44,14 +65,14 @@ export default function OrdersPage() {
         <Card>
           <CardContent className="pt-4 pb-4">
             <p className="text-sm text-muted-foreground">Total Orders</p>
-            <p className="text-2xl font-bold">{purchaseOrders.length}</p>
+            <p className="text-2xl font-bold">{allOrders.length}</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-4 pb-4">
             <p className="text-sm text-muted-foreground">Pending Delivery</p>
             <p className="text-2xl font-bold text-blue-600">
-              {purchaseOrders.filter((o) => o.status === "confirmed" || o.status === "shipped").length}
+              {allOrders.filter((o) => o.status === "confirmed" || o.status === "shipped").length}
             </p>
           </CardContent>
         </Card>
@@ -59,14 +80,14 @@ export default function OrdersPage() {
           <CardContent className="pt-4 pb-4">
             <p className="text-sm text-muted-foreground">Total Value (Active)</p>
             <p className="text-2xl font-bold">
-              {purchaseOrders.filter((o) => o.status !== "cancelled" && o.status !== "delivered").reduce((sum, o) => sum + o.totalAmount, 0).toLocaleString()} <span className="text-sm font-normal">MAD</span>
+              {allOrders.filter((o) => o.status !== "cancelled" && o.status !== "delivered").reduce((sum, o) => sum + o.totalAmount, 0).toLocaleString()} <span className="text-sm font-normal">MAD</span>
             </p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-4 pb-4">
             <p className="text-sm text-muted-foreground">Suppliers</p>
-            <p className="text-2xl font-bold">{suppliers.length}</p>
+            <p className="text-2xl font-bold">{allSuppliers.length}</p>
           </CardContent>
         </Card>
       </div>
@@ -88,7 +109,7 @@ export default function OrdersPage() {
       {/* Orders */}
       <div className="space-y-4">
         {filtered.map((order) => {
-          const status = statusConfig[order.status];
+          const status = statusConfig[order.status as OrderStatus] ?? statusConfig.draft;
           return (
             <Card key={order.id}>
               <CardContent className="pt-6">

@@ -1,14 +1,25 @@
 "use client";
 
-import { useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { AlertTriangle, Check, Clock, X } from "lucide-react";
-import { pharmacyProducts, getExpiryStatus } from "@/lib/pharmacy-demo-data";
+import { clinicConfig } from "@/config/clinic.config";
+import { fetchProducts, getExpiryStatus } from "@/lib/data/client";
+import type { ProductView } from "@/lib/data/client";
 
 export default function ExpiryTrackerPage() {
+  const [allProducts, setAllProducts] = useState<ProductView[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchProducts(clinicConfig.clinicId)
+      .then(setAllProducts)
+      .finally(() => setLoading(false));
+  }, []);
+
   const products = useMemo(() => {
-    return pharmacyProducts
+    return allProducts
       .filter((p) => p.active)
       .map((p) => ({
         ...p,
@@ -18,7 +29,15 @@ export default function ExpiryTrackerPage() {
         ),
       }))
       .sort((a, b) => a.daysUntilExpiry - b.daysUntilExpiry);
-  }, []);
+  }, [allProducts]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[50vh]">
+        <div className="animate-pulse text-muted-foreground">Loading expiry data...</div>
+      </div>
+    );
+  }
 
   const expired = products.filter((p) => p.expiryStatus === "red");
   const expiringSoon = products.filter((p) => p.expiryStatus === "yellow");
