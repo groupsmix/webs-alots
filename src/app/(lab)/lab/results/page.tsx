@@ -1,0 +1,195 @@
+"use client";
+
+import { useState, useEffect } from "react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Search, FlaskConical, ArrowUpDown, TrendingUp, TrendingDown, Minus } from "lucide-react";
+import { clinicConfig } from "@/config/clinic.config";
+import { fetchLabTestOrders, fetchLabTestResults } from "@/lib/data/client";
+import type { LabTestOrderView, LabTestResultView } from "@/lib/data/client";
+
+function FlagIcon({ flag }: { flag: string }) {
+  if (flag === "high" || flag === "critical_high") return <TrendingUp className="h-3 w-3" />;
+  if (flag === "low" || flag === "critical_low") return <TrendingDown className="h-3 w-3" />;
+  return <Minus className="h-3 w-3" />;
+}
+
+function flagColor(flag: string): string {
+  if (flag === "critical_high" || flag === "critical_low") return "bg-red-100 text-red-700 border-0";
+  if (flag === "high") return "bg-orange-100 text-orange-700 border-0";
+  if (flag === "low") return "bg-yellow-100 text-yellow-700 border-0";
+  return "bg-emerald-100 text-emerald-700 border-0";
+}
+
+export default function ResultsPage() {
+  const [orders, setOrders] = useState<LabTestOrderView[]>([]);
+  const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
+  const [results, setResults] = useState<LabTestResultView[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [resultsLoading, setResultsLoading] = useState(false);
+  const [search, setSearch] = useState("");
+
+  useEffect(() => {
+    fetchLabTestOrders(clinicConfig.clinicId)
+      .then((all) => {
+        const active = all.filter((o) => o.status !== "cancelled");
+        setOrders(active);
+      })
+      .finally(() => setLoading(false));
+  }, []);
+
+  useEffect(() => {
+    if (!selectedOrderId) {
+      setResults([]);
+      return;
+    }
+    setResultsLoading(true);
+    fetchLabTestResults(selectedOrderId)
+      .then(setResults)
+      .finally(() => setResultsLoading(false));
+  }, [selectedOrderId]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[50vh]">
+        <div className="animate-pulse text-muted-foreground">Loading...</div>
+      </div>
+    );
+  }
+
+  const filtered = orders.filter((o) => {
+    if (!search) return true;
+    const q = search.toLowerCase();
+    return o.patientName.toLowerCase().includes(q) || o.orderNumber.toLowerCase().includes(q);
+  });
+
+  return (
+    <div>
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold">Results Entry</h1>
+        <p className="text-muted-foreground text-sm">Select an order to view or enter results</p>
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-3">
+        {/* Order List */}
+        <div className="lg:col-span-1 space-y-3">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search orders..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="pl-9"
+            />
+          </div>
+          <div className="space-y-2 max-h-[70vh] overflow-y-auto">
+            {filtered.map((order) => (
+              <Card
+                key={order.id}
+                className={`cursor-pointer transition-colors ${
+                  selectedOrderId === order.id ? "ring-2 ring-blue-500" : "hover:bg-muted/50"
+                }`}
+                onClick={() => setSelectedOrderId(order.id)}
+              >
+                <CardContent className="pt-3 pb-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-medium text-sm">{order.patientName}</p>
+                      <p className="text-xs text-muted-foreground">{order.orderNumber}</p>
+                    </div>
+                    <Badge className={
+                      order.status === "completed" ? "bg-emerald-100 text-emerald-700 border-0" :
+                      order.status === "validated" ? "bg-green-100 text-green-700 border-0" :
+                      order.status === "in_progress" ? "bg-blue-100 text-blue-700 border-0" :
+                      "bg-yellow-100 text-yellow-700 border-0"
+                    }>
+                      {order.status.replace("_", " ")}
+                    </Badge>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+            {filtered.length === 0 && (
+              <p className="text-sm text-muted-foreground text-center py-4">No orders found</p>
+            )}
+          </div>
+        </div>
+
+        {/* Results Panel */}
+        <div className="lg:col-span-2">
+          {!selectedOrderId ? (
+            <Card>
+              <CardContent className="py-16 text-center">
+                <FlaskConical className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
+                <p className="text-muted-foreground">Select an order to view results</p>
+              </CardContent>
+            </Card>
+          ) : resultsLoading ? (
+            <Card>
+              <CardContent className="py-16 text-center">
+                <div className="animate-pulse text-muted-foreground">Loading results...</div>
+              </CardContent>
+            </Card>
+          ) : (
+            <Card>
+              <CardContent className="pt-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="font-semibold text-lg flex items-center gap-2">
+                    <ArrowUpDown className="h-4 w-4" />
+                    Test Results
+                  </h2>
+                  <Badge variant="outline">{results.length} result{results.length !== 1 ? "s" : ""}</Badge>
+                </div>
+
+                {results.length === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center py-8">No results recorded yet for this order</p>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b text-left">
+                          <th className="pb-2 font-medium">Test</th>
+                          <th className="pb-2 font-medium">Value</th>
+                          <th className="pb-2 font-medium">Unit</th>
+                          <th className="pb-2 font-medium">Reference</th>
+                          <th className="pb-2 font-medium">Flag</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {results.map((r) => (
+                          <tr key={r.id} className="border-b last:border-0">
+                            <td className="py-2 font-medium">{r.testName}</td>
+                            <td className="py-2">{r.value ?? "—"}</td>
+                            <td className="py-2 text-muted-foreground">{r.unit ?? ""}</td>
+                            <td className="py-2 text-muted-foreground text-xs">
+                              {r.referenceMin != null && r.referenceMax != null
+                                ? `${r.referenceMin} - ${r.referenceMax}`
+                                : r.referenceMin != null
+                                ? `>= ${r.referenceMin}`
+                                : r.referenceMax != null
+                                ? `<= ${r.referenceMax}`
+                                : "—"}
+                            </td>
+                            <td className="py-2">
+                              {r.flag && (
+                                <Badge className={`${flagColor(r.flag)} text-xs`}>
+                                  <FlagIcon flag={r.flag} />
+                                  <span className="ml-1 capitalize">{r.flag.replace("_", " ")}</span>
+                                </Badge>
+                              )}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
