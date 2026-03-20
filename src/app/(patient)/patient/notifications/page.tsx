@@ -27,15 +27,16 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import {
-  demoInAppNotifications,
-  type NotificationTrigger,
-} from "@/lib/notifications";
+  getCurrentUser,
+  fetchNotifications,
+  type NotificationView,
+} from "@/lib/data/client";
 
 // ---- Type Mapping ----
 
 type NotificationType = "appointment" | "prescription" | "payment" | "general" | "review" | "cancellation";
 
-function triggerToType(trigger: NotificationTrigger): NotificationType {
+function triggerToType(trigger: string): NotificationType {
   switch (trigger) {
     case "new_booking":
     case "booking_confirmation":
@@ -78,17 +79,6 @@ const colorMap: Record<NotificationType, string> = {
   cancellation: "text-red-600 bg-red-100 dark:bg-red-900",
 };
 
-// ---- Patient notifications for demo (userId = "p1") ----
-
-const patientNotifications = demoInAppNotifications
-  .filter((n) => n.userId === "p1")
-  .map((n) => ({
-    ...n,
-    type: triggerToType(n.trigger),
-    read: n.status === "read",
-    time: formatTimeAgo(n.createdAt),
-  }));
-
 function formatTimeAgo(dateStr: string): string {
   const now = new Date();
   const then = new Date(dateStr);
@@ -104,7 +94,29 @@ function formatTimeAgo(dateStr: string): string {
 }
 
 export default function PatientNotificationsPage() {
-  const [notifications, setNotifications] = useState(patientNotifications);
+  const [notifications, setNotifications] = useState<Array<NotificationView & { type: NotificationType; time: string }>>([]);
+  const [pageLoading, setPageLoading] = useState(true);
+
+  useEffect(() => {
+    getCurrentUser().then(async (user) => {
+      if (!user) { setPageLoading(false); return; }
+      const notifs = await fetchNotifications(user.id);
+      setNotifications(notifs.map((n) => ({
+        ...n,
+        type: triggerToType(n.trigger),
+        time: formatTimeAgo(n.createdAt),
+      })));
+      setPageLoading(false);
+    });
+  }, []);
+
+  if (pageLoading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <p className="text-sm text-muted-foreground">Loading notifications...</p>
+      </div>
+    );
+  }
   const [filter, setFilter] = useState<"all" | "unread">("all");
   const [prefsOpen, setPrefsOpen] = useState(false);
   const [prefs, setPrefs] = useState({

@@ -1,16 +1,38 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Download, Pill, FileText, Clock } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { prescriptions } from "@/lib/demo-data";
-
-const patientPrescriptions = prescriptions.filter((p) => p.patientId === "p1");
+import {
+  getCurrentUser,
+  fetchPrescriptions,
+  type PrescriptionView,
+} from "@/lib/data/client";
 
 export default function PatientPrescriptionsPage() {
   const [downloading, setDownloading] = useState<string | null>(null);
+  const [patientPrescriptions, setPatientPrescriptions] = useState<PrescriptionView[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const load = useCallback(async () => {
+    const user = await getCurrentUser();
+    if (!user?.clinic_id) { setLoading(false); return; }
+    const rxs = await fetchPrescriptions(user.clinic_id);
+    setPatientPrescriptions(rxs.filter(rx => rx.patientId === user.id));
+    setLoading(false);
+  }, []);
+
+  useEffect(() => { load(); }, [load]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <p className="text-sm text-muted-foreground">Loading prescriptions...</p>
+      </div>
+    );
+  }
 
   const handleDownload = (rxId: string) => {
     setDownloading(rxId);

@@ -1,15 +1,12 @@
+"use client";
+
+import { useEffect, useState, useCallback } from "react";
 import { Star, MessageSquare } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { reviews, getAverageRating } from "@/lib/demo-data";
-
-const avgRating = getAverageRating();
-const ratingCounts = [5, 4, 3, 2, 1].map((r) => ({
-  stars: r,
-  count: reviews.filter((rv) => rv.rating === r).length,
-}));
+import { getCurrentUser, fetchReviews, type ReviewView } from "@/lib/data/client";
 
 function StarRating({ rating }: { rating: number }) {
   return (
@@ -25,6 +22,33 @@ function StarRating({ rating }: { rating: number }) {
 }
 
 export default function ReviewManagementPage() {
+  const [reviews, setReviews] = useState<ReviewView[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const load = useCallback(async () => {
+    const user = await getCurrentUser();
+    if (!user?.clinic_id) { setLoading(false); return; }
+    const r = await fetchReviews(user.clinic_id);
+    setReviews(r);
+    setLoading(false);
+  }, []);
+
+  useEffect(() => { load(); }, [load]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <p className="text-sm text-muted-foreground">Loading reviews...</p>
+      </div>
+    );
+  }
+
+  const avgRating = reviews.length > 0 ? reviews.reduce((s, r) => s + r.rating, 0) / reviews.length : 0;
+  const ratingCounts = [5, 4, 3, 2, 1].map((r) => ({
+    stars: r,
+    count: reviews.filter((rv) => rv.rating === r).length,
+  }));
+
   return (
     <div>
       <h1 className="text-2xl font-bold mb-6">Review Management</h1>

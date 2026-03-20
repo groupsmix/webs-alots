@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Plus, Download, Pill, Trash2, Save, FileDown } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -8,8 +8,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { prescriptions, patients } from "@/lib/demo-data";
-import type { Prescription } from "@/lib/demo-data";
+import {
+  getCurrentUser,
+  fetchPrescriptions,
+  fetchPatients,
+  type PrescriptionView,
+  type PatientView,
+} from "@/lib/data/client";
+
+type Prescription = PrescriptionView;
 
 interface MedicationEntry {
   name: string;
@@ -86,9 +93,34 @@ function generatePrescriptionPDF(rx: Prescription) {
 }
 
 export default function DoctorPrescriptionsPage() {
-  const [rxList, setRxList] = useState<Prescription[]>([...prescriptions]);
+  const [rxList, setRxList] = useState<Prescription[]>([]);
+  const [patients, setPatients] = useState<PatientView[]>([]);
   const [showWriter, setShowWriter] = useState(false);
-  const [selectedPatient, setSelectedPatient] = useState(patients[0].id);
+  const [selectedPatient, setSelectedPatient] = useState("");
+  const [loading, setLoading] = useState(true);
+
+  const load = useCallback(async () => {
+    const user = await getCurrentUser();
+    if (!user?.clinic_id) { setLoading(false); return; }
+    const [rxs, pts] = await Promise.all([
+      fetchPrescriptions(user.clinic_id),
+      fetchPatients(user.clinic_id),
+    ]);
+    setRxList(rxs);
+    setPatients(pts);
+    if (pts.length > 0) setSelectedPatient(pts[0].id);
+    setLoading(false);
+  }, []);
+
+  useEffect(() => { load(); }, [load]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <p className="text-sm text-muted-foreground">Loading prescriptions...</p>
+      </div>
+    );
+  }
   const [diagnosis, setDiagnosis] = useState("");
   const [notes, setNotes] = useState("");
   const [medications, setMedications] = useState<MedicationEntry[]>([

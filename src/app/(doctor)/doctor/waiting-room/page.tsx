@@ -1,16 +1,38 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Clock, ArrowRight, CheckCircle, AlertTriangle, User } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { waitingRoom } from "@/lib/demo-data";
-import type { WaitingRoomEntry } from "@/lib/demo-data";
+import {
+  getCurrentUser,
+  fetchWaitingRoom,
+  type WaitingRoomEntry,
+} from "@/lib/data/client";
 
 export default function WaitingRoomPage() {
-  const [entries, setEntries] = useState<WaitingRoomEntry[]>([...waitingRoom]);
+  const [entries, setEntries] = useState<WaitingRoomEntry[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const load = useCallback(async () => {
+    const user = await getCurrentUser();
+    if (!user?.clinic_id) { setLoading(false); return; }
+    const wr = await fetchWaitingRoom(user.clinic_id);
+    setEntries(wr);
+    setLoading(false);
+  }, []);
+
+  useEffect(() => { load(); }, [load]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <p className="text-sm text-muted-foreground">Loading waiting room...</p>
+      </div>
+    );
+  }
 
   const waitingEntries = entries.filter((e) => e.status === "waiting");
   const inConsultation = entries.filter((e) => e.status === "in-consultation");

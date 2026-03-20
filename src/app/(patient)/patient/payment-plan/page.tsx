@@ -1,11 +1,34 @@
 "use client";
 
+import { useState, useEffect, useCallback } from "react";
 import { InstallmentTracker } from "@/components/installments/installment-tracker";
-import { installmentPlans } from "@/lib/dental-demo-data";
+import {
+  getCurrentUser,
+  fetchInstallments,
+  type InstallmentView,
+} from "@/lib/data/client";
 
 export default function PatientPaymentPlanPage() {
-  // Demo: show patient p1's installment plans
-  const myPlans = installmentPlans.filter((p) => p.patientId === "p1");
+  const [myPlans, setMyPlans] = useState<InstallmentView[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const load = useCallback(async () => {
+    const user = await getCurrentUser();
+    if (!user?.clinic_id) { setLoading(false); return; }
+    const plans = await fetchInstallments(user.clinic_id);
+    setMyPlans(plans.filter(p => p.patientId === user.id));
+    setLoading(false);
+  }, []);
+
+  useEffect(() => { load(); }, [load]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <p className="text-sm text-muted-foreground">Loading payment plans...</p>
+      </div>
+    );
+  }
 
   const handleGenerateReceipt = (planId: string, installmentId: string) => {
     const plan = myPlans.find((p) => p.id === planId);

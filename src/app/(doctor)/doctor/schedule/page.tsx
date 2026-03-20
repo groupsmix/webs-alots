@@ -1,10 +1,14 @@
+"use client";
+
+import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { appointments } from "@/lib/demo-data";
 import { clinicConfig } from "@/config/clinic.config";
-
-const doctorId = "d1";
-const doctorAppointments = appointments.filter((a) => a.doctorId === doctorId);
+import {
+  getCurrentUser,
+  fetchDoctorAppointments,
+  type AppointmentView,
+} from "@/lib/data/client";
 
 const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
@@ -18,6 +22,27 @@ const statusVariant: Record<string, "default" | "success" | "warning" | "destruc
 };
 
 export default function DoctorSchedulePage() {
+  const [doctorAppointments, setDoctorAppointments] = useState<AppointmentView[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const load = useCallback(async () => {
+    const user = await getCurrentUser();
+    if (!user?.clinic_id) { setLoading(false); return; }
+    const appts = await fetchDoctorAppointments(user.clinic_id, user.id);
+    setDoctorAppointments(appts);
+    setLoading(false);
+  }, []);
+
+  useEffect(() => { load(); }, [load]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <p className="text-sm text-muted-foreground">Loading schedule...</p>
+      </div>
+    );
+  }
+
   return (
     <div>
       <h1 className="text-2xl font-bold mb-6">My Schedule</h1>

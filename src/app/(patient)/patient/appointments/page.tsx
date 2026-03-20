@@ -1,16 +1,18 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Calendar, Clock, User, MapPin, X, RefreshCw, AlertTriangle, Repeat, Plus } from "lucide-react";
 import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { appointments, canCancelAppointment } from "@/lib/demo-data";
+import {
+  getCurrentUser,
+  fetchPatientAppointments,
+  type AppointmentView,
+} from "@/lib/data/client";
 import { RescheduleDialog } from "@/components/patient/reschedule-dialog";
-
-const patientId = "p1";
 
 const statusColors: Record<string, string> = {
   scheduled: "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300",
@@ -29,9 +31,26 @@ export default function PatientAppointmentsPage() {
   const [cancellingId, setCancellingId] = useState<string | null>(null);
   const [cancelError, setCancelError] = useState<string | null>(null);
   const [cancelSuccess, setCancelSuccess] = useState<string | null>(null);
+  const [patientAppointments, setPatientAppointments] = useState<AppointmentView[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  void refreshKey;
-  const patientAppointments = appointments.filter((a) => a.patientId === patientId);
+  const load = useCallback(async () => {
+    const user = await getCurrentUser();
+    if (!user?.clinic_id) { setLoading(false); return; }
+    const appts = await fetchPatientAppointments(user.clinic_id, user.id);
+    setPatientAppointments(appts);
+    setLoading(false);
+  }, []);
+
+  useEffect(() => { load(); }, [load, refreshKey]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <p className="text-sm text-muted-foreground">Loading appointments...</p>
+      </div>
+    );
+  }
   const upcoming = patientAppointments.filter(
     (a) => a.status === "scheduled" || a.status === "confirmed" || a.status === "in-progress"
   );
@@ -44,11 +63,6 @@ export default function PatientAppointmentsPage() {
   const handleCancel = async (appointmentId: string) => {
     setCancelError(null);
     setCancelSuccess(null);
-    const check = canCancelAppointment(appointmentId);
-    if (!check.canCancel) {
-      setCancelError(check.reason ?? "Cannot cancel this appointment");
-      return;
-    }
 
     setCancellingId(appointmentId);
     try {
@@ -74,7 +88,7 @@ export default function PatientAppointmentsPage() {
   };
 
   const apptToReschedule = rescheduleApptId
-    ? appointments.find((a) => a.id === rescheduleApptId)
+    ? patientAppointments.find((a) => a.id === rescheduleApptId)
     : null;
 
   if (apptToReschedule) {

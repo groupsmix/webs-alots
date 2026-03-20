@@ -1,37 +1,66 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { OdontogramChart } from "@/components/dental/odontogram-chart";
-import { patientOdontograms, type ToothStatus, type OdontogramEntry } from "@/lib/dental-demo-data";
+import { getCurrentUser, fetchPatients, fetchOdontogram, type PatientView, type OdontogramView } from "@/lib/data/client";
+import type { ToothStatus, OdontogramEntry } from "@/lib/dental-demo-data";
 
 export default function DoctorOdontogramPage() {
-  const [selectedPatient, setSelectedPatient] = useState(patientOdontograms[0]?.patientId ?? "");
-  const [odontograms, setOdontograms] = useState(patientOdontograms);
+  const [patients, setPatients] = useState<PatientView[]>([]);
+  const [selectedPatient, setSelectedPatient] = useState("");
+  const [entries, setEntries] = useState<OdontogramView[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const current = odontograms.find((o) => o.patientId === selectedPatient);
+  const loadPatients = useCallback(async () => {
+    const user = await getCurrentUser();
+    if (!user?.clinic_id) { setLoading(false); return; }
+    const pts = await fetchPatients(user.clinic_id);
+    setPatients(pts);
+    if (pts.length > 0) {
+      setSelectedPatient(pts[0].id);
+      const data = await fetchOdontogram(user.clinic_id, pts[0].id);
+      setEntries(data);
+    }
+    setLoading(false);
+  }, []);
+
+  useEffect(() => { loadPatients(); }, [loadPatients]);
+
+  useEffect(() => {
+    if (!selectedPatient) return;
+    getCurrentUser().then(async (user) => {
+      if (!user?.clinic_id) return;
+      const data = await fetchOdontogram(user.clinic_id, selectedPatient);
+      setEntries(data);
+    });
+  }, [selectedPatient]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <p className="text-sm text-muted-foreground">Loading odontogram...</p>
+      </div>
+    );
+  }
 
   const handleUpdateEntry = (toothNumber: number, status: ToothStatus, notes: string) => {
-    setOdontograms((prev) =>
-      prev.map((o) => {
-        if (o.patientId !== selectedPatient) return o;
-        const existingIdx = o.entries.findIndex((e) => e.toothNumber === toothNumber);
-        const newEntry: OdontogramEntry = {
-          toothNumber,
-          status,
-          notes,
-          lastUpdated: new Date().toISOString().split("T")[0],
-        };
-        const entries = [...o.entries];
-        if (existingIdx >= 0) {
-          entries[existingIdx] = newEntry;
-        } else {
-          entries.push(newEntry);
-        }
-        return { ...o, entries };
-      })
-    );
+    const newEntry: OdontogramView = {
+      toothNumber,
+      status,
+      notes,
+      lastUpdated: new Date().toISOString().split("T")[0],
+    };
+    setEntries((prev) => {
+      const existingIdx = prev.findIndex((e) => e.toothNumber === toothNumber);
+      if (existingIdx >= 0) {
+        const updated = [...prev];
+        updated[existingIdx] = newEntry;
+        return updated;
+      }
+      return [...prev, newEntry];
+    });
   };
 
   return (
@@ -49,19 +78,21 @@ export default function DoctorOdontogramPage() {
             onChange={(e) => setSelectedPatient(e.target.value)}
             className="w-full rounded-lg border p-2 text-sm bg-background mt-1"
           >
-            {odontograms.map((o) => (
-              <option key={o.patientId} value={o.patientId}>{o.patientName}</option>
+            {patients.map((p) => (
+              <option key={p.id} value={p.id}>{p.name}</option>
             ))}
           </select>
         </CardContent>
       </Card>
 
-      {current && (
+      {entries.length > 0 ? (
         <OdontogramChart
-          entries={current.entries}
+          entries={entries.map(e => ({ toothNumber: e.toothNumber, status: e.status as OdontogramEntry["status"], notes: e.notes, lastUpdated: e.lastUpdated }))}
           editable
           onUpdateEntry={handleUpdateEntry}
         />
+      ) : (
+        <p className="text-sm text-muted-foreground">No odontogram entries for this patient.</p>
       )}
     </div>
   );

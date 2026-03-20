@@ -1,22 +1,19 @@
 "use client";
 
+import { useState, useEffect, useCallback } from "react";
 import { Activity, Pill, FileText, Stethoscope, AlertTriangle, TrendingUp } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { patients, prescriptions, appointments } from "@/lib/demo-data";
-
-const patientId = "p1";
-const patient = patients.find((p) => p.id === patientId) ?? patients[0];
-const patientRx = prescriptions.filter((rx) => rx.patientId === patient.id);
-const completedVisits = appointments
-  .filter((a) => a.patientId === patient.id && a.status === "completed");
-
-const mockDiagnoses = [
-  { date: "2026-03-19", doctor: "Dr. Ahmed Benali", diagnosis: "Upper respiratory infection", notes: "Prescribed antibiotics. Follow-up in 7 days.", vitals: "BP: 120/80, Temp: 37.8°C", severity: "moderate" },
-  { date: "2026-02-15", doctor: "Dr. Ahmed Benali", diagnosis: "Annual check-up", notes: "All vitals normal. Blood work ordered.", vitals: "BP: 118/76, Temp: 36.6°C", severity: "routine" },
-  { date: "2025-12-10", doctor: "Dr. Youssef El Amrani", diagnosis: "Mild hypertension", notes: "Started on lifestyle modifications. Re-check in 3 months.", vitals: "BP: 140/90, Temp: 36.5°C", severity: "moderate" },
-  { date: "2025-09-05", doctor: "Dr. Ahmed Benali", diagnosis: "Seasonal allergies", notes: "Antihistamine prescribed. Avoid outdoor exposure during peak pollen.", vitals: "BP: 122/78, Temp: 36.7°C", severity: "mild" },
-];
+import {
+  getCurrentUser,
+  fetchPatientAppointments,
+  fetchPrescriptions,
+  fetchConsultationNotes,
+  type PatientView,
+  type AppointmentView,
+  type PrescriptionView,
+  type ConsultationNoteView,
+} from "@/lib/data/client";
 
 const vitals = [
   { label: "Blood Pressure", value: "120/80 mmHg", icon: Activity, trend: "stable", color: "text-blue-600" },
@@ -33,6 +30,46 @@ const severityColors: Record<string, string> = {
 };
 
 export default function MedicalHistoryPage() {
+  const [completedVisits, setCompletedVisits] = useState<AppointmentView[]>([]);
+  const [patientRx, setPatientRx] = useState<PrescriptionView[]>([]);
+  const [consultNotes, setConsultNotes] = useState<ConsultationNoteView[]>([]);
+  const [patient, setPatient] = useState<{ dateOfBirth: string; gender: string; insurance: string; allergies: string[] } | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  const load = useCallback(async () => {
+    const user = await getCurrentUser();
+    if (!user?.clinic_id) { setLoading(false); return; }
+    const [appts, rxs, notes] = await Promise.all([
+      fetchPatientAppointments(user.clinic_id, user.id),
+      fetchPrescriptions(user.clinic_id),
+      fetchConsultationNotes(user.clinic_id),
+    ]);
+    setCompletedVisits(appts.filter(a => a.status === "completed"));
+    setPatientRx(rxs.filter(rx => rx.patientId === user.id));
+    setConsultNotes(notes);
+    setPatient({ dateOfBirth: "", gender: "", insurance: "", allergies: [] });
+    setLoading(false);
+  }, []);
+
+  useEffect(() => { load(); }, [load]);
+
+  if (loading || !patient) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <p className="text-sm text-muted-foreground">Loading medical history...</p>
+      </div>
+    );
+  }
+
+  const diagnoses = consultNotes.map(n => ({
+    date: n.date,
+    doctor: n.doctorName ?? "",
+    diagnosis: n.diagnosis,
+    notes: n.notes ?? "",
+    vitals: "",
+    severity: "routine" as string,
+  }));
+
   return (
     <div>
       <h1 className="text-2xl font-bold mb-6">Medical History</h1>
@@ -107,12 +144,12 @@ export default function MedicalHistoryPage() {
           <CardTitle className="text-base flex items-center gap-2">
             <FileText className="h-4 w-4" />
             Past Visits & Diagnoses
-            <Badge variant="secondary" className="ml-auto">{completedVisits.length + mockDiagnoses.length} records</Badge>
+            <Badge variant="secondary" className="ml-auto">{completedVisits.length + diagnoses.length} records</Badge>
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {mockDiagnoses.map((visit, i) => (
+            {diagnoses.map((visit, i) => (
               <div key={i} className="border rounded-lg p-4">
                 <div className="flex items-start justify-between mb-2">
                   <div>

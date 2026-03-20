@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { FileEdit, CheckCircle, XCircle, Save, Eye, EyeOff, Plus } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -10,14 +10,73 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { appointments, consultationNotes } from "@/lib/demo-data";
-import type { ConsultationNote } from "@/lib/demo-data";
+import {
+  getCurrentUser,
+  fetchDoctorAppointments,
+  fetchConsultationNotes,
+  updateAppointmentStatus,
+  type AppointmentView,
+  type ConsultationNoteView,
+} from "@/lib/data/client";
 
-const doctorId = "d1";
+interface ConsultationNote {
+  id: string;
+  appointmentId: string;
+  patientId: string;
+  doctorId: string;
+  date: string;
+  chiefComplaint: string;
+  examination: string;
+  diagnosis: string;
+  plan: string;
+  privateNotes?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+function mapDbNoteToLocal(n: ConsultationNoteView): ConsultationNote {
+  return {
+    id: n.id,
+    appointmentId: n.appointmentId,
+    patientId: n.patientId,
+    doctorId: "",
+    date: n.date,
+    chiefComplaint: "",
+    examination: "",
+    diagnosis: n.diagnosis,
+    plan: "",
+    privateNotes: "",
+    createdAt: n.date,
+    updatedAt: n.date,
+  };
+}
 
 export default function ConsultationNotesPage() {
-  const [notes, setNotes] = useState<ConsultationNote[]>([...consultationNotes]);
-  const [apptList, setApptList] = useState(() => [...appointments]);
+  const [notes, setNotes] = useState<ConsultationNote[]>([]);
+  const [apptList, setApptList] = useState<AppointmentView[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const load = useCallback(async () => {
+    const user = await getCurrentUser();
+    if (!user?.clinic_id) { setLoading(false); return; }
+    const [appts, dbNotes] = await Promise.all([
+      fetchDoctorAppointments(user.clinic_id, user.id),
+      fetchConsultationNotes(user.clinic_id, user.id),
+    ]);
+    setApptList(appts);
+    setNotes(dbNotes.map(mapDbNoteToLocal));
+    setLoading(false);
+  }, []);
+
+  useEffect(() => { load(); }, [load]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <p className="text-sm text-muted-foreground">Loading consultation notes...</p>
+      </div>
+    );
+  }
   const [editingApptId, setEditingApptId] = useState<string | null>(null);
   const [showPrivate, setShowPrivate] = useState<Record<string, boolean>>({});
 
@@ -30,7 +89,7 @@ export default function ConsultationNotesPage() {
   });
 
   const recentAppts = apptList
-    .filter((a) => a.doctorId === doctorId && (a.status === "completed" || a.status === "in-progress" || a.status === "confirmed"))
+    .filter((a) => a.status === "completed" || a.status === "in-progress" || a.status === "confirmed")
     .slice(0, 10);
 
   const getNoteForAppointment = (appointmentId: string) => {
@@ -85,15 +144,17 @@ export default function ConsultationNotesPage() {
     setEditingApptId(null);
   };
 
-  const handleMarkDone = (appointmentId: string) => {
+  const handleMarkDone = async (appointmentId: string) => {
+    await updateAppointmentStatus(appointmentId, "completed");
     setApptList((prev) =>
-      prev.map((a) => (a.id === appointmentId ? { ...a, status: "completed" as const } : a))
+      prev.map((a) => (a.id === appointmentId ? { ...a, status: "completed" } : a))
     );
   };
 
-  const handleNoShow = (appointmentId: string) => {
+  const handleNoShow = async (appointmentId: string) => {
+    await updateAppointmentStatus(appointmentId, "no-show");
     setApptList((prev) =>
-      prev.map((a) => (a.id === appointmentId ? { ...a, status: "no-show" as const } : a))
+      prev.map((a) => (a.id === appointmentId ? { ...a, status: "no-show" } : a))
     );
   };
 

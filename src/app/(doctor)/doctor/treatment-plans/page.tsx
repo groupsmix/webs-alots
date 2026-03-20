@@ -1,11 +1,34 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { TreatmentPlanBuilder } from "@/components/dental/treatment-plan-builder";
-import { treatmentPlans as initialPlans, type TreatmentPlan, type TreatmentStep } from "@/lib/dental-demo-data";
+import { getCurrentUser, fetchTreatmentPlans, type TreatmentPlanView } from "@/lib/data/client";
+import type { TreatmentPlan, TreatmentStep } from "@/lib/dental-demo-data";
 
 export default function DoctorTreatmentPlansPage() {
-  const [plans, setPlans] = useState<TreatmentPlan[]>(initialPlans);
+  const [plans, setPlans] = useState<TreatmentPlan[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const load = useCallback(async () => {
+    const user = await getCurrentUser();
+    if (!user?.clinic_id) { setLoading(false); return; }
+    const data = await fetchTreatmentPlans(user.clinic_id, user.id);
+    setPlans(data.map(p => ({
+      ...p,
+      steps: p.steps.map((s, i) => ({ ...s, step: i + 1 })),
+    })) as unknown as TreatmentPlan[]);
+    setLoading(false);
+  }, []);
+
+  useEffect(() => { load(); }, [load]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <p className="text-sm text-muted-foreground">Loading treatment plans...</p>
+      </div>
+    );
+  }
 
   const handleUpdateStep = (planId: string, stepIndex: number, status: TreatmentStep["status"]) => {
     setPlans((prev) =>

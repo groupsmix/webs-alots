@@ -1,19 +1,45 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Star, Send, MessageSquare, CheckCircle2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { doctors } from "@/lib/demo-data";
-
-const pastFeedback = [
-  { id: "f1", doctorName: "Dr. Ahmed Benali", rating: 5, comment: "Excellent consultation. Very thorough and professional.", date: "2026-03-15", status: "published" },
-  { id: "f2", doctorName: "Dr. Youssef El Amrani", rating: 4, comment: "Good cardiology check-up. Explained everything clearly.", date: "2026-03-10", status: "published" },
-];
+import {
+  getCurrentUser,
+  fetchDoctors,
+  fetchReviews,
+  type DoctorView,
+  type ReviewView,
+} from "@/lib/data/client";
 
 export default function PatientFeedbackPage() {
+  const [doctors, setDoctors] = useState<DoctorView[]>([]);
+  const [pastFeedback, setPastFeedback] = useState<ReviewView[]>([]);
+  const [pageLoading, setPageLoading] = useState(true);
+
+  const loadData = useCallback(async () => {
+    const user = await getCurrentUser();
+    if (!user?.clinic_id) { setPageLoading(false); return; }
+    const [docs, reviews] = await Promise.all([
+      fetchDoctors(user.clinic_id),
+      fetchReviews(user.clinic_id),
+    ]);
+    setDoctors(docs);
+    setPastFeedback(reviews.filter(r => r.patientId === user.id));
+    setPageLoading(false);
+  }, []);
+
+  useEffect(() => { loadData(); }, [loadData]);
+
+  if (pageLoading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <p className="text-sm text-muted-foreground">Loading feedback...</p>
+      </div>
+    );
+  }
   const [selectedDoctor, setSelectedDoctor] = useState("");
   const [rating, setRating] = useState(0);
   const [hoverRating, setHoverRating] = useState(0);

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Plus, Edit, Trash2, Clock, CreditCard } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -17,11 +17,23 @@ import {
   DialogFooter,
   DialogDescription,
 } from "@/components/ui/dialog";
-import { services as initialServices } from "@/lib/demo-data";
-import type { Service } from "@/lib/demo-data";
+import { getCurrentUser, fetchServices, type ServiceView } from "@/lib/data/client";
+
+type Service = ServiceView;
 
 export default function ManageServicesPage() {
-  const [servicesList, setServicesList] = useState<Service[]>(initialServices);
+  const [servicesList, setServicesList] = useState<Service[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const load = useCallback(async () => {
+    const user = await getCurrentUser();
+    if (!user?.clinic_id) { setLoading(false); return; }
+    const svcs = await fetchServices(user.clinic_id);
+    setServicesList(svcs);
+    setLoading(false);
+  }, []);
+
+  useEffect(() => { load(); }, [load]);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingService, setEditingService] = useState<Service | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
