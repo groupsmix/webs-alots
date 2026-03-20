@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { clinicConfig } from "@/config/clinic.config";
+import { fetchChatbotContext, buildSystemPrompt, getBasicResponse } from "@/lib/chatbot-data";
+import { TENANT_HEADERS } from "@/lib/tenant";
 
 export const runtime = "edge";
 
@@ -8,76 +9,31 @@ interface ChatRequestBody {
   clinicId?: string;
 }
 
-const SYSTEM_PROMPT = `You are a helpful AI assistant for ${clinicConfig.name}, a ${clinicConfig.type} clinic.
-You help patients and staff with questions about appointments, services, clinic information, and general health guidance.
-
-Clinic details:
-- Name: ${clinicConfig.name}
-- Type: ${clinicConfig.type}
-- Currency: ${clinicConfig.currency}
-- Locale: ${clinicConfig.locale}
-
-Guidelines:
-- Be concise, friendly, and professional.
-- For appointment booking, direct users to the booking page.
-- Never provide medical diagnoses or specific medical advice.
-- If you don't know something specific about the clinic, say so and suggest contacting the clinic directly.
-- Respond in the same language the user writes in (French, Arabic, or English).`;
-
-/**
- * Built-in fallback responses when no AI API key is configured.
- * Provides basic responses without requiring an external API.
- */
-function getFallbackResponse(userMessage: string): string {
-  const msg = userMessage.toLowerCase();
-
-  if (msg.includes("rendez-vous") || msg.includes("appointment") || msg.includes("book") || msg.includes("réserv")) {
-    return "Pour prendre un rendez-vous, veuillez utiliser notre page de réservation en ligne ou appeler le cabinet directement. Puis-je vous aider avec autre chose ?";
-  }
-  if (msg.includes("horaire") || msg.includes("hours") || msg.includes("ouvert") || msg.includes("open")) {
-    const days = ["Dimanche", "Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi"];
-    const hours = Object.entries(clinicConfig.workingHours)
-      .filter(([, h]) => h.enabled)
-      .map(([d, h]) => `${days[Number(d)]}: ${h.open} - ${h.close}`)
-      .join("\n");
-    return `Voici nos horaires d'ouverture :\n${hours}`;
-  }
-  if (msg.includes("contact") || msg.includes("téléphone") || msg.includes("phone") || msg.includes("email")) {
-    const parts: string[] = [];
-    if (clinicConfig.contact.phone) parts.push(`Téléphone : ${clinicConfig.contact.phone}`);
-    if (clinicConfig.contact.email) parts.push(`Email : ${clinicConfig.contact.email}`);
-    if (clinicConfig.contact.address) parts.push(`Adresse : ${clinicConfig.contact.address}`);
-    if (clinicConfig.contact.whatsapp) parts.push(`WhatsApp : ${clinicConfig.contact.whatsapp}`);
-    return parts.length > 0
-      ? `Voici nos coordonnées :\n${parts.join("\n")}`
-      : "Les coordonnées du cabinet ne sont pas encore configurées. Veuillez réessayer plus tard.";
-  }
-  if (msg.includes("bonjour") || msg.includes("hello") || msg.includes("hi") || msg.includes("salut")) {
-    return `Bonjour ! Bienvenue chez ${clinicConfig.name}. Comment puis-je vous aider aujourd'hui ?`;
-  }
-  if (msg.includes("merci") || msg.includes("thank")) {
-    return "Je vous en prie ! N'hésitez pas si vous avez d'autres questions.";
-  }
-
-  return `Merci pour votre message. Je suis l'assistant virtuel de ${clinicConfig.name}. Je peux vous aider avec :\n- Les rendez-vous et réservations\n- Les horaires d'ouverture\n- Les coordonnées du cabinet\n\nComment puis-je vous aider ?`;
-}
-
 /**
  * POST /api/chat
  *
- * Handles chat messages. Uses OpenAI-compatible API if configured,
- * otherwise falls back to rule-based responses.
+ * Tenant-aware chatbot endpoint. Supports 3 intelligence levels:
+ *   - basic:    Keyword matching against DB data + custom FAQs (no AI)
+ *   - smart:    Cloudflare Workers AI (free tier)
+ *   - advanced: OpenAI-compatible API (paid)
+ *
+ * The clinic is resolved from:
+ *   1. x-tenant-clinic-id header (set by middleware from subdomain)
+ *   2. clinicId in request body (fallback)
  */
 export async function POST(request: NextRequest) {
   try {
-    if (!clinicConfig.features.chatbot) {
+    // Resolve clinic ID from tenant headers or request body
+    const tenantClinicId = request.headers.get(TENANT_HEADERS.clinicId);
+    const body = (await request.json()) as ChatRequestBody;
+    const clinicId = tenantClinicId || body.clinicId;
+
+    if (!clinicId) {
       return NextResponse.json(
-        { error: "Chatbot feature is not enabled" },
-        { status: 403 },
+        { error: "No clinic context. Please access via a clinic subdomain." },
+        { status: 400 },
       );
     }
-
-    const body = (await request.json()) as ChatRequestBody;
 
     if (!body.messages || !Array.isArray(body.messages) || body.messages.length === 0) {
       return NextResponse.json(
@@ -94,24 +50,92 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Fetch clinic context from Supabase
+    const ctx = await fetchChatbotContext(clinicId);
+
+    // Check if chatbot is enabled for this clinic
+    if (ctx.chatbotConfig && !ctx.chatbotConfig.enabled) {
+      return NextResponse.json(
+        { error: "Chatbot is not enabled for this clinic" },
+        { status: 403 },
+      );
+    }
+
+    // Determine intelligence level
+    const intelligence = ctx.chatbotConfig?.intelligence ?? "basic";
+
+    // --- BASIC: keyword matching, no AI ---
+    if (intelligence === "basic") {
+      const reply = getBasicResponse(lastMessage.content, ctx);
+      return NextResponse.json({
+        message: { role: "assistant" as const, content: reply },
+      });
+    }
+
+    // --- SMART: Cloudflare Workers AI (free) ---
+    if (intelligence === "smart") {
+      const cfAccountId = process.env.CLOUDFLARE_ACCOUNT_ID;
+      const cfApiToken = process.env.CLOUDFLARE_AI_API_TOKEN;
+
+      if (!cfAccountId || !cfApiToken) {
+        const reply = getBasicResponse(lastMessage.content, ctx);
+        return NextResponse.json({
+          message: { role: "assistant" as const, content: reply },
+        });
+      }
+
+      const systemPrompt = buildSystemPrompt(ctx);
+      const cfMessages = [
+        { role: "system" as const, content: systemPrompt },
+        ...body.messages,
+      ];
+
+      const cfResponse = await fetch(
+        `https://api.cloudflare.com/client/v4/accounts/${cfAccountId}/ai/run/@cf/meta/llama-3.1-8b-instruct`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${cfApiToken}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            messages: cfMessages,
+            max_tokens: 500,
+          }),
+        },
+      );
+
+      if (cfResponse.ok) {
+        const cfData = (await cfResponse.json()) as { result?: { response?: string } };
+        const content = cfData.result?.response;
+        if (content) {
+          return NextResponse.json({
+            message: { role: "assistant" as const, content },
+          });
+        }
+      }
+
+      const reply = getBasicResponse(lastMessage.content, ctx);
+      return NextResponse.json({
+        message: { role: "assistant" as const, content: reply },
+      });
+    }
+
+    // --- ADVANCED: OpenAI-compatible API (paid) ---
     const apiKey = process.env.OPENAI_API_KEY;
     const baseUrl = process.env.OPENAI_BASE_URL || "https://api.openai.com/v1";
     const model = process.env.OPENAI_MODEL || "gpt-4o-mini";
 
-    // If no API key is configured, use fallback responses
     if (!apiKey) {
-      const fallbackReply = getFallbackResponse(lastMessage.content);
+      const reply = getBasicResponse(lastMessage.content, ctx);
       return NextResponse.json({
-        message: {
-          role: "assistant" as const,
-          content: fallbackReply,
-        },
+        message: { role: "assistant" as const, content: reply },
       });
     }
 
-    // Call OpenAI-compatible API with streaming
+    const systemPrompt = buildSystemPrompt(ctx);
     const apiMessages = [
-      { role: "system" as const, content: SYSTEM_PROMPT },
+      { role: "system" as const, content: systemPrompt },
       ...body.messages,
     ];
 
@@ -132,13 +156,9 @@ export async function POST(request: NextRequest) {
 
     if (!apiResponse.ok) {
       console.error("AI API error:", apiResponse.status, apiResponse.statusText);
-      // Fall back to rule-based if API fails
-      const fallbackReply = getFallbackResponse(lastMessage.content);
+      const reply = getBasicResponse(lastMessage.content, ctx);
       return NextResponse.json({
-        message: {
-          role: "assistant" as const,
-          content: fallbackReply,
-        },
+        message: { role: "assistant" as const, content: reply },
       });
     }
 
@@ -173,7 +193,7 @@ export async function POST(request: NextRequest) {
                   const content = json.choices?.[0]?.delta?.content;
                   if (content) {
                     controller.enqueue(
-                      encoder.encode(`data: ${JSON.stringify({ content })}\n\n`)
+                      encoder.encode(`data: ${JSON.stringify({ content })}\n\n`),
                     );
                   }
                 } catch {

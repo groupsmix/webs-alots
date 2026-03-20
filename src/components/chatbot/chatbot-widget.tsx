@@ -6,14 +6,30 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useChatbot } from "./chatbot-provider";
-import { clinicConfig } from "@/config/clinic.config";
+import { useTenant } from "@/components/tenant-provider";
+
+/** Quick-action suggestions based on clinic type */
+function getQuickActions(clinicType?: string): string[] {
+  switch (clinicType) {
+    case "dentist":
+      return ["Prendre un rendez-vous", "Tarifs des soins", "Horaires d'ouverture"];
+    case "pharmacy":
+      return ["Produits disponibles", "Horaires d'ouverture", "Nous contacter"];
+    default:
+      return ["Prendre un rendez-vous", "Horaires d'ouverture", "Nous contacter"];
+  }
+}
 
 export function ChatbotWidget() {
   const { messages, isOpen, isLoading, setIsOpen, sendMessage, clearMessages } =
     useChatbot();
+  const tenant = useTenant();
   const [input, setInput] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  const clinicName = tenant?.clinicName || "notre cabinet";
+  const clinicType = tenant?.clinicType;
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
@@ -37,13 +53,11 @@ export function ChatbotWidget() {
     await sendMessage(msg);
   }
 
-  if (!clinicConfig.features.chatbot) {
-    return null;
-  }
-
   const unreadCount = messages.filter(
     (m) => m.role === "assistant" && !isOpen
   ).length;
+
+  const quickActions = getQuickActions(clinicType);
 
   return (
     <>
@@ -57,7 +71,7 @@ export function ChatbotWidget() {
             <div className="flex items-center gap-2 text-primary-foreground">
               <Bot className="h-5 w-5" />
               <div>
-                <p className="text-sm font-semibold">Assistant {clinicConfig.name}</p>
+                <p className="text-sm font-semibold">Assistant {clinicName}</p>
                 <p className="text-[10px] opacity-80">
                   {isLoading ? "En train d'écrire..." : "En ligne"}
                 </p>
@@ -92,13 +106,13 @@ export function ChatbotWidget() {
                 <div>
                   <p className="text-sm font-medium">Bonjour !</p>
                   <p className="text-xs mt-1">
-                    Je suis l&apos;assistant virtuel de {clinicConfig.name}.
+                    Je suis l&apos;assistant virtuel de {clinicName}.
                     <br />
                     Comment puis-je vous aider ?
                   </p>
                 </div>
                 <div className="flex flex-wrap justify-center gap-1.5 mt-2">
-                  {["Prendre un rendez-vous", "Horaires d'ouverture", "Nous contacter"].map((suggestion) => (
+                  {quickActions.map((suggestion) => (
                     <button
                       key={suggestion}
                       className="rounded-full border px-3 py-1 text-[11px] hover:bg-muted transition-colors"
