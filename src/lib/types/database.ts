@@ -23,6 +23,47 @@ export type ClinicTypeCategory =
   | "pharmacy_retail"
   | "clinics_centers";
 
+export type LabTestOrderStatus =
+  | "pending"
+  | "sample_collected"
+  | "in_progress"
+  | "completed"
+  | "validated"
+  | "cancelled";
+
+export type LabTestPriority = "normal" | "urgent" | "stat";
+
+export type RadiologyModality =
+  | "xray"
+  | "ct"
+  | "mri"
+  | "ultrasound"
+  | "mammography"
+  | "pet"
+  | "fluoroscopy"
+  | "other";
+
+export type RadiologyOrderStatus =
+  | "pending"
+  | "scheduled"
+  | "in_progress"
+  | "images_ready"
+  | "reported"
+  | "validated"
+  | "cancelled";
+
+export type ResultFlag = "normal" | "high" | "low" | "critical_high" | "critical_low";
+
+export type EquipmentCondition = "new" | "good" | "fair" | "needs_repair" | "decommissioned";
+
+export type RentalStatus = "reserved" | "active" | "returned" | "overdue" | "cancelled";
+
+export type RentalPaymentStatus = "pending" | "partial" | "paid" | "refunded";
+
+export type MaintenanceType = "routine" | "repair" | "calibration" | "inspection" | "cleaning";
+
+export type MaintenanceStatus = "scheduled" | "in_progress" | "completed" | "cancelled";
+
 export type ClinicTier = "vitrine" | "cabinet" | "pro" | "premium" | "saas";
 
 export type AppointmentStatus =
@@ -804,6 +845,251 @@ export interface CustomFieldOverrideRow {
   created_at: string;
 }
 
+// ---- Diagnostic Center: Analysis Lab ----
+
+export interface LabTestCatalog {
+  id: string;
+  clinic_id: string;
+  name: string;
+  name_ar: string | null;
+  code: string | null;
+  category: string;
+  sample_type: string;
+  description: string | null;
+  price: number | null;
+  currency: string;
+  turnaround_hours: number;
+  reference_ranges: Record<string, unknown>[];
+  is_active: boolean;
+  sort_order: number;
+  created_at: string;
+}
+
+export interface LabTestOrder {
+  id: string;
+  clinic_id: string;
+  patient_id: string;
+  ordering_doctor_id: string | null;
+  assigned_technician_id: string | null;
+  order_number: string;
+  status: LabTestOrderStatus;
+  priority: LabTestPriority;
+  clinical_notes: string | null;
+  fasting_required: boolean;
+  sample_collected_at: string | null;
+  completed_at: string | null;
+  validated_at: string | null;
+  validated_by: string | null;
+  pdf_url: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface LabTestItem {
+  id: string;
+  order_id: string;
+  test_id: string;
+  test_name: string;
+  status: "pending" | "in_progress" | "completed";
+  created_at: string;
+}
+
+export interface LabTestResult {
+  id: string;
+  order_id: string;
+  test_item_id: string;
+  parameter_name: string;
+  value: string | null;
+  unit: string | null;
+  reference_min: number | null;
+  reference_max: number | null;
+  flag: ResultFlag | null;
+  notes: string | null;
+  entered_by: string | null;
+  entered_at: string;
+}
+
+// ---- Diagnostic Center: Radiology ----
+
+export interface RadiologyOrder {
+  id: string;
+  clinic_id: string;
+  patient_id: string;
+  ordering_doctor_id: string | null;
+  radiologist_id: string | null;
+  order_number: string;
+  modality: RadiologyModality;
+  body_part: string | null;
+  clinical_indication: string | null;
+  status: RadiologyOrderStatus;
+  priority: LabTestPriority;
+  scheduled_at: string | null;
+  performed_at: string | null;
+  reported_at: string | null;
+  report_text: string | null;
+  report_template_id: string | null;
+  findings: string | null;
+  impression: string | null;
+  pdf_url: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface RadiologyImage {
+  id: string;
+  order_id: string;
+  clinic_id: string;
+  file_url: string;
+  file_name: string | null;
+  file_size: number | null;
+  content_type: string | null;
+  modality: string | null;
+  is_dicom: boolean;
+  dicom_metadata: Record<string, unknown>;
+  thumbnail_url: string | null;
+  description: string | null;
+  uploaded_by: string | null;
+  uploaded_at: string;
+}
+
+export interface RadiologyReportTemplate {
+  id: string;
+  clinic_id: string;
+  name: string;
+  modality: string | null;
+  body_part: string | null;
+  template_text: string;
+  fields: Record<string, unknown>[];
+  is_default: boolean;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+// ---- Medical Equipment Store ----
+
+export interface EquipmentInventory {
+  id: string;
+  clinic_id: string;
+  name: string;
+  description: string | null;
+  category: string;
+  serial_number: string | null;
+  model: string | null;
+  manufacturer: string | null;
+  purchase_date: string | null;
+  purchase_price: number | null;
+  currency: string;
+  condition: EquipmentCondition;
+  is_available: boolean;
+  is_rentable: boolean;
+  rental_price_daily: number | null;
+  rental_price_weekly: number | null;
+  rental_price_monthly: number | null;
+  image_url: string | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface EquipmentRental {
+  id: string;
+  clinic_id: string;
+  equipment_id: string;
+  client_name: string;
+  client_phone: string | null;
+  client_id_number: string | null;
+  rental_start: string;
+  rental_end: string | null;
+  actual_return: string | null;
+  status: RentalStatus;
+  condition_out: string;
+  condition_in: string | null;
+  deposit_amount: number | null;
+  rental_amount: number | null;
+  currency: string;
+  payment_status: RentalPaymentStatus;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface EquipmentMaintenance {
+  id: string;
+  clinic_id: string;
+  equipment_id: string;
+  type: MaintenanceType;
+  description: string | null;
+  performed_by: string | null;
+  performed_at: string;
+  next_due: string | null;
+  cost: number | null;
+  currency: string;
+  status: MaintenanceStatus;
+  notes: string | null;
+  created_at: string;
+}
+
+// ---- Parapharmacy ----
+
+export interface ParapharmacyCategory {
+  id: string;
+  clinic_id: string;
+  name: string;
+  name_ar: string | null;
+  slug: string;
+  icon: string | null;
+  parent_id: string | null;
+  sort_order: number;
+  is_active: boolean;
+  created_at: string;
+}
+
+// ---- Clinic/Center Tables ----
+
+export interface Department {
+  id: string;
+  clinic_id: string;
+  name: string;
+  code: string | null;
+  head_doctor_id: string | null;
+  is_active: boolean;
+  created_at: string;
+}
+
+export type BedStatus = "available" | "occupied" | "maintenance" | "reserved";
+
+export interface Bed {
+  id: string;
+  clinic_id: string;
+  department_id: string;
+  bed_number: string;
+  ward: string | null;
+  status: BedStatus;
+  patient_id: string | null;
+  admitted_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export type AdmissionStatus = "admitted" | "discharged" | "transferred";
+
+export interface Admission {
+  id: string;
+  clinic_id: string;
+  patient_id: string;
+  doctor_id: string;
+  department_id: string;
+  bed_id: string | null;
+  admission_date: string;
+  discharge_date: string | null;
+  status: AdmissionStatus;
+  diagnosis: string | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 // ---- Supabase Database Schema (for use with supabase-js typed client) ----
 
 export interface Database {
@@ -858,6 +1144,22 @@ export interface Database {
       custom_field_definitions: { Row: CustomFieldDefinitionRow; Insert: Partial<CustomFieldDefinitionRow> & Pick<CustomFieldDefinitionRow, "clinic_type_key" | "entity_type" | "field_key" | "field_type" | "label_fr">; Update: Partial<CustomFieldDefinitionRow> };
       custom_field_values: { Row: CustomFieldValuesRow; Insert: Partial<CustomFieldValuesRow> & Pick<CustomFieldValuesRow, "clinic_id" | "entity_type" | "entity_id">; Update: Partial<CustomFieldValuesRow> };
       custom_field_overrides: { Row: CustomFieldOverrideRow; Insert: Partial<CustomFieldOverrideRow> & Pick<CustomFieldOverrideRow, "clinic_id" | "field_definition_id">; Update: Partial<CustomFieldOverrideRow> };
+      // Phase 4 & 5 tables
+      lab_test_catalog: { Row: LabTestCatalog; Insert: Partial<LabTestCatalog> & Pick<LabTestCatalog, "clinic_id" | "name">; Update: Partial<LabTestCatalog> };
+      lab_test_orders: { Row: LabTestOrder; Insert: Partial<LabTestOrder> & Pick<LabTestOrder, "clinic_id" | "patient_id" | "order_number">; Update: Partial<LabTestOrder> };
+      lab_test_items: { Row: LabTestItem; Insert: Partial<LabTestItem> & Pick<LabTestItem, "order_id" | "test_id" | "test_name">; Update: Partial<LabTestItem> };
+      lab_test_results: { Row: LabTestResult; Insert: Partial<LabTestResult> & Pick<LabTestResult, "order_id" | "test_item_id" | "parameter_name">; Update: Partial<LabTestResult> };
+      radiology_orders: { Row: RadiologyOrder; Insert: Partial<RadiologyOrder> & Pick<RadiologyOrder, "clinic_id" | "patient_id" | "order_number" | "modality">; Update: Partial<RadiologyOrder> };
+      radiology_images: { Row: RadiologyImage; Insert: Partial<RadiologyImage> & Pick<RadiologyImage, "order_id" | "clinic_id" | "file_url">; Update: Partial<RadiologyImage> };
+      radiology_report_templates: { Row: RadiologyReportTemplate; Insert: Partial<RadiologyReportTemplate> & Pick<RadiologyReportTemplate, "clinic_id" | "name" | "template_text">; Update: Partial<RadiologyReportTemplate> };
+      equipment_inventory: { Row: EquipmentInventory; Insert: Partial<EquipmentInventory> & Pick<EquipmentInventory, "clinic_id" | "name">; Update: Partial<EquipmentInventory> };
+      equipment_rentals: { Row: EquipmentRental; Insert: Partial<EquipmentRental> & Pick<EquipmentRental, "clinic_id" | "equipment_id" | "client_name" | "rental_start">; Update: Partial<EquipmentRental> };
+      equipment_maintenance: { Row: EquipmentMaintenance; Insert: Partial<EquipmentMaintenance> & Pick<EquipmentMaintenance, "clinic_id" | "equipment_id">; Update: Partial<EquipmentMaintenance> };
+      parapharmacy_categories: { Row: ParapharmacyCategory; Insert: Partial<ParapharmacyCategory> & Pick<ParapharmacyCategory, "clinic_id" | "name" | "slug">; Update: Partial<ParapharmacyCategory> };
+      // Clinic/Center tables
+      departments: { Row: Department; Insert: Partial<Department> & Pick<Department, "clinic_id" | "name">; Update: Partial<Department> };
+      beds: { Row: Bed; Insert: Partial<Bed> & Pick<Bed, "clinic_id" | "department_id" | "bed_number">; Update: Partial<Bed> };
+      admissions: { Row: Admission; Insert: Partial<Admission> & Pick<Admission, "clinic_id" | "patient_id" | "doctor_id" | "department_id">; Update: Partial<Admission> };
     };
   };
 }
