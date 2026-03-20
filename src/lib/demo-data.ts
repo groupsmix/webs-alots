@@ -278,6 +278,144 @@ export const appointmentDoctors: { appointmentId: string; doctorId: string; isPr
 
 export const paymentRecords: PaymentRecord[] = [];
 
+// ---------- Consultation Notes (per-visit, private) ----------
+
+export interface ConsultationNote {
+  id: string;
+  appointmentId: string;
+  patientId: string;
+  doctorId: string;
+  date: string;
+  chiefComplaint: string;
+  examination: string;
+  diagnosis: string;
+  plan: string;
+  privateNotes?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export const consultationNotes: ConsultationNote[] = [
+  {
+    id: "cn1", appointmentId: "a1", patientId: "p1", doctorId: "d1", date: "2026-03-19",
+    chiefComplaint: "Recurring headaches for 2 weeks, worsening in the evenings",
+    examination: "BP 130/85, HR 72. Neurological exam normal. No papilledema.",
+    diagnosis: "Tension-type headache",
+    plan: "Prescribed Paracetamol 1g PRN, stress management, follow-up in 2 weeks if no improvement.",
+    privateNotes: "Patient seems stressed, consider referring to psychologist if symptoms persist.",
+    createdAt: "2026-03-19T09:30:00Z", updatedAt: "2026-03-19T09:30:00Z",
+  },
+  {
+    id: "cn2", appointmentId: "a2", patientId: "p2", doctorId: "d1", date: "2026-03-19",
+    chiefComplaint: "Follow-up on blood pressure medication",
+    examination: "BP 125/80, improved from last visit. Weight stable.",
+    diagnosis: "Hypertension - controlled",
+    plan: "Continue Lisinopril 10mg daily. Repeat blood work in 1 month.",
+    createdAt: "2026-03-19T10:00:00Z", updatedAt: "2026-03-19T10:00:00Z",
+  },
+  {
+    id: "cn3", appointmentId: "a5", patientId: "p5", doctorId: "d3", date: "2026-03-19",
+    chiefComplaint: "Routine cardiology check-up",
+    examination: "ECG normal sinus rhythm. BP 140/90. Heart sounds normal, no murmurs.",
+    diagnosis: "Borderline hypertension",
+    plan: "Lifestyle modifications, reduce salt intake, exercise 30min daily. Recheck in 3 months.",
+    privateNotes: "Family history of cardiac events. Monitor closely.",
+    createdAt: "2026-03-19T11:15:00Z", updatedAt: "2026-03-19T11:15:00Z",
+  },
+];
+
+// ---------- Internal Chat Messages ----------
+
+export interface ChatMessage {
+  id: string;
+  senderId: string;
+  senderName: string;
+  senderRole: "doctor" | "receptionist";
+  recipientId: string;
+  message: string;
+  timestamp: string;
+  read: boolean;
+}
+
+export const chatMessages: ChatMessage[] = [
+  { id: "msg1", senderId: "d1", senderName: "Dr. Ahmed Benali", senderRole: "doctor", recipientId: "r1", message: "Please send in the next patient.", timestamp: "2026-03-20T09:05:00Z", read: true },
+  { id: "msg2", senderId: "r1", senderName: "Receptionist Sara", senderRole: "receptionist", recipientId: "d1", message: "Karim Mansouri is on his way. He arrived 5 minutes ago.", timestamp: "2026-03-20T09:06:00Z", read: true },
+  { id: "msg3", senderId: "d1", senderName: "Dr. Ahmed Benali", senderRole: "doctor", recipientId: "r1", message: "Thank you. Also, can you reschedule Omar Tazi to 14:30?", timestamp: "2026-03-20T09:10:00Z", read: true },
+  { id: "msg4", senderId: "r1", senderName: "Receptionist Sara", senderRole: "receptionist", recipientId: "d1", message: "Done! Omar has been moved to 14:30. I notified him via WhatsApp.", timestamp: "2026-03-20T09:12:00Z", read: true },
+  { id: "msg5", senderId: "r1", senderName: "Receptionist Sara", senderRole: "receptionist", recipientId: "d1", message: "Dr., Amina Chaoui just called to confirm her 11:30 appointment.", timestamp: "2026-03-20T09:45:00Z", read: false },
+  { id: "msg6", senderId: "r1", senderName: "Receptionist Sara", senderRole: "receptionist", recipientId: "d1", message: "A walk-in patient is asking if you have any availability today. Should I add them?", timestamp: "2026-03-20T10:15:00Z", read: false },
+];
+
+// ---------- Waiting Room Queue ----------
+
+export interface WaitingRoomEntry {
+  id: string;
+  patientId: string;
+  patientName: string;
+  appointmentId: string;
+  serviceName: string;
+  scheduledTime: string;
+  arrivedAt: string;
+  status: "waiting" | "in-consultation" | "done";
+  priority: "normal" | "urgent" | "follow-up";
+}
+
+export const waitingRoom: WaitingRoomEntry[] = [
+  { id: "wr1", patientId: "p1", patientName: "Karim Mansouri", appointmentId: "a7", serviceName: "General Consultation", scheduledTime: "09:00", arrivedAt: "2026-03-20T08:50:00Z", status: "in-consultation", priority: "normal" },
+  { id: "wr2", patientId: "p3", patientName: "Omar Tazi", appointmentId: "a8", serviceName: "Follow-up Visit", scheduledTime: "14:00", arrivedAt: "2026-03-20T13:45:00Z", status: "waiting", priority: "follow-up" },
+  { id: "wr3", patientId: "p4", patientName: "Salma Berrada", appointmentId: "a4", serviceName: "Pediatric Consultation", scheduledTime: "10:30", arrivedAt: "2026-03-20T10:15:00Z", status: "waiting", priority: "normal" },
+  { id: "wr4", patientId: "p6", patientName: "Amina Chaoui", appointmentId: "a6", serviceName: "Vaccination", scheduledTime: "11:30", arrivedAt: "2026-03-20T11:20:00Z", status: "waiting", priority: "urgent" },
+];
+
+// ---------- Doctor Stats Helpers ----------
+
+export function getDoctorWeekStats(doctorId: string) {
+  const now = new Date();
+  const startOfWeek = new Date(now);
+  startOfWeek.setDate(now.getDate() - now.getDay());
+  const startStr = startOfWeek.toISOString().split("T")[0];
+
+  const weekAppts = appointments.filter(
+    (a) => a.doctorId === doctorId && a.date >= startStr && a.date <= now.toISOString().split("T")[0]
+  );
+  const uniquePatients = new Set(weekAppts.map((a) => a.patientId)).size;
+  const completed = weekAppts.filter((a) => a.status === "completed").length;
+  const noShows = weekAppts.filter((a) => a.status === "no-show").length;
+
+  return { totalAppointments: weekAppts.length, uniquePatients, completed, noShows };
+}
+
+export function getDoctorMonthStats(doctorId: string) {
+  const now = new Date();
+  const monthStr = now.toISOString().slice(0, 7); // YYYY-MM
+
+  const monthAppts = appointments.filter(
+    (a) => a.doctorId === doctorId && a.date.startsWith(monthStr)
+  );
+  const uniquePatients = new Set(monthAppts.map((a) => a.patientId)).size;
+  const completed = monthAppts.filter((a) => a.status === "completed").length;
+  const noShows = monthAppts.filter((a) => a.status === "no-show").length;
+  const revenue = monthAppts.filter((a) => a.status === "completed").length * 200; // simplified
+
+  return { totalAppointments: monthAppts.length, uniquePatients, completed, noShows, revenue };
+}
+
+export function getNextAvailableSlots(doctorId: string, daysAhead: number = 7): { date: string; slots: string[] }[] {
+  const results: { date: string; slots: string[] }[] = [];
+  const today = new Date();
+
+  for (let i = 0; i < daysAhead; i++) {
+    const d = new Date(today);
+    d.setDate(today.getDate() + i);
+    const dateStr = d.toISOString().split("T")[0];
+    const slots = getAvailableSlots(dateStr, doctorId);
+    if (slots.length > 0) {
+      results.push({ date: dateStr, slots });
+    }
+  }
+  return results;
+}
+
 // ---------- Time slot helpers ----------
 
 import { clinicConfig } from "@/config/clinic.config";

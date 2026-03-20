@@ -1,22 +1,23 @@
-import { Calendar, Users, Clock, CheckCircle, XCircle, Activity } from "lucide-react";
+"use client";
+
+import { useState } from "react";
+import {
+  Calendar, Users, Clock, CheckCircle, XCircle, Activity,
+  TrendingUp, BarChart3, Search, ArrowRight,
+} from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { appointments, getTodayAppointments } from "@/lib/demo-data";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import {
+  appointments, patients,
+  getDoctorWeekStats, getDoctorMonthStats,
+  waitingRoom,
+} from "@/lib/demo-data";
 
 const doctorId = "d1";
-const todayAppts = getTodayAppointments(doctorId);
-const totalPatients = new Set(appointments.filter((a) => a.doctorId === doctorId).map((a) => a.patientId)).size;
-const completedToday = todayAppts.filter((a) => a.status === "completed").length;
-const waiting = todayAppts.filter((a) => a.status === "confirmed").length;
-
-const stats = [
-  { icon: Calendar, label: "Today's Appointments", value: todayAppts.length.toString(), color: "text-blue-600" },
-  { icon: Users, label: "Total Patients", value: totalPatients.toString(), color: "text-green-600" },
-  { icon: CheckCircle, label: "Completed Today", value: completedToday.toString(), color: "text-emerald-600" },
-  { icon: Clock, label: "In Waiting Room", value: waiting.toString(), color: "text-orange-600" },
-];
 
 const statusVariant: Record<string, "default" | "success" | "warning" | "destructive" | "secondary" | "outline"> = {
   scheduled: "outline",
@@ -28,10 +29,65 @@ const statusVariant: Record<string, "default" | "success" | "warning" | "destruc
 };
 
 export default function DoctorDashboardPage() {
+  const [appointmentList, setAppointmentList] = useState(() => [...appointments]);
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const todayStr = new Date().toISOString().split("T")[0];
+  const todayAppts = appointmentList.filter(
+    (a) => a.date === todayStr && a.doctorId === doctorId
+  );
+
+  const totalPatients = new Set(
+    appointmentList.filter((a) => a.doctorId === doctorId).map((a) => a.patientId)
+  ).size;
+  const completedToday = todayAppts.filter((a) => a.status === "completed").length;
+  const waitingCount = todayAppts.filter(
+    (a) => a.status === "confirmed" || a.status === "scheduled"
+  ).length;
+
+  const weekStats = getDoctorWeekStats(doctorId);
+  const monthStats = getDoctorMonthStats(doctorId);
+
+  const stats = [
+    { icon: Calendar, label: "Today's Appointments", value: todayAppts.length.toString(), color: "text-blue-600" },
+    { icon: Users, label: "Total Patients", value: totalPatients.toString(), color: "text-green-600" },
+    { icon: CheckCircle, label: "Completed Today", value: completedToday.toString(), color: "text-emerald-600" },
+    { icon: Clock, label: "In Waiting Room", value: waitingCount.toString(), color: "text-orange-600" },
+  ];
+
+  const handleMarkDone = (appointmentId: string) => {
+    setAppointmentList((prev) =>
+      prev.map((a) => (a.id === appointmentId ? { ...a, status: "completed" as const } : a))
+    );
+  };
+
+  const handleNoShow = (appointmentId: string) => {
+    setAppointmentList((prev) =>
+      prev.map((a) => (a.id === appointmentId ? { ...a, status: "no-show" as const } : a))
+    );
+  };
+
+  const handleStartConsultation = (appointmentId: string) => {
+    setAppointmentList((prev) =>
+      prev.map((a) => (a.id === appointmentId ? { ...a, status: "in-progress" as const } : a))
+    );
+  };
+
+  const filteredPatients = searchQuery.trim()
+    ? patients.filter(
+        (p) =>
+          p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          p.phone.includes(searchQuery)
+      )
+    : [];
+
+  const waitingRoomEntries = waitingRoom.filter((wr) => wr.status === "waiting");
+
   return (
     <div>
       <h1 className="text-2xl font-bold mb-6">Doctor Dashboard</h1>
 
+      {/* Stats Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-8">
         {stats.map((stat) => (
           <Card key={stat.label}>
@@ -75,15 +131,41 @@ export default function DoctorDashboardPage() {
                     </div>
                     <div className="text-right">
                       <p className="text-sm font-medium">{apt.time}</p>
-                      <Badge variant={statusVariant[apt.status]} className="text-xs">{apt.status}</Badge>
+                      <Badge variant={statusVariant[apt.status]} className="text-xs">
+                        {apt.status}
+                      </Badge>
                     </div>
                     <div className="flex gap-1">
-                      <Button variant="ghost" size="sm" title="Mark as done">
-                        <CheckCircle className="h-4 w-4 text-green-600" />
-                      </Button>
-                      <Button variant="ghost" size="sm" title="No show">
-                        <XCircle className="h-4 w-4 text-red-500" />
-                      </Button>
+                      {(apt.status === "scheduled" || apt.status === "confirmed") && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          title="Start consultation"
+                          onClick={() => handleStartConsultation(apt.id)}
+                        >
+                          <ArrowRight className="h-4 w-4 text-blue-600" />
+                        </Button>
+                      )}
+                      {apt.status === "in-progress" && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          title="Mark as done"
+                          onClick={() => handleMarkDone(apt.id)}
+                        >
+                          <CheckCircle className="h-4 w-4 text-green-600" />
+                        </Button>
+                      )}
+                      {apt.status !== "completed" && apt.status !== "no-show" && apt.status !== "cancelled" && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          title="No show"
+                          onClick={() => handleNoShow(apt.id)}
+                        >
+                          <XCircle className="h-4 w-4 text-red-500" />
+                        </Button>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -92,37 +174,174 @@ export default function DoctorDashboardPage() {
           </CardContent>
         </Card>
 
-        {/* Waiting Room */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base flex items-center gap-2">
-              <Clock className="h-4 w-4" />
-              Waiting Room
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {waiting === 0 ? (
-              <p className="text-sm text-muted-foreground">No patients waiting.</p>
-            ) : (
-              <div className="space-y-3">
-                {todayAppts.filter((a) => a.status === "confirmed").map((apt) => (
-                  <div key={apt.id} className="flex items-center gap-3 rounded-lg border p-3">
-                    <Avatar>
-                      <AvatarFallback className="text-xs bg-orange-100 text-orange-700">
-                        {apt.patientName.split(" ").map((n) => n[0]).join("")}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1">
-                      <p className="text-sm font-medium">{apt.patientName}</p>
-                      <p className="text-xs text-muted-foreground">{apt.time}</p>
+        {/* Right Column */}
+        <div className="space-y-6">
+          {/* Waiting Room */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base flex items-center gap-2">
+                <Clock className="h-4 w-4" />
+                Waiting Room
+                {waitingRoomEntries.length > 0 && (
+                  <Badge variant="destructive" className="ml-auto text-xs">
+                    {waitingRoomEntries.length}
+                  </Badge>
+                )}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {waitingRoomEntries.length === 0 ? (
+                <p className="text-sm text-muted-foreground">No patients waiting.</p>
+              ) : (
+                <div className="space-y-3">
+                  {waitingRoomEntries.map((wr) => (
+                    <div key={wr.id} className="flex items-center gap-3 rounded-lg border p-3">
+                      <Avatar>
+                        <AvatarFallback className="text-xs bg-orange-100 text-orange-700">
+                          {wr.patientName.split(" ").map((n) => n[0]).join("")}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1">
+                        <p className="text-sm font-medium">{wr.patientName}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {wr.scheduledTime} &middot; {wr.serviceName}
+                        </p>
+                      </div>
+                      {wr.priority === "urgent" && (
+                        <Badge variant="destructive" className="text-[10px]">Urgent</Badge>
+                      )}
                     </div>
-                    <Button size="sm" variant="outline">Start</Button>
-                  </div>
-                ))}
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Quick Patient Search */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base flex items-center gap-2">
+                <Search className="h-4 w-4" />
+                Quick Patient Search
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="relative mb-3">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Name or phone..."
+                  className="pl-10"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
               </div>
-            )}
-          </CardContent>
-        </Card>
+              {searchQuery.trim() && (
+                <div className="space-y-2 max-h-48 overflow-auto">
+                  {filteredPatients.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">No patients found.</p>
+                  ) : (
+                    filteredPatients.slice(0, 5).map((p) => (
+                      <div key={p.id} className="flex items-center gap-2 rounded border p-2 text-sm">
+                        <Avatar className="h-7 w-7">
+                          <AvatarFallback className="text-[10px]">
+                            {p.name.split(" ").map((n) => n[0]).join("")}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium truncate">{p.name}</p>
+                          <p className="text-xs text-muted-foreground">{p.phone}</p>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+
+      {/* Weekly/Monthly Stats */}
+      <div className="mt-8">
+        <Tabs defaultValue="week">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold flex items-center gap-2">
+              <BarChart3 className="h-5 w-5" />
+              Statistics
+            </h2>
+            <TabsList>
+              <TabsTrigger value="week">This Week</TabsTrigger>
+              <TabsTrigger value="month">This Month</TabsTrigger>
+            </TabsList>
+          </div>
+
+          <TabsContent value="week">
+            <div className="grid gap-4 md:grid-cols-4">
+              <Card>
+                <CardContent className="p-4">
+                  <p className="text-xs text-muted-foreground">Appointments</p>
+                  <p className="text-2xl font-bold">{weekStats.totalAppointments}</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="p-4">
+                  <p className="text-xs text-muted-foreground">Unique Patients</p>
+                  <p className="text-2xl font-bold">{weekStats.uniquePatients}</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="p-4">
+                  <p className="text-xs text-muted-foreground">Completed</p>
+                  <p className="text-2xl font-bold text-green-600">{weekStats.completed}</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="p-4">
+                  <p className="text-xs text-muted-foreground">No Shows</p>
+                  <p className="text-2xl font-bold text-red-500">{weekStats.noShows}</p>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="month">
+            <div className="grid gap-4 md:grid-cols-5">
+              <Card>
+                <CardContent className="p-4">
+                  <p className="text-xs text-muted-foreground">Appointments</p>
+                  <p className="text-2xl font-bold">{monthStats.totalAppointments}</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="p-4">
+                  <p className="text-xs text-muted-foreground">Unique Patients</p>
+                  <p className="text-2xl font-bold">{monthStats.uniquePatients}</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="p-4">
+                  <p className="text-xs text-muted-foreground">Completed</p>
+                  <p className="text-2xl font-bold text-green-600">{monthStats.completed}</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="p-4">
+                  <p className="text-xs text-muted-foreground">No Shows</p>
+                  <p className="text-2xl font-bold text-red-500">{monthStats.noShows}</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="p-4 flex items-center gap-2">
+                  <div>
+                    <p className="text-xs text-muted-foreground">Revenue</p>
+                    <p className="text-2xl font-bold">{monthStats.revenue} MAD</p>
+                  </div>
+                  <TrendingUp className="h-5 w-5 text-green-500" />
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );
