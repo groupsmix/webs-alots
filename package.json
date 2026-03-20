@@ -6,7 +6,10 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "postinstall": "node scripts/patch-opennext.js",
+    "build:cf": "opennextjs-cloudflare build && node scripts/post-build-patch.js",
+    "deploy": "npm run build:cf && wrangler deploy"
   },
   "dependencies": {
     "@base-ui/react": "^1.3.0",
