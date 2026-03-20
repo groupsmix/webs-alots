@@ -1,16 +1,38 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Palette, Upload, Save, Image as ImageIcon, Type } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Palette,
+  Upload,
+  Save,
+  Image as ImageIcon,
+  Type,
+  Building2,
+  Phone,
+  MapPin,
+  Clock,
+} from "lucide-react";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Textarea } from "@/components/ui/textarea";
 
 interface BrandingState {
+  name: string;
+  tagline: string;
+  phone: string;
+  address: string;
   logo_url: string | null;
   favicon_url: string | null;
+  cover_photo_url: string | null;
   primary_color: string;
   secondary_color: string;
   heading_font: string;
@@ -32,8 +54,13 @@ const FONT_OPTIONS = [
 ];
 
 const DEFAULT_BRANDING: BrandingState = {
+  name: "",
+  tagline: "",
+  phone: "",
+  address: "",
   logo_url: null,
   favicon_url: null,
+  cover_photo_url: null,
   primary_color: "#1E4DA1",
   secondary_color: "#0F6E56",
   heading_font: "Geist",
@@ -51,14 +78,20 @@ export default function BrandingPage() {
   const logoRef = useRef<HTMLInputElement>(null);
   const faviconRef = useRef<HTMLInputElement>(null);
   const heroRef = useRef<HTMLInputElement>(null);
+  const coverRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     fetch("/api/branding")
       .then((r) => r.json())
       .then((data) => {
         setBranding({
+          name: data.name ?? "",
+          tagline: data.tagline ?? "",
+          phone: data.phone ?? "",
+          address: data.address ?? "",
           logo_url: data.logo_url ?? null,
           favicon_url: data.favicon_url ?? null,
+          cover_photo_url: data.cover_photo_url ?? null,
           primary_color: data.primary_color ?? "#1E4DA1",
           secondary_color: data.secondary_color ?? "#0F6E56",
           heading_font: data.heading_font ?? "Geist",
@@ -70,13 +103,17 @@ export default function BrandingPage() {
       .finally(() => setLoading(false));
   }, []);
 
-  const handleSaveColors = async () => {
+  const handleSave = async () => {
     setSaving(true);
     try {
       await fetch("/api/branding", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          name: branding.name,
+          tagline: branding.tagline,
+          phone: branding.phone,
+          address: branding.address,
           primary_color: branding.primary_color,
           secondary_color: branding.secondary_color,
           heading_font: branding.heading_font,
@@ -90,7 +127,10 @@ export default function BrandingPage() {
     }
   };
 
-  const handleUpload = async (field: "logo" | "favicon" | "hero", file: File) => {
+  const handleUpload = async (
+    field: "logo" | "favicon" | "hero" | "cover",
+    file: File,
+  ) => {
     setUploading(field);
     try {
       const formData = new FormData();
@@ -109,37 +149,157 @@ export default function BrandingPage() {
       }
 
       const { url } = await res.json();
-      const urlField = field === "logo" ? "logo_url" : field === "favicon" ? "favicon_url" : "hero_image_url";
+      const urlField =
+        field === "logo"
+          ? "logo_url"
+          : field === "favicon"
+            ? "favicon_url"
+            : field === "cover"
+              ? "cover_photo_url"
+              : "hero_image_url";
       setBranding((prev) => ({ ...prev, [urlField]: url }));
     } finally {
       setUploading(null);
     }
   };
 
-  const onFileChange = (field: "logo" | "favicon" | "hero") => (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) handleUpload(field, file);
-  };
+  const onFileChange =
+    (field: "logo" | "favicon" | "hero" | "cover") =>
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (file) handleUpload(field, file);
+    };
 
   if (loading) {
     return (
       <div>
         <h1 className="text-2xl font-bold mb-6">Branding</h1>
-        <p className="text-muted-foreground">Loading branding settings…</p>
+        <p className="text-muted-foreground">Loading branding settings...</p>
       </div>
     );
   }
 
   return (
     <div>
-      <h1 className="text-2xl font-bold mb-6">Branding</h1>
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h1 className="text-2xl font-bold">Branding</h1>
+          <p className="text-sm text-muted-foreground">
+            Customize your clinic&apos;s look and feel. Changes apply instantly
+            to your public website.
+          </p>
+        </div>
+        <Button onClick={handleSave} disabled={saving}>
+          <Save className="h-4 w-4 mr-2" />
+          {saved ? "Saved!" : saving ? "Saving..." : "Save Changes"}
+        </Button>
+      </div>
 
-      <Tabs defaultValue="images">
+      <Tabs defaultValue="info">
         <TabsList className="mb-6 flex-wrap">
-          <TabsTrigger value="images">Images</TabsTrigger>
-          <TabsTrigger value="colors">Colors</TabsTrigger>
-          <TabsTrigger value="fonts">Fonts</TabsTrigger>
+          <TabsTrigger value="info">
+            <Building2 className="h-4 w-4 mr-2" />
+            Clinic Info
+          </TabsTrigger>
+          <TabsTrigger value="images">
+            <ImageIcon className="h-4 w-4 mr-2" />
+            Images
+          </TabsTrigger>
+          <TabsTrigger value="colors">
+            <Palette className="h-4 w-4 mr-2" />
+            Colors
+          </TabsTrigger>
+          <TabsTrigger value="fonts">
+            <Type className="h-4 w-4 mr-2" />
+            Fonts
+          </TabsTrigger>
         </TabsList>
+
+        {/* ── Clinic Info Tab ── */}
+        <TabsContent value="info">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base flex items-center gap-2">
+                <Building2 className="h-4 w-4" />
+                Clinic Information
+              </CardTitle>
+              <CardDescription>
+                Name, tagline, phone, and address displayed on your public site
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <Label>Clinic Name</Label>
+                  <Input
+                    value={branding.name}
+                    onChange={(e) =>
+                      setBranding((p) => ({ ...p, name: e.target.value }))
+                    }
+                    placeholder="My Clinic"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Tagline</Label>
+                  <Input
+                    value={branding.tagline}
+                    onChange={(e) =>
+                      setBranding((p) => ({ ...p, tagline: e.target.value }))
+                    }
+                    placeholder="Your Health, Our Priority"
+                  />
+                </div>
+              </div>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <Label className="flex items-center gap-1">
+                    <Phone className="h-3.5 w-3.5" />
+                    Phone
+                  </Label>
+                  <Input
+                    value={branding.phone}
+                    onChange={(e) =>
+                      setBranding((p) => ({ ...p, phone: e.target.value }))
+                    }
+                    placeholder="+212 6 12 34 56 78"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="flex items-center gap-1">
+                    <MapPin className="h-3.5 w-3.5" />
+                    Address
+                  </Label>
+                  <Textarea
+                    value={branding.address}
+                    onChange={(e) =>
+                      setBranding((p) => ({ ...p, address: e.target.value }))
+                    }
+                    placeholder="123 Bd Mohammed V, Casablanca"
+                    rows={2}
+                  />
+                </div>
+              </div>
+
+              {/* Working Hours Display */}
+              <div className="border-t pt-4 mt-2">
+                <div className="flex items-center gap-2 mb-2">
+                  <Clock className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-sm font-medium">Working Hours</span>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Working hours are managed from the{" "}
+                  <a
+                    href="/admin/working-hours"
+                    className="text-primary underline"
+                  >
+                    Working Hours
+                  </a>{" "}
+                  page and are automatically displayed on your public site.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
 
         {/* ── Images Tab ── */}
         <TabsContent value="images">
@@ -178,7 +338,7 @@ export default function BrandingPage() {
                     onClick={() => logoRef.current?.click()}
                   >
                     <Upload className="h-4 w-4 mr-2" />
-                    {uploading === "logo" ? "Uploading…" : "Upload Logo"}
+                    {uploading === "logo" ? "Uploading..." : "Upload Logo"}
                   </Button>
                 </div>
               </CardContent>
@@ -218,19 +378,22 @@ export default function BrandingPage() {
                     onClick={() => faviconRef.current?.click()}
                   >
                     <Upload className="h-4 w-4 mr-2" />
-                    {uploading === "favicon" ? "Uploading…" : "Upload Favicon"}
+                    {uploading === "favicon" ? "Uploading..." : "Upload Favicon"}
                   </Button>
                 </div>
               </CardContent>
             </Card>
 
             {/* Hero Image */}
-            <Card className="md:col-span-2">
+            <Card>
               <CardHeader>
                 <CardTitle className="text-base flex items-center gap-2">
                   <ImageIcon className="h-4 w-4" />
                   Hero Image
                 </CardTitle>
+                <CardDescription>
+                  Main image in the homepage hero section
+                </CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
@@ -258,7 +421,50 @@ export default function BrandingPage() {
                     onClick={() => heroRef.current?.click()}
                   >
                     <Upload className="h-4 w-4 mr-2" />
-                    {uploading === "hero" ? "Uploading…" : "Upload Hero Image"}
+                    {uploading === "hero" ? "Uploading..." : "Upload Hero Image"}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Cover Photo / Banner */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base flex items-center gap-2">
+                  <ImageIcon className="h-4 w-4" />
+                  Cover Photo / Banner
+                </CardTitle>
+                <CardDescription>
+                  Wide banner image used across pages
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {branding.cover_photo_url && (
+                    <div className="border rounded-lg p-4 flex items-center justify-center bg-muted/30">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={branding.cover_photo_url}
+                        alt="Cover photo"
+                        className="max-h-48 max-w-full object-contain"
+                      />
+                    </div>
+                  )}
+                  <input
+                    ref={coverRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={onFileChange("cover")}
+                  />
+                  <Button
+                    variant="outline"
+                    className="w-full"
+                    disabled={uploading === "cover"}
+                    onClick={() => coverRef.current?.click()}
+                  >
+                    <Upload className="h-4 w-4 mr-2" />
+                    {uploading === "cover" ? "Uploading..." : "Upload Cover Photo"}
                   </Button>
                 </div>
               </CardContent>
@@ -270,20 +476,10 @@ export default function BrandingPage() {
         <TabsContent value="colors">
           <Card>
             <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-base flex items-center gap-2">
-                  <Palette className="h-4 w-4" />
-                  Brand Colors
-                </CardTitle>
-                <Button
-                  size="sm"
-                  onClick={handleSaveColors}
-                  disabled={saving}
-                >
-                  <Save className="h-4 w-4 mr-1" />
-                  {saved ? "Saved!" : saving ? "Saving…" : "Save"}
-                </Button>
-              </div>
+              <CardTitle className="text-base flex items-center gap-2">
+                <Palette className="h-4 w-4" />
+                Brand Colors
+              </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="grid gap-6 sm:grid-cols-2">
@@ -372,20 +568,10 @@ export default function BrandingPage() {
         <TabsContent value="fonts">
           <Card>
             <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-base flex items-center gap-2">
-                  <Type className="h-4 w-4" />
-                  Typography
-                </CardTitle>
-                <Button
-                  size="sm"
-                  onClick={handleSaveColors}
-                  disabled={saving}
-                >
-                  <Save className="h-4 w-4 mr-1" />
-                  {saved ? "Saved!" : saving ? "Saving…" : "Save"}
-                </Button>
-              </div>
+              <CardTitle className="text-base flex items-center gap-2">
+                <Type className="h-4 w-4" />
+                Typography
+              </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="grid gap-6 sm:grid-cols-2">

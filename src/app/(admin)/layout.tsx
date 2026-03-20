@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, UserCog, Stethoscope, Settings, BarChart3, Star, Users, CalendarOff, Bell, Clock, UserCheck, Palette, Paintbrush, Menu, X, CreditCard } from "lucide-react";
+import { LayoutDashboard, UserCog, Stethoscope, Settings, BarChart3, Star, Users, CalendarOff, Bell, Clock, UserCheck, Palette, Paintbrush, Menu, X, CreditCard, LayoutTemplate, ToggleRight } from "lucide-react";
 import { SignOutButton } from "@/components/sign-out-button";
 
 const navItems = [
@@ -18,6 +18,8 @@ const navItems = [
   { href: "/admin/reports", label: "Reports", icon: BarChart3 },
   { href: "/admin/reviews", label: "Reviews", icon: Star },
   { href: "/admin/branding", label: "Branding", icon: Paintbrush },
+  { href: "/admin/templates", label: "Layout Templates", icon: LayoutTemplate },
+  { href: "/admin/sections", label: "Section Control", icon: ToggleRight },
   { href: "/admin/website-editor", label: "Website Editor", icon: Palette },
   { href: "/admin/billing", label: "Billing & Plan", icon: CreditCard },
   { href: "/admin/settings", label: "Settings", icon: Settings },
