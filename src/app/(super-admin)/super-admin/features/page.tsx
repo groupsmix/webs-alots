@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   ToggleLeft, Search, Shield, Zap, Globe, Settings,
   CheckCircle, XCircle,
@@ -13,17 +13,40 @@ import { Switch } from "@/components/ui/switch";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from "@/components/ui/dialog";
+import { Loader2 } from "lucide-react";
 import {
-  featureDefinitions as initialFeatures, clinicDetails,
+  fetchFeatureDefinitions,
+  fetchClinics,
   type FeatureDefinition,
-} from "@/lib/super-admin-data";
+} from "@/lib/super-admin-actions";
 
 type CategoryFilter = "all" | "core" | "communication" | "integration" | "advanced";
 
 const tiers = ["basic", "standard", "premium"];
 
 export default function FeatureTogglesPage() {
-  const [features, setFeatures] = useState<FeatureDefinition[]>(initialFeatures);
+  const [features, setFeatures] = useState<FeatureDefinition[]>([]);
+  const [totalClinicsCount, setTotalClinicsCount] = useState(0);
+  const [loading, setLoading] = useState(true);
+
+  const loadFeatures = useCallback(async () => {
+    try {
+      const [feats, clinics] = await Promise.all([
+        fetchFeatureDefinitions(),
+        fetchClinics(),
+      ]);
+      setFeatures(feats);
+      setTotalClinicsCount(clinics.length);
+    } catch (err) {
+      console.error("[sa-features] failed to load:", err);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadFeatures();
+  }, [loadFeatures]);
   const [search, setSearch] = useState("");
   const [catFilter, setCatFilter] = useState<CategoryFilter>("all");
   const [bulkOpen, setBulkOpen] = useState(false);
@@ -81,7 +104,7 @@ export default function FeatureTogglesPage() {
   }
 
   const enabledCount = features.filter((f) => f.globalEnabled).length;
-  const totalClinics = clinicDetails.length;
+  const totalClinics = totalClinicsCount;
 
   return (
     <div>

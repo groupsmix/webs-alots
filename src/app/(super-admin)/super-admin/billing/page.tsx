@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   DollarSign, TrendingUp, AlertTriangle, CheckCircle, Clock,
-  Send, Eye, Search, Filter, CreditCard, Receipt,
+  Send, Eye, Search, Filter, CreditCard, Receipt, Loader2,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -14,9 +14,9 @@ import {
 } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
 import {
-  billingRecords, getMRR, getOverdueCount, getPaidCount,
+  fetchBillingRecords,
   type BillingRecord,
-} from "@/lib/super-admin-data";
+} from "@/lib/super-admin-actions";
 
 type StatusFilter = "all" | "paid" | "pending" | "overdue" | "cancelled";
 
@@ -26,14 +26,32 @@ export default function BillingPage() {
   const [detailRecord, setDetailRecord] = useState<BillingRecord | null>(null);
   const [reminderOpen, setReminderOpen] = useState(false);
   const [reminderRecord, setReminderRecord] = useState<BillingRecord | null>(null);
-  const [records, setRecords] = useState(billingRecords);
+  const [records, setRecords] = useState<BillingRecord[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const mrr = getMRR();
+  const loadRecords = useCallback(async () => {
+    try {
+      const data = await fetchBillingRecords();
+      setRecords(data);
+    } catch (err) {
+      console.error("[sa-billing] failed to load records:", err);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadRecords();
+  }, [loadRecords]);
+
+  const paidRecords = records.filter((r) => r.status === "paid");
+  const overdueRecords = records.filter((r) => r.status === "overdue");
+  const mrr = records.filter((r) => r.status !== "cancelled").reduce((sum, r) => sum + r.amountDue, 0);
   const arr = mrr * 12;
-  const overdueCount = getOverdueCount();
-  const paidCount = getPaidCount();
-  const totalRevenue = records.filter((r) => r.status === "paid").reduce((sum, r) => sum + r.amountPaid, 0);
-  const overdueAmount = records.filter((r) => r.status === "overdue").reduce((sum, r) => sum + r.amountDue - r.amountPaid, 0);
+  const overdueCount = overdueRecords.length;
+  const paidCount = paidRecords.length;
+  const totalRevenue = paidRecords.reduce((sum, r) => sum + r.amountPaid, 0);
+  const overdueAmount = overdueRecords.reduce((sum, r) => sum + r.amountDue - r.amountPaid, 0);
 
   const filtered = records.filter((r) => {
     const q = search.toLowerCase();
@@ -72,6 +90,13 @@ export default function BillingPage() {
           <p className="text-sm text-muted-foreground mt-1">Monitor revenue, subscriptions, and payment status</p>
         </div>
       </div>
+
+      {loading && (
+        <div className="flex items-center gap-2 mb-4 text-sm text-muted-foreground">
+          <Loader2 className="h-4 w-4 animate-spin" />
+          Loading billing data...
+        </div>
+      )}
 
       {/* KPI Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
