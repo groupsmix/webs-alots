@@ -37,6 +37,12 @@ export type ClinicFeatureKey =
   | "lens_inventory"
   | "frame_catalog"
   | "optical_prescriptions"
+  // Diagnostic & Equipment
+  | "lab_tests"
+  | "radiology_reports"
+  | "equipment_rentals"
+  | "equipment_maintenance"
+  | "parapharmacy"
   | "dermatology"
   | "cardiology"
   | "ent"

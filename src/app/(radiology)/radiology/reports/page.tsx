@@ -1,0 +1,123 @@
+"use client";
+
+import { useState, useEffect } from "react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Search, FileText, Download, Scan } from "lucide-react";
+import { clinicConfig } from "@/config/clinic.config";
+import { fetchRadiologyOrders } from "@/lib/data/client";
+import type { RadiologyOrderView } from "@/lib/data/client";
+
+export default function RadiologyReportsPage() {
+  const [orders, setOrders] = useState<RadiologyOrderView[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetchRadiologyOrders(clinicConfig.clinicId)
+      .then((all) => setOrders(all.filter((o) => o.status === "reported" || o.status === "validated")))
+      .finally(() => setLoading(false));
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[50vh]">
+        <div className="animate-pulse text-muted-foreground">Loading reports...</div>
+      </div>
+    );
+  }
+
+  const filtered = orders.filter((o) => {
+    if (!search) return true;
+    const q = search.toLowerCase();
+    return o.patientName.toLowerCase().includes(q) || o.orderNumber.toLowerCase().includes(q) || o.modality.toLowerCase().includes(q);
+  });
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h1 className="text-2xl font-bold">Radiology Reports</h1>
+          <p className="text-muted-foreground text-sm">Completed radiology reports</p>
+        </div>
+      </div>
+
+      <div className="relative mb-6 max-w-md">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <Input placeholder="Search by patient, order, modality..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
+      </div>
+
+      <div className="space-y-3">
+        {filtered.map((order) => (
+          <Card key={order.id}>
+            <CardContent className="pt-4 pb-4">
+              <div className="flex items-center justify-between cursor-pointer" onClick={() => setExpandedId(expandedId === order.id ? null : order.id)}>
+                <div className="flex items-center gap-4">
+                  <div className="h-10 w-10 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
+                    <FileText className="h-5 w-5 text-emerald-600" />
+                  </div>
+                  <div>
+                    <p className="font-medium">{order.patientName}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {order.modality.toUpperCase()} &middot; {order.bodyPart ?? "N/A"} &middot; {order.reportedAt ? new Date(order.reportedAt).toLocaleDateString() : ""}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Badge className={order.status === "validated" ? "bg-green-100 text-green-700 border-0" : "bg-emerald-100 text-emerald-700 border-0"}>
+                    {order.status}
+                  </Badge>
+                  {order.pdfUrl && (
+                    <a
+                      href={order.pdfUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center rounded-md border px-3 py-1 text-xs font-medium hover:bg-muted transition-colors"
+                    >
+                      <Download className="h-3 w-3 mr-1" /> PDF
+                    </a>
+                  )}
+                </div>
+              </div>
+
+              {expandedId === order.id && (
+                <div className="mt-4 pt-4 border-t space-y-3">
+                  {order.findings && (
+                    <div className="text-sm">
+                      <p className="text-muted-foreground text-xs font-medium mb-1">Findings</p>
+                      <p className="whitespace-pre-wrap">{order.findings}</p>
+                    </div>
+                  )}
+                  {order.impression && (
+                    <div className="text-sm">
+                      <p className="text-muted-foreground text-xs font-medium mb-1">Impression</p>
+                      <p className="font-medium whitespace-pre-wrap">{order.impression}</p>
+                    </div>
+                  )}
+                  {order.reportText && (
+                    <div className="text-sm">
+                      <p className="text-muted-foreground text-xs font-medium mb-1">Full Report</p>
+                      <p className="whitespace-pre-wrap">{order.reportText}</p>
+                    </div>
+                  )}
+                  <div className="text-sm text-muted-foreground">
+                    <p>Radiologist: {order.radiologistName ?? "—"} &middot; Reported: {order.reportedAt ? new Date(order.reportedAt).toLocaleString() : "—"}</p>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        ))}
+
+        {filtered.length === 0 && (
+          <div className="text-center py-12">
+            <Scan className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
+            <p className="text-muted-foreground">No reports found</p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
