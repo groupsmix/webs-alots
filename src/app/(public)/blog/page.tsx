@@ -14,6 +14,7 @@ export const metadata: Metadata = {
   },
 };
 
+// Blog posts don't have a DB table yet — uses demo data until a blog_posts table or CMS is added
 export default function BlogPage() {
   return (
     <div className="container mx-auto px-4 py-12">
