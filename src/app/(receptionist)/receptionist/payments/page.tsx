@@ -1,13 +1,19 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { CreditCard, Check, Clock, Search } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { appointments, patients } from "@/lib/demo-data";
+import {
+  getCurrentUser,
+  fetchAppointments,
+  fetchInvoices,
+  fetchPatients,
+  type PatientView,
+} from "@/lib/data/client";
 import { PaymentDialog } from "@/components/receptionist/payment-dialog";
 
 interface PaymentEntry {
@@ -23,21 +29,54 @@ interface PaymentEntry {
 
 export default function PaymentsPage() {
   const [searchQuery, setSearchQuery] = useState("");
-  const [paymentEntries, setPaymentEntries] = useState<PaymentEntry[]>(() => {
-    const today = new Date().toISOString().split("T")[0];
-    return appointments
-      .filter((a) => a.date === today || a.status === "completed")
-      .map((a, i) => ({
-        id: `pay-${a.id}`,
-        appointmentId: a.id,
-        patientName: a.patientName,
-        serviceName: a.serviceName,
-        date: a.date,
-        amount: [200, 300, 150, 500, 250][i % 5],
-        method: i % 3 === 0 ? "cash" : i % 3 === 1 ? "card" : "transfer",
-        status: (a.status === "completed" ? "paid" : "pending") as "paid" | "pending",
+  const [paymentEntries, setPaymentEntries] = useState<PaymentEntry[]>([]);
+  const [patientList, setPatientList] = useState<PatientView[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function load() {
+      const user = await getCurrentUser();
+      if (!user?.clinic_id) { setLoading(false); return; }
+      const [appts, invoices, pts] = await Promise.all([
+        fetchAppointments(user.clinic_id),
+        fetchInvoices(user.clinic_id),
+        fetchPatients(user.clinic_id),
+      ]);
+      setPatientList(pts);
+
+      // Build payment entries from invoices (real payment data)
+      const invoiceEntries: PaymentEntry[] = invoices.map((inv) => ({
+        id: inv.id,
+        appointmentId: "",
+        patientName: inv.patientName,
+        serviceName: "",
+        date: inv.date,
+        amount: inv.amount,
+        method: inv.method || "cash",
+        status: (inv.status === "paid" ? "paid" : "pending") as "paid" | "pending",
       }));
-  });
+
+      // Also add today's appointments that don't have invoices yet as pending
+      const today = new Date().toISOString().split("T")[0];
+      const invoicePatientDates = new Set(invoices.map((inv) => `${inv.patientName}-${inv.date}`));
+      const apptEntries: PaymentEntry[] = appts
+        .filter((a) => a.date === today && !invoicePatientDates.has(`${a.patientName}-${a.date}`))
+        .map((a) => ({
+          id: `appt-${a.id}`,
+          appointmentId: a.id,
+          patientName: a.patientName,
+          serviceName: a.serviceName,
+          date: a.date,
+          amount: 0,
+          method: "",
+          status: "pending" as const,
+        }));
+
+      setPaymentEntries([...invoiceEntries, ...apptEntries]);
+      setLoading(false);
+    }
+    load();
+  }, []);
 
   const filteredEntries = paymentEntries.filter((e) =>
     e.patientName.toLowerCase().includes(searchQuery.toLowerCase())
@@ -55,6 +94,14 @@ export default function PaymentsPage() {
       )
     );
   };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <p className="text-muted-foreground">Loading payments...</p>
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -110,7 +157,7 @@ export default function PaymentsPage() {
         <CardContent>
           <div className="space-y-3">
             {filteredEntries.map((entry) => {
-              const patient = patients.find((p) => p.name === entry.patientName);
+              const patient = patientList.find((p) => p.name === entry.patientName);
               return (
                 <div key={entry.id} className="flex items-center gap-3 rounded-lg border p-3">
                   <Avatar>
