@@ -29,7 +29,7 @@ export default function DoctorStockPage() {
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold">Material Stock</h1>
-      <MaterialStockAlert stock={stock.map(p => ({ id: p.id, name: p.name, currentQuantity: p.stockQty, minQuantity: p.reorderLevel, unit: p.unit ?? "pcs", expiryDate: p.expiryDate, lastRestocked: p.updatedAt }))} />
+      <MaterialStockAlert stock={stock.map(p => ({ id: p.id, name: p.name, category: p.category ?? "General", quantity: p.stockQuantity, unit: "pcs", minThreshold: p.minimumStock, lastRestocked: p.expiryDate ?? "", supplier: p.manufacturer ?? "Unknown" }))} />
     </div>
   );
 }
