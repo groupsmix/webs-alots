@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import {
   LayoutDashboard, Users, Calendar, Pill, FileEdit, Clock,
   MessageCircle, CalendarClock, BarChart3, ClipboardList,
-  FlaskConical, ShieldCheck, Camera, Package, CreditCard,
+  FlaskConical, ShieldCheck, Camera, Package, CreditCard, Award,
 } from "lucide-react";
 import { SignOutButton } from "@/components/sign-out-button";
 import { useClinicFeatures } from "@/lib/hooks/use-clinic-features";
@@ -31,7 +31,8 @@ const navItems: NavItem[] = [
   { href: "/doctor/odontogram", label: "Odontogram", icon: ClipboardList, requiredFeature: "odontogram" },
   { href: "/doctor/treatment-plans", label: "Treatment Plans", icon: ClipboardList, requiredFeature: "odontogram" },
   { href: "/doctor/lab-orders", label: "Lab Orders", icon: FlaskConical, requiredFeature: "lab_results" },
-  { href: "/doctor/sterilization", label: "Sterilization Log", icon: ShieldCheck },
+  { href: "/doctor/certificates", label: "Certificates", icon: Award, requiredFeature: "certificates" },
+  { href: "/doctor/sterilization", label: "Sterilization Log", icon: ShieldCheck, requiredFeature: "sterilization_log" },
   { href: "/doctor/before-after", label: "Before/After", icon: Camera, requiredFeature: "before_after_photos" },
   { href: "/doctor/stock", label: "Material Stock", icon: Package, requiredFeature: "stock" },
   { href: "/doctor/installments", label: "Installments", icon: CreditCard, requiredFeature: "installments" },

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { SterilizationLogPanel } from "@/components/dental/sterilization-log-panel";
-import { getCurrentUser, fetchSterilizationLog, type SterilizationView } from "@/lib/data/client";
+import { getCurrentUser, fetchSterilizationLog, createSterilizationEntry } from "@/lib/data/client";
 import type { SterilizationEntry } from "@/lib/types/dental";
 
 export default function DoctorSterilizationPage() {
@@ -27,10 +27,24 @@ export default function DoctorSterilizationPage() {
     );
   }
 
-  const handleAddEntry = (entry: Omit<SterilizationEntry, "id" | "sterilizedAt">) => {
+  const handleAddEntry = async (entry: Omit<SterilizationEntry, "id" | "sterilizedAt">) => {
+    const user = await getCurrentUser();
+    if (!user?.clinic_id) return;
+
+    const newId = await createSterilizationEntry({
+      clinic_id: user.clinic_id,
+      tool_name: entry.toolName,
+      sterilized_by: entry.sterilizedBy,
+      method: entry.method,
+      notes: entry.notes,
+      next_due: entry.nextDue ?? undefined,
+      batch_number: entry.batchNumber,
+      cycle_number: entry.cycleNumber,
+    });
+
     const newEntry: SterilizationEntry = {
       ...entry,
-      id: `st${log.length + 1}`,
+      id: newId ?? `st${log.length + 1}`,
       sterilizedAt: new Date().toISOString(),
     };
     setLog((prev) => [newEntry, ...prev]);

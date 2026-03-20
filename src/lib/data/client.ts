@@ -937,6 +937,371 @@ export async function createPrescription(data: {
   return true;
 }
 
+export async function updatePrescription(
+  id: string,
+  data: {
+    items?: { name: string; dosage: string; duration: string }[];
+    notes?: string;
+  },
+): Promise<boolean> {
+  const supabase = createClient();
+  const { error } = await supabase.from("prescriptions").update(data).eq("id", id);
+  if (error) {
+    console.error("[data] update prescription:", error.message);
+    return false;
+  }
+  return true;
+}
+
+// ─────────────────────────────────────────────
+// Consultation Notes Mutations
+// ─────────────────────────────────────────────
+
+export async function createConsultationNote(data: {
+  clinic_id: string;
+  doctor_id: string;
+  patient_id: string;
+  appointment_id: string;
+  diagnosis?: string;
+  notes?: string;
+  content?: Record<string, unknown>;
+  is_private?: boolean;
+}): Promise<string | null> {
+  const supabase = createClient();
+  const { data: result, error } = await supabase
+    .from("consultation_notes")
+    .insert(data)
+    .select("id")
+    .single();
+  if (error) {
+    console.error("[data] create consultation note:", error.message);
+    return null;
+  }
+  return result?.id ?? null;
+}
+
+export async function updateConsultationNote(
+  id: string,
+  data: {
+    diagnosis?: string;
+    notes?: string;
+    content?: Record<string, unknown>;
+    is_private?: boolean;
+  },
+): Promise<boolean> {
+  const supabase = createClient();
+  const { error } = await supabase
+    .from("consultation_notes")
+    .update({ ...data, updated_at: new Date().toISOString() })
+    .eq("id", id);
+  if (error) {
+    console.error("[data] update consultation note:", error.message);
+    return false;
+  }
+  return true;
+}
+
+export async function deleteConsultationNote(id: string): Promise<boolean> {
+  const supabase = createClient();
+  const { error } = await supabase.from("consultation_notes").delete().eq("id", id);
+  if (error) {
+    console.error("[data] delete consultation note:", error.message);
+    return false;
+  }
+  return true;
+}
+
+// ─────────────────────────────────────────────
+// Odontogram Mutations
+// ─────────────────────────────────────────────
+
+export async function upsertOdontogramEntry(data: {
+  clinic_id: string;
+  patient_id: string;
+  tooth_number: number;
+  status: string;
+  notes?: string;
+  dentition?: "adult" | "child";
+}): Promise<boolean> {
+  const supabase = createClient();
+  const { error } = await supabase.from("odontogram").upsert(data, {
+    onConflict: "clinic_id,patient_id,tooth_number",
+  });
+  if (error) {
+    console.error("[data] upsert odontogram:", error.message);
+    return false;
+  }
+  return true;
+}
+
+export async function deleteOdontogramEntry(
+  clinicId: string,
+  patientId: string,
+  toothNumber: number,
+): Promise<boolean> {
+  const supabase = createClient();
+  const { error } = await supabase
+    .from("odontogram")
+    .delete()
+    .eq("clinic_id", clinicId)
+    .eq("patient_id", patientId)
+    .eq("tooth_number", toothNumber);
+  if (error) {
+    console.error("[data] delete odontogram entry:", error.message);
+    return false;
+  }
+  return true;
+}
+
+// ─────────────────────────────────────────────
+// Treatment Plan Mutations
+// ─────────────────────────────────────────────
+
+export async function createTreatmentPlan(data: {
+  clinic_id: string;
+  patient_id: string;
+  doctor_id: string;
+  title: string;
+  steps: { step: number; description: string; status: string; date: string | null; cost: number; toothNumbers?: number[] }[];
+  total_cost: number;
+  status?: string;
+}): Promise<string | null> {
+  const supabase = createClient();
+  const { data: result, error } = await supabase
+    .from("treatment_plans")
+    .insert({ ...data, status: data.status ?? "planned" })
+    .select("id")
+    .single();
+  if (error) {
+    console.error("[data] create treatment plan:", error.message);
+    return null;
+  }
+  return result?.id ?? null;
+}
+
+export async function updateTreatmentPlan(
+  id: string,
+  data: {
+    title?: string;
+    steps?: { step: number; description: string; status: string; date: string | null; cost: number; toothNumbers?: number[] }[];
+    total_cost?: number;
+    status?: string;
+  },
+): Promise<boolean> {
+  const supabase = createClient();
+  const { error } = await supabase
+    .from("treatment_plans")
+    .update({ ...data, updated_at: new Date().toISOString() })
+    .eq("id", id);
+  if (error) {
+    console.error("[data] update treatment plan:", error.message);
+    return false;
+  }
+  return true;
+}
+
+// ─────────────────────────────────────────────
+// Sterilization Log Mutations
+// ─────────────────────────────────────────────
+
+export async function createSterilizationEntry(data: {
+  clinic_id: string;
+  tool_name: string;
+  sterilized_by?: string;
+  method?: string;
+  notes?: string;
+  next_due?: string;
+  batch_number?: string;
+  cycle_number?: number;
+}): Promise<string | null> {
+  const supabase = createClient();
+  const { data: result, error } = await supabase
+    .from("sterilization_log")
+    .insert({ ...data, sterilized_at: new Date().toISOString() })
+    .select("id")
+    .single();
+  if (error) {
+    console.error("[data] create sterilization entry:", error.message);
+    return null;
+  }
+  return result?.id ?? null;
+}
+
+export async function updateSterilizationEntry(
+  id: string,
+  data: {
+    tool_name?: string;
+    method?: string;
+    notes?: string;
+    next_due?: string;
+    batch_number?: string;
+    cycle_number?: number;
+  },
+): Promise<boolean> {
+  const supabase = createClient();
+  const { error } = await supabase.from("sterilization_log").update(data).eq("id", id);
+  if (error) {
+    console.error("[data] update sterilization entry:", error.message);
+    return false;
+  }
+  return true;
+}
+
+// ─────────────────────────────────────────────
+// Before/After Photo Mutations
+// ─────────────────────────────────────────────
+
+export async function createBeforeAfterPhoto(data: {
+  clinic_id: string;
+  patient_id: string;
+  treatment_plan_id?: string;
+  description?: string;
+  category?: string;
+  before_image_url?: string;
+  after_image_url?: string;
+  before_date?: string;
+  after_date?: string;
+}): Promise<string | null> {
+  const supabase = createClient();
+  const { data: result, error } = await supabase
+    .from("before_after_photos")
+    .insert(data)
+    .select("id")
+    .single();
+  if (error) {
+    console.error("[data] create before/after photo:", error.message);
+    return null;
+  }
+  return result?.id ?? null;
+}
+
+export async function updateBeforeAfterPhoto(
+  id: string,
+  data: {
+    description?: string;
+    category?: string;
+    before_image_url?: string;
+    after_image_url?: string;
+    after_date?: string;
+  },
+): Promise<boolean> {
+  const supabase = createClient();
+  const { error } = await supabase
+    .from("before_after_photos")
+    .update({ ...data, updated_at: new Date().toISOString() })
+    .eq("id", id);
+  if (error) {
+    console.error("[data] update before/after photo:", error.message);
+    return false;
+  }
+  return true;
+}
+
+export async function deleteBeforeAfterPhoto(id: string): Promise<boolean> {
+  const supabase = createClient();
+  const { error } = await supabase.from("before_after_photos").delete().eq("id", id);
+  if (error) {
+    console.error("[data] delete before/after photo:", error.message);
+    return false;
+  }
+  return true;
+}
+
+// ─────────────────────────────────────────────
+// Medical Certificates
+// ─────────────────────────────────────────────
+
+export interface MedicalCertificateView {
+  id: string;
+  patientId: string;
+  patientName: string;
+  doctorId: string;
+  doctorName: string;
+  type: "sick_leave" | "fitness" | "medical_report" | "disability" | "custom";
+  content: Record<string, unknown>;
+  pdfUrl?: string;
+  issuedDate: string;
+  createdAt: string;
+}
+
+interface MedicalCertificateRaw {
+  id: string;
+  clinic_id: string;
+  patient_id: string;
+  doctor_id: string;
+  appointment_id: string | null;
+  type: string;
+  content: Record<string, unknown>;
+  pdf_url: string | null;
+  issued_date: string;
+  created_at: string;
+}
+
+export async function fetchMedicalCertificates(
+  clinicId: string,
+  doctorId?: string,
+): Promise<MedicalCertificateView[]> {
+  await ensureLookups(clinicId);
+  const eq: [string, unknown][] = [["clinic_id", clinicId]];
+  if (doctorId) eq.push(["doctor_id", doctorId]);
+  const rows = await fetchRows<MedicalCertificateRaw>("medical_certificates", {
+    eq,
+    order: ["created_at", { ascending: false }],
+  });
+  return rows.map((r) => ({
+    id: r.id,
+    patientId: r.patient_id,
+    patientName: _userMap?.get(r.patient_id)?.name ?? "Patient",
+    doctorId: r.doctor_id,
+    doctorName: _userMap?.get(r.doctor_id)?.name ?? "Doctor",
+    type: r.type as MedicalCertificateView["type"],
+    content: r.content ?? {},
+    pdfUrl: r.pdf_url ?? undefined,
+    issuedDate: r.issued_date,
+    createdAt: r.created_at?.split("T")[0] ?? "",
+  }));
+}
+
+export async function createMedicalCertificate(data: {
+  clinic_id: string;
+  patient_id: string;
+  doctor_id: string;
+  appointment_id?: string;
+  type: string;
+  content: Record<string, unknown>;
+  issued_date?: string;
+}): Promise<string | null> {
+  const supabase = createClient();
+  const { data: result, error } = await supabase
+    .from("medical_certificates")
+    .insert(data)
+    .select("id")
+    .single();
+  if (error) {
+    console.error("[data] create medical certificate:", error.message);
+    return null;
+  }
+  return result?.id ?? null;
+}
+
+export async function updateMedicalCertificate(
+  id: string,
+  data: {
+    type?: string;
+    content?: Record<string, unknown>;
+    pdf_url?: string;
+    issued_date?: string;
+  },
+): Promise<boolean> {
+  const supabase = createClient();
+  const { error } = await supabase.from("medical_certificates").update(data).eq("id", id);
+  if (error) {
+    console.error("[data] update medical certificate:", error.message);
+    return false;
+  }
+  return true;
+}
+
 // ─────────────────────────────────────────────
 // Dental: Odontogram
 // ─────────────────────────────────────────────

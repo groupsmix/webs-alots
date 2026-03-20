@@ -15,6 +15,8 @@ import {
   fetchDoctorAppointments,
   fetchConsultationNotes,
   updateAppointmentStatus,
+  createConsultationNote,
+  updateConsultationNote,
   type AppointmentView,
   type ConsultationNoteView,
 } from "@/lib/data/client";
@@ -35,17 +37,18 @@ interface ConsultationNote {
 }
 
 function mapDbNoteToLocal(n: ConsultationNoteView): ConsultationNote {
+  const content = (n as unknown as { content?: Record<string, string> }).content ?? {};
   return {
     id: n.id,
     appointmentId: n.appointmentId,
     patientId: n.patientId,
     doctorId: "",
     date: n.date,
-    chiefComplaint: "",
-    examination: "",
+    chiefComplaint: content.chiefComplaint ?? "",
+    examination: content.examination ?? "",
     diagnosis: n.diagnosis,
-    plan: "",
-    privateNotes: "",
+    plan: content.plan ?? "",
+    privateNotes: content.privateNotes ?? "",
     createdAt: n.date,
     updatedAt: n.date,
   };
@@ -112,34 +115,63 @@ export default function ConsultationNotesPage() {
     setEditingApptId(appointmentId);
   };
 
-  const handleSaveNote = () => {
+  const handleSaveNote = async () => {
     if (!editingApptId) return;
     const appt = apptList.find((a) => a.id === editingApptId);
     if (!appt) return;
 
     const existing = getNoteForAppointment(editingApptId);
     const now = new Date().toISOString();
+    const user = await getCurrentUser();
+    if (!user?.clinic_id) return;
+
+    const content = {
+      chiefComplaint: formData.chiefComplaint,
+      examination: formData.examination,
+      plan: formData.plan,
+      privateNotes: formData.privateNotes,
+    };
 
     if (existing) {
-      setNotes((prev) =>
-        prev.map((n) =>
-          n.appointmentId === editingApptId
-            ? { ...n, ...formData, updatedAt: now }
-            : n
-        )
-      );
+      const ok = await updateConsultationNote(existing.id, {
+        diagnosis: formData.diagnosis,
+        notes: formData.chiefComplaint,
+        content,
+        is_private: !!formData.privateNotes,
+      });
+      if (ok) {
+        setNotes((prev) =>
+          prev.map((n) =>
+            n.appointmentId === editingApptId
+              ? { ...n, ...formData, updatedAt: now }
+              : n
+          )
+        );
+      }
     } else {
-      const newNote: ConsultationNote = {
-        id: `cn-${Date.now()}`,
-        appointmentId: editingApptId,
-        patientId: appt.patientId,
-        doctorId: appt.doctorId,
-        date: appt.date,
-        ...formData,
-        createdAt: now,
-        updatedAt: now,
-      };
-      setNotes((prev) => [...prev, newNote]);
+      const newId = await createConsultationNote({
+        clinic_id: user.clinic_id,
+        doctor_id: user.id,
+        patient_id: appt.patientId,
+        appointment_id: editingApptId,
+        diagnosis: formData.diagnosis,
+        notes: formData.chiefComplaint,
+        content,
+        is_private: !!formData.privateNotes,
+      });
+      if (newId) {
+        const newNote: ConsultationNote = {
+          id: newId,
+          appointmentId: editingApptId,
+          patientId: appt.patientId,
+          doctorId: user.id,
+          date: appt.date,
+          ...formData,
+          createdAt: now,
+          updatedAt: now,
+        };
+        setNotes((prev) => [...prev, newNote]);
+      }
     }
     setEditingApptId(null);
   };

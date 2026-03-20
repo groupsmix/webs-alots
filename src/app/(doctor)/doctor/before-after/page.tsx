@@ -5,6 +5,7 @@ import { BeforeAfterGallery } from "@/components/dental/before-after-gallery";
 import {
   getCurrentUser,
   fetchBeforeAfterPhotos,
+  createBeforeAfterPhoto,
   type BeforeAfterPhotoView,
 } from "@/lib/data/client";
 
@@ -30,9 +31,24 @@ export default function DoctorBeforeAfterPage() {
     );
   }
 
-  const handleAddPhoto = (photo: Omit<BeforeAfterPhotoView, "id">) => {
+  const handleAddPhoto = async (photo: Omit<BeforeAfterPhotoView, "id">) => {
+    const user = await getCurrentUser();
+    if (!user?.clinic_id) return;
+
+    const newId = await createBeforeAfterPhoto({
+      clinic_id: user.clinic_id,
+      patient_id: photo.patientId,
+      treatment_plan_id: photo.treatmentPlanId ?? undefined,
+      description: photo.description ?? undefined,
+      category: photo.category ?? undefined,
+      before_image_url: photo.beforeUrl ?? undefined,
+      after_image_url: photo.afterUrl ?? undefined,
+      before_date: photo.beforeDate ?? undefined,
+      after_date: photo.afterDate ?? undefined,
+    });
+
     setPhotos((prev) => [
-      { ...photo, id: `ba${prev.length + 1}` },
+      { ...photo, id: newId ?? `ba${prev.length + 1}` },
       ...prev,
     ]);
   };

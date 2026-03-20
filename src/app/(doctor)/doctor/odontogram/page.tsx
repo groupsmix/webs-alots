@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { OdontogramChart } from "@/components/dental/odontogram-chart";
-import { getCurrentUser, fetchPatients, fetchOdontogram, type PatientView, type OdontogramView } from "@/lib/data/client";
+import { getCurrentUser, fetchPatients, fetchOdontogram, upsertOdontogramEntry, type PatientView, type OdontogramView } from "@/lib/data/client";
 import type { ToothStatus, OdontogramEntry } from "@/lib/types/dental";
 
 export default function DoctorOdontogramPage() {
@@ -45,7 +45,21 @@ export default function DoctorOdontogramPage() {
     );
   }
 
-  const handleUpdateEntry = (toothNumber: number, status: ToothStatus, notes: string) => {
+  const handleUpdateEntry = async (toothNumber: number, status: ToothStatus, notes: string) => {
+    const user = await getCurrentUser();
+    if (!user?.clinic_id || !selectedPatient) return;
+
+    const dentition: "adult" | "child" = toothNumber >= 51 && toothNumber <= 85 ? "child" : "adult";
+
+    await upsertOdontogramEntry({
+      clinic_id: user.clinic_id,
+      patient_id: selectedPatient,
+      tooth_number: toothNumber,
+      status,
+      notes,
+      dentition,
+    });
+
     const newEntry: OdontogramView = {
       toothNumber,
       status,
