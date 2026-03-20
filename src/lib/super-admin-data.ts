@@ -203,6 +203,7 @@ export const featureDefinitions: FeatureDefinition[] = [
   { id: "f10", name: "Walk-in Management", description: "Track and manage walk-in patients with waiting room queue", key: "walkIn", category: "core", availableTiers: ["basic", "standard", "premium"], globalEnabled: true },
   { id: "f11", name: "Online Payment", description: "Accept online payments via CMI payment gateway", key: "onlinePayment", category: "integration", availableTiers: ["premium"], globalEnabled: true },
   { id: "f12", name: "Document Management", description: "Digital document storage, sharing, and patient file uploads", key: "documents", category: "core", availableTiers: ["standard", "premium"], globalEnabled: true },
+  { id: "f13", name: "AI Chatbot", description: "AI-powered assistant chatbot for patients and staff with clinic-aware responses", key: "chatbot", category: "integration", availableTiers: ["premium"], globalEnabled: true },
 ];
 
 // ---------- Helpers ----------

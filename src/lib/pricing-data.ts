@@ -274,6 +274,7 @@ export const featureToggles: FeatureToggle[] = [
   { id: "ft-16", key: "document_mgmt", label: "Gestion de documents", description: "Stockage et partage de documents numériques", category: "core", systemTypes: ["doctor", "dentist", "pharmacy"], tiers: ["pro", "premium", "saas-monthly"], enabled: true },
   { id: "ft-17", key: "white_label", label: "White label", description: "Supprimer la marque de la plateforme", category: "advanced", systemTypes: ["doctor", "dentist", "pharmacy"], tiers: ["premium"], enabled: true },
   { id: "ft-18", key: "on_duty", label: "Pharmacie de garde", description: "Indicateur et planning de garde", category: "pharmacy", systemTypes: ["pharmacy"], tiers: ["vitrine", "cabinet", "pro", "premium", "saas-monthly"], enabled: true },
+  { id: "ft-19", key: "chatbot", label: "AI Chatbot", description: "Assistant IA pour les patients et le personnel", category: "integration", systemTypes: ["doctor", "dentist", "pharmacy"], tiers: ["pro", "premium", "saas-monthly"], enabled: true },
 ];
 
 // ---------- Client Subscriptions ----------

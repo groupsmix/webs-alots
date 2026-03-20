@@ -121,9 +121,21 @@ const key = buildUploadKey(clinicId, "logos", "clinic-logo.png");
 const url = await uploadToR2(key, buffer, "image/png");
 ```
 
-## Deploy on Cloudflare Pages
+## Deploy on Cloudflare Workers
+
+### Manual Deploy
 
 ```bash
-npm run build
-# Deploy the .next output to Cloudflare Pages
+npm run deploy
 ```
+
+### Auto-Deploy via GitHub Actions
+
+Pushes to `main` automatically build and deploy to Cloudflare Workers. Add these secrets in your GitHub repo settings (**Settings > Secrets and variables > Actions**):
+
+| Secret | Description |
+|---|---|
+| `CLOUDFLARE_API_TOKEN` | Cloudflare API token with Workers edit permissions |
+| `CLOUDFLARE_ACCOUNT_ID` | Your Cloudflare account ID |
+| `NEXT_PUBLIC_SUPABASE_URL` | Supabase project URL (used at build time) |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase anon key (used at build time) |
