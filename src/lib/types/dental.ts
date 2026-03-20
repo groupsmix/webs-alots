@@ -34,6 +34,7 @@ export interface OdontogramEntry {
   status: ToothStatus;
   notes: string;
   lastUpdated: string;
+  dentition?: "adult" | "child";
 }
 
 export interface PatientOdontogram {
@@ -50,6 +51,7 @@ export interface TreatmentStep {
   status: "pending" | "in_progress" | "completed";
   date: string | null;
   cost: number;
+  toothNumbers?: number[];
 }
 
 export interface TreatmentPlan {
@@ -93,6 +95,8 @@ export interface SterilizationEntry {
   nextDue: string | null;
   method: "autoclave" | "chemical" | "dry_heat";
   notes: string;
+  batchNumber?: string;
+  cycleNumber?: number;
 }
 
 // ---------- Material Stock ----------

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { TreatmentPlanBuilder } from "@/components/dental/treatment-plan-builder";
-import { getCurrentUser, fetchTreatmentPlans, type TreatmentPlanView } from "@/lib/data/client";
+import { getCurrentUser, fetchTreatmentPlans, updateTreatmentPlan } from "@/lib/data/client";
 import type { TreatmentPlan, TreatmentStep } from "@/lib/types/dental";
 
 export default function DoctorTreatmentPlansPage() {
@@ -30,7 +30,7 @@ export default function DoctorTreatmentPlansPage() {
     );
   }
 
-  const handleUpdateStep = (planId: string, stepIndex: number, status: TreatmentStep["status"]) => {
+  const handleUpdateStep = async (planId: string, stepIndex: number, status: TreatmentStep["status"]) => {
     setPlans((prev) =>
       prev.map((p) => {
         if (p.id !== planId) return p;
@@ -45,38 +45,93 @@ export default function DoctorTreatmentPlansPage() {
         return { ...p, steps, updatedAt: new Date().toISOString().split("T")[0] };
       })
     );
+
+    const plan = plans.find((p) => p.id === planId);
+    if (plan) {
+      const updatedSteps = [...plan.steps];
+      updatedSteps[stepIndex] = {
+        ...updatedSteps[stepIndex],
+        status,
+        date: status === "completed" || status === "in_progress"
+          ? new Date().toISOString().split("T")[0]
+          : updatedSteps[stepIndex].date,
+      };
+      await updateTreatmentPlan(planId, {
+        steps: updatedSteps.map((s) => ({
+          step: s.step,
+          description: s.description,
+          status: s.status,
+          date: s.date,
+          cost: s.cost,
+          toothNumbers: s.toothNumbers,
+        })),
+      });
+    }
   };
 
-  const handleAddStep = (planId: string, description: string, cost: number) => {
+  const handleAddStep = async (planId: string, description: string, cost: number) => {
+    const plan = plans.find((p) => p.id === planId);
+    if (!plan) return;
+
+    const newStep: TreatmentStep = {
+      step: plan.steps.length + 1,
+      description,
+      status: "pending",
+      date: null,
+      cost,
+    };
+    const allSteps = [...plan.steps, newStep];
+
     setPlans((prev) =>
       prev.map((p) => {
         if (p.id !== planId) return p;
-        const newStep: TreatmentStep = {
-          step: p.steps.length + 1,
-          description,
-          status: "pending",
-          date: null,
-          cost,
-        };
         return {
           ...p,
-          steps: [...p.steps, newStep],
+          steps: allSteps,
           totalCost: p.totalCost + cost,
           updatedAt: new Date().toISOString().split("T")[0],
         };
       })
     );
+
+    await updateTreatmentPlan(planId, {
+      steps: allSteps.map((s) => ({
+        step: s.step,
+        description: s.description,
+        status: s.status,
+        date: s.date,
+        cost: s.cost,
+        toothNumbers: s.toothNumbers,
+      })),
+      total_cost: plan.totalCost + cost,
+    });
   };
 
-  const handleDeleteStep = (planId: string, stepIndex: number) => {
+  const handleDeleteStep = async (planId: string, stepIndex: number) => {
+    const plan = plans.find((p) => p.id === planId);
+    if (!plan) return;
+
+    const removedCost = plan.steps[stepIndex].cost;
+    const remainingSteps = plan.steps.filter((_, i) => i !== stepIndex).map((s, i) => ({ ...s, step: i + 1 }));
+
     setPlans((prev) =>
       prev.map((p) => {
         if (p.id !== planId) return p;
-        const removedCost = p.steps[stepIndex].cost;
-        const steps = p.steps.filter((_, i) => i !== stepIndex).map((s, i) => ({ ...s, step: i + 1 }));
-        return { ...p, steps, totalCost: p.totalCost - removedCost, updatedAt: new Date().toISOString().split("T")[0] };
+        return { ...p, steps: remainingSteps, totalCost: p.totalCost - removedCost, updatedAt: new Date().toISOString().split("T")[0] };
       })
     );
+
+    await updateTreatmentPlan(planId, {
+      steps: remainingSteps.map((s) => ({
+        step: s.step,
+        description: s.description,
+        status: s.status,
+        date: s.date,
+        cost: s.cost,
+        toothNumbers: s.toothNumbers,
+      })),
+      total_cost: plan.totalCost - removedCost,
+    });
   };
 
   return (

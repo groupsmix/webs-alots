@@ -12,6 +12,7 @@ import {
   getCurrentUser,
   fetchPrescriptions,
   fetchPatients,
+  createPrescription,
   type PrescriptionView,
   type PatientView,
 } from "@/lib/data/client";
@@ -144,46 +145,73 @@ export default function DoctorPrescriptionsPage() {
     setMedications(updated);
   };
 
-  const handleSavePrescription = () => {
+  const handleSavePrescription = async () => {
     const patient = patients.find((p) => p.id === selectedPatient);
     if (!patient) return;
+    const user = await getCurrentUser();
+    if (!user?.clinic_id) return;
 
-    const newRx: Prescription = {
-      id: `rx-${Date.now()}`,
-      patientId: patient.id,
-      patientName: patient.name,
-      doctorName: "Dr. Ahmed Benali",
-      date: new Date().toISOString().split("T")[0],
-      medications: medications
-        .filter((m) => m.name.trim())
-        .map((m) => ({ name: m.name, dosage: `${m.dosage} ${m.frequency}`.trim(), duration: m.duration })),
+    const items = medications
+      .filter((m) => m.name.trim())
+      .map((m) => ({ name: m.name, dosage: `${m.dosage} ${m.frequency}`.trim(), duration: m.duration }));
+
+    const ok = await createPrescription({
+      clinic_id: user.clinic_id,
+      doctor_id: user.id,
+      patient_id: patient.id,
+      items,
       notes: notes || undefined,
-    };
+    });
 
-    setRxList((prev) => [newRx, ...prev]);
+    if (ok) {
+      const newRx: Prescription = {
+        id: `rx-${Date.now()}`,
+        patientId: patient.id,
+        patientName: patient.name,
+        doctorName: user.name ?? "Doctor",
+        date: new Date().toISOString().split("T")[0],
+        medications: items,
+        notes: notes || undefined,
+      };
+      setRxList((prev) => [newRx, ...prev]);
+    }
     setShowWriter(false);
     setMedications([{ name: "", dosage: "", frequency: "", duration: "", instructions: "" }]);
     setDiagnosis("");
     setNotes("");
   };
 
-  const handleSaveAndDownload = () => {
+  const handleSaveAndDownload = async () => {
     const patient = patients.find((p) => p.id === selectedPatient);
     if (!patient) return;
+    const user = await getCurrentUser();
+    if (!user?.clinic_id) return;
+
+    const items = medications
+      .filter((m) => m.name.trim())
+      .map((m) => ({ name: m.name, dosage: `${m.dosage} ${m.frequency}`.trim(), duration: m.duration }));
+
+    const ok = await createPrescription({
+      clinic_id: user.clinic_id,
+      doctor_id: user.id,
+      patient_id: patient.id,
+      items,
+      notes: notes || undefined,
+    });
 
     const newRx: Prescription = {
       id: `rx-${Date.now()}`,
       patientId: patient.id,
       patientName: patient.name,
-      doctorName: "Dr. Ahmed Benali",
+      doctorName: user.name ?? "Doctor",
       date: new Date().toISOString().split("T")[0],
-      medications: medications
-        .filter((m) => m.name.trim())
-        .map((m) => ({ name: m.name, dosage: `${m.dosage} ${m.frequency}`.trim(), duration: m.duration })),
+      medications: items,
       notes: notes || undefined,
     };
 
-    setRxList((prev) => [newRx, ...prev]);
+    if (ok) {
+      setRxList((prev) => [newRx, ...prev]);
+    }
     generatePrescriptionPDF(newRx);
     setShowWriter(false);
     setMedications([{ name: "", dosage: "", frequency: "", duration: "", instructions: "" }]);
