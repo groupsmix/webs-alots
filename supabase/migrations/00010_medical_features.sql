@@ -78,4 +78,4 @@ WHERE type_key = 'general_medicine';
 -- Also add sterilization_log feature key for dental types
 UPDATE clinic_types
 SET features_config = features_config || '{"sterilization_log": true}'::jsonb
-WHERE type_key = 'dental';
+WHERE type_key = 'dental_clinic';
