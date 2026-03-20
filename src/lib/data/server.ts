@@ -126,6 +126,49 @@ export async function getClinicById(id: string): Promise<ClinicRow | null> {
 }
 
 // ────────────────────────────────────────────
+// Clinic Branding
+// ────────────────────────────────────────────
+
+export interface ClinicBrandingRow {
+  logo_url: string | null;
+  favicon_url: string | null;
+  primary_color: string | null;
+  secondary_color: string | null;
+  heading_font: string | null;
+  body_font: string | null;
+  hero_image_url: string | null;
+}
+
+export async function getClinicBranding(clinicId: string): Promise<ClinicBrandingRow | null> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("clinics")
+    .select("logo_url, favicon_url, primary_color, secondary_color, heading_font, body_font, hero_image_url")
+    .eq("id", clinicId)
+    .single();
+
+  if (error) return null;
+  return data as ClinicBrandingRow;
+}
+
+export async function updateClinicBranding(
+  clinicId: string,
+  branding: Partial<ClinicBrandingRow>,
+): Promise<boolean> {
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("clinics")
+    .update(branding)
+    .eq("id", clinicId);
+
+  if (error) {
+    console.error("[data] Error updating clinic branding:", error.message);
+    return false;
+  }
+  return true;
+}
+
+// ────────────────────────────────────────────
 // Users (doctors, patients, receptionists, etc.)
 // ────────────────────────────────────────────
 
