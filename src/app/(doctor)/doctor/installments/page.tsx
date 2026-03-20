@@ -1,13 +1,36 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { InstallmentTracker } from "@/components/installments/installment-tracker";
 import { InstallmentForm } from "@/components/installments/installment-form";
-import { installmentPlans as initialPlans, type InstallmentPlan } from "@/lib/dental-demo-data";
+import {
+  getCurrentUser,
+  fetchInstallmentPlans,
+  type InstallmentPlanView,
+} from "@/lib/data/client";
 
 export default function DoctorInstallmentsPage() {
-  const [plans, setPlans] = useState<InstallmentPlan[]>(initialPlans);
+  const [plans, setPlans] = useState<InstallmentPlanView[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const load = useCallback(async () => {
+    const user = await getCurrentUser();
+    if (!user?.clinic_id) { setLoading(false); return; }
+    const data = await fetchInstallmentPlans(user.clinic_id);
+    setPlans(data);
+    setLoading(false);
+  }, []);
+
+  useEffect(() => { load(); }, [load]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <p className="text-sm text-muted-foreground">Loading installment plans...</p>
+      </div>
+    );
+  }
 
   const handleMarkPaid = (planId: string, installmentId: string) => {
     setPlans((prev) =>

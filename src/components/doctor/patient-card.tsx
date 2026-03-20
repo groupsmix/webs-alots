@@ -1,11 +1,19 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { User, Phone, Calendar, FileText, Pill, ClipboardList, AlertCircle } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { patients, prescriptions, appointments } from "@/lib/demo-data";
+import {
+  getCurrentUser,
+  fetchPatients,
+  fetchPrescriptions,
+  fetchAppointments,
+  type PatientView,
+  type PrescriptionView,
+  type AppointmentView,
+} from "@/lib/data/client";
 
 type TabKey = "overview" | "history" | "prescriptions" | "notes";
 
@@ -16,10 +24,45 @@ type TabKey = "overview" | "history" | "prescriptions" | "notes";
  */
 export function PatientCard({ patientId }: { patientId?: string }) {
   const [activeTab, setActiveTab] = useState<TabKey>("overview");
+  const [patient, setPatient] = useState<PatientView | null>(null);
+  const [patientRx, setPatientRx] = useState<PrescriptionView[]>([]);
+  const [patientAppts, setPatientAppts] = useState<AppointmentView[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const patient = patients.find((p) => p.id === patientId) ?? patients[0];
-  const patientRx = prescriptions.filter((rx) => rx.patientId === patient.id);
-  const patientAppts = appointments.filter((a) => a.patientId === patient.id);
+  const load = useCallback(async () => {
+    const user = await getCurrentUser();
+    if (!user?.clinic_id) { setLoading(false); return; }
+    const [pts, rxs, appts] = await Promise.all([
+      fetchPatients(user.clinic_id),
+      fetchPrescriptions(user.clinic_id),
+      fetchAppointments(user.clinic_id),
+    ]);
+    const found = pts.find((p) => p.id === patientId) ?? pts[0] ?? null;
+    setPatient(found);
+    if (found) {
+      setPatientRx(rxs.filter((rx) => rx.patientId === found.id));
+      setPatientAppts(appts.filter((a) => a.patientId === found.id));
+    }
+    setLoading(false);
+  }, [patientId]);
+
+  useEffect(() => { load(); }, [load]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <p className="text-sm text-muted-foreground">Loading patient...</p>
+      </div>
+    );
+  }
+
+  if (!patient) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <p className="text-sm text-muted-foreground">No patient found.</p>
+      </div>
+    );
+  }
 
   const tabs: { key: TabKey; label: string }[] = [
     { key: "overview", label: "Overview" },

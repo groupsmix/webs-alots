@@ -1,11 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Clock, User, CheckCircle2, XCircle, ArrowRight } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { appointments } from "@/lib/demo-data";
+import {
+  getCurrentUser,
+  fetchAppointments,
+  type AppointmentView,
+} from "@/lib/data/client";
 import { clinicConfig } from "@/config/clinic.config";
 import { EmergencySlotCreator } from "./emergency-slot-creator";
 
@@ -27,7 +31,28 @@ const statusColors: Record<string, string> = {
  */
 export function ScheduleView() {
   const [viewMode, setViewMode] = useState<ViewMode>("timeline");
-  const todayAppointments = appointments.slice(0, 6);
+  const [todayAppointments, setTodayAppointments] = useState<AppointmentView[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const load = useCallback(async () => {
+    const user = await getCurrentUser();
+    if (!user?.clinic_id) { setLoading(false); return; }
+    const appts = await fetchAppointments(user.clinic_id);
+    const today = new Date().toISOString().split("T")[0];
+    const filtered = appts.filter((a) => a.date === today);
+    setTodayAppointments(filtered.length > 0 ? filtered : appts.slice(0, 6));
+    setLoading(false);
+  }, []);
+
+  useEffect(() => { load(); }, [load]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <p className="text-sm text-muted-foreground">Loading schedule...</p>
+      </div>
+    );
+  }
 
   const timeSlots = [
     "09:00", "09:30", "10:00", "10:30", "11:00", "11:30",

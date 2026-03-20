@@ -1,13 +1,17 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Plus, Trash2, FileDown, Send } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { patients } from "@/lib/demo-data";
+import {
+  getCurrentUser,
+  fetchPatients,
+  type PatientView,
+} from "@/lib/data/client";
 
 interface Medication {
   name: string;
@@ -24,12 +28,33 @@ interface Medication {
  * Generates downloadable PDF.
  */
 export function PrescriptionWriter() {
-  const [selectedPatient, setSelectedPatient] = useState(patients[0].id);
+  const [patients, setPatients] = useState<PatientView[]>([]);
+  const [selectedPatient, setSelectedPatient] = useState("");
   const [medications, setMedications] = useState<Medication[]>([
     { name: "", dosage: "", frequency: "", duration: "", instructions: "" },
   ]);
   const [notes, setNotes] = useState("");
   const [diagnosis, setDiagnosis] = useState("");
+  const [loading, setLoading] = useState(true);
+
+  const load = useCallback(async () => {
+    const user = await getCurrentUser();
+    if (!user?.clinic_id) { setLoading(false); return; }
+    const pts = await fetchPatients(user.clinic_id);
+    setPatients(pts);
+    if (pts.length > 0) setSelectedPatient(pts[0].id);
+    setLoading(false);
+  }, []);
+
+  useEffect(() => { load(); }, [load]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <p className="text-sm text-muted-foreground">Loading...</p>
+      </div>
+    );
+  }
 
   const patient = patients.find((p) => p.id === selectedPatient) ?? patients[0];
 

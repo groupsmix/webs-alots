@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   BarChart, Bar, LineChart, Line, PieChart, Pie, Cell,
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip,
@@ -15,38 +15,72 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
-  dailyAnalytics,
-  weeklyRevenue,
-  monthlyRevenue,
-  servicePopularity,
-  hourlyHeatmap,
-  reviewTrends,
-  patientRetention,
-} from "@/lib/dental-demo-data";
-import { appointments, patients } from "@/lib/demo-data";
+  getCurrentUser,
+  fetchAnalytics,
+  type AnalyticsData,
+} from "@/lib/data/client";
 
 const COLORS = [
   "#2563eb", "#7c3aed", "#db2777", "#ea580c",
   "#16a34a", "#0891b2", "#ca8a04", "#dc2626", "#4f46e5",
 ];
 
-const totalAppts = appointments.length;
-const noShowAppts = appointments.filter((a) => a.status === "no-show").length;
-const noShowRate = totalAppts > 0 ? Math.round((noShowAppts / totalAppts) * 100) : 0;
-
-const onlineBookings = dailyAnalytics.reduce((sum, d) => sum + d.onlineBookings, 0);
-const walkInBookings = dailyAnalytics.reduce((sum, d) => sum + d.walkIns, 0);
-const totalBookings = onlineBookings + walkInBookings;
-
-const bookingSourceData = [
-  { name: "Online", value: onlineBookings, percentage: Math.round((onlineBookings / totalBookings) * 100) },
-  { name: "Walk-in", value: walkInBookings, percentage: Math.round((walkInBookings / totalBookings) * 100) },
-];
-
-const latestRetention = patientRetention[patientRetention.length - 1];
-
 export function AnalyticsDashboard({ role = "admin" }: { role?: "admin" | "doctor" }) {
   const [revenuePeriod, setRevenuePeriod] = useState<"daily" | "weekly" | "monthly">("daily");
+  const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  const load = useCallback(async () => {
+    const user = await getCurrentUser();
+    if (!user?.clinic_id) { setLoading(false); return; }
+    const data = await fetchAnalytics(user.clinic_id);
+    setAnalytics(data);
+    setLoading(false);
+  }, []);
+
+  useEffect(() => { load(); }, [load]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <p className="text-sm text-muted-foreground">Loading analytics...</p>
+      </div>
+    );
+  }
+
+  if (!analytics) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <p className="text-sm text-muted-foreground">No analytics data available.</p>
+      </div>
+    );
+  }
+
+  const {
+    dailyAnalytics,
+    weeklyRevenue,
+    monthlyRevenue,
+    servicePopularity,
+    hourlyHeatmap,
+    reviewTrends,
+    patientRetention,
+    totalPatients,
+    totalAppointments,
+  } = analytics;
+
+  const noShowAppts = dailyAnalytics.reduce((sum, d) => sum + d.noShows, 0);
+  const noShowRate = totalAppointments > 0 ? Math.round((noShowAppts / totalAppointments) * 100) : 0;
+
+  const onlineBookings = dailyAnalytics.reduce((sum, d) => sum + d.onlineBookings, 0);
+  const walkInBookings = dailyAnalytics.reduce((sum, d) => sum + d.walkIns, 0);
+  const totalBookings = onlineBookings + walkInBookings || 1;
+
+  const bookingSourceData = [
+    { name: "Online", value: onlineBookings, percentage: Math.round((onlineBookings / totalBookings) * 100) },
+    { name: "Walk-in", value: walkInBookings, percentage: Math.round((walkInBookings / totalBookings) * 100) },
+  ];
+
+  const latestRetention = patientRetention[patientRetention.length - 1];
 
   const revenueData =
     revenuePeriod === "daily"
@@ -78,7 +112,7 @@ export function AnalyticsDashboard({ role = "admin" }: { role?: "admin" | "docto
               <Users className="h-5 w-5 text-blue-600" />
               <Badge variant="outline" className="text-xs text-green-600">+{latestRetention.newPatients}</Badge>
             </div>
-            <p className="text-2xl font-bold">{patients.length}</p>
+            <p className="text-2xl font-bold">{totalPatients}</p>
             <p className="text-xs text-muted-foreground">Total Patients</p>
           </CardContent>
         </Card>
