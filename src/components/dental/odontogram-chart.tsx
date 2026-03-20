@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import type { ToothStatus, OdontogramEntry } from "@/lib/dental-demo-data";
+import type { ToothStatus, OdontogramEntry } from "@/lib/types/dental";
 
 const STATUS_COLORS: Record<ToothStatus, string> = {
   healthy: "#22c55e",

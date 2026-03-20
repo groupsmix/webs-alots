@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import type { LabOrder } from "@/lib/dental-demo-data";
+import type { LabOrder } from "@/lib/types/dental";
 
 const STATUS_CONFIG: Record<string, { icon: typeof Clock; color: string; variant: "default" | "secondary" | "success" | "destructive" | "outline" | "warning" }> = {
   pending: { icon: Clock, color: "text-gray-500", variant: "outline" },
