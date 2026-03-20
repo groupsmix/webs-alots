@@ -13,7 +13,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Palette, Type, ImageIcon, Eye, Save, RotateCcw } from "lucide-react";
+import { Palette, Type, ImageIcon, Eye, Save, RotateCcw, Plus, Trash2, Clock } from "lucide-react";
 import {
   defaultWebsiteConfig,
   type WebsiteConfig,
@@ -79,6 +79,62 @@ export default function WebsiteEditorPage() {
       ...prev,
       reviews: { ...prev.reviews, [key]: value },
     }));
+    setSaved(false);
+  }
+
+  function updateHowToBook(
+    key: keyof WebsiteConfig["howToBook"],
+    value: string
+  ) {
+    setConfig((prev) => ({
+      ...prev,
+      howToBook: { ...prev.howToBook, [key]: value },
+    }));
+    setSaved(false);
+  }
+
+  function updateHowToBookStep(
+    index: number,
+    key: "title" | "description",
+    value: string
+  ) {
+    setConfig((prev) => {
+      const steps = [...prev.howToBook.steps];
+      steps[index] = { ...steps[index], [key]: value };
+      return { ...prev, howToBook: { ...prev.howToBook, steps } };
+    });
+    setSaved(false);
+  }
+
+  function addHowToBookStep() {
+    setConfig((prev) => ({
+      ...prev,
+      howToBook: {
+        ...prev.howToBook,
+        steps: [...prev.howToBook.steps, { title: "", description: "" }],
+      },
+    }));
+    setSaved(false);
+  }
+
+  function removeHowToBookStep(index: number) {
+    setConfig((prev) => {
+      const steps = prev.howToBook.steps.filter((_, i) => i !== index);
+      return { ...prev, howToBook: { ...prev.howToBook, steps } };
+    });
+    setSaved(false);
+  }
+
+  function updateWorkingHours(
+    index: number,
+    key: "day" | "hours",
+    value: string
+  ) {
+    setConfig((prev) => {
+      const wh = [...prev.location.workingHours];
+      wh[index] = { ...wh[index], [key]: value };
+      return { ...prev, location: { ...prev.location, workingHours: wh } };
+    });
     setSaved(false);
   }
 
@@ -409,6 +465,117 @@ export default function WebsiteEditorPage() {
                   Go to Google Maps, click Share, then Embed a map, and
                   copy the src URL from the iframe code.
                 </p>
+              </div>
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <Clock className="h-4 w-4 text-muted-foreground" />
+                  <Label>Working Hours</Label>
+                </div>
+                {config.location.workingHours.map((wh, i) => (
+                  <div key={i} className="grid grid-cols-2 gap-3">
+                    <Input
+                      value={wh.day}
+                      onChange={(e) =>
+                        updateWorkingHours(i, "day", e.target.value)
+                      }
+                      placeholder="Day"
+                    />
+                    <Input
+                      value={wh.hours}
+                      onChange={(e) =>
+                        updateWorkingHours(i, "hours", e.target.value)
+                      }
+                      placeholder="09:00 - 17:00 or Closed"
+                    />
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>How to Book</CardTitle>
+              <CardDescription>
+                Steps shown on the How to Book page
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label>Title</Label>
+                <Input
+                  value={config.howToBook.title}
+                  onChange={(e) =>
+                    updateHowToBook("title", e.target.value)
+                  }
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Subtitle</Label>
+                <Textarea
+                  value={config.howToBook.subtitle}
+                  onChange={(e) =>
+                    updateHowToBook("subtitle", e.target.value)
+                  }
+                  rows={2}
+                />
+              </div>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <Label>Steps</Label>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={addHowToBookStep}
+                  >
+                    <Plus className="h-4 w-4 mr-1" />
+                    Add Step
+                  </Button>
+                </div>
+                {config.howToBook.steps.map((step, i) => (
+                  <div
+                    key={i}
+                    className="rounded-lg border p-4 space-y-2"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium text-muted-foreground">
+                        Step {i + 1}
+                      </span>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => removeHowToBookStep(i)}
+                        disabled={
+                          config.howToBook.steps.length <= 1
+                        }
+                      >
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
+                    </div>
+                    <Input
+                      value={step.title}
+                      onChange={(e) =>
+                        updateHowToBookStep(
+                          i,
+                          "title",
+                          e.target.value
+                        )
+                      }
+                      placeholder="Step title"
+                    />
+                    <Input
+                      value={step.description}
+                      onChange={(e) =>
+                        updateHowToBookStep(
+                          i,
+                          "description",
+                          e.target.value
+                        )
+                      }
+                      placeholder="Step description"
+                    />
+                  </div>
+                ))}
               </div>
             </CardContent>
           </Card>
