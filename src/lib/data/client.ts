@@ -1425,3 +1425,397 @@ export async function fetchWaitingRoom(clinicId: string): Promise<WaitingRoomEnt
       priority: a.isEmergency ? "urgent" : "normal",
     }));
 }
+
+// ─────────────────────────────────────────────
+// Emergency Slots
+// ─────────────────────────────────────────────
+
+export interface EmergencySlotView {
+  id: string;
+  doctorId: string;
+  doctorName: string;
+  date: string;
+  startTime: string;
+  endTime: string;
+  reason?: string;
+  isBooked: boolean;
+  createdAt: string;
+}
+
+// ─────────────────────────────────────────────
+// Before/After Photos
+// ─────────────────────────────────────────────
+
+export interface BeforeAfterPhotoView {
+  id: string;
+  patientId: string;
+  patientName: string;
+  treatmentPlanId: string;
+  description: string;
+  beforeDate: string;
+  afterDate: string | null;
+  category: string;
+}
+
+export async function fetchBeforeAfterPhotos(clinicId: string): Promise<BeforeAfterPhotoView[]> {
+  await ensureLookups(clinicId);
+  const rows = await fetchRows<{
+    id: string;
+    clinic_id: string;
+    patient_id: string;
+    treatment_plan_id: string | null;
+    description: string | null;
+    before_date: string | null;
+    after_date: string | null;
+    category: string | null;
+  }>("before_after_photos", {
+    eq: [["clinic_id", clinicId]],
+    order: ["before_date", { ascending: false }],
+  });
+  return rows.map((r) => ({
+    id: r.id,
+    patientId: r.patient_id,
+    patientName: _userMap?.get(r.patient_id)?.name ?? "Patient",
+    treatmentPlanId: r.treatment_plan_id ?? "",
+    description: r.description ?? "",
+    beforeDate: r.before_date ?? "",
+    afterDate: r.after_date ?? null,
+    category: r.category ?? "General",
+  }));
+}
+
+// ─────────────────────────────────────────────
+// Installment Plans (grouped view)
+// ─────────────────────────────────────────────
+
+export interface InstallmentPaymentView {
+  id: string;
+  installmentPlanId: string;
+  amount: number;
+  dueDate: string;
+  paidDate: string | null;
+  status: "pending" | "paid" | "overdue";
+  receiptId: string | null;
+}
+
+export interface InstallmentPlanView {
+  id: string;
+  patientId: string;
+  patientName: string;
+  treatmentPlanId: string;
+  treatmentTitle: string;
+  totalAmount: number;
+  currency: string;
+  downPayment: number;
+  numberOfInstallments: number;
+  installments: InstallmentPaymentView[];
+  createdAt: string;
+  status: "active" | "completed" | "defaulted";
+  whatsappReminderEnabled: boolean;
+}
+
+interface InstallmentPlanRaw {
+  id: string;
+  clinic_id: string;
+  patient_id: string;
+  treatment_plan_id: string;
+  total_amount: number;
+  currency: string | null;
+  down_payment: number | null;
+  status: string;
+  whatsapp_reminder: boolean;
+  created_at: string;
+}
+
+interface InstallmentItemRaw {
+  id: string;
+  plan_id: string;
+  amount: number;
+  due_date: string;
+  paid_date: string | null;
+  status: string;
+  receipt_id: string | null;
+}
+
+export async function fetchInstallmentPlans(clinicId: string): Promise<InstallmentPlanView[]> {
+  await ensureLookups(clinicId);
+
+  const plans = await fetchRows<InstallmentPlanRaw>("installment_plans", {
+    eq: [["clinic_id", clinicId]],
+    order: ["created_at", { ascending: false }],
+  });
+
+  if (plans.length === 0) return [];
+
+  const planIds = plans.map((p) => p.id);
+  const items = await fetchRows<InstallmentItemRaw>("installments", {
+    inFilter: ["plan_id", planIds],
+    order: ["due_date", { ascending: true }],
+  });
+
+  const itemsByPlan = new Map<string, InstallmentItemRaw[]>();
+  for (const item of items) {
+    const arr = itemsByPlan.get(item.plan_id) ?? [];
+    arr.push(item);
+    itemsByPlan.set(item.plan_id, arr);
+  }
+
+  // Fetch treatment plan titles
+  const tpIds = [...new Set(plans.map((p) => p.treatment_plan_id))];
+  const tpRows = await fetchRows<{ id: string; title: string }>("treatment_plans", {
+    select: "id, title",
+    inFilter: ["id", tpIds],
+  });
+  const tpMap = new Map(tpRows.map((t) => [t.id, t.title]));
+
+  return plans.map((p) => {
+    const planItems = itemsByPlan.get(p.id) ?? [];
+    return {
+      id: p.id,
+      patientId: p.patient_id,
+      patientName: _userMap?.get(p.patient_id)?.name ?? "Patient",
+      treatmentPlanId: p.treatment_plan_id,
+      treatmentTitle: tpMap.get(p.treatment_plan_id) ?? "Treatment Plan",
+      totalAmount: p.total_amount,
+      currency: p.currency ?? "MAD",
+      downPayment: p.down_payment ?? 0,
+      numberOfInstallments: planItems.length,
+      installments: planItems.map((i) => ({
+        id: i.id,
+        installmentPlanId: i.plan_id,
+        amount: i.amount,
+        dueDate: i.due_date,
+        paidDate: i.paid_date,
+        status: i.status as "pending" | "paid" | "overdue",
+        receiptId: i.receipt_id,
+      })),
+      createdAt: p.created_at?.split("T")[0] ?? "",
+      status: p.status as "active" | "completed" | "defaulted",
+      whatsappReminderEnabled: p.whatsapp_reminder ?? false,
+    };
+  });
+}
+
+// ─────────────────────────────────────────────
+// Analytics (computed from real data)
+// ─────────────────────────────────────────────
+
+export interface DailyAnalyticsView {
+  date: string;
+  patientCount: number;
+  revenue: number;
+  appointments: number;
+  noShows: number;
+  walkIns: number;
+  onlineBookings: number;
+}
+
+export interface WeeklyRevenueView {
+  week: string;
+  revenue: number;
+  patients: number;
+}
+
+export interface MonthlyRevenueView {
+  month: string;
+  revenue: number;
+  patients: number;
+  appointments: number;
+}
+
+export interface ServicePopularityView {
+  serviceName: string;
+  count: number;
+  revenue: number;
+  percentage: number;
+}
+
+export interface HourlyHeatmapView {
+  day: string;
+  hours: { hour: number; count: number }[];
+}
+
+export interface ReviewTrendView {
+  month: string;
+  averageScore: number;
+  count: number;
+}
+
+export interface PatientRetentionView {
+  month: string;
+  newPatients: number;
+  returningPatients: number;
+  retentionRate: number;
+}
+
+export interface AnalyticsData {
+  dailyAnalytics: DailyAnalyticsView[];
+  weeklyRevenue: WeeklyRevenueView[];
+  monthlyRevenue: MonthlyRevenueView[];
+  servicePopularity: ServicePopularityView[];
+  hourlyHeatmap: HourlyHeatmapView[];
+  reviewTrends: ReviewTrendView[];
+  patientRetention: PatientRetentionView[];
+  totalPatients: number;
+  totalAppointments: number;
+}
+
+export async function fetchAnalytics(clinicId: string): Promise<AnalyticsData> {
+  const supabase = createClient();
+
+  const [apptsRes, paymentsRes, reviewsRes, patientsRes] = await Promise.all([
+    supabase.from("appointments").select("*").eq("clinic_id", clinicId),
+    supabase.from("payments").select("*").eq("clinic_id", clinicId).eq("status", "completed"),
+    supabase.from("reviews").select("*").eq("clinic_id", clinicId),
+    supabase.from("users").select("id, created_at").eq("clinic_id", clinicId).eq("role", "patient"),
+  ]);
+
+  type ApptRow = { id: string; appointment_date: string; start_time: string; status: string; patient_id: string; service_id: string | null; booking_source: string | null };
+  type PaymentRow = { id: string; amount: number; created_at: string };
+  type ReviewRow = { id: string; stars: number; created_at: string };
+  type PatientRow = { id: string; created_at: string };
+
+  const appts = (apptsRes.data ?? []) as ApptRow[];
+  const payments = (paymentsRes.data ?? []) as PaymentRow[];
+  const reviews = (reviewsRes.data ?? []) as ReviewRow[];
+  const allPatients = (patientsRes.data ?? []) as PatientRow[];
+
+  await ensureLookups(clinicId);
+
+  // Daily analytics (last 20 days)
+  const dailyMap = new Map<string, DailyAnalyticsView>();
+  const now = new Date();
+  for (let i = 19; i >= 0; i--) {
+    const d = new Date(now);
+    d.setDate(d.getDate() - i);
+    const dateStr = d.toISOString().split("T")[0];
+    dailyMap.set(dateStr, { date: dateStr, patientCount: 0, revenue: 0, appointments: 0, noShows: 0, walkIns: 0, onlineBookings: 0 });
+  }
+  for (const a of appts) {
+    const day = dailyMap.get(a.appointment_date);
+    if (!day) continue;
+    day.appointments++;
+    day.patientCount++;
+    if (a.status === "no_show" || a.status === "no-show") day.noShows++;
+    if (a.booking_source === "walk-in" || a.booking_source === "walk_in") day.walkIns++;
+    if (a.booking_source === "online" || a.booking_source === "website") day.onlineBookings++;
+  }
+  for (const p of payments) {
+    const dateStr = p.created_at?.split("T")[0];
+    const day = dailyMap.get(dateStr);
+    if (day) day.revenue += p.amount;
+  }
+  const dailyAnalytics = [...dailyMap.values()];
+
+  // Weekly revenue (group daily into weeks)
+  const weeklyRevenue: WeeklyRevenueView[] = [];
+  for (let i = 0; i < dailyAnalytics.length; i += 7) {
+    const chunk = dailyAnalytics.slice(i, i + 7);
+    if (chunk.length === 0) break;
+    const weekNum = Math.floor(i / 7) + 1;
+    weeklyRevenue.push({
+      week: `Week ${weekNum} (${chunk[0].date.slice(5)} - ${chunk[chunk.length - 1].date.slice(5)})`,
+      revenue: chunk.reduce((s, d) => s + d.revenue, 0),
+      patients: chunk.reduce((s, d) => s + d.patientCount, 0),
+    });
+  }
+
+  // Monthly revenue (last 6 months)
+  const monthlyRevenue: MonthlyRevenueView[] = [];
+  for (let i = 5; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const monthStr = d.toISOString().slice(0, 7);
+    const label = d.toLocaleDateString("en-US", { month: "short", year: "numeric" });
+    const monthAppts = appts.filter((a) => a.appointment_date?.startsWith(monthStr));
+    const monthPayments = payments.filter((p) => p.created_at?.startsWith(monthStr));
+    const uniquePatients = new Set(monthAppts.map((a) => a.patient_id));
+    monthlyRevenue.push({
+      month: label,
+      revenue: monthPayments.reduce((s, p) => s + p.amount, 0),
+      patients: uniquePatients.size,
+      appointments: monthAppts.length,
+    });
+  }
+
+  // Service popularity
+  const serviceCount = new Map<string, { count: number; revenue: number }>();
+  for (const a of appts) {
+    const svcName = a.service_id ? (_serviceMap?.get(a.service_id)?.name ?? "Other") : "Consultation";
+    const entry = serviceCount.get(svcName) ?? { count: 0, revenue: 0 };
+    entry.count++;
+    if (a.service_id) {
+      entry.revenue += _serviceMap?.get(a.service_id)?.price ?? 0;
+    }
+    serviceCount.set(svcName, entry);
+  }
+  const totalSvcCount = appts.length || 1;
+  const servicePopularity: ServicePopularityView[] = [...serviceCount.entries()]
+    .map(([name, val]) => ({
+      serviceName: name,
+      count: val.count,
+      revenue: val.revenue,
+      percentage: Math.round((val.count / totalSvcCount) * 100),
+    }))
+    .sort((a, b) => b.count - a.count);
+
+  // Hourly heatmap
+  const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  const heatmap = new Map<string, Map<number, number>>();
+  for (const name of dayNames) heatmap.set(name, new Map());
+  for (const a of appts) {
+    const date = new Date(a.appointment_date);
+    const dayName = dayNames[date.getDay()];
+    const hour = parseInt(a.start_time?.slice(0, 2) ?? "0", 10);
+    const dayMap = heatmap.get(dayName)!;
+    dayMap.set(hour, (dayMap.get(hour) ?? 0) + 1);
+  }
+  const hourlyHeatmap: HourlyHeatmapView[] = dayNames.slice(1, 7).map((day) => ({
+    day,
+    hours: [9, 10, 11, 12, 14, 15, 16, 17]
+      .map((hour) => ({ hour, count: heatmap.get(day)?.get(hour) ?? 0 })),
+  }));
+
+  // Review trends (last 6 months)
+  const reviewTrends: ReviewTrendView[] = [];
+  for (let i = 5; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const monthStr = d.toISOString().slice(0, 7);
+    const label = d.toLocaleDateString("en-US", { month: "short", year: "numeric" });
+    const monthReviews = reviews.filter((r) => r.created_at?.startsWith(monthStr));
+    const avg = monthReviews.length > 0
+      ? monthReviews.reduce((s, r) => s + r.stars, 0) / monthReviews.length
+      : 0;
+    reviewTrends.push({ month: label, averageScore: Math.round(avg * 10) / 10, count: monthReviews.length });
+  }
+
+  // Patient retention (last 6 months)
+  const patientRetention: PatientRetentionView[] = [];
+  for (let i = 5; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const monthStr = d.toISOString().slice(0, 7);
+    const label = d.toLocaleDateString("en-US", { month: "short", year: "numeric" });
+    const newPts = allPatients.filter((p) => p.created_at?.startsWith(monthStr)).length;
+    const monthAppts = appts.filter((a) => a.appointment_date?.startsWith(monthStr));
+    const returningIds = new Set(monthAppts.map((a) => a.patient_id));
+    const returning = returningIds.size;
+    const total = newPts + returning || 1;
+    patientRetention.push({
+      month: label,
+      newPatients: newPts,
+      returningPatients: returning,
+      retentionRate: Math.round((returning / total) * 100),
+    });
+  }
+
+  return {
+    dailyAnalytics,
+    weeklyRevenue,
+    monthlyRevenue,
+    servicePopularity,
+    hourlyHeatmap,
+    reviewTrends,
+    patientRetention,
+    totalPatients: allPatients.length,
+    totalAppointments: appts.length,
+  };
+}
