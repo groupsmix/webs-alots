@@ -786,6 +786,223 @@ export interface PainQuestionnaire {
   created_at: string;
 }
 
+// ---- Para-Medical Extras ----
+
+export interface ExerciseProgramRow {
+  id: string;
+  clinic_id: string;
+  patient_id: string;
+  therapist_id: string;
+  title: string;
+  exercises: Record<string, unknown>[];
+  frequency: string;
+  start_date: string;
+  end_date: string | null;
+  status: "active" | "completed" | "paused";
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PhysioSessionRow {
+  id: string;
+  clinic_id: string;
+  patient_id: string;
+  therapist_id: string;
+  program_id: string | null;
+  session_date: string;
+  duration_minutes: number;
+  attended: boolean;
+  progress_notes: string | null;
+  pain_level_before: number | null;
+  pain_level_after: number | null;
+  exercises_completed: string[];
+  created_at: string;
+}
+
+export interface ProgressPhotoRow {
+  id: string;
+  clinic_id: string;
+  patient_id: string;
+  photo_url: string;
+  photo_date: string;
+  category: string;
+  notes: string | null;
+  created_at: string;
+}
+
+export interface MealPlanRow {
+  id: string;
+  clinic_id: string;
+  patient_id: string;
+  nutritionist_id: string;
+  title: string;
+  type: "daily" | "weekly";
+  daily_plans: Record<string, unknown>[];
+  target_calories: number;
+  notes: string | null;
+  start_date: string;
+  end_date: string | null;
+  status: "active" | "completed" | "draft";
+  created_at: string;
+  updated_at: string;
+}
+
+export interface BodyMeasurementRow {
+  id: string;
+  clinic_id: string;
+  patient_id: string;
+  measurement_date: string;
+  weight_kg: number | null;
+  height_cm: number | null;
+  bmi: number | null;
+  body_fat_pct: number | null;
+  waist_cm: number | null;
+  hip_cm: number | null;
+  chest_cm: number | null;
+  arm_cm: number | null;
+  thigh_cm: number | null;
+  notes: string | null;
+  created_at: string;
+}
+
+export interface TherapySessionNoteRow {
+  id: string;
+  clinic_id: string;
+  patient_id: string;
+  therapist_id: string;
+  session_date: string;
+  session_number: number;
+  duration_minutes: number;
+  session_type: "individual" | "couple" | "family" | "group";
+  mood_rating: number | null;
+  presenting_issues: string | null;
+  interventions: string | null;
+  observations: string | null;
+  homework: string | null;
+  is_confidential: boolean;
+  risk_assessment: "none" | "low" | "moderate" | "high" | null;
+  next_session_date: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface TherapyPlanRow {
+  id: string;
+  clinic_id: string;
+  patient_id: string;
+  therapist_id: string;
+  diagnosis: string | null;
+  treatment_approach: string;
+  goals: Record<string, unknown>[];
+  start_date: string;
+  review_date: string | null;
+  status: "active" | "completed" | "on_hold";
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface SpeechExerciseRow {
+  id: string;
+  clinic_id: string;
+  name: string;
+  category: "articulation" | "fluency" | "language" | "voice" | "pragmatics" | "phonology";
+  description: string;
+  difficulty: "beginner" | "intermediate" | "advanced";
+  target_sounds: string[];
+  instructions: string;
+  materials_needed: string | null;
+  duration_minutes: number;
+  created_at: string;
+}
+
+export interface SpeechSessionRow {
+  id: string;
+  clinic_id: string;
+  patient_id: string;
+  therapist_id: string;
+  session_date: string;
+  duration_minutes: number;
+  attended: boolean;
+  exercises_assigned: string[];
+  exercises_completed: string[];
+  accuracy_pct: number | null;
+  notes: string | null;
+  home_practice: string | null;
+  created_at: string;
+}
+
+export interface SpeechProgressReportRow {
+  id: string;
+  clinic_id: string;
+  patient_id: string;
+  therapist_id: string;
+  report_date: string;
+  period_start: string;
+  period_end: string;
+  goals_summary: string;
+  progress_summary: string;
+  areas_of_improvement: string[];
+  areas_of_concern: string[];
+  recommendations: string;
+  next_steps: string;
+  overall_progress: "significant" | "moderate" | "minimal" | "regression";
+  created_at: string;
+}
+
+export interface LensInventoryRow {
+  id: string;
+  clinic_id: string;
+  type: "single_vision" | "bifocal" | "progressive" | "contact" | "sunglasses";
+  material: string;
+  coating: string | null;
+  power_range: string;
+  stock_quantity: number;
+  min_threshold: number;
+  unit_cost: number;
+  selling_price: number;
+  supplier: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface FrameCatalogRow {
+  id: string;
+  clinic_id: string;
+  brand: string;
+  model: string;
+  color: string;
+  size: string;
+  material: string;
+  frame_type: "full_rim" | "semi_rimless" | "rimless";
+  gender: "men" | "women" | "unisex" | "kids";
+  price: number;
+  cost_price: number;
+  stock_quantity: number;
+  photo_url: string | null;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface OpticalPrescriptionRow {
+  id: string;
+  clinic_id: string;
+  patient_id: string;
+  ophthalmologist_name: string | null;
+  prescription_date: string;
+  expiry_date: string | null;
+  right_eye: Record<string, unknown>;
+  left_eye: Record<string, unknown>;
+  notes: string | null;
+  frame_id: string | null;
+  lens_type: string | null;
+  status: "pending" | "in_progress" | "ready" | "delivered";
+  created_at: string;
+  updated_at: string;
+}
+
 // ---- Custom Fields (Migration 00012) ----
 
 export type CustomFieldType =
@@ -844,7 +1061,6 @@ export interface CustomFieldOverrideRow {
   sort_order: number | null;
   created_at: string;
 }
-
 // ---- Diagnostic Center: Analysis Lab ----
 
 export interface LabTestCatalog {
@@ -1140,6 +1356,20 @@ export interface Database {
       before_after_photos: { Row: BeforeAfterPhoto; Insert: Partial<BeforeAfterPhoto> & Pick<BeforeAfterPhoto, "clinic_id" | "patient_id">; Update: Partial<BeforeAfterPhoto> };
       pain_questionnaires: { Row: PainQuestionnaire; Insert: Partial<PainQuestionnaire> & Pick<PainQuestionnaire, "clinic_id" | "patient_id" | "pain_level">; Update: Partial<PainQuestionnaire> };
       clinic_types: { Row: ClinicTypeRecord; Insert: Partial<ClinicTypeRecord> & Pick<ClinicTypeRecord, "type_key" | "name_fr" | "name_ar" | "category">; Update: Partial<ClinicTypeRecord> };
+      // Para-medical tables
+      exercise_programs: { Row: ExerciseProgramRow; Insert: Partial<ExerciseProgramRow> & Pick<ExerciseProgramRow, "clinic_id" | "patient_id" | "therapist_id" | "title">; Update: Partial<ExerciseProgramRow> };
+      physio_sessions: { Row: PhysioSessionRow; Insert: Partial<PhysioSessionRow> & Pick<PhysioSessionRow, "clinic_id" | "patient_id" | "therapist_id">; Update: Partial<PhysioSessionRow> };
+      progress_photos: { Row: ProgressPhotoRow; Insert: Partial<ProgressPhotoRow> & Pick<ProgressPhotoRow, "clinic_id" | "patient_id" | "photo_url">; Update: Partial<ProgressPhotoRow> };
+      meal_plans: { Row: MealPlanRow; Insert: Partial<MealPlanRow> & Pick<MealPlanRow, "clinic_id" | "patient_id" | "nutritionist_id" | "title">; Update: Partial<MealPlanRow> };
+      body_measurements: { Row: BodyMeasurementRow; Insert: Partial<BodyMeasurementRow> & Pick<BodyMeasurementRow, "clinic_id" | "patient_id">; Update: Partial<BodyMeasurementRow> };
+      therapy_session_notes: { Row: TherapySessionNoteRow; Insert: Partial<TherapySessionNoteRow> & Pick<TherapySessionNoteRow, "clinic_id" | "patient_id" | "therapist_id">; Update: Partial<TherapySessionNoteRow> };
+      therapy_plans: { Row: TherapyPlanRow; Insert: Partial<TherapyPlanRow> & Pick<TherapyPlanRow, "clinic_id" | "patient_id" | "therapist_id">; Update: Partial<TherapyPlanRow> };
+      speech_exercises: { Row: SpeechExerciseRow; Insert: Partial<SpeechExerciseRow> & Pick<SpeechExerciseRow, "clinic_id" | "name" | "category">; Update: Partial<SpeechExerciseRow> };
+      speech_sessions: { Row: SpeechSessionRow; Insert: Partial<SpeechSessionRow> & Pick<SpeechSessionRow, "clinic_id" | "patient_id" | "therapist_id">; Update: Partial<SpeechSessionRow> };
+      speech_progress_reports: { Row: SpeechProgressReportRow; Insert: Partial<SpeechProgressReportRow> & Pick<SpeechProgressReportRow, "clinic_id" | "patient_id" | "therapist_id">; Update: Partial<SpeechProgressReportRow> };
+      lens_inventory: { Row: LensInventoryRow; Insert: Partial<LensInventoryRow> & Pick<LensInventoryRow, "clinic_id" | "type">; Update: Partial<LensInventoryRow> };
+      frame_catalog: { Row: FrameCatalogRow; Insert: Partial<FrameCatalogRow> & Pick<FrameCatalogRow, "clinic_id" | "brand" | "model">; Update: Partial<FrameCatalogRow> };
+      optical_prescriptions: { Row: OpticalPrescriptionRow; Insert: Partial<OpticalPrescriptionRow> & Pick<OpticalPrescriptionRow, "clinic_id" | "patient_id">; Update: Partial<OpticalPrescriptionRow> };
       // Custom Fields (migration 00012)
       custom_field_definitions: { Row: CustomFieldDefinitionRow; Insert: Partial<CustomFieldDefinitionRow> & Pick<CustomFieldDefinitionRow, "clinic_type_key" | "entity_type" | "field_key" | "field_type" | "label_fr">; Update: Partial<CustomFieldDefinitionRow> };
       custom_field_values: { Row: CustomFieldValuesRow; Insert: Partial<CustomFieldValuesRow> & Pick<CustomFieldValuesRow, "clinic_id" | "entity_type" | "entity_id">; Update: Partial<CustomFieldValuesRow> };
