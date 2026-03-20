@@ -31,6 +31,13 @@ const PUBLIC_ROUTES = [
   "/login",
   "/register",
   "/auth/callback",
+  "/how-to-book",
+  "/location",
+];
+
+// Public route prefixes (no auth required)
+const PUBLIC_PREFIXES = [
+  "/pharmacy",
 ];
 
 // Protected route prefixes (require authentication)
@@ -43,7 +50,11 @@ const PROTECTED_PREFIXES = [
 ];
 
 function isPublicRoute(pathname: string): boolean {
-  return PUBLIC_ROUTES.includes(pathname) || pathname.startsWith("/api/");
+  return (
+    PUBLIC_ROUTES.includes(pathname) ||
+    pathname.startsWith("/api/") ||
+    PUBLIC_PREFIXES.some((prefix) => pathname.startsWith(prefix))
+  );
 }
 
 function isProtectedRoute(pathname: string): boolean {
@@ -51,13 +62,31 @@ function isProtectedRoute(pathname: string): boolean {
 }
 
 export async function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl;
+
+  // If Supabase is not configured, allow all requests through
+  // so the site renders with demo data instead of crashing
+  if (
+    !process.env.NEXT_PUBLIC_SUPABASE_URL ||
+    !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  ) {
+    // For protected routes without Supabase, redirect to login
+    // (login page will show an appropriate message)
+    if (isProtectedRoute(pathname)) {
+      const loginUrl = new URL("/login", request.url);
+      loginUrl.searchParams.set("redirect", pathname);
+      return NextResponse.redirect(loginUrl);
+    }
+    return NextResponse.next({ request });
+  }
+
   let supabaseResponse = NextResponse.next({
     request,
   });
 
   const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    process.env.NEXT_PUBLIC_SUPABASE_URL,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
     {
       cookies: {
         getAll() {
@@ -83,8 +112,6 @@ export async function middleware(request: NextRequest) {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-
-  const { pathname } = request.nextUrl;
 
   // If user is on a public route, allow through
   if (isPublicRoute(pathname)) {
