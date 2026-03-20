@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   Plus, Edit, Trash2, Megaphone, AlertTriangle, Info, AlertCircle,
   Calendar, Users, Search, Eye,
@@ -13,12 +13,32 @@ import { Label } from "@/components/ui/label";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from "@/components/ui/dialog";
-import { announcements as initialAnnouncements, type Announcement } from "@/lib/super-admin-data";
+import { Loader2 } from "lucide-react";
+import {
+  fetchAnnouncements,
+  type Announcement,
+} from "@/lib/super-admin-actions";
 
 type TypeFilter = "all" | "info" | "warning" | "critical";
 
 export default function AnnouncementsPage() {
-  const [list, setList] = useState<Announcement[]>(initialAnnouncements);
+  const [list, setList] = useState<Announcement[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const loadAnnouncements = useCallback(async () => {
+    try {
+      const data = await fetchAnnouncements();
+      setList(data);
+    } catch (err) {
+      console.error("[sa-announcements] failed to load:", err);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadAnnouncements();
+  }, [loadAnnouncements]);
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState<TypeFilter>("all");
   const [editOpen, setEditOpen] = useState(false);

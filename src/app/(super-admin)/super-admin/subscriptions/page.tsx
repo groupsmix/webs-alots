@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   Search, Filter, Eye, Send, CreditCard, Receipt,
   CheckCircle, Clock, AlertTriangle, Download,
@@ -14,16 +14,17 @@ import { Separator } from "@/components/ui/separator";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from "@/components/ui/dialog";
+import { Loader2 } from "lucide-react";
 import {
-  clientSubscriptions,
-  getTotalMRR,
-  getSubscriptionStats,
   systemTypeLabels,
   tierColors,
   statusColors,
+} from "@/lib/pricing-data";
+import {
+  fetchClientSubscriptions,
   type ClientSubscription,
   type SystemType,
-} from "@/lib/pricing-data";
+} from "@/lib/super-admin-actions";
 
 type StatusFilter = "all" | ClientSubscription["status"];
 type SystemFilter = "all" | SystemType;
@@ -42,12 +43,40 @@ export default function SubscriptionsPage() {
   const [reminderOpen, setReminderOpen] = useState(false);
   const [reminderSub, setReminderSub] = useState<ClientSubscription | null>(null);
   const [expandedInvoices, setExpandedInvoices] = useState<string | null>(null);
+  const [subscriptions, setSubscriptions] = useState<ClientSubscription[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const stats = getSubscriptionStats();
-  const mrr = getTotalMRR();
+  const loadSubscriptions = useCallback(async () => {
+    try {
+      const data = await fetchClientSubscriptions();
+      setSubscriptions(data);
+    } catch (err) {
+      console.error("[sa-subscriptions] failed to load:", err);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadSubscriptions();
+  }, [loadSubscriptions]);
+
+  const stats = {
+    active: subscriptions.filter((s) => s.status === "active").length,
+    trial: subscriptions.filter((s) => s.status === "trial").length,
+    pastDue: subscriptions.filter((s) => s.status === "past_due").length,
+    cancelled: subscriptions.filter((s) => s.status === "cancelled" || s.status === "suspended").length,
+    total: subscriptions.length,
+  };
+  const mrr = subscriptions
+    .filter((s) => s.status === "active" || s.status === "past_due")
+    .reduce((sum, s) => {
+      if (s.billingCycle === "yearly") return sum + Math.round(s.amount / 12);
+      return sum + s.amount;
+    }, 0);
   const arr = mrr * 12;
 
-  const filtered = clientSubscriptions.filter((sub) => {
+  const filtered = subscriptions.filter((sub) => {
     const q = search.toLowerCase();
     const matchSearch = !q || sub.clinicName.toLowerCase().includes(q);
     const matchStatus = statusFilter === "all" || sub.status === statusFilter;
@@ -151,7 +180,7 @@ export default function SubscriptionsPage() {
           <Button key={s} variant={statusFilter === s ? "default" : "outline"} size="sm" onClick={() => setStatusFilter(s)} className="text-xs">
             {s === "all" ? "Tous" : statusLabel(s as ClientSubscription["status"])}
             <Badge variant="secondary" className="ml-1 text-[10px] px-1">
-              {s === "all" ? clientSubscriptions.length : clientSubscriptions.filter((sub) => sub.status === s).length}
+              {s === "all" ? subscriptions.length : subscriptions.filter((sub) => sub.status === s).length}
             </Badge>
           </Button>
         ))}
@@ -247,7 +276,7 @@ export default function SubscriptionsPage() {
 
           {/* Expanded Invoices */}
           {expandedInvoices && (() => {
-            const sub = clientSubscriptions.find((s) => s.id === expandedInvoices);
+            const sub = subscriptions.find((s) => s.id === expandedInvoices);
             if (!sub) return null;
             return (
               <div className="border-t bg-muted/30 p-4">

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   Check, X, Search, Filter, Crown, Building2,
   Stethoscope, Pill, ChevronDown, ChevronUp,
@@ -12,18 +12,20 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
+import { Loader2 } from "lucide-react";
 import {
   pricingTiers,
-  featureToggles,
-  clientSubscriptions,
-  getSubscriptionStats,
-  getTotalMRR,
+  featureToggles as defaultFeatureToggles,
   systemTypeLabels,
   tierColors,
   type SystemType,
   type TierSlug,
   type FeatureToggle,
 } from "@/lib/pricing-data";
+import {
+  fetchClientSubscriptions,
+  type ClientSubscription,
+} from "@/lib/super-admin-actions";
 
 type TabView = "tiers" | "features";
 type SystemFilter = "all" | SystemType;
@@ -42,11 +44,39 @@ export default function PricingPage() {
   const [billingCycle, setBillingCycle] = useState<"monthly" | "yearly">("monthly");
   const [featureSearch, setFeatureSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>("all");
-  const [toggles, setToggles] = useState(featureToggles);
+  const [toggles, setToggles] = useState(defaultFeatureToggles);
   const [expandedTier, setExpandedTier] = useState<string | null>(null);
+  const [subscriptions, setSubscriptions] = useState<ClientSubscription[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const stats = getSubscriptionStats();
-  const mrr = getTotalMRR();
+  const loadSubscriptions = useCallback(async () => {
+    try {
+      const data = await fetchClientSubscriptions();
+      setSubscriptions(data);
+    } catch (err) {
+      console.error("[sa-pricing] failed to load subscriptions:", err);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadSubscriptions();
+  }, [loadSubscriptions]);
+
+  const stats = {
+    active: subscriptions.filter((s) => s.status === "active").length,
+    trial: subscriptions.filter((s) => s.status === "trial").length,
+    pastDue: subscriptions.filter((s) => s.status === "past_due").length,
+    cancelled: subscriptions.filter((s) => s.status === "cancelled" || s.status === "suspended").length,
+    total: subscriptions.length,
+  };
+  const mrr = subscriptions
+    .filter((s) => s.status === "active" || s.status === "past_due")
+    .reduce((sum, s) => {
+      if (s.billingCycle === "yearly") return sum + Math.round(s.amount / 12);
+      return sum + s.amount;
+    }, 0);
 
   const filteredToggles = toggles.filter((ft) => {
     const q = featureSearch.toLowerCase();
@@ -199,7 +229,7 @@ export default function PricingPage() {
             {pricingTiers.map((tier) => {
               const price = tier.pricing[selectedSystem][billingCycle];
               const isExpanded = expandedTier === tier.id;
-              const subCount = clientSubscriptions.filter((s) => s.tierSlug === tier.slug).length;
+              const subCount = subscriptions.filter((s) => s.tierSlug === tier.slug).length;
 
               return (
                 <Card key={tier.id} className={`relative ${tier.popular ? "border-primary shadow-md" : ""}`}>
@@ -283,7 +313,7 @@ export default function PricingPage() {
             <CardHeader className="py-3 px-4">
               <CardTitle className="text-base flex items-center gap-2">
                 <Users className="h-4 w-4" />
-                Abonnements par tier ({clientSubscriptions.length})
+                Abonnements par tier ({subscriptions.length})
               </CardTitle>
             </CardHeader>
             <CardContent className="p-0">
@@ -300,7 +330,7 @@ export default function PricingPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {clientSubscriptions.map((sub) => {
+                    {subscriptions.map((sub) => {
                       const Icon = systemIcons[sub.systemType];
                       return (
                         <tr key={sub.id} className="border-b last:border-0 hover:bg-muted/50">

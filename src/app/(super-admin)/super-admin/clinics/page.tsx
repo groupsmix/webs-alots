@@ -15,8 +15,27 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
-import { clinicDetails as demoClinicDetails, type ClinicDetail } from "@/lib/super-admin-data";
 import { fetchClinics, updateClinicStatus, fetchClinicUsers } from "@/lib/super-admin-actions";
+
+interface ClinicDetail {
+  id: string;
+  name: string;
+  type: "doctor" | "dentist" | "pharmacy";
+  plan: string;
+  city: string;
+  patientsCount: number;
+  monthlyRevenue: number;
+  status: "active" | "suspended" | "trial";
+  ownerName: string;
+  ownerEmail: string;
+  ownerPhone: string;
+  createdAt: string;
+  doctorsCount: number;
+  appointmentsThisMonth: number;
+  domain?: string;
+  lastLoginAt: string;
+  features: Record<string, boolean>;
+}
 
 type FilterType = "all" | "doctor" | "dentist" | "pharmacy";
 type FilterStatus = "all" | "active" | "suspended" | "trial";
@@ -30,53 +49,49 @@ export default function AllClinicsPage() {
   const [loginClinic, setLoginClinic] = useState<ClinicDetail | null>(null);
   const [suspendOpen, setSuspendOpen] = useState(false);
   const [suspendClinic, setSuspendClinic] = useState<ClinicDetail | null>(null);
-  const [list, setList] = useState<ClinicDetail[]>(demoClinicDetails);
-  const [isLive, setIsLive] = useState(false);
+  const [list, setList] = useState<ClinicDetail[]>([]);
   const [loadingData, setLoadingData] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
 
   const loadClinics = useCallback(async () => {
     try {
       const clinics = await fetchClinics();
-      if (clinics && clinics.length > 0) {
-        const enriched: ClinicDetail[] = await Promise.all(
-          clinics.map(async (c) => {
-            let patientsCount = 0;
-            let doctorsCount = 0;
-            try {
-              const users = await fetchClinicUsers(c.id);
-              patientsCount = users.filter((u) => u.role === "patient").length;
-              doctorsCount = users.filter((u) => u.role === "doctor" || u.role === "clinic_admin").length;
-            } catch {
-              // ignore
-            }
-            const config = (c.config ?? {}) as Record<string, unknown>;
-            return {
-              id: c.id,
-              name: c.name,
-              type: c.type as "doctor" | "dentist" | "pharmacy",
-              plan: c.tier ?? "pro",
-              city: (config.city as string) ?? "",
-              patientsCount,
-              monthlyRevenue: 0,
-              status: (c.status === "inactive" ? "suspended" : c.status ?? "active") as "active" | "suspended" | "trial",
-              ownerName: (config.ownerName as string) ?? "",
-              ownerEmail: (config.email as string) ?? "",
-              ownerPhone: (config.phone as string) ?? "",
-              createdAt: c.created_at ?? "",
-              doctorsCount,
-              appointmentsThisMonth: 0,
-              domain: (config.domain as string) ?? undefined,
-              lastLoginAt: "",
-              features: {},
-            };
-          }),
-        );
-        setList(enriched);
-        setIsLive(true);
-      }
-    } catch {
-      // Supabase not configured - keep demo data
+      const enriched: ClinicDetail[] = await Promise.all(
+        clinics.map(async (c) => {
+          let patientsCount = 0;
+          let doctorsCount = 0;
+          try {
+            const users = await fetchClinicUsers(c.id);
+            patientsCount = users.filter((u) => u.role === "patient").length;
+            doctorsCount = users.filter((u) => u.role === "doctor" || u.role === "clinic_admin").length;
+          } catch {
+            // ignore
+          }
+          const config = (c.config ?? {}) as Record<string, unknown>;
+          return {
+            id: c.id,
+            name: c.name,
+            type: c.type as "doctor" | "dentist" | "pharmacy",
+            plan: c.tier ?? "pro",
+            city: (config.city as string) ?? "",
+            patientsCount,
+            monthlyRevenue: 0,
+            status: (c.status === "inactive" ? "suspended" : c.status ?? "active") as "active" | "suspended" | "trial",
+            ownerName: (config.ownerName as string) ?? "",
+            ownerEmail: (config.email as string) ?? "",
+            ownerPhone: (config.phone as string) ?? "",
+            createdAt: c.created_at ?? "",
+            doctorsCount,
+            appointmentsThisMonth: 0,
+            domain: (config.domain as string) ?? undefined,
+            lastLoginAt: "",
+            features: {},
+          };
+        }),
+      );
+      setList(enriched);
+    } catch (err) {
+      console.error("[sa-clinics] failed to load clinics:", err);
     } finally {
       setLoadingData(false);
     }
@@ -93,29 +108,19 @@ export default function AllClinicsPage() {
   });
 
   async function toggleStatus(clinic: ClinicDetail) {
-    if (isLive) {
-      setActionLoading(true);
-      try {
-        const newStatus = clinic.status === "suspended" ? "active" : "suspended";
-        await updateClinicStatus(clinic.id, newStatus);
-        setList((prev) =>
-          prev.map((c) =>
-            c.id === clinic.id ? { ...c, status: newStatus as "active" | "suspended" | "trial" } : c,
-          ),
-        );
-      } catch (err) {
-        console.error("Failed to update status:", err);
-      } finally {
-        setActionLoading(false);
-      }
-    } else {
+    setActionLoading(true);
+    try {
+      const newStatus = clinic.status === "suspended" ? "active" : "suspended";
+      await updateClinicStatus(clinic.id, newStatus);
       setList((prev) =>
         prev.map((c) =>
-          c.id === clinic.id
-            ? { ...c, status: c.status === "suspended" ? ("active" as const) : ("suspended" as const) }
-            : c,
+          c.id === clinic.id ? { ...c, status: newStatus as "active" | "suspended" | "trial" } : c,
         ),
       );
+    } catch (err) {
+      console.error("Failed to update status:", err);
+    } finally {
+      setActionLoading(false);
     }
     setSuspendOpen(false);
   }
@@ -127,8 +132,6 @@ export default function AllClinicsPage() {
           <h1 className="text-2xl font-bold">All Clinics</h1>
           <p className="text-sm text-muted-foreground mt-1">
             Manage all {list.length} registered clinics
-            {isLive && <Badge variant="success" className="ml-2 text-[10px]">Live Data</Badge>}
-            {!isLive && !loadingData && <Badge variant="secondary" className="ml-2 text-[10px]">Demo Data</Badge>}
           </p>
         </div>
         <Link href="/super-admin/onboarding">
@@ -295,7 +298,7 @@ export default function AllClinicsPage() {
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setLoginOpen(false)}>Cancel</Button>
-              <Button onClick={() => setLoginOpen(false)}><LogIn className="h-4 w-4 mr-1" />Continue as {loginClinic.ownerName.split(" ")[0]}</Button>
+              <Button onClick={() => setLoginOpen(false)}><LogIn className="h-4 w-4 mr-1" />Continue as {loginClinic.ownerName.split(" ")[0] || "Admin"}</Button>
             </DialogFooter>
           </DialogContent>
         )}
