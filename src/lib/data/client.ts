@@ -1118,6 +1118,49 @@ export async function fetchInstallments(clinicId: string): Promise<InstallmentVi
 }
 
 // ─────────────────────────────────────────────
+// Dental: Before/After Photos
+// ─────────────────────────────────────────────
+
+export interface BeforeAfterPhotoView {
+  id: string;
+  patientId: string;
+  patientName: string;
+  treatmentPlanId: string;
+  description: string;
+  beforeDate: string;
+  afterDate: string | null;
+  category: string;
+}
+
+export async function fetchBeforeAfterPhotos(clinicId: string, patientId?: string): Promise<BeforeAfterPhotoView[]> {
+  await ensureLookups(clinicId);
+  const eq: [string, unknown][] = [["clinic_id", clinicId]];
+  if (patientId) eq.push(["patient_id", patientId]);
+  const rows = await fetchRows<{
+    id: string;
+    patient_id: string;
+    treatment_plan_id: string | null;
+    description: string | null;
+    before_date: string | null;
+    after_date: string | null;
+    category: string | null;
+  }>("before_after_photos", {
+    eq,
+    order: ["before_date", { ascending: false }],
+  });
+  return rows.map((r) => ({
+    id: r.id,
+    patientId: r.patient_id,
+    patientName: _userMap?.get(r.patient_id)?.name ?? "Patient",
+    treatmentPlanId: r.treatment_plan_id ?? "",
+    description: r.description ?? "",
+    beforeDate: r.before_date ?? "",
+    afterDate: r.after_date ?? null,
+    category: r.category ?? "General",
+  }));
+}
+
+// ─────────────────────────────────────────────
 // Pharmacy: Products / Stock
 // ─────────────────────────────────────────────
 
