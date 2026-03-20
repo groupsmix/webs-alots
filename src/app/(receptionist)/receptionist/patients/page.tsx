@@ -1,18 +1,28 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Search, Phone, MessageCircle, CheckCircle } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { patients } from "@/lib/demo-data";
+import { getCurrentUser, fetchPatients, type PatientView } from "@/lib/data/client";
 import { PatientRegistrationDialog } from "@/components/receptionist/patient-registration-dialog";
 
 export default function ReceptionistPatientsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [checkedInIds, setCheckedInIds] = useState<Set<string>>(new Set());
+  const [patients, setPatients] = useState<PatientView[]>([]);
+
+  const loadPatients = useCallback(async () => {
+    const user = await getCurrentUser();
+    if (!user?.clinic_id) return;
+    const data = await fetchPatients(user.clinic_id);
+    setPatients(data);
+  }, []);
+
+  useEffect(() => { loadPatients(); }, [loadPatients]);
 
   const filteredPatients = patients.filter((p) => {
     const query = searchQuery.toLowerCase();

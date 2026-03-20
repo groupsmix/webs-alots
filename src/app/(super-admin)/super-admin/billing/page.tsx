@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   DollarSign, TrendingUp, AlertTriangle, CheckCircle, Clock,
   Send, Eye, Search, Filter, CreditCard, Receipt,
@@ -13,10 +13,8 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
-import {
-  billingRecords, getMRR, getOverdueCount, getPaidCount,
-  type BillingRecord,
-} from "@/lib/super-admin-data";
+import { fetchBillingRecords } from "@/lib/super-admin-actions";
+import type { BillingRecord } from "@/lib/super-admin-data";
 
 type StatusFilter = "all" | "paid" | "pending" | "overdue" | "cancelled";
 
@@ -26,12 +24,16 @@ export default function BillingPage() {
   const [detailRecord, setDetailRecord] = useState<BillingRecord | null>(null);
   const [reminderOpen, setReminderOpen] = useState(false);
   const [reminderRecord, setReminderRecord] = useState<BillingRecord | null>(null);
-  const [records, setRecords] = useState(billingRecords);
+  const [records, setRecords] = useState<BillingRecord[]>([]);
 
-  const mrr = getMRR();
+  useEffect(() => {
+    fetchBillingRecords().then(setRecords).catch(() => {});
+  }, []);
+
+  const mrr = records.filter((r) => r.status !== "cancelled").reduce((sum, r) => sum + r.amountDue, 0);
   const arr = mrr * 12;
-  const overdueCount = getOverdueCount();
-  const paidCount = getPaidCount();
+  const overdueCount = records.filter((r) => r.status === "overdue").length;
+  const paidCount = records.filter((r) => r.status === "paid").length;
   const totalRevenue = records.filter((r) => r.status === "paid").reduce((sum, r) => sum + r.amountPaid, 0);
   const overdueAmount = records.filter((r) => r.status === "overdue").reduce((sum, r) => sum + r.amountDue - r.amountPaid, 0);
 

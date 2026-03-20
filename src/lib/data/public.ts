@@ -296,6 +296,42 @@ export async function getPublicSlotBookingCounts(
 /**
  * Get available (non-fully-booked) slots for a date and doctor.
  */
+// ── Blog Posts ──
+
+export interface PublicBlogPost {
+  id: string;
+  title: string;
+  excerpt: string;
+  date: string;
+  readTime: string;
+  category: string;
+}
+
+export async function getPublicBlogPosts(): Promise<PublicBlogPost[]> {
+  const clinicId = getClinicId();
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from("blog_posts")
+    .select("id, title, excerpt, published_at, read_time, category")
+    .eq("clinic_id", clinicId)
+    .eq("is_published", true)
+    .order("published_at", { ascending: false });
+
+  if (error || !data) return [];
+
+  return data.map((p) => ({
+    id: p.id,
+    title: p.title ?? "",
+    excerpt: p.excerpt ?? "",
+    date: (p.published_at as string)?.split("T")[0] ?? "",
+    readTime: (p.read_time as string) ?? "5 min",
+    category: p.category ?? "",
+  }));
+}
+
+// ── Available Slots ──
+
 export async function getPublicAvailableSlots(
   date: string,
   doctorId: string,

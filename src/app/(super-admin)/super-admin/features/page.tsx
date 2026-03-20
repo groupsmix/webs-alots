@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   ToggleLeft, Search, Shield, Zap, Globe, Settings,
   CheckCircle, XCircle,
@@ -13,17 +13,21 @@ import { Switch } from "@/components/ui/switch";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from "@/components/ui/dialog";
-import {
-  featureDefinitions as initialFeatures, clinicDetails,
-  type FeatureDefinition,
-} from "@/lib/super-admin-data";
+import { fetchFeatureDefinitions, fetchClinics } from "@/lib/super-admin-actions";
+import type { FeatureDefinition } from "@/lib/super-admin-data";
 
 type CategoryFilter = "all" | "core" | "communication" | "integration" | "advanced";
 
 const tiers = ["basic", "standard", "premium"];
 
 export default function FeatureTogglesPage() {
-  const [features, setFeatures] = useState<FeatureDefinition[]>(initialFeatures);
+  const [features, setFeatures] = useState<FeatureDefinition[]>([]);
+  const [clinicCount, setClinicCount] = useState(0);
+
+  useEffect(() => {
+    fetchFeatureDefinitions().then(setFeatures).catch(() => {});
+    fetchClinics().then((c) => setClinicCount(c.length)).catch(() => {});
+  }, []);
   const [search, setSearch] = useState("");
   const [catFilter, setCatFilter] = useState<CategoryFilter>("all");
   const [bulkOpen, setBulkOpen] = useState(false);
@@ -81,7 +85,7 @@ export default function FeatureTogglesPage() {
   }
 
   const enabledCount = features.filter((f) => f.globalEnabled).length;
-  const totalClinics = clinicDetails.length;
+  const totalClinics = clinicCount;
 
   return (
     <div>

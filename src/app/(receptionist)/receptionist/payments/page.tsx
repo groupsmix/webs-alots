@@ -1,13 +1,19 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { CreditCard, Check, Clock, Search } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { appointments, patients } from "@/lib/demo-data";
+import {
+  getCurrentUser,
+  fetchTodayAppointments,
+  fetchPatients,
+  type AppointmentView,
+  type PatientView,
+} from "@/lib/data/client";
 import { PaymentDialog } from "@/components/receptionist/payment-dialog";
 
 interface PaymentEntry {
@@ -23,11 +29,19 @@ interface PaymentEntry {
 
 export default function PaymentsPage() {
   const [searchQuery, setSearchQuery] = useState("");
-  const [paymentEntries, setPaymentEntries] = useState<PaymentEntry[]>(() => {
-    const today = new Date().toISOString().split("T")[0];
-    return appointments
-      .filter((a) => a.date === today || a.status === "completed")
-      .map((a, i) => ({
+  const [paymentEntries, setPaymentEntries] = useState<PaymentEntry[]>([]);
+  const [patientList, setPatientList] = useState<PatientView[]>([]);
+
+  const loadData = useCallback(async () => {
+    const user = await getCurrentUser();
+    if (!user?.clinic_id) return;
+    const [appts, pts] = await Promise.all([
+      fetchTodayAppointments(user.clinic_id),
+      fetchPatients(user.clinic_id),
+    ]);
+    setPatientList(pts);
+    setPaymentEntries(
+      appts.map((a: AppointmentView, i: number) => ({
         id: `pay-${a.id}`,
         appointmentId: a.id,
         patientName: a.patientName,
@@ -36,8 +50,11 @@ export default function PaymentsPage() {
         amount: [200, 300, 150, 500, 250][i % 5],
         method: i % 3 === 0 ? "cash" : i % 3 === 1 ? "card" : "transfer",
         status: (a.status === "completed" ? "paid" : "pending") as "paid" | "pending",
-      }));
-  });
+      })),
+    );
+  }, []);
+
+  useEffect(() => { loadData(); }, [loadData]);
 
   const filteredEntries = paymentEntries.filter((e) =>
     e.patientName.toLowerCase().includes(searchQuery.toLowerCase())
@@ -110,7 +127,7 @@ export default function PaymentsPage() {
         <CardContent>
           <div className="space-y-3">
             {filteredEntries.map((entry) => {
-              const patient = patients.find((p) => p.name === entry.patientName);
+              const patient = patientList.find((p) => p.name === entry.patientName);
               return (
                 <div key={entry.id} className="flex items-center gap-3 rounded-lg border p-3">
                   <Avatar>

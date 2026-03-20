@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Check, X, Search, Filter, Crown, Building2,
   Stethoscope, Pill, ChevronDown, ChevronUp,
@@ -13,17 +13,15 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import {
-  pricingTiers,
-  featureToggles,
-  clientSubscriptions,
-  getSubscriptionStats,
-  getTotalMRR,
   systemTypeLabels,
   tierColors,
   type SystemType,
   type TierSlug,
   type FeatureToggle,
+  type PricingTier,
+  type ClientSubscription,
 } from "@/lib/pricing-data";
+import { fetchPricingTiers, fetchFeatureToggles, fetchClientSubscriptions } from "@/lib/super-admin-actions";
 
 type TabView = "tiers" | "features";
 type SystemFilter = "all" | SystemType;
@@ -42,11 +40,27 @@ export default function PricingPage() {
   const [billingCycle, setBillingCycle] = useState<"monthly" | "yearly">("monthly");
   const [featureSearch, setFeatureSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>("all");
-  const [toggles, setToggles] = useState(featureToggles);
+  const [toggles, setToggles] = useState<FeatureToggle[]>([]);
   const [expandedTier, setExpandedTier] = useState<string | null>(null);
+  const [tiers, setTiers] = useState<PricingTier[]>([]);
+  const [subscriptions, setSubscriptions] = useState<ClientSubscription[]>([]);
 
-  const stats = getSubscriptionStats();
-  const mrr = getTotalMRR();
+  useEffect(() => {
+    fetchPricingTiers().then(setTiers).catch(() => {});
+    fetchFeatureToggles().then(setToggles).catch(() => {});
+    fetchClientSubscriptions().then(setSubscriptions).catch(() => {});
+  }, []);
+
+  const mrr = subscriptions
+    .filter((s) => s.status === "active" || s.status === "trial")
+    .reduce((sum, s) => sum + (s.billingCycle === "monthly" ? s.amount : Math.round(s.amount / 12)), 0);
+  const stats = {
+    total: subscriptions.length,
+    active: subscriptions.filter((s) => s.status === "active").length,
+    trial: subscriptions.filter((s) => s.status === "trial").length,
+    pastDue: subscriptions.filter((s) => s.status === "past_due").length,
+    cancelled: subscriptions.filter((s) => s.status === "cancelled").length,
+  };
 
   const filteredToggles = toggles.filter((ft) => {
     const q = featureSearch.toLowerCase();
@@ -196,10 +210,10 @@ export default function PricingPage() {
 
           {/* Pricing Cards */}
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
-            {pricingTiers.map((tier) => {
+            {tiers.map((tier) => {
               const price = tier.pricing[selectedSystem][billingCycle];
               const isExpanded = expandedTier === tier.id;
-              const subCount = clientSubscriptions.filter((s) => s.tierSlug === tier.slug).length;
+              const subCount = subscriptions.filter((s) => s.tierSlug === tier.slug).length;
 
               return (
                 <Card key={tier.id} className={`relative ${tier.popular ? "border-primary shadow-md" : ""}`}>
@@ -283,7 +297,7 @@ export default function PricingPage() {
             <CardHeader className="py-3 px-4">
               <CardTitle className="text-base flex items-center gap-2">
                 <Users className="h-4 w-4" />
-                Abonnements par tier ({clientSubscriptions.length})
+                Abonnements par tier ({subscriptions.length})
               </CardTitle>
             </CardHeader>
             <CardContent className="p-0">
@@ -300,7 +314,7 @@ export default function PricingPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {clientSubscriptions.map((sub) => {
+                    {subscriptions.map((sub) => {
                       const Icon = systemIcons[sub.systemType];
                       return (
                         <tr key={sub.id} className="border-b last:border-0 hover:bg-muted/50">

@@ -15,7 +15,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
-import { clinicDetails as demoClinicDetails, type ClinicDetail } from "@/lib/super-admin-data";
+import type { ClinicDetail } from "@/lib/super-admin-data";
 import { fetchClinics, updateClinicStatus, fetchClinicUsers } from "@/lib/super-admin-actions";
 
 type FilterType = "all" | "doctor" | "dentist" | "pharmacy";
@@ -30,7 +30,7 @@ export default function AllClinicsPage() {
   const [loginClinic, setLoginClinic] = useState<ClinicDetail | null>(null);
   const [suspendOpen, setSuspendOpen] = useState(false);
   const [suspendClinic, setSuspendClinic] = useState<ClinicDetail | null>(null);
-  const [list, setList] = useState<ClinicDetail[]>(demoClinicDetails);
+  const [list, setList] = useState<ClinicDetail[]>([]);
   const [isLive, setIsLive] = useState(false);
   const [loadingData, setLoadingData] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
@@ -127,8 +127,7 @@ export default function AllClinicsPage() {
           <h1 className="text-2xl font-bold">All Clinics</h1>
           <p className="text-sm text-muted-foreground mt-1">
             Manage all {list.length} registered clinics
-            {isLive && <Badge variant="success" className="ml-2 text-[10px]">Live Data</Badge>}
-            {!isLive && !loadingData && <Badge variant="secondary" className="ml-2 text-[10px]">Demo Data</Badge>}
+            {!loadingData && <Badge variant="success" className="ml-2 text-[10px]">Live Data</Badge>}
           </p>
         </div>
         <Link href="/super-admin/onboarding">

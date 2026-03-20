@@ -10,6 +10,8 @@ import type {
   ClinicType,
   ClinicTier,
 } from "@/lib/types/database";
+import type { Announcement, ActivityLog, BillingRecord, FeatureDefinition } from "./super-admin-data";
+import type { ClientSubscription, FeatureToggle, PricingTier } from "./pricing-data";
 
 /** Untyped Supabase client so we can work with raw column names from the SQL schema
  *  without conflicting with the typed Database interface. */
@@ -313,4 +315,185 @@ export async function fetchDashboardStats(): Promise<DashboardStats> {
     totalAppointments: appointments.length,
     totalRevenue,
   };
+}
+
+// ---------- Announcements ----------
+
+export async function fetchAnnouncements(): Promise<Announcement[]> {
+  const supabase = rawClient();
+  const { data, error } = await supabase
+    .from("announcements")
+    .select("*")
+    .order("published_at", { ascending: false });
+
+  if (error || !data) return [];
+  return data.map((a: Record<string, unknown>) => ({
+    id: a.id as string,
+    title: (a.title as string) ?? "",
+    message: (a.message as string) ?? "",
+    type: (a.type as Announcement["type"]) ?? "info",
+    target: (a.target as string) ?? "all",
+    targetLabel: (a.target_label as string) ?? "All Clinics",
+    publishedAt: ((a.published_at as string) ?? "").split("T")[0],
+    expiresAt: a.expires_at ? (a.expires_at as string).split("T")[0] : undefined,
+    active: (a.active as boolean) ?? true,
+    createdBy: (a.created_by as string) ?? "",
+  }));
+}
+
+// ---------- Activity Logs ----------
+
+export async function fetchActivityLogs(limit: number = 10): Promise<ActivityLog[]> {
+  const supabase = rawClient();
+  const { data, error } = await supabase
+    .from("activity_logs")
+    .select("*")
+    .order("timestamp", { ascending: false })
+    .limit(limit);
+
+  if (error || !data) return [];
+  return data.map((l: Record<string, unknown>) => ({
+    id: l.id as string,
+    action: (l.action as string) ?? "",
+    description: (l.description as string) ?? "",
+    clinicId: l.clinic_id as string | undefined,
+    clinicName: l.clinic_name as string | undefined,
+    timestamp: (l.timestamp as string) ?? "",
+    actor: (l.actor as string) ?? "",
+    type: (l.type as ActivityLog["type"]) ?? "clinic",
+  }));
+}
+
+// ---------- Billing Records ----------
+
+export async function fetchBillingRecords(): Promise<BillingRecord[]> {
+  const supabase = rawClient();
+  const { data, error } = await supabase
+    .from("billing_records")
+    .select("*")
+    .order("due_date", { ascending: false });
+
+  if (error || !data) return [];
+  return data.map((r: Record<string, unknown>) => ({
+    id: r.id as string,
+    clinicId: (r.clinic_id as string) ?? "",
+    clinicName: (r.clinic_name as string) ?? "",
+    plan: (r.plan as string) ?? "",
+    amountDue: (r.amount_due as number) ?? 0,
+    amountPaid: (r.amount_paid as number) ?? 0,
+    currency: (r.currency as string) ?? "MAD",
+    status: (r.status as BillingRecord["status"]) ?? "pending",
+    invoiceDate: ((r.invoice_date as string) ?? "").split("T")[0],
+    dueDate: ((r.due_date as string) ?? "").split("T")[0],
+    paidDate: r.paid_date ? (r.paid_date as string).split("T")[0] : undefined,
+    paymentMethod: r.payment_method as string | undefined,
+  }));
+}
+
+// ---------- Feature Definitions ----------
+
+export async function fetchFeatureDefinitions(): Promise<FeatureDefinition[]> {
+  const supabase = rawClient();
+  const { data, error } = await supabase
+    .from("feature_definitions")
+    .select("*")
+    .order("name", { ascending: true });
+
+  if (error || !data) return [];
+  return data.map((f: Record<string, unknown>) => ({
+    id: f.id as string,
+    name: (f.name as string) ?? "",
+    description: (f.description as string) ?? "",
+    key: (f.key as string) ?? "",
+    category: (f.category as FeatureDefinition["category"]) ?? "core",
+    availableTiers: (f.available_tiers as string[]) ?? [],
+    globalEnabled: (f.global_enabled as boolean) ?? false,
+  }));
+}
+
+// ---------- Client Subscriptions ----------
+
+export async function fetchClientSubscriptions(): Promise<ClientSubscription[]> {
+  const supabase = rawClient();
+  const { data, error } = await supabase
+    .from("subscriptions")
+    .select("*")
+    .order("created_at", { ascending: false });
+
+  if (error || !data) return [];
+  return data.map((s: Record<string, unknown>) => ({
+    id: s.id as string,
+    clinicId: (s.clinic_id as string) ?? "",
+    clinicName: (s.clinic_name as string) ?? "",
+    systemType: (s.system_type as ClientSubscription["systemType"]) ?? "doctor",
+    tierSlug: (s.tier_slug as ClientSubscription["tierSlug"]) ?? "cabinet",
+    tierName: (s.tier_name as string) ?? "",
+    status: (s.status as ClientSubscription["status"]) ?? "active",
+    currentPeriodStart: ((s.current_period_start as string) ?? "").split("T")[0],
+    currentPeriodEnd: ((s.current_period_end as string) ?? "").split("T")[0],
+    billingCycle: (s.billing_cycle as ClientSubscription["billingCycle"]) ?? "monthly",
+    amount: (s.amount as number) ?? 0,
+    currency: (s.currency as string) ?? "MAD",
+    paymentMethod: (s.payment_method as string) ?? "",
+    autoRenew: (s.auto_renew as boolean) ?? false,
+    trialEndsAt: s.trial_ends_at as string | undefined,
+    cancelledAt: s.cancelled_at as string | undefined,
+    invoices: (s.invoices as ClientSubscription["invoices"]) ?? [],
+  }));
+}
+
+// ---------- Feature Toggles ----------
+
+export async function fetchFeatureToggles(): Promise<FeatureToggle[]> {
+  const supabase = rawClient();
+  const { data, error } = await supabase
+    .from("feature_toggles")
+    .select("*")
+    .order("label", { ascending: true });
+
+  if (error || !data) return [];
+  return data.map((f: Record<string, unknown>) => ({
+    id: f.id as string,
+    key: (f.key as string) ?? "",
+    label: (f.label as string) ?? "",
+    description: (f.description as string) ?? "",
+    category: (f.category as FeatureToggle["category"]) ?? "core",
+    systemTypes: (f.system_types as FeatureToggle["systemTypes"]) ?? [],
+    tiers: (f.tiers as FeatureToggle["tiers"]) ?? [],
+    enabled: (f.enabled as boolean) ?? false,
+  }));
+}
+
+// ---------- Pricing Tiers ----------
+
+export async function fetchPricingTiers(): Promise<PricingTier[]> {
+  const supabase = rawClient();
+  const { data, error } = await supabase
+    .from("pricing_tiers")
+    .select("*")
+    .order("sort_order", { ascending: true });
+
+  if (error || !data) return [];
+  return data.map((t: Record<string, unknown>) => ({
+    id: t.id as string,
+    slug: (t.slug as PricingTier["slug"]) ?? "cabinet",
+    name: (t.name as string) ?? "",
+    description: (t.description as string) ?? "",
+    popular: (t.popular as boolean) ?? false,
+    pricing: (t.pricing as PricingTier["pricing"]) ?? {
+      doctor: { monthly: 0, yearly: 0 },
+      dentist: { monthly: 0, yearly: 0 },
+      pharmacy: { monthly: 0, yearly: 0 },
+    },
+    features: (t.features as PricingTier["features"]) ?? [],
+    limits: (t.limits as PricingTier["limits"]) ?? {
+      maxDoctors: 0,
+      maxPatients: 0,
+      maxAppointmentsPerMonth: 0,
+      storageGB: 0,
+      customDomain: false,
+      apiAccess: false,
+      whiteLabel: false,
+    },
+  }));
 }

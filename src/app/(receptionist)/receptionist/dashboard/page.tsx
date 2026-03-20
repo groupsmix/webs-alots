@@ -1,12 +1,19 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Calendar, Users, UserPlus, Clock, CreditCard, FileText, Phone, MessageCircle, CheckCircle } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { getTodayAppointments, getTotalRevenue, patients } from "@/lib/demo-data";
+import {
+  getCurrentUser,
+  fetchTodayAppointments,
+  fetchPatients,
+  fetchInvoices,
+  type AppointmentView,
+  type PatientView,
+} from "@/lib/data/client";
 import { ManualBookingDialog } from "@/components/receptionist/manual-booking-dialog";
 import { WalkInDialog } from "@/components/receptionist/walk-in-dialog";
 import { PaymentDialog } from "@/components/receptionist/payment-dialog";
@@ -21,11 +28,27 @@ const statusVariant: Record<string, "default" | "success" | "warning" | "destruc
 };
 
 export default function ReceptionistDashboardPage() {
-  const todayAppts = getTodayAppointments("d1");
-  const checkedIn = todayAppts.filter((a) => a.status === "confirmed" || a.status === "in-progress").length;
-  const totalRevenue = getTotalRevenue();
-
+  const [todayAppts, setTodayAppts] = useState<AppointmentView[]>([]);
+  const [patientList, setPatientList] = useState<PatientView[]>([]);
+  const [totalRevenue, setTotalRevenue] = useState(0);
   const [checkedInIds, setCheckedInIds] = useState<Set<string>>(new Set());
+
+  const loadData = useCallback(async () => {
+    const user = await getCurrentUser();
+    if (!user?.clinic_id) return;
+    const [appts, patients, invoices] = await Promise.all([
+      fetchTodayAppointments(user.clinic_id),
+      fetchPatients(user.clinic_id),
+      fetchInvoices(user.clinic_id),
+    ]);
+    setTodayAppts(appts);
+    setPatientList(patients);
+    setTotalRevenue(invoices.reduce((s, inv) => s + inv.amount, 0));
+  }, []);
+
+  useEffect(() => { loadData(); }, [loadData]);
+
+  const checkedIn = todayAppts.filter((a) => a.status === "confirmed" || a.status === "in-progress").length;
 
   const stats = [
     { icon: Calendar, label: "Today's Bookings", value: todayAppts.length.toString(), color: "text-blue-600" },
@@ -115,7 +138,7 @@ export default function ReceptionistDashboardPage() {
             ) : (
               <div className="space-y-3">
                 {todayAppts.map((apt) => {
-                  const patient = patients.find((p) => p.id === apt.patientId);
+                  const patient = patientList.find((p) => p.id === apt.patientId);
                   const isCheckedIn = checkedInIds.has(apt.id);
                   return (
                     <div key={apt.id} className="flex items-center gap-3 rounded-lg border p-3">
@@ -173,7 +196,7 @@ export default function ReceptionistDashboardPage() {
             ) : (
               <div className="space-y-3">
                 {todayAppts.filter((a) => a.status === "confirmed").map((apt, i) => {
-                  const patient = patients.find((p) => p.id === apt.patientId);
+                  const patient2 = patientList.find((p) => p.id === apt.patientId);
                   return (
                     <div key={apt.id} className="flex items-center gap-3 rounded-lg border p-3">
                       <div className="flex h-7 w-7 items-center justify-center rounded-full bg-orange-100 text-orange-700 text-xs font-bold">
@@ -184,12 +207,12 @@ export default function ReceptionistDashboardPage() {
                         <p className="text-xs text-muted-foreground">Est. wait: ~{(i + 1) * 15}min</p>
                       </div>
                       <div className="flex gap-1">
-                        {patient && (
+                        {patient2 && (
                           <>
-                            <Button variant="ghost" size="sm" onClick={() => handleCallPatient(patient.phone)} title="Call">
+                            <Button variant="ghost" size="sm" onClick={() => handleCallPatient(patient2.phone)} title="Call">
                               <Phone className="h-3.5 w-3.5 text-blue-600" />
                             </Button>
-                            <Button variant="ghost" size="sm" onClick={() => handleWhatsApp(patient.phone)} title="WhatsApp">
+                            <Button variant="ghost" size="sm" onClick={() => handleWhatsApp(patient2.phone)} title="WhatsApp">
                               <MessageCircle className="h-3.5 w-3.5 text-green-600" />
                             </Button>
                           </>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Plus, Edit, Trash2, Megaphone, AlertTriangle, Info, AlertCircle,
   Calendar, Users, Search, Eye,
@@ -13,12 +13,17 @@ import { Label } from "@/components/ui/label";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from "@/components/ui/dialog";
-import { announcements as initialAnnouncements, type Announcement } from "@/lib/super-admin-data";
+import { fetchAnnouncements } from "@/lib/super-admin-actions";
+import type { Announcement } from "@/lib/super-admin-data";
 
 type TypeFilter = "all" | "info" | "warning" | "critical";
 
 export default function AnnouncementsPage() {
-  const [list, setList] = useState<Announcement[]>(initialAnnouncements);
+  const [list, setList] = useState<Announcement[]>([]);
+
+  useEffect(() => {
+    fetchAnnouncements().then(setList).catch(() => {});
+  }, []);
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState<TypeFilter>("all");
   const [editOpen, setEditOpen] = useState(false);

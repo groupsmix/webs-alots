@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Clock, Tag } from "lucide-react";
-import { blogPosts } from "@/lib/demo-data";
+import { getPublicBlogPosts } from "@/lib/data/public";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 
@@ -14,8 +14,8 @@ export const metadata: Metadata = {
   },
 };
 
-// Blog posts don't have a DB table yet — uses demo data until a blog_posts table or CMS is added
-export default function BlogPage() {
+export default async function BlogPage() {
+  const blogPosts = await getPublicBlogPosts();
   return (
     <div className="container mx-auto px-4 py-12">
       <div className="text-center mb-12">

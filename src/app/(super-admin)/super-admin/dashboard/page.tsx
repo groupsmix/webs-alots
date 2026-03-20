@@ -17,18 +17,8 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  clinicDetails as demoClinicDetails,
-  activityLogs,
-  announcements,
-  getActiveClinicsCount,
-  getTotalPatientsCount,
-  getTotalMonthlyRevenue,
-  getMRR,
-  getOverdueCount,
-} from "@/lib/super-admin-data";
-import { fetchDashboardStats } from "@/lib/super-admin-actions";
-import type { ClinicDetail } from "@/lib/super-admin-data";
+import { fetchDashboardStats, fetchAnnouncements, fetchActivityLogs } from "@/lib/super-admin-actions";
+import type { ClinicDetail, Announcement, ActivityLog } from "@/lib/super-admin-data";
 
 const activityTypeIcons: Record<string, string> = {
   clinic: "text-blue-600",
@@ -41,52 +31,56 @@ const activityTypeIcons: Record<string, string> = {
 
 export default function SuperAdminDashboardPage() {
   const [loading, setLoading] = useState(true);
-  const [isLive, setIsLive] = useState(false);
-  const [clinicList, setClinicList] = useState<ClinicDetail[]>(demoClinicDetails);
-  const [totalClinics, setTotalClinics] = useState(demoClinicDetails.length);
-  const [activeClinics, setActiveClinics] = useState(getActiveClinicsCount());
-  const [totalPatients, setTotalPatients] = useState(getTotalPatientsCount());
-  const [totalRevenue, setTotalRevenue] = useState(getTotalMonthlyRevenue());
-  const [mrr, setMrr] = useState(getMRR());
-  const [overdue, setOverdue] = useState(getOverdueCount());
+  const [clinicList, setClinicList] = useState<ClinicDetail[]>([]);
+  const [totalClinics, setTotalClinics] = useState(0);
+  const [activeClinics, setActiveClinics] = useState(0);
+  const [totalPatients, setTotalPatients] = useState(0);
+  const [totalRevenue, setTotalRevenue] = useState(0);
+  const [mrr, setMrr] = useState(0);
+  const [overdue, setOverdue] = useState(0);
+  const [announcementList, setAnnouncementList] = useState<Announcement[]>([]);
+  const [activityLogList, setActivityLogList] = useState<ActivityLog[]>([]);
 
   const loadStats = useCallback(async () => {
     try {
-      const stats = await fetchDashboardStats();
-      if (stats.clinics && stats.clinics.length > 0) {
-        setTotalClinics(stats.totalClinics);
-        setActiveClinics(stats.activeClinics);
-        setTotalPatients(stats.totalPatients);
-        setTotalRevenue(stats.totalRevenue);
-        setMrr(stats.totalRevenue);
-        setOverdue(0);
-        const mapped: ClinicDetail[] = stats.clinics.map((c) => {
-          const config = (c.config ?? {}) as Record<string, unknown>;
-          return {
-            id: c.id,
-            name: c.name,
-            type: c.type as "doctor" | "dentist" | "pharmacy",
-            plan: (c.tier as string) ?? "pro",
-            city: (config.city as string) ?? "",
-            patientsCount: 0,
-            monthlyRevenue: 0,
-            status: (c.status === "inactive" ? "suspended" : c.status ?? "active") as "active" | "suspended" | "trial",
-            ownerName: (config.ownerName as string) ?? "",
-            ownerEmail: (config.email as string) ?? "",
-            ownerPhone: (config.phone as string) ?? "",
-            createdAt: c.created_at ?? "",
-            doctorsCount: 0,
-            appointmentsThisMonth: 0,
-            domain: (config.domain as string) ?? undefined,
-            lastLoginAt: "",
-            features: {},
-          };
-        });
-        setClinicList(mapped);
-        setIsLive(true);
-      }
+      const [stats, anns, logs] = await Promise.all([
+        fetchDashboardStats(),
+        fetchAnnouncements(),
+        fetchActivityLogs(8),
+      ]);
+      setTotalClinics(stats.totalClinics);
+      setActiveClinics(stats.activeClinics);
+      setTotalPatients(stats.totalPatients);
+      setTotalRevenue(stats.totalRevenue);
+      setMrr(stats.totalRevenue);
+      setOverdue(0);
+      const mapped: ClinicDetail[] = stats.clinics.map((c) => {
+        const config = (c.config ?? {}) as Record<string, unknown>;
+        return {
+          id: c.id,
+          name: c.name,
+          type: c.type as "doctor" | "dentist" | "pharmacy",
+          plan: (c.tier as string) ?? "pro",
+          city: (config.city as string) ?? "",
+          patientsCount: 0,
+          monthlyRevenue: 0,
+          status: (c.status === "inactive" ? "suspended" : c.status ?? "active") as "active" | "suspended" | "trial",
+          ownerName: (config.ownerName as string) ?? "",
+          ownerEmail: (config.email as string) ?? "",
+          ownerPhone: (config.phone as string) ?? "",
+          createdAt: c.created_at ?? "",
+          doctorsCount: 0,
+          appointmentsThisMonth: 0,
+          domain: (config.domain as string) ?? undefined,
+          lastLoginAt: "",
+          features: {},
+        };
+      });
+      setClinicList(mapped);
+      setAnnouncementList(anns);
+      setActivityLogList(logs);
     } catch {
-      // Supabase not configured - keep demo data
+      // Supabase error - data will remain empty
     } finally {
       setLoading(false);
     }
@@ -96,15 +90,15 @@ export default function SuperAdminDashboardPage() {
     loadStats();
   }, [loadStats]);
 
-  const activeAnnouncements = announcements.filter((a) => a.active);
-  const recentLogs = activityLogs.slice(0, 8);
+  const activeAnnouncements = announcementList.filter((a) => a.active);
+  const recentLogs = activityLogList.slice(0, 8);
 
   const stats = [
     {
       icon: Building2,
       label: "Total Clinics",
       value: totalClinics.toString(),
-      change: isLive ? `${activeClinics} active` : "+2 this month",
+      change: `${activeClinics} active`,
       color: "text-blue-600",
       bg: "bg-blue-50",
     },
@@ -112,7 +106,7 @@ export default function SuperAdminDashboardPage() {
       icon: Building2,
       label: "Active Clinics",
       value: activeClinics.toString(),
-      change: isLive ? `${totalClinics - activeClinics} inactive` : `${demoClinicDetails.filter((c) => c.status === "suspended").length} suspended`,
+      change: `${totalClinics - activeClinics} inactive`,
       color: "text-green-600",
       bg: "bg-green-50",
     },
@@ -120,7 +114,7 @@ export default function SuperAdminDashboardPage() {
       icon: Users,
       label: "Total Patients",
       value: totalPatients.toLocaleString(),
-      change: isLive ? "from Supabase" : "+89 this month",
+      change: "live data",
       color: "text-purple-600",
       bg: "bg-purple-50",
     },
@@ -128,7 +122,7 @@ export default function SuperAdminDashboardPage() {
       icon: TrendingUp,
       label: "Monthly Revenue",
       value: `${totalRevenue.toLocaleString()} MAD`,
-      change: isLive ? "from Supabase" : "+12% vs last month",
+      change: "live data",
       color: "text-orange-600",
       bg: "bg-orange-50",
     },
@@ -147,8 +141,7 @@ export default function SuperAdminDashboardPage() {
           <h1 className="text-2xl font-bold">Super Admin Dashboard</h1>
           <p className="text-sm text-muted-foreground mt-1">
             Overview of all clinics and system status
-            {isLive && <Badge variant="success" className="ml-2 text-[10px]">Live Data</Badge>}
-            {!isLive && !loading && <Badge variant="secondary" className="ml-2 text-[10px]">Demo Data</Badge>}
+            {!loading && <Badge variant="success" className="ml-2 text-[10px]">Live Data</Badge>}
           </p>
         </div>
         <div className="flex gap-2">

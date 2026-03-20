@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Search, Filter, Eye, Send, CreditCard, Receipt,
   CheckCircle, Clock, AlertTriangle, Download,
@@ -15,15 +15,13 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from "@/components/ui/dialog";
 import {
-  clientSubscriptions,
-  getTotalMRR,
-  getSubscriptionStats,
   systemTypeLabels,
   tierColors,
   statusColors,
   type ClientSubscription,
   type SystemType,
 } from "@/lib/pricing-data";
+import { fetchClientSubscriptions } from "@/lib/super-admin-actions";
 
 type StatusFilter = "all" | ClientSubscription["status"];
 type SystemFilter = "all" | SystemType;
@@ -42,12 +40,25 @@ export default function SubscriptionsPage() {
   const [reminderOpen, setReminderOpen] = useState(false);
   const [reminderSub, setReminderSub] = useState<ClientSubscription | null>(null);
   const [expandedInvoices, setExpandedInvoices] = useState<string | null>(null);
+  const [allSubscriptions, setAllSubscriptions] = useState<ClientSubscription[]>([]);
 
-  const stats = getSubscriptionStats();
-  const mrr = getTotalMRR();
+  useEffect(() => {
+    fetchClientSubscriptions().then(setAllSubscriptions).catch(() => {});
+  }, []);
+
+  const mrr = allSubscriptions
+    .filter((s) => s.status === "active" || s.status === "trial")
+    .reduce((sum, s) => sum + (s.billingCycle === "monthly" ? s.amount : Math.round(s.amount / 12)), 0);
   const arr = mrr * 12;
+  const stats = {
+    total: allSubscriptions.length,
+    active: allSubscriptions.filter((s) => s.status === "active").length,
+    trial: allSubscriptions.filter((s) => s.status === "trial").length,
+    pastDue: allSubscriptions.filter((s) => s.status === "past_due").length,
+    cancelled: allSubscriptions.filter((s) => s.status === "cancelled").length,
+  };
 
-  const filtered = clientSubscriptions.filter((sub) => {
+  const filtered = allSubscriptions.filter((sub) => {
     const q = search.toLowerCase();
     const matchSearch = !q || sub.clinicName.toLowerCase().includes(q);
     const matchStatus = statusFilter === "all" || sub.status === statusFilter;
@@ -151,7 +162,7 @@ export default function SubscriptionsPage() {
           <Button key={s} variant={statusFilter === s ? "default" : "outline"} size="sm" onClick={() => setStatusFilter(s)} className="text-xs">
             {s === "all" ? "Tous" : statusLabel(s as ClientSubscription["status"])}
             <Badge variant="secondary" className="ml-1 text-[10px] px-1">
-              {s === "all" ? clientSubscriptions.length : clientSubscriptions.filter((sub) => sub.status === s).length}
+              {s === "all" ? allSubscriptions.length : allSubscriptions.filter((sub) => sub.status === s).length}
             </Badge>
           </Button>
         ))}
@@ -247,7 +258,7 @@ export default function SubscriptionsPage() {
 
           {/* Expanded Invoices */}
           {expandedInvoices && (() => {
-            const sub = clientSubscriptions.find((s) => s.id === expandedInvoices);
+            const sub = allSubscriptions.find((s) => s.id === expandedInvoices);
             if (!sub) return null;
             return (
               <div className="border-t bg-muted/30 p-4">
