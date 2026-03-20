@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Users, Clock, CalendarDays } from "lucide-react";
+import { LayoutDashboard, Users, Clock, CalendarDays, CreditCard, FileText } from "lucide-react";
 import { SignOutButton } from "@/components/sign-out-button";
 
 const navItems = [
@@ -10,6 +10,8 @@ const navItems = [
   { href: "/receptionist/bookings", label: "Bookings", icon: CalendarDays },
   { href: "/receptionist/patients", label: "Patients", icon: Users },
   { href: "/receptionist/waiting-room", label: "Waiting Room", icon: Clock },
+  { href: "/receptionist/payments", label: "Payments", icon: CreditCard },
+  { href: "/receptionist/daily-report", label: "Daily Report", icon: FileText },
 ];
 
 export default function ReceptionistLayout({
