@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Phone, Calendar } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,7 +20,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { doctors, services, patients } from "@/lib/demo-data";
+import {
+  getCurrentUser,
+  fetchDoctors,
+  fetchServices,
+  fetchPatients,
+  type DoctorView,
+  type ServiceView,
+  type PatientView,
+} from "@/lib/data/client";
 
 interface ManualBookingDialogProps {
   trigger?: React.ReactNode;
@@ -37,9 +45,29 @@ interface ManualBookingDialogProps {
 
 export function ManualBookingDialog({ trigger, onBook }: ManualBookingDialogProps) {
   const [open, setOpen] = useState(false);
+  const [doctors, setDoctors] = useState<DoctorView[]>([]);
+  const [services, setServices] = useState<ServiceView[]>([]);
+  const [patients, setPatients] = useState<PatientView[]>([]);
   const [patientId, setPatientId] = useState("");
   const [doctorId, setDoctorId] = useState("");
   const [serviceId, setServiceId] = useState("");
+
+  useEffect(() => {
+    async function load() {
+      const user = await getCurrentUser();
+      if (!user?.clinic_id) return;
+      const [docs, svcs, pts] = await Promise.all([
+        fetchDoctors(user.clinic_id),
+        fetchServices(user.clinic_id),
+        fetchPatients(user.clinic_id),
+      ]);
+      setDoctors(docs);
+      setServices(svcs);
+      setPatients(pts);
+    }
+    load();
+  }, []);
+
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
   const [time, setTime] = useState("");
   const [notes, setNotes] = useState("");
@@ -124,7 +152,7 @@ export function ManualBookingDialog({ trigger, onBook }: ManualBookingDialogProp
                 <SelectContent>
                   {doctors.map((d) => (
                     <SelectItem key={d.id} value={d.id}>
-                      {d.name} - {d.specialty}
+                      {d.name}{d.specialty ? ` - ${d.specialty}` : ""}
                     </SelectItem>
                   ))}
                 </SelectContent>

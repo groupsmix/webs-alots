@@ -1,21 +1,49 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { ChevronLeft, ChevronRight, Plus, User, Clock, GripVertical, Phone, MessageCircle } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { appointments as demoAppointments, doctors, type Appointment } from "@/lib/demo-data";
+import {
+  getCurrentUser,
+  fetchAppointments,
+  fetchDoctors,
+  type AppointmentView,
+  type DoctorView,
+} from "@/lib/data/client";
 import { clinicConfig } from "@/config/clinic.config";
 import { ManualBookingDialog } from "./manual-booking-dialog";
 import { WalkInDialog } from "./walk-in-dialog";
 
+// Local appointment type that supports drag-and-drop rescheduling
+interface LocalAppointment extends AppointmentView {
+  status: string;
+}
+
 export function ReceptionistBookingCalendar() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDoctor, setSelectedDoctor] = useState("all");
-  const [localAppointments, setLocalAppointments] = useState<Appointment[]>(demoAppointments);
-  const [draggedAppointment, setDraggedAppointment] = useState<Appointment | null>(null);
+  const [localAppointments, setLocalAppointments] = useState<LocalAppointment[]>([]);
+  const [doctorList, setDoctorList] = useState<DoctorView[]>([]);
+  const [draggedAppointment, setDraggedAppointment] = useState<LocalAppointment | null>(null);
   const [dragOverCell, setDragOverCell] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function load() {
+      const user = await getCurrentUser();
+      if (!user?.clinic_id) { setLoading(false); return; }
+      const [appts, docs] = await Promise.all([
+        fetchAppointments(user.clinic_id),
+        fetchDoctors(user.clinic_id),
+      ]);
+      setLocalAppointments(appts);
+      setDoctorList(docs);
+      setLoading(false);
+    }
+    load();
+  }, []);
 
   const timeSlots = [
     "09:00", "09:30", "10:00", "10:30", "11:00", "11:30",
@@ -71,7 +99,7 @@ export function ReceptionistBookingCalendar() {
     rescheduled: "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200",
   };
 
-  const handleDragStart = useCallback((e: React.DragEvent, appointment: Appointment) => {
+  const handleDragStart = useCallback((e: React.DragEvent, appointment: LocalAppointment) => {
     setDraggedAppointment(appointment);
     e.dataTransfer.effectAllowed = "move";
     e.dataTransfer.setData("text/plain", appointment.id);
@@ -118,8 +146,8 @@ export function ReceptionistBookingCalendar() {
     notes: string;
     source: "phone" | "walk_in";
   }) => {
-    const doctor = doctors.find((d) => d.id === booking.doctorId);
-    const newAppointment: Appointment = {
+    const doctor = doctorList.find((d) => d.id === booking.doctorId);
+    const newAppointment: LocalAppointment = {
       id: `a${Date.now()}`,
       patientId: booking.patientId,
       patientName: "New Patient",
@@ -144,6 +172,14 @@ export function ReceptionistBookingCalendar() {
     const cleaned = phone.replace(/\s/g, "").replace("+", "");
     window.open(`https://wa.me/${cleaned}`, "_blank");
   };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <p className="text-muted-foreground">Loading calendar...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
@@ -171,7 +207,7 @@ export function ReceptionistBookingCalendar() {
             className="flex h-9 rounded-md border border-input bg-background px-3 py-1 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
             <option value="all">All Doctors</option>
-            {doctors.map((doc) => (
+            {doctorList.map((doc) => (
               <option key={doc.id} value={doc.id}>
                 {doc.name}
               </option>
