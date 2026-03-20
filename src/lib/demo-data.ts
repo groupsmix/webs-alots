@@ -5,9 +5,16 @@
 
 // ---------- Types ----------
 
+export interface Specialty {
+  id: string;
+  name: string;
+  description: string;
+}
+
 export interface Doctor {
   id: string;
   name: string;
+  specialtyId: string;
   specialty: string;
   phone: string;
   email: string;
@@ -105,10 +112,16 @@ export interface BlogPost {
 
 // ---------- Data ----------
 
+export const specialties: Specialty[] = [
+  { id: "sp1", name: "General Medicine", description: "Primary care and general health consultations" },
+  { id: "sp2", name: "Pediatrics", description: "Medical care for children and infants" },
+  { id: "sp3", name: "Cardiology", description: "Heart and cardiovascular system care" },
+];
+
 export const doctors: Doctor[] = [
-  { id: "d1", name: "Dr. Ahmed Benali", specialty: "General Medicine", phone: "+212 6 12 34 56 78", email: "ahmed@clinic.ma", consultationFee: 200, languages: ["Arabic", "French"] },
-  { id: "d2", name: "Dr. Fatima Zahra", specialty: "Pediatrics", phone: "+212 6 23 45 67 89", email: "fatima@clinic.ma", consultationFee: 250, languages: ["Arabic", "French", "English"] },
-  { id: "d3", name: "Dr. Youssef El Amrani", specialty: "Cardiology", phone: "+212 6 34 56 78 90", email: "youssef@clinic.ma", consultationFee: 400, languages: ["Arabic", "French"] },
+  { id: "d1", name: "Dr. Ahmed Benali", specialtyId: "sp1", specialty: "General Medicine", phone: "+212 6 12 34 56 78", email: "ahmed@clinic.ma", consultationFee: 200, languages: ["Arabic", "French"] },
+  { id: "d2", name: "Dr. Fatima Zahra", specialtyId: "sp2", specialty: "Pediatrics", phone: "+212 6 23 45 67 89", email: "fatima@clinic.ma", consultationFee: 250, languages: ["Arabic", "French", "English"] },
+  { id: "d3", name: "Dr. Youssef El Amrani", specialtyId: "sp3", specialty: "Cardiology", phone: "+212 6 34 56 78 90", email: "youssef@clinic.ma", consultationFee: 400, languages: ["Arabic", "French"] },
 ];
 
 export const services: Service[] = [
@@ -199,16 +212,75 @@ export const blogPosts: BlogPost[] = [
 
 // ---------- Time slot helpers ----------
 
+import { clinicConfig } from "@/config/clinic.config";
+
+/**
+ * Generate time slots dynamically based on clinic working hours,
+ * slot duration, and buffer time configuration.
+ */
+export function generateTimeSlots(date: string): string[] {
+  const d = new Date(date);
+  const dayOfWeek = d.getDay();
+  const hours = clinicConfig.workingHours[dayOfWeek];
+  if (!hours?.enabled) return [];
+
+  const slotDuration = clinicConfig.booking.slotDuration;
+  const bufferTime = clinicConfig.booking.bufferTime;
+  const totalInterval = slotDuration + bufferTime;
+
+  const [openH, openM] = hours.open.split(":").map(Number);
+  const [closeH, closeM] = hours.close.split(":").map(Number);
+  const openMinutes = openH * 60 + openM;
+  const closeMinutes = closeH * 60 + closeM;
+
+  const slots: string[] = [];
+  for (let m = openMinutes; m + slotDuration <= closeMinutes; m += totalInterval) {
+    const hh = String(Math.floor(m / 60)).padStart(2, "0");
+    const mm = String(m % 60).padStart(2, "0");
+    slots.push(`${hh}:${mm}`);
+  }
+  return slots;
+}
+
 export const timeSlots = [
   "09:00", "09:30", "10:00", "10:30", "11:00", "11:30",
   "14:00", "14:30", "15:00", "15:30", "16:00", "16:30",
 ];
 
+/**
+ * Get available slots for a doctor on a given date.
+ * Respects max capacity per slot and filters out fully-booked times.
+ */
 export function getAvailableSlots(date: string, doctorId: string): string[] {
-  const booked = appointments
+  const allSlots = generateTimeSlots(date);
+  const maxPerSlot = clinicConfig.booking.maxPerSlot;
+
+  return allSlots.filter((slot) => {
+    const bookingsAtSlot = appointments.filter(
+      (a) => a.date === date && a.doctorId === doctorId && a.time === slot && a.status !== "cancelled"
+    ).length;
+    return bookingsAtSlot < maxPerSlot;
+  });
+}
+
+/**
+ * Get booked slot counts for display purposes.
+ */
+export function getSlotBookingCounts(date: string, doctorId: string): Record<string, number> {
+  const counts: Record<string, number> = {};
+  appointments
     .filter((a) => a.date === date && a.doctorId === doctorId && a.status !== "cancelled")
-    .map((a) => a.time);
-  return timeSlots.filter((slot) => !booked.includes(slot));
+    .forEach((a) => {
+      counts[a.time] = (counts[a.time] || 0) + 1;
+    });
+  return counts;
+}
+
+/**
+ * Get doctors filtered by specialty.
+ */
+export function getDoctorsBySpecialty(specialtyId: string): Doctor[] {
+  return doctors.filter((d) => d.specialtyId === specialtyId);
 }
 
 // ---------- Stats helpers ----------
