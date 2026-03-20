@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Search, User, Phone, Calendar, FileText, Pill, ClipboardList, AlertCircle } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -8,13 +8,55 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { patients, appointments, prescriptions, consultationNotes } from "@/lib/demo-data";
-import type { Patient } from "@/lib/demo-data";
+import {
+  getCurrentUser,
+  fetchPatients,
+  fetchAppointments,
+  fetchPrescriptions,
+  fetchConsultationNotes,
+  type PatientView,
+  type AppointmentView,
+  type PrescriptionView,
+  type ConsultationNoteView,
+} from "@/lib/data/client";
+
+type Patient = PatientView;
 
 export default function DoctorPatientsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
   const [activeTab, setActiveTab] = useState<"overview" | "history" | "prescriptions" | "notes">("overview");
+  const [patients, setPatients] = useState<Patient[]>([]);
+  const [appointments, setAppointments] = useState<AppointmentView[]>([]);
+  const [prescriptions, setPrescriptions] = useState<PrescriptionView[]>([]);
+  const [consultationNotes, setConsultationNotes] = useState<ConsultationNoteView[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const load = useCallback(async () => {
+    const user = await getCurrentUser();
+    if (!user?.clinic_id) { setLoading(false); return; }
+    const [pts, appts, rxs, notes] = await Promise.all([
+      fetchPatients(user.clinic_id),
+      fetchAppointments(user.clinic_id),
+      fetchPrescriptions(user.clinic_id),
+      fetchConsultationNotes(user.clinic_id, user.id),
+    ]);
+    setPatients(pts);
+    setAppointments(appts);
+    setPrescriptions(rxs);
+    setConsultationNotes(notes);
+    setLoading(false);
+  }, []);
+
+  useEffect(() => { load(); }, [load]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <p className="text-sm text-muted-foreground">Loading patients...</p>
+      </div>
+    );
+  }
 
   const filteredPatients = patients.filter(
     (p) =>
@@ -27,7 +69,7 @@ export default function DoctorPatientsPage() {
     const patientAppts = appointments.filter((a) => a.patientId === patient.id);
     const patientRx = prescriptions.filter((rx) => rx.patientId === patient.id);
     const patientNotes = consultationNotes.filter((n) => n.patientId === patient.id);
-    return { patientAppts, patientRx, patientNotes };
+    return { patientAppts, patientRx, patientNotes: patientNotes.map(n => ({ ...n, chiefComplaint: "", examination: "", plan: "", privateNotes: "" })) };
   };
 
   return (
@@ -243,16 +285,8 @@ export default function DoctorPatientsPage() {
                             <span className="text-xs text-muted-foreground">{note.date}</span>
                           </div>
                           <div className="text-sm space-y-1">
-                            <p><span className="font-medium">Complaint:</span> {note.chiefComplaint}</p>
-                            <p><span className="font-medium">Examination:</span> {note.examination}</p>
-                            <p><span className="font-medium">Plan:</span> {note.plan}</p>
+                            {note.notes && <p>{note.notes}</p>}
                           </div>
-                          {note.privateNotes && (
-                            <div className="bg-yellow-50 dark:bg-yellow-900/20 rounded p-2 text-xs flex items-start gap-1">
-                              <ClipboardList className="h-3 w-3 mt-0.5 text-yellow-600" />
-                              <span className="text-yellow-800 dark:text-yellow-200">{note.privateNotes}</span>
-                            </div>
-                          )}
                         </div>
                       ))
                     )}

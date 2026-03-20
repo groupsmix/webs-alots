@@ -1,11 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Download, CreditCard, Eye, FileText, CheckCircle2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { invoices } from "@/lib/demo-data";
+import {
+  getCurrentUser,
+  fetchInvoices,
+  type InvoiceView,
+} from "@/lib/data/client";
 
 const statusVariant: Record<string, "success" | "warning" | "destructive"> = {
   paid: "success",
@@ -15,6 +19,26 @@ const statusVariant: Record<string, "success" | "warning" | "destructive"> = {
 
 export default function PatientInvoicesPage() {
   const [downloading, setDownloading] = useState<string | null>(null);
+  const [invoices, setInvoices] = useState<InvoiceView[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const load = useCallback(async () => {
+    const user = await getCurrentUser();
+    if (!user?.clinic_id) { setLoading(false); return; }
+    const invs = await fetchInvoices(user.clinic_id);
+    setInvoices(invs);
+    setLoading(false);
+  }, []);
+
+  useEffect(() => { load(); }, [load]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <p className="text-sm text-muted-foreground">Loading invoices...</p>
+      </div>
+    );
+  }
 
   const totalPaid = invoices.filter((i) => i.status === "paid").reduce((sum, i) => sum + i.amount, 0);
   const totalPending = invoices.filter((i) => i.status === "pending").reduce((sum, i) => sum + i.amount, 0);

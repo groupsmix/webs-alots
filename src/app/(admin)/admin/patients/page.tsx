@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Search, User, Phone, Mail, Calendar, Shield, Pill } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -14,12 +14,45 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { patients, appointments, prescriptions } from "@/lib/demo-data";
-import type { Patient } from "@/lib/demo-data";
+import {
+  getCurrentUser,
+  fetchPatients,
+  fetchAppointments,
+  fetchPrescriptions,
+  type PatientView,
+  type AppointmentView,
+  type PrescriptionView,
+} from "@/lib/data/client";
+
+type Patient = PatientView;
 
 export default function AdminPatientDatabasePage() {
   const [search, setSearch] = useState("");
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
+  const [patientsList, setPatientsList] = useState<Patient[]>([]);
+  const [appointmentsList, setAppointmentsList] = useState<AppointmentView[]>([]);
+  const [prescriptionsList, setPrescriptionsList] = useState<PrescriptionView[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const load = useCallback(async () => {
+    const user = await getCurrentUser();
+    if (!user?.clinic_id) { setLoading(false); return; }
+    const [p, a, rx] = await Promise.all([
+      fetchPatients(user.clinic_id),
+      fetchAppointments(user.clinic_id),
+      fetchPrescriptions(user.clinic_id),
+    ]);
+    setPatientsList(p);
+    setAppointmentsList(a);
+    setPrescriptionsList(rx);
+    setLoading(false);
+  }, []);
+
+  useEffect(() => { load(); }, [load]);
+
+  const patients = patientsList;
+  const appointments = appointmentsList;
+  const prescriptions = prescriptionsList;
 
   const filtered = patients.filter(
     (p) =>
@@ -27,6 +60,14 @@ export default function AdminPatientDatabasePage() {
       p.phone.includes(search) ||
       p.email.toLowerCase().includes(search.toLowerCase())
   );
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <p className="text-sm text-muted-foreground">Loading patients...</p>
+      </div>
+    );
+  }
 
   const getPatientAppts = (patientId: string) =>
     appointments.filter((a) => a.patientId === patientId);

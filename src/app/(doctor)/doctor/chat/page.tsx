@@ -8,14 +8,29 @@ import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { chatMessages } from "@/lib/demo-data";
-import type { ChatMessage } from "@/lib/demo-data";
+import { getCurrentUser, type ClinicUser } from "@/lib/data/client";
 
-const doctorId = "d1";
-const doctorName = "Dr. Ahmed Benali";
+interface ChatMessage {
+  id: string;
+  senderId: string;
+  senderName: string;
+  senderRole: string;
+  recipientId: string;
+  message: string;
+  timestamp: string;
+  read: boolean;
+}
 
 export default function DoctorChatPage() {
-  const [messages, setMessages] = useState<ChatMessage[]>([...chatMessages]);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [user, setUser] = useState<ClinicUser | null>(null);
+
+  useEffect(() => {
+    getCurrentUser().then((u) => setUser(u));
+  }, []);
+
+  const doctorId = user?.id ?? "";
+  const doctorName = user?.name ?? "Doctor";
   const [newMessage, setNewMessage] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -28,14 +43,14 @@ export default function DoctorChatPage() {
   }, [messages]);
 
   const handleSend = () => {
-    if (!newMessage.trim()) return;
+    if (!newMessage.trim() || !user) return;
 
     const msg: ChatMessage = {
       id: `msg-${Date.now()}`,
       senderId: doctorId,
       senderName: doctorName,
       senderRole: "doctor",
-      recipientId: "r1",
+      recipientId: "",
       message: newMessage.trim(),
       timestamp: new Date().toISOString(),
       read: true,

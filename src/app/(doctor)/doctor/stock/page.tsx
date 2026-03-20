@@ -1,11 +1,35 @@
+"use client";
+
+import { useState, useEffect, useCallback } from "react";
 import { MaterialStockAlert } from "@/components/dental/material-stock-alert";
-import { materialStock } from "@/lib/dental-demo-data";
+import { getCurrentUser, fetchProducts, type ProductView } from "@/lib/data/client";
 
 export default function DoctorStockPage() {
+  const [stock, setStock] = useState<ProductView[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const load = useCallback(async () => {
+    const user = await getCurrentUser();
+    if (!user?.clinic_id) { setLoading(false); return; }
+    const products = await fetchProducts(user.clinic_id);
+    setStock(products);
+    setLoading(false);
+  }, []);
+
+  useEffect(() => { load(); }, [load]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <p className="text-sm text-muted-foreground">Loading stock...</p>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold">Material Stock</h1>
-      <MaterialStockAlert stock={materialStock} />
+      <MaterialStockAlert stock={stock.map(p => ({ id: p.id, name: p.name, currentQuantity: p.stockQty, minQuantity: p.reorderLevel, unit: p.unit ?? "pcs", expiryDate: p.expiryDate, lastRestocked: p.updatedAt }))} />
     </div>
   );
 }

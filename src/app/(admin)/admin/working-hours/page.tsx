@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Clock, Save } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { doctors } from "@/lib/demo-data";
+import { getCurrentUser, fetchDoctors, type DoctorView } from "@/lib/data/client";
 
 const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
@@ -27,14 +27,24 @@ const defaultSchedule = (): Record<number, { open: string; close: string; enable
   6: { open: "09:00", close: "13:00", enabled: true },
 });
 
-const initialSchedules: DoctorSchedule[] = doctors.map((d) => ({
-  doctorId: d.id,
-  days: defaultSchedule(),
-}));
-
 export default function WorkingHoursPage() {
-  const [schedules, setSchedules] = useState<DoctorSchedule[]>(initialSchedules);
-  const [selectedDoctor, setSelectedDoctor] = useState(doctors[0]?.id ?? "");
+  const [doctors, setDoctors] = useState<DoctorView[]>([]);
+  const [schedules, setSchedules] = useState<DoctorSchedule[]>([]);
+  const [selectedDoctor, setSelectedDoctor] = useState("");
+  const [loading, setLoading] = useState(true);
+
+  const load = useCallback(async () => {
+    const user = await getCurrentUser();
+    if (!user?.clinic_id) { setLoading(false); return; }
+    const docs = await fetchDoctors(user.clinic_id);
+    setDoctors(docs);
+    const initialSchedules = docs.map((d) => ({ doctorId: d.id, days: defaultSchedule() }));
+    setSchedules(initialSchedules);
+    if (docs.length > 0) setSelectedDoctor(docs[0].id);
+    setLoading(false);
+  }, []);
+
+  useEffect(() => { load(); }, [load]);
   const [saved, setSaved] = useState(false);
 
   const currentSchedule = schedules.find((s) => s.doctorId === selectedDoctor);

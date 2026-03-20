@@ -1,11 +1,31 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { SterilizationLogPanel } from "@/components/dental/sterilization-log-panel";
-import { sterilizationLog as initialLog, type SterilizationEntry } from "@/lib/dental-demo-data";
+import { getCurrentUser, fetchSterilizationLog, type SterilizationView } from "@/lib/data/client";
+import type { SterilizationEntry } from "@/lib/dental-demo-data";
 
 export default function DoctorSterilizationPage() {
-  const [log, setLog] = useState<SterilizationEntry[]>(initialLog);
+  const [log, setLog] = useState<SterilizationEntry[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const load = useCallback(async () => {
+    const user = await getCurrentUser();
+    if (!user?.clinic_id) { setLoading(false); return; }
+    const data = await fetchSterilizationLog(user.clinic_id);
+    setLog(data as unknown as SterilizationEntry[]);
+    setLoading(false);
+  }, []);
+
+  useEffect(() => { load(); }, [load]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <p className="text-sm text-muted-foreground">Loading sterilization log...</p>
+      </div>
+    );
+  }
 
   const handleAddEntry = (entry: Omit<SterilizationEntry, "id" | "sterilizedAt">) => {
     const newEntry: SterilizationEntry = {

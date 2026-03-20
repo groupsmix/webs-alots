@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   Calendar, Users, Clock, CheckCircle, XCircle, Activity,
   TrendingUp, BarChart3, Search, ArrowRight,
@@ -12,12 +12,15 @@ import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
-  appointments, patients,
-  getDoctorWeekStats, getDoctorMonthStats,
-  waitingRoom,
-} from "@/lib/demo-data";
-
-const doctorId = "d1";
+  getCurrentUser,
+  fetchDoctorAppointments,
+  fetchPatients,
+  fetchWaitingRoom,
+  updateAppointmentStatus,
+  type AppointmentView,
+  type PatientView,
+  type WaitingRoomEntry,
+} from "@/lib/data/client";
 
 const statusVariant: Record<string, "default" | "success" | "warning" | "destructive" | "secondary" | "outline"> = {
   scheduled: "outline",
@@ -29,24 +32,51 @@ const statusVariant: Record<string, "default" | "success" | "warning" | "destruc
 };
 
 export default function DoctorDashboardPage() {
-  const [appointmentList, setAppointmentList] = useState(() => [...appointments]);
+  const [appointmentList, setAppointmentList] = useState<AppointmentView[]>([]);
+  const [patients, setPatients] = useState<PatientView[]>([]);
+  const [waitingRoomEntries, setWaitingRoomEntries] = useState<WaitingRoomEntry[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
+  const [loading, setLoading] = useState(true);
+
+  const load = useCallback(async () => {
+    const user = await getCurrentUser();
+    if (!user?.clinic_id) { setLoading(false); return; }
+    const [appts, pts, wr] = await Promise.all([
+      fetchDoctorAppointments(user.clinic_id, user.id),
+      fetchPatients(user.clinic_id),
+      fetchWaitingRoom(user.clinic_id),
+    ]);
+    setAppointmentList(appts);
+    setPatients(pts);
+    setWaitingRoomEntries(wr);
+    setLoading(false);
+  }, []);
+
+  useEffect(() => { load(); }, [load]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <p className="text-sm text-muted-foreground">Loading dashboard...</p>
+      </div>
+    );
+  }
 
   const todayStr = new Date().toISOString().split("T")[0];
   const todayAppts = appointmentList.filter(
-    (a) => a.date === todayStr && a.doctorId === doctorId
+    (a) => a.date === todayStr
   );
 
   const totalPatients = new Set(
-    appointmentList.filter((a) => a.doctorId === doctorId).map((a) => a.patientId)
+    appointmentList.map((a) => a.patientId)
   ).size;
   const completedToday = todayAppts.filter((a) => a.status === "completed").length;
   const waitingCount = todayAppts.filter(
     (a) => a.status === "confirmed" || a.status === "scheduled"
   ).length;
 
-  const weekStats = getDoctorWeekStats(doctorId);
-  const monthStats = getDoctorMonthStats(doctorId);
+  const weekStats = { totalAppointments: appointmentList.length, uniquePatients: totalPatients, completed: appointmentList.filter(a => a.status === "completed").length, noShows: appointmentList.filter(a => a.status === "no-show" || a.status === "no_show").length };
+  const monthStats = { ...weekStats, revenue: 0 };
 
   const stats = [
     { icon: Calendar, label: "Today's Appointments", value: todayAppts.length.toString(), color: "text-blue-600" },
@@ -55,21 +85,24 @@ export default function DoctorDashboardPage() {
     { icon: Clock, label: "In Waiting Room", value: waitingCount.toString(), color: "text-orange-600" },
   ];
 
-  const handleMarkDone = (appointmentId: string) => {
+  const handleMarkDone = async (appointmentId: string) => {
+    await updateAppointmentStatus(appointmentId, "completed");
     setAppointmentList((prev) =>
-      prev.map((a) => (a.id === appointmentId ? { ...a, status: "completed" as const } : a))
+      prev.map((a) => (a.id === appointmentId ? { ...a, status: "completed" } : a))
     );
   };
 
-  const handleNoShow = (appointmentId: string) => {
+  const handleNoShow = async (appointmentId: string) => {
+    await updateAppointmentStatus(appointmentId, "no-show");
     setAppointmentList((prev) =>
-      prev.map((a) => (a.id === appointmentId ? { ...a, status: "no-show" as const } : a))
+      prev.map((a) => (a.id === appointmentId ? { ...a, status: "no-show" } : a))
     );
   };
 
-  const handleStartConsultation = (appointmentId: string) => {
+  const handleStartConsultation = async (appointmentId: string) => {
+    await updateAppointmentStatus(appointmentId, "in-progress");
     setAppointmentList((prev) =>
-      prev.map((a) => (a.id === appointmentId ? { ...a, status: "in-progress" as const } : a))
+      prev.map((a) => (a.id === appointmentId ? { ...a, status: "in-progress" } : a))
     );
   };
 
@@ -80,8 +113,6 @@ export default function DoctorDashboardPage() {
           p.phone.includes(searchQuery)
       )
     : [];
-
-  const waitingRoomEntries = waitingRoom.filter((wr) => wr.status === "waiting");
 
   return (
     <div>

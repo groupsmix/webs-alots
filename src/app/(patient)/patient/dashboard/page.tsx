@@ -1,28 +1,22 @@
 "use client";
 
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { Calendar, FileText, Clock, Bell, Pill, CreditCard, Users, MessageSquare, ArrowRight, Activity } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { appointments, prescriptions, invoices } from "@/lib/demo-data";
-import { demoInAppNotifications } from "@/lib/notifications";
-
-const patientId = "p1";
-const patientAppointments = appointments.filter((a) => a.patientId === patientId);
-const upcoming = patientAppointments.filter((a) => a.status === "scheduled" || a.status === "confirmed");
-const completedVisits = patientAppointments.filter((a) => a.status === "completed");
-const patientPrescriptions = prescriptions.filter((p) => p.patientId === patientId);
-const unreadNotifications = demoInAppNotifications.filter((n) => n.userId === patientId && n.status !== "read");
-const patientInvoices = invoices.filter((_, i) => i < 2);
-const pendingInvoices = patientInvoices.filter((inv) => inv.status === "pending");
-
-const statCards = [
-  { icon: Calendar, label: "Upcoming Appointments", value: upcoming.length.toString(), color: "text-blue-600 bg-blue-100 dark:bg-blue-900/50", href: "/patient/appointments" },
-  { icon: Pill, label: "Active Prescriptions", value: patientPrescriptions.length.toString(), color: "text-green-600 bg-green-100 dark:bg-green-900/50", href: "/patient/prescriptions" },
-  { icon: Clock, label: "Total Visits", value: completedVisits.length.toString(), color: "text-purple-600 bg-purple-100 dark:bg-purple-900/50", href: "/patient/medical-history" },
-  { icon: Bell, label: "Unread Notifications", value: unreadNotifications.length.toString(), color: "text-orange-600 bg-orange-100 dark:bg-orange-900/50", href: "/patient/notifications" },
-];
+import {
+  getCurrentUser,
+  fetchPatientAppointments,
+  fetchPrescriptions,
+  fetchInvoices,
+  fetchNotifications,
+  type AppointmentView,
+  type PrescriptionView,
+  type InvoiceView,
+  type NotificationView,
+} from "@/lib/data/client";
 
 const quickLinks = [
   { icon: Calendar, label: "My Appointments", description: "View & manage bookings", href: "/patient/appointments" },
@@ -36,10 +30,57 @@ const quickLinks = [
 ];
 
 export default function PatientDashboardPage() {
+  const [appointmentsList, setAppointmentsList] = useState<AppointmentView[]>([]);
+  const [prescriptionsList, setPrescriptionsList] = useState<PrescriptionView[]>([]);
+  const [invoicesList, setInvoicesList] = useState<InvoiceView[]>([]);
+  const [notificationsList, setNotificationsList] = useState<NotificationView[]>([]);
+  const [userName, setUserName] = useState("");
+  const [loading, setLoading] = useState(true);
+
+  const load = useCallback(async () => {
+    const user = await getCurrentUser();
+    if (!user?.clinic_id) { setLoading(false); return; }
+    setUserName(user.name);
+    const [appts, rxs, invs, notifs] = await Promise.all([
+      fetchPatientAppointments(user.clinic_id, user.id),
+      fetchPrescriptions(user.clinic_id),
+      fetchInvoices(user.clinic_id),
+      fetchNotifications(user.clinic_id, user.id),
+    ]);
+    setAppointmentsList(appts);
+    setPrescriptionsList(rxs.filter(rx => rx.patientId === user.id));
+    setInvoicesList(invs);
+    setNotificationsList(notifs);
+    setLoading(false);
+  }, []);
+
+  useEffect(() => { load(); }, [load]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <p className="text-sm text-muted-foreground">Loading dashboard...</p>
+      </div>
+    );
+  }
+
+  const upcoming = appointmentsList.filter((a) => a.status === "scheduled" || a.status === "confirmed");
+  const completedVisits = appointmentsList.filter((a) => a.status === "completed");
+  const patientPrescriptions = prescriptionsList;
+  const unreadNotifications = notificationsList.filter((n) => !n.read);
+  const pendingInvoices = invoicesList.filter((inv) => inv.status === "pending");
+
+  const statCards = [
+    { icon: Calendar, label: "Upcoming Appointments", value: upcoming.length.toString(), color: "text-blue-600 bg-blue-100 dark:bg-blue-900/50", href: "/patient/appointments" },
+    { icon: Pill, label: "Active Prescriptions", value: patientPrescriptions.length.toString(), color: "text-green-600 bg-green-100 dark:bg-green-900/50", href: "/patient/prescriptions" },
+    { icon: Clock, label: "Total Visits", value: completedVisits.length.toString(), color: "text-purple-600 bg-purple-100 dark:bg-purple-900/50", href: "/patient/medical-history" },
+    { icon: Bell, label: "Unread Notifications", value: unreadNotifications.length.toString(), color: "text-orange-600 bg-orange-100 dark:bg-orange-900/50", href: "/patient/notifications" },
+  ];
+
   return (
     <div>
       <div className="mb-6">
-        <h1 className="text-2xl font-bold">Welcome back, Karim</h1>
+        <h1 className="text-2xl font-bold">Welcome back{userName ? `, ${userName.split(" ")[0]}` : ""}</h1>
         <p className="text-muted-foreground text-sm mt-1">Here&apos;s an overview of your health portal.</p>
       </div>
 

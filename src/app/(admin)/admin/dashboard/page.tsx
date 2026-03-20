@@ -1,28 +1,14 @@
+"use client";
+
+import { useEffect, useState, useCallback } from "react";
 import { Users, Calendar, CreditCard, Star, Activity } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { appointments, patients, doctors, getTotalRevenue, getAverageRating } from "@/lib/demo-data";
-
-const totalRevenue = getTotalRevenue();
-const avgRating = getAverageRating();
-const totalAppts = appointments.length;
-const completedAppts = appointments.filter((a) => a.status === "completed").length;
-const noShowRate = Math.round((appointments.filter((a) => a.status === "no-show").length / totalAppts) * 100);
-
-const stats = [
-  { icon: Users, label: "Total Patients", value: patients.length.toString(), color: "text-blue-600", change: "+12%" },
-  { icon: Calendar, label: "Total Appointments", value: totalAppts.toString(), color: "text-green-600", change: "+8%" },
-  { icon: CreditCard, label: "Monthly Revenue", value: `${totalRevenue} MAD`, color: "text-purple-600", change: "+15%" },
-  { icon: Star, label: "Average Rating", value: avgRating.toFixed(1), color: "text-yellow-600", change: "+0.2" },
-];
-
-const recentActivity = [
-  { type: "booking", message: "New booking: Fatima Zahra — General Consultation", time: "5 min ago" },
-  { type: "payment", message: "Payment received: 300 MAD — Hassan Bourkia", time: "15 min ago" },
-  { type: "review", message: "New review: 5 stars from Khadija Alaoui", time: "1 hour ago" },
-  { type: "cancel", message: "Cancelled: Omar El Fassi — Follow-up", time: "2 hours ago" },
-  { type: "booking", message: "New booking: Youssef Tazi — ECG Checkup", time: "3 hours ago" },
-];
+import {
+  getCurrentUser,
+  fetchDashboardStats,
+  type DashboardStats,
+} from "@/lib/data/client";
 
 const activityVariant: Record<string, "default" | "success" | "warning" | "destructive"> = {
   booking: "default",
@@ -32,17 +18,55 @@ const activityVariant: Record<string, "default" | "success" | "warning" | "destr
 };
 
 export default function AdminDashboardPage() {
+  const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  const load = useCallback(async () => {
+    const user = await getCurrentUser();
+    if (!user?.clinic_id) { setLoading(false); return; }
+    const s = await fetchDashboardStats(user.clinic_id);
+    setStats(s);
+    setLoading(false);
+  }, []);
+
+  useEffect(() => { load(); }, [load]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <p className="text-sm text-muted-foreground">Loading dashboard...</p>
+      </div>
+    );
+  }
+
+  const totalPatients = stats?.totalPatients ?? 0;
+  const totalAppts = stats?.totalAppointments ?? 0;
+  const completedAppts = stats?.completedAppointments ?? 0;
+  const noShowRate = totalAppts > 0 ? Math.round((stats?.noShowCount ?? 0) / totalAppts * 100) : 0;
+  const totalRevenue = stats?.totalRevenue ?? 0;
+  const avgRating = stats?.averageRating ?? 0;
+  const doctorCount = stats?.doctorCount ?? 0;
+  const insurancePatients = stats?.insurancePatients ?? 0;
+
+  const statCards = [
+    { icon: Users, label: "Total Patients", value: totalPatients.toString(), color: "text-blue-600" },
+    { icon: Calendar, label: "Total Appointments", value: totalAppts.toString(), color: "text-green-600" },
+    { icon: CreditCard, label: "Monthly Revenue", value: `${totalRevenue} MAD`, color: "text-purple-600" },
+    { icon: Star, label: "Average Rating", value: avgRating.toFixed(1), color: "text-yellow-600" },
+  ];
+
+  const recentActivity: { type: string; message: string; time: string }[] = [];
+
   return (
     <div>
       <h1 className="text-2xl font-bold mb-6">Clinic Admin Dashboard</h1>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-8">
-        {stats.map((stat) => (
+        {statCards.map((stat) => (
           <Card key={stat.label}>
             <CardContent className="p-4">
               <div className="flex items-center justify-between mb-2">
                 <stat.icon className={`h-5 w-5 ${stat.color}`} />
-                <Badge variant="outline" className="text-xs text-green-600">{stat.change}</Badge>
               </div>
               <p className="text-2xl font-bold">{stat.value}</p>
               <p className="text-xs text-muted-foreground">{stat.label}</p>
@@ -60,17 +84,21 @@ export default function AdminDashboardPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-3">
-              {recentActivity.map((activity, i) => (
-                <div key={i} className="flex items-center gap-3 text-sm">
-                  <Badge variant={activityVariant[activity.type]} className="text-[10px] w-16 justify-center">
-                    {activity.type}
-                  </Badge>
-                  <p className="flex-1 text-sm">{activity.message}</p>
-                  <span className="text-xs text-muted-foreground whitespace-nowrap">{activity.time}</span>
-                </div>
-              ))}
-            </div>
+            {recentActivity.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-4">No recent activity</p>
+            ) : (
+              <div className="space-y-3">
+                {recentActivity.map((activity, i) => (
+                  <div key={i} className="flex items-center gap-3 text-sm">
+                    <Badge variant={activityVariant[activity.type]} className="text-[10px] w-16 justify-center">
+                      {activity.type}
+                    </Badge>
+                    <p className="flex-1 text-sm">{activity.message}</p>
+                    <span className="text-xs text-muted-foreground whitespace-nowrap">{activity.time}</span>
+                  </div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -82,7 +110,7 @@ export default function AdminDashboardPage() {
             <div className="space-y-3">
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Active Doctors</span>
-                <span className="font-medium">{doctors.length}</span>
+                <span className="font-medium">{doctorCount}</span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Completed Appts</span>
@@ -98,7 +126,7 @@ export default function AdminDashboardPage() {
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Insurance Patients</span>
-                <span className="font-medium">{patients.filter((p) => p.insurance).length}</span>
+                <span className="font-medium">{insurancePatients}</span>
               </div>
             </div>
           </CardContent>

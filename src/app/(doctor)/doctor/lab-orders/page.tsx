@@ -1,11 +1,31 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { LabOrdersPanel } from "@/components/dental/lab-orders-panel";
-import { labOrders as initialOrders, type LabOrder } from "@/lib/dental-demo-data";
+import { getCurrentUser, fetchLabOrders, type LabOrderView } from "@/lib/data/client";
+import type { LabOrder } from "@/lib/dental-demo-data";
 
 export default function DoctorLabOrdersPage() {
-  const [orders, setOrders] = useState<LabOrder[]>(initialOrders);
+  const [orders, setOrders] = useState<LabOrder[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const load = useCallback(async () => {
+    const user = await getCurrentUser();
+    if (!user?.clinic_id) { setLoading(false); return; }
+    const data = await fetchLabOrders(user.clinic_id);
+    setOrders(data as unknown as LabOrder[]);
+    setLoading(false);
+  }, []);
+
+  useEffect(() => { load(); }, [load]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <p className="text-sm text-muted-foreground">Loading lab orders...</p>
+      </div>
+    );
+  }
 
   const handleUpdateStatus = (orderId: string, status: LabOrder["status"]) => {
     setOrders((prev) =>

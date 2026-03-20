@@ -1,21 +1,61 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Calendar, Clock } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { getNextAvailableSlots } from "@/lib/demo-data";
-
-const doctorId = "d1";
+import {
+  getCurrentUser,
+  fetchTimeSlots,
+  type TimeSlotView,
+} from "@/lib/data/client";
 
 const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 
+function computeAvailableSlots(slots: TimeSlotView[], daysAhead: number) {
+  const today = new Date();
+  const result: { date: string; slots: string[] }[] = [];
+  for (let i = 0; i <= daysAhead; i++) {
+    const d = new Date(today);
+    d.setDate(d.getDate() + i);
+    const dayOfWeek = d.getDay();
+    const dateStr = d.toISOString().split("T")[0];
+    const daySlots = slots
+      .filter((s) => s.dayOfWeek === dayOfWeek && s.isAvailable)
+      .map((s) => s.startTime.slice(0, 5));
+    if (daySlots.length > 0) {
+      result.push({ date: dateStr, slots: daySlots });
+    }
+  }
+  return result;
+}
+
 export default function NextAvailableSlotsPage() {
   const [daysAhead, setDaysAhead] = useState(14);
+  const [timeSlots, setTimeSlots] = useState<TimeSlotView[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const availableSlots = getNextAvailableSlots(doctorId, daysAhead);
+  const load = useCallback(async () => {
+    const user = await getCurrentUser();
+    if (!user?.clinic_id) { setLoading(false); return; }
+    const ts = await fetchTimeSlots(user.clinic_id);
+    setTimeSlots(ts);
+    setLoading(false);
+  }, []);
+
+  useEffect(() => { load(); }, [load]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <p className="text-sm text-muted-foreground">Loading slots...</p>
+      </div>
+    );
+  }
+
+  const availableSlots = computeAvailableSlots(timeSlots, daysAhead);
 
   const formatDate = (dateStr: string) => {
     const d = new Date(dateStr);

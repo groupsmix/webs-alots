@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Plus, Edit, Trash2 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -16,11 +16,23 @@ import {
   DialogFooter,
   DialogDescription,
 } from "@/components/ui/dialog";
-import { doctors as initialDoctors, specialties } from "@/lib/demo-data";
-import type { Doctor } from "@/lib/demo-data";
+import { getCurrentUser, fetchDoctors, type DoctorView } from "@/lib/data/client";
+
+type Doctor = DoctorView;
 
 export default function ManageDoctorsPage() {
-  const [doctorsList, setDoctorsList] = useState<Doctor[]>(initialDoctors);
+  const [doctorsList, setDoctorsList] = useState<Doctor[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const load = useCallback(async () => {
+    const user = await getCurrentUser();
+    if (!user?.clinic_id) { setLoading(false); return; }
+    const docs = await fetchDoctors(user.clinic_id);
+    setDoctorsList(docs);
+    setLoading(false);
+  }, []);
+
+  useEffect(() => { load(); }, [load]);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingDoctor, setEditingDoctor] = useState<Doctor | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
@@ -156,16 +168,7 @@ export default function ManageDoctorsPage() {
             </div>
             <div className="space-y-2">
               <Label>Specialty Category</Label>
-              <select
-                className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                value={formSpecialtyId}
-                onChange={(e) => setFormSpecialtyId(e.target.value)}
-              >
-                <option value="">Select category...</option>
-                {specialties.map((s) => (
-                  <option key={s.id} value={s.id}>{s.name}</option>
-                ))}
-              </select>
+              <Input placeholder="Specialty category" value={formSpecialtyId} onChange={(e) => setFormSpecialtyId(e.target.value)} />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
