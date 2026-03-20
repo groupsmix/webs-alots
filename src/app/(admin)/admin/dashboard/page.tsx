@@ -9,6 +9,8 @@ import {
   fetchDashboardStats,
   type DashboardStats,
 } from "@/lib/data/client";
+import { LabDashboardKPIsComponent } from "@/components/admin/lab-dashboard-kpis";
+import { ClinicCenterDashboardKPIsComponent } from "@/components/admin/clinic-center-dashboard-kpis";
 
 const activityVariant: Record<string, "default" | "success" | "warning" | "destructive"> = {
   booking: "default",
@@ -131,6 +133,15 @@ export default function AdminDashboardPage() {
             </div>
           </CardContent>
         </Card>
+      </div>
+      {/* Lab Dashboard KPIs (Task 36) */}
+      <div className="mt-8">
+        <LabDashboardKPIsComponent />
+      </div>
+
+      {/* Clinic/Center Dashboard KPIs (Task 37) */}
+      <div className="mt-8">
+        <ClinicCenterDashboardKPIsComponent />
       </div>
     </div>
   );
