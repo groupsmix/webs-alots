@@ -74,6 +74,7 @@ export interface ClinicConfig {
     waitingList: boolean;
     emergencySlots: boolean;
     recurringBookings: boolean;
+    chatbot: boolean;
   };
 }
 
@@ -134,5 +135,6 @@ export const clinicConfig: ClinicConfig = {
     waitingList: true,
     emergencySlots: true,
     recurringBookings: true,
+    chatbot: false,
   },
 };
