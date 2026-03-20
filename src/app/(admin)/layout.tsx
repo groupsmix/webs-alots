@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, UserCog, Stethoscope, Settings, BarChart3, Star, Users, CalendarOff, Clock, UserCheck } from "lucide-react";
+import { LayoutDashboard, UserCog, Stethoscope, Settings, BarChart3, Star, Users, CalendarOff, Bell, Clock, UserCheck } from "lucide-react";
 import { SignOutButton } from "@/components/sign-out-button";
 
 const navItems = [
@@ -13,6 +13,7 @@ const navItems = [
   { href: "/admin/holidays", label: "Holidays / Closures", icon: CalendarOff },
   { href: "/admin/receptionists", label: "Receptionists", icon: UserCheck },
   { href: "/admin/patients", label: "Patient Database", icon: Users },
+  { href: "/admin/notifications", label: "Notifications", icon: Bell },
   { href: "/admin/reports", label: "Reports", icon: BarChart3 },
   { href: "/admin/reviews", label: "Reviews", icon: Star },
   { href: "/admin/settings", label: "Settings", icon: Settings },

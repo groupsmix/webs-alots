@@ -1,42 +1,141 @@
-import { Bell, Calendar, Pill, CreditCard, CheckCircle2 } from "lucide-react";
+"use client";
+
+import { useState } from "react";
+import {
+  Bell,
+  Calendar,
+  Pill,
+  CreditCard,
+  CheckCircle2,
+  Star,
+  CalendarX,
+  MessageCircle,
+  Settings,
+  Trash2,
+} from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import {
+  demoInAppNotifications,
+  type NotificationTrigger,
+} from "@/lib/notifications";
 
-interface Notification {
-  id: string;
-  type: "appointment" | "prescription" | "payment" | "general";
-  title: string;
-  message: string;
-  time: string;
-  read: boolean;
+// ---- Type Mapping ----
+
+type NotificationType = "appointment" | "prescription" | "payment" | "general" | "review" | "cancellation";
+
+function triggerToType(trigger: NotificationTrigger): NotificationType {
+  switch (trigger) {
+    case "new_booking":
+    case "booking_confirmation":
+    case "reminder_24h":
+    case "reminder_2h":
+    case "rescheduled":
+    case "doctor_assigned":
+    case "follow_up":
+    case "no_show":
+      return "appointment";
+    case "prescription_ready":
+      return "prescription";
+    case "payment_received":
+      return "payment";
+    case "new_review":
+      return "review";
+    case "cancellation":
+      return "cancellation";
+    case "new_patient_registered":
+    default:
+      return "general";
+  }
 }
 
-const notifications: Notification[] = [
-  { id: "n1", type: "appointment", title: "Appointment Reminder", message: "Your appointment with Dr. Ahmed Benali is tomorrow at 09:00.", time: "1 hour ago", read: false },
-  { id: "n2", type: "prescription", title: "Prescription Ready", message: "Your prescription from Dr. Youssef El Amrani is ready for pickup.", time: "3 hours ago", read: false },
-  { id: "n3", type: "payment", title: "Invoice Due", message: "Invoice #INV-003 of 400 MAD is pending payment.", time: "1 day ago", read: false },
-  { id: "n4", type: "appointment", title: "Appointment Confirmed", message: "Your follow-up visit with Dr. Ahmed Benali on March 20 has been confirmed.", time: "2 days ago", read: true },
-  { id: "n5", type: "general", title: "Welcome to the Patient Portal", message: "Complete your profile to get personalized health recommendations.", time: "1 week ago", read: true },
-  { id: "n6", type: "prescription", title: "Medication Reminder", message: "Remember to take your Atorvastatin 20mg at bedtime.", time: "1 week ago", read: true },
-];
-
-const iconMap = {
+const iconMap: Record<NotificationType, typeof Bell> = {
   appointment: Calendar,
   prescription: Pill,
   payment: CreditCard,
   general: Bell,
+  review: Star,
+  cancellation: CalendarX,
 };
 
-const colorMap = {
+const colorMap: Record<NotificationType, string> = {
   appointment: "text-blue-600 bg-blue-100 dark:bg-blue-900",
   prescription: "text-green-600 bg-green-100 dark:bg-green-900",
   payment: "text-purple-600 bg-purple-100 dark:bg-purple-900",
   general: "text-orange-600 bg-orange-100 dark:bg-orange-900",
+  review: "text-yellow-600 bg-yellow-100 dark:bg-yellow-900",
+  cancellation: "text-red-600 bg-red-100 dark:bg-red-900",
 };
 
+// ---- Patient notifications for demo (userId = "p1") ----
+
+const patientNotifications = demoInAppNotifications
+  .filter((n) => n.userId === "p1")
+  .map((n) => ({
+    ...n,
+    type: triggerToType(n.trigger),
+    read: n.status === "read",
+    time: formatTimeAgo(n.createdAt),
+  }));
+
+function formatTimeAgo(dateStr: string): string {
+  const now = new Date();
+  const then = new Date(dateStr);
+  const diffMs = now.getTime() - then.getTime();
+  const diffMin = Math.floor(diffMs / 60000);
+  const diffHour = Math.floor(diffMin / 60);
+  const diffDay = Math.floor(diffHour / 24);
+
+  if (diffMin < 60) return `${diffMin} min ago`;
+  if (diffHour < 24) return `${diffHour} hour${diffHour > 1 ? "s" : ""} ago`;
+  if (diffDay < 7) return `${diffDay} day${diffDay > 1 ? "s" : ""} ago`;
+  return then.toLocaleDateString();
+}
+
 export default function PatientNotificationsPage() {
+  const [notifications, setNotifications] = useState(patientNotifications);
+  const [filter, setFilter] = useState<"all" | "unread">("all");
+  const [prefsOpen, setPrefsOpen] = useState(false);
+  const [prefs, setPrefs] = useState({
+    whatsapp: true,
+    in_app: true,
+    reminders: true,
+    confirmations: true,
+    payments: true,
+    prescriptions: true,
+  });
+  const [savedPrefs, setSavedPrefs] = useState(false);
+
+  const displayed = filter === "unread" ? notifications.filter((n) => !n.read) : notifications;
   const unreadCount = notifications.filter((n) => !n.read).length;
+
+  const markAsRead = (id: string) => {
+    setNotifications(notifications.map((n) => (n.id === id ? { ...n, read: true, status: "read" as const } : n)));
+  };
+
+  const markAllRead = () => {
+    setNotifications(notifications.map((n) => ({ ...n, read: true, status: "read" as const })));
+  };
+
+  const deleteNotification = (id: string) => {
+    setNotifications(notifications.filter((n) => n.id !== id));
+  };
+
+  const handleSavePrefs = () => {
+    setSavedPrefs(true);
+    setTimeout(() => setSavedPrefs(false), 2000);
+  };
 
   return (
     <div>
@@ -44,37 +143,162 @@ export default function PatientNotificationsPage() {
         <div>
           <h1 className="text-2xl font-bold">Notifications</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            {unreadCount > 0 ? `${unreadCount} unread notifications` : "All caught up!"}
+            {unreadCount > 0 ? `${unreadCount} unread notification${unreadCount > 1 ? "s" : ""}` : "All caught up!"}
           </p>
         </div>
-        <Button variant="outline" size="sm">
-          <CheckCircle2 className="h-4 w-4 mr-1" />
-          Mark All Read
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={() => setPrefsOpen(true)}>
+            <Settings className="h-4 w-4 mr-1" />
+            Preferences
+          </Button>
+          <Button variant="outline" size="sm" onClick={markAllRead} disabled={unreadCount === 0}>
+            <CheckCircle2 className="h-4 w-4 mr-1" />
+            Mark All Read
+          </Button>
+        </div>
       </div>
 
+      {/* Filter Tabs */}
+      <Tabs defaultValue="all" className="mb-4">
+        <TabsList>
+          <TabsTrigger value="all" onClick={() => setFilter("all")}>
+            All ({notifications.length})
+          </TabsTrigger>
+          <TabsTrigger value="unread" onClick={() => setFilter("unread")}>
+            Unread ({unreadCount})
+          </TabsTrigger>
+        </TabsList>
+      </Tabs>
+
       <div className="space-y-3">
-        {notifications.map((notification) => {
-          const Icon = iconMap[notification.type];
+        {displayed.length === 0 && (
+          <div className="text-center py-12">
+            <Bell className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
+            <p className="text-sm text-muted-foreground">
+              {filter === "unread" ? "No unread notifications" : "No notifications yet"}
+            </p>
+          </div>
+        )}
+        {displayed.map((notification) => {
+          const nType = notification.type;
+          const Icon = iconMap[nType];
           return (
-            <Card key={notification.id} className={!notification.read ? "border-l-4 border-l-primary" : "opacity-75"}>
+            <Card
+              key={notification.id}
+              className={`cursor-pointer transition-colors hover:bg-muted/50 ${!notification.read ? "border-l-4 border-l-primary" : "opacity-75"}`}
+              onClick={() => markAsRead(notification.id)}
+            >
               <CardContent className="flex items-start gap-4 pt-4 pb-4">
-                <div className={`h-10 w-10 rounded-full flex items-center justify-center shrink-0 ${colorMap[notification.type]}`}>
+                <div className={`h-10 w-10 rounded-full flex items-center justify-center shrink-0 ${colorMap[nType]}`}>
                   <Icon className="h-5 w-5" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
                     <p className="text-sm font-medium">{notification.title}</p>
                     {!notification.read && <Badge className="text-[10px]">New</Badge>}
+                    {notification.priority === "urgent" && (
+                      <Badge variant="destructive" className="text-[10px]">Urgent</Badge>
+                    )}
                   </div>
                   <p className="text-sm text-muted-foreground mt-0.5">{notification.message}</p>
-                  <p className="text-xs text-muted-foreground mt-1">{notification.time}</p>
+                  <div className="flex items-center gap-3 mt-1">
+                    <p className="text-xs text-muted-foreground">{notification.time}</p>
+                    <Badge variant="outline" className="text-[10px]">
+                      {notification.channel === "in_app" ? "In-App" : notification.channel}
+                    </Badge>
+                  </div>
                 </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="shrink-0 opacity-0 group-hover:opacity-100"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    deleteNotification(notification.id);
+                  }}
+                >
+                  <Trash2 className="h-4 w-4 text-muted-foreground" />
+                </Button>
               </CardContent>
             </Card>
           );
         })}
       </div>
+
+      {/* Notification Preferences Dialog */}
+      <Dialog open={prefsOpen} onOpenChange={setPrefsOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Notification Preferences</DialogTitle>
+            <DialogDescription>Choose how you want to receive notifications</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-6 mt-4">
+            <div>
+              <h4 className="text-sm font-medium mb-3">Channels</h4>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <MessageCircle className="h-4 w-4 text-green-600" />
+                    <Label>WhatsApp Notifications</Label>
+                  </div>
+                  <Switch
+                    checked={prefs.whatsapp}
+                    onCheckedChange={(v) => setPrefs({ ...prefs, whatsapp: v })}
+                  />
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Bell className="h-4 w-4 text-blue-600" />
+                    <Label>In-App Notifications</Label>
+                  </div>
+                  <Switch
+                    checked={prefs.in_app}
+                    onCheckedChange={(v) => setPrefs({ ...prefs, in_app: v })}
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <h4 className="text-sm font-medium mb-3">Notification Types</h4>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <Label>Appointment Reminders</Label>
+                  <Switch
+                    checked={prefs.reminders}
+                    onCheckedChange={(v) => setPrefs({ ...prefs, reminders: v })}
+                  />
+                </div>
+                <div className="flex items-center justify-between">
+                  <Label>Booking Confirmations</Label>
+                  <Switch
+                    checked={prefs.confirmations}
+                    onCheckedChange={(v) => setPrefs({ ...prefs, confirmations: v })}
+                  />
+                </div>
+                <div className="flex items-center justify-between">
+                  <Label>Payment Receipts</Label>
+                  <Switch
+                    checked={prefs.payments}
+                    onCheckedChange={(v) => setPrefs({ ...prefs, payments: v })}
+                  />
+                </div>
+                <div className="flex items-center justify-between">
+                  <Label>Prescription Updates</Label>
+                  <Switch
+                    checked={prefs.prescriptions}
+                    onCheckedChange={(v) => setPrefs({ ...prefs, prescriptions: v })}
+                  />
+                </div>
+              </div>
+            </div>
+
+            <Button className="w-full" onClick={handleSavePrefs}>
+              {savedPrefs ? "Saved!" : "Save Preferences"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
