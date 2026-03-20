@@ -1,8 +1,18 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { ChevronLeft, ChevronRight, Check, Stethoscope, User, ShieldCheck, Repeat, Users } from "lucide-react";
-import { specialties, doctors, services, getAvailableSlots, generateTimeSlots, getSlotBookingCounts, getDoctorsBySpecialty, addToWaitingList } from "@/lib/demo-data";
+import {
+  specialties as demoSpecialties,
+  doctors as demoDoctors,
+  services as demoServices,
+  getAvailableSlots as demoGetAvailableSlots,
+  generateTimeSlots as demoGenerateTimeSlots,
+  getSlotBookingCounts as demoGetSlotBookingCounts,
+  addToWaitingList as demoAddToWaitingList,
+} from "@/lib/demo-data";
+import type { Specialty, Doctor, Service } from "@/lib/demo-data";
+import { fetchDoctors, fetchServices } from "@/lib/data/client";
 import { clinicConfig } from "@/config/clinic.config";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -18,6 +28,21 @@ function getSteps() {
   if (clinicConfig.features.onlinePayment) s.push("Payment");
   s.push("Confirm");
   return s;
+}
+
+/** Derive specialties from doctor metadata */
+function deriveSpecialties(docs: Doctor[]): Specialty[] {
+  const seen = new Map<string, Specialty>();
+  for (const d of docs) {
+    if (d.specialtyId && !seen.has(d.specialtyId)) {
+      seen.set(d.specialtyId, {
+        id: d.specialtyId,
+        name: d.specialty,
+        description: `${d.specialty} consultations`,
+      });
+    }
+  }
+  return Array.from(seen.values());
 }
 
 export function BookingForm() {
@@ -42,20 +67,94 @@ export function BookingForm() {
   const [pendingPaymentId] = useState(() => `pending-${crypto.randomUUID()}`);
   const [patientPaymentId] = useState(() => `patient-${crypto.randomUUID()}`);
 
+  // Supabase-loaded data with demo fallbacks
+  const [specialties, setSpecialties] = useState<Specialty[]>(demoSpecialties);
+  const [doctors, setDoctors] = useState<Doctor[]>(demoDoctors);
+  const [services, setServices] = useState<Service[]>(demoServices);
+
+  // Slot data (fetched dynamically via API when date/doctor change)
+  const [availableSlots, setAvailableSlots] = useState<string[]>([]);
+  const [allSlots, setAllSlots] = useState<string[]>([]);
+  const [slotCounts, setSlotCounts] = useState<Record<string, number>>({});
+
+  // Load doctors, services, and specialties from Supabase on mount
+  useEffect(() => {
+    const clinicId = clinicConfig.clinicId;
+    if (!clinicId || clinicId === "demo-clinic") return;
+
+    Promise.all([
+      fetchDoctors(clinicId),
+      fetchServices(clinicId),
+    ]).then(([dbDoctors, dbServices]) => {
+      if (dbDoctors.length > 0) {
+        const mappedDoctors: Doctor[] = dbDoctors.map((d) => ({
+          id: d.id,
+          name: d.name,
+          specialtyId: d.specialtyId,
+          specialty: d.specialty,
+          phone: d.phone,
+          email: d.email,
+          avatar: d.avatar,
+          consultationFee: d.consultationFee,
+          languages: d.languages,
+        }));
+        setDoctors(mappedDoctors);
+        setSpecialties(deriveSpecialties(mappedDoctors));
+      }
+      if (dbServices.length > 0) {
+        const mappedServices: Service[] = dbServices.map((s) => ({
+          id: s.id,
+          name: s.name,
+          description: s.description,
+          duration: s.duration,
+          price: s.price,
+          currency: s.currency,
+          active: s.active,
+        }));
+        setServices(mappedServices);
+      }
+    }).catch(() => {
+      // Keep demo data on error
+    });
+  }, []);
+
+  // Fetch available slots when date or doctor changes
+  const fetchSlots = useCallback(async (date: string, doctorId: string) => {
+    if (!date || !doctorId) return;
+
+    try {
+      const res = await fetch(`/api/booking?date=${date}&doctorId=${doctorId}`);
+      if (res.ok) {
+        const data = await res.json();
+        setAvailableSlots(data.slots ?? []);
+        setAllSlots(data.allSlots ?? []);
+        setSlotCounts(data.bookedCounts ?? {});
+        return;
+      }
+    } catch {
+      // Fall through to demo fallback
+    }
+
+    // Fallback to demo data functions
+    setAvailableSlots(demoGetAvailableSlots(date, doctorId));
+    setAllSlots(demoGenerateTimeSlots(date));
+    setSlotCounts(demoGetSlotBookingCounts(date, doctorId));
+  }, []);
+
+  useEffect(() => {
+    if (selectedDate && selectedDoctor) {
+      fetchSlots(selectedDate, selectedDoctor);
+    } else {
+      setAvailableSlots([]);
+      setAllSlots([]);
+      setSlotCounts({});
+    }
+  }, [selectedDate, selectedDoctor, fetchSlots]);
+
   const filteredDoctors = useMemo(() => {
     if (!selectedSpecialty) return doctors;
-    return getDoctorsBySpecialty(selectedSpecialty);
-  }, [selectedSpecialty]);
-
-  const availableSlots = selectedDate && selectedDoctor
-    ? getAvailableSlots(selectedDate, selectedDoctor)
-    : [];
-
-  const allSlots = selectedDate ? generateTimeSlots(selectedDate) : [];
-
-  const slotCounts = selectedDate && selectedDoctor
-    ? getSlotBookingCounts(selectedDate, selectedDoctor)
-    : {};
+    return doctors.filter((d) => d.specialtyId === selectedSpecialty);
+  }, [selectedSpecialty, doctors]);
 
   const doctor = doctors.find((d) => d.id === selectedDoctor);
   const service = services.find((s) => s.id === selectedService);
@@ -79,7 +178,7 @@ export function BookingForm() {
       setWaitingListMessage("Please complete your info first (step 5) to join a waiting list.");
       return;
     }
-    const result = addToWaitingList(
+    const result = demoAddToWaitingList(
       `patient-${Date.now()}`,
       patientInfo.name,
       selectedDoctor,

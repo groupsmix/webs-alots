@@ -1,14 +1,17 @@
-"use client";
-
 import { Clock, CreditCard } from "lucide-react";
 import Link from "next/link";
-import { services } from "@/lib/demo-data";
+import { getPublicServices } from "@/lib/data/public";
+import { services as demoServices } from "@/lib/demo-data";
 import { defaultWebsiteConfig } from "@/lib/website-config";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 
-export default function ServicesPage() {
+export default async function ServicesPage() {
   const cfg = defaultWebsiteConfig.services;
+
+  // Fetch from Supabase, fall back to demo data if empty
+  const supabaseServices = await getPublicServices();
+  const services = supabaseServices.length > 0 ? supabaseServices : demoServices;
 
   return (
     <div className="container mx-auto px-4 py-12">
