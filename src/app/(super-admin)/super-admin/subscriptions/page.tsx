@@ -23,7 +23,6 @@ import {
   statusColors,
   type ClientSubscription,
   type SystemType,
-  type TierSlug,
 } from "@/lib/pricing-data";
 
 type StatusFilter = "all" | ClientSubscription["status"];
