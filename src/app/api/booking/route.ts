@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getAvailableSlots, generateTimeSlots, appointments, doctors, services, specialties } from "@/lib/demo-data";
+import { getAvailableSlots, generateTimeSlots, appointments, doctors, services, specialties, assignDoctorsToAppointment } from "@/lib/demo-data";
 import { clinicConfig } from "@/config/clinic.config";
 
 export const runtime = "edge";
@@ -7,6 +7,7 @@ export const runtime = "edge";
 interface BookingRequestBody {
   specialtyId: string;
   doctorId: string;
+  doctorIds?: string[];
   serviceId: string;
   date: string;
   time: string;
@@ -103,6 +104,11 @@ export async function POST(request: NextRequest) {
     };
 
     appointments.push(newAppointment);
+
+    // Multi-doctor support: assign additional doctors if provided
+    if (body.doctorIds && body.doctorIds.length > 0 && clinicConfig.features.multiDoctor) {
+      assignDoctorsToAppointment(newAppointment.id, body.doctorIds, body.doctorId);
+    }
 
     console.log("Booking created:", JSON.stringify(newAppointment));
 

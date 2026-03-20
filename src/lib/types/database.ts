@@ -139,6 +139,10 @@ export interface TimeSlot {
   is_active: boolean;
 }
 
+export type RecurrencePattern = "weekly" | "biweekly" | "monthly";
+
+export type PaymentType = "deposit" | "full";
+
 export interface Appointment {
   id: string;
   clinic_id: string;
@@ -154,6 +158,13 @@ export interface Appointment {
   insurance_flag: boolean;
   booking_source: BookingSource;
   notes: string | null;
+  cancelled_at: string | null;
+  cancellation_reason: string | null;
+  rescheduled_from: string | null;
+  is_emergency: boolean;
+  recurrence_group_id: string | null;
+  recurrence_pattern: RecurrencePattern | null;
+  recurrence_index: number | null;
   created_at: string;
   updated_at: string;
 }
@@ -164,7 +175,10 @@ export interface WaitingListEntry {
   patient_id: string;
   doctor_id: string;
   preferred_date: string | null;
+  preferred_time: string | null;
+  service_id: string | null;
   status: WaitingListStatus;
+  notified_at: string | null;
   created_at: string;
 }
 
@@ -189,6 +203,9 @@ export interface Payment {
   method: PaymentMethod | null;
   status: PaymentStatus;
   reference: string | null;
+  payment_type: PaymentType;
+  gateway_session_id: string | null;
+  refunded_amount: number;
   created_at: string;
 }
 
@@ -333,6 +350,28 @@ export interface SterilizationLogEntry {
   created_at: string;
 }
 
+// ---- Advanced Booking Extras ----
+
+export interface EmergencySlot {
+  id: string;
+  clinic_id: string;
+  doctor_id: string;
+  slot_date: string;
+  start_time: string;
+  end_time: string;
+  reason: string | null;
+  is_booked: boolean;
+  created_at: string;
+}
+
+export interface AppointmentDoctor {
+  id: string;
+  appointment_id: string;
+  doctor_id: string;
+  is_primary: boolean;
+  created_at: string;
+}
+
 // ---- Pharmacy Extras ----
 
 export interface Product {
@@ -452,6 +491,8 @@ export interface Database {
       loyalty_transactions: { Row: LoyaltyTransaction; Insert: Partial<LoyaltyTransaction> & Pick<LoyaltyTransaction, "clinic_id" | "patient_id" | "points">; Update: Partial<LoyaltyTransaction> };
       purchase_orders: { Row: PurchaseOrder; Insert: Partial<PurchaseOrder> & Pick<PurchaseOrder, "clinic_id" | "supplier_id">; Update: Partial<PurchaseOrder> };
       purchase_order_items: { Row: PurchaseOrderItem; Insert: Partial<PurchaseOrderItem> & Pick<PurchaseOrderItem, "purchase_order_id" | "product_id" | "quantity">; Update: Partial<PurchaseOrderItem> };
+      emergency_slots: { Row: EmergencySlot; Insert: Partial<EmergencySlot> & Pick<EmergencySlot, "clinic_id" | "doctor_id" | "slot_date" | "start_time" | "end_time">; Update: Partial<EmergencySlot> };
+      appointment_doctors: { Row: AppointmentDoctor; Insert: Partial<AppointmentDoctor> & Pick<AppointmentDoctor, "appointment_id" | "doctor_id">; Update: Partial<AppointmentDoctor> };
     };
   };
 }

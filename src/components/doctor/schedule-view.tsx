@@ -6,6 +6,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { appointments } from "@/lib/demo-data";
+import { clinicConfig } from "@/config/clinic.config";
+import { EmergencySlotCreator } from "./emergency-slot-creator";
 
 type ViewMode = "timeline" | "list";
 
@@ -140,6 +142,10 @@ export function ScheduleView() {
             </div>
           </CardContent>
         </Card>
+      )}
+
+      {clinicConfig.features.emergencySlots && (
+        <EmergencySlotCreator doctorId="d1" />
       )}
 
       <Card>

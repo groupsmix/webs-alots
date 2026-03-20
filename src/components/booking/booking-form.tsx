@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { ChevronLeft, ChevronRight, Check, Stethoscope, User, ShieldCheck } from "lucide-react";
-import { specialties, doctors, services, getAvailableSlots, generateTimeSlots, getSlotBookingCounts, getDoctorsBySpecialty } from "@/lib/demo-data";
+import { ChevronLeft, ChevronRight, Check, Stethoscope, User, ShieldCheck, Repeat, Users } from "lucide-react";
+import { specialties, doctors, services, getAvailableSlots, generateTimeSlots, getSlotBookingCounts, getDoctorsBySpecialty, addToWaitingList } from "@/lib/demo-data";
 import { clinicConfig } from "@/config/clinic.config";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -11,13 +11,21 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { BookingCalendar } from "./calendar";
 import { TimeSlotPicker } from "./time-slots";
+import { PaymentStep } from "./payment-step";
 
-const steps = ["Specialty", "Doctor", "Service", "Date & Time", "Your Info", "Confirm"];
+function getSteps() {
+  const s = ["Specialty", "Doctor", "Service", "Date & Time", "Your Info"];
+  if (clinicConfig.features.onlinePayment) s.push("Payment");
+  s.push("Confirm");
+  return s;
+}
 
 export function BookingForm() {
+  const steps = useMemo(() => getSteps(), []);
   const [step, setStep] = useState(0);
   const [selectedSpecialty, setSelectedSpecialty] = useState("");
   const [selectedDoctor, setSelectedDoctor] = useState("");
+  const [selectedDoctors, setSelectedDoctors] = useState<string[]>([]);
   const [selectedService, setSelectedService] = useState("");
   const [selectedDate, setSelectedDate] = useState("");
   const [selectedTime, setSelectedTime] = useState("");
@@ -25,6 +33,14 @@ export function BookingForm() {
   const [isFirstVisit, setIsFirstVisit] = useState(true);
   const [patientInfo, setPatientInfo] = useState({ name: "", phone: "", email: "", reason: "" });
   const [submitted, setSubmitted] = useState(false);
+  const [isRecurring, setIsRecurring] = useState(false);
+  const [recurrencePattern, setRecurrencePattern] = useState<"weekly" | "biweekly" | "monthly">("weekly");
+  const [recurrenceCount, setRecurrenceCount] = useState(4);
+  const [waitingListMessage, setWaitingListMessage] = useState<string | null>(null);
+  const [paymentCompleted, setPaymentCompleted] = useState(false);
+  const [bookingId, setBookingId] = useState<string | null>(null);
+  const [pendingPaymentId] = useState(() => `pending-${crypto.randomUUID()}`);
+  const [patientPaymentId] = useState(() => `patient-${crypto.randomUUID()}`);
 
   const filteredDoctors = useMemo(() => {
     if (!selectedSpecialty) return doctors;
@@ -45,33 +61,88 @@ export function BookingForm() {
   const service = services.find((s) => s.id === selectedService);
   const specialty = specialties.find((s) => s.id === selectedSpecialty);
 
+  const confirmStepIndex = steps.indexOf("Confirm");
+  const paymentStepIndex = steps.indexOf("Payment");
+
   const canNext = () => {
     if (step === 0) return !!selectedSpecialty;
     if (step === 1) return !!selectedDoctor;
     if (step === 2) return !!selectedService;
     if (step === 3) return !!selectedDate && !!selectedTime;
     if (step === 4) return !!patientInfo.name && !!patientInfo.phone;
+    if (paymentStepIndex !== -1 && step === paymentStepIndex) return paymentCompleted;
     return true;
+  };
+
+  const handleJoinWaitingList = (slot: string) => {
+    if (!patientInfo.name) {
+      setWaitingListMessage("Please complete your info first (step 5) to join a waiting list.");
+      return;
+    }
+    const result = addToWaitingList(
+      `patient-${Date.now()}`,
+      patientInfo.name,
+      selectedDoctor,
+      selectedDate,
+      slot,
+      selectedService,
+    );
+    if (result.success) {
+      setWaitingListMessage(`You've been added to the waiting list for ${selectedDate} at ${slot}.`);
+    } else {
+      setWaitingListMessage(result.error ?? "Could not join waiting list.");
+    }
   };
 
   const handleConfirm = async () => {
     try {
-      await fetch("/api/booking", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          specialtyId: selectedSpecialty,
-          doctorId: selectedDoctor,
-          serviceId: selectedService,
-          date: selectedDate,
-          time: selectedTime,
-          isFirstVisit,
-          hasInsurance: isInsurance,
-          patient: patientInfo,
-          slotDuration: clinicConfig.booking.slotDuration,
-          bufferTime: clinicConfig.booking.bufferTime,
-        }),
-      });
+      if (isRecurring && clinicConfig.features.recurringBookings) {
+        const res = await fetch("/api/booking/recurring", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            action: "create",
+            patientId: `patient-${Date.now()}`,
+            patientName: patientInfo.name,
+            doctorId: selectedDoctor,
+            serviceId: selectedService,
+            date: selectedDate,
+            time: selectedTime,
+            pattern: recurrencePattern,
+            occurrences: recurrenceCount,
+            isFirstVisit,
+            hasInsurance: isInsurance,
+          }),
+        });
+        const data = await res.json();
+        if (data.appointmentIds?.length > 0) {
+          setBookingId(data.appointmentIds[0]);
+        }
+      } else {
+        const res = await fetch("/api/booking", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            specialtyId: selectedSpecialty,
+            doctorId: selectedDoctor,
+            doctorIds: clinicConfig.features.multiDoctor && selectedDoctors.length > 0
+              ? selectedDoctors
+              : undefined,
+            serviceId: selectedService,
+            date: selectedDate,
+            time: selectedTime,
+            isFirstVisit,
+            hasInsurance: isInsurance,
+            patient: patientInfo,
+            slotDuration: clinicConfig.booking.slotDuration,
+            bufferTime: clinicConfig.booking.bufferTime,
+          }),
+        });
+        const data = await res.json();
+        if (data.appointment?.id) {
+          setBookingId(data.appointment.id);
+        }
+      }
       setSubmitted(true);
     } catch {
       setSubmitted(true);
@@ -111,6 +182,11 @@ export function BookingForm() {
             setPatientInfo({ name: "", phone: "", email: "", reason: "" });
             setIsFirstVisit(true);
             setIsInsurance(false);
+            setIsRecurring(false);
+            setSelectedDoctors([]);
+            setPaymentCompleted(false);
+            setBookingId(null);
+            setWaitingListMessage(null);
           }}>
             Book Another Appointment
           </Button>
@@ -245,13 +321,65 @@ export function BookingForm() {
                   maxPerSlot={clinicConfig.booking.maxPerSlot}
                   selectedSlot={selectedTime}
                   onSelectSlot={setSelectedTime}
+                  showWaitingList={clinicConfig.features.waitingList}
+                  onJoinWaitingList={handleJoinWaitingList}
                 />
+                {waitingListMessage && (
+                  <p className="text-sm text-primary mt-2">{waitingListMessage}</p>
+                )}
+              </div>
+            )}
+
+            {/* Recurring booking toggle */}
+            {clinicConfig.features.recurringBookings && selectedDate && selectedTime && (
+              <div className="rounded-lg border p-4 mt-4 space-y-3">
+                <label className="flex items-center gap-3 cursor-pointer">
+                  <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${isRecurring ? "bg-primary/10" : "bg-muted"}`}>
+                    <Repeat className={`h-5 w-5 ${isRecurring ? "text-primary" : "text-muted-foreground"}`} />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm font-medium">Recurring Appointment</p>
+                    <p className="text-xs text-muted-foreground">Book this same slot on a regular basis</p>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={isRecurring}
+                    onChange={(e) => setIsRecurring(e.target.checked)}
+                    className="h-5 w-5 rounded border-gray-300"
+                  />
+                </label>
+                {isRecurring && (
+                  <div className="grid grid-cols-2 gap-3 pt-2">
+                    <div className="space-y-1">
+                      <Label className="text-xs">Pattern</Label>
+                      <select
+                        value={recurrencePattern}
+                        onChange={(e) => setRecurrencePattern(e.target.value as "weekly" | "biweekly" | "monthly")}
+                        className="w-full rounded-lg border p-2 text-sm bg-background"
+                      >
+                        <option value="weekly">Weekly</option>
+                        <option value="biweekly">Bi-weekly</option>
+                        <option value="monthly">Monthly</option>
+                      </select>
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs">Occurrences</Label>
+                      <Input
+                        type="number"
+                        min={2}
+                        max={clinicConfig.booking.maxRecurringWeeks}
+                        value={recurrenceCount}
+                        onChange={(e) => setRecurrenceCount(parseInt(e.target.value) || 4)}
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>
         )}
 
-        {/* Step 4: Patient Info */}
+        {/* Step 4: Patient Info + Multi-Doctor */}
         {step === 4 && (
           <div className="space-y-4">
             <div className="space-y-2">
@@ -329,11 +457,62 @@ export function BookingForm() {
                 />
               </label>
             </div>
+
+            {/* Multi-Doctor Selection */}
+            {clinicConfig.features.multiDoctor && (
+              <div className="rounded-lg border p-4 space-y-3">
+                <div className="flex items-center gap-2">
+                  <Users className="h-5 w-5 text-primary" />
+                  <div>
+                    <p className="text-sm font-medium">Additional Doctors (Optional)</p>
+                    <p className="text-xs text-muted-foreground">Select additional doctors for a multi-doctor appointment</p>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  {doctors
+                    .filter((d) => d.id !== selectedDoctor)
+                    .map((d) => (
+                      <label key={d.id} className="flex items-center gap-3 cursor-pointer p-2 rounded-lg hover:bg-muted/50">
+                        <input
+                          type="checkbox"
+                          checked={selectedDoctors.includes(d.id)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedDoctors([...selectedDoctors, d.id]);
+                            } else {
+                              setSelectedDoctors(selectedDoctors.filter((id) => id !== d.id));
+                            }
+                          }}
+                          className="h-4 w-4 rounded border-gray-300"
+                        />
+                        <span className="text-sm">{d.name}</span>
+                        <Badge variant="outline" className="ml-auto text-xs">{d.specialty}</Badge>
+                      </label>
+                    ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
 
-        {/* Step 5: Confirmation */}
-        {step === 5 && (
+        {/* Payment Step */}
+        {paymentStepIndex !== -1 && step === paymentStepIndex && (
+          <PaymentStep
+            appointmentId={bookingId ?? pendingPaymentId}
+            patientId={patientPaymentId}
+            patientName={patientInfo.name}
+            servicePrice={service?.price ?? 0}
+            currency={service?.currency ?? "MAD"}
+            onPaymentComplete={() => setPaymentCompleted(true)}
+            onSkip={() => {
+              setPaymentCompleted(true);
+              setStep(step + 1);
+            }}
+          />
+        )}
+
+        {/* Confirmation Step */}
+        {step === confirmStepIndex && (
           <div className="rounded-lg border p-6 space-y-3 text-sm">
             <h3 className="font-semibold text-base mb-4">Review Your Booking</h3>
             <div className="grid gap-2">
@@ -351,7 +530,26 @@ export function BookingForm() {
               {patientInfo.email && <div className="flex justify-between"><span className="text-muted-foreground">Email</span><span className="font-medium">{patientInfo.email}</span></div>}
               {patientInfo.reason && <div className="flex justify-between"><span className="text-muted-foreground">Reason</span><span className="font-medium">{patientInfo.reason}</span></div>}
               <div className="flex justify-between"><span className="text-muted-foreground">Visit Type</span><Badge variant={isFirstVisit ? "default" : "secondary"}>{isFirstVisit ? "First Visit" : "Return Visit"}</Badge></div>
-              {isInsurance && <div className="flex justify-between"><span className="text-muted-foreground">Insurance</span><Badge variant="success">Covered</Badge></div>}
+              {isInsurance && <div className="flex justify-between"><span className="text-muted-foreground">Insurance</span><Badge variant="secondary">Covered</Badge></div>}
+              {isRecurring && (
+                <>
+                  <hr />
+                  <div className="flex justify-between"><span className="text-muted-foreground">Recurring</span><Badge variant="outline">{recurrencePattern}</Badge></div>
+                  <div className="flex justify-between"><span className="text-muted-foreground">Occurrences</span><span className="font-medium">{recurrenceCount}</span></div>
+                </>
+              )}
+              {selectedDoctors.length > 0 && (
+                <>
+                  <hr />
+                  <div className="flex justify-between"><span className="text-muted-foreground">Additional Doctors</span><span className="font-medium">{selectedDoctors.map((id) => doctors.find((d) => d.id === id)?.name).join(", ")}</span></div>
+                </>
+              )}
+              {paymentCompleted && (
+                <>
+                  <hr />
+                  <div className="flex justify-between"><span className="text-muted-foreground">Payment</span><Badge variant="secondary">Paid</Badge></div>
+                </>
+              )}
             </div>
           </div>
         )}
@@ -366,7 +564,7 @@ export function BookingForm() {
             <ChevronLeft className="h-4 w-4 mr-1" />
             Back
           </Button>
-          {step < 5 ? (
+          {step < confirmStepIndex ? (
             <Button
               onClick={() => setStep(step + 1)}
               disabled={!canNext()}
@@ -376,7 +574,7 @@ export function BookingForm() {
             </Button>
           ) : (
             <Button onClick={handleConfirm}>
-              Confirm Booking
+              {isRecurring ? "Confirm Recurring Booking" : "Confirm Booking"}
             </Button>
           )}
         </div>

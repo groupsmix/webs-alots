@@ -1,6 +1,6 @@
 "use client";
 
-import { Clock } from "lucide-react";
+import { Clock, Bell } from "lucide-react";
 
 interface TimeSlotPickerProps {
   slots: string[];
@@ -9,9 +9,11 @@ interface TimeSlotPickerProps {
   maxPerSlot?: number;
   selectedSlot: string;
   onSelectSlot: (slot: string) => void;
+  onJoinWaitingList?: (slot: string) => void;
+  showWaitingList?: boolean;
 }
 
-export function TimeSlotPicker({ slots, allSlots, slotCounts, maxPerSlot = 1, selectedSlot, onSelectSlot }: TimeSlotPickerProps) {
+export function TimeSlotPicker({ slots, allSlots, slotCounts, maxPerSlot = 1, selectedSlot, onSelectSlot, onJoinWaitingList, showWaitingList = false }: TimeSlotPickerProps) {
   const displaySlots = allSlots && allSlots.length > 0 ? allSlots : slots;
 
   if (displaySlots.length === 0) {
@@ -39,14 +41,25 @@ export function TimeSlotPicker({ slots, allSlots, slotCounts, maxPerSlot = 1, se
 
     if (!isAvailable || isFull) {
       return (
-        <button
-          key={slot}
-          disabled
-          className="rounded-lg border px-3 py-2 text-sm font-medium bg-muted/50 text-muted-foreground line-through cursor-not-allowed opacity-60"
-          title="This slot is taken"
-        >
-          {slot}
-        </button>
+        <div key={slot} className="flex flex-col gap-1">
+          <button
+            disabled
+            className="rounded-lg border px-3 py-2 text-sm font-medium bg-muted/50 text-muted-foreground line-through cursor-not-allowed opacity-60"
+            title="This slot is taken"
+          >
+            {slot}
+          </button>
+          {showWaitingList && onJoinWaitingList && (
+            <button
+              onClick={() => onJoinWaitingList(slot)}
+              className="text-xs text-primary hover:underline flex items-center justify-center gap-1"
+              title="Join waiting list for this slot"
+            >
+              <Bell className="h-3 w-3" />
+              Wait List
+            </button>
+          )}
+        </div>
       );
     }
 
