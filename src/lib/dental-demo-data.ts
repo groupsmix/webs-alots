@@ -2,19 +2,37 @@
  * Demo data for dental-specific features (Tasks 12-14).
  * Odontogram, treatment plans, lab orders, sterilization logs,
  * installment payments, and dental services.
+ *
+ * Types are defined in @/lib/types/dental and re-exported here
+ * for backward compatibility.
  */
 
-// ---------- Dental Treatment Types ----------
+export type {
+  DentalTreatmentType,
+  ToothStatus,
+  OdontogramEntry,
+  PatientOdontogram,
+  TreatmentStep,
+  TreatmentPlan,
+  LabOrder,
+  SterilizationEntry,
+  MaterialStock,
+  BeforeAfterPhoto,
+  PainQuestionnaire,
+  InstallmentPayment,
+  InstallmentPlan,
+  DailyAnalytics,
+  WeeklyRevenue,
+  MonthlyRevenue,
+  ServicePopularity,
+  HourlyHeatmap,
+  ReviewTrend,
+  PatientRetention,
+} from "@/lib/types/dental";
 
-export interface DentalTreatmentType {
-  id: string;
-  name: string;
-  category: string;
-  durationMinutes: number;
-  price: number;
-  currency: string;
-  description: string;
-}
+import type { DentalTreatmentType, ToothStatus, OdontogramEntry, PatientOdontogram, TreatmentStep, TreatmentPlan, LabOrder, SterilizationEntry, MaterialStock, BeforeAfterPhoto, PainQuestionnaire, InstallmentPayment, InstallmentPlan, DailyAnalytics, WeeklyRevenue, MonthlyRevenue, ServicePopularity, HourlyHeatmap, ReviewTrend, PatientRetention } from "@/lib/types/dental";
+
+// ---------- Dental Treatment Types ----------
 
 export const dentalTreatmentTypes: DentalTreatmentType[] = [
   { id: "dt1", name: "Dental Cleaning", category: "Preventive", durationMinutes: 45, price: 300, currency: "MAD", description: "Professional teeth cleaning and polishing" },
@@ -28,21 +46,6 @@ export const dentalTreatmentTypes: DentalTreatmentType[] = [
 ];
 
 // ---------- Odontogram Data ----------
-
-export type ToothStatus = "healthy" | "decayed" | "filled" | "missing" | "crown" | "implant" | "root_canal" | "extraction_needed";
-
-export interface OdontogramEntry {
-  toothNumber: number;
-  status: ToothStatus;
-  notes: string;
-  lastUpdated: string;
-}
-
-export interface PatientOdontogram {
-  patientId: string;
-  patientName: string;
-  entries: OdontogramEntry[];
-}
 
 export const patientOdontograms: PatientOdontogram[] = [
   {
@@ -75,28 +78,6 @@ export const patientOdontograms: PatientOdontogram[] = [
 ];
 
 // ---------- Treatment Plans ----------
-
-export interface TreatmentStep {
-  step: number;
-  description: string;
-  status: "pending" | "in_progress" | "completed";
-  date: string | null;
-  cost: number;
-}
-
-export interface TreatmentPlan {
-  id: string;
-  patientId: string;
-  patientName: string;
-  doctorId: string;
-  doctorName: string;
-  title: string;
-  steps: TreatmentStep[];
-  totalCost: number;
-  status: "planned" | "in_progress" | "completed" | "cancelled";
-  createdAt: string;
-  updatedAt: string;
-}
 
 export const treatmentPlans: TreatmentPlan[] = [
   {
@@ -141,21 +122,6 @@ export const treatmentPlans: TreatmentPlan[] = [
 ];
 
 // ---------- Lab Orders ----------
-
-export interface LabOrder {
-  id: string;
-  patientId: string;
-  patientName: string;
-  doctorId: string;
-  doctorName: string;
-  labName: string;
-  description: string;
-  status: "pending" | "sent" | "in_progress" | "ready" | "delivered";
-  dueDate: string | null;
-  notes: string;
-  createdAt: string;
-  updatedAt: string;
-}
 
 export const labOrders: LabOrder[] = [
   {
@@ -218,16 +184,6 @@ export const labOrders: LabOrder[] = [
 
 // ---------- Sterilization Log ----------
 
-export interface SterilizationEntry {
-  id: string;
-  toolName: string;
-  sterilizedBy: string;
-  sterilizedAt: string;
-  nextDue: string | null;
-  method: "autoclave" | "chemical" | "dry_heat";
-  notes: string;
-}
-
 export const sterilizationLog: SterilizationEntry[] = [
   { id: "st1", toolName: "Dental Handpiece Set A", sterilizedBy: "Assistant Amira", sterilizedAt: "2026-03-20T08:00:00Z", nextDue: "2026-03-20T14:00:00Z", method: "autoclave", notes: "Cycle 132C, 4 min" },
   { id: "st2", toolName: "Extraction Forceps Set", sterilizedBy: "Assistant Amira", sterilizedAt: "2026-03-20T08:15:00Z", nextDue: "2026-03-21T08:00:00Z", method: "autoclave", notes: "Standard cycle" },
@@ -237,17 +193,6 @@ export const sterilizationLog: SterilizationEntry[] = [
 ];
 
 // ---------- Material Stock ----------
-
-export interface MaterialStock {
-  id: string;
-  name: string;
-  category: string;
-  quantity: number;
-  unit: string;
-  minThreshold: number;
-  lastRestocked: string;
-  supplier: string;
-}
 
 export const materialStock: MaterialStock[] = [
   { id: "ms1", name: "Composite Resin A2", category: "Restorative", quantity: 3, unit: "syringes", minThreshold: 5, lastRestocked: "2026-02-15", supplier: "DentalMart MA" },
@@ -264,17 +209,6 @@ export const materialStock: MaterialStock[] = [
 
 // ---------- Before/After Photos ----------
 
-export interface BeforeAfterPhoto {
-  id: string;
-  patientId: string;
-  patientName: string;
-  treatmentPlanId: string;
-  description: string;
-  beforeDate: string;
-  afterDate: string | null;
-  category: string;
-}
-
 export const beforeAfterPhotos: BeforeAfterPhoto[] = [
   { id: "ba1", patientId: "p1", patientName: "Karim Mansouri", treatmentPlanId: "tp1", description: "Tooth #16 - Before & after root canal + crown", beforeDate: "2026-01-10", afterDate: "2026-03-15", category: "Root Canal" },
   { id: "ba2", patientId: "p1", patientName: "Karim Mansouri", treatmentPlanId: "tp1", description: "Tooth #26 - Before & after filling", beforeDate: "2026-02-05", afterDate: "2026-02-10", category: "Filling" },
@@ -282,19 +216,6 @@ export const beforeAfterPhotos: BeforeAfterPhoto[] = [
 ];
 
 // ---------- Pain Questionnaire ----------
-
-export interface PainQuestionnaire {
-  patientId: string;
-  appointmentId: string;
-  painLevel: number; // 1-10
-  painLocation: string;
-  painDuration: string;
-  painType: string;
-  triggers: string[];
-  hasSwelling: boolean;
-  hasBleeding: boolean;
-  additionalNotes: string;
-}
 
 export const painQuestionnaires: PainQuestionnaire[] = [
   {
@@ -312,32 +233,6 @@ export const painQuestionnaires: PainQuestionnaire[] = [
 ];
 
 // ---------- Installment Plans ----------
-
-export interface InstallmentPayment {
-  id: string;
-  installmentPlanId: string;
-  amount: number;
-  dueDate: string;
-  paidDate: string | null;
-  status: "pending" | "paid" | "overdue";
-  receiptId: string | null;
-}
-
-export interface InstallmentPlan {
-  id: string;
-  patientId: string;
-  patientName: string;
-  treatmentPlanId: string;
-  treatmentTitle: string;
-  totalAmount: number;
-  currency: string;
-  downPayment: number;
-  numberOfInstallments: number;
-  installments: InstallmentPayment[];
-  createdAt: string;
-  status: "active" | "completed" | "defaulted";
-  whatsappReminderEnabled: boolean;
-}
 
 export const installmentPlans: InstallmentPlan[] = [
   {
@@ -394,16 +289,6 @@ export const installmentPlans: InstallmentPlan[] = [
 
 // ---------- Analytics Demo Data ----------
 
-export interface DailyAnalytics {
-  date: string;
-  patientCount: number;
-  revenue: number;
-  appointments: number;
-  noShows: number;
-  walkIns: number;
-  onlineBookings: number;
-}
-
 export const dailyAnalytics: DailyAnalytics[] = [
   { date: "2026-03-01", patientCount: 12, revenue: 4200, appointments: 14, noShows: 1, walkIns: 3, onlineBookings: 11 },
   { date: "2026-03-02", patientCount: 0, revenue: 0, appointments: 0, noShows: 0, walkIns: 0, onlineBookings: 0 },
@@ -427,24 +312,11 @@ export const dailyAnalytics: DailyAnalytics[] = [
   { date: "2026-03-20", patientCount: 14, revenue: 4800, appointments: 15, noShows: 0, walkIns: 3, onlineBookings: 12 },
 ];
 
-export interface WeeklyRevenue {
-  week: string;
-  revenue: number;
-  patients: number;
-}
-
 export const weeklyRevenue: WeeklyRevenue[] = [
   { week: "Week 1 (Mar 1-7)", revenue: 25700, patients: 75 },
   { week: "Week 2 (Mar 8-14)", revenue: 27700, patients: 76 },
   { week: "Week 3 (Mar 15-20)", revenue: 24000, patients: 68 },
 ];
-
-export interface MonthlyRevenue {
-  month: string;
-  revenue: number;
-  patients: number;
-  appointments: number;
-}
 
 export const monthlyRevenue: MonthlyRevenue[] = [
   { month: "Oct 2025", revenue: 68400, patients: 185, appointments: 220 },
@@ -454,13 +326,6 @@ export const monthlyRevenue: MonthlyRevenue[] = [
   { month: "Feb 2026", revenue: 81200, patients: 220, appointments: 268 },
   { month: "Mar 2026", revenue: 77400, patients: 219, appointments: 260 },
 ];
-
-export interface ServicePopularity {
-  serviceName: string;
-  count: number;
-  revenue: number;
-  percentage: number;
-}
 
 export const servicePopularity: ServicePopularity[] = [
   { serviceName: "Dental Cleaning", count: 85, revenue: 25500, percentage: 28 },
@@ -474,11 +339,6 @@ export const servicePopularity: ServicePopularity[] = [
   { serviceName: "Consultation", count: 19, revenue: 3800, percentage: 6 },
 ];
 
-export interface HourlyHeatmap {
-  day: string;
-  hours: { hour: number; count: number }[];
-}
-
 export const hourlyHeatmap: HourlyHeatmap[] = [
   { day: "Mon", hours: [{ hour: 9, count: 4 }, { hour: 10, count: 6 }, { hour: 11, count: 5 }, { hour: 12, count: 2 }, { hour: 14, count: 5 }, { hour: 15, count: 4 }, { hour: 16, count: 3 }, { hour: 17, count: 1 }] },
   { day: "Tue", hours: [{ hour: 9, count: 5 }, { hour: 10, count: 7 }, { hour: 11, count: 6 }, { hour: 12, count: 3 }, { hour: 14, count: 6 }, { hour: 15, count: 5 }, { hour: 16, count: 4 }, { hour: 17, count: 2 }] },
@@ -488,12 +348,6 @@ export const hourlyHeatmap: HourlyHeatmap[] = [
   { day: "Sat", hours: [{ hour: 9, count: 7 }, { hour: 10, count: 9 }, { hour: 11, count: 8 }, { hour: 12, count: 4 }] },
 ];
 
-export interface ReviewTrend {
-  month: string;
-  averageScore: number;
-  count: number;
-}
-
 export const reviewTrends: ReviewTrend[] = [
   { month: "Oct 2025", averageScore: 4.2, count: 18 },
   { month: "Nov 2025", averageScore: 4.4, count: 22 },
@@ -502,13 +356,6 @@ export const reviewTrends: ReviewTrend[] = [
   { month: "Feb 2026", averageScore: 4.6, count: 28 },
   { month: "Mar 2026", averageScore: 4.7, count: 20 },
 ];
-
-export interface PatientRetention {
-  month: string;
-  newPatients: number;
-  returningPatients: number;
-  retentionRate: number;
-}
 
 export const patientRetention: PatientRetention[] = [
   { month: "Oct 2025", newPatients: 42, returningPatients: 143, retentionRate: 77 },
