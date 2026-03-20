@@ -16,6 +16,13 @@ export type UserRole =
 
 export type ClinicType = "doctor" | "dentist" | "pharmacy";
 
+export type ClinicTypeCategory =
+  | "medical"
+  | "para_medical"
+  | "diagnostic"
+  | "pharmacy_retail"
+  | "clinics_centers";
+
 export type ClinicTier = "vitrine" | "cabinet" | "pro" | "premium" | "saas";
 
 export type AppointmentStatus =
@@ -91,10 +98,25 @@ export type PurchaseOrderStatus =
 
 export type ClinicStatus = "active" | "inactive" | "suspended";
 
+export interface ClinicTypeRow {
+  id: string;
+  type_key: string;
+  name_fr: string;
+  name_ar: string;
+  category: ClinicTypeCategory;
+  icon: string;
+  features_config: Record<string, boolean>;
+  sort_order: number;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface Clinic {
   id: string;
   name: string;
   type: ClinicType;
+  clinic_type_id: string | null;
   tier: ClinicTier;
   subdomain: string | null;
   domain: string | null;
@@ -773,6 +795,8 @@ export interface Database {
       on_duty_schedule: { Row: OnDutySchedule; Insert: Partial<OnDutySchedule> & Pick<OnDutySchedule, "clinic_id" | "date" | "start_time" | "end_time">; Update: Partial<OnDutySchedule> };
       before_after_photos: { Row: BeforeAfterPhoto; Insert: Partial<BeforeAfterPhoto> & Pick<BeforeAfterPhoto, "clinic_id" | "patient_id">; Update: Partial<BeforeAfterPhoto> };
       pain_questionnaires: { Row: PainQuestionnaire; Insert: Partial<PainQuestionnaire> & Pick<PainQuestionnaire, "clinic_id" | "patient_id" | "pain_level">; Update: Partial<PainQuestionnaire> };
+      // New tables (migration 00009)
+      clinic_types: { Row: ClinicTypeRow; Insert: Partial<ClinicTypeRow> & Pick<ClinicTypeRow, "type_key" | "name_fr" | "name_ar" | "category">; Update: Partial<ClinicTypeRow> };
     };
   };
 }
