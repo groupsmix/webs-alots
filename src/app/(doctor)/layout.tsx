@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Users, Calendar, Pill, FileEdit } from "lucide-react";
+import { LayoutDashboard, Users, Calendar, Pill, FileEdit, Clock, MessageCircle, CalendarClock } from "lucide-react";
 import { SignOutButton } from "@/components/sign-out-button";
 
 const navItems = [
@@ -11,6 +11,9 @@ const navItems = [
   { href: "/doctor/schedule", label: "Schedule", icon: Calendar },
   { href: "/doctor/prescriptions", label: "Prescriptions", icon: Pill },
   { href: "/doctor/consultation", label: "Consultation Notes", icon: FileEdit },
+  { href: "/doctor/waiting-room", label: "Waiting Room", icon: Clock },
+  { href: "/doctor/slots", label: "Available Slots", icon: CalendarClock },
+  { href: "/doctor/chat", label: "Chat", icon: MessageCircle },
 ];
 
 export default function DoctorLayout({
