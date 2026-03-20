@@ -1,22 +1,24 @@
 "use client";
 
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import {
   Building2,
   Users,
   TrendingUp,
   Megaphone,
-  Plus,
   ArrowUpRight,
   Activity,
   CreditCard,
   Clock,
+  Loader2,
+  UserPlus,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
-  clinicDetails,
+  clinicDetails as demoClinicDetails,
   activityLogs,
   announcements,
   getActiveClinicsCount,
@@ -25,47 +27,8 @@ import {
   getMRR,
   getOverdueCount,
 } from "@/lib/super-admin-data";
-
-const stats = [
-  {
-    icon: Building2,
-    label: "Total Clinics",
-    value: clinicDetails.length.toString(),
-    change: "+2 this month",
-    color: "text-blue-600",
-    bg: "bg-blue-50",
-  },
-  {
-    icon: Building2,
-    label: "Active Clinics",
-    value: getActiveClinicsCount().toString(),
-    change: `${clinicDetails.filter((c) => c.status === "suspended").length} suspended`,
-    color: "text-green-600",
-    bg: "bg-green-50",
-  },
-  {
-    icon: Users,
-    label: "Total Patients",
-    value: getTotalPatientsCount().toLocaleString(),
-    change: "+89 this month",
-    color: "text-purple-600",
-    bg: "bg-purple-50",
-  },
-  {
-    icon: TrendingUp,
-    label: "Monthly Revenue",
-    value: `${getTotalMonthlyRevenue().toLocaleString()} MAD`,
-    change: "+12% vs last month",
-    color: "text-orange-600",
-    bg: "bg-orange-50",
-  },
-];
-
-const financialStats = [
-  { label: "MRR", value: `${getMRR().toLocaleString()} MAD`, icon: CreditCard, color: "text-emerald-600" },
-  { label: "Overdue", value: getOverdueCount().toString(), icon: Clock, color: "text-red-500" },
-  { label: "Paid This Month", value: `${clinicDetails.filter((c) => c.status === "active").length}`, icon: TrendingUp, color: "text-blue-600" },
-];
+import { fetchDashboardStats } from "@/lib/super-admin-actions";
+import type { ClinicDetail } from "@/lib/super-admin-data";
 
 const activityTypeIcons: Record<string, string> = {
   clinic: "text-blue-600",
@@ -77,8 +40,105 @@ const activityTypeIcons: Record<string, string> = {
 };
 
 export default function SuperAdminDashboardPage() {
+  const [loading, setLoading] = useState(true);
+  const [isLive, setIsLive] = useState(false);
+  const [clinicList, setClinicList] = useState<ClinicDetail[]>(demoClinicDetails);
+  const [totalClinics, setTotalClinics] = useState(demoClinicDetails.length);
+  const [activeClinics, setActiveClinics] = useState(getActiveClinicsCount());
+  const [totalPatients, setTotalPatients] = useState(getTotalPatientsCount());
+  const [totalRevenue, setTotalRevenue] = useState(getTotalMonthlyRevenue());
+  const [mrr, setMrr] = useState(getMRR());
+  const [overdue, setOverdue] = useState(getOverdueCount());
+
+  const loadStats = useCallback(async () => {
+    try {
+      const stats = await fetchDashboardStats();
+      if (stats.clinics && stats.clinics.length > 0) {
+        setTotalClinics(stats.totalClinics);
+        setActiveClinics(stats.activeClinics);
+        setTotalPatients(stats.totalPatients);
+        setTotalRevenue(stats.totalRevenue);
+        setMrr(stats.totalRevenue);
+        setOverdue(0);
+        const mapped: ClinicDetail[] = stats.clinics.map((c) => {
+          const config = (c.config ?? {}) as Record<string, unknown>;
+          return {
+            id: c.id,
+            name: c.name,
+            type: c.type as "doctor" | "dentist" | "pharmacy",
+            plan: (c.tier as string) ?? "pro",
+            city: (config.city as string) ?? "",
+            patientsCount: 0,
+            monthlyRevenue: 0,
+            status: (c.status === "inactive" ? "suspended" : c.status ?? "active") as "active" | "suspended" | "trial",
+            ownerName: (config.ownerName as string) ?? "",
+            ownerEmail: (config.email as string) ?? "",
+            ownerPhone: (config.phone as string) ?? "",
+            createdAt: c.created_at ?? "",
+            doctorsCount: 0,
+            appointmentsThisMonth: 0,
+            domain: (config.domain as string) ?? undefined,
+            lastLoginAt: "",
+            features: {},
+          };
+        });
+        setClinicList(mapped);
+        setIsLive(true);
+      }
+    } catch {
+      // Supabase not configured - keep demo data
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadStats();
+  }, [loadStats]);
+
   const activeAnnouncements = announcements.filter((a) => a.active);
   const recentLogs = activityLogs.slice(0, 8);
+
+  const stats = [
+    {
+      icon: Building2,
+      label: "Total Clinics",
+      value: totalClinics.toString(),
+      change: isLive ? `${activeClinics} active` : "+2 this month",
+      color: "text-blue-600",
+      bg: "bg-blue-50",
+    },
+    {
+      icon: Building2,
+      label: "Active Clinics",
+      value: activeClinics.toString(),
+      change: isLive ? `${totalClinics - activeClinics} inactive` : `${demoClinicDetails.filter((c) => c.status === "suspended").length} suspended`,
+      color: "text-green-600",
+      bg: "bg-green-50",
+    },
+    {
+      icon: Users,
+      label: "Total Patients",
+      value: totalPatients.toLocaleString(),
+      change: isLive ? "from Supabase" : "+89 this month",
+      color: "text-purple-600",
+      bg: "bg-purple-50",
+    },
+    {
+      icon: TrendingUp,
+      label: "Monthly Revenue",
+      value: `${totalRevenue.toLocaleString()} MAD`,
+      change: isLive ? "from Supabase" : "+12% vs last month",
+      color: "text-orange-600",
+      bg: "bg-orange-50",
+    },
+  ];
+
+  const financialStats = [
+    { label: "MRR", value: `${mrr.toLocaleString()} MAD`, icon: CreditCard, color: "text-emerald-600" },
+    { label: "Overdue", value: overdue.toString(), icon: Clock, color: "text-red-500" },
+    { label: "Paid This Month", value: `${activeClinics}`, icon: TrendingUp, color: "text-blue-600" },
+  ];
 
   return (
     <div>
@@ -87,12 +147,14 @@ export default function SuperAdminDashboardPage() {
           <h1 className="text-2xl font-bold">Super Admin Dashboard</h1>
           <p className="text-sm text-muted-foreground mt-1">
             Overview of all clinics and system status
+            {isLive && <Badge variant="success" className="ml-2 text-[10px]">Live Data</Badge>}
+            {!isLive && !loading && <Badge variant="secondary" className="ml-2 text-[10px]">Demo Data</Badge>}
           </p>
         </div>
         <div className="flex gap-2">
-          <Link href="/super-admin/clinics">
+          <Link href="/super-admin/onboarding">
             <Button size="sm">
-              <Plus className="h-4 w-4 mr-1" />
+              <UserPlus className="h-4 w-4 mr-1" />
               New Clinic
             </Button>
           </Link>
@@ -106,6 +168,12 @@ export default function SuperAdminDashboardPage() {
       </div>
 
       {/* KPI Cards */}
+      {loading && (
+        <div className="flex items-center gap-2 mb-4 text-sm text-muted-foreground">
+          <Loader2 className="h-4 w-4 animate-spin" />
+          Loading live data from Supabase...
+        </div>
+      )}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-6">
         {stats.map((stat) => (
           <Card key={stat.label}>
@@ -158,7 +226,7 @@ export default function SuperAdminDashboardPage() {
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {clinicDetails.slice(0, 6).map((clinic) => (
+              {clinicList.slice(0, 6).map((clinic) => (
                 <div
                   key={clinic.id}
                   className="flex items-center justify-between rounded-lg border p-3"
