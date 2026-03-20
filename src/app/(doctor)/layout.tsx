@@ -2,7 +2,11 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Users, Calendar, Pill, FileEdit, Clock, MessageCircle, CalendarClock } from "lucide-react";
+import {
+  LayoutDashboard, Users, Calendar, Pill, FileEdit, Clock,
+  MessageCircle, CalendarClock, BarChart3, ClipboardList,
+  FlaskConical, ShieldCheck, Camera, Package, CreditCard,
+} from "lucide-react";
 import { SignOutButton } from "@/components/sign-out-button";
 
 const navItems = [
@@ -14,6 +18,14 @@ const navItems = [
   { href: "/doctor/waiting-room", label: "Waiting Room", icon: Clock },
   { href: "/doctor/slots", label: "Available Slots", icon: CalendarClock },
   { href: "/doctor/chat", label: "Chat", icon: MessageCircle },
+  { href: "/doctor/analytics", label: "Analytics", icon: BarChart3 },
+  { href: "/doctor/odontogram", label: "Odontogram", icon: ClipboardList },
+  { href: "/doctor/treatment-plans", label: "Treatment Plans", icon: ClipboardList },
+  { href: "/doctor/lab-orders", label: "Lab Orders", icon: FlaskConical },
+  { href: "/doctor/sterilization", label: "Sterilization Log", icon: ShieldCheck },
+  { href: "/doctor/before-after", label: "Before/After", icon: Camera },
+  { href: "/doctor/stock", label: "Material Stock", icon: Package },
+  { href: "/doctor/installments", label: "Installments", icon: CreditCard },
 ];
 
 export default function DoctorLayout({
