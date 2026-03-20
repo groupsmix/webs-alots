@@ -1,23 +1,17 @@
 import Link from "next/link";
 import { clinicConfig } from "@/config/clinic.config";
+import { defaultWebsiteConfig } from "@/lib/website-config";
 
 export function PublicFooter() {
+  const contact = defaultWebsiteConfig.contact;
+
   return (
     <footer className="border-t bg-muted/50 py-8">
       <div className="container mx-auto px-4">
         <div className="grid gap-8 md:grid-cols-3">
           <div>
             <h3 className="font-semibold mb-2">{clinicConfig.name}</h3>
-            {clinicConfig.contact.address && (
-              <p className="text-sm text-muted-foreground">
-                {clinicConfig.contact.address}
-              </p>
-            )}
-            {clinicConfig.contact.city && (
-              <p className="text-sm text-muted-foreground">
-                {clinicConfig.contact.city}
-              </p>
-            )}
+            <p className="text-sm text-muted-foreground">{contact.address}</p>
           </div>
 
           <div>
@@ -30,10 +24,16 @@ export function PublicFooter() {
                 Services
               </Link>
               <Link
-                href="/book"
+                href="/how-to-book"
                 className="text-sm text-muted-foreground hover:text-foreground"
               >
-                Book Appointment
+                How to Book
+              </Link>
+              <Link
+                href="/location"
+                className="text-sm text-muted-foreground hover:text-foreground"
+              >
+                Location & Hours
               </Link>
               <Link
                 href="/contact"
@@ -46,16 +46,8 @@ export function PublicFooter() {
 
           <div>
             <h3 className="font-semibold mb-2">Contact</h3>
-            {clinicConfig.contact.phone && (
-              <p className="text-sm text-muted-foreground">
-                {clinicConfig.contact.phone}
-              </p>
-            )}
-            {clinicConfig.contact.email && (
-              <p className="text-sm text-muted-foreground">
-                {clinicConfig.contact.email}
-              </p>
-            )}
+            <p className="text-sm text-muted-foreground">{contact.phone}</p>
+            <p className="text-sm text-muted-foreground">{contact.email}</p>
           </div>
         </div>
 

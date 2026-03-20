@@ -1,32 +1,30 @@
-import { Phone, Mail, MapPin, Clock, MessageCircle } from "lucide-react";
+import { Phone, Mail, MapPin, MessageCircle } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { clinicConfig } from "@/config/clinic.config";
-
-const contactInfo = [
-  { icon: Phone, label: "Phone", value: clinicConfig.contact.phone ?? "+212 6 12 34 56 78" },
-  { icon: MessageCircle, label: "WhatsApp", value: clinicConfig.contact.whatsapp ?? "+212 6 12 34 56 78" },
-  { icon: Mail, label: "Email", value: clinicConfig.contact.email ?? "contact@clinic.ma" },
-  { icon: MapPin, label: "Address", value: clinicConfig.contact.address ?? "123 Bd Mohammed V, Casablanca" },
-];
-
-const workingHoursDisplay = [
-  { day: "Monday - Friday", hours: "09:00 - 17:00" },
-  { day: "Saturday", hours: "09:00 - 13:00" },
-  { day: "Sunday", hours: "Closed" },
-];
+import { defaultWebsiteConfig } from "@/lib/website-config";
+import Link from "next/link";
 
 export default function ContactPage() {
+  const cfg = defaultWebsiteConfig.contact;
+
+  const contactInfo = [
+    { icon: Phone, label: "Phone", value: cfg.phone },
+    { icon: MessageCircle, label: "WhatsApp", value: cfg.whatsapp },
+    { icon: Mail, label: "Email", value: cfg.email },
+    { icon: MapPin, label: "Address", value: cfg.address },
+  ];
+
+  const whatsappLink = `https://wa.me/${cfg.whatsapp.replace(/\s+/g, "")}?text=${encodeURIComponent(cfg.whatsappMessage)}`;
+
   return (
     <div className="container mx-auto px-4 py-12">
       <div className="text-center mb-12">
-        <h1 className="text-3xl font-bold mb-4">Contact Us</h1>
+        <h1 className="text-3xl font-bold mb-4">{cfg.title}</h1>
         <p className="text-muted-foreground max-w-2xl mx-auto">
-          Have a question or need to reach us? We&apos;re here to help. Use any of the
-          methods below or send us a message.
+          {cfg.subtitle}
         </p>
       </div>
 
@@ -48,33 +46,26 @@ export default function ContactPage() {
             ))}
           </div>
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Clock className="h-5 w-5 text-primary" />
-                Working Hours
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                {workingHoursDisplay.map((wh) => (
-                  <div key={wh.day} className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">{wh.day}</span>
-                    <span className="font-medium">{wh.hours}</span>
-                  </div>
-                ))}
+          {/* WhatsApp CTA */}
+          <Card className="border-green-200 bg-green-50/50">
+            <CardContent className="flex items-center gap-4 p-6">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-green-100">
+                <MessageCircle className="h-6 w-6 text-green-600" />
               </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-0 overflow-hidden rounded-xl">
-              <div className="h-48 bg-muted flex items-center justify-center">
-                <div className="text-center text-muted-foreground">
-                  <MapPin className="h-8 w-8 mx-auto mb-2" />
-                  <p className="text-sm">Google Maps will appear here</p>
-                </div>
+              <div className="flex-1">
+                <p className="font-medium">Chat with us on WhatsApp</p>
+                <p className="text-sm text-muted-foreground">
+                  Quick responses during working hours
+                </p>
               </div>
+              <Link
+                href={whatsappLink}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center justify-center rounded-lg bg-green-600 text-white px-4 py-2 text-sm font-medium hover:bg-green-700 transition-colors"
+              >
+                Open WhatsApp
+              </Link>
             </CardContent>
           </Card>
         </div>

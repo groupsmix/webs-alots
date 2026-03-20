@@ -24,6 +24,7 @@ export async function GET(request: Request) {
           .single();
 
         if (profile) {
+          const userProfile = profile as { role: string };
           const roleDashboardMap: Record<string, string> = {
             super_admin: "/super-admin/dashboard",
             clinic_admin: "/admin/dashboard",
@@ -31,7 +32,7 @@ export async function GET(request: Request) {
             doctor: "/doctor/dashboard",
             patient: "/patient/dashboard",
           };
-          const redirectPath = roleDashboardMap[profile.role] || next;
+          const redirectPath = roleDashboardMap[userProfile.role] || next;
           return NextResponse.redirect(`${origin}${redirectPath}`);
         }
       }
