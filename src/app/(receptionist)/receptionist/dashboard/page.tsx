@@ -94,12 +94,12 @@ export default function ReceptionistDashboardPage() {
             </Button>
           }
         />
-        <Button variant="outline" asChild>
-          <a href="/receptionist/daily-report">
+        <a href="/receptionist/daily-report">
+          <Button variant="outline">
             <FileText className="h-4 w-4 mr-1" />
             Daily Report
-          </a>
-        </Button>
+          </Button>
+        </a>
       </div>
 
       {/* Two-column layout */}

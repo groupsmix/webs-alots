@@ -11,9 +11,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
   DialogFooter,
-  DialogClose,
 } from "@/components/ui/dialog";
 import {
   Select,
@@ -76,189 +74,189 @@ export function PatientRegistrationDialog({ trigger, onRegister }: PatientRegist
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
+    <>
+      <span onClick={() => setOpen(true)}>
         {trigger ?? (
           <Button>
             <UserPlus className="h-4 w-4 mr-1" />
             Register New Patient
           </Button>
         )}
-      </DialogTrigger>
-      <DialogContent className="sm:max-w-[600px] max-h-[85vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <UserPlus className="h-5 w-5" />
-            Patient Registration Form
-          </DialogTitle>
-        </DialogHeader>
-        <div className="space-y-6 py-2">
-          {/* Personal Information */}
-          <div>
-            <h3 className="text-sm font-semibold mb-3 text-muted-foreground uppercase tracking-wide">
-              Personal Information
-            </h3>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="col-span-2 space-y-2">
-                <Label>Full Name *</Label>
-                <Input
-                  placeholder="Full name"
-                  value={form.name}
-                  onChange={(e) => updateField("name", e.target.value)}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Phone *</Label>
-                <Input
-                  placeholder="+212 6XX XX XX XX"
-                  value={form.phone}
-                  onChange={(e) => updateField("phone", e.target.value)}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Email</Label>
-                <Input
-                  type="email"
-                  placeholder="patient@email.com"
-                  value={form.email}
-                  onChange={(e) => updateField("email", e.target.value)}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Date of Birth *</Label>
-                <Input
-                  type="date"
-                  value={form.dateOfBirth}
-                  onChange={(e) => updateField("dateOfBirth", e.target.value)}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Gender *</Label>
-                <Select value={form.gender} onValueChange={(v) => updateField("gender", v)}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select gender" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="M">Male</SelectItem>
-                    <SelectItem value="F">Female</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label>CIN (National ID)</Label>
-                <Input
-                  placeholder="XX000000"
-                  value={form.cin}
-                  onChange={(e) => updateField("cin", e.target.value)}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Address</Label>
-                <Input
-                  placeholder="Full address"
-                  value={form.address}
-                  onChange={(e) => updateField("address", e.target.value)}
-                />
+      </span>
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent className="sm:max-w-[600px] max-h-[85vh] overflow-y-auto" onClose={() => setOpen(false)}>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <UserPlus className="h-5 w-5" />
+              Patient Registration Form
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-6 py-2">
+            {/* Personal Information */}
+            <div>
+              <h3 className="text-sm font-semibold mb-3 text-muted-foreground uppercase tracking-wide">
+                Personal Information
+              </h3>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="col-span-2 space-y-2">
+                  <Label>Full Name *</Label>
+                  <Input
+                    placeholder="Full name"
+                    value={form.name}
+                    onChange={(e) => updateField("name", e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Phone *</Label>
+                  <Input
+                    placeholder="+212 6XX XX XX XX"
+                    value={form.phone}
+                    onChange={(e) => updateField("phone", e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Email</Label>
+                  <Input
+                    type="email"
+                    placeholder="patient@email.com"
+                    value={form.email}
+                    onChange={(e) => updateField("email", e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Date of Birth *</Label>
+                  <Input
+                    type="date"
+                    value={form.dateOfBirth}
+                    onChange={(e) => updateField("dateOfBirth", e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Gender *</Label>
+                  <Select value={form.gender} onValueChange={(v) => updateField("gender", v)}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select gender" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="M">Male</SelectItem>
+                      <SelectItem value="F">Female</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>CIN (National ID)</Label>
+                  <Input
+                    placeholder="XX000000"
+                    value={form.cin}
+                    onChange={(e) => updateField("cin", e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Address</Label>
+                  <Input
+                    placeholder="Full address"
+                    value={form.address}
+                    onChange={(e) => updateField("address", e.target.value)}
+                  />
+                </div>
               </div>
             </div>
-          </div>
 
-          {/* Insurance */}
-          <div>
-            <h3 className="text-sm font-semibold mb-3 text-muted-foreground uppercase tracking-wide">
-              Insurance
-            </h3>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Insurance Provider</Label>
-                <Select value={form.insurance} onValueChange={(v) => updateField("insurance", v)}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select insurance" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">No Insurance</SelectItem>
-                    <SelectItem value="CNSS">CNSS</SelectItem>
-                    <SelectItem value="CNOPS">CNOPS</SelectItem>
-                    <SelectItem value="RAMED">RAMED</SelectItem>
-                    <SelectItem value="private">Private Insurance</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label>Insurance Number</Label>
-                <Input
-                  placeholder="Insurance ID"
-                  value={form.insuranceNumber}
-                  onChange={(e) => updateField("insuranceNumber", e.target.value)}
-                />
+            {/* Insurance */}
+            <div>
+              <h3 className="text-sm font-semibold mb-3 text-muted-foreground uppercase tracking-wide">
+                Insurance
+              </h3>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Insurance Provider</Label>
+                  <Select value={form.insurance} onValueChange={(v) => updateField("insurance", v)}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select insurance" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">No Insurance</SelectItem>
+                      <SelectItem value="CNSS">CNSS</SelectItem>
+                      <SelectItem value="CNOPS">CNOPS</SelectItem>
+                      <SelectItem value="RAMED">RAMED</SelectItem>
+                      <SelectItem value="private">Private Insurance</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Insurance Number</Label>
+                  <Input
+                    placeholder="Insurance ID"
+                    value={form.insuranceNumber}
+                    onChange={(e) => updateField("insuranceNumber", e.target.value)}
+                  />
+                </div>
               </div>
             </div>
-          </div>
 
-          {/* Medical */}
-          <div>
-            <h3 className="text-sm font-semibold mb-3 text-muted-foreground uppercase tracking-wide">
-              Medical Information
-            </h3>
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label>Allergies</Label>
-                <Textarea
-                  placeholder="List any known allergies (one per line)..."
-                  value={form.allergies}
-                  onChange={(e) => updateField("allergies", e.target.value)}
-                  rows={2}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Medical History</Label>
-                <Textarea
-                  placeholder="Any relevant medical history, chronic conditions..."
-                  value={form.medicalHistory}
-                  onChange={(e) => updateField("medicalHistory", e.target.value)}
-                  rows={2}
-                />
+            {/* Medical */}
+            <div>
+              <h3 className="text-sm font-semibold mb-3 text-muted-foreground uppercase tracking-wide">
+                Medical Information
+              </h3>
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label>Allergies</Label>
+                  <Textarea
+                    placeholder="List any known allergies (one per line)..."
+                    value={form.allergies}
+                    onChange={(e) => updateField("allergies", e.target.value)}
+                    rows={2}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Medical History</Label>
+                  <Textarea
+                    placeholder="Any relevant medical history, chronic conditions..."
+                    value={form.medicalHistory}
+                    onChange={(e) => updateField("medicalHistory", e.target.value)}
+                    rows={2}
+                  />
+                </div>
               </div>
             </div>
-          </div>
 
-          {/* Emergency Contact */}
-          <div>
-            <h3 className="text-sm font-semibold mb-3 text-muted-foreground uppercase tracking-wide">
-              Emergency Contact
-            </h3>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Contact Name</Label>
-                <Input
-                  placeholder="Emergency contact name"
-                  value={form.emergencyContactName}
-                  onChange={(e) => updateField("emergencyContactName", e.target.value)}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Contact Phone</Label>
-                <Input
-                  placeholder="+212 6XX XX XX XX"
-                  value={form.emergencyContactPhone}
-                  onChange={(e) => updateField("emergencyContactPhone", e.target.value)}
-                />
+            {/* Emergency Contact */}
+            <div>
+              <h3 className="text-sm font-semibold mb-3 text-muted-foreground uppercase tracking-wide">
+                Emergency Contact
+              </h3>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Contact Name</Label>
+                  <Input
+                    placeholder="Emergency contact name"
+                    value={form.emergencyContactName}
+                    onChange={(e) => updateField("emergencyContactName", e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Contact Phone</Label>
+                  <Input
+                    placeholder="+212 6XX XX XX XX"
+                    value={form.emergencyContactPhone}
+                    onChange={(e) => updateField("emergencyContactPhone", e.target.value)}
+                  />
+                </div>
               </div>
             </div>
           </div>
-        </div>
-        <DialogFooter>
-          <DialogClose asChild>
-            <Button variant="outline">Cancel</Button>
-          </DialogClose>
-          <Button
-            onClick={handleSubmit}
-            disabled={!form.name || !form.phone || !form.dateOfBirth || !form.gender}
-          >
-            Register Patient
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
+            <Button
+              onClick={handleSubmit}
+              disabled={!form.name || !form.phone || !form.dateOfBirth || !form.gender}
+            >
+              Register Patient
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
