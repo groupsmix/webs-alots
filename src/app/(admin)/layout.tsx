@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, UserCog, Stethoscope, Settings, BarChart3, Star, Users, CalendarOff, Bell, Clock, UserCheck, Palette, Paintbrush, Menu, X, CreditCard, LayoutTemplate, ToggleRight } from "lucide-react";
+import { LayoutDashboard, UserCog, Stethoscope, Settings, BarChart3, Star, Users, CalendarOff, Bell, Clock, UserCheck, Palette, Paintbrush, Menu, X, CreditCard, LayoutTemplate, ToggleRight, Building2, BedDouble, Monitor, Boxes, FileText } from "lucide-react";
 import { SignOutButton } from "@/components/sign-out-button";
 import { useClinicFeatures } from "@/lib/hooks/use-clinic-features";
 import type { ClinicFeatureKey } from "@/lib/features";
@@ -33,6 +33,12 @@ const navItems: NavItem[] = [
   { href: "/admin/website-editor", label: "Website Editor", icon: Palette },
   { href: "/admin/billing", label: "Billing & Plan", icon: CreditCard },
   { href: "/admin/settings", label: "Settings", icon: Settings },
+  // Phase 6: Clinics & Centers
+  { href: "/admin/departments", label: "Departments", icon: Building2, requiredFeature: "departments" },
+  { href: "/admin/beds", label: "Bed Management", icon: BedDouble, requiredFeature: "bed_management" },
+  { href: "/admin/machines", label: "Dialysis Machines", icon: Monitor, requiredFeature: "dialysis_machines" },
+  { href: "/admin/lab-materials", label: "Lab Materials", icon: Boxes, requiredFeature: "lab_materials" },
+  { href: "/admin/lab-invoices", label: "Lab Invoices", icon: FileText, requiredFeature: "lab_invoices" },
 ];
 
 function SidebarContent({ pathname, onNavClick }: { pathname: string; onNavClick?: () => void }) {
