@@ -89,21 +89,17 @@ export async function POST(request: NextRequest) {
 
     const newAppointment = {
       id: `apt-${Date.now()}`,
+      patientId: `pat-${Date.now()}`,
       patientName: body.patient.name,
-      patientPhone: body.patient.phone,
-      patientEmail: body.patient.email ?? "",
       doctorId: body.doctorId,
+      doctorName: doctor?.name ?? "",
       serviceId: body.serviceId,
-      specialtyId: body.specialtyId,
+      serviceName: service?.name ?? "",
       date: body.date,
       time: body.time,
       status: "confirmed" as const,
       isFirstVisit: body.isFirstVisit,
       hasInsurance: body.hasInsurance,
-      reason: body.patient.reason ?? "",
-      slotDuration: body.slotDuration ?? clinicConfig.booking.slotDuration,
-      bufferTime: body.bufferTime ?? clinicConfig.booking.bufferTime,
-      createdAt: new Date().toISOString(),
     };
 
     appointments.push(newAppointment);
