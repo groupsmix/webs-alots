@@ -29,6 +29,7 @@ const FIELD_MAP: Record<string, string> = {
   logo: "logo_url",
   favicon: "favicon_url",
   hero: "hero_image_url",
+  cover: "cover_photo_url",
 };
 
 // ── GET — return current branding ──
@@ -40,7 +41,7 @@ export async function GET() {
   const { data, error } = await supabase
     .from("clinics")
     .select(
-      "logo_url, favicon_url, primary_color, secondary_color, heading_font, body_font, hero_image_url",
+      "name, logo_url, favicon_url, primary_color, secondary_color, heading_font, body_font, hero_image_url, tagline, cover_photo_url, template_id, section_visibility, phone, address",
     )
     .eq("id", clinicId)
     .single();
@@ -48,6 +49,7 @@ export async function GET() {
   if (error || !data) {
     return NextResponse.json(
       {
+        name: clinicConfig.name,
         logo_url: null,
         favicon_url: null,
         primary_color: "#1E4DA1",
@@ -55,6 +57,12 @@ export async function GET() {
         heading_font: "Geist",
         body_font: "Geist",
         hero_image_url: null,
+        tagline: null,
+        cover_photo_url: null,
+        template_id: "modern",
+        section_visibility: {},
+        phone: null,
+        address: null,
       },
       { status: 200 },
     );
@@ -74,12 +82,22 @@ export async function PUT(request: NextRequest) {
     "secondary_color",
     "heading_font",
     "body_font",
+    "name",
+    "tagline",
+    "phone",
+    "address",
+    "template_id",
   ];
-  const updates: Record<string, string> = {};
+  const updates: Record<string, unknown> = {};
   for (const key of allowed) {
-    if (typeof body[key] === "string" && body[key].trim()) {
+    if (typeof body[key] === "string") {
       updates[key] = body[key].trim();
     }
+  }
+
+  // Handle section_visibility as JSONB
+  if (body.section_visibility && typeof body.section_visibility === "object") {
+    updates.section_visibility = body.section_visibility;
   }
 
   if (Object.keys(updates).length === 0) {

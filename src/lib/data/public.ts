@@ -67,6 +67,12 @@ export interface ClinicBranding {
   bodyFont: string;
   heroImageUrl: string | null;
   clinicName: string;
+  tagline: string | null;
+  coverPhotoUrl: string | null;
+  templateId: string;
+  sectionVisibility: Record<string, boolean>;
+  phone: string | null;
+  address: string | null;
 }
 
 // ── Helpers ──
@@ -83,7 +89,7 @@ export async function getPublicBranding(): Promise<ClinicBranding> {
 
   const { data, error } = await supabase
     .from("clinics")
-    .select("name, logo_url, favicon_url, primary_color, secondary_color, heading_font, body_font, hero_image_url")
+    .select("name, logo_url, favicon_url, primary_color, secondary_color, heading_font, body_font, hero_image_url, tagline, cover_photo_url, template_id, section_visibility, phone, address")
     .eq("id", clinicId)
     .single();
 
@@ -97,6 +103,12 @@ export async function getPublicBranding(): Promise<ClinicBranding> {
       bodyFont: "Geist",
       heroImageUrl: null,
       clinicName: clinicConfig.name,
+      tagline: null,
+      coverPhotoUrl: null,
+      templateId: "modern",
+      sectionVisibility: {},
+      phone: clinicConfig.contact.phone ?? null,
+      address: clinicConfig.contact.address ?? null,
     };
   }
 
@@ -109,6 +121,12 @@ export async function getPublicBranding(): Promise<ClinicBranding> {
     bodyFont: data.body_font ?? "Geist",
     heroImageUrl: data.hero_image_url ?? null,
     clinicName: data.name ?? clinicConfig.name,
+    tagline: (data as Record<string, unknown>).tagline as string | null ?? null,
+    coverPhotoUrl: (data as Record<string, unknown>).cover_photo_url as string | null ?? null,
+    templateId: ((data as Record<string, unknown>).template_id as string) ?? "modern",
+    sectionVisibility: ((data as Record<string, unknown>).section_visibility as Record<string, boolean>) ?? {},
+    phone: (data as Record<string, unknown>).phone as string | null ?? clinicConfig.contact.phone ?? null,
+    address: (data as Record<string, unknown>).address as string | null ?? clinicConfig.contact.address ?? null,
   };
 }
 
