@@ -35,7 +35,21 @@ export type ClinicFeatureKey =
   | "dialysis_machines"
   | "prosthetic_orders"
   | "lab_materials"
-  | "lab_invoices";
+  | "lab_invoices"
+  | "dermatology"
+  | "cardiology"
+  | "ent"
+  | "orthopedics"
+  | "psychiatry"
+  | "neurology"
+  | "urology"
+  | "pulmonology"
+  | "endocrinology"
+  | "rheumatology"
+  | "pregnancy_tracking"
+  | "ultrasound_records"
+  | "vision_tests"
+  | "iop_tracking";
 
 /** A features_config object as stored in the DB. */
 export type FeaturesConfig = Partial<Record<ClinicFeatureKey, boolean>>;
