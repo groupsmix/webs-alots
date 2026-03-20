@@ -77,7 +77,7 @@ export default function PatientInvoicesPage() {
                 <tr className="border-b text-muted-foreground">
                   <th className="text-left font-medium py-3 pr-4">Invoice</th>
                   <th className="text-left font-medium py-3 pr-4">Date</th>
-                  <th className="text-left font-medium py-3 pr-4">Service</th>
+                  <th className="text-left font-medium py-3 pr-4">Patient</th>
                   <th className="text-left font-medium py-3 pr-4">Amount</th>
                   <th className="text-left font-medium py-3 pr-4">Method</th>
                   <th className="text-left font-medium py-3 pr-4">Status</th>
@@ -89,7 +89,7 @@ export default function PatientInvoicesPage() {
                   <tr key={inv.id} className="border-b last:border-0 hover:bg-muted/50 transition-colors">
                     <td className="py-3 pr-4 font-medium">{inv.id.toUpperCase()}</td>
                     <td className="py-3 pr-4 text-muted-foreground">{inv.date}</td>
-                    <td className="py-3 pr-4">{inv.serviceName}</td>
+                    <td className="py-3 pr-4">{inv.patientName}</td>
                     <td className="py-3 pr-4 font-semibold">{inv.amount} {inv.currency}</td>
                     <td className="py-3 pr-4 capitalize text-muted-foreground">{inv.method}</td>
                     <td className="py-3 pr-4">
@@ -124,7 +124,7 @@ export default function PatientInvoicesPage() {
                   <p className="font-medium text-sm">{inv.id.toUpperCase()}</p>
                   <Badge variant={statusVariant[inv.status]}>{inv.status}</Badge>
                 </div>
-                <p className="text-sm">{inv.serviceName}</p>
+                <p className="text-sm">{inv.patientName}</p>
                 <div className="flex items-center justify-between mt-2">
                   <div>
                     <p className="text-sm font-semibold">{inv.amount} {inv.currency}</p>
