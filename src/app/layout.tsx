@@ -60,6 +60,29 @@ export default async function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "MedicalBusiness",
+              name: tenant?.clinicName ?? "Health SaaS Platform",
+              description:
+                "Plateforme SaaS multi-tenant pour la gestion de cabinets m\u00e9dicaux, dentaires et pharmacies au Maroc.",
+              url: process.env.NEXT_PUBLIC_SITE_URL ?? "https://example.com",
+              "@id":
+                (process.env.NEXT_PUBLIC_SITE_URL ?? "https://example.com") +
+                "/#organization",
+              potentialAction: {
+                "@type": "ReserveAction",
+                target:
+                  (process.env.NEXT_PUBLIC_SITE_URL ?? "https://example.com") +
+                  "/book",
+                name: "Prendre rendez-vous",
+              },
+            }),
+          }}
+        />
         <TenantProvider tenant={tenant}>
           {children}
           <Chatbot />

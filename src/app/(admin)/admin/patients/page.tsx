@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Search, User, Phone, Mail, Calendar, Shield, Pill } from "lucide-react";
+import { Search, User, Phone, Mail, Calendar, Shield, Pill, Download } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -23,6 +23,7 @@ import {
   type AppointmentView,
   type PrescriptionView,
 } from "@/lib/data/client";
+import { exportPatients } from "@/lib/export-data";
 
 type Patient = PatientView;
 
@@ -78,8 +79,14 @@ export default function AdminPatientDatabasePage() {
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">Patient Database</h1>
-        <Badge variant="outline">{patients.length} patients</Badge>
+        <div className="flex items-center gap-3">
+          <h1 className="text-2xl font-bold">Patient Database</h1>
+          <Badge variant="outline">{patients.length} patients</Badge>
+        </div>
+        <Button variant="outline" size="sm" onClick={() => exportPatients(filtered)}>
+          <Download className="h-4 w-4 mr-1" />
+          Export CSV
+        </Button>
       </div>
 
       <div className="relative mb-6">
