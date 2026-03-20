@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createEmergencySlot, getEmergencySlots, bookEmergencySlot } from "@/lib/demo-data";
+import { createClient } from "@/lib/supabase-server";
+import { clinicConfig } from "@/config/clinic.config";
 
 export const runtime = "edge";
 
@@ -25,6 +26,8 @@ export async function POST(request: NextRequest) {
       serviceId?: string;
     };
 
+    const supabase = await createClient();
+
     if (body.action === "create") {
       if (!body.doctorId || !body.date || !body.startTime || !body.durationMin) {
         return NextResponse.json(
@@ -33,22 +36,46 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      const result = createEmergencySlot(
-        body.doctorId,
-        body.date,
-        body.startTime,
-        body.durationMin,
-        body.reason,
-      );
+      // Verify doctor exists
+      const { data: doctor } = await supabase
+        .from("users")
+        .select("id")
+        .eq("id", body.doctorId)
+        .eq("clinic_id", clinicConfig.clinicId)
+        .eq("role", "doctor")
+        .single();
 
-      if (!result.success) {
-        return NextResponse.json({ error: result.error }, { status: 400 });
+      if (!doctor) {
+        return NextResponse.json({ error: "Doctor not found" }, { status: 404 });
+      }
+
+      // Calculate end time
+      const [hh, mm] = body.startTime.split(":").map(Number);
+      const endMinutes = hh * 60 + mm + body.durationMin;
+      const endTime = `${String(Math.floor(endMinutes / 60)).padStart(2, "0")}:${String(endMinutes % 60).padStart(2, "0")}`;
+
+      const { data: slot, error: insertError } = await supabase
+        .from("emergency_slots")
+        .insert({
+          clinic_id: clinicConfig.clinicId,
+          doctor_id: body.doctorId,
+          slot_date: body.date,
+          start_time: body.startTime,
+          end_time: endTime,
+          reason: body.reason ?? null,
+          is_booked: false,
+        })
+        .select("id")
+        .single();
+
+      if (insertError || !slot) {
+        return NextResponse.json({ error: insertError?.message ?? "Failed to create emergency slot" }, { status: 500 });
       }
 
       return NextResponse.json({
         status: "created",
         message: "Emergency slot created",
-        slotId: result.slotId,
+        slotId: slot.id,
       });
     }
 
@@ -60,16 +87,84 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      const result = bookEmergencySlot(body.slotId, body.patientId, body.patientName, body.serviceId);
+      // Fetch the emergency slot
+      const { data: slot, error: slotError } = await supabase
+        .from("emergency_slots")
+        .select("id, doctor_id, slot_date, start_time, end_time, is_booked")
+        .eq("id", body.slotId)
+        .eq("clinic_id", clinicConfig.clinicId)
+        .single();
 
-      if (!result.success) {
-        return NextResponse.json({ error: result.error }, { status: 400 });
+      if (slotError || !slot) {
+        return NextResponse.json({ error: "Emergency slot not found" }, { status: 404 });
       }
+
+      if (slot.is_booked) {
+        return NextResponse.json({ error: "Emergency slot is already booked" }, { status: 400 });
+      }
+
+      // Find or create patient
+      let patientId = body.patientId;
+      if (patientId.startsWith("patient-")) {
+        const { data: existing } = await supabase
+          .from("users")
+          .select("id")
+          .eq("clinic_id", clinicConfig.clinicId)
+          .eq("name", body.patientName)
+          .eq("role", "patient")
+          .limit(1)
+          .single();
+
+        if (existing) {
+          patientId = existing.id;
+        } else {
+          const { data: newPatient } = await supabase
+            .from("users")
+            .insert({
+              clinic_id: clinicConfig.clinicId,
+              name: body.patientName,
+              role: "patient",
+            })
+            .select("id")
+            .single();
+          if (newPatient) patientId = newPatient.id;
+        }
+      }
+
+      // Create appointment from emergency slot
+      const { data: appointment, error: apptError } = await supabase
+        .from("appointments")
+        .insert({
+          clinic_id: clinicConfig.clinicId,
+          patient_id: patientId,
+          doctor_id: slot.doctor_id,
+          service_id: body.serviceId ?? null,
+          appointment_date: slot.slot_date,
+          start_time: slot.start_time,
+          end_time: slot.end_time,
+          status: "confirmed",
+          is_first_visit: false,
+          insurance_flag: false,
+          booking_source: "online",
+          is_emergency: true,
+        })
+        .select("id")
+        .single();
+
+      if (apptError || !appointment) {
+        return NextResponse.json({ error: "Failed to create appointment" }, { status: 500 });
+      }
+
+      // Mark slot as booked
+      await supabase
+        .from("emergency_slots")
+        .update({ is_booked: true })
+        .eq("id", body.slotId);
 
       return NextResponse.json({
         status: "booked",
         message: "Emergency slot booked",
-        appointmentId: result.appointmentId,
+        appointmentId: appointment.id,
       });
     }
 
@@ -88,6 +183,36 @@ export async function GET(request: NextRequest) {
   const doctorId = request.nextUrl.searchParams.get("doctorId") ?? undefined;
   const date = request.nextUrl.searchParams.get("date") ?? undefined;
 
-  const slots = getEmergencySlots(doctorId, date);
-  return NextResponse.json({ slots });
+  const supabase = await createClient();
+
+  let q = supabase
+    .from("emergency_slots")
+    .select("id, doctor_id, slot_date, start_time, end_time, reason, is_booked, created_at")
+    .eq("clinic_id", clinicConfig.clinicId);
+
+  if (doctorId) {
+    q = q.eq("doctor_id", doctorId);
+  }
+  if (date) {
+    q = q.eq("slot_date", date);
+  }
+
+  const { data: slots, error } = await q.order("start_time", { ascending: true });
+
+  if (error) {
+    return NextResponse.json({ slots: [] });
+  }
+
+  return NextResponse.json({
+    slots: (slots ?? []).map((s) => ({
+      id: s.id,
+      doctorId: s.doctor_id,
+      date: s.slot_date,
+      startTime: s.start_time,
+      endTime: s.end_time,
+      reason: s.reason,
+      isBooked: s.is_booked,
+      createdAt: s.created_at,
+    })),
+  });
 }

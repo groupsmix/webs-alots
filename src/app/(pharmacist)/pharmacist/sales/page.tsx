@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -8,14 +8,26 @@ import {
   Plus, Receipt, DollarSign, CreditCard, Banknote,
   Shield, Gift,
 } from "lucide-react";
-import { dailySales } from "@/lib/pharmacy-demo-data";
+import { clinicConfig } from "@/config/clinic.config";
+import { fetchDailySales } from "@/lib/data/client";
+import type { DailySaleView } from "@/lib/data/client";
 
 export default function SalesPage() {
-  const [dateFilter, setDateFilter] = useState("2026-03-20");
+  const [allSales, setAllSales] = useState<DailySaleView[]>([]);
+  const [loading, setLoading] = useState(true);
+  const today = new Date().toISOString().split("T")[0] ?? "";
+  const yesterday = (() => { const d = new Date(); d.setDate(d.getDate() - 1); return d.toISOString().split("T")[0] ?? ""; })();
+  const [dateFilter, setDateFilter] = useState(today);
+
+  useEffect(() => {
+    fetchDailySales(clinicConfig.clinicId)
+      .then(setAllSales)
+      .finally(() => setLoading(false));
+  }, []);
 
   const filteredSales = useMemo(() => {
-    return dailySales.filter((s) => s.date === dateFilter);
-  }, [dateFilter]);
+    return allSales.filter((s) => s.date === dateFilter);
+  }, [allSales, dateFilter]);
 
   const totalRevenue = filteredSales.reduce((sum, s) => sum + s.total, 0);
   const cashSales = filteredSales.filter((s) => s.paymentMethod === "cash");
@@ -27,6 +39,14 @@ export default function SalesPage() {
     card: <CreditCard className="h-3 w-3" />,
     insurance: <Shield className="h-3 w-3" />,
   };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[50vh]">
+        <div className="animate-pulse text-muted-foreground">Loading sales data...</div>
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -42,7 +62,7 @@ export default function SalesPage() {
 
       {/* Date selector */}
       <div className="flex gap-2 mb-6">
-        {["2026-03-20", "2026-03-19"].map((d) => (
+        {[today, yesterday].map((d) => (
           <button
             key={d}
             onClick={() => setDateFilter(d)}

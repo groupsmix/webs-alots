@@ -314,3 +314,280 @@ export async function fetchDashboardStats(): Promise<DashboardStats> {
     totalRevenue,
   };
 }
+
+// ---------- Billing Records ----------
+
+export interface BillingRecord {
+  id: string;
+  clinicId: string;
+  clinicName: string;
+  plan: string;
+  amountDue: number;
+  amountPaid: number;
+  currency: string;
+  status: "paid" | "pending" | "overdue" | "cancelled";
+  invoiceDate: string;
+  dueDate: string;
+  paidDate?: string;
+  paymentMethod?: string;
+}
+
+export async function fetchBillingRecords(): Promise<BillingRecord[]> {
+  const supabase = rawClient();
+
+  const [paymentsRes, clinicsRes] = await Promise.all([
+    supabase
+      .from("payments")
+      .select("id, clinic_id, amount, status, payment_type, created_at")
+      .order("created_at", { ascending: false }),
+    supabase.from("clinics").select("id, name, tier"),
+  ]);
+
+  const payments = (paymentsRes.data ?? []) as {
+    id: string;
+    clinic_id: string;
+    amount: number;
+    status: string;
+    payment_type: string | null;
+    created_at: string;
+  }[];
+  const clinics = (clinicsRes.data ?? []) as { id: string; name: string; tier: string | null }[];
+  const clinicMap = new Map(clinics.map((c) => [c.id, c]));
+
+  return payments.map((p) => {
+    const clinic = clinicMap.get(p.clinic_id);
+    const createdDate = p.created_at?.split("T")[0] ?? "";
+    const isPaid = p.status === "completed";
+    return {
+      id: p.id,
+      clinicId: p.clinic_id,
+      clinicName: clinic?.name ?? "Unknown Clinic",
+      plan: clinic?.tier ?? "pro",
+      amountDue: p.amount ?? 0,
+      amountPaid: isPaid ? (p.amount ?? 0) : 0,
+      currency: "MAD",
+      status: (isPaid ? "paid" : p.status === "pending" ? "pending" : "overdue") as BillingRecord["status"],
+      invoiceDate: createdDate,
+      dueDate: createdDate,
+      paidDate: isPaid ? createdDate : undefined,
+      paymentMethod: p.payment_type ?? undefined,
+    };
+  });
+}
+
+// ---------- Announcements ----------
+
+export interface Announcement {
+  id: string;
+  title: string;
+  message: string;
+  type: "info" | "warning" | "critical";
+  target: string;
+  targetLabel: string;
+  publishedAt: string;
+  expiresAt?: string;
+  active: boolean;
+  createdBy: string;
+}
+
+export async function fetchAnnouncements(): Promise<Announcement[]> {
+  const supabase = rawClient();
+  const { data, error } = await supabase
+    .from("announcements")
+    .select("*")
+    .order("created_at", { ascending: false });
+
+  if (error || !data) return [];
+
+  return (data as Record<string, unknown>[]).map((row) => ({
+    id: row.id as string,
+    title: (row.title as string) ?? "",
+    message: (row.message as string) ?? "",
+    type: ((row.type as string) ?? "info") as Announcement["type"],
+    target: (row.target as string) ?? "all",
+    targetLabel: (row.target_label as string) ?? "All Clinics",
+    publishedAt: ((row.published_at ?? row.created_at) as string)?.split("T")[0] ?? "",
+    expiresAt: row.expires_at ? (row.expires_at as string).split("T")[0] : undefined,
+    active: (row.active as boolean) ?? true,
+    createdBy: (row.created_by as string) ?? "System",
+  }));
+}
+
+// ---------- Activity Logs ----------
+
+export interface ActivityLog {
+  id: string;
+  action: string;
+  description: string;
+  clinicId?: string;
+  clinicName?: string;
+  timestamp: string;
+  actor: string;
+  type: "clinic" | "billing" | "feature" | "announcement" | "template" | "auth";
+}
+
+export async function fetchActivityLogs(): Promise<ActivityLog[]> {
+  const supabase = rawClient();
+  const { data, error } = await supabase
+    .from("activity_logs")
+    .select("*")
+    .order("created_at", { ascending: false })
+    .limit(20);
+
+  if (error || !data) return [];
+
+  return (data as Record<string, unknown>[]).map((row) => ({
+    id: row.id as string,
+    action: (row.action as string) ?? "",
+    description: (row.description as string) ?? "",
+    clinicId: row.clinic_id as string | undefined,
+    clinicName: row.clinic_name as string | undefined,
+    timestamp: (row.created_at as string) ?? "",
+    actor: (row.actor as string) ?? "System",
+    type: ((row.type as string) ?? "clinic") as ActivityLog["type"],
+  }));
+}
+
+// ---------- Feature Definitions ----------
+
+export interface FeatureDefinition {
+  id: string;
+  name: string;
+  description: string;
+  key: string;
+  category: "core" | "communication" | "integration" | "advanced";
+  availableTiers: string[];
+  globalEnabled: boolean;
+}
+
+export async function fetchFeatureDefinitions(): Promise<FeatureDefinition[]> {
+  const supabase = rawClient();
+  const { data, error } = await supabase
+    .from("feature_definitions")
+    .select("*")
+    .order("name", { ascending: true });
+
+  if (error || !data) return [];
+
+  return (data as Record<string, unknown>[]).map((row) => ({
+    id: row.id as string,
+    name: (row.name as string) ?? "",
+    description: (row.description as string) ?? "",
+    key: (row.key as string) ?? "",
+    category: ((row.category as string) ?? "core") as FeatureDefinition["category"],
+    availableTiers: (row.available_tiers as string[]) ?? [],
+    globalEnabled: (row.global_enabled as boolean) ?? true,
+  }));
+}
+
+// ---------- Client Subscriptions ----------
+
+export interface ClientInvoice {
+  id: string;
+  date: string;
+  amount: number;
+  status: "paid" | "pending" | "overdue" | "refunded";
+  paidDate?: string;
+}
+
+export type SystemType = "doctor" | "dentist" | "pharmacy";
+export type TierSlug = "vitrine" | "cabinet" | "pro" | "premium" | "saas-monthly";
+
+export interface ClientSubscription {
+  id: string;
+  clinicId: string;
+  clinicName: string;
+  systemType: SystemType;
+  tierSlug: TierSlug;
+  tierName: string;
+  status: "active" | "trial" | "past_due" | "cancelled" | "suspended";
+  currentPeriodStart: string;
+  currentPeriodEnd: string;
+  billingCycle: "monthly" | "yearly";
+  amount: number;
+  currency: string;
+  paymentMethod: string;
+  autoRenew: boolean;
+  trialEndsAt?: string;
+  cancelledAt?: string;
+  invoices: ClientInvoice[];
+}
+
+const TIER_NAMES: Record<string, string> = {
+  vitrine: "Vitrine",
+  cabinet: "Cabinet",
+  pro: "Pro",
+  premium: "Premium",
+  "saas-monthly": "SaaS Monthly",
+};
+
+export async function fetchClientSubscriptions(): Promise<ClientSubscription[]> {
+  const supabase = rawClient();
+
+  const [clinicsRes, paymentsRes] = await Promise.all([
+    supabase.from("clinics").select("id, name, type, tier, status, config, created_at"),
+    supabase
+      .from("payments")
+      .select("id, clinic_id, amount, status, created_at")
+      .order("created_at", { ascending: false }),
+  ]);
+
+  const clinics = (clinicsRes.data ?? []) as ClinicRow[];
+  const payments = (paymentsRes.data ?? []) as {
+    id: string;
+    clinic_id: string;
+    amount: number;
+    status: string;
+    created_at: string;
+  }[];
+
+  const paymentsByClinic = new Map<string, typeof payments>();
+  for (const p of payments) {
+    const list = paymentsByClinic.get(p.clinic_id) ?? [];
+    list.push(p);
+    paymentsByClinic.set(p.clinic_id, list);
+  }
+
+  return clinics.map((c) => {
+    const tierSlug = (c.tier ?? "pro") as TierSlug;
+    const clinicPayments = paymentsByClinic.get(c.id) ?? [];
+    const invoices: ClientInvoice[] = clinicPayments.slice(0, 5).map((p) => ({
+      id: p.id,
+      date: p.created_at?.split("T")[0] ?? "",
+      amount: p.amount ?? 0,
+      status: (p.status === "completed" ? "paid" : p.status === "pending" ? "pending" : "overdue") as ClientInvoice["status"],
+      paidDate: p.status === "completed" ? p.created_at?.split("T")[0] : undefined,
+    }));
+
+    const subStatus: ClientSubscription["status"] =
+      c.status === "active" ? "active"
+        : c.status === "suspended" ? "suspended"
+        : c.status === "trial" ? "trial"
+        : "cancelled";
+
+    const now = new Date();
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split("T")[0];
+    const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split("T")[0];
+
+    const latestPayment = clinicPayments[0];
+    const amount = latestPayment?.amount ?? 0;
+
+    return {
+      id: `sub-${c.id}`,
+      clinicId: c.id,
+      clinicName: c.name,
+      systemType: (c.type ?? "doctor") as SystemType,
+      tierSlug,
+      tierName: TIER_NAMES[tierSlug] ?? tierSlug,
+      status: subStatus,
+      currentPeriodStart: monthStart,
+      currentPeriodEnd: monthEnd,
+      billingCycle: "monthly" as const,
+      amount,
+      currency: "MAD",
+      paymentMethod: "Carte bancaire",
+      autoRenew: c.status === "active",
+      invoices,
+    };
+  });
+}

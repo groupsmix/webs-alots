@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -7,9 +8,30 @@ import {
   Plus, Phone, Mail, MapPin, Star, Clock,
   Truck, ShoppingCart, Package,
 } from "lucide-react";
-import { suppliers, purchaseOrders } from "@/lib/pharmacy-demo-data";
+import { clinicConfig } from "@/config/clinic.config";
+import { fetchSuppliers, fetchPurchaseOrders } from "@/lib/data/client";
+import type { SupplierView, PurchaseOrderView } from "@/lib/data/client";
 
 export default function SuppliersPage() {
+  const [allSuppliers, setAllSuppliers] = useState<SupplierView[]>([]);
+  const [allOrders, setAllOrders] = useState<PurchaseOrderView[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const cId = clinicConfig.clinicId;
+    Promise.all([fetchSuppliers(cId), fetchPurchaseOrders(cId)])
+      .then(([s, o]) => { setAllSuppliers(s); setAllOrders(o); })
+      .finally(() => setLoading(false));
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[50vh]">
+        <div className="animate-pulse text-muted-foreground">Loading suppliers...</div>
+      </div>
+    );
+  }
+
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
@@ -23,8 +45,8 @@ export default function SuppliersPage() {
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">
-        {suppliers.map((supplier) => {
-          const activeOrders = purchaseOrders.filter(
+        {allSuppliers.map((supplier) => {
+          const activeOrders = allOrders.filter(
             (o) => o.supplierId === supplier.id && o.status !== "delivered" && o.status !== "cancelled"
           );
 

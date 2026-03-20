@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { confirmPayment } from "@/lib/demo-data";
+import { createClient } from "@/lib/supabase-server";
+import { clinicConfig } from "@/config/clinic.config";
 
 export const runtime = "edge";
 
@@ -16,10 +17,41 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "paymentId is required" }, { status: 400 });
     }
 
-    const result = confirmPayment(body.paymentId);
+    const supabase = await createClient();
 
-    if (!result.success) {
-      return NextResponse.json({ error: result.error }, { status: 400 });
+    // Fetch the payment
+    const { data: payment, error: fetchError } = await supabase
+      .from("payments")
+      .select("id, status, appointment_id")
+      .eq("id", body.paymentId)
+      .eq("clinic_id", clinicConfig.clinicId)
+      .single();
+
+    if (fetchError || !payment) {
+      return NextResponse.json({ error: "Payment not found" }, { status: 404 });
+    }
+
+    if (payment.status !== "pending") {
+      return NextResponse.json({ error: "Payment is not in pending state" }, { status: 400 });
+    }
+
+    // Mark payment as completed
+    const { error: updateError } = await supabase
+      .from("payments")
+      .update({ status: "completed" })
+      .eq("id", body.paymentId);
+
+    if (updateError) {
+      return NextResponse.json({ error: updateError.message }, { status: 500 });
+    }
+
+    // Also confirm the associated appointment if it is still scheduled
+    if (payment.appointment_id) {
+      await supabase
+        .from("appointments")
+        .update({ status: "confirmed" })
+        .eq("id", payment.appointment_id)
+        .in("status", ["pending", "scheduled"]);
     }
 
     return NextResponse.json({ status: "confirmed", message: "Payment confirmed" });

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -9,13 +9,14 @@ import {
   Search, Package, Plus, Filter,
   ArrowUpDown, ShoppingCart,
 } from "lucide-react";
+import { clinicConfig } from "@/config/clinic.config";
 import {
-  pharmacyProducts,
-  searchProducts,
+  fetchProducts,
+  searchProductsLocal,
   getStockStatus,
   getExpiryStatus,
-} from "@/lib/pharmacy-demo-data";
-import type { PharmacyProduct } from "@/lib/pharmacy-demo-data";
+} from "@/lib/data/client";
+import type { ProductView } from "@/lib/data/client";
 
 const categories = [
   { value: "all", label: "All" },
@@ -35,17 +36,25 @@ const stockFilters = [
 ];
 
 export default function StockPage() {
+  const [allProducts, setAllProducts] = useState<ProductView[]>([]);
+  const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [stockFilter, setStockFilter] = useState("all");
   const [sortBy, setSortBy] = useState<"name" | "stock" | "expiry">("name");
 
+  useEffect(() => {
+    fetchProducts(clinicConfig.clinicId)
+      .then(setAllProducts)
+      .finally(() => setLoading(false));
+  }, []);
+
   const filtered = useMemo(() => {
-    let results: PharmacyProduct[];
+    let results: ProductView[];
     if (query.trim()) {
-      results = searchProducts(query);
+      results = searchProductsLocal(allProducts, query);
     } else {
-      results = pharmacyProducts.filter((p) => p.active);
+      results = allProducts.filter((p) => p.active);
     }
     if (categoryFilter !== "all") {
       results = results.filter((p) => p.category === categoryFilter);
@@ -59,9 +68,17 @@ export default function StockPage() {
       return a.name.localeCompare(b.name);
     });
     return results;
-  }, [query, categoryFilter, stockFilter, sortBy]);
+  }, [allProducts, query, categoryFilter, stockFilter, sortBy]);
 
   const totalValue = filtered.reduce((sum, p) => sum + p.price * p.stockQuantity, 0);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[50vh]">
+        <div className="animate-pulse text-muted-foreground">Loading stock data...</div>
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -80,7 +97,7 @@ export default function StockPage() {
         <Card>
           <CardContent className="pt-4 pb-4">
             <p className="text-sm text-muted-foreground">Total Products</p>
-            <p className="text-2xl font-bold">{pharmacyProducts.filter((p) => p.active).length}</p>
+            <p className="text-2xl font-bold">{allProducts.filter((p) => p.active).length}</p>
           </CardContent>
         </Card>
         <Card>
@@ -92,13 +109,13 @@ export default function StockPage() {
         <Card>
           <CardContent className="pt-4 pb-4">
             <p className="text-sm text-muted-foreground">Low Stock Items</p>
-            <p className="text-2xl font-bold text-orange-500">{pharmacyProducts.filter((p) => getStockStatus(p) === "low").length}</p>
+            <p className="text-2xl font-bold text-orange-500">{allProducts.filter((p) => getStockStatus(p) === "low").length}</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-4 pb-4">
             <p className="text-sm text-muted-foreground">Out of Stock</p>
-            <p className="text-2xl font-bold text-red-500">{pharmacyProducts.filter((p) => getStockStatus(p) === "out").length}</p>
+            <p className="text-2xl font-bold text-red-500">{allProducts.filter((p) => getStockStatus(p) === "out").length}</p>
           </CardContent>
         </Card>
       </div>

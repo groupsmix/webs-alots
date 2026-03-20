@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { refundPayment } from "@/lib/demo-data";
+import { createClient } from "@/lib/supabase-server";
+import { clinicConfig } from "@/config/clinic.config";
 
 export const runtime = "edge";
 
@@ -16,10 +17,36 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "paymentId is required" }, { status: 400 });
     }
 
-    const result = refundPayment(body.paymentId, body.amount);
+    const supabase = await createClient();
 
-    if (!result.success) {
-      return NextResponse.json({ error: result.error }, { status: 400 });
+    // Fetch the payment
+    const { data: payment, error: fetchError } = await supabase
+      .from("payments")
+      .select("id, status, amount")
+      .eq("id", body.paymentId)
+      .eq("clinic_id", clinicConfig.clinicId)
+      .single();
+
+    if (fetchError || !payment) {
+      return NextResponse.json({ error: "Payment not found" }, { status: 404 });
+    }
+
+    if (payment.status !== "completed") {
+      return NextResponse.json({ error: "Only completed payments can be refunded" }, { status: 400 });
+    }
+
+    const refundAmount = body.amount ?? payment.amount;
+
+    const { error: updateError } = await supabase
+      .from("payments")
+      .update({
+        status: "refunded",
+        refunded_amount: refundAmount,
+      })
+      .eq("id", body.paymentId);
+
+    if (updateError) {
+      return NextResponse.json({ error: updateError.message }, { status: 500 });
     }
 
     return NextResponse.json({ status: "refunded", message: "Payment refunded" });
