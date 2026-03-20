@@ -89,6 +89,8 @@ export type PurchaseOrderStatus =
 
 // ---- Row types ----
 
+export type ClinicStatus = "active" | "inactive" | "suspended";
+
 export interface Clinic {
   id: string;
   name: string;
@@ -97,7 +99,13 @@ export interface Clinic {
   subdomain: string | null;
   domain: string | null;
   config: Record<string, unknown>;
+  status: ClinicStatus;
   is_active: boolean;
+  owner_name: string | null;
+  owner_email: string | null;
+  owner_phone: string | null;
+  city: string | null;
+  features: Record<string, boolean>;
   created_at: string;
   updated_at: string;
 }
@@ -340,6 +348,8 @@ export interface Installment {
   created_at: string;
 }
 
+export type SterilizationMethod = "autoclave" | "chemical" | "dry_heat";
+
 export interface SterilizationLogEntry {
   id: string;
   clinic_id: string;
@@ -347,6 +357,7 @@ export interface SterilizationLogEntry {
   sterilized_by: string | null;
   sterilized_at: string;
   next_due: string | null;
+  method: SterilizationMethod;
   notes: string | null;
   created_at: string;
 }
@@ -379,10 +390,17 @@ export interface Product {
   id: string;
   clinic_id: string;
   name: string;
+  generic_name: string | null;
   category: string | null;
   description: string | null;
   price: number | null;
+  currency: string;
   requires_prescription: boolean;
+  manufacturer: string | null;
+  barcode: string | null;
+  dosage_form: string | null;
+  strength: string | null;
+  image_url: string | null;
   is_active: boolean;
   created_at: string;
 }
@@ -404,7 +422,14 @@ export interface Supplier {
   name: string;
   contact_phone: string | null;
   contact_email: string | null;
+  contact_person: string | null;
   address: string | null;
+  city: string | null;
+  categories: string[];
+  rating: number;
+  payment_terms: string | null;
+  delivery_days: number;
+  is_active: boolean;
   created_at: string;
 }
 
@@ -425,16 +450,31 @@ export interface LoyaltyPoints {
   clinic_id: string;
   patient_id: string;
   points: number;
+  available_points: number;
+  redeemed_points: number;
+  tier: "bronze" | "silver" | "gold" | "platinum";
+  referral_code: string | null;
+  referred_by: string | null;
+  total_purchases: number;
+  date_of_birth: string | null;
+  birthday_reward_claimed: boolean;
+  birthday_reward_year: number | null;
   last_earned: string | null;
+  created_at: string;
   updated_at: string;
 }
+
+export type LoyaltyTransactionType = "earned" | "redeemed" | "birthday_bonus" | "referral_bonus" | "expired";
 
 export interface LoyaltyTransaction {
   id: string;
   clinic_id: string;
   patient_id: string;
   points: number;
+  type: LoyaltyTransactionType;
   reason: string | null;
+  description: string | null;
+  sale_id: string | null;
   created_at: string;
 }
 
@@ -442,11 +482,15 @@ export interface PurchaseOrder {
   id: string;
   clinic_id: string;
   supplier_id: string;
+  supplier_name: string | null;
   status: PurchaseOrderStatus;
   total_amount: number | null;
+  currency: string;
   notes: string | null;
   ordered_at: string | null;
   received_at: string | null;
+  expected_delivery: string | null;
+  delivered_at: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -457,6 +501,226 @@ export interface PurchaseOrderItem {
   product_id: string;
   quantity: number;
   unit_price: number | null;
+  created_at: string;
+}
+
+// ---- New Tables (Migration 00005) ----
+
+export type AnnouncementType = "info" | "warning" | "critical";
+
+export type ActivityLogType = "clinic" | "billing" | "feature" | "announcement" | "template" | "auth";
+
+export type PlatformBillingStatus = "paid" | "pending" | "overdue" | "cancelled";
+
+export type SubscriptionStatus = "active" | "trial" | "past_due" | "cancelled" | "suspended";
+
+export type SubscriptionBillingCycle = "monthly" | "yearly";
+
+export type TierSlug = "vitrine" | "cabinet" | "pro" | "premium" | "saas-monthly";
+
+export type SystemType = "doctor" | "dentist" | "pharmacy";
+
+export type FeatureToggleCategory = "core" | "communication" | "integration" | "advanced" | "pharmacy";
+
+export type SalePaymentMethod = "cash" | "card" | "insurance";
+
+export type LoyaltyTier = "bronze" | "silver" | "gold" | "platinum";
+
+export interface BlogPost {
+  id: string;
+  clinic_id: string | null;
+  title: string;
+  excerpt: string | null;
+  content: string | null;
+  date: string;
+  read_time: string | null;
+  category: string | null;
+  slug: string | null;
+  is_published: boolean;
+  author_id: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Announcement {
+  id: string;
+  title: string;
+  message: string;
+  type: AnnouncementType;
+  target: string;
+  target_label: string | null;
+  published_at: string;
+  expires_at: string | null;
+  is_active: boolean;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ActivityLog {
+  id: string;
+  action: string;
+  description: string | null;
+  clinic_id: string | null;
+  clinic_name: string | null;
+  timestamp: string;
+  actor: string | null;
+  type: ActivityLogType;
+  created_at: string;
+}
+
+export interface PlatformBilling {
+  id: string;
+  clinic_id: string;
+  clinic_name: string | null;
+  plan: string | null;
+  amount_due: number;
+  amount_paid: number;
+  currency: string;
+  status: PlatformBillingStatus;
+  invoice_date: string;
+  due_date: string;
+  paid_date: string | null;
+  payment_method: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface FeatureDefinition {
+  id: string;
+  name: string;
+  description: string | null;
+  key: string;
+  category: "core" | "communication" | "integration" | "advanced";
+  available_tiers: string[];
+  global_enabled: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ClinicFeatureOverride {
+  id: string;
+  clinic_id: string;
+  feature_id: string;
+  enabled: boolean;
+  created_at: string;
+}
+
+export interface PricingTier {
+  id: string;
+  slug: TierSlug;
+  name: string;
+  description: string | null;
+  is_popular: boolean;
+  pricing: Record<string, unknown>;
+  features: Record<string, unknown>[];
+  limits: Record<string, unknown>;
+  sort_order: number;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Subscription {
+  id: string;
+  clinic_id: string;
+  clinic_name: string | null;
+  system_type: SystemType;
+  tier_slug: string;
+  tier_name: string | null;
+  status: SubscriptionStatus;
+  current_period_start: string;
+  current_period_end: string;
+  billing_cycle: SubscriptionBillingCycle;
+  amount: number;
+  currency: string;
+  payment_method: string | null;
+  auto_renew: boolean;
+  trial_ends_at: string | null;
+  cancelled_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface SubscriptionInvoice {
+  id: string;
+  subscription_id: string;
+  date: string;
+  amount: number;
+  status: "paid" | "pending" | "overdue" | "refunded";
+  paid_date: string | null;
+  download_url: string | null;
+  created_at: string;
+}
+
+export interface FeatureToggle {
+  id: string;
+  key: string;
+  label: string;
+  description: string | null;
+  category: FeatureToggleCategory;
+  system_types: string[];
+  tiers: string[];
+  enabled: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Sale {
+  id: string;
+  clinic_id: string;
+  date: string;
+  time: string;
+  patient_id: string | null;
+  patient_name: string | null;
+  items: Record<string, unknown>[];
+  total: number;
+  currency: string;
+  payment_method: SalePaymentMethod;
+  has_prescription: boolean;
+  loyalty_points_earned: number;
+  created_at: string;
+}
+
+export interface OnDutySchedule {
+  id: string;
+  clinic_id: string;
+  date: string;
+  start_time: string;
+  end_time: string;
+  is_on_duty: boolean;
+  notes: string | null;
+  created_at: string;
+}
+
+export interface BeforeAfterPhoto {
+  id: string;
+  clinic_id: string;
+  patient_id: string;
+  treatment_plan_id: string | null;
+  description: string | null;
+  before_image_url: string | null;
+  after_image_url: string | null;
+  before_date: string | null;
+  after_date: string | null;
+  category: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PainQuestionnaire {
+  id: string;
+  clinic_id: string;
+  patient_id: string;
+  appointment_id: string | null;
+  pain_level: number;
+  pain_location: string | null;
+  pain_duration: string | null;
+  pain_type: string | null;
+  triggers: string[];
+  has_swelling: boolean;
+  has_bleeding: boolean;
+  additional_notes: string | null;
   created_at: string;
 }
 
@@ -494,6 +758,21 @@ export interface Database {
       purchase_order_items: { Row: PurchaseOrderItem; Insert: Partial<PurchaseOrderItem> & Pick<PurchaseOrderItem, "purchase_order_id" | "product_id" | "quantity">; Update: Partial<PurchaseOrderItem> };
       emergency_slots: { Row: EmergencySlot; Insert: Partial<EmergencySlot> & Pick<EmergencySlot, "clinic_id" | "doctor_id" | "slot_date" | "start_time" | "end_time">; Update: Partial<EmergencySlot> };
       appointment_doctors: { Row: AppointmentDoctor; Insert: Partial<AppointmentDoctor> & Pick<AppointmentDoctor, "appointment_id" | "doctor_id">; Update: Partial<AppointmentDoctor> };
+      // New tables (migration 00005)
+      blog_posts: { Row: BlogPost; Insert: Partial<BlogPost> & Pick<BlogPost, "title">; Update: Partial<BlogPost> };
+      announcements: { Row: Announcement; Insert: Partial<Announcement> & Pick<Announcement, "title" | "message">; Update: Partial<Announcement> };
+      activity_logs: { Row: ActivityLog; Insert: Partial<ActivityLog> & Pick<ActivityLog, "action" | "type">; Update: Partial<ActivityLog> };
+      platform_billing: { Row: PlatformBilling; Insert: Partial<PlatformBilling> & Pick<PlatformBilling, "clinic_id" | "invoice_date" | "due_date">; Update: Partial<PlatformBilling> };
+      feature_definitions: { Row: FeatureDefinition; Insert: Partial<FeatureDefinition> & Pick<FeatureDefinition, "name" | "key">; Update: Partial<FeatureDefinition> };
+      clinic_feature_overrides: { Row: ClinicFeatureOverride; Insert: Partial<ClinicFeatureOverride> & Pick<ClinicFeatureOverride, "clinic_id" | "feature_id">; Update: Partial<ClinicFeatureOverride> };
+      pricing_tiers: { Row: PricingTier; Insert: Partial<PricingTier> & Pick<PricingTier, "slug" | "name">; Update: Partial<PricingTier> };
+      subscriptions: { Row: Subscription; Insert: Partial<Subscription> & Pick<Subscription, "clinic_id" | "system_type" | "tier_slug" | "current_period_start" | "current_period_end">; Update: Partial<Subscription> };
+      subscription_invoices: { Row: SubscriptionInvoice; Insert: Partial<SubscriptionInvoice> & Pick<SubscriptionInvoice, "subscription_id" | "date" | "amount">; Update: Partial<SubscriptionInvoice> };
+      feature_toggles: { Row: FeatureToggle; Insert: Partial<FeatureToggle> & Pick<FeatureToggle, "key" | "label">; Update: Partial<FeatureToggle> };
+      sales: { Row: Sale; Insert: Partial<Sale> & Pick<Sale, "clinic_id">; Update: Partial<Sale> };
+      on_duty_schedule: { Row: OnDutySchedule; Insert: Partial<OnDutySchedule> & Pick<OnDutySchedule, "clinic_id" | "date" | "start_time" | "end_time">; Update: Partial<OnDutySchedule> };
+      before_after_photos: { Row: BeforeAfterPhoto; Insert: Partial<BeforeAfterPhoto> & Pick<BeforeAfterPhoto, "clinic_id" | "patient_id">; Update: Partial<BeforeAfterPhoto> };
+      pain_questionnaires: { Row: PainQuestionnaire; Insert: Partial<PainQuestionnaire> & Pick<PainQuestionnaire, "clinic_id" | "patient_id" | "pain_level">; Update: Partial<PainQuestionnaire> };
     };
   };
 }
