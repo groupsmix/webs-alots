@@ -1,6 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getAvailableSlots, generateTimeSlots, appointments, doctors, services, specialties, assignDoctorsToAppointment } from "@/lib/demo-data";
 import { clinicConfig } from "@/config/clinic.config";
+import {
+  getPublicGeneratedSlots,
+  getPublicAvailableSlots,
+  getPublicSlotBookingCounts,
+  getPublicDoctors,
+  getPublicServices,
+  getPublicSpecialties,
+} from "@/lib/data/public";
+import { createClient } from "@/lib/supabase-server";
 
 export const runtime = "edge";
 
@@ -23,7 +31,13 @@ interface BookingRequestBody {
   bufferTime: number;
 }
 
-function validateBookingRequest(body: BookingRequestBody): string | null {
+async function validateBookingRequest(body: BookingRequestBody): Promise<string | null> {
+  const [specialties, doctors, services] = await Promise.all([
+    getPublicSpecialties(),
+    getPublicDoctors(),
+    getPublicServices(),
+  ]);
+
   if (!body.specialtyId || !specialties.find((s) => s.id === body.specialtyId)) {
     return "Invalid specialty selected";
   }
@@ -53,12 +67,12 @@ function validateBookingRequest(body: BookingRequestBody): string | null {
     return "Selected date is not a working day";
   }
 
-  const allSlots = generateTimeSlots(body.date);
+  const allSlots = await getPublicGeneratedSlots(body.date, body.doctorId);
   if (!allSlots.includes(body.time)) {
     return "Selected time is not a valid slot";
   }
 
-  const availableSlots = getAvailableSlots(body.date, body.doctorId);
+  const availableSlots = await getPublicAvailableSlots(body.date, body.doctorId);
   if (!availableSlots.includes(body.time)) {
     return "Selected time slot is already fully booked";
   }
@@ -77,7 +91,7 @@ export async function POST(request: NextRequest) {
   try {
     const body = (await request.json()) as BookingRequestBody;
 
-    const validationError = validateBookingRequest(body);
+    const validationError = await validateBookingRequest(body);
     if (validationError) {
       return NextResponse.json(
         { error: validationError },
@@ -85,47 +99,94 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const [doctors, services] = await Promise.all([
+      getPublicDoctors(),
+      getPublicServices(),
+    ]);
+
     const doctor = doctors.find((d) => d.id === body.doctorId);
     const service = services.find((s) => s.id === body.serviceId);
 
-    const newAppointment = {
-      id: `apt-${Date.now()}`,
-      patientId: `pat-${Date.now()}`,
-      patientName: body.patient.name,
-      doctorId: body.doctorId,
-      doctorName: doctor?.name ?? "",
-      serviceId: body.serviceId,
-      serviceName: service?.name ?? "",
-      date: body.date,
-      time: body.time,
-      status: "confirmed" as const,
-      isFirstVisit: body.isFirstVisit,
-      hasInsurance: body.hasInsurance,
-    };
+    const supabase = await createClient();
 
-    appointments.push(newAppointment);
+    // Find or create a patient record
+    let patientId: string;
+    const { data: existingPatient } = await supabase
+      .from("users")
+      .select("id")
+      .eq("clinic_id", clinicConfig.clinicId)
+      .eq("phone", body.patient.phone)
+      .eq("role", "patient")
+      .single();
 
-    // Multi-doctor support: assign additional doctors if provided
-    if (body.doctorIds && body.doctorIds.length > 0 && clinicConfig.features.multiDoctor) {
-      assignDoctorsToAppointment(newAppointment.id, body.doctorIds, body.doctorId);
+    if (existingPatient) {
+      patientId = existingPatient.id;
+    } else {
+      const { data: newPatient, error: patientError } = await supabase
+        .from("users")
+        .insert({
+          clinic_id: clinicConfig.clinicId,
+          name: body.patient.name,
+          phone: body.patient.phone,
+          email: body.patient.email ?? null,
+          role: "patient",
+        })
+        .select("id")
+        .single();
+
+      if (patientError || !newPatient) {
+        return NextResponse.json({ error: "Failed to create patient record" }, { status: 500 });
+      }
+      patientId = newPatient.id;
     }
 
-    console.log("Booking created:", JSON.stringify(newAppointment));
+    // Calculate end time
+    const duration = service?.duration ?? clinicConfig.booking.slotDuration;
+    const [h, m] = body.time.split(":").map(Number);
+    const endMinutes = h * 60 + m + duration;
+    const endTime = `${Math.floor(endMinutes / 60).toString().padStart(2, "0")}:${(endMinutes % 60).toString().padStart(2, "0")}`;
+
+    const { data: appointment, error: apptError } = await supabase
+      .from("appointments")
+      .insert({
+        clinic_id: clinicConfig.clinicId,
+        patient_id: patientId,
+        doctor_id: body.doctorId,
+        service_id: body.serviceId,
+        appointment_date: body.date,
+        start_time: body.time,
+        end_time: endTime,
+        status: "confirmed",
+        is_first_visit: body.isFirstVisit,
+        insurance_flag: body.hasInsurance,
+        booking_source: "online",
+        notes: body.patient.reason ?? null,
+        is_emergency: false,
+      })
+      .select("id")
+      .single();
+
+    if (apptError || !appointment) {
+      console.error("[booking] create appointment:", apptError?.message);
+      return NextResponse.json({ error: "Failed to create booking" }, { status: 500 });
+    }
+
+    console.log("Booking created:", appointment.id);
 
     return NextResponse.json({
       status: "created",
       message: "Appointment booked successfully",
       appointment: {
-        id: newAppointment.id,
+        id: appointment.id,
         doctor: doctor?.name,
         service: service?.name,
-        date: newAppointment.date,
-        time: newAppointment.time,
+        date: body.date,
+        time: body.time,
         duration: service?.duration,
         price: service?.price,
         currency: service?.currency,
-        isFirstVisit: newAppointment.isFirstVisit,
-        hasInsurance: newAppointment.hasInsurance,
+        isFirstVisit: body.isFirstVisit,
+        hasInsurance: body.hasInsurance,
       },
     });
   } catch {
@@ -153,16 +214,11 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  const allSlots = generateTimeSlots(date);
-  const availableSlots = getAvailableSlots(date, doctorId);
-
-  const bookedCounts: Record<string, number> = {};
-  for (const slot of allSlots) {
-    const count = appointments.filter(
-      (a) => a.date === date && a.doctorId === doctorId && a.time === slot && a.status !== "cancelled"
-    ).length;
-    if (count > 0) bookedCounts[slot] = count;
-  }
+  const [allSlots, availableSlots, bookedCounts] = await Promise.all([
+    getPublicGeneratedSlots(date, doctorId),
+    getPublicAvailableSlots(date, doctorId),
+    getPublicSlotBookingCounts(date, doctorId),
+  ]);
 
   return NextResponse.json({
     slots: availableSlots,
