@@ -8,6 +8,7 @@ const ROLE_ROUTE_MAP: Record<string, string> = {
   receptionist: "/receptionist",
   doctor: "/doctor",
   patient: "/patient",
+  pharmacist: "/pharmacist",
 };
 
 // Role to dashboard path mapping
@@ -17,6 +18,7 @@ const ROLE_DASHBOARD_MAP: Record<string, string> = {
   receptionist: "/receptionist/dashboard",
   doctor: "/doctor/dashboard",
   patient: "/patient/dashboard",
+  pharmacist: "/pharmacist/dashboard",
 };
 
 // Routes that don't require authentication
@@ -47,6 +49,7 @@ const PROTECTED_PREFIXES = [
   "/receptionist",
   "/admin",
   "/super-admin",
+  "/pharmacist",
 ];
 
 function isPublicRoute(pathname: string): boolean {
