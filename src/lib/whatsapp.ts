@@ -1,4 +1,34 @@
-const WHATSAPP_API_URL = "https://graph.facebook.com/v21.0";
+/**
+ * WhatsApp Business API Integration
+ *
+ * Supports both Meta WhatsApp Business API (direct) and Twilio WhatsApp API.
+ * Integrates with the notification engine for template-based messaging.
+ */
+
+import {
+  substituteVariables,
+  type NotificationTrigger,
+  type TemplateVariables,
+  type NotificationTemplate,
+  defaultNotificationTemplates,
+} from "./notifications";
+
+// ---- Types ----
+
+type WhatsAppProvider = "meta" | "twilio";
+
+interface WhatsAppConfig {
+  provider: WhatsAppProvider;
+  // Meta WhatsApp Business API
+  metaPhoneNumberId?: string;
+  metaAccessToken?: string;
+  // Twilio WhatsApp API
+  twilioAccountSid?: string;
+  twilioAuthToken?: string;
+  twilioFromNumber?: string;
+  // Shared
+  verifyToken?: string;
+}
 
 interface WhatsAppMessagePayload {
   to: string;
@@ -7,70 +37,51 @@ interface WhatsAppMessagePayload {
   parameters?: string[];
 }
 
-export async function sendWhatsAppMessage({
-  to,
-  templateName,
-  languageCode = "en",
-  parameters = [],
-}: WhatsAppMessagePayload) {
-  const phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID;
-  const accessToken = process.env.WHATSAPP_ACCESS_TOKEN;
-
-  if (!phoneNumberId || !accessToken) {
-    console.warn("WhatsApp API credentials not configured");
-    return null;
-  }
-
-  const response = await fetch(
-    `${WHATSAPP_API_URL}/${phoneNumberId}/messages`,
-    {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        messaging_product: "whatsapp",
-        to,
-        type: "template",
-        template: {
-          name: templateName,
-          language: { code: languageCode },
-          components:
-            parameters.length > 0
-              ? [
-                  {
-                    type: "body",
-                    parameters: parameters.map((p) => ({
-                      type: "text",
-                      text: p,
-                    })),
-                  },
-                ]
-              : undefined,
-        },
-      }),
-    },
-  );
-
-  return response.json();
+interface WhatsAppSendResult {
+  success: boolean;
+  messageId?: string;
+  error?: string;
+  provider: WhatsAppProvider;
 }
 
-export async function sendTextMessage(to: string, body: string) {
-  const phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID;
-  const accessToken = process.env.WHATSAPP_ACCESS_TOKEN;
+const META_API_URL = "https://graph.facebook.com/v21.0";
+const TWILIO_API_URL = "https://api.twilio.com/2010-04-01";
 
-  if (!phoneNumberId || !accessToken) {
-    console.warn("WhatsApp API credentials not configured");
-    return null;
+// ---- Configuration ----
+
+function getWhatsAppConfig(): WhatsAppConfig {
+  const provider = (process.env.WHATSAPP_PROVIDER || "meta") as WhatsAppProvider;
+  return {
+    provider,
+    metaPhoneNumberId: process.env.WHATSAPP_PHONE_NUMBER_ID,
+    metaAccessToken: process.env.WHATSAPP_ACCESS_TOKEN,
+    twilioAccountSid: process.env.TWILIO_ACCOUNT_SID,
+    twilioAuthToken: process.env.TWILIO_AUTH_TOKEN,
+    twilioFromNumber: process.env.TWILIO_WHATSAPP_FROM,
+    verifyToken: process.env.WHATSAPP_VERIFY_TOKEN,
+  };
+}
+
+function isConfigured(config: WhatsAppConfig): boolean {
+  if (config.provider === "twilio") {
+    return !!(config.twilioAccountSid && config.twilioAuthToken && config.twilioFromNumber);
   }
+  return !!(config.metaPhoneNumberId && config.metaAccessToken);
+}
 
+// ---- Meta WhatsApp Business API ----
+
+async function sendViaMeta(
+  config: WhatsAppConfig,
+  to: string,
+  body: string,
+): Promise<WhatsAppSendResult> {
   const response = await fetch(
-    `${WHATSAPP_API_URL}/${phoneNumberId}/messages`,
+    `${META_API_URL}/${config.metaPhoneNumberId}/messages`,
     {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${accessToken}`,
+        Authorization: `Bearer ${config.metaAccessToken}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
@@ -82,5 +93,177 @@ export async function sendTextMessage(to: string, body: string) {
     },
   );
 
-  return response.json();
+  const data = await response.json();
+  if (response.ok) {
+    return {
+      success: true,
+      messageId: data.messages?.[0]?.id,
+      provider: "meta",
+    };
+  }
+  return {
+    success: false,
+    error: data.error?.message || "Failed to send via Meta API",
+    provider: "meta",
+  };
+}
+
+async function sendTemplateViaMeta(
+  config: WhatsAppConfig,
+  payload: WhatsAppMessagePayload,
+): Promise<WhatsAppSendResult> {
+  const response = await fetch(
+    `${META_API_URL}/${config.metaPhoneNumberId}/messages`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${config.metaAccessToken}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        messaging_product: "whatsapp",
+        to: payload.to,
+        type: "template",
+        template: {
+          name: payload.templateName,
+          language: { code: payload.languageCode || "en" },
+          components:
+            payload.parameters && payload.parameters.length > 0
+              ? [
+                  {
+                    type: "body",
+                    parameters: payload.parameters.map((p) => ({
+                      type: "text",
+                      text: p,
+                    })),
+                  },
+                ]
+              : undefined,
+        },
+      }),
+    },
+  );
+
+  const data = await response.json();
+  if (response.ok) {
+    return {
+      success: true,
+      messageId: data.messages?.[0]?.id,
+      provider: "meta",
+    };
+  }
+  return {
+    success: false,
+    error: data.error?.message || "Failed to send template via Meta API",
+    provider: "meta",
+  };
+}
+
+// ---- Twilio WhatsApp API ----
+
+async function sendViaTwilio(
+  config: WhatsAppConfig,
+  to: string,
+  body: string,
+): Promise<WhatsAppSendResult> {
+  const url = `${TWILIO_API_URL}/Accounts/${config.twilioAccountSid}/Messages.json`;
+  const auth = btoa(`${config.twilioAccountSid}:${config.twilioAuthToken}`);
+
+  const formData = new URLSearchParams();
+  formData.append("From", `whatsapp:${config.twilioFromNumber}`);
+  formData.append("To", `whatsapp:${to}`);
+  formData.append("Body", body);
+
+  const response = await fetch(url, {
+    method: "POST",
+    headers: {
+      Authorization: `Basic ${auth}`,
+      "Content-Type": "application/x-www-form-urlencoded",
+    },
+    body: formData.toString(),
+  });
+
+  const data = await response.json();
+  if (response.ok) {
+    return {
+      success: true,
+      messageId: data.sid,
+      provider: "twilio",
+    };
+  }
+  return {
+    success: false,
+    error: data.message || "Failed to send via Twilio",
+    provider: "twilio",
+  };
+}
+
+// ---- Public API ----
+
+/**
+ * Send a WhatsApp template message using the configured provider.
+ */
+export async function sendWhatsAppMessage(
+  payload: WhatsAppMessagePayload,
+): Promise<WhatsAppSendResult> {
+  const config = getWhatsAppConfig();
+
+  if (!isConfigured(config)) {
+    console.warn("WhatsApp API credentials not configured");
+    return { success: false, error: "Not configured", provider: config.provider };
+  }
+
+  if (config.provider === "twilio") {
+    // Twilio doesn't support template API the same way — send as text
+    return sendViaTwilio(config, payload.to, payload.parameters?.join(", ") || "");
+  }
+
+  return sendTemplateViaMeta(config, payload);
+}
+
+/**
+ * Send a plain text WhatsApp message using the configured provider.
+ */
+export async function sendTextMessage(
+  to: string,
+  body: string,
+): Promise<WhatsAppSendResult> {
+  const config = getWhatsAppConfig();
+
+  if (!isConfigured(config)) {
+    console.warn("WhatsApp API credentials not configured");
+    return { success: false, error: "Not configured", provider: config.provider };
+  }
+
+  if (config.provider === "twilio") {
+    return sendViaTwilio(config, to, body);
+  }
+
+  return sendViaMeta(config, to, body);
+}
+
+/**
+ * Send a notification-triggered WhatsApp message with variable substitution.
+ * Looks up the template for the given trigger, substitutes variables, and sends.
+ */
+export async function sendNotificationWhatsApp(
+  trigger: NotificationTrigger,
+  to: string,
+  variables: TemplateVariables,
+  templates: NotificationTemplate[] = defaultNotificationTemplates,
+): Promise<WhatsAppSendResult> {
+  const template = templates.find(
+    (t) => t.trigger === trigger && t.enabled && t.channels.includes("whatsapp"),
+  );
+
+  if (!template) {
+    return {
+      success: false,
+      error: `No enabled WhatsApp template found for trigger: ${trigger}`,
+      provider: "meta",
+    };
+  }
+
+  const body = substituteVariables(template.whatsappBody, variables);
+  return sendTextMessage(to, body);
 }

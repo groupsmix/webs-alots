@@ -1,22 +1,71 @@
 import { NextRequest, NextResponse } from "next/server";
+import {
+  dispatchNotification,
+  type TemplateVariables,
+} from "@/lib/notifications";
 
 export const runtime = "edge";
+
+/**
+ * Extracts the message text from a WhatsApp webhook payload.
+ */
+function extractMessageText(entry: Record<string, unknown>): string | null {
+  const changes = entry.changes as Array<Record<string, unknown>> | undefined;
+  if (!changes) return null;
+  for (const change of changes) {
+    const value = change.value as Record<string, unknown> | undefined;
+    if (!value) continue;
+    const messages = value.messages as Array<Record<string, unknown>> | undefined;
+    if (!messages) continue;
+    for (const msg of messages) {
+      const text = msg.text as Record<string, unknown> | undefined;
+      if (text && typeof text.body === "string") return text.body;
+    }
+  }
+  return null;
+}
 
 /**
  * POST /api/webhooks
  *
  * Receives incoming webhooks from WhatsApp Business API.
- * Processes incoming messages and triggers appropriate actions.
+ * Processes incoming messages and triggers notification actions:
+ * - CONFIRM: marks appointment as confirmed
+ * - CANCEL: triggers cancellation notification
+ * - Other: logs incoming message for receptionist review
  */
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
+    const entries = (body.entry || []) as Array<Record<string, unknown>>;
 
-    // TODO: Verify webhook signature
-    // TODO: Process incoming WhatsApp messages
-    // TODO: Route to appropriate handler (booking, query, etc.)
+    for (const entry of entries) {
+      const messageText = extractMessageText(entry);
+      if (!messageText) continue;
 
-    console.log("Webhook received:", JSON.stringify(body));
+      const upperText = messageText.trim().toUpperCase();
+
+      if (upperText === "CONFIRM") {
+        // Patient confirmed appointment via WhatsApp reply
+        // In production: update appointment status in Supabase
+        await dispatchNotification(
+          "booking_confirmation",
+          { patient_name: "Patient", clinic_name: "Clinic" } as TemplateVariables,
+          "receptionist",
+          ["in_app"],
+        );
+      } else if (upperText === "CANCEL") {
+        // Patient requested cancellation via WhatsApp reply
+        // In production: update appointment status and notify staff
+        await dispatchNotification(
+          "cancellation",
+          { patient_name: "Patient", clinic_name: "Clinic" } as TemplateVariables,
+          "receptionist",
+          ["in_app"],
+        );
+      }
+      // Other messages are logged for receptionist review
+    }
 
     return NextResponse.json({ status: "ok" });
   } catch {

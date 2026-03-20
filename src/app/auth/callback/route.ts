@@ -21,7 +21,7 @@ export async function GET(request: Request) {
           .from("users")
           .select("role")
           .eq("auth_id", user.id)
-          .single();
+          .single<{ role: string }>();
 
         if (profile) {
           const userProfile = profile as { role: string };
