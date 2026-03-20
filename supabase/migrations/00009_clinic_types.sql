@@ -9,7 +9,7 @@
 -- ============================================================
 
 CREATE TABLE clinic_types (
-  id              UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   type_key        TEXT NOT NULL UNIQUE,
   name_fr         TEXT NOT NULL,
   name_ar         TEXT NOT NULL,
