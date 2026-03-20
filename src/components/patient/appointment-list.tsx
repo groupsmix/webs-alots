@@ -1,11 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Calendar, Clock, User, MapPin, X, RefreshCw, AlertTriangle, Repeat } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { appointments, canCancelAppointment } from "@/lib/demo-data";
+import {
+  getCurrentUser,
+  fetchAppointments,
+  type AppointmentView,
+} from "@/lib/data/client";
 import { RescheduleDialog } from "./reschedule-dialog";
 
 const statusVariant: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
@@ -29,12 +33,20 @@ export function AppointmentList({ patientId }: { patientId?: string }) {
   const [rescheduleAppt, setRescheduleAppt] = useState<string | null>(null);
   const [cancellingId, setCancellingId] = useState<string | null>(null);
   const [cancelError, setCancelError] = useState<string | null>(null);
+  const [allAppointments, setAllAppointments] = useState<AppointmentView[]>([]);
 
-  // Re-read appointments on refresh
-  void refreshKey;
+  const loadData = useCallback(async () => {
+    const user = await getCurrentUser();
+    if (!user?.clinic_id) return;
+    const data = await fetchAppointments(user.clinic_id);
+    setAllAppointments(data);
+  }, []);
+
+  useEffect(() => { loadData(); }, [loadData, refreshKey]);
+
   const patientAppts = patientId
-    ? appointments.filter((a) => a.patientId === patientId)
-    : appointments.slice(0, 4);
+    ? allAppointments.filter((a) => a.patientId === patientId)
+    : allAppointments.slice(0, 4);
 
   const upcoming = patientAppts.filter(
     (a) => a.status === "scheduled" || a.status === "confirmed" || a.status === "in-progress",
@@ -45,12 +57,6 @@ export function AppointmentList({ patientId }: { patientId?: string }) {
 
   const handleCancel = async (appointmentId: string) => {
     setCancelError(null);
-    const check = canCancelAppointment(appointmentId);
-    if (!check.canCancel) {
-      setCancelError(check.reason ?? "Cannot cancel this appointment");
-      return;
-    }
-
     setCancellingId(appointmentId);
     try {
       const res = await fetch("/api/booking/cancel", {
@@ -74,7 +80,7 @@ export function AppointmentList({ patientId }: { patientId?: string }) {
   };
 
   const apptToReschedule = rescheduleAppt
-    ? appointments.find((a) => a.id === rescheduleAppt)
+    ? allAppointments.find((a) => a.id === rescheduleAppt)
     : null;
 
   if (apptToReschedule) {

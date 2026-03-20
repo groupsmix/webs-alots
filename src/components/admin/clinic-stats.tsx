@@ -1,9 +1,16 @@
 "use client";
 
+import { useState, useEffect, useCallback } from "react";
 import { Users, Calendar, TrendingDown, DollarSign, Activity, Clock, UserCheck, AlertTriangle } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { appointments, patients, getTotalRevenue } from "@/lib/demo-data";
+import {
+  getCurrentUser,
+  fetchAppointments,
+  fetchPatients,
+  fetchInvoices,
+  type AppointmentView,
+} from "@/lib/data/client";
 
 /**
  * ClinicStats
@@ -11,14 +18,31 @@ import { appointments, patients, getTotalRevenue } from "@/lib/demo-data";
  * Key metrics cards: patient count, no-show rate, booking sources, busiest hours.
  */
 export function ClinicStats() {
-  const totalPatients = patients.length;
-  const todayAppts = appointments.filter((a) => a.date === new Date().toISOString().split("T")[0]);
-  const completedAppts = appointments.filter((a) => a.status === "completed");
-  const noShowAppts = appointments.filter((a) => a.status === "no-show");
-  const noShowRate = appointments.length > 0
-    ? Math.round((noShowAppts.length / appointments.length) * 100)
+  const [allAppointments, setAllAppointments] = useState<AppointmentView[]>([]);
+  const [totalPatients, setTotalPatients] = useState(0);
+  const [revenue, setRevenue] = useState(0);
+
+  const loadData = useCallback(async () => {
+    const user = await getCurrentUser();
+    if (!user?.clinic_id) return;
+    const [appts, pts, invs] = await Promise.all([
+      fetchAppointments(user.clinic_id),
+      fetchPatients(user.clinic_id),
+      fetchInvoices(user.clinic_id),
+    ]);
+    setAllAppointments(appts);
+    setTotalPatients(pts.length);
+    setRevenue(invs.reduce((s, inv) => s + inv.amount, 0));
+  }, []);
+
+  useEffect(() => { loadData(); }, [loadData]);
+
+  const todayAppts = allAppointments.filter((a) => a.date === new Date().toISOString().split("T")[0]);
+  const completedAppts = allAppointments.filter((a) => a.status === "completed");
+  const noShowAppts = allAppointments.filter((a) => a.status === "no-show");
+  const noShowRate = allAppointments.length > 0
+    ? Math.round((noShowAppts.length / allAppointments.length) * 100)
     : 0;
-  const revenue = getTotalRevenue();
 
   const stats = [
     { title: "Total Patients", value: totalPatients.toString(), icon: Users, change: "+12%", trend: "up" as const },
