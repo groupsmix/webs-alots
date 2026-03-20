@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { UserPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,7 +20,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { doctors, services, patients } from "@/lib/demo-data";
+import { fetchDoctors, fetchServices, fetchPatients, type DoctorView, type ServiceView, type PatientView } from "@/lib/data/client";
+import { clinicConfig } from "@/config/clinic.config";
 
 interface WalkInDialogProps {
   trigger?: React.ReactNode;
@@ -44,6 +45,26 @@ export function WalkInDialog({ trigger, onRegister }: WalkInDialogProps) {
   const [doctorId, setDoctorId] = useState("");
   const [serviceId, setServiceId] = useState("");
   const [notes, setNotes] = useState("");
+
+  const [doctors, setDoctors] = useState<DoctorView[]>([]);
+  const [services, setServices] = useState<ServiceView[]>([]);
+  const [patients, setPatients] = useState<PatientView[]>([]);
+
+  useEffect(() => {
+    const clinicId = clinicConfig.clinicId;
+    if (!clinicId) return;
+    Promise.all([
+      fetchDoctors(clinicId),
+      fetchServices(clinicId),
+      fetchPatients(clinicId),
+    ]).then(([d, s, p]) => {
+      setDoctors(d);
+      setServices(s);
+      setPatients(p);
+    }).catch((err) => {
+      console.error("[walk-in-dialog] failed to load data:", err);
+    });
+  }, []);
 
   const handleSubmit = () => {
     if (isNewPatient && (!newPatientName || !newPatientPhone)) return;

@@ -1,18 +1,8 @@
 "use client";
 
-import { useState, useMemo, useEffect, useCallback } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { ChevronLeft, ChevronRight, Check, Stethoscope, User, ShieldCheck, Repeat, Users } from "lucide-react";
-import {
-  specialties as demoSpecialties,
-  doctors as demoDoctors,
-  services as demoServices,
-  getAvailableSlots as demoGetAvailableSlots,
-  generateTimeSlots as demoGenerateTimeSlots,
-  getSlotBookingCounts as demoGetSlotBookingCounts,
-  addToWaitingList as demoAddToWaitingList,
-} from "@/lib/demo-data";
-import type { Specialty, Doctor, Service } from "@/lib/demo-data";
-import { fetchDoctors, fetchServices } from "@/lib/data/client";
+import { fetchDoctors, fetchServices, type DoctorView, type ServiceView } from "@/lib/data/client";
 import { clinicConfig } from "@/config/clinic.config";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -30,6 +20,34 @@ function getSteps() {
   return s;
 }
 
+interface Specialty {
+  id: string;
+  name: string;
+  description: string;
+}
+
+interface Doctor {
+  id: string;
+  name: string;
+  specialtyId: string;
+  specialty: string;
+  phone: string;
+  email: string;
+  avatar?: string;
+  consultationFee: number;
+  languages: string[];
+}
+
+interface Service {
+  id: string;
+  name: string;
+  description: string;
+  duration: number;
+  price: number;
+  currency: string;
+  active: boolean;
+}
+
 /** Derive specialties from doctor metadata */
 function deriveSpecialties(docs: Doctor[]): Specialty[] {
   const seen = new Map<string, Specialty>();
@@ -43,6 +61,32 @@ function deriveSpecialties(docs: Doctor[]): Specialty[] {
     }
   }
   return Array.from(seen.values());
+}
+
+function mapDoctor(d: DoctorView): Doctor {
+  return {
+    id: d.id,
+    name: d.name,
+    specialtyId: d.specialtyId,
+    specialty: d.specialty,
+    phone: d.phone,
+    email: d.email,
+    avatar: d.avatar,
+    consultationFee: d.consultationFee,
+    languages: d.languages,
+  };
+}
+
+function mapService(s: ServiceView): Service {
+  return {
+    id: s.id,
+    name: s.name,
+    description: s.description,
+    duration: s.duration,
+    price: s.price,
+    currency: s.currency,
+    active: s.active,
+  };
 }
 
 export function BookingForm() {
@@ -67,89 +111,64 @@ export function BookingForm() {
   const [pendingPaymentId] = useState(() => `pending-${crypto.randomUUID()}`);
   const [patientPaymentId] = useState(() => `patient-${crypto.randomUUID()}`);
 
-  // Supabase-loaded data with demo fallbacks
-  const [specialties, setSpecialties] = useState<Specialty[]>(demoSpecialties);
-  const [doctors, setDoctors] = useState<Doctor[]>(demoDoctors);
-  const [services, setServices] = useState<Service[]>(demoServices);
+  // Supabase-loaded data
+  const [specialties, setSpecialties] = useState<Specialty[]>([]);
+  const [doctors, setDoctors] = useState<Doctor[]>([]);
+  const [services, setServices] = useState<Service[]>([]);
 
   // Slot data (fetched dynamically via API when date/doctor change)
-  const [availableSlots, setAvailableSlots] = useState<string[]>([]);
-  const [allSlots, setAllSlots] = useState<string[]>([]);
-  const [slotCounts, setSlotCounts] = useState<Record<string, number>>({});
+  const [slotData, setSlotData] = useState<{
+    available: string[];
+    all: string[];
+    counts: Record<string, number>;
+  }>({ available: [], all: [], counts: {} });
 
   // Load doctors, services, and specialties from Supabase on mount
   useEffect(() => {
     const clinicId = clinicConfig.clinicId;
-    if (!clinicId || clinicId === "demo-clinic") return;
+    if (!clinicId) return;
 
+    let cancelled = false;
     Promise.all([
       fetchDoctors(clinicId),
       fetchServices(clinicId),
     ]).then(([dbDoctors, dbServices]) => {
-      if (dbDoctors.length > 0) {
-        const mappedDoctors: Doctor[] = dbDoctors.map((d) => ({
-          id: d.id,
-          name: d.name,
-          specialtyId: d.specialtyId,
-          specialty: d.specialty,
-          phone: d.phone,
-          email: d.email,
-          avatar: d.avatar,
-          consultationFee: d.consultationFee,
-          languages: d.languages,
-        }));
-        setDoctors(mappedDoctors);
-        setSpecialties(deriveSpecialties(mappedDoctors));
-      }
-      if (dbServices.length > 0) {
-        const mappedServices: Service[] = dbServices.map((s) => ({
-          id: s.id,
-          name: s.name,
-          description: s.description,
-          duration: s.duration,
-          price: s.price,
-          currency: s.currency,
-          active: s.active,
-        }));
-        setServices(mappedServices);
-      }
-    }).catch(() => {
-      // Keep demo data on error
+      if (cancelled) return;
+      const mappedDoctors = dbDoctors.map(mapDoctor);
+      setDoctors(mappedDoctors);
+      setSpecialties(deriveSpecialties(mappedDoctors));
+      setServices(dbServices.map(mapService));
+    }).catch((err) => {
+      console.error("[booking-form] failed to load data:", err);
     });
+    return () => { cancelled = true; };
   }, []);
 
   // Fetch available slots when date or doctor changes
-  const fetchSlots = useCallback(async (date: string, doctorId: string) => {
-    if (!date || !doctorId) return;
-
-    try {
-      const res = await fetch(`/api/booking?date=${date}&doctorId=${doctorId}`);
-      if (res.ok) {
-        const data = await res.json();
-        setAvailableSlots(data.slots ?? []);
-        setAllSlots(data.allSlots ?? []);
-        setSlotCounts(data.bookedCounts ?? {});
-        return;
-      }
-    } catch {
-      // Fall through to demo fallback
-    }
-
-    // Fallback to demo data functions
-    setAvailableSlots(demoGetAvailableSlots(date, doctorId));
-    setAllSlots(demoGenerateTimeSlots(date));
-    setSlotCounts(demoGetSlotBookingCounts(date, doctorId));
-  }, []);
-
   useEffect(() => {
-    if (selectedDate && selectedDoctor) {
-      fetchSlots(selectedDate, selectedDoctor);
-    } else {
-      setAvailableSlots([]);
-      setAllSlots([]);
-      setSlotCounts({});
-    }
-  }, [selectedDate, selectedDoctor, fetchSlots]);
+    if (!selectedDate || !selectedDoctor) return;
+
+    let cancelled = false;
+
+    fetch(`/api/booking?date=${selectedDate}&doctorId=${selectedDoctor}`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (cancelled) return;
+        setSlotData(data
+          ? { available: data.slots ?? [], all: data.allSlots ?? [], counts: data.bookedCounts ?? {} }
+          : { available: [], all: [], counts: {} });
+      })
+      .catch(() => {
+        if (!cancelled) setSlotData({ available: [], all: [], counts: {} });
+      });
+
+    return () => { cancelled = true; };
+  }, [selectedDate, selectedDoctor]);
+
+  // Derive slot arrays; reset when selection cleared (avoids setState inside effect)
+  const availableSlots = (selectedDate && selectedDoctor) ? slotData.available : [];
+  const allSlots = (selectedDate && selectedDoctor) ? slotData.all : [];
+  const slotCounts = (selectedDate && selectedDoctor) ? slotData.counts : {};
 
   const filteredDoctors = useMemo(() => {
     if (!selectedSpecialty) return doctors;
@@ -173,23 +192,32 @@ export function BookingForm() {
     return true;
   };
 
-  const handleJoinWaitingList = (slot: string) => {
+  const handleJoinWaitingList = async (slot: string) => {
     if (!patientInfo.name) {
       setWaitingListMessage("Please complete your info first (step 5) to join a waiting list.");
       return;
     }
-    const result = demoAddToWaitingList(
-      `patient-${Date.now()}`,
-      patientInfo.name,
-      selectedDoctor,
-      selectedDate,
-      slot,
-      selectedService,
-    );
-    if (result.success) {
-      setWaitingListMessage(`You've been added to the waiting list for ${selectedDate} at ${slot}.`);
-    } else {
-      setWaitingListMessage(result.error ?? "Could not join waiting list.");
+    try {
+      const res = await fetch("/api/booking/waiting-list", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          patientId: `patient-${Date.now()}`,
+          patientName: patientInfo.name,
+          doctorId: selectedDoctor,
+          preferredDate: selectedDate,
+          preferredTime: slot,
+          serviceId: selectedService,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setWaitingListMessage(`You've been added to the waiting list for ${selectedDate} at ${slot}.`);
+      } else {
+        setWaitingListMessage(data.error ?? "Could not join waiting list.");
+      }
+    } catch {
+      setWaitingListMessage("Could not join waiting list.");
     }
   };
 
