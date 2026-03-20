@@ -1,9 +1,21 @@
+import type { Metadata } from "next";
 import { Clock, CreditCard } from "lucide-react";
 import Link from "next/link";
 import { getPublicServices } from "@/lib/data/public";
 import { defaultWebsiteConfig } from "@/lib/website-config";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+
+export const metadata: Metadata = {
+  title: "Nos Services — Cabinet Médical",
+  description:
+    "Découvrez nos services médicaux, consultations, soins et traitements. Tarifs transparents et prise de rendez-vous en ligne.",
+  openGraph: {
+    title: "Nos Services — Cabinet Médical",
+    description:
+      "Découvrez nos services médicaux, consultations, soins et traitements.",
+  },
+};
 
 export default async function ServicesPage() {
   const cfg = defaultWebsiteConfig.services;

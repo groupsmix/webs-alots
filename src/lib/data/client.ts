@@ -2787,6 +2787,777 @@ export async function fetchClinicSubscription(clinicId: string): Promise<ClinicS
 }
 
 // ─────────────────────────────────────────────
+// Analysis Lab — Test Catalog
+// ─────────────────────────────────────────────
+
+export interface LabTestCatalogView {
+  id: string;
+  name: string;
+  nameAr?: string;
+  code?: string;
+  category: string;
+  sampleType: string;
+  description?: string;
+  price: number;
+  currency: string;
+  turnaroundHours: number;
+  referenceRanges: { parameter: string; unit: string; min: number | null; max: number | null }[];
+  isActive: boolean;
+  sortOrder: number;
+}
+
+interface LabTestCatalogRaw {
+  id: string;
+  clinic_id: string;
+  name: string;
+  name_ar: string | null;
+  code: string | null;
+  category: string;
+  sample_type: string;
+  description: string | null;
+  price: number | null;
+  currency: string;
+  turnaround_hours: number;
+  reference_ranges: { parameter: string; unit: string; min: number | null; max: number | null }[] | null;
+  is_active: boolean;
+  sort_order: number;
+  created_at: string;
+}
+
+function mapLabTestCatalog(raw: LabTestCatalogRaw): LabTestCatalogView {
+  return {
+    id: raw.id,
+    name: raw.name,
+    nameAr: raw.name_ar ?? undefined,
+    code: raw.code ?? undefined,
+    category: raw.category,
+    sampleType: raw.sample_type ?? "blood",
+    description: raw.description ?? undefined,
+    price: raw.price ?? 0,
+    currency: raw.currency ?? "MAD",
+    turnaroundHours: raw.turnaround_hours ?? 24,
+    referenceRanges: raw.reference_ranges ?? [],
+    isActive: raw.is_active ?? true,
+    sortOrder: raw.sort_order ?? 0,
+  };
+}
+
+export async function fetchLabTestCatalog(clinicId: string): Promise<LabTestCatalogView[]> {
+  const rows = await fetchRows<LabTestCatalogRaw>("lab_test_catalog", {
+    eq: [["clinic_id", clinicId]],
+    order: ["sort_order", { ascending: true }],
+  });
+  return rows.map(mapLabTestCatalog);
+}
+
+// ─────────────────────────────────────────────
+// Analysis Lab — Test Orders
+// ─────────────────────────────────────────────
+
+export interface LabTestOrderView {
+  id: string;
+  patientId: string;
+  patientName: string;
+  orderingDoctorName?: string;
+  assignedTechnicianName?: string;
+  orderNumber: string;
+  status: string;
+  priority: string;
+  clinicalNotes?: string;
+  fastingRequired: boolean;
+  sampleCollectedAt?: string;
+  completedAt?: string;
+  validatedAt?: string;
+  pdfUrl?: string;
+  tests: { id: string; testId: string; testName: string; status: string }[];
+  testCount: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface LabTestOrderRaw {
+  id: string;
+  clinic_id: string;
+  patient_id: string;
+  ordering_doctor_id: string | null;
+  assigned_technician_id: string | null;
+  order_number: string;
+  status: string;
+  priority: string;
+  clinical_notes: string | null;
+  fasting_required: boolean;
+  sample_collected_at: string | null;
+  completed_at: string | null;
+  validated_at: string | null;
+  validated_by: string | null;
+  pdf_url: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+interface LabTestItemRaw {
+  id: string;
+  order_id: string;
+  test_id: string;
+  test_name: string;
+  status: string;
+}
+
+export async function fetchLabTestOrders(clinicId: string): Promise<LabTestOrderView[]> {
+  await ensureLookups(clinicId);
+  const rows = await fetchRows<LabTestOrderRaw>("lab_test_orders", {
+    eq: [["clinic_id", clinicId]],
+    order: ["created_at", { ascending: false }],
+  });
+  const orderIds = rows.map((r) => r.id);
+  let items: LabTestItemRaw[] = [];
+  if (orderIds.length > 0) {
+    items = await fetchRows<LabTestItemRaw>("lab_test_items", {
+      inFilter: ["order_id", orderIds],
+    });
+  }
+  const itemsByOrder = new Map<string, LabTestItemRaw[]>();
+  for (const item of items) {
+    const arr = itemsByOrder.get(item.order_id) ?? [];
+    arr.push(item);
+    itemsByOrder.set(item.order_id, arr);
+  }
+  return rows.map((r) => ({
+    id: r.id,
+    patientId: r.patient_id,
+    patientName: _userMap?.get(r.patient_id)?.name ?? "Patient",
+    orderingDoctorName: r.ordering_doctor_id ? (_userMap?.get(r.ordering_doctor_id)?.name ?? undefined) : undefined,
+    assignedTechnicianName: r.assigned_technician_id ? (_userMap?.get(r.assigned_technician_id)?.name ?? undefined) : undefined,
+    orderNumber: r.order_number,
+    status: r.status,
+    priority: r.priority,
+    clinicalNotes: r.clinical_notes ?? undefined,
+    fastingRequired: r.fasting_required ?? false,
+    sampleCollectedAt: r.sample_collected_at ?? undefined,
+    completedAt: r.completed_at ?? undefined,
+    validatedAt: r.validated_at ?? undefined,
+    pdfUrl: r.pdf_url ?? undefined,
+    tests: (itemsByOrder.get(r.id) ?? []).map((ti) => ({
+      id: ti.id,
+      testId: ti.test_id,
+      testName: ti.test_name,
+      status: ti.status,
+    })),
+    testCount: (itemsByOrder.get(r.id) ?? []).length,
+    createdAt: r.created_at?.split("T")[0] ?? "",
+    updatedAt: r.updated_at?.split("T")[0] ?? "",
+  }));
+}
+
+export async function fetchPatientLabOrders(clinicId: string, patientId: string): Promise<LabTestOrderView[]> {
+  await ensureLookups(clinicId);
+  const rows = await fetchRows<LabTestOrderRaw>("lab_test_orders", {
+    eq: [["clinic_id", clinicId], ["patient_id", patientId]],
+    order: ["created_at", { ascending: false }],
+  });
+  const orderIds = rows.map((r) => r.id);
+  let items: LabTestItemRaw[] = [];
+  if (orderIds.length > 0) {
+    items = await fetchRows<LabTestItemRaw>("lab_test_items", {
+      inFilter: ["order_id", orderIds],
+    });
+  }
+  const itemsByOrder = new Map<string, LabTestItemRaw[]>();
+  for (const item of items) {
+    const arr = itemsByOrder.get(item.order_id) ?? [];
+    arr.push(item);
+    itemsByOrder.set(item.order_id, arr);
+  }
+  return rows.map((r) => ({
+    id: r.id,
+    patientId: r.patient_id,
+    patientName: _userMap?.get(r.patient_id)?.name ?? "Patient",
+    orderingDoctorName: r.ordering_doctor_id ? (_userMap?.get(r.ordering_doctor_id)?.name ?? undefined) : undefined,
+    assignedTechnicianName: r.assigned_technician_id ? (_userMap?.get(r.assigned_technician_id)?.name ?? undefined) : undefined,
+    orderNumber: r.order_number,
+    status: r.status,
+    priority: r.priority,
+    clinicalNotes: r.clinical_notes ?? undefined,
+    fastingRequired: r.fasting_required ?? false,
+    sampleCollectedAt: r.sample_collected_at ?? undefined,
+    completedAt: r.completed_at ?? undefined,
+    validatedAt: r.validated_at ?? undefined,
+    pdfUrl: r.pdf_url ?? undefined,
+    tests: (itemsByOrder.get(r.id) ?? []).map((ti) => ({
+      id: ti.id,
+      testId: ti.test_id,
+      testName: ti.test_name,
+      status: ti.status,
+    })),
+    testCount: (itemsByOrder.get(r.id) ?? []).length,
+    createdAt: r.created_at?.split("T")[0] ?? "",
+    updatedAt: r.updated_at?.split("T")[0] ?? "",
+  }));
+}
+
+// ─────────────────────────────────────────────
+// Analysis Lab — Test Results
+// ─────────────────────────────────────────────
+
+export interface LabTestResultView {
+  id: string;
+  orderId: string;
+  testItemId: string;
+  testName: string;
+  parameterName: string;
+  value: string;
+  unit: string;
+  referenceMin: number | null;
+  referenceMax: number | null;
+  flag: string | null;
+  notes?: string;
+  enteredBy?: string;
+  enteredAt: string;
+}
+
+interface LabTestResultRaw {
+  id: string;
+  order_id: string;
+  test_item_id: string;
+  parameter_name: string;
+  value: string | null;
+  unit: string | null;
+  reference_min: number | null;
+  reference_max: number | null;
+  flag: string | null;
+  notes: string | null;
+  entered_by: string | null;
+  entered_at: string;
+}
+
+export async function fetchLabTestResults(orderId: string): Promise<LabTestResultView[]> {
+  const rows = await fetchRows<LabTestResultRaw>("lab_test_results", {
+    eq: [["order_id", orderId]],
+    order: ["entered_at", { ascending: true }],
+  });
+  return rows.map((r) => ({
+    id: r.id,
+    orderId: r.order_id,
+    testItemId: r.test_item_id,
+    testName: r.parameter_name,
+    parameterName: r.parameter_name,
+    value: r.value ?? "",
+    unit: r.unit ?? "",
+    referenceMin: r.reference_min,
+    referenceMax: r.reference_max,
+    flag: r.flag,
+    notes: r.notes ?? undefined,
+    enteredBy: r.entered_by ?? undefined,
+    enteredAt: r.entered_at?.split("T")[0] ?? "",
+  }));
+}
+
+// ─────────────────────────────────────────────
+// Radiology — Orders
+// ─────────────────────────────────────────────
+
+export interface RadiologyOrderView {
+  id: string;
+  patientId: string;
+  patientName: string;
+  orderingDoctorName?: string;
+  radiologistName?: string;
+  orderNumber: string;
+  modality: string;
+  bodyPart?: string;
+  clinicalIndication?: string;
+  status: string;
+  priority: string;
+  scheduledAt?: string;
+  performedAt?: string;
+  reportedAt?: string;
+  reportText?: string;
+  findings?: string;
+  impression?: string;
+  pdfUrl?: string;
+  images: RadiologyImageView[];
+  imageCount: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface RadiologyImageView {
+  id: string;
+  orderId: string;
+  fileUrl: string;
+  fileName?: string;
+  fileSize?: number;
+  contentType?: string;
+  modality?: string;
+  isDicom: boolean;
+  dicomStudyUid?: string;
+  thumbnailUrl?: string;
+  description?: string;
+  uploadedAt: string;
+}
+
+interface RadiologyOrderRaw {
+  id: string;
+  clinic_id: string;
+  patient_id: string;
+  ordering_doctor_id: string | null;
+  radiologist_id: string | null;
+  order_number: string;
+  modality: string;
+  body_part: string | null;
+  clinical_indication: string | null;
+  status: string;
+  priority: string;
+  scheduled_at: string | null;
+  performed_at: string | null;
+  reported_at: string | null;
+  report_text: string | null;
+  findings: string | null;
+  impression: string | null;
+  pdf_url: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+interface RadiologyImageRaw {
+  id: string;
+  order_id: string;
+  clinic_id: string;
+  file_url: string;
+  file_name: string | null;
+  file_size: number | null;
+  content_type: string | null;
+  modality: string | null;
+  is_dicom: boolean;
+  dicom_metadata: { study_uid?: string } | null;
+  thumbnail_url: string | null;
+  description: string | null;
+  uploaded_at: string;
+}
+
+export async function fetchRadiologyOrders(clinicId: string): Promise<RadiologyOrderView[]> {
+  await ensureLookups(clinicId);
+  const rows = await fetchRows<RadiologyOrderRaw>("radiology_orders", {
+    eq: [["clinic_id", clinicId]],
+    order: ["created_at", { ascending: false }],
+  });
+  const orderIds = rows.map((r) => r.id);
+  let images: RadiologyImageRaw[] = [];
+  if (orderIds.length > 0) {
+    images = await fetchRows<RadiologyImageRaw>("radiology_images", {
+      eq: [["clinic_id", clinicId]],
+      inFilter: ["order_id", orderIds],
+    });
+  }
+  const imagesByOrder = new Map<string, RadiologyImageRaw[]>();
+  for (const img of images) {
+    const arr = imagesByOrder.get(img.order_id) ?? [];
+    arr.push(img);
+    imagesByOrder.set(img.order_id, arr);
+  }
+  return rows.map((r) => ({
+    id: r.id,
+    patientId: r.patient_id,
+    patientName: _userMap?.get(r.patient_id)?.name ?? "Patient",
+    orderingDoctorName: r.ordering_doctor_id ? (_userMap?.get(r.ordering_doctor_id)?.name ?? undefined) : undefined,
+    radiologistName: r.radiologist_id ? (_userMap?.get(r.radiologist_id)?.name ?? undefined) : undefined,
+    orderNumber: r.order_number,
+    modality: r.modality,
+    bodyPart: r.body_part ?? undefined,
+    clinicalIndication: r.clinical_indication ?? undefined,
+    status: r.status,
+    priority: r.priority ?? "normal",
+    scheduledAt: r.scheduled_at ?? undefined,
+    performedAt: r.performed_at ?? undefined,
+    reportedAt: r.reported_at ?? undefined,
+    reportText: r.report_text ?? undefined,
+    findings: r.findings ?? undefined,
+    impression: r.impression ?? undefined,
+    pdfUrl: r.pdf_url ?? undefined,
+    images: (imagesByOrder.get(r.id) ?? []).map((img) => ({
+      id: img.id,
+      orderId: img.order_id,
+      fileUrl: img.file_url,
+      fileName: img.file_name ?? undefined,
+      fileSize: img.file_size ?? undefined,
+      contentType: img.content_type ?? undefined,
+      modality: img.modality ?? undefined,
+      isDicom: img.is_dicom ?? false,
+      dicomStudyUid: img.dicom_metadata?.study_uid ?? undefined,
+      thumbnailUrl: img.thumbnail_url ?? undefined,
+      description: img.description ?? undefined,
+      uploadedAt: img.uploaded_at?.split("T")[0] ?? "",
+    })),
+    imageCount: (imagesByOrder.get(r.id) ?? []).length,
+    createdAt: r.created_at?.split("T")[0] ?? "",
+    updatedAt: r.updated_at?.split("T")[0] ?? "",
+  }));
+}
+
+// ─────────────────────────────────────────────
+// Radiology — Report Templates
+// ─────────────────────────────────────────────
+
+export interface RadiologyTemplateView {
+  id: string;
+  name: string;
+  modality?: string;
+  bodyPart?: string;
+  templateText: string;
+  fields: { key: string; label: string; type: string; options?: string[] }[];
+  sections: { title: string; defaultContent: string }[];
+  language: string;
+  isDefault: boolean;
+  isActive: boolean;
+}
+
+interface RadiologyTemplateRaw {
+  id: string;
+  clinic_id: string;
+  name: string;
+  modality: string | null;
+  body_part: string | null;
+  template_text: string;
+  fields: { key: string; label: string; type: string; options?: string[] }[] | null;
+  is_default: boolean;
+  is_active: boolean;
+  created_at: string;
+}
+
+export async function fetchRadiologyTemplates(clinicId: string): Promise<RadiologyTemplateView[]> {
+  const rows = await fetchRows<RadiologyTemplateRaw>("radiology_report_templates", {
+    eq: [["clinic_id", clinicId]],
+    order: ["name", { ascending: true }],
+  });
+  return rows.map((r) => {
+    // Parse template_text into sections (split by markdown-style headers)
+    const sectionRegex = /^##\s+(.+)$/gm;
+    const sections: { title: string; defaultContent: string }[] = [];
+    const text = r.template_text ?? "";
+    let lastIndex = 0;
+    let lastTitle = "";
+    let match: RegExpExecArray | null;
+    while ((match = sectionRegex.exec(text)) !== null) {
+      if (lastTitle) {
+        sections.push({ title: lastTitle, defaultContent: text.slice(lastIndex, match.index).trim() });
+      }
+      lastTitle = match[1];
+      lastIndex = match.index + match[0].length;
+    }
+    if (lastTitle) {
+      sections.push({ title: lastTitle, defaultContent: text.slice(lastIndex).trim() });
+    }
+    if (sections.length === 0 && text) {
+      sections.push({ title: "Report", defaultContent: text });
+    }
+
+    return {
+      id: r.id,
+      name: r.name,
+      modality: r.modality ?? undefined,
+      bodyPart: r.body_part ?? undefined,
+      templateText: r.template_text,
+      fields: r.fields ?? [],
+      sections,
+      language: "en",
+      isDefault: r.is_default ?? false,
+      isActive: r.is_active ?? true,
+    };
+  });
+}
+
+// ─────────────────────────────────────────────
+// Medical Equipment — Inventory
+// ─────────────────────────────────────────────
+
+export interface EquipmentItemView {
+  id: string;
+  name: string;
+  description?: string;
+  category: string;
+  serialNumber?: string;
+  model?: string;
+  manufacturer?: string;
+  purchaseDate?: string;
+  purchasePrice?: number;
+  currency: string;
+  condition: string;
+  isAvailable: boolean;
+  isRentable: boolean;
+  rentalPriceDaily?: number;
+  rentalPriceWeekly?: number;
+  rentalPriceMonthly?: number;
+  imageUrl?: string;
+  notes?: string;
+}
+
+interface EquipmentItemRaw {
+  id: string;
+  clinic_id: string;
+  name: string;
+  description: string | null;
+  category: string;
+  serial_number: string | null;
+  model: string | null;
+  manufacturer: string | null;
+  purchase_date: string | null;
+  purchase_price: number | null;
+  currency: string;
+  condition: string;
+  is_available: boolean;
+  is_rentable: boolean;
+  rental_price_daily: number | null;
+  rental_price_weekly: number | null;
+  rental_price_monthly: number | null;
+  image_url: string | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+function mapEquipmentItem(raw: EquipmentItemRaw): EquipmentItemView {
+  return {
+    id: raw.id,
+    name: raw.name,
+    description: raw.description ?? undefined,
+    category: raw.category,
+    serialNumber: raw.serial_number ?? undefined,
+    model: raw.model ?? undefined,
+    manufacturer: raw.manufacturer ?? undefined,
+    purchaseDate: raw.purchase_date ?? undefined,
+    purchasePrice: raw.purchase_price ?? undefined,
+    currency: raw.currency ?? "MAD",
+    condition: raw.condition ?? "good",
+    isAvailable: raw.is_available ?? true,
+    isRentable: raw.is_rentable ?? true,
+    rentalPriceDaily: raw.rental_price_daily ?? undefined,
+    rentalPriceWeekly: raw.rental_price_weekly ?? undefined,
+    rentalPriceMonthly: raw.rental_price_monthly ?? undefined,
+    imageUrl: raw.image_url ?? undefined,
+    notes: raw.notes ?? undefined,
+  };
+}
+
+export async function fetchEquipmentInventory(clinicId: string): Promise<EquipmentItemView[]> {
+  const rows = await fetchRows<EquipmentItemRaw>("equipment_inventory", {
+    eq: [["clinic_id", clinicId]],
+    order: ["name", { ascending: true }],
+  });
+  return rows.map(mapEquipmentItem);
+}
+
+// ─────────────────────────────────────────────
+// Medical Equipment — Rentals
+// ─────────────────────────────────────────────
+
+export interface EquipmentRentalView {
+  id: string;
+  equipmentId: string;
+  equipmentName: string;
+  clientName: string;
+  clientPhone?: string;
+  clientIdNumber?: string;
+  rentalStart: string;
+  rentalEnd?: string;
+  actualReturn?: string;
+  status: string;
+  conditionOut: string;
+  conditionIn?: string;
+  depositAmount?: number;
+  rentalAmount?: number;
+  currency: string;
+  paymentStatus: string;
+  notes?: string;
+}
+
+interface EquipmentRentalRaw {
+  id: string;
+  clinic_id: string;
+  equipment_id: string;
+  client_name: string;
+  client_phone: string | null;
+  client_id_number: string | null;
+  rental_start: string;
+  rental_end: string | null;
+  actual_return: string | null;
+  status: string;
+  condition_out: string;
+  condition_in: string | null;
+  deposit_amount: number | null;
+  rental_amount: number | null;
+  currency: string;
+  payment_status: string;
+  notes: string | null;
+  created_at: string;
+}
+
+export async function fetchEquipmentRentals(clinicId: string): Promise<EquipmentRentalView[]> {
+  const equipment = await fetchEquipmentInventory(clinicId);
+  const equipMap = new Map(equipment.map((e) => [e.id, e.name]));
+  const rows = await fetchRows<EquipmentRentalRaw>("equipment_rentals", {
+    eq: [["clinic_id", clinicId]],
+    order: ["created_at", { ascending: false }],
+  });
+  return rows.map((r) => ({
+    id: r.id,
+    equipmentId: r.equipment_id,
+    equipmentName: equipMap.get(r.equipment_id) ?? "Equipment",
+    clientName: r.client_name,
+    clientPhone: r.client_phone ?? undefined,
+    clientIdNumber: r.client_id_number ?? undefined,
+    rentalStart: r.rental_start,
+    rentalEnd: r.rental_end ?? undefined,
+    actualReturn: r.actual_return ?? undefined,
+    status: r.status,
+    conditionOut: r.condition_out ?? "good",
+    conditionIn: r.condition_in ?? undefined,
+    depositAmount: r.deposit_amount ?? undefined,
+    rentalAmount: r.rental_amount ?? undefined,
+    currency: r.currency ?? "MAD",
+    paymentStatus: r.payment_status ?? "pending",
+    notes: r.notes ?? undefined,
+  }));
+}
+
+// ─────────────────────────────────────────────
+// Medical Equipment — Maintenance
+// ─────────────────────────────────────────────
+
+export interface EquipmentMaintenanceView {
+  id: string;
+  equipmentId: string;
+  equipmentName: string;
+  type: string;
+  description?: string;
+  performedBy?: string;
+  performedAt: string;
+  nextDue?: string;
+  cost?: number;
+  currency: string;
+  status: string;
+  notes?: string;
+}
+
+interface EquipmentMaintenanceRaw {
+  id: string;
+  clinic_id: string;
+  equipment_id: string;
+  type: string;
+  description: string | null;
+  performed_by: string | null;
+  performed_at: string;
+  next_due: string | null;
+  cost: number | null;
+  currency: string;
+  status: string;
+  notes: string | null;
+  created_at: string;
+}
+
+export async function fetchEquipmentMaintenance(clinicId: string): Promise<EquipmentMaintenanceView[]> {
+  const equipment = await fetchEquipmentInventory(clinicId);
+  const equipMap = new Map(equipment.map((e) => [e.id, e.name]));
+  const rows = await fetchRows<EquipmentMaintenanceRaw>("equipment_maintenance", {
+    eq: [["clinic_id", clinicId]],
+    order: ["performed_at", { ascending: false }],
+  });
+  return rows.map((r) => ({
+    id: r.id,
+    equipmentId: r.equipment_id,
+    equipmentName: equipMap.get(r.equipment_id) ?? "Equipment",
+    type: r.type,
+    description: r.description ?? undefined,
+    performedBy: r.performed_by ?? undefined,
+    performedAt: r.performed_at,
+    nextDue: r.next_due ?? undefined,
+    cost: r.cost ?? undefined,
+    currency: r.currency ?? "MAD",
+    status: r.status ?? "completed",
+    notes: r.notes ?? undefined,
+  }));
+}
+
+// ─────────────────────────────────────────────
+// Parapharmacy — Categories
+// ─────────────────────────────────────────────
+
+export interface ParapharmacyCategoryView {
+  id: string;
+  name: string;
+  nameAr?: string;
+  description?: string;
+  slug: string;
+  icon?: string;
+  parentId?: string;
+  sortOrder: number;
+  isActive: boolean;
+}
+
+interface ParapharmacyCategoryRaw {
+  id: string;
+  clinic_id: string;
+  name: string;
+  name_ar: string | null;
+  slug: string;
+  icon: string | null;
+  parent_id: string | null;
+  sort_order: number;
+  is_active: boolean;
+}
+
+export async function fetchParapharmacyCategories(clinicId: string): Promise<ParapharmacyCategoryView[]> {
+  const rows = await fetchRows<ParapharmacyCategoryRaw>("parapharmacy_categories", {
+    eq: [["clinic_id", clinicId]],
+    order: ["sort_order", { ascending: true }],
+  });
+  return rows.map((r) => ({
+    id: r.id,
+    name: r.name,
+    nameAr: r.name_ar ?? undefined,
+    slug: r.slug,
+    icon: r.icon ?? undefined,
+    parentId: r.parent_id ?? undefined,
+    sortOrder: r.sort_order ?? 0,
+    isActive: r.is_active ?? true,
+  }));
+}
+
+// Parapharmacy products reuse the existing Product / stock tables
+// with is_parapharmacy=true and requires_prescription=false
+export async function fetchParapharmacyProducts(clinicId: string): Promise<ProductView[]> {
+  const [products, stock] = await Promise.all([
+    fetchRows<ProductRaw>("products", {
+      eq: [["clinic_id", clinicId], ["is_parapharmacy", true]],
+      order: ["name", { ascending: true }],
+    }),
+    fetchRows<StockRaw>("stock", { eq: [["clinic_id", clinicId]] }),
+  ]);
+  const stockMap = new Map(stock.map((s) => [s.product_id, s]));
+  return products.map((p) => {
+    const s = stockMap.get(p.id);
+    return {
+      id: p.id,
+      name: p.name,
+      genericName: p.generic_name ?? undefined,
+      category: p.category ?? "General",
+      description: p.description ?? undefined,
+      price: p.price ?? 0,
+      currency: "MAD",
+      requiresPrescription: false,
+      stockQuantity: s?.quantity ?? 0,
+      minimumStock: s?.min_threshold ?? 0,
+      expiryDate: s?.expiry_date ?? "",
+      barcode: s?.batch_number ?? undefined,
+      manufacturer: p.manufacturer ?? undefined,
+      supplierId: s?.supplier_id ?? undefined,
+      dosageForm: p.dosage_form ?? undefined,
+      strength: p.strength ?? undefined,
+      active: p.is_active ?? true,
+    };
+  });
+}
+
+// ─────────────────────────────────────────────
 // PEDIATRICIAN — Growth Measurements
 // ─────────────────────────────────────────────
 
