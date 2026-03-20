@@ -1,13 +1,18 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { CreditCard, Check, Clock, Search } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { appointments, patients } from "@/lib/demo-data";
+import {
+  getCurrentUser,
+  fetchTodayAppointments,
+  fetchInvoices,
+  type InvoiceView,
+} from "@/lib/data/client";
 import { PaymentDialog } from "@/components/receptionist/payment-dialog";
 
 interface PaymentEntry {
@@ -23,21 +28,39 @@ interface PaymentEntry {
 
 export default function PaymentsPage() {
   const [searchQuery, setSearchQuery] = useState("");
-  const [paymentEntries, setPaymentEntries] = useState<PaymentEntry[]>(() => {
-    const today = new Date().toISOString().split("T")[0];
-    return appointments
-      .filter((a) => a.date === today || a.status === "completed")
-      .map((a, i) => ({
-        id: `pay-${a.id}`,
-        appointmentId: a.id,
-        patientName: a.patientName,
-        serviceName: a.serviceName,
-        date: a.date,
-        amount: [200, 300, 150, 500, 250][i % 5],
-        method: i % 3 === 0 ? "cash" : i % 3 === 1 ? "card" : "transfer",
-        status: (a.status === "completed" ? "paid" : "pending") as "paid" | "pending",
-      }));
-  });
+  const [paymentEntries, setPaymentEntries] = useState<PaymentEntry[]>([]);
+
+  useEffect(() => {
+    async function load() {
+      const user = await getCurrentUser();
+      if (!user?.clinic_id) return;
+      const clinicId = user.clinic_id;
+      const [appts, invoices] = await Promise.all([
+        fetchTodayAppointments(clinicId),
+        fetchInvoices(clinicId),
+      ]);
+      // Build a lookup from appointment id to invoice
+      const invoiceByAppt = new Map<string, InvoiceView>();
+      for (const inv of invoices) {
+        if (inv.appointmentId) invoiceByAppt.set(inv.appointmentId, inv);
+      }
+      const entries: PaymentEntry[] = appts.map((a) => {
+        const inv = invoiceByAppt.get(a.id);
+        return {
+          id: inv?.id ?? `pay-${a.id}`,
+          appointmentId: a.id,
+          patientName: a.patientName,
+          serviceName: a.serviceName,
+          date: a.date,
+          amount: inv?.amount ?? 0,
+          method: inv?.method ?? "cash",
+          status: (inv?.status === "paid" ? "paid" : "pending") as "paid" | "pending",
+        };
+      });
+      setPaymentEntries(entries);
+    }
+    load();
+  }, []);
 
   const filteredEntries = paymentEntries.filter((e) =>
     e.patientName.toLowerCase().includes(searchQuery.toLowerCase())
@@ -110,7 +133,6 @@ export default function PaymentsPage() {
         <CardContent>
           <div className="space-y-3">
             {filteredEntries.map((entry) => {
-              const patient = patients.find((p) => p.name === entry.patientName);
               return (
                 <div key={entry.id} className="flex items-center gap-3 rounded-lg border p-3">
                   <Avatar>
@@ -121,7 +143,6 @@ export default function PaymentsPage() {
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium">{entry.patientName}</p>
                     <p className="text-xs text-muted-foreground">{entry.serviceName}</p>
-                    {patient && <p className="text-xs text-muted-foreground">{patient.phone}</p>}
                   </div>
                   <div className="text-right mr-2">
                     <p className="text-sm font-bold">{entry.amount} MAD</p>

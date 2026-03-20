@@ -1,12 +1,19 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Calendar, Users, UserPlus, Clock, CreditCard, FileText, Phone, MessageCircle, CheckCircle } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { getTodayAppointments, getTotalRevenue, patients } from "@/lib/demo-data";
+import {
+  getCurrentUser,
+  fetchTodayAppointments,
+  fetchInvoices,
+  fetchPatients,
+  type AppointmentView,
+  type PatientView,
+} from "@/lib/data/client";
 import { ManualBookingDialog } from "@/components/receptionist/manual-booking-dialog";
 import { WalkInDialog } from "@/components/receptionist/walk-in-dialog";
 import { PaymentDialog } from "@/components/receptionist/payment-dialog";
@@ -21,16 +28,37 @@ const statusVariant: Record<string, "default" | "success" | "warning" | "destruc
 };
 
 export default function ReceptionistDashboardPage() {
-  const todayAppts = getTodayAppointments("d1");
-  const checkedIn = todayAppts.filter((a) => a.status === "confirmed" || a.status === "in-progress").length;
-  const totalRevenue = getTotalRevenue();
-
+  const [todayAppts, setTodayAppts] = useState<AppointmentView[]>([]);
+  const [patientMap, setPatientMap] = useState<Map<string, PatientView>>(new Map());
+  const [totalRevenue, setTotalRevenue] = useState(0);
   const [checkedInIds, setCheckedInIds] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    async function load() {
+      const user = await getCurrentUser();
+      if (!user?.clinic_id) return;
+      const clinicId = user.clinic_id;
+      const [appts, invoices, patients] = await Promise.all([
+        fetchTodayAppointments(clinicId),
+        fetchInvoices(clinicId),
+        fetchPatients(clinicId),
+      ]);
+      setTodayAppts(appts);
+      setPatientMap(new Map(patients.map((p) => [p.id, p])));
+      const revenue = invoices
+        .filter((inv) => inv.status === "paid")
+        .reduce((sum, inv) => sum + inv.amount, 0);
+      setTotalRevenue(revenue);
+    }
+    load();
+  }, []);
+
+  const checkedIn = todayAppts.filter((a) => a.status === "confirmed" || a.status === "in-progress").length;
 
   const stats = [
     { icon: Calendar, label: "Today's Bookings", value: todayAppts.length.toString(), color: "text-blue-600" },
     { icon: Users, label: "Checked In", value: (checkedIn + checkedInIds.size).toString(), color: "text-green-600" },
-    { icon: UserPlus, label: "Walk-ins Today", value: "2", color: "text-purple-600" },
+    { icon: UserPlus, label: "Walk-ins Today", value: "0", color: "text-purple-600" },
     { icon: CreditCard, label: "Revenue (Month)", value: `${totalRevenue} MAD`, color: "text-orange-600" },
   ];
 
@@ -115,7 +143,7 @@ export default function ReceptionistDashboardPage() {
             ) : (
               <div className="space-y-3">
                 {todayAppts.map((apt) => {
-                  const patient = patients.find((p) => p.id === apt.patientId);
+                  const patient = patientMap.get(apt.patientId);
                   const isCheckedIn = checkedInIds.has(apt.id);
                   return (
                     <div key={apt.id} className="flex items-center gap-3 rounded-lg border p-3">
@@ -173,7 +201,7 @@ export default function ReceptionistDashboardPage() {
             ) : (
               <div className="space-y-3">
                 {todayAppts.filter((a) => a.status === "confirmed").map((apt, i) => {
-                  const patient = patients.find((p) => p.id === apt.patientId);
+                  const patient = patientMap.get(apt.patientId);
                   return (
                     <div key={apt.id} className="flex items-center gap-3 rounded-lg border p-3">
                       <div className="flex h-7 w-7 items-center justify-center rounded-full bg-orange-100 text-orange-700 text-xs font-bold">

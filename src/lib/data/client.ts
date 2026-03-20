@@ -484,6 +484,7 @@ export async function fetchPatientPrescriptions(clinicId: string, patientId: str
 export interface InvoiceView {
   id: string;
   patientName: string;
+  appointmentId?: string;
   amount: number;
   currency: string;
   method: string;
@@ -514,6 +515,7 @@ export async function fetchInvoices(clinicId: string): Promise<InvoiceView[]> {
   return rows.map((r) => ({
     id: r.id,
     patientName: _userMap?.get(r.patient_id)?.name ?? "Patient",
+    appointmentId: r.appointment_id ?? undefined,
     amount: r.amount,
     currency: "MAD",
     method: r.method ?? "cash",
