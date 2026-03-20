@@ -109,6 +109,38 @@ Run the initial migration against your Supabase project:
 supabase db push
 ```
 
+## File Storage (Cloudflare R2)
+
+Images and documents (clinic logos, doctor photos, patient files) are stored in **Cloudflare R2** — S3-compatible with no egress fees.
+
+### Setup
+
+1. Create an R2 bucket in your Cloudflare dashboard
+2. Create an R2 API token with read/write permissions
+3. Add env vars to `.env.local`:
+
+| Variable | Description |
+|---|---|
+| `R2_ACCOUNT_ID` | Cloudflare account ID |
+| `R2_ACCESS_KEY_ID` | R2 API token access key |
+| `R2_SECRET_ACCESS_KEY` | R2 API token secret key |
+| `R2_BUCKET_NAME` | Bucket name (e.g., `webs-alots-uploads`) |
+| `R2_PUBLIC_URL` | Public URL for the bucket (custom domain or `.r2.dev` URL) |
+
+### API Endpoints
+
+- **`POST /api/upload`** — Server-side upload (multipart form data: `file`, `category`, `clinicId`)
+- **`GET /api/upload?filename=...&contentType=...&category=...&clinicId=...`** — Get a pre-signed URL for direct browser upload
+
+### Usage in Code
+
+```typescript
+import { uploadToR2, buildUploadKey } from "@/lib/r2";
+
+const key = buildUploadKey(clinicId, "logos", "clinic-logo.png");
+const url = await uploadToR2(key, buffer, "image/png");
+```
+
 ## Deploy on Cloudflare Workers
 
 ### Manual Deploy
