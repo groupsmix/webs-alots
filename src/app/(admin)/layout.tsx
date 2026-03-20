@@ -2,18 +2,20 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, UserCog, Stethoscope, Settings, BarChart3, Star, Users, CalendarOff } from "lucide-react";
+import { LayoutDashboard, UserCog, Stethoscope, Settings, BarChart3, Star, Users, CalendarOff, Clock, UserCheck } from "lucide-react";
 import { SignOutButton } from "@/components/sign-out-button";
 
 const navItems = [
   { href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/admin/doctors", label: "Doctors", icon: UserCog },
-  { href: "/admin/services", label: "Services", icon: Stethoscope },
-  { href: "/admin/settings", label: "Settings", icon: Settings },
+  { href: "/admin/services", label: "Services & Prices", icon: Stethoscope },
+  { href: "/admin/working-hours", label: "Working Hours", icon: Clock },
+  { href: "/admin/holidays", label: "Holidays / Closures", icon: CalendarOff },
+  { href: "/admin/receptionists", label: "Receptionists", icon: UserCheck },
+  { href: "/admin/patients", label: "Patient Database", icon: Users },
   { href: "/admin/reports", label: "Reports", icon: BarChart3 },
   { href: "/admin/reviews", label: "Reviews", icon: Star },
-  { href: "/admin/patients", label: "Patient Database", icon: Users },
-  { href: "/admin/holidays", label: "Holidays / Closures", icon: CalendarOff },
+  { href: "/admin/settings", label: "Settings", icon: Settings },
 ];
 
 export default function AdminLayout({
