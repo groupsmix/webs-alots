@@ -6,7 +6,8 @@ import {
   LayoutDashboard, Users, Calendar, Pill, FileEdit, Clock,
   MessageCircle, CalendarClock, BarChart3, ClipboardList,
   FlaskConical, ShieldCheck, Camera, Package, CreditCard, Award,
-  Heart, Ear, Bone, Brain, Activity, Wind, Droplets, Target,
+  Building2, FileCheck, Sparkles, HeartHandshake, Droplets, Monitor, Boxes, FileText,
+  Heart, Ear, Bone, Brain, Activity, Wind, Target,
   Ruler, Syringe, Baby, Image, Eye,
 } from "lucide-react";
 import { SignOutButton } from "@/components/sign-out-button";
@@ -38,6 +39,18 @@ const navItems: NavItem[] = [
   { href: "/doctor/before-after", label: "Before/After", icon: Camera, requiredFeature: "before_after_photos" },
   { href: "/doctor/stock", label: "Material Stock", icon: Package, requiredFeature: "stock" },
   { href: "/doctor/installments", label: "Installments", icon: CreditCard, requiredFeature: "installments" },
+  // Phase 6: Clinics & Centers
+  { href: "/doctor/departments", label: "Departments", icon: Building2, requiredFeature: "departments" },
+  { href: "/doctor/consent-forms", label: "Consent Forms", icon: FileCheck, requiredFeature: "consent_forms" },
+  { href: "/doctor/treatment-packages", label: "Treatment Packages", icon: Sparkles, requiredFeature: "treatment_packages" },
+  { href: "/doctor/consultation-photos", label: "Consultation Photos", icon: Camera, requiredFeature: "consultation_photos" },
+  { href: "/doctor/ivf-cycles", label: "IVF Cycles", icon: HeartHandshake, requiredFeature: "ivf_cycles" },
+  { href: "/doctor/ivf-protocols", label: "IVF Protocols", icon: ClipboardList, requiredFeature: "ivf_protocols" },
+  { href: "/doctor/dialysis-sessions", label: "Dialysis Sessions", icon: Droplets, requiredFeature: "dialysis_sessions" },
+  { href: "/doctor/dialysis-machines", label: "Dialysis Machines", icon: Monitor, requiredFeature: "dialysis_machines" },
+  { href: "/doctor/prosthetic-orders", label: "Prosthetic Orders", icon: Package, requiredFeature: "prosthetic_orders" },
+  { href: "/doctor/lab-materials", label: "Lab Materials", icon: Boxes, requiredFeature: "lab_materials" },
+  { href: "/doctor/lab-invoices", label: "Lab Invoices", icon: FileText, requiredFeature: "lab_invoices" },
   { href: "/doctor/dermatology", label: "Dermatology", icon: Camera, requiredFeature: "dermatology" },
   { href: "/doctor/cardiology", label: "Cardiology", icon: Heart, requiredFeature: "cardiology" },
   { href: "/doctor/ent", label: "ENT", icon: Ear, requiredFeature: "ent" },

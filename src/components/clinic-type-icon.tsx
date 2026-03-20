@@ -36,6 +36,7 @@ import {
   Droplet,
   StretchVertical,
   Sparkles,
+  FlaskConical,
   type LucideProps,
 } from "lucide-react";
 
@@ -77,6 +78,7 @@ const ICON_MAP: Record<string, React.ComponentType<LucideProps>> = {
   Droplet,
   StretchVertical,
   Sparkles,
+  FlaskConical,
 };
 
 interface ClinicTypeIconProps extends LucideProps {

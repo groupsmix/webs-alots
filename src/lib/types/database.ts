@@ -786,6 +786,350 @@ export interface PainQuestionnaire {
   created_at: string;
 }
 
+// ---- Phase 6: Clinics & Centers ----
+
+// -- Polyclinic --
+
+export type RoomType = "ward" | "private" | "icu" | "operating" | "consultation" | "other";
+
+export type BedStatus = "available" | "occupied" | "maintenance" | "reserved";
+
+export type AdmissionStatus = "admitted" | "discharged" | "transferred";
+
+export interface Department {
+  id: string;
+  clinic_id: string;
+  name: string;
+  name_ar: string | null;
+  head_doctor_id: string | null;
+  description: string | null;
+  floor: string | null;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface DoctorDepartment {
+  id: string;
+  doctor_id: string;
+  department_id: string;
+  clinic_id: string;
+  is_primary: boolean;
+  joined_at: string;
+}
+
+export interface Room {
+  id: string;
+  clinic_id: string;
+  department_id: string | null;
+  room_number: string;
+  room_type: RoomType;
+  floor: string | null;
+  total_beds: number;
+  is_active: boolean;
+  created_at: string;
+}
+
+export interface Bed {
+  id: string;
+  clinic_id: string;
+  room_id: string;
+  bed_number: string;
+  status: BedStatus;
+  current_patient_id: string | null;
+  notes: string | null;
+  updated_at: string;
+}
+
+export interface Admission {
+  id: string;
+  clinic_id: string;
+  patient_id: string;
+  bed_id: string;
+  department_id: string | null;
+  admitting_doctor_id: string | null;
+  admission_date: string;
+  discharge_date: string | null;
+  diagnosis: string | null;
+  status: AdmissionStatus;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+// -- Aesthetic / Cosmetic Clinic --
+
+export type ConsentType = "before_after" | "marketing" | "medical_record";
+
+export type PatientPackageStatus = "active" | "completed" | "expired" | "cancelled";
+
+export interface PhotoConsentForm {
+  id: string;
+  clinic_id: string;
+  patient_id: string;
+  consent_type: ConsentType;
+  signed_at: string;
+  signature_url: string | null;
+  consent_text: string | null;
+  is_active: boolean;
+  expires_at: string | null;
+  created_at: string;
+}
+
+export interface TreatmentPackage {
+  id: string;
+  clinic_id: string;
+  name: string;
+  description: string | null;
+  services: Record<string, unknown>[];
+  total_sessions: number;
+  price: number;
+  discount_percent: number;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PatientPackage {
+  id: string;
+  clinic_id: string;
+  patient_id: string;
+  package_id: string;
+  sessions_used: number;
+  sessions_total: number;
+  start_date: string;
+  expiry_date: string | null;
+  status: PatientPackageStatus;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ConsultationPhoto {
+  id: string;
+  clinic_id: string;
+  patient_id: string;
+  doctor_id: string | null;
+  photo_url: string;
+  thumbnail_url: string | null;
+  annotations: Record<string, unknown>[];
+  body_area: string | null;
+  notes: string | null;
+  taken_at: string;
+  created_at: string;
+}
+
+// -- IVF / Fertility Center --
+
+export type IVFCycleType = "ivf" | "icsi" | "iui" | "fet" | "egg_freezing" | "other";
+
+export type IVFCycleStatus = "planned" | "stimulation" | "retrieval" | "fertilization" | "transfer" | "tww" | "completed" | "cancelled";
+
+export type IVFOutcome = "positive" | "negative" | "biochemical" | "miscarriage" | "ongoing" | "pending";
+
+export type IVFProtocolType = "long" | "short" | "antagonist" | "natural" | "mini_ivf" | "custom";
+
+export type IVFTimelineEventType = "medication_start" | "scan" | "blood_test" | "trigger" | "retrieval" | "fertilization_report" | "transfer" | "beta_test" | "follow_up" | "other";
+
+export interface IVFCycle {
+  id: string;
+  clinic_id: string;
+  patient_id: string;
+  doctor_id: string | null;
+  partner_id: string | null;
+  cycle_number: number;
+  cycle_type: IVFCycleType;
+  status: IVFCycleStatus;
+  start_date: string | null;
+  end_date: string | null;
+  protocol_id: string | null;
+  stimulation_start: string | null;
+  retrieval_date: string | null;
+  transfer_date: string | null;
+  eggs_retrieved: number | null;
+  eggs_fertilized: number | null;
+  embryos_transferred: number | null;
+  embryos_frozen: number | null;
+  outcome: IVFOutcome | null;
+  beta_hcg_value: number | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface IVFProtocol {
+  id: string;
+  clinic_id: string;
+  name: string;
+  description: string | null;
+  protocol_type: IVFProtocolType;
+  medications: Record<string, unknown>[];
+  steps: Record<string, unknown>[];
+  duration_days: number | null;
+  is_template: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface IVFTimelineEvent {
+  id: string;
+  cycle_id: string;
+  clinic_id: string;
+  event_type: IVFTimelineEventType;
+  event_date: string;
+  title: string;
+  description: string | null;
+  results: Record<string, unknown> | null;
+  created_at: string;
+}
+
+// -- Dialysis Center --
+
+export type DialysisMachineStatus = "available" | "in_use" | "maintenance" | "out_of_service";
+
+export type DialysisSessionStatus = "scheduled" | "in_progress" | "completed" | "cancelled" | "no_show";
+
+export type DialysisRecurrencePattern = "mon_wed_fri" | "tue_thu_sat" | "custom";
+
+export type DialysisAccessType = "fistula" | "graft" | "catheter";
+
+export interface DialysisMachine {
+  id: string;
+  clinic_id: string;
+  machine_name: string;
+  machine_model: string | null;
+  serial_number: string | null;
+  status: DialysisMachineStatus;
+  last_maintenance: string | null;
+  next_maintenance: string | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface DialysisSession {
+  id: string;
+  clinic_id: string;
+  patient_id: string;
+  doctor_id: string | null;
+  machine_id: string | null;
+  session_date: string;
+  start_time: string;
+  end_time: string | null;
+  duration_minutes: number;
+  status: DialysisSessionStatus;
+  is_recurring: boolean;
+  recurrence_pattern: DialysisRecurrencePattern | null;
+  recurrence_group_id: string | null;
+  pre_weight: number | null;
+  post_weight: number | null;
+  pre_bp_systolic: number | null;
+  pre_bp_diastolic: number | null;
+  post_bp_systolic: number | null;
+  post_bp_diastolic: number | null;
+  pre_pulse: number | null;
+  post_pulse: number | null;
+  pre_temperature: number | null;
+  post_temperature: number | null;
+  uf_goal: number | null;
+  uf_actual: number | null;
+  dialysate_flow: number | null;
+  blood_flow: number | null;
+  access_type: DialysisAccessType | null;
+  complications: string | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+// -- Dental Lab --
+
+export type ProstheticOrderType = "crown" | "bridge" | "denture" | "implant_abutment" | "veneer" | "inlay_onlay" | "orthodontic" | "other";
+
+export type ProstheticOrderStatus = "received" | "in_progress" | "quality_check" | "ready" | "delivered" | "returned";
+
+export type ProstheticPriority = "normal" | "urgent" | "rush";
+
+export type DeliveryCondition = "good" | "damaged" | "incomplete";
+
+export type LabInvoiceStatus = "draft" | "sent" | "paid" | "overdue" | "cancelled";
+
+export interface ProstheticOrder {
+  id: string;
+  clinic_id: string;
+  dentist_id: string | null;
+  dentist_name: string | null;
+  dentist_clinic: string | null;
+  patient_name: string | null;
+  order_type: ProstheticOrderType;
+  material: string | null;
+  shade: string | null;
+  tooth_numbers: number[];
+  description: string | null;
+  special_instructions: string | null;
+  status: ProstheticOrderStatus;
+  priority: ProstheticPriority;
+  received_date: string;
+  due_date: string | null;
+  completed_date: string | null;
+  delivered_date: string | null;
+  price: number | null;
+  is_paid: boolean;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface LabMaterial {
+  id: string;
+  clinic_id: string;
+  name: string;
+  category: string;
+  quantity: number;
+  unit: string;
+  min_threshold: number;
+  unit_cost: number | null;
+  supplier: string | null;
+  lot_number: string | null;
+  expiry_date: string | null;
+  last_restocked: string | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface LabDelivery {
+  id: string;
+  clinic_id: string;
+  order_id: string;
+  delivery_date: string;
+  delivered_by: string | null;
+  received_by: string | null;
+  condition: DeliveryCondition;
+  notes: string | null;
+  created_at: string;
+}
+
+export interface LabInvoice {
+  id: string;
+  clinic_id: string;
+  invoice_number: string;
+  dentist_id: string | null;
+  dentist_name: string | null;
+  items: Record<string, unknown>[];
+  subtotal: number;
+  tax_amount: number;
+  total: number;
+  currency: string;
+  status: LabInvoiceStatus;
+  issued_date: string;
+  due_date: string | null;
+  paid_date: string | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 // ---- Para-Medical Extras ----
 
 export interface ExerciseProgramRow {
@@ -1261,51 +1605,6 @@ export interface ParapharmacyCategory {
   created_at: string;
 }
 
-// ---- Clinic/Center Tables ----
-
-export interface Department {
-  id: string;
-  clinic_id: string;
-  name: string;
-  code: string | null;
-  head_doctor_id: string | null;
-  is_active: boolean;
-  created_at: string;
-}
-
-export type BedStatus = "available" | "occupied" | "maintenance" | "reserved";
-
-export interface Bed {
-  id: string;
-  clinic_id: string;
-  department_id: string;
-  bed_number: string;
-  ward: string | null;
-  status: BedStatus;
-  patient_id: string | null;
-  admitted_at: string | null;
-  created_at: string;
-  updated_at: string;
-}
-
-export type AdmissionStatus = "admitted" | "discharged" | "transferred";
-
-export interface Admission {
-  id: string;
-  clinic_id: string;
-  patient_id: string;
-  doctor_id: string;
-  department_id: string;
-  bed_id: string | null;
-  admission_date: string;
-  discharge_date: string | null;
-  status: AdmissionStatus;
-  diagnosis: string | null;
-  notes: string | null;
-  created_at: string;
-  updated_at: string;
-}
-
 // ---- Supabase Database Schema (for use with supabase-js typed client) ----
 
 export interface Database {
@@ -1386,10 +1685,27 @@ export interface Database {
       equipment_rentals: { Row: EquipmentRental; Insert: Partial<EquipmentRental> & Pick<EquipmentRental, "clinic_id" | "equipment_id" | "client_name" | "rental_start">; Update: Partial<EquipmentRental> };
       equipment_maintenance: { Row: EquipmentMaintenance; Insert: Partial<EquipmentMaintenance> & Pick<EquipmentMaintenance, "clinic_id" | "equipment_id">; Update: Partial<EquipmentMaintenance> };
       parapharmacy_categories: { Row: ParapharmacyCategory; Insert: Partial<ParapharmacyCategory> & Pick<ParapharmacyCategory, "clinic_id" | "name" | "slug">; Update: Partial<ParapharmacyCategory> };
-      // Clinic/Center tables
+      // Phase 6: Clinics & Centers
       departments: { Row: Department; Insert: Partial<Department> & Pick<Department, "clinic_id" | "name">; Update: Partial<Department> };
-      beds: { Row: Bed; Insert: Partial<Bed> & Pick<Bed, "clinic_id" | "department_id" | "bed_number">; Update: Partial<Bed> };
-      admissions: { Row: Admission; Insert: Partial<Admission> & Pick<Admission, "clinic_id" | "patient_id" | "doctor_id" | "department_id">; Update: Partial<Admission> };
+      doctor_departments: { Row: DoctorDepartment; Insert: Partial<DoctorDepartment> & Pick<DoctorDepartment, "doctor_id" | "department_id" | "clinic_id">; Update: Partial<DoctorDepartment> };
+      rooms: { Row: Room; Insert: Partial<Room> & Pick<Room, "clinic_id" | "room_number" | "room_type">; Update: Partial<Room> };
+      beds: { Row: Bed; Insert: Partial<Bed> & Pick<Bed, "clinic_id" | "room_id" | "bed_number">; Update: Partial<Bed> };
+      admissions: { Row: Admission; Insert: Partial<Admission> & Pick<Admission, "clinic_id" | "patient_id" | "bed_id">; Update: Partial<Admission> };
+      photo_consent_forms: { Row: PhotoConsentForm; Insert: Partial<PhotoConsentForm> & Pick<PhotoConsentForm, "clinic_id" | "patient_id">; Update: Partial<PhotoConsentForm> };
+      treatment_packages: { Row: TreatmentPackage; Insert: Partial<TreatmentPackage> & Pick<TreatmentPackage, "clinic_id" | "name">; Update: Partial<TreatmentPackage> };
+      patient_packages: { Row: PatientPackage; Insert: Partial<PatientPackage> & Pick<PatientPackage, "clinic_id" | "patient_id" | "package_id" | "sessions_total">; Update: Partial<PatientPackage> };
+      consultation_photos: { Row: ConsultationPhoto; Insert: Partial<ConsultationPhoto> & Pick<ConsultationPhoto, "clinic_id" | "patient_id" | "photo_url">; Update: Partial<ConsultationPhoto> };
+      ivf_cycles: { Row: IVFCycle; Insert: Partial<IVFCycle> & Pick<IVFCycle, "clinic_id" | "patient_id" | "cycle_type">; Update: Partial<IVFCycle> };
+      ivf_protocols: { Row: IVFProtocol; Insert: Partial<IVFProtocol> & Pick<IVFProtocol, "clinic_id" | "name" | "protocol_type">; Update: Partial<IVFProtocol> };
+      ivf_timeline_events: { Row: IVFTimelineEvent; Insert: Partial<IVFTimelineEvent> & Pick<IVFTimelineEvent, "cycle_id" | "clinic_id" | "event_type" | "event_date" | "title">; Update: Partial<IVFTimelineEvent> };
+      dialysis_machines: { Row: DialysisMachine; Insert: Partial<DialysisMachine> & Pick<DialysisMachine, "clinic_id" | "machine_name">; Update: Partial<DialysisMachine> };
+      dialysis_sessions: { Row: DialysisSession; Insert: Partial<DialysisSession> & Pick<DialysisSession, "clinic_id" | "patient_id" | "session_date" | "start_time">; Update: Partial<DialysisSession> };
+      prosthetic_orders: { Row: ProstheticOrder; Insert: Partial<ProstheticOrder> & Pick<ProstheticOrder, "clinic_id" | "order_type">; Update: Partial<ProstheticOrder> };
+      lab_materials: { Row: LabMaterial; Insert: Partial<LabMaterial> & Pick<LabMaterial, "clinic_id" | "name" | "category">; Update: Partial<LabMaterial> };
+      lab_deliveries: { Row: LabDelivery; Insert: Partial<LabDelivery> & Pick<LabDelivery, "clinic_id" | "order_id">; Update: Partial<LabDelivery> };
+      lab_invoices: { Row: LabInvoice; Insert: Partial<LabInvoice> & Pick<LabInvoice, "clinic_id" | "invoice_number">; Update: Partial<LabInvoice> };
+      // Lab test orders (migration 00012)
+      lab_test_orders: { Row: LabTestOrder; Insert: Partial<LabTestOrder> & Pick<LabTestOrder, "clinic_id" | "patient_id" | "doctor_id" | "test_name">; Update: Partial<LabTestOrder> };
     };
   };
 }
