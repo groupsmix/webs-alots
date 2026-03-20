@@ -5,13 +5,23 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { LayoutDashboard, UserCog, Stethoscope, Settings, BarChart3, Star, Users, CalendarOff, Bell, Clock, UserCheck, Palette, Paintbrush, Menu, X, CreditCard, LayoutTemplate, ToggleRight } from "lucide-react";
 import { SignOutButton } from "@/components/sign-out-button";
+import { useClinicFeatures } from "@/lib/hooks/use-clinic-features";
+import type { ClinicFeatureKey } from "@/lib/features";
 
-const navItems = [
+interface NavItem {
+  href: string;
+  label: string;
+  icon: React.ComponentType<{ className?: string }>;
+  /** When set, this item is only shown if the feature is enabled. */
+  requiredFeature?: ClinicFeatureKey;
+}
+
+const navItems: NavItem[] = [
   { href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/admin/doctors", label: "Doctors", icon: UserCog },
-  { href: "/admin/services", label: "Services & Prices", icon: Stethoscope },
-  { href: "/admin/working-hours", label: "Working Hours", icon: Clock },
-  { href: "/admin/holidays", label: "Holidays / Closures", icon: CalendarOff },
+  { href: "/admin/services", label: "Services & Prices", icon: Stethoscope, requiredFeature: "appointments" },
+  { href: "/admin/working-hours", label: "Working Hours", icon: Clock, requiredFeature: "appointments" },
+  { href: "/admin/holidays", label: "Holidays / Closures", icon: CalendarOff, requiredFeature: "appointments" },
   { href: "/admin/receptionists", label: "Receptionists", icon: UserCheck },
   { href: "/admin/patients", label: "Patient Database", icon: Users },
   { href: "/admin/notifications", label: "Notifications", icon: Bell },
@@ -26,10 +36,16 @@ const navItems = [
 ];
 
 function SidebarContent({ pathname, onNavClick }: { pathname: string; onNavClick?: () => void }) {
+  const { hasFeature } = useClinicFeatures();
+
+  const visibleItems = navItems.filter(
+    (item) => !item.requiredFeature || hasFeature(item.requiredFeature),
+  );
+
   return (
     <>
       <nav className="space-y-1 flex-1">
-        {navItems.map((item) => {
+        {visibleItems.map((item) => {
           const isActive = pathname === item.href;
           return (
             <Link

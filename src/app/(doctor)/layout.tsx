@@ -8,24 +8,33 @@ import {
   FlaskConical, ShieldCheck, Camera, Package, CreditCard,
 } from "lucide-react";
 import { SignOutButton } from "@/components/sign-out-button";
+import { useClinicFeatures } from "@/lib/hooks/use-clinic-features";
+import type { ClinicFeatureKey } from "@/lib/features";
 
-const navItems = [
+interface NavItem {
+  href: string;
+  label: string;
+  icon: React.ComponentType<{ className?: string }>;
+  requiredFeature?: ClinicFeatureKey;
+}
+
+const navItems: NavItem[] = [
   { href: "/doctor/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/doctor/patients", label: "My Patients", icon: Users },
-  { href: "/doctor/schedule", label: "Schedule", icon: Calendar },
-  { href: "/doctor/prescriptions", label: "Prescriptions", icon: Pill },
-  { href: "/doctor/consultation", label: "Consultation Notes", icon: FileEdit },
-  { href: "/doctor/waiting-room", label: "Waiting Room", icon: Clock },
-  { href: "/doctor/slots", label: "Available Slots", icon: CalendarClock },
+  { href: "/doctor/schedule", label: "Schedule", icon: Calendar, requiredFeature: "appointments" },
+  { href: "/doctor/prescriptions", label: "Prescriptions", icon: Pill, requiredFeature: "prescriptions" },
+  { href: "/doctor/consultation", label: "Consultation Notes", icon: FileEdit, requiredFeature: "consultations" },
+  { href: "/doctor/waiting-room", label: "Waiting Room", icon: Clock, requiredFeature: "appointments" },
+  { href: "/doctor/slots", label: "Available Slots", icon: CalendarClock, requiredFeature: "appointments" },
   { href: "/doctor/chat", label: "Chat", icon: MessageCircle },
   { href: "/doctor/analytics", label: "Analytics", icon: BarChart3 },
-  { href: "/doctor/odontogram", label: "Odontogram", icon: ClipboardList },
-  { href: "/doctor/treatment-plans", label: "Treatment Plans", icon: ClipboardList },
-  { href: "/doctor/lab-orders", label: "Lab Orders", icon: FlaskConical },
+  { href: "/doctor/odontogram", label: "Odontogram", icon: ClipboardList, requiredFeature: "odontogram" },
+  { href: "/doctor/treatment-plans", label: "Treatment Plans", icon: ClipboardList, requiredFeature: "odontogram" },
+  { href: "/doctor/lab-orders", label: "Lab Orders", icon: FlaskConical, requiredFeature: "lab_results" },
   { href: "/doctor/sterilization", label: "Sterilization Log", icon: ShieldCheck },
-  { href: "/doctor/before-after", label: "Before/After", icon: Camera },
-  { href: "/doctor/stock", label: "Material Stock", icon: Package },
-  { href: "/doctor/installments", label: "Installments", icon: CreditCard },
+  { href: "/doctor/before-after", label: "Before/After", icon: Camera, requiredFeature: "before_after_photos" },
+  { href: "/doctor/stock", label: "Material Stock", icon: Package, requiredFeature: "stock" },
+  { href: "/doctor/installments", label: "Installments", icon: CreditCard, requiredFeature: "installments" },
 ];
 
 export default function DoctorLayout({
@@ -34,13 +43,18 @@ export default function DoctorLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const { hasFeature } = useClinicFeatures();
+
+  const visibleItems = navItems.filter(
+    (item) => !item.requiredFeature || hasFeature(item.requiredFeature),
+  );
 
   return (
     <div className="flex min-h-screen">
       <aside className="hidden w-64 border-r bg-card p-4 md:block">
         <h2 className="text-lg font-semibold mb-6">Doctor Dashboard</h2>
         <nav className="space-y-1">
-          {navItems.map((item) => {
+          {visibleItems.map((item) => {
             const isActive = pathname === item.href;
             return (
               <Link
