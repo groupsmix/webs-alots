@@ -986,6 +986,51 @@ export interface ParapharmacyCategory {
   created_at: string;
 }
 
+// ---- Clinic/Center Tables ----
+
+export interface Department {
+  id: string;
+  clinic_id: string;
+  name: string;
+  code: string | null;
+  head_doctor_id: string | null;
+  is_active: boolean;
+  created_at: string;
+}
+
+export type BedStatus = "available" | "occupied" | "maintenance" | "reserved";
+
+export interface Bed {
+  id: string;
+  clinic_id: string;
+  department_id: string;
+  bed_number: string;
+  ward: string | null;
+  status: BedStatus;
+  patient_id: string | null;
+  admitted_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export type AdmissionStatus = "admitted" | "discharged" | "transferred";
+
+export interface Admission {
+  id: string;
+  clinic_id: string;
+  patient_id: string;
+  doctor_id: string;
+  department_id: string;
+  bed_id: string | null;
+  admission_date: string;
+  discharge_date: string | null;
+  status: AdmissionStatus;
+  diagnosis: string | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 // ---- Supabase Database Schema (for use with supabase-js typed client) ----
 
 export interface Database {
@@ -1036,6 +1081,7 @@ export interface Database {
       before_after_photos: { Row: BeforeAfterPhoto; Insert: Partial<BeforeAfterPhoto> & Pick<BeforeAfterPhoto, "clinic_id" | "patient_id">; Update: Partial<BeforeAfterPhoto> };
       pain_questionnaires: { Row: PainQuestionnaire; Insert: Partial<PainQuestionnaire> & Pick<PainQuestionnaire, "clinic_id" | "patient_id" | "pain_level">; Update: Partial<PainQuestionnaire> };
       clinic_types: { Row: ClinicTypeRecord; Insert: Partial<ClinicTypeRecord> & Pick<ClinicTypeRecord, "type_key" | "name_fr" | "name_ar" | "category">; Update: Partial<ClinicTypeRecord> };
+<<<<<<< HEAD
       // Phase 4 & 5 tables
       lab_test_catalog: { Row: LabTestCatalog; Insert: Partial<LabTestCatalog> & Pick<LabTestCatalog, "clinic_id" | "name">; Update: Partial<LabTestCatalog> };
       lab_test_orders: { Row: LabTestOrder; Insert: Partial<LabTestOrder> & Pick<LabTestOrder, "clinic_id" | "patient_id" | "order_number">; Update: Partial<LabTestOrder> };
@@ -1048,6 +1094,10 @@ export interface Database {
       equipment_rentals: { Row: EquipmentRental; Insert: Partial<EquipmentRental> & Pick<EquipmentRental, "clinic_id" | "equipment_id" | "client_name" | "rental_start">; Update: Partial<EquipmentRental> };
       equipment_maintenance: { Row: EquipmentMaintenance; Insert: Partial<EquipmentMaintenance> & Pick<EquipmentMaintenance, "clinic_id" | "equipment_id">; Update: Partial<EquipmentMaintenance> };
       parapharmacy_categories: { Row: ParapharmacyCategory; Insert: Partial<ParapharmacyCategory> & Pick<ParapharmacyCategory, "clinic_id" | "name" | "slug">; Update: Partial<ParapharmacyCategory> };
+      // Clinic/Center tables
+      departments: { Row: Department; Insert: Partial<Department> & Pick<Department, "clinic_id" | "name">; Update: Partial<Department> };
+      beds: { Row: Bed; Insert: Partial<Bed> & Pick<Bed, "clinic_id" | "department_id" | "bed_number">; Update: Partial<Bed> };
+      admissions: { Row: Admission; Insert: Partial<Admission> & Pick<Admission, "clinic_id" | "patient_id" | "doctor_id" | "department_id">; Update: Partial<Admission> };
     };
   };
 }
