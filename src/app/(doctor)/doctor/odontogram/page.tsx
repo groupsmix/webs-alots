@@ -101,7 +101,7 @@ export default function DoctorOdontogramPage() {
 
       {entries.length > 0 ? (
         <OdontogramChart
-          entries={entries.map(e => ({ toothNumber: e.toothNumber, status: e.status as OdontogramEntry["status"], notes: e.notes, lastUpdated: e.lastUpdated }))}
+          entries={entries.map(e => ({ toothNumber: e.toothNumber, status: e.status as OdontogramEntry["status"], notes: e.notes ?? "", lastUpdated: e.lastUpdated ?? "" }))}
           editable
           onUpdateEntry={handleUpdateEntry}
         />

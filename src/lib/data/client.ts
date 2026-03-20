@@ -1310,6 +1310,7 @@ export interface OdontogramView {
   toothNumber: number;
   status: string;
   notes?: string;
+  lastUpdated?: string;
 }
 
 export async function fetchOdontogram(clinicId: string, patientId: string): Promise<OdontogramView[]> {
