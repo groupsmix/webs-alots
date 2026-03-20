@@ -16,6 +16,9 @@ import {
   Menu,
   X,
   Heart,
+  ClipboardList,
+  Camera,
+  CreditCard as CreditCardIcon,
 } from "lucide-react";
 import { SignOutButton } from "@/components/sign-out-button";
 import { Button } from "@/components/ui/button";
@@ -30,6 +33,10 @@ const navItems = [
   { href: "/patient/family", label: "Family Members", icon: Users },
   { href: "/patient/notifications", label: "Notifications", icon: Bell },
   { href: "/patient/feedback", label: "Feedback", icon: MessageSquare },
+  { href: "/patient/treatment-plan", label: "Treatment Plan", icon: ClipboardList },
+  { href: "/patient/tooth-map", label: "Tooth Map", icon: Heart },
+  { href: "/patient/before-after", label: "Before/After", icon: Camera },
+  { href: "/patient/payment-plan", label: "Payment Plan", icon: CreditCardIcon },
 ];
 
 export default function PatientLayout({
