@@ -16,14 +16,24 @@ const navLinks = [
   { href: "/reviews", label: "Reviews" },
 ];
 
-export function PublicHeader() {
+interface PublicHeaderProps {
+  logoUrl?: string | null;
+  clinicName?: string;
+}
+
+export function PublicHeader({ logoUrl, clinicName }: PublicHeaderProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const displayName = clinicName || clinicConfig.name;
 
   return (
     <header className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur">
       <div className="container mx-auto flex h-16 items-center justify-between px-4">
-        <Link href="/" className="text-xl font-bold">
-          {clinicConfig.name}
+        <Link href="/" className="flex items-center gap-2 text-xl font-bold">
+          {logoUrl && (
+            /* eslint-disable-next-line @next/next/no-img-element */
+            <img src={logoUrl} alt={displayName} className="h-8 w-auto" />
+          )}
+          {displayName}
         </Link>
 
         {/* Desktop navigation */}

@@ -58,10 +58,58 @@ export interface PublicSpecialty {
   description: string;
 }
 
+export interface ClinicBranding {
+  logoUrl: string | null;
+  faviconUrl: string | null;
+  primaryColor: string;
+  secondaryColor: string;
+  headingFont: string;
+  bodyFont: string;
+  heroImageUrl: string | null;
+  clinicName: string;
+}
+
 // ── Helpers ──
 
 function getClinicId(): string {
   return clinicConfig.clinicId;
+}
+
+// ── Clinic Branding ──
+
+export async function getPublicBranding(): Promise<ClinicBranding> {
+  const clinicId = getClinicId();
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from("clinics")
+    .select("name, logo_url, favicon_url, primary_color, secondary_color, heading_font, body_font, hero_image_url")
+    .eq("id", clinicId)
+    .single();
+
+  if (error || !data) {
+    return {
+      logoUrl: null,
+      faviconUrl: null,
+      primaryColor: "#1E4DA1",
+      secondaryColor: "#0F6E56",
+      headingFont: "Geist",
+      bodyFont: "Geist",
+      heroImageUrl: null,
+      clinicName: clinicConfig.name,
+    };
+  }
+
+  return {
+    logoUrl: data.logo_url ?? null,
+    faviconUrl: data.favicon_url ?? null,
+    primaryColor: data.primary_color ?? "#1E4DA1",
+    secondaryColor: data.secondary_color ?? "#0F6E56",
+    headingFont: data.heading_font ?? "Geist",
+    bodyFont: data.body_font ?? "Geist",
+    heroImageUrl: data.hero_image_url ?? null,
+    clinicName: data.name ?? clinicConfig.name,
+  };
 }
 
 // ── Reviews ──

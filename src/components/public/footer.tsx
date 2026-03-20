@@ -2,15 +2,20 @@ import Link from "next/link";
 import { clinicConfig } from "@/config/clinic.config";
 import { defaultWebsiteConfig } from "@/lib/website-config";
 
-export function PublicFooter() {
+interface PublicFooterProps {
+  clinicName?: string;
+}
+
+export function PublicFooter({ clinicName }: PublicFooterProps) {
   const contact = defaultWebsiteConfig.contact;
+  const displayName = clinicName || clinicConfig.name;
 
   return (
     <footer className="border-t bg-muted/50 py-8">
       <div className="container mx-auto px-4">
         <div className="grid gap-8 md:grid-cols-3">
           <div>
-            <h3 className="font-semibold mb-2">{clinicConfig.name}</h3>
+            <h3 className="font-semibold mb-2">{displayName}</h3>
             <p className="text-sm text-muted-foreground">{contact.address}</p>
           </div>
 
@@ -52,7 +57,7 @@ export function PublicFooter() {
         </div>
 
         <div className="mt-8 border-t pt-4 text-center text-xs text-muted-foreground">
-          &copy; {new Date().getFullYear()} {clinicConfig.name}. All rights
+          &copy; {new Date().getFullYear()} {displayName}. All rights
           reserved.
         </div>
       </div>
