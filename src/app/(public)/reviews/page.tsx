@@ -1,5 +1,6 @@
 import { Star } from "lucide-react";
 import { reviews, getAverageRating } from "@/lib/demo-data";
+import { defaultWebsiteConfig } from "@/lib/website-config";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
@@ -21,12 +22,16 @@ function StarRating({ rating }: { rating: number }) {
 }
 
 export default function ReviewsPage() {
+  const cfg = defaultWebsiteConfig.reviews;
   const avgRating = getAverageRating();
 
   return (
     <div className="container mx-auto px-4 py-12">
       <div className="text-center mb-12">
-        <h1 className="text-3xl font-bold mb-4">Patient Reviews</h1>
+        <h1 className="text-3xl font-bold mb-4">{cfg.title}</h1>
+        <p className="text-muted-foreground max-w-2xl mx-auto mb-6">
+          {cfg.subtitle}
+        </p>
         <div className="flex items-center justify-center gap-2 mb-2">
           <span className="text-4xl font-bold">{avgRating}</span>
           <div>

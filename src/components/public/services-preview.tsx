@@ -1,4 +1,8 @@
-import { Stethoscope, Calendar, FileText } from "lucide-react";
+import Link from "next/link";
+import { Stethoscope, Calendar, FileText, ArrowRight } from "lucide-react";
+
+const linkBtnOutline =
+  "inline-flex items-center justify-center rounded-lg border border-border bg-background px-2.5 py-1.5 text-sm font-medium hover:bg-muted hover:text-foreground transition-colors";
 
 const previewServices = [
   {
@@ -40,6 +44,15 @@ export function ServicesPreview() {
               </p>
             </div>
           ))}
+        </div>
+        <div className="mt-10 text-center">
+          <Link
+            href="/services"
+            className={linkBtnOutline}
+          >
+            View All Services
+            <ArrowRight className="ml-2 h-4 w-4" />
+          </Link>
         </div>
       </div>
     </section>
