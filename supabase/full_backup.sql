@@ -330,23 +330,29 @@ CREATE INDEX idx_prescription_requests_patient ON prescription_requests(patient_
 CREATE INDEX idx_loyalty_points_patient ON loyalty_points(patient_id);
 CREATE INDEX idx_loyalty_points_clinic ON loyalty_points(clinic_id);
 CREATE INDEX idx_family_members_primary ON family_members(primary_user_id);
+
+
 -- ============================================================
--- ROW LEVEL SECURITY POLICIES
+-- Migration 00002: Auth + Role-Based RLS
+-- Phone OTP auth, helper functions, granular RLS for 5 roles
 -- ============================================================
 
--- Enable RLS on all tables
+-- ============================================================
+-- 1. ENABLE RLS ON ALL TABLES
+-- ============================================================
+
 ALTER TABLE clinics ENABLE ROW LEVEL SECURITY;
 ALTER TABLE users ENABLE ROW LEVEL SECURITY;
-ALTER TABLE appointments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE services ENABLE ROW LEVEL SECURITY;
 ALTER TABLE time_slots ENABLE ROW LEVEL SECURITY;
+ALTER TABLE appointments ENABLE ROW LEVEL SECURITY;
+ALTER TABLE waiting_list ENABLE ROW LEVEL SECURITY;
 ALTER TABLE notifications ENABLE ROW LEVEL SECURITY;
 ALTER TABLE payments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE reviews ENABLE ROW LEVEL SECURITY;
 ALTER TABLE documents ENABLE ROW LEVEL SECURITY;
-ALTER TABLE waiting_list ENABLE ROW LEVEL SECURITY;
-ALTER TABLE prescriptions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE consultation_notes ENABLE ROW LEVEL SECURITY;
+ALTER TABLE prescriptions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE family_members ENABLE ROW LEVEL SECURITY;
 ALTER TABLE odontogram ENABLE ROW LEVEL SECURITY;
 ALTER TABLE treatment_plans ENABLE ROW LEVEL SECURITY;
@@ -354,45 +360,935 @@ ALTER TABLE lab_orders ENABLE ROW LEVEL SECURITY;
 ALTER TABLE installments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE sterilization_log ENABLE ROW LEVEL SECURITY;
 ALTER TABLE products ENABLE ROW LEVEL SECURITY;
-ALTER TABLE suppliers ENABLE ROW LEVEL SECURITY;
 ALTER TABLE stock ENABLE ROW LEVEL SECURITY;
+ALTER TABLE suppliers ENABLE ROW LEVEL SECURITY;
 ALTER TABLE prescription_requests ENABLE ROW LEVEL SECURITY;
 ALTER TABLE loyalty_points ENABLE ROW LEVEL SECURITY;
 
--- Super admin can access all data
-CREATE POLICY "super_admin_all_clinics" ON clinics FOR ALL USING (EXISTS (SELECT 1 FROM users WHERE users.auth_id = auth.uid() AND users.role = 'super_admin'));
-CREATE POLICY "super_admin_all_users" ON users FOR ALL USING (EXISTS (SELECT 1 FROM users WHERE users.auth_id = auth.uid() AND users.role = 'super_admin'));
-CREATE POLICY "super_admin_all_appointments" ON appointments FOR ALL USING (EXISTS (SELECT 1 FROM users WHERE users.auth_id = auth.uid() AND users.role = 'super_admin'));
-CREATE POLICY "super_admin_all_services" ON services FOR ALL USING (EXISTS (SELECT 1 FROM users WHERE users.auth_id = auth.uid() AND users.role = 'super_admin'));
-CREATE POLICY "super_admin_all_time_slots" ON time_slots FOR ALL USING (EXISTS (SELECT 1 FROM users WHERE users.auth_id = auth.uid() AND users.role = 'super_admin'));
-CREATE POLICY "super_admin_all_notifications" ON notifications FOR ALL USING (EXISTS (SELECT 1 FROM users WHERE users.auth_id = auth.uid() AND users.role = 'super_admin'));
-CREATE POLICY "super_admin_all_payments" ON payments FOR ALL USING (EXISTS (SELECT 1 FROM users WHERE users.auth_id = auth.uid() AND users.role = 'super_admin'));
-CREATE POLICY "super_admin_all_reviews" ON reviews FOR ALL USING (EXISTS (SELECT 1 FROM users WHERE users.auth_id = auth.uid() AND users.role = 'super_admin'));
-CREATE POLICY "super_admin_all_documents" ON documents FOR ALL USING (EXISTS (SELECT 1 FROM users WHERE users.auth_id = auth.uid() AND users.role = 'super_admin'));
-CREATE POLICY "super_admin_all_waiting_list" ON waiting_list FOR ALL USING (EXISTS (SELECT 1 FROM users WHERE users.auth_id = auth.uid() AND users.role = 'super_admin'));
-CREATE POLICY "super_admin_all_prescriptions" ON prescriptions FOR ALL USING (EXISTS (SELECT 1 FROM users WHERE users.auth_id = auth.uid() AND users.role = 'super_admin'));
-CREATE POLICY "super_admin_all_consultation_notes" ON consultation_notes FOR ALL USING (EXISTS (SELECT 1 FROM users WHERE users.auth_id = auth.uid() AND users.role = 'super_admin'));
-CREATE POLICY "super_admin_all_family_members" ON family_members FOR ALL USING (EXISTS (SELECT 1 FROM users WHERE users.auth_id = auth.uid() AND users.role = 'super_admin'));
-CREATE POLICY "super_admin_all_odontogram" ON odontogram FOR ALL USING (EXISTS (SELECT 1 FROM users WHERE users.auth_id = auth.uid() AND users.role = 'super_admin'));
-CREATE POLICY "super_admin_all_treatment_plans" ON treatment_plans FOR ALL USING (EXISTS (SELECT 1 FROM users WHERE users.auth_id = auth.uid() AND users.role = 'super_admin'));
-CREATE POLICY "super_admin_all_lab_orders" ON lab_orders FOR ALL USING (EXISTS (SELECT 1 FROM users WHERE users.auth_id = auth.uid() AND users.role = 'super_admin'));
-CREATE POLICY "super_admin_all_installments" ON installments FOR ALL USING (EXISTS (SELECT 1 FROM users WHERE users.auth_id = auth.uid() AND users.role = 'super_admin'));
-CREATE POLICY "super_admin_all_sterilization_log" ON sterilization_log FOR ALL USING (EXISTS (SELECT 1 FROM users WHERE users.auth_id = auth.uid() AND users.role = 'super_admin'));
-CREATE POLICY "super_admin_all_products" ON products FOR ALL USING (EXISTS (SELECT 1 FROM users WHERE users.auth_id = auth.uid() AND users.role = 'super_admin'));
-CREATE POLICY "super_admin_all_suppliers" ON suppliers FOR ALL USING (EXISTS (SELECT 1 FROM users WHERE users.auth_id = auth.uid() AND users.role = 'super_admin'));
-CREATE POLICY "super_admin_all_stock" ON stock FOR ALL USING (EXISTS (SELECT 1 FROM users WHERE users.auth_id = auth.uid() AND users.role = 'super_admin'));
-CREATE POLICY "super_admin_all_prescription_requests" ON prescription_requests FOR ALL USING (EXISTS (SELECT 1 FROM users WHERE users.auth_id = auth.uid() AND users.role = 'super_admin'));
-CREATE POLICY "super_admin_all_loyalty_points" ON loyalty_points FOR ALL USING (EXISTS (SELECT 1 FROM users WHERE users.auth_id = auth.uid() AND users.role = 'super_admin'));
+-- ============================================================
+-- 2. HELPER FUNCTIONS
+-- ============================================================
 
--- Clinic-scoped access for non-super-admin roles
-CREATE POLICY "clinic_scope_users" ON users FOR ALL USING (clinic_id IN (SELECT clinic_id FROM users WHERE users.auth_id = auth.uid()));
-CREATE POLICY "clinic_scope_appointments" ON appointments FOR ALL USING (clinic_id IN (SELECT clinic_id FROM users WHERE users.auth_id = auth.uid()));
-CREATE POLICY "clinic_scope_services" ON services FOR ALL USING (clinic_id IN (SELECT clinic_id FROM users WHERE users.auth_id = auth.uid()));
-CREATE POLICY "clinic_scope_time_slots" ON time_slots FOR ALL USING (clinic_id IN (SELECT clinic_id FROM users WHERE users.auth_id = auth.uid()));
-CREATE POLICY "clinic_scope_notifications" ON notifications FOR ALL USING (clinic_id IN (SELECT clinic_id FROM users WHERE users.auth_id = auth.uid()));
-CREATE POLICY "clinic_scope_payments" ON payments FOR ALL USING (clinic_id IN (SELECT clinic_id FROM users WHERE users.auth_id = auth.uid()));
-CREATE POLICY "clinic_scope_reviews" ON reviews FOR ALL USING (clinic_id IN (SELECT clinic_id FROM users WHERE users.auth_id = auth.uid()));
-CREATE POLICY "clinic_scope_documents" ON documents FOR ALL USING (clinic_id IN (SELECT clinic_id FROM users WHERE users.auth_id = auth.uid()));
-CREATE POLICY "clinic_scope_waiting_list" ON waiting_list FOR ALL USING (clinic_id IN (SELECT clinic_id FROM users WHERE users.auth_id = auth.uid()));
-CREATE POLICY "clinic_scope_prescriptions" ON prescriptions FOR ALL USING (clinic_id IN (SELECT clinic_id FROM users WHERE users.auth_id = auth.uid()));
-CREATE POLICY "clinic_scope_consultation_notes" ON consultation_notes FOR ALL USING (clinic_id IN (SELECT clinic_id FROM users WHERE users.auth_id = auth.uid()));
+-- Get the current user's internal ID (from users table)
+CREATE OR REPLACE FUNCTION get_my_user_id()
+RETURNS UUID AS $$
+  SELECT id FROM users WHERE auth_id = auth.uid() LIMIT 1
+$$ LANGUAGE sql SECURITY DEFINER STABLE;
+
+-- Get the current user's clinic_id
+CREATE OR REPLACE FUNCTION get_user_clinic_id()
+RETURNS UUID AS $$
+  SELECT clinic_id FROM users WHERE auth_id = auth.uid() LIMIT 1
+$$ LANGUAGE sql SECURITY DEFINER STABLE;
+
+-- Get the current user's role
+CREATE OR REPLACE FUNCTION get_user_role()
+RETURNS TEXT AS $$
+  SELECT role FROM users WHERE auth_id = auth.uid() LIMIT 1
+$$ LANGUAGE sql SECURITY DEFINER STABLE;
+
+-- Check if current user is super admin
+CREATE OR REPLACE FUNCTION is_super_admin()
+RETURNS BOOLEAN AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM users
+    WHERE auth_id = auth.uid() AND role = 'super_admin'
+  )
+$$ LANGUAGE sql SECURITY DEFINER STABLE;
+
+-- Check if current user is clinic admin for a given clinic
+CREATE OR REPLACE FUNCTION is_clinic_admin(check_clinic_id UUID)
+RETURNS BOOLEAN AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM users
+    WHERE auth_id = auth.uid()
+      AND role = 'clinic_admin'
+      AND clinic_id = check_clinic_id
+  )
+$$ LANGUAGE sql SECURITY DEFINER STABLE;
+
+-- Check if user is staff (clinic_admin, receptionist, or doctor) at their clinic
+CREATE OR REPLACE FUNCTION is_clinic_staff()
+RETURNS BOOLEAN AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM users
+    WHERE auth_id = auth.uid()
+      AND role IN ('clinic_admin', 'receptionist', 'doctor')
+  )
+$$ LANGUAGE sql SECURITY DEFINER STABLE;
+
+-- ============================================================
+-- 3. AUTH TRIGGER: Auto-create user profile on signup
+-- Supports phone OTP, email, or social login
+-- ============================================================
+
+CREATE OR REPLACE FUNCTION handle_new_auth_user()
+RETURNS TRIGGER AS $$
+BEGIN
+  INSERT INTO public.users (auth_id, role, name, phone, email, clinic_id)
+  VALUES (
+    NEW.id,
+    COALESCE(NEW.raw_user_meta_data->>'role', 'patient'),
+    COALESCE(NEW.raw_user_meta_data->>'name', NEW.phone, NEW.email, 'New User'),
+    COALESCE(NEW.phone, NEW.raw_user_meta_data->>'phone'),
+    NEW.email,
+    (NEW.raw_user_meta_data->>'clinic_id')::UUID
+  );
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+CREATE TRIGGER on_auth_user_created
+  AFTER INSERT ON auth.users
+  FOR EACH ROW EXECUTE FUNCTION handle_new_auth_user();
+
+-- ============================================================
+-- 4. RLS POLICIES
+-- Roles: super_admin, clinic_admin, receptionist, doctor, patient
+--
+-- Principles:
+--   super_admin  -> full access to everything
+--   clinic_admin -> full CRUD within their clinic
+--   receptionist -> read/write appointments, patients, payments within clinic
+--   doctor       -> read/write own patients & appointments within clinic
+--   patient      -> read own data, create bookings/reviews
+-- ============================================================
+
+-- -------------------------------------------------------
+-- CLINICS
+-- -------------------------------------------------------
+
+CREATE POLICY "sa_clinics_all" ON clinics
+  FOR ALL USING (is_super_admin())
+  WITH CHECK (is_super_admin());
+
+CREATE POLICY "clinics_select_own" ON clinics
+  FOR SELECT USING (id = get_user_clinic_id());
+
+CREATE POLICY "admin_clinics_update" ON clinics
+  FOR UPDATE USING (is_clinic_admin(id))
+  WITH CHECK (is_clinic_admin(id));
+
+CREATE POLICY "clinics_select_active_public" ON clinics
+  FOR SELECT USING (status = 'active');
+
+-- -------------------------------------------------------
+-- USERS
+-- -------------------------------------------------------
+
+CREATE POLICY "sa_users_all" ON users
+  FOR ALL USING (is_super_admin())
+  WITH CHECK (is_super_admin());
+
+CREATE POLICY "users_select_self" ON users
+  FOR SELECT USING (auth_id = auth.uid());
+
+CREATE POLICY "users_update_self" ON users
+  FOR UPDATE USING (auth_id = auth.uid())
+  WITH CHECK (auth_id = auth.uid());
+
+CREATE POLICY "admin_users_all" ON users
+  FOR ALL USING (
+    clinic_id = get_user_clinic_id()
+    AND get_user_role() = 'clinic_admin'
+  )
+  WITH CHECK (
+    clinic_id = get_user_clinic_id()
+    AND role != 'super_admin'
+  );
+
+CREATE POLICY "receptionist_users_select" ON users
+  FOR SELECT USING (
+    clinic_id = get_user_clinic_id()
+    AND get_user_role() = 'receptionist'
+  );
+
+CREATE POLICY "receptionist_users_insert_patient" ON users
+  FOR INSERT WITH CHECK (
+    clinic_id = get_user_clinic_id()
+    AND get_user_role() = 'receptionist'
+    AND role = 'patient'
+  );
+
+CREATE POLICY "doctor_users_select" ON users
+  FOR SELECT USING (
+    get_user_role() = 'doctor'
+    AND (
+      id = get_my_user_id()
+      OR (clinic_id = get_user_clinic_id() AND role = 'patient')
+    )
+  );
+
+CREATE POLICY "patient_users_select" ON users
+  FOR SELECT USING (
+    get_user_role() = 'patient'
+    AND (
+      id = get_my_user_id()
+      OR (clinic_id = get_user_clinic_id() AND role IN ('doctor', 'clinic_admin'))
+    )
+  );
+
+-- Allow auth trigger to insert new user profiles
+CREATE POLICY "users_insert_auth_trigger" ON users
+  FOR INSERT WITH CHECK (TRUE);
+
+-- -------------------------------------------------------
+-- SERVICES
+-- -------------------------------------------------------
+
+CREATE POLICY "sa_services_all" ON services
+  FOR ALL USING (is_super_admin()) WITH CHECK (is_super_admin());
+
+CREATE POLICY "admin_services_all" ON services
+  FOR ALL USING (
+    clinic_id = get_user_clinic_id() AND get_user_role() = 'clinic_admin'
+  ) WITH CHECK (clinic_id = get_user_clinic_id());
+
+CREATE POLICY "services_select_clinic" ON services
+  FOR SELECT USING (clinic_id = get_user_clinic_id());
+
+-- -------------------------------------------------------
+-- TIME_SLOTS
+-- -------------------------------------------------------
+
+CREATE POLICY "sa_time_slots_all" ON time_slots
+  FOR ALL USING (is_super_admin()) WITH CHECK (is_super_admin());
+
+CREATE POLICY "admin_time_slots_all" ON time_slots
+  FOR ALL USING (
+    clinic_id = get_user_clinic_id() AND get_user_role() = 'clinic_admin'
+  ) WITH CHECK (clinic_id = get_user_clinic_id());
+
+CREATE POLICY "doctor_time_slots_own" ON time_slots
+  FOR ALL USING (
+    clinic_id = get_user_clinic_id()
+    AND doctor_id = get_my_user_id()
+    AND get_user_role() = 'doctor'
+  ) WITH CHECK (
+    clinic_id = get_user_clinic_id()
+    AND doctor_id = get_my_user_id()
+  );
+
+CREATE POLICY "time_slots_select_available" ON time_slots
+  FOR SELECT USING (
+    clinic_id = get_user_clinic_id() AND is_available = TRUE
+  );
+
+-- -------------------------------------------------------
+-- APPOINTMENTS
+-- -------------------------------------------------------
+
+CREATE POLICY "sa_appointments_all" ON appointments
+  FOR ALL USING (is_super_admin()) WITH CHECK (is_super_admin());
+
+CREATE POLICY "admin_appointments_all" ON appointments
+  FOR ALL USING (
+    clinic_id = get_user_clinic_id() AND get_user_role() = 'clinic_admin'
+  ) WITH CHECK (clinic_id = get_user_clinic_id());
+
+CREATE POLICY "receptionist_appointments_all" ON appointments
+  FOR ALL USING (
+    clinic_id = get_user_clinic_id() AND get_user_role() = 'receptionist'
+  ) WITH CHECK (clinic_id = get_user_clinic_id());
+
+CREATE POLICY "doctor_appointments_select" ON appointments
+  FOR SELECT USING (
+    clinic_id = get_user_clinic_id()
+    AND doctor_id = get_my_user_id()
+    AND get_user_role() = 'doctor'
+  );
+
+CREATE POLICY "doctor_appointments_update" ON appointments
+  FOR UPDATE USING (
+    clinic_id = get_user_clinic_id()
+    AND doctor_id = get_my_user_id()
+    AND get_user_role() = 'doctor'
+  ) WITH CHECK (clinic_id = get_user_clinic_id());
+
+CREATE POLICY "patient_appointments_select" ON appointments
+  FOR SELECT USING (
+    patient_id = get_my_user_id() AND get_user_role() = 'patient'
+  );
+
+CREATE POLICY "patient_appointments_insert" ON appointments
+  FOR INSERT WITH CHECK (
+    patient_id = get_my_user_id() AND get_user_role() = 'patient'
+  );
+
+CREATE POLICY "patient_appointments_update" ON appointments
+  FOR UPDATE USING (
+    patient_id = get_my_user_id()
+    AND get_user_role() = 'patient'
+    AND status IN ('pending', 'confirmed')
+  ) WITH CHECK (
+    patient_id = get_my_user_id()
+    AND status IN ('pending', 'confirmed', 'cancelled', 'rescheduled')
+  );
+
+-- -------------------------------------------------------
+-- WAITING_LIST
+-- -------------------------------------------------------
+
+CREATE POLICY "sa_waiting_list_all" ON waiting_list
+  FOR ALL USING (is_super_admin()) WITH CHECK (is_super_admin());
+
+CREATE POLICY "admin_waiting_list_all" ON waiting_list
+  FOR ALL USING (
+    clinic_id = get_user_clinic_id() AND get_user_role() = 'clinic_admin'
+  ) WITH CHECK (clinic_id = get_user_clinic_id());
+
+CREATE POLICY "receptionist_waiting_list_all" ON waiting_list
+  FOR ALL USING (
+    clinic_id = get_user_clinic_id() AND get_user_role() = 'receptionist'
+  ) WITH CHECK (clinic_id = get_user_clinic_id());
+
+CREATE POLICY "doctor_waiting_list_select" ON waiting_list
+  FOR SELECT USING (
+    clinic_id = get_user_clinic_id()
+    AND doctor_id = get_my_user_id()
+    AND get_user_role() = 'doctor'
+  );
+
+CREATE POLICY "patient_waiting_list_select" ON waiting_list
+  FOR SELECT USING (
+    patient_id = get_my_user_id() AND get_user_role() = 'patient'
+  );
+
+CREATE POLICY "patient_waiting_list_insert" ON waiting_list
+  FOR INSERT WITH CHECK (
+    patient_id = get_my_user_id() AND get_user_role() = 'patient'
+  );
+
+CREATE POLICY "patient_waiting_list_delete" ON waiting_list
+  FOR DELETE USING (
+    patient_id = get_my_user_id() AND get_user_role() = 'patient'
+  );
+
+-- -------------------------------------------------------
+-- NOTIFICATIONS
+-- -------------------------------------------------------
+
+CREATE POLICY "sa_notifications_all" ON notifications
+  FOR ALL USING (is_super_admin()) WITH CHECK (is_super_admin());
+
+CREATE POLICY "notifications_select_own" ON notifications
+  FOR SELECT USING (user_id = get_my_user_id());
+
+CREATE POLICY "notifications_update_own" ON notifications
+  FOR UPDATE USING (user_id = get_my_user_id())
+  WITH CHECK (user_id = get_my_user_id());
+
+CREATE POLICY "notifications_insert_staff" ON notifications
+  FOR INSERT WITH CHECK (
+    get_user_role() IN ('clinic_admin', 'receptionist', 'doctor')
+  );
+
+-- -------------------------------------------------------
+-- PAYMENTS
+-- -------------------------------------------------------
+
+CREATE POLICY "sa_payments_all" ON payments
+  FOR ALL USING (is_super_admin()) WITH CHECK (is_super_admin());
+
+CREATE POLICY "payments_select_patient" ON payments
+  FOR SELECT USING (patient_id = get_my_user_id());
+
+CREATE POLICY "payments_manage_staff" ON payments
+  FOR ALL USING (
+    clinic_id = get_user_clinic_id()
+    AND get_user_role() IN ('clinic_admin', 'receptionist')
+  ) WITH CHECK (
+    clinic_id = get_user_clinic_id()
+  );
+
+-- -------------------------------------------------------
+-- REVIEWS
+-- -------------------------------------------------------
+
+CREATE POLICY "sa_reviews_all" ON reviews
+  FOR ALL USING (is_super_admin()) WITH CHECK (is_super_admin());
+
+CREATE POLICY "reviews_insert_patient" ON reviews
+  FOR INSERT WITH CHECK (patient_id = get_my_user_id());
+
+CREATE POLICY "reviews_update_patient" ON reviews
+  FOR UPDATE USING (patient_id = get_my_user_id())
+  WITH CHECK (patient_id = get_my_user_id());
+
+CREATE POLICY "reviews_select_clinic" ON reviews
+  FOR SELECT USING (clinic_id = get_user_clinic_id());
+
+CREATE POLICY "reviews_manage_admin" ON reviews
+  FOR ALL USING (
+    clinic_id = get_user_clinic_id()
+    AND get_user_role() = 'clinic_admin'
+  ) WITH CHECK (clinic_id = get_user_clinic_id());
+
+-- -------------------------------------------------------
+-- DOCUMENTS
+-- -------------------------------------------------------
+
+CREATE POLICY "sa_documents_all" ON documents
+  FOR ALL USING (is_super_admin()) WITH CHECK (is_super_admin());
+
+CREATE POLICY "documents_select_own" ON documents
+  FOR SELECT USING (user_id = get_my_user_id());
+
+CREATE POLICY "documents_insert_own" ON documents
+  FOR INSERT WITH CHECK (user_id = get_my_user_id());
+
+CREATE POLICY "documents_select_doctor" ON documents
+  FOR SELECT USING (
+    clinic_id = get_user_clinic_id()
+    AND get_user_role() = 'doctor'
+  );
+
+CREATE POLICY "documents_manage_staff" ON documents
+  FOR ALL USING (
+    clinic_id = get_user_clinic_id()
+    AND get_user_role() IN ('clinic_admin', 'receptionist')
+  ) WITH CHECK (clinic_id = get_user_clinic_id());
+
+-- -------------------------------------------------------
+-- PRESCRIPTIONS (Doctor Extra)
+-- -------------------------------------------------------
+
+CREATE POLICY "sa_prescriptions_all" ON prescriptions
+  FOR ALL USING (is_super_admin()) WITH CHECK (is_super_admin());
+
+CREATE POLICY "prescriptions_select_patient" ON prescriptions
+  FOR SELECT USING (patient_id = get_my_user_id());
+
+CREATE POLICY "prescriptions_manage_doctor" ON prescriptions
+  FOR ALL USING (
+    doctor_id = get_my_user_id() AND get_user_role() = 'doctor'
+  ) WITH CHECK (doctor_id = get_my_user_id());
+
+CREATE POLICY "prescriptions_select_admin" ON prescriptions
+  FOR SELECT USING (
+    get_user_role() = 'clinic_admin'
+    AND EXISTS (
+      SELECT 1 FROM users u WHERE u.id = prescriptions.doctor_id
+        AND u.clinic_id = get_user_clinic_id()
+    )
+  );
+
+-- -------------------------------------------------------
+-- CONSULTATION_NOTES (Doctor Extra)
+-- -------------------------------------------------------
+
+CREATE POLICY "sa_consultation_notes_all" ON consultation_notes
+  FOR ALL USING (is_super_admin()) WITH CHECK (is_super_admin());
+
+CREATE POLICY "consultation_notes_manage_doctor" ON consultation_notes
+  FOR ALL USING (
+    doctor_id = get_my_user_id() AND get_user_role() = 'doctor'
+  ) WITH CHECK (doctor_id = get_my_user_id());
+
+CREATE POLICY "consultation_notes_select_admin" ON consultation_notes
+  FOR SELECT USING (
+    get_user_role() = 'clinic_admin'
+    AND EXISTS (
+      SELECT 1 FROM users u WHERE u.id = consultation_notes.doctor_id
+        AND u.clinic_id = get_user_clinic_id()
+    )
+  );
+
+-- Patients can see non-private notes about them
+CREATE POLICY "consultation_notes_select_patient" ON consultation_notes
+  FOR SELECT USING (
+    patient_id = get_my_user_id()
+    AND private = FALSE
+  );
+
+-- -------------------------------------------------------
+-- FAMILY_MEMBERS (Doctor Extra)
+-- -------------------------------------------------------
+
+CREATE POLICY "sa_family_members_all" ON family_members
+  FOR ALL USING (is_super_admin()) WITH CHECK (is_super_admin());
+
+CREATE POLICY "family_members_manage_own" ON family_members
+  FOR ALL USING (primary_user_id = get_my_user_id())
+  WITH CHECK (primary_user_id = get_my_user_id());
+
+CREATE POLICY "family_members_select_staff" ON family_members
+  FOR SELECT USING (
+    is_clinic_staff()
+    AND EXISTS (
+      SELECT 1 FROM users u WHERE u.id = family_members.primary_user_id
+        AND u.clinic_id = get_user_clinic_id()
+    )
+  );
+
+-- -------------------------------------------------------
+-- ODONTOGRAM (Dentist Extra)
+-- -------------------------------------------------------
+
+CREATE POLICY "sa_odontogram_all" ON odontogram
+  FOR ALL USING (is_super_admin()) WITH CHECK (is_super_admin());
+
+CREATE POLICY "odontogram_select_patient" ON odontogram
+  FOR SELECT USING (patient_id = get_my_user_id());
+
+CREATE POLICY "odontogram_manage_doctor" ON odontogram
+  FOR ALL USING (
+    get_user_role() IN ('doctor', 'clinic_admin')
+    AND EXISTS (
+      SELECT 1 FROM users u WHERE u.id = odontogram.patient_id
+        AND u.clinic_id = get_user_clinic_id()
+    )
+  ) WITH CHECK (
+    get_user_role() IN ('doctor', 'clinic_admin')
+  );
+
+-- -------------------------------------------------------
+-- TREATMENT_PLANS (Dentist Extra)
+-- -------------------------------------------------------
+
+CREATE POLICY "sa_treatment_plans_all" ON treatment_plans
+  FOR ALL USING (is_super_admin()) WITH CHECK (is_super_admin());
+
+CREATE POLICY "treatment_plans_select_patient" ON treatment_plans
+  FOR SELECT USING (patient_id = get_my_user_id());
+
+CREATE POLICY "treatment_plans_manage_doctor" ON treatment_plans
+  FOR ALL USING (
+    doctor_id = get_my_user_id() AND get_user_role() = 'doctor'
+  ) WITH CHECK (doctor_id = get_my_user_id());
+
+CREATE POLICY "treatment_plans_select_admin" ON treatment_plans
+  FOR SELECT USING (
+    get_user_role() = 'clinic_admin'
+    AND EXISTS (
+      SELECT 1 FROM users u WHERE u.id = treatment_plans.doctor_id
+        AND u.clinic_id = get_user_clinic_id()
+    )
+  );
+
+-- -------------------------------------------------------
+-- LAB_ORDERS (Dentist Extra)
+-- -------------------------------------------------------
+
+CREATE POLICY "sa_lab_orders_all" ON lab_orders
+  FOR ALL USING (is_super_admin()) WITH CHECK (is_super_admin());
+
+CREATE POLICY "lab_orders_manage_doctor" ON lab_orders
+  FOR ALL USING (
+    doctor_id = get_my_user_id()
+    AND clinic_id = get_user_clinic_id()
+    AND get_user_role() = 'doctor'
+  ) WITH CHECK (
+    doctor_id = get_my_user_id()
+    AND clinic_id = get_user_clinic_id()
+  );
+
+CREATE POLICY "lab_orders_manage_admin" ON lab_orders
+  FOR ALL USING (
+    clinic_id = get_user_clinic_id()
+    AND get_user_role() = 'clinic_admin'
+  ) WITH CHECK (clinic_id = get_user_clinic_id());
+
+-- -------------------------------------------------------
+-- INSTALLMENTS (Dentist Extra)
+-- -------------------------------------------------------
+
+CREATE POLICY "sa_installments_all" ON installments
+  FOR ALL USING (is_super_admin()) WITH CHECK (is_super_admin());
+
+CREATE POLICY "installments_select_patient" ON installments
+  FOR SELECT USING (patient_id = get_my_user_id());
+
+CREATE POLICY "installments_manage_staff" ON installments
+  FOR ALL USING (
+    get_user_role() IN ('clinic_admin', 'receptionist')
+    AND EXISTS (
+      SELECT 1 FROM treatment_plans tp
+      JOIN users u ON u.id = tp.doctor_id
+      WHERE tp.id = installments.treatment_plan_id
+        AND u.clinic_id = get_user_clinic_id()
+    )
+  ) WITH CHECK (
+    get_user_role() IN ('clinic_admin', 'receptionist')
+  );
+
+-- -------------------------------------------------------
+-- STERILIZATION_LOG (Dentist Extra)
+-- -------------------------------------------------------
+
+CREATE POLICY "sa_sterilization_log_all" ON sterilization_log
+  FOR ALL USING (is_super_admin()) WITH CHECK (is_super_admin());
+
+CREATE POLICY "sterilization_log_manage_staff" ON sterilization_log
+  FOR ALL USING (
+    clinic_id = get_user_clinic_id()
+    AND get_user_role() IN ('clinic_admin', 'doctor', 'receptionist')
+  ) WITH CHECK (clinic_id = get_user_clinic_id());
+
+-- -------------------------------------------------------
+-- PRODUCTS (Pharmacy Extra)
+-- -------------------------------------------------------
+
+CREATE POLICY "sa_products_all" ON products
+  FOR ALL USING (is_super_admin()) WITH CHECK (is_super_admin());
+
+CREATE POLICY "products_manage_staff" ON products
+  FOR ALL USING (
+    clinic_id = get_user_clinic_id()
+    AND get_user_role() IN ('clinic_admin', 'receptionist')
+  ) WITH CHECK (clinic_id = get_user_clinic_id());
+
+CREATE POLICY "products_select_clinic" ON products
+  FOR SELECT USING (clinic_id = get_user_clinic_id());
+
+-- -------------------------------------------------------
+-- SUPPLIERS (Pharmacy Extra)
+-- -------------------------------------------------------
+
+CREATE POLICY "sa_suppliers_all" ON suppliers
+  FOR ALL USING (is_super_admin()) WITH CHECK (is_super_admin());
+
+CREATE POLICY "suppliers_manage_staff" ON suppliers
+  FOR ALL USING (
+    clinic_id = get_user_clinic_id()
+    AND get_user_role() IN ('clinic_admin', 'receptionist')
+  ) WITH CHECK (clinic_id = get_user_clinic_id());
+
+-- -------------------------------------------------------
+-- STOCK (Pharmacy Extra)
+-- -------------------------------------------------------
+
+CREATE POLICY "sa_stock_all" ON stock
+  FOR ALL USING (is_super_admin()) WITH CHECK (is_super_admin());
+
+CREATE POLICY "stock_manage_staff" ON stock
+  FOR ALL USING (
+    clinic_id = get_user_clinic_id()
+    AND get_user_role() IN ('clinic_admin', 'receptionist')
+  ) WITH CHECK (clinic_id = get_user_clinic_id());
+
+-- -------------------------------------------------------
+-- PRESCRIPTION_REQUESTS (Pharmacy Extra)
+-- -------------------------------------------------------
+
+CREATE POLICY "sa_prescription_requests_all" ON prescription_requests
+  FOR ALL USING (is_super_admin()) WITH CHECK (is_super_admin());
+
+CREATE POLICY "prescription_requests_manage_patient" ON prescription_requests
+  FOR ALL USING (patient_id = get_my_user_id())
+  WITH CHECK (patient_id = get_my_user_id());
+
+CREATE POLICY "prescription_requests_manage_staff" ON prescription_requests
+  FOR ALL USING (
+    clinic_id = get_user_clinic_id()
+    AND get_user_role() IN ('clinic_admin', 'receptionist')
+  ) WITH CHECK (clinic_id = get_user_clinic_id());
+
+-- -------------------------------------------------------
+-- LOYALTY_POINTS (Pharmacy Extra)
+-- -------------------------------------------------------
+
+CREATE POLICY "sa_loyalty_points_all" ON loyalty_points
+  FOR ALL USING (is_super_admin()) WITH CHECK (is_super_admin());
+
+CREATE POLICY "loyalty_points_select_patient" ON loyalty_points
+  FOR SELECT USING (patient_id = get_my_user_id());
+
+CREATE POLICY "loyalty_points_manage_staff" ON loyalty_points
+  FOR ALL USING (
+    clinic_id = get_user_clinic_id()
+    AND get_user_role() IN ('clinic_admin', 'receptionist')
+  ) WITH CHECK (clinic_id = get_user_clinic_id());
+
+
+-- ============================================================
+-- SEED DATA for Health SaaS Platform
+-- 1 clinic, 1 doctor, 1 receptionist, 5 patients,
+-- sample services, time slots, and appointments
+-- ============================================================
+
+-- ============================================================
+-- CLINIC
+-- ============================================================
+
+INSERT INTO clinics (id, name, type, config, tier, status) VALUES
+  ('c1000000-0000-0000-0000-000000000001',
+   'Cabinet Dr. Ahmed Benali',
+   'doctor',
+   '{
+     "locale": "fr",
+     "currency": "MAD",
+     "city": "Casablanca",
+     "phone": "+212 5 22 33 44 55",
+     "specialty": "General Medicine"
+   }'::jsonb,
+   'pro',
+   'active');
+
+-- ============================================================
+-- USERS
+-- ============================================================
+
+-- Super Admin (no clinic)
+INSERT INTO users (id, auth_id, role, name, phone, email, clinic_id) VALUES
+  ('u0000000-0000-0000-0000-000000000001',
+   'a0000000-0000-0000-0000-000000000001',
+   'super_admin',
+   'Admin Platform',
+   '+212600000001',
+   'admin@health-saas.ma',
+   NULL);
+
+-- Clinic Admin
+INSERT INTO users (id, auth_id, role, name, phone, email, clinic_id) VALUES
+  ('u0000000-0000-0000-0000-000000000002',
+   'a0000000-0000-0000-0000-000000000002',
+   'clinic_admin',
+   'Nadia Benali',
+   '+212611000001',
+   'nadia@dr-benali.ma',
+   'c1000000-0000-0000-0000-000000000001');
+
+-- Doctor
+INSERT INTO users (id, auth_id, role, name, phone, email, clinic_id) VALUES
+  ('u0000000-0000-0000-0000-000000000003',
+   'a0000000-0000-0000-0000-000000000003',
+   'doctor',
+   'Dr. Ahmed Benali',
+   '+212611000002',
+   'ahmed@dr-benali.ma',
+   'c1000000-0000-0000-0000-000000000001');
+
+-- Receptionist
+INSERT INTO users (id, auth_id, role, name, phone, email, clinic_id) VALUES
+  ('u0000000-0000-0000-0000-000000000004',
+   'a0000000-0000-0000-0000-000000000004',
+   'receptionist',
+   'Amina Tazi',
+   '+212611000003',
+   'amina@dr-benali.ma',
+   'c1000000-0000-0000-0000-000000000001');
+
+-- Patient 1
+INSERT INTO users (id, auth_id, role, name, phone, email, clinic_id) VALUES
+  ('u0000000-0000-0000-0000-000000000010',
+   'a0000000-0000-0000-0000-000000000010',
+   'patient',
+   'Fatima Zahra Mansouri',
+   '+212622113344',
+   'fatima.m@gmail.com',
+   'c1000000-0000-0000-0000-000000000001');
+
+-- Patient 2
+INSERT INTO users (id, auth_id, role, name, phone, email, clinic_id) VALUES
+  ('u0000000-0000-0000-0000-000000000011',
+   'a0000000-0000-0000-0000-000000000011',
+   'patient',
+   'Hassan Bourkia',
+   '+212633224455',
+   'hassan.b@gmail.com',
+   'c1000000-0000-0000-0000-000000000001');
+
+-- Patient 3
+INSERT INTO users (id, auth_id, role, name, phone, email, clinic_id) VALUES
+  ('u0000000-0000-0000-0000-000000000012',
+   'a0000000-0000-0000-0000-000000000012',
+   'patient',
+   'Khadija Alaoui',
+   '+212644335566',
+   'khadija.a@gmail.com',
+   'c1000000-0000-0000-0000-000000000001');
+
+-- Patient 4
+INSERT INTO users (id, auth_id, role, name, phone, email, clinic_id) VALUES
+  ('u0000000-0000-0000-0000-000000000013',
+   'a0000000-0000-0000-0000-000000000013',
+   'patient',
+   'Omar El Fassi',
+   '+212655446677',
+   'omar.f@gmail.com',
+   'c1000000-0000-0000-0000-000000000001');
+
+-- Patient 5
+INSERT INTO users (id, auth_id, role, name, phone, email, clinic_id) VALUES
+  ('u0000000-0000-0000-0000-000000000014',
+   'a0000000-0000-0000-0000-000000000014',
+   'patient',
+   'Youssef Tazi',
+   '+212666557788',
+   'youssef.t@gmail.com',
+   'c1000000-0000-0000-0000-000000000001');
+
+-- ============================================================
+-- SERVICES
+-- ============================================================
+
+INSERT INTO services (id, clinic_id, name, price, duration_minutes, category) VALUES
+  ('s0000000-0000-0000-0000-000000000001',
+   'c1000000-0000-0000-0000-000000000001',
+   'General Consultation', 300.00, 30, 'consultation'),
+  ('s0000000-0000-0000-0000-000000000002',
+   'c1000000-0000-0000-0000-000000000001',
+   'Follow-up Visit', 200.00, 20, 'follow-up'),
+  ('s0000000-0000-0000-0000-000000000003',
+   'c1000000-0000-0000-0000-000000000001',
+   'ECG Checkup', 500.00, 45, 'diagnostic'),
+  ('s0000000-0000-0000-0000-000000000004',
+   'c1000000-0000-0000-0000-000000000001',
+   'Blood Pressure Check', 150.00, 15, 'screening'),
+  ('s0000000-0000-0000-0000-000000000005',
+   'c1000000-0000-0000-0000-000000000001',
+   'Vaccination', 200.00, 15, 'vaccination');
+
+-- ============================================================
+-- TIME SLOTS (Dr. Ahmed — Mon-Fri 09:00-12:00 & 14:00-17:00)
+-- ============================================================
+
+INSERT INTO time_slots (doctor_id, clinic_id, day_of_week, start_time, end_time, is_available, max_capacity, buffer_minutes) VALUES
+  ('u0000000-0000-0000-0000-000000000003', 'c1000000-0000-0000-0000-000000000001', 1, '09:00', '12:00', TRUE, 1, 10),
+  ('u0000000-0000-0000-0000-000000000003', 'c1000000-0000-0000-0000-000000000001', 1, '14:00', '17:00', TRUE, 1, 10),
+  ('u0000000-0000-0000-0000-000000000003', 'c1000000-0000-0000-0000-000000000001', 2, '09:00', '12:00', TRUE, 1, 10),
+  ('u0000000-0000-0000-0000-000000000003', 'c1000000-0000-0000-0000-000000000001', 2, '14:00', '17:00', TRUE, 1, 10),
+  ('u0000000-0000-0000-0000-000000000003', 'c1000000-0000-0000-0000-000000000001', 3, '09:00', '12:00', TRUE, 1, 10),
+  ('u0000000-0000-0000-0000-000000000003', 'c1000000-0000-0000-0000-000000000001', 3, '14:00', '17:00', TRUE, 1, 10),
+  ('u0000000-0000-0000-0000-000000000003', 'c1000000-0000-0000-0000-000000000001', 4, '09:00', '12:00', TRUE, 1, 10),
+  ('u0000000-0000-0000-0000-000000000003', 'c1000000-0000-0000-0000-000000000001', 4, '14:00', '17:00', TRUE, 1, 10),
+  ('u0000000-0000-0000-0000-000000000003', 'c1000000-0000-0000-0000-000000000001', 5, '09:00', '12:00', TRUE, 1, 10),
+  ('u0000000-0000-0000-0000-000000000003', 'c1000000-0000-0000-0000-000000000001', 5, '14:00', '17:00', TRUE, 1, 10);
+
+-- ============================================================
+-- APPOINTMENTS (sample: various statuses)
+-- ============================================================
+
+-- Appointment 1: Fatima — completed general consultation
+INSERT INTO appointments (id, patient_id, doctor_id, clinic_id, service_id, slot_start, slot_end, status, is_first_visit, insurance_flag, source, notes) VALUES
+  ('ap000000-0000-0000-0000-000000000001',
+   'u0000000-0000-0000-0000-000000000010',
+   'u0000000-0000-0000-0000-000000000003',
+   'c1000000-0000-0000-0000-000000000001',
+   's0000000-0000-0000-0000-000000000001',
+   '2026-03-18 09:00:00+00', '2026-03-18 09:30:00+00',
+   'completed', TRUE, TRUE, 'online',
+   'Initial consultation — blood pressure normal');
+
+-- Appointment 2: Hassan — confirmed follow-up
+INSERT INTO appointments (id, patient_id, doctor_id, clinic_id, service_id, slot_start, slot_end, status, is_first_visit, insurance_flag, source) VALUES
+  ('ap000000-0000-0000-0000-000000000002',
+   'u0000000-0000-0000-0000-000000000011',
+   'u0000000-0000-0000-0000-000000000003',
+   'c1000000-0000-0000-0000-000000000001',
+   's0000000-0000-0000-0000-000000000002',
+   '2026-03-21 10:00:00+00', '2026-03-21 10:20:00+00',
+   'confirmed', FALSE, TRUE, 'phone');
+
+-- Appointment 3: Khadija — pending ECG
+INSERT INTO appointments (id, patient_id, doctor_id, clinic_id, service_id, slot_start, slot_end, status, is_first_visit, insurance_flag, source) VALUES
+  ('ap000000-0000-0000-0000-000000000003',
+   'u0000000-0000-0000-0000-000000000012',
+   'u0000000-0000-0000-0000-000000000003',
+   'c1000000-0000-0000-0000-000000000001',
+   's0000000-0000-0000-0000-000000000003',
+   '2026-03-22 14:00:00+00', '2026-03-22 14:45:00+00',
+   'pending', TRUE, FALSE, 'whatsapp');
+
+-- Appointment 4: Omar — cancelled
+INSERT INTO appointments (id, patient_id, doctor_id, clinic_id, service_id, slot_start, slot_end, status, is_first_visit, insurance_flag, source, notes) VALUES
+  ('ap000000-0000-0000-0000-000000000004',
+   'u0000000-0000-0000-0000-000000000013',
+   'u0000000-0000-0000-0000-000000000003',
+   'c1000000-0000-0000-0000-000000000001',
+   's0000000-0000-0000-0000-000000000001',
+   '2026-03-19 11:00:00+00', '2026-03-19 11:30:00+00',
+   'cancelled', FALSE, TRUE, 'online',
+   'Patient cancelled — will reschedule');
+
+-- Appointment 5: Youssef — no show
+INSERT INTO appointments (id, patient_id, doctor_id, clinic_id, service_id, slot_start, slot_end, status, is_first_visit, insurance_flag, source) VALUES
+  ('ap000000-0000-0000-0000-000000000005',
+   'u0000000-0000-0000-0000-000000000014',
+   'u0000000-0000-0000-0000-000000000003',
+   'c1000000-0000-0000-0000-000000000001',
+   's0000000-0000-0000-0000-000000000005',
+   '2026-03-17 09:30:00+00', '2026-03-17 09:45:00+00',
+   'no_show', TRUE, FALSE, 'walk_in');
+
+-- Appointment 6: Fatima — upcoming vaccination
+INSERT INTO appointments (id, patient_id, doctor_id, clinic_id, service_id, slot_start, slot_end, status, is_first_visit, insurance_flag, source) VALUES
+  ('ap000000-0000-0000-0000-000000000006',
+   'u0000000-0000-0000-0000-000000000010',
+   'u0000000-0000-0000-0000-000000000003',
+   'c1000000-0000-0000-0000-000000000001',
+   's0000000-0000-0000-0000-000000000005',
+   '2026-03-25 15:00:00+00', '2026-03-25 15:15:00+00',
+   'confirmed', FALSE, TRUE, 'online');
+
+-- ============================================================
+-- PRESCRIPTIONS (sample for completed appointment)
+-- ============================================================
+
+INSERT INTO prescriptions (id, patient_id, doctor_id, appointment_id, content, pdf_url) VALUES
+  ('pr000000-0000-0000-0000-000000000001',
+   'u0000000-0000-0000-0000-000000000010',
+   'u0000000-0000-0000-0000-000000000003',
+   'ap000000-0000-0000-0000-000000000001',
+   '[
+     {"medication": "Paracetamol 500mg", "dosage": "1 tablet 3x/day", "duration": "5 days"},
+     {"medication": "Omeprazole 20mg", "dosage": "1 capsule before breakfast", "duration": "14 days"}
+   ]'::jsonb,
+   NULL);
+
+-- ============================================================
+-- CONSULTATION NOTES
+-- ============================================================
+
+INSERT INTO consultation_notes (id, patient_id, doctor_id, appointment_id, notes, private) VALUES
+  ('cn000000-0000-0000-0000-000000000001',
+   'u0000000-0000-0000-0000-000000000010',
+   'u0000000-0000-0000-0000-000000000003',
+   'ap000000-0000-0000-0000-000000000001',
+   'Patient presents with mild headache and fatigue. BP 120/80. Prescribed paracetamol and omeprazole for gastric discomfort.',
+   TRUE);
+
+-- ============================================================
+-- PAYMENTS (sample)
+-- ============================================================
+
+INSERT INTO payments (id, clinic_id, patient_id, appointment_id, amount, method, status, ref) VALUES
+  ('py000000-0000-0000-0000-000000000001',
+   'c1000000-0000-0000-0000-000000000001',
+   'u0000000-0000-0000-0000-000000000010',
+   'ap000000-0000-0000-0000-000000000001',
+   300.00, 'cash', 'completed', 'PAY-001');
+
+-- ============================================================
+-- REVIEWS (sample)
+-- ============================================================
+
+INSERT INTO reviews (id, patient_id, clinic_id, stars, comment, response) VALUES
+  ('rv000000-0000-0000-0000-000000000001',
+   'u0000000-0000-0000-0000-000000000010',
+   'c1000000-0000-0000-0000-000000000001',
+   5,
+   'Excellent doctor, very professional and caring.',
+   'Thank you for your kind words, Fatima!');
+
+-- ============================================================
+-- NOTIFICATIONS (sample)
+-- ============================================================
+
+INSERT INTO notifications (id, user_id, type, channel, message, sent_at, read_at) VALUES
+  ('nt000000-0000-0000-0000-000000000001',
+   'u0000000-0000-0000-0000-000000000011',
+   'appointment_reminder',
+   'whatsapp',
+   'Reminder: Your follow-up appointment with Dr. Ahmed Benali is on March 21 at 10:00 AM.',
+   '2026-03-20 08:00:00+00',
+   NULL),
+  ('nt000000-0000-0000-0000-000000000002',
+   'u0000000-0000-0000-0000-000000000010',
+   'appointment_confirmed',
+   'sms',
+   'Your vaccination appointment on March 25 at 3:00 PM has been confirmed.',
+   '2026-03-20 09:00:00+00',
+   '2026-03-20 09:05:00+00');
