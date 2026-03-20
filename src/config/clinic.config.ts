@@ -75,6 +75,45 @@ export interface ClinicConfig {
     emergencySlots: boolean;
     recurringBookings: boolean;
     chatbot: boolean;
+    /** Morocco-specific features */
+    insuranceTracking: boolean;
+    installmentPayments: boolean;
+    gardeScheduling: boolean;
+    carnetDeSante: boolean;
+    fiscExport: boolean;
+    multiCabinet: boolean;
+    publicDirectory: boolean;
+    tvQueueDisplay: boolean;
+    ordonnanceFr: boolean;
+  };
+
+  /** Morocco-specific configuration */
+  morocco?: {
+    /** Legal identification numbers */
+    legal?: {
+      ice?: string;
+      identifiantFiscal?: string;
+      rc?: string;
+      cnss?: string;
+      patente?: string;
+      autorisationExercice?: string;
+    };
+
+    /** Ramadan mode configuration */
+    ramadan?: {
+      enabled: boolean;
+      startDate: string;
+      endDate: string;
+    };
+
+    /** Accepted payment methods */
+    paymentMethods?: string[];
+
+    /** Accepted insurance providers */
+    acceptedInsurance?: string[];
+
+    /** Default TVA rate key */
+    defaultTVARate?: "standard" | "reduced_14" | "reduced_10" | "reduced_7" | "exempt";
   };
 }
 
@@ -136,5 +175,33 @@ export const clinicConfig: ClinicConfig = {
     emergencySlots: true,
     recurringBookings: true,
     chatbot: false,
+    insuranceTracking: true,
+    installmentPayments: true,
+    gardeScheduling: true,
+    carnetDeSante: true,
+    fiscExport: true,
+    multiCabinet: false,
+    publicDirectory: true,
+    tvQueueDisplay: true,
+    ordonnanceFr: true,
+  },
+
+  morocco: {
+    legal: {
+      ice: undefined,
+      identifiantFiscal: undefined,
+      rc: undefined,
+      cnss: undefined,
+      patente: undefined,
+      autorisationExercice: undefined,
+    },
+    ramadan: {
+      enabled: false,
+      startDate: "",
+      endDate: "",
+    },
+    paymentMethods: ["cash", "cmi", "cashplus", "wafacash", "baridbank", "bank_transfer", "check", "insurance"],
+    acceptedInsurance: ["cnss", "cnops", "amo", "ramed"],
+    defaultTVARate: "standard",
   },
 };

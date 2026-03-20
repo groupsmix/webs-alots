@@ -1,11 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { CreditCard, DollarSign, Shield, CheckCircle2 } from "lucide-react";
+import { CreditCard, DollarSign, Shield, CheckCircle2, Smartphone, Building2, Banknote, FileText } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { clinicConfig } from "@/config/clinic.config";
+import { formatMAD, type MoroccanPaymentMethod } from "@/lib/morocco";
 
 interface PaymentStepProps {
   appointmentId: string;
@@ -33,7 +34,7 @@ export function PaymentStep({
   onSkip,
 }: PaymentStepProps) {
   const [paymentType, setPaymentType] = useState<"deposit" | "full">("deposit");
-  const [method, setMethod] = useState<"online" | "card">("online");
+  const [method, setMethod] = useState<MoroccanPaymentMethod | "online" | "card">("cash");
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [paymentSuccess, setPaymentSuccess] = useState(false);
@@ -144,31 +145,81 @@ export function PaymentStep({
         </button>
       </div>
 
-      {/* Payment method */}
+      {/* Payment method — Morocco-specific options */}
       <Card>
         <CardHeader className="pb-2">
-          <CardTitle className="text-sm">Payment Method</CardTitle>
+          <CardTitle className="text-sm">Mode de paiement</CardTitle>
         </CardHeader>
         <CardContent className="space-y-2">
           <button
-            onClick={() => setMethod("online")}
+            onClick={() => setMethod("cash")}
             className={`w-full rounded-lg border p-3 text-left text-sm transition-colors flex items-center gap-3 ${
-              method === "online" ? "border-primary bg-primary/5" : "hover:bg-muted/50"
+              method === "cash" ? "border-primary bg-primary/5" : "hover:bg-muted/50"
             }`}
           >
-            <CreditCard className="h-4 w-4" />
-            <span>Online Payment</span>
-            {method === "online" && <Badge className="ml-auto" variant="default">Selected</Badge>}
+            <Banknote className="h-4 w-4" />
+            <span>Espèces</span>
+            {method === "cash" && <Badge className="ml-auto" variant="default">Selected</Badge>}
           </button>
           <button
-            onClick={() => setMethod("card")}
+            onClick={() => setMethod("cmi")}
             className={`w-full rounded-lg border p-3 text-left text-sm transition-colors flex items-center gap-3 ${
-              method === "card" ? "border-primary bg-primary/5" : "hover:bg-muted/50"
+              method === "cmi" ? "border-primary bg-primary/5" : "hover:bg-muted/50"
             }`}
           >
             <CreditCard className="h-4 w-4" />
-            <span>Card on File</span>
-            {method === "card" && <Badge className="ml-auto" variant="default">Selected</Badge>}
+            <span>Carte CMI</span>
+            {method === "cmi" && <Badge className="ml-auto" variant="default">Selected</Badge>}
+          </button>
+          <button
+            onClick={() => setMethod("cashplus")}
+            className={`w-full rounded-lg border p-3 text-left text-sm transition-colors flex items-center gap-3 ${
+              method === "cashplus" ? "border-primary bg-primary/5" : "hover:bg-muted/50"
+            }`}
+          >
+            <Smartphone className="h-4 w-4" />
+            <span>CashPlus</span>
+            {method === "cashplus" && <Badge className="ml-auto" variant="default">Selected</Badge>}
+          </button>
+          <button
+            onClick={() => setMethod("wafacash")}
+            className={`w-full rounded-lg border p-3 text-left text-sm transition-colors flex items-center gap-3 ${
+              method === "wafacash" ? "border-primary bg-primary/5" : "hover:bg-muted/50"
+            }`}
+          >
+            <Smartphone className="h-4 w-4" />
+            <span>Wafacash</span>
+            {method === "wafacash" && <Badge className="ml-auto" variant="default">Selected</Badge>}
+          </button>
+          <button
+            onClick={() => setMethod("baridbank")}
+            className={`w-full rounded-lg border p-3 text-left text-sm transition-colors flex items-center gap-3 ${
+              method === "baridbank" ? "border-primary bg-primary/5" : "hover:bg-muted/50"
+            }`}
+          >
+            <Building2 className="h-4 w-4" />
+            <span>Barid Bank</span>
+            {method === "baridbank" && <Badge className="ml-auto" variant="default">Selected</Badge>}
+          </button>
+          <button
+            onClick={() => setMethod("check")}
+            className={`w-full rounded-lg border p-3 text-left text-sm transition-colors flex items-center gap-3 ${
+              method === "check" ? "border-primary bg-primary/5" : "hover:bg-muted/50"
+            }`}
+          >
+            <FileText className="h-4 w-4" />
+            <span>Chèque</span>
+            {method === "check" && <Badge className="ml-auto" variant="default">Selected</Badge>}
+          </button>
+          <button
+            onClick={() => setMethod("insurance")}
+            className={`w-full rounded-lg border p-3 text-left text-sm transition-colors flex items-center gap-3 ${
+              method === "insurance" ? "border-primary bg-primary/5" : "hover:bg-muted/50"
+            }`}
+          >
+            <Shield className="h-4 w-4" />
+            <span>Tiers payant (Assurance)</span>
+            {method === "insurance" && <Badge className="ml-auto" variant="default">Selected</Badge>}
           </button>
         </CardContent>
       </Card>
