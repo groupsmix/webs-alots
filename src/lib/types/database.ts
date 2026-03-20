@@ -94,6 +94,7 @@ export interface Clinic {
   name: string;
   type: ClinicType;
   tier: ClinicTier;
+  subdomain: string | null;
   domain: string | null;
   config: Record<string, unknown>;
   is_active: boolean;

@@ -76,6 +76,26 @@ supabase/
 
 All clinics share one Supabase project. Data isolation is enforced via **Row Level Security (RLS)** - every table has a `clinic_id` column and RLS policies automatically filter queries.
 
+### Subdomain Routing
+
+Each clinic is accessible at `clinicname.yourdomain.com`. The middleware extracts the subdomain, looks up the clinic in Supabase, and injects tenant info into request headers for all downstream pages and API routes.
+
+**Setup:**
+
+1. Add a `subdomain` value to each clinic row in the `clinics` table (run migration `00004_add_clinic_subdomain.sql`)
+2. Set `ROOT_DOMAIN=yourdomain.com` in `.env.local`
+3. Configure a wildcard DNS record: `*.yourdomain.com → your server`
+
+For local development, subdomains work automatically via `*.localhost` (e.g., `demo.localhost:3000`).
+
+**How it works:**
+
+- `middleware.ts` extracts the subdomain and queries the `clinics` table
+- Resolved clinic info is passed via `x-tenant-*` headers
+- Server Components use `getTenant()` from `src/lib/tenant.ts`
+- Client Components use `useTenant()` from `src/components/tenant-provider.tsx`
+- Unknown subdomains redirect to the root domain
+
 ## Per-Client Deployment
 
 To deploy for a new client, only edit `src/config/clinic.config.ts` with their details (name, contact, features, working hours).
