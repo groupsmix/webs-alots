@@ -1,7 +1,18 @@
+import type { Metadata } from "next";
 import { Clock, Tag } from "lucide-react";
 import { blogPosts } from "@/lib/demo-data";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+
+export const metadata: Metadata = {
+  title: "Blog Santé",
+  description:
+    "Articles et conseils santé de notre équipe médicale. Restez informé avec nos dernières publications sur le bien-être et la prévention.",
+  openGraph: {
+    title: "Blog Santé",
+    description: "Articles et conseils santé de notre équipe médicale.",
+  },
+};
 
 export default function BlogPage() {
   return (

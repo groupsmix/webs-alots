@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { HeroSection } from "@/components/public/hero-section";
 import { ServicesPreview } from "@/components/public/services-preview";
 import { defaultWebsiteConfig } from "@/lib/website-config";
@@ -6,6 +7,17 @@ import { Star, ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+
+export const metadata: Metadata = {
+  title: "Accueil — Cabinet Médical",
+  description:
+    "Bienvenue dans notre cabinet médical. Prenez rendez-vous en ligne, consultez nos services et découvrez notre équipe médicale.",
+  openGraph: {
+    title: "Accueil — Cabinet Médical",
+    description:
+      "Bienvenue dans notre cabinet médical. Prenez rendez-vous en ligne, consultez nos services.",
+  },
+};
 
 const linkBtnOutline =
   "inline-flex items-center justify-center rounded-lg border border-border bg-background px-2.5 py-1.5 text-sm font-medium hover:bg-muted hover:text-foreground transition-colors";

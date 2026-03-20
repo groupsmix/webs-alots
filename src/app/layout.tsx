@@ -13,9 +13,35 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Health SaaS Platform",
+  title: {
+    default: "Health SaaS Platform — Gestion Médicale en Ligne",
+    template: "%s | Health SaaS Platform",
+  },
   description:
-    "Multi-tenant health management platform for doctors, dentists, and pharmacies",
+    "Plateforme SaaS multi-tenant pour la gestion de cabinets médicaux, dentaires et pharmacies au Maroc. Prise de rendez-vous, dossiers patients, ordonnances et plus.",
+  keywords: [
+    "gestion cabinet médical",
+    "logiciel médecin",
+    "logiciel dentiste",
+    "logiciel pharmacie",
+    "rendez-vous médical en ligne",
+    "SaaS santé Maroc",
+    "dossier patient électronique",
+    "plateforme médicale",
+  ],
+  authors: [{ name: "Health SaaS Platform" }],
+  openGraph: {
+    type: "website",
+    locale: "fr_MA",
+    siteName: "Health SaaS Platform",
+    title: "Health SaaS Platform — Gestion Médicale en Ligne",
+    description:
+      "Plateforme SaaS multi-tenant pour la gestion de cabinets médicaux, dentaires et pharmacies au Maroc.",
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
 };
 
 export default function RootLayout({
@@ -25,7 +51,7 @@ export default function RootLayout({
 }>) {
   return (
     <html
-      lang="en"
+      lang="fr"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">{children}</body>

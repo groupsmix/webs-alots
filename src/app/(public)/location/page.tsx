@@ -1,6 +1,17 @@
+import type { Metadata } from "next";
 import { MapPin, Clock } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { defaultWebsiteConfig } from "@/lib/website-config";
+
+export const metadata: Metadata = {
+  title: "Localisation & Horaires",
+  description:
+    "Trouvez notre cabinet médical facilement. Adresse, carte Google Maps et horaires d'ouverture.",
+  openGraph: {
+    title: "Localisation & Horaires",
+    description: "Trouvez notre cabinet médical facilement. Adresse et horaires.",
+  },
+};
 
 export default function LocationPage() {
   const cfg = defaultWebsiteConfig.location;

@@ -1,6 +1,17 @@
+import type { Metadata } from "next";
 import { Card, CardContent } from "@/components/ui/card";
 import { Phone, Mail, MapPin, Clock, MessageCircle } from "lucide-react";
 import { onDutySchedule } from "@/lib/pharmacy-demo-data";
+
+export const metadata: Metadata = {
+  title: "Contact Pharmacie",
+  description:
+    "Contactez notre pharmacie : téléphone, WhatsApp, email. Horaires d'ouverture, adresse et planning de garde.",
+  openGraph: {
+    title: "Contact Pharmacie",
+    description: "Contactez notre pharmacie. Horaires et planning de garde.",
+  },
+};
 
 export default function PharmacyContactPage() {
   const upcomingDuties = onDutySchedule.filter((d) => d.isOnDuty);

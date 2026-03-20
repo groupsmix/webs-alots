@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -11,6 +12,16 @@ import {
   isCurrentlyOnDuty,
   getNextOnDuty,
 } from "@/lib/pharmacy-demo-data";
+
+export const metadata: Metadata = {
+  title: "Pharmacie — Accueil",
+  description:
+    "Votre pharmacie de confiance. Catalogue de produits, services pharmaceutiques, envoi d'ordonnance en ligne et pharmacie de garde.",
+  openGraph: {
+    title: "Pharmacie — Accueil",
+    description: "Votre pharmacie de confiance. Catalogue, services et ordonnances en ligne.",
+  },
+};
 
 const linkBtnPrimary =
   "inline-flex items-center justify-center rounded-lg bg-emerald-600 text-white px-4 py-2.5 text-sm font-medium hover:bg-emerald-700 transition-colors";

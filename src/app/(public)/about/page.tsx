@@ -1,7 +1,18 @@
+import type { Metadata } from "next";
 import { Award, Languages, GraduationCap, Briefcase } from "lucide-react";
 import { defaultWebsiteConfig } from "@/lib/website-config";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+
+export const metadata: Metadata = {
+  title: "À propos — Notre Médecin",
+  description:
+    "Découvrez notre médecin, ses qualifications, son expérience et sa spécialité. Un professionnel de santé dédié à votre bien-être.",
+  openGraph: {
+    title: "À propos — Notre Médecin",
+    description: "Découvrez notre médecin, ses qualifications et son expérience.",
+  },
+};
 
 export default function AboutPage() {
   const cfg = defaultWebsiteConfig.about;

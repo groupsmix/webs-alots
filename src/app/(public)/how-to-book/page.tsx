@@ -1,6 +1,17 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { defaultWebsiteConfig } from "@/lib/website-config";
 import { Card, CardContent } from "@/components/ui/card";
+
+export const metadata: Metadata = {
+  title: "Comment Réserver",
+  description:
+    "Guide étape par étape pour prendre rendez-vous en ligne dans notre cabinet médical. Simple, rapide et sécurisé.",
+  openGraph: {
+    title: "Comment Réserver",
+    description: "Guide étape par étape pour prendre rendez-vous en ligne.",
+  },
+};
 
 const linkBtnPrimary =
   "inline-flex items-center justify-center rounded-lg bg-primary text-primary-foreground px-4 py-2 text-sm font-medium hover:bg-primary/80 transition-colors";

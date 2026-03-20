@@ -1,8 +1,19 @@
+import type { Metadata } from "next";
 import { Star } from "lucide-react";
 import { reviews, getAverageRating } from "@/lib/demo-data";
 import { defaultWebsiteConfig } from "@/lib/website-config";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+
+export const metadata: Metadata = {
+  title: "Avis Patients",
+  description:
+    "Lisez les avis et témoignages de nos patients. Découvrez pourquoi ils nous font confiance pour leurs soins médicaux.",
+  openGraph: {
+    title: "Avis Patients",
+    description: "Lisez les avis et témoignages de nos patients.",
+  },
+};
 
 function StarRating({ rating }: { rating: number }) {
   return (

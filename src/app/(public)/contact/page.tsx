@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { Phone, Mail, MapPin, MessageCircle } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -6,6 +7,16 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { defaultWebsiteConfig } from "@/lib/website-config";
 import Link from "next/link";
+
+export const metadata: Metadata = {
+  title: "Contact — Nous Joindre",
+  description:
+    "Contactez notre cabinet médical par téléphone, WhatsApp ou email. Accès facile, formulaire de contact et adresse.",
+  openGraph: {
+    title: "Contact — Nous Joindre",
+    description: "Contactez notre cabinet médical par téléphone, WhatsApp ou email.",
+  },
+};
 
 export default function ContactPage() {
   const cfg = defaultWebsiteConfig.contact;
