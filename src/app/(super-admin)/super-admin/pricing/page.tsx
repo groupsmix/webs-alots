@@ -14,22 +14,23 @@ import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { Loader2 } from "lucide-react";
 import {
-  pricingTiers,
-  featureToggles as defaultFeatureToggles,
   systemTypeLabels,
   tierColors,
   type SystemType,
   type TierSlug,
-  type FeatureToggle,
-} from "@/lib/pricing-data";
+} from "@/lib/config/pricing";
 import {
   fetchClientSubscriptions,
+  fetchPricingTiers,
+  fetchFeatureToggles,
   type ClientSubscription,
+  type PricingTierRow,
+  type FeatureToggleRow,
 } from "@/lib/super-admin-actions";
 
 type TabView = "tiers" | "features";
 type SystemFilter = "all" | SystemType;
-type CategoryFilter = "all" | FeatureToggle["category"];
+type CategoryFilter = "all" | FeatureToggleRow["category"];
 
 const systemIcons: Record<SystemType, typeof Stethoscope> = {
   doctor: Stethoscope,
@@ -44,25 +45,32 @@ export default function PricingPage() {
   const [billingCycle, setBillingCycle] = useState<"monthly" | "yearly">("monthly");
   const [featureSearch, setFeatureSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>("all");
-  const [toggles, setToggles] = useState(defaultFeatureToggles);
+  const [tiers, setTiers] = useState<PricingTierRow[]>([]);
+  const [toggles, setToggles] = useState<FeatureToggleRow[]>([]);
   const [expandedTier, setExpandedTier] = useState<string | null>(null);
   const [subscriptions, setSubscriptions] = useState<ClientSubscription[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const loadSubscriptions = useCallback(async () => {
+  const loadData = useCallback(async () => {
     try {
-      const data = await fetchClientSubscriptions();
-      setSubscriptions(data);
+      const [subs, tiersData, togglesData] = await Promise.all([
+        fetchClientSubscriptions(),
+        fetchPricingTiers(),
+        fetchFeatureToggles(),
+      ]);
+      setSubscriptions(subs);
+      setTiers(tiersData);
+      setToggles(togglesData);
     } catch (err) {
-      console.error("[sa-pricing] failed to load subscriptions:", err);
+      console.error("[sa-pricing] failed to load data:", err);
     } finally {
       setLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    loadSubscriptions();
-  }, [loadSubscriptions]);
+    loadData();
+  }, [loadData]);
 
   const stats = {
     active: subscriptions.filter((s) => s.status === "active").length,
@@ -226,7 +234,7 @@ export default function PricingPage() {
 
           {/* Pricing Cards */}
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
-            {pricingTiers.map((tier) => {
+            {tiers.map((tier) => {
               const price = tier.pricing[selectedSystem][billingCycle];
               const isExpanded = expandedTier === tier.id;
               const subCount = subscriptions.filter((s) => s.tierSlug === tier.slug).length;
@@ -240,7 +248,7 @@ export default function PricingPage() {
                   )}
                   <CardHeader className="pb-3">
                     <div className="flex items-center justify-between">
-                      <Badge className={`text-[10px] ${tierColors[tier.slug]}`}>{tier.name}</Badge>
+                      <Badge className={`text-[10px] ${tierColors[tier.slug as TierSlug] ?? ""}`}>{tier.name}</Badge>
                       <span className="text-xs text-muted-foreground">{subCount} clients</span>
                     </div>
                     <CardTitle className="text-lg mt-2">
@@ -456,8 +464,8 @@ export default function PricingPage() {
                         <td className="py-3 px-4 text-center">
                           <div className="flex items-center justify-center gap-1">
                             {ft.systemTypes.map((st) => {
-                              const Icon = systemIcons[st];
-                              return <span key={st} title={systemTypeLabels[st]}><Icon className="h-3.5 w-3.5 text-muted-foreground" /></span>;
+                              const Icon = systemIcons[st as SystemType];
+                              return <span key={st} title={systemTypeLabels[st as SystemType]}><Icon className="h-3.5 w-3.5 text-muted-foreground" /></span>;
                             })}
                           </div>
                         </td>
