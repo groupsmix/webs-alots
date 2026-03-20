@@ -1,5 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { extractSubdomain } from "@/lib/subdomain";
+import { TENANT_HEADERS } from "@/lib/tenant";
 
 // Role to allowed route prefix mapping
 const ROLE_ROUTE_MAP: Record<string, string> = {
@@ -61,8 +63,28 @@ function isProtectedRoute(pathname: string): boolean {
   return PROTECTED_PREFIXES.some((prefix) => pathname.startsWith(prefix));
 }
 
+/**
+ * Set tenant headers on a response so downstream Server Components
+ * and API routes can read them via getTenant().
+ */
+function setTenantHeaders(
+  response: NextResponse,
+  clinic: { id: string; name: string; subdomain: string; type: string; tier: string },
+) {
+  response.headers.set(TENANT_HEADERS.clinicId, clinic.id);
+  response.headers.set(TENANT_HEADERS.clinicName, clinic.name);
+  response.headers.set(TENANT_HEADERS.subdomain, clinic.subdomain);
+  response.headers.set(TENANT_HEADERS.clinicType, clinic.type);
+  response.headers.set(TENANT_HEADERS.clinicTier, clinic.tier);
+}
+
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  const hostname = request.headers.get("host") ?? "";
+  const rootDomain = process.env.ROOT_DOMAIN;
+
+  // --- Subdomain resolution ---
+  const subdomain = extractSubdomain(hostname, rootDomain);
 
   // If Supabase is not configured, allow all requests through
   // so the site renders with demo data instead of crashing
@@ -106,6 +128,32 @@ export async function middleware(request: NextRequest) {
       },
     }
   );
+
+  // --- Resolve clinic from subdomain ---
+  if (subdomain) {
+    const { data: clinic } = await supabase
+      .from("clinics")
+      .select("id, name, type, tier, subdomain")
+      .eq("subdomain", subdomain)
+      .single();
+
+    if (!clinic) {
+      // Unknown subdomain → redirect to root domain
+      const rootUrl = rootDomain
+        ? `${request.nextUrl.protocol}//${rootDomain}`
+        : request.nextUrl.origin;
+      return NextResponse.redirect(rootUrl);
+    }
+
+    // Attach tenant info to all responses so pages can read it
+    setTenantHeaders(supabaseResponse, {
+      id: clinic.id,
+      name: clinic.name,
+      subdomain: clinic.subdomain ?? subdomain,
+      type: clinic.type,
+      tier: clinic.tier,
+    });
+  }
 
   // IMPORTANT: Do NOT use getSession() here — it reads from cookies and
   // can be tampered with. Use getUser() which validates with Supabase.
