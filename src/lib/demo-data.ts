@@ -953,7 +953,7 @@ export function confirmPayment(paymentId: string): { success: boolean; error?: s
 
   // Also confirm the appointment
   const appt = appointments.find((a) => a.id === payment.appointmentId);
-  if (appt && appt.status === "pending") {
+  if (appt && appt.status === "scheduled") {
     appt.status = "confirmed";
   }
 
