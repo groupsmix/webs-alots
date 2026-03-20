@@ -18,6 +18,7 @@ import {
   Megaphone,
   DollarSign,
   Receipt,
+  UserPlus,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -35,6 +36,7 @@ import { SignOutButton } from "@/components/sign-out-button";
 
 const navItems = [
   { href: "/super-admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/super-admin/onboarding", label: "Client Onboarding", icon: UserPlus },
   { href: "/super-admin/clinics", label: "All Clinics", icon: Building2 },
   { href: "/super-admin/billing", label: "Billing", icon: CreditCard },
   { href: "/super-admin/announcements", label: "Announcements", icon: Megaphone },

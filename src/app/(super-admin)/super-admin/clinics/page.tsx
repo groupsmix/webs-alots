@@ -1,20 +1,22 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
+import Link from "next/link";
 import {
-  Plus, LogIn, Search, Ban, CheckCircle, Eye, Filter,
+  LogIn, Search, Ban, CheckCircle, Eye, Filter,
   Building2, Mail, Phone, MapPin, Calendar, Users, TrendingUp,
+  Loader2, UserPlus,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
-import { clinicDetails, type ClinicDetail } from "@/lib/super-admin-data";
+import { clinicDetails as demoClinicDetails, type ClinicDetail } from "@/lib/super-admin-data";
+import { fetchClinics, updateClinicStatus, fetchClinicUsers } from "@/lib/super-admin-actions";
 
 type FilterType = "all" | "doctor" | "dentist" | "pharmacy";
 type FilterStatus = "all" | "active" | "suspended" | "trial";
@@ -23,13 +25,66 @@ export default function AllClinicsPage() {
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState<FilterType>("all");
   const [statusFilter, setStatusFilter] = useState<FilterStatus>("all");
-  const [createOpen, setCreateOpen] = useState(false);
   const [detail, setDetail] = useState<ClinicDetail | null>(null);
   const [loginOpen, setLoginOpen] = useState(false);
   const [loginClinic, setLoginClinic] = useState<ClinicDetail | null>(null);
   const [suspendOpen, setSuspendOpen] = useState(false);
   const [suspendClinic, setSuspendClinic] = useState<ClinicDetail | null>(null);
-  const [list, setList] = useState(clinicDetails);
+  const [list, setList] = useState<ClinicDetail[]>(demoClinicDetails);
+  const [isLive, setIsLive] = useState(false);
+  const [loadingData, setLoadingData] = useState(true);
+  const [actionLoading, setActionLoading] = useState(false);
+
+  const loadClinics = useCallback(async () => {
+    try {
+      const clinics = await fetchClinics();
+      if (clinics && clinics.length > 0) {
+        const enriched: ClinicDetail[] = await Promise.all(
+          clinics.map(async (c) => {
+            let patientsCount = 0;
+            let doctorsCount = 0;
+            try {
+              const users = await fetchClinicUsers(c.id);
+              patientsCount = users.filter((u) => u.role === "patient").length;
+              doctorsCount = users.filter((u) => u.role === "doctor" || u.role === "clinic_admin").length;
+            } catch {
+              // ignore
+            }
+            const config = (c.config ?? {}) as Record<string, unknown>;
+            return {
+              id: c.id,
+              name: c.name,
+              type: c.type as "doctor" | "dentist" | "pharmacy",
+              plan: c.tier ?? "pro",
+              city: (config.city as string) ?? "",
+              patientsCount,
+              monthlyRevenue: 0,
+              status: (c.status === "inactive" ? "suspended" : c.status ?? "active") as "active" | "suspended" | "trial",
+              ownerName: (config.ownerName as string) ?? "",
+              ownerEmail: (config.email as string) ?? "",
+              ownerPhone: (config.phone as string) ?? "",
+              createdAt: c.created_at ?? "",
+              doctorsCount,
+              appointmentsThisMonth: 0,
+              domain: (config.domain as string) ?? undefined,
+              lastLoginAt: "",
+              features: {},
+            };
+          }),
+        );
+        setList(enriched);
+        setIsLive(true);
+      }
+    } catch {
+      // Supabase not configured - keep demo data
+    } finally {
+      setLoadingData(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadClinics();
+  }, [loadClinics]);
 
   const filtered = list.filter((c) => {
     const q = search.toLowerCase();
@@ -37,8 +92,31 @@ export default function AllClinicsPage() {
     return matchSearch && (typeFilter === "all" || c.type === typeFilter) && (statusFilter === "all" || c.status === statusFilter);
   });
 
-  function toggleStatus(clinic: ClinicDetail) {
-    setList((prev) => prev.map((c) => c.id === clinic.id ? { ...c, status: c.status === "suspended" ? "active" as const : "suspended" as const } : c));
+  async function toggleStatus(clinic: ClinicDetail) {
+    if (isLive) {
+      setActionLoading(true);
+      try {
+        const newStatus = clinic.status === "suspended" ? "active" : "suspended";
+        await updateClinicStatus(clinic.id, newStatus);
+        setList((prev) =>
+          prev.map((c) =>
+            c.id === clinic.id ? { ...c, status: newStatus as "active" | "suspended" | "trial" } : c,
+          ),
+        );
+      } catch (err) {
+        console.error("Failed to update status:", err);
+      } finally {
+        setActionLoading(false);
+      }
+    } else {
+      setList((prev) =>
+        prev.map((c) =>
+          c.id === clinic.id
+            ? { ...c, status: c.status === "suspended" ? ("active" as const) : ("suspended" as const) }
+            : c,
+        ),
+      );
+    }
     setSuspendOpen(false);
   }
 
@@ -47,12 +125,18 @@ export default function AllClinicsPage() {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold">All Clinics</h1>
-          <p className="text-sm text-muted-foreground mt-1">Manage all {list.length} registered clinics</p>
+          <p className="text-sm text-muted-foreground mt-1">
+            Manage all {list.length} registered clinics
+            {isLive && <Badge variant="success" className="ml-2 text-[10px]">Live Data</Badge>}
+            {!isLive && !loadingData && <Badge variant="secondary" className="ml-2 text-[10px]">Demo Data</Badge>}
+          </p>
         </div>
-        <Button onClick={() => setCreateOpen(true)}>
-          <Plus className="h-4 w-4 mr-1" />
-          New Client Setup
-        </Button>
+        <Link href="/super-admin/onboarding">
+          <Button>
+            <UserPlus className="h-4 w-4 mr-1" />
+            New Client Setup
+          </Button>
+        </Link>
       </div>
 
       <div className="flex flex-col sm:flex-row gap-3 mb-6">
@@ -79,6 +163,14 @@ export default function AllClinicsPage() {
         ))}
       </div>
 
+      {loadingData ? (
+        <Card>
+          <CardContent className="p-8 text-center">
+            <Loader2 className="h-6 w-6 animate-spin mx-auto mb-2 text-muted-foreground" />
+            <p className="text-sm text-muted-foreground">Loading clinics...</p>
+          </CardContent>
+        </Card>
+      ) : (
       <Card>
         <CardContent className="p-0">
           <div className="overflow-x-auto">
@@ -134,50 +226,7 @@ export default function AllClinicsPage() {
           </div>
         </CardContent>
       </Card>
-
-      {/* Create Clinic Dialog */}
-      <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-        <DialogContent onClose={() => setCreateOpen(false)} className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>New Client Setup</DialogTitle>
-            <DialogDescription>Create a new clinic account. The owner will receive login credentials via email.</DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2"><Label>Clinic Name</Label><Input placeholder="e.g. Cabinet Dr. Ahmed" /></div>
-              <div className="space-y-2">
-                <Label>Clinic Type</Label>
-                <select className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm">
-                  <option value="doctor">Doctor</option><option value="dentist">Dentist</option><option value="pharmacy">Pharmacy</option>
-                </select>
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2"><Label>Owner Name</Label><Input placeholder="Full name" /></div>
-              <div className="space-y-2"><Label>Owner Email</Label><Input type="email" placeholder="owner@clinic.ma" /></div>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2"><Label>Phone Number</Label><Input placeholder="+212 6 XX XX XX XX" /></div>
-              <div className="space-y-2"><Label>City</Label><Input placeholder="e.g. Casablanca" /></div>
-            </div>
-            <Separator />
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Subscription Plan</Label>
-                <select className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm">
-                  <option value="basic">Basic - 150 MAD/mo</option><option value="standard">Standard - 300 MAD/mo</option><option value="premium">Premium - 500 MAD/mo</option>
-                </select>
-              </div>
-              <div className="space-y-2"><Label>Custom Domain (optional)</Label><Input placeholder="clinic.ma" /></div>
-            </div>
-            <div className="space-y-2"><Label>Address</Label><Input placeholder="Full clinic address" /></div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setCreateOpen(false)}>Cancel</Button>
-            <Button onClick={() => setCreateOpen(false)}><Plus className="h-4 w-4 mr-1" />Create Clinic</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      )}
 
       {/* Detail Dialog */}
       <Dialog open={detail !== null} onOpenChange={() => setDetail(null)}>
@@ -270,7 +319,8 @@ export default function AllClinicsPage() {
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setSuspendOpen(false)}>Cancel</Button>
-              <Button variant={suspendClinic.status === "suspended" ? "default" : "destructive"} onClick={() => toggleStatus(suspendClinic)}>
+              <Button variant={suspendClinic.status === "suspended" ? "default" : "destructive"} onClick={() => toggleStatus(suspendClinic)} disabled={actionLoading}>
+                {actionLoading && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}
                 {suspendClinic.status === "suspended" ? <><CheckCircle className="h-4 w-4 mr-1" />Activate</> : <><Ban className="h-4 w-4 mr-1" />Suspend</>}
               </Button>
             </DialogFooter>
