@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import {
-  Calendar, Users, Clock, CheckCircle, XCircle, Activity,
+  Calendar, Clock, CheckCircle, XCircle, Activity,
   TrendingUp, BarChart3, Search, ArrowRight,
+  DollarSign, CalendarClock, Stethoscope,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -16,11 +17,32 @@ import {
   fetchDoctorAppointments,
   fetchPatients,
   fetchWaitingRoom,
+  fetchInvoices,
   updateAppointmentStatus,
   type AppointmentView,
   type PatientView,
   type WaitingRoomEntry,
+  type InvoiceView,
 } from "@/lib/data/client";
+
+// ── Date helpers ──
+
+function startOfWeek(d: Date): Date {
+  const day = d.getDay();
+  const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+  const monday = new Date(d);
+  monday.setDate(diff);
+  monday.setHours(0, 0, 0, 0);
+  return monday;
+}
+
+function startOfMonth(d: Date): Date {
+  return new Date(d.getFullYear(), d.getMonth(), 1);
+}
+
+function toDateStr(d: Date): string {
+  return d.toISOString().split("T")[0];
+}
 
 const statusVariant: Record<string, "default" | "success" | "warning" | "destructive" | "secondary" | "outline"> = {
   scheduled: "outline",
@@ -35,24 +57,97 @@ export default function DoctorDashboardPage() {
   const [appointmentList, setAppointmentList] = useState<AppointmentView[]>([]);
   const [patients, setPatients] = useState<PatientView[]>([]);
   const [waitingRoomEntries, setWaitingRoomEntries] = useState<WaitingRoomEntry[]>([]);
+  const [invoices, setInvoices] = useState<InvoiceView[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
     const user = await getCurrentUser();
     if (!user?.clinic_id) { setLoading(false); return; }
-    const [appts, pts, wr] = await Promise.all([
+    const [appts, pts, wr, inv] = await Promise.all([
       fetchDoctorAppointments(user.clinic_id, user.id),
       fetchPatients(user.clinic_id),
       fetchWaitingRoom(user.clinic_id),
+      fetchInvoices(user.clinic_id),
     ]);
     setAppointmentList(appts);
     setPatients(pts);
     setWaitingRoomEntries(wr);
+    setInvoices(inv);
     setLoading(false);
   }, []);
 
   useEffect(() => { load(); }, [load]);
+
+  // ── Derived KPIs ──
+
+  const now = useMemo(() => new Date(), []);
+  const todayStr = toDateStr(now);
+  const weekStart = toDateStr(startOfWeek(now));
+  const monthStart = toDateStr(startOfMonth(now));
+
+  const todayAppts = appointmentList.filter((a) => a.date === todayStr);
+  const completedToday = todayAppts.filter((a) => a.status === "completed").length;
+
+  // Consultations this week/month (completed or in-progress)
+  const consultationStatuses = useMemo(() => new Set(["completed", "in-progress"]), []);
+  const weekConsultations = appointmentList.filter(
+    (a) => a.date >= weekStart && a.date <= todayStr && consultationStatuses.has(a.status)
+  );
+  const monthConsultations = appointmentList.filter(
+    (a) => a.date >= monthStart && a.date <= todayStr && consultationStatuses.has(a.status)
+  );
+
+  // Revenue from consultations (paid invoices linked to this doctor's appointments)
+  const appointmentIds = useMemo(() => new Set(appointmentList.map((a) => a.id)), [appointmentList]);
+  const consultationInvoices = invoices.filter(
+    (inv) => inv.appointmentId && appointmentIds.has(inv.appointmentId) && inv.status === "paid"
+  );
+  const weekRevenue = consultationInvoices
+    .filter((inv) => inv.date >= weekStart && inv.date <= todayStr)
+    .reduce((sum, inv) => sum + inv.amount, 0);
+  const monthRevenue = consultationInvoices
+    .filter((inv) => inv.date >= monthStart && inv.date <= todayStr)
+    .reduce((sum, inv) => sum + inv.amount, 0);
+
+  // Upcoming follow-ups — future appointments for patients who already had a completed visit
+  const completedPatientIds = useMemo(
+    () => new Set(appointmentList.filter((a) => a.status === "completed").map((a) => a.patientId)),
+    [appointmentList],
+  );
+  const upcomingFollowUps = appointmentList.filter(
+    (a) =>
+      a.date > todayStr &&
+      (a.status === "scheduled" || a.status === "confirmed") &&
+      completedPatientIds.has(a.patientId)
+  );
+
+  // Week/month aggregate stats
+  const weekAppts = appointmentList.filter((a) => a.date >= weekStart && a.date <= todayStr);
+  const monthAppts = appointmentList.filter((a) => a.date >= monthStart && a.date <= todayStr);
+  const weekStats = {
+    totalAppointments: weekAppts.length,
+    uniquePatients: new Set(weekAppts.map((a) => a.patientId)).size,
+    completed: weekAppts.filter((a) => a.status === "completed").length,
+    noShows: weekAppts.filter((a) => a.status === "no-show" || a.status === "no_show").length,
+    consultations: weekConsultations.length,
+    revenue: weekRevenue,
+  };
+  const monthStats = {
+    totalAppointments: monthAppts.length,
+    uniquePatients: new Set(monthAppts.map((a) => a.patientId)).size,
+    completed: monthAppts.filter((a) => a.status === "completed").length,
+    noShows: monthAppts.filter((a) => a.status === "no-show" || a.status === "no_show").length,
+    consultations: monthConsultations.length,
+    revenue: monthRevenue,
+  };
+
+  const stats = [
+    { icon: Calendar, label: "Today's Appointments", value: todayAppts.length.toString(), color: "text-blue-600" },
+    { icon: Stethoscope, label: "Consultations (Week)", value: weekConsultations.length.toString(), color: "text-indigo-600" },
+    { icon: DollarSign, label: "Revenue (Month)", value: `${monthRevenue.toLocaleString()} MAD`, color: "text-emerald-600" },
+    { icon: CalendarClock, label: "Upcoming Follow-ups", value: upcomingFollowUps.length.toString(), color: "text-purple-600" },
+  ];
 
   if (loading) {
     return (
@@ -61,29 +156,6 @@ export default function DoctorDashboardPage() {
       </div>
     );
   }
-
-  const todayStr = new Date().toISOString().split("T")[0];
-  const todayAppts = appointmentList.filter(
-    (a) => a.date === todayStr
-  );
-
-  const totalPatients = new Set(
-    appointmentList.map((a) => a.patientId)
-  ).size;
-  const completedToday = todayAppts.filter((a) => a.status === "completed").length;
-  const waitingCount = todayAppts.filter(
-    (a) => a.status === "confirmed" || a.status === "scheduled"
-  ).length;
-
-  const weekStats = { totalAppointments: appointmentList.length, uniquePatients: totalPatients, completed: appointmentList.filter(a => a.status === "completed").length, noShows: appointmentList.filter(a => a.status === "no-show" || a.status === "no_show").length };
-  const monthStats = { ...weekStats, revenue: 0 };
-
-  const stats = [
-    { icon: Calendar, label: "Today's Appointments", value: todayAppts.length.toString(), color: "text-blue-600" },
-    { icon: Users, label: "Total Patients", value: totalPatients.toString(), color: "text-green-600" },
-    { icon: CheckCircle, label: "Completed Today", value: completedToday.toString(), color: "text-emerald-600" },
-    { icon: Clock, label: "In Waiting Room", value: waitingCount.toString(), color: "text-orange-600" },
-  ];
 
   const handleMarkDone = async (appointmentId: string) => {
     await updateAppointmentStatus(appointmentId, "completed");
@@ -142,6 +214,9 @@ export default function DoctorDashboardPage() {
             <CardTitle className="text-base flex items-center gap-2">
               <Activity className="h-4 w-4" />
               Today&apos;s Schedule
+              <Badge variant="outline" className="ml-auto text-xs">
+                {completedToday}/{todayAppts.length} completed
+              </Badge>
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -248,6 +323,46 @@ export default function DoctorDashboardPage() {
             </CardContent>
           </Card>
 
+          {/* Upcoming Follow-ups */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base flex items-center gap-2">
+                <CalendarClock className="h-4 w-4" />
+                Upcoming Follow-ups
+                {upcomingFollowUps.length > 0 && (
+                  <Badge variant="secondary" className="ml-auto text-xs">
+                    {upcomingFollowUps.length}
+                  </Badge>
+                )}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {upcomingFollowUps.length === 0 ? (
+                <p className="text-sm text-muted-foreground">No upcoming follow-ups.</p>
+              ) : (
+                <div className="space-y-3">
+                  {upcomingFollowUps.slice(0, 5).map((apt) => (
+                    <div key={apt.id} className="flex items-center gap-3 rounded-lg border p-3">
+                      <Avatar className="h-8 w-8">
+                        <AvatarFallback className="text-[10px] bg-purple-100 text-purple-700">
+                          {apt.patientName.split(" ").map((n) => n[0]).join("")}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate">{apt.patientName}</p>
+                        <p className="text-xs text-muted-foreground">{apt.serviceName}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-xs font-medium">{apt.date}</p>
+                        <p className="text-xs text-muted-foreground">{apt.time}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
           {/* Quick Patient Search */}
           <Card>
             <CardHeader>
@@ -307,11 +422,17 @@ export default function DoctorDashboardPage() {
           </div>
 
           <TabsContent value="week">
-            <div className="grid gap-4 md:grid-cols-4">
+            <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-6">
               <Card>
                 <CardContent className="p-4">
                   <p className="text-xs text-muted-foreground">Appointments</p>
                   <p className="text-2xl font-bold">{weekStats.totalAppointments}</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="p-4">
+                  <p className="text-xs text-muted-foreground">Consultations</p>
+                  <p className="text-2xl font-bold text-indigo-600">{weekStats.consultations}</p>
                 </CardContent>
               </Card>
               <Card>
@@ -332,15 +453,30 @@ export default function DoctorDashboardPage() {
                   <p className="text-2xl font-bold text-red-500">{weekStats.noShows}</p>
                 </CardContent>
               </Card>
+              <Card>
+                <CardContent className="p-4 flex items-center gap-2">
+                  <div>
+                    <p className="text-xs text-muted-foreground">Revenue</p>
+                    <p className="text-2xl font-bold">{weekStats.revenue.toLocaleString()} MAD</p>
+                  </div>
+                  <TrendingUp className="h-5 w-5 text-green-500" />
+                </CardContent>
+              </Card>
             </div>
           </TabsContent>
 
           <TabsContent value="month">
-            <div className="grid gap-4 md:grid-cols-5">
+            <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-6">
               <Card>
                 <CardContent className="p-4">
                   <p className="text-xs text-muted-foreground">Appointments</p>
                   <p className="text-2xl font-bold">{monthStats.totalAppointments}</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="p-4">
+                  <p className="text-xs text-muted-foreground">Consultations</p>
+                  <p className="text-2xl font-bold text-indigo-600">{monthStats.consultations}</p>
                 </CardContent>
               </Card>
               <Card>
@@ -365,7 +501,7 @@ export default function DoctorDashboardPage() {
                 <CardContent className="p-4 flex items-center gap-2">
                   <div>
                     <p className="text-xs text-muted-foreground">Revenue</p>
-                    <p className="text-2xl font-bold">{monthStats.revenue} MAD</p>
+                    <p className="text-2xl font-bold">{monthStats.revenue.toLocaleString()} MAD</p>
                   </div>
                   <TrendingUp className="h-5 w-5 text-green-500" />
                 </CardContent>

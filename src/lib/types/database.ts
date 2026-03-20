@@ -1089,6 +1089,38 @@ export interface LabInvoice {
   updated_at: string;
 }
 
+// ---- Lab Test Orders (from Migration 00012) ----
+
+export type LabTestOrderStatus =
+  | "pending"
+  | "in_progress"
+  | "completed"
+  | "awaiting_validation"
+  | "validated"
+  | "cancelled";
+
+export type LabTestPriority = "normal" | "urgent" | "stat";
+
+export interface LabTestOrder {
+  id: string;
+  clinic_id: string;
+  patient_id: string;
+  doctor_id: string;
+  test_name: string;
+  test_category: string;
+  status: LabTestOrderStatus;
+  priority: LabTestPriority;
+  ordered_at: string;
+  started_at: string | null;
+  completed_at: string | null;
+  validated_at: string | null;
+  validated_by: string | null;
+  results: Record<string, unknown>;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 // ---- Supabase Database Schema (for use with supabase-js typed client) ----
 
 export interface Database {
@@ -1139,6 +1171,7 @@ export interface Database {
       before_after_photos: { Row: BeforeAfterPhoto; Insert: Partial<BeforeAfterPhoto> & Pick<BeforeAfterPhoto, "clinic_id" | "patient_id">; Update: Partial<BeforeAfterPhoto> };
       pain_questionnaires: { Row: PainQuestionnaire; Insert: Partial<PainQuestionnaire> & Pick<PainQuestionnaire, "clinic_id" | "patient_id" | "pain_level">; Update: Partial<PainQuestionnaire> };
       clinic_types: { Row: ClinicTypeRecord; Insert: Partial<ClinicTypeRecord> & Pick<ClinicTypeRecord, "type_key" | "name_fr" | "name_ar" | "category">; Update: Partial<ClinicTypeRecord> };
+<<<<<<< HEAD
       // Phase 6: Clinics & Centers
       departments: { Row: Department; Insert: Partial<Department> & Pick<Department, "clinic_id" | "name">; Update: Partial<Department> };
       doctor_departments: { Row: DoctorDepartment; Insert: Partial<DoctorDepartment> & Pick<DoctorDepartment, "doctor_id" | "department_id" | "clinic_id">; Update: Partial<DoctorDepartment> };
@@ -1158,6 +1191,8 @@ export interface Database {
       lab_materials: { Row: LabMaterial; Insert: Partial<LabMaterial> & Pick<LabMaterial, "clinic_id" | "name" | "category">; Update: Partial<LabMaterial> };
       lab_deliveries: { Row: LabDelivery; Insert: Partial<LabDelivery> & Pick<LabDelivery, "clinic_id" | "order_id">; Update: Partial<LabDelivery> };
       lab_invoices: { Row: LabInvoice; Insert: Partial<LabInvoice> & Pick<LabInvoice, "clinic_id" | "invoice_number">; Update: Partial<LabInvoice> };
+      // Lab test orders (migration 00012)
+      lab_test_orders: { Row: LabTestOrder; Insert: Partial<LabTestOrder> & Pick<LabTestOrder, "clinic_id" | "patient_id" | "doctor_id" | "test_name">; Update: Partial<LabTestOrder> };
     };
   };
 }
