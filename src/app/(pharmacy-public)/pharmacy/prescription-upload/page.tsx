@@ -82,9 +82,12 @@ export default function PrescriptionUploadPage() {
           >
             Upload Another
           </Button>
-          <Button className="bg-emerald-600 hover:bg-emerald-700" asChild>
-            <a href="/pharmacy/prescription-history">View History</a>
-          </Button>
+          <a
+            href="/pharmacy/prescription-history"
+            className="inline-flex items-center justify-center rounded-lg px-2.5 h-8 text-sm font-medium bg-emerald-600 hover:bg-emerald-700 text-white transition-colors"
+          >
+            View History
+          </a>
         </div>
       </div>
     );

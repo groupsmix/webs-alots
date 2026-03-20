@@ -427,7 +427,7 @@ export default function PricingPage() {
                           <div className="flex items-center justify-center gap-1">
                             {ft.systemTypes.map((st) => {
                               const Icon = systemIcons[st];
-                              return <Icon key={st} className="h-3.5 w-3.5 text-muted-foreground" title={systemTypeLabels[st]} />;
+                              return <span key={st} title={systemTypeLabels[st]}><Icon className="h-3.5 w-3.5 text-muted-foreground" /></span>;
                             })}
                           </div>
                         </td>
