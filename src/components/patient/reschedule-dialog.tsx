@@ -1,18 +1,25 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Calendar, Clock, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { BookingCalendar } from "@/components/booking/calendar";
 import { TimeSlotPicker } from "@/components/booking/time-slots";
-import { getAvailableSlots, generateTimeSlots, getSlotBookingCounts } from "@/lib/demo-data";
 import { clinicConfig } from "@/config/clinic.config";
-import type { Appointment } from "@/lib/demo-data";
+import { fetchAvailableSlots, fetchGeneratedSlots, fetchSlotBookingCounts } from "@/lib/data/client";
+
+interface RescheduleAppointment {
+  id: string;
+  doctorId: string;
+  doctorName: string;
+  date: string;
+  time: string;
+}
 
 interface RescheduleDialogProps {
-  appointment: Appointment;
+  appointment: RescheduleAppointment;
   onClose: () => void;
   onReschedule: (newDate: string, newTime: string) => void;
 }
@@ -30,15 +37,33 @@ export function RescheduleDialog({ appointment, onClose, onReschedule }: Resched
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
 
-  const availableSlots = selectedDate
-    ? getAvailableSlots(selectedDate, appointment.doctorId)
-    : [];
+  const [availableSlots, setAvailableSlots] = useState<string[]>([]);
+  const [allSlots, setAllSlots] = useState<string[]>([]);
+  const [slotCounts, setSlotCounts] = useState<Record<string, number>>({});
 
-  const allSlots = selectedDate ? generateTimeSlots(selectedDate) : [];
-
-  const slotCounts = selectedDate
-    ? getSlotBookingCounts(selectedDate, appointment.doctorId)
-    : {};
+  // Fetch slots when date changes
+  useEffect(() => {
+    if (!selectedDate) {
+      setAvailableSlots([]);
+      setAllSlots([]);
+      setSlotCounts({});
+      return;
+    }
+    const clinicId = clinicConfig.clinicId;
+    Promise.all([
+      fetchAvailableSlots(clinicId, selectedDate, appointment.doctorId),
+      fetchGeneratedSlots(clinicId, selectedDate, appointment.doctorId),
+      fetchSlotBookingCounts(clinicId, selectedDate, appointment.doctorId),
+    ]).then(([available, all, counts]) => {
+      setAvailableSlots(available);
+      setAllSlots(all);
+      setSlotCounts(counts);
+    }).catch(() => {
+      setAvailableSlots([]);
+      setAllSlots([]);
+      setSlotCounts({});
+    });
+  }, [selectedDate, appointment.doctorId]);
 
   const handleReschedule = async () => {
     if (!selectedDate || !selectedTime) return;
