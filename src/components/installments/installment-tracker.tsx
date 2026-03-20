@@ -8,31 +8,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-interface InstallmentPayment {
-  id: string;
-  installmentPlanId: string;
-  amount: number;
-  dueDate: string;
-  paidDate: string | null;
-  status: "pending" | "paid" | "overdue";
-  receiptId: string | null;
-}
-
-interface InstallmentPlan {
-  id: string;
-  patientId: string;
-  patientName: string;
-  treatmentPlanId: string;
-  treatmentTitle: string;
-  totalAmount: number;
-  currency: string;
-  downPayment: number;
-  numberOfInstallments: number;
-  installments: InstallmentPayment[];
-  createdAt: string;
-  status: "active" | "completed" | "defaulted";
-  whatsappReminderEnabled: boolean;
-}
+import type { InstallmentPlan, InstallmentPayment } from "@/lib/types/dental";
 
 const STATUS_CONFIG: Record<InstallmentPayment["status"], { icon: typeof Clock; color: string; variant: "default" | "success" | "destructive" | "outline" }> = {
   pending: { icon: Clock, color: "text-gray-500", variant: "outline" },
