@@ -6,6 +6,7 @@ import {
   LayoutDashboard, Users, Calendar, Pill, FileEdit, Clock,
   MessageCircle, CalendarClock, BarChart3, ClipboardList,
   FlaskConical, ShieldCheck, Camera, Package, CreditCard, Award,
+  Ruler, Syringe, Baby, Heart, Image, Eye, Activity,
 } from "lucide-react";
 import { SignOutButton } from "@/components/sign-out-button";
 import { useClinicFeatures } from "@/lib/hooks/use-clinic-features";
@@ -36,6 +37,16 @@ const navItems: NavItem[] = [
   { href: "/doctor/before-after", label: "Before/After", icon: Camera, requiredFeature: "before_after_photos" },
   { href: "/doctor/stock", label: "Material Stock", icon: Package, requiredFeature: "stock" },
   { href: "/doctor/installments", label: "Installments", icon: CreditCard, requiredFeature: "installments" },
+  // Pediatrician
+  { href: "/doctor/growth-charts", label: "Growth Charts", icon: Ruler, requiredFeature: "growth_charts" },
+  { href: "/doctor/vaccinations", label: "Vaccinations", icon: Syringe, requiredFeature: "vaccination" },
+  { href: "/doctor/child-info", label: "Child Development", icon: Baby, requiredFeature: "growth_charts" },
+  // Gynecologist
+  { href: "/doctor/pregnancies", label: "Pregnancy Tracking", icon: Heart, requiredFeature: "pregnancy_tracking" },
+  { href: "/doctor/ultrasounds", label: "Ultrasound Records", icon: Image, requiredFeature: "ultrasound_records" },
+  // Ophthalmologist
+  { href: "/doctor/vision-tests", label: "Vision Tests", icon: Eye, requiredFeature: "vision_tests" },
+  { href: "/doctor/iop-tracking", label: "IOP Tracking", icon: Activity, requiredFeature: "iop_tracking" },
 ];
 
 export default function DoctorLayout({

@@ -24,7 +24,11 @@ export type ClinicFeatureKey =
   | "bed_management"
   | "installments"
   | "certificates"
-  | "sterilization_log";
+  | "sterilization_log"
+  | "pregnancy_tracking"
+  | "ultrasound_records"
+  | "vision_tests"
+  | "iop_tracking";
 
 /** A features_config object as stored in the DB. */
 export type FeaturesConfig = Partial<Record<ClinicFeatureKey, boolean>>;
