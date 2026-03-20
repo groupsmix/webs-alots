@@ -7,11 +7,11 @@ import {
   Clock, MapPin, Phone, ArrowRight, Star, ShoppingBag,
 } from "lucide-react";
 import {
-  pharmacyProducts,
-  pharmacyServices,
-  isCurrentlyOnDuty,
-  getNextOnDuty,
-} from "@/lib/pharmacy-demo-data";
+  getPublicPharmacyProducts,
+  getPublicPharmacyServices,
+  isPublicCurrentlyOnDuty,
+  getPublicNextOnDuty,
+} from "@/lib/data/public";
 
 export const metadata: Metadata = {
   title: "Pharmacie — Accueil",
@@ -34,11 +34,16 @@ const serviceIcons: Record<string, React.ReactNode> = {
   Shield: <Shield className="h-6 w-6" />,
 };
 
-export default function PharmacyHomePage() {
-  const onDuty = isCurrentlyOnDuty();
-  const nextDuty = getNextOnDuty();
-  const featuredProducts = pharmacyProducts.filter((p) => p.active).slice(0, 4);
-  const topServices = pharmacyServices.filter((s) => s.available).slice(0, 3);
+export default async function PharmacyHomePage() {
+  const [allProducts, allServices, onDuty, nextDuty] = await Promise.all([
+    getPublicPharmacyProducts(),
+    getPublicPharmacyServices(),
+    isPublicCurrentlyOnDuty(),
+    getPublicNextOnDuty(),
+  ]);
+
+  const featuredProducts = allProducts.filter((p) => p.active).slice(0, 4);
+  const topServices = allServices.filter((s) => s.available).slice(0, 3);
 
   return (
     <>
@@ -85,7 +90,7 @@ export default function PharmacyHomePage() {
                   <div className="flex items-center gap-2">
                     <ShoppingBag className="h-5 w-5 text-emerald-600" />
                     <div>
-                      <p className="text-sm font-semibold">{pharmacyProducts.length}+</p>
+                      <p className="text-sm font-semibold">{allProducts.length}+</p>
                       <p className="text-xs text-muted-foreground">Products</p>
                     </div>
                   </div>

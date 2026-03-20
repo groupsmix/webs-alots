@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Card, CardContent } from "@/components/ui/card";
 import { Phone, Mail, MapPin, Clock, MessageCircle } from "lucide-react";
-import { onDutySchedule } from "@/lib/pharmacy-demo-data";
+import { getPublicOnDutySchedule } from "@/lib/data/public";
 
 export const metadata: Metadata = {
   title: "Contact Pharmacie",
@@ -13,7 +13,8 @@ export const metadata: Metadata = {
   },
 };
 
-export default function PharmacyContactPage() {
+export default async function PharmacyContactPage() {
+  const onDutySchedule = await getPublicOnDutySchedule();
   const upcomingDuties = onDutySchedule.filter((d) => d.isOnDuty);
 
   return (

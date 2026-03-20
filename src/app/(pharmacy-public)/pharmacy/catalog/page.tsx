@@ -1,12 +1,56 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Search, Filter } from "lucide-react";
-import { pharmacyProducts, searchProducts, getStockStatus } from "@/lib/pharmacy-demo-data";
-import type { PharmacyProduct } from "@/lib/pharmacy-demo-data";
+import { Search, Filter, Loader2 } from "lucide-react";
+import { clinicConfig } from "@/config/clinic.config";
+import {
+  type PublicPharmacyProduct,
+  getPublicStockStatus,
+  searchPublicProducts,
+} from "@/lib/data/public";
+import { createClient } from "@/lib/supabase-client";
+
+async function fetchProductsClient(): Promise<PublicPharmacyProduct[]> {
+  const clinicId = clinicConfig.clinicId;
+  const supabase = createClient();
+
+  const [{ data: products }, { data: stockRows }] = await Promise.all([
+    supabase.from("products").select("*").eq("clinic_id", clinicId),
+    supabase.from("stock").select("*").eq("clinic_id", clinicId),
+  ]);
+
+  if (!products) return [];
+
+  const stockMap = new Map(
+    ((stockRows ?? []) as { product_id: string; quantity: number; min_threshold: number; expiry_date: string | null }[])
+      .map((s) => [s.product_id, s]),
+  );
+
+  return products.map((p: Record<string, unknown>) => {
+    const s = stockMap.get(p.id as string);
+    return {
+      id: p.id as string,
+      name: p.name as string,
+      genericName: (p.generic_name as string) ?? undefined,
+      category: (p.category as string) ?? "medication",
+      description: (p.description as string) ?? "",
+      price: (p.price as number) ?? 0,
+      currency: clinicConfig.currency,
+      requiresPrescription: (p.requires_prescription as boolean) ?? false,
+      stockQuantity: s?.quantity ?? 0,
+      minimumStock: s?.min_threshold ?? 0,
+      expiryDate: s?.expiry_date ?? "",
+      manufacturer: (p.manufacturer as string) ?? undefined,
+      barcode: (p.barcode as string) ?? undefined,
+      dosageForm: (p.dosage_form as string) ?? undefined,
+      strength: (p.strength as string) ?? undefined,
+      active: (p.is_active as boolean) ?? true,
+    };
+  });
+}
 
 const categories = [
   { value: "all", label: "All Products" },
@@ -21,19 +65,27 @@ const categories = [
 export default function CatalogPage() {
   const [query, setQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
+  const [allProducts, setAllProducts] = useState<PublicPharmacyProduct[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchProductsClient()
+      .then(setAllProducts)
+      .finally(() => setLoading(false));
+  }, []);
 
   const filtered = useMemo(() => {
-    let results: PharmacyProduct[];
+    let results: PublicPharmacyProduct[];
     if (query.trim()) {
-      results = searchProducts(query);
+      results = searchPublicProducts(allProducts, query);
     } else {
-      results = pharmacyProducts.filter((p) => p.active);
+      results = allProducts.filter((p) => p.active);
     }
     if (selectedCategory !== "all") {
       results = results.filter((p) => p.category === selectedCategory);
     }
     return results;
-  }, [query, selectedCategory]);
+  }, [query, selectedCategory, allProducts]);
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -71,6 +123,12 @@ export default function CatalogPage() {
         </div>
       </div>
 
+      {loading ? (
+        <div className="flex justify-center py-16">
+          <Loader2 className="h-8 w-8 animate-spin text-emerald-600" />
+        </div>
+      ) : (
+        <>
       {/* Results count */}
       <p className="text-sm text-muted-foreground mb-4">
         Showing {filtered.length} product{filtered.length !== 1 ? "s" : ""}
@@ -79,7 +137,7 @@ export default function CatalogPage() {
       {/* Product Grid */}
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {filtered.map((product) => {
-          const stock = getStockStatus(product);
+          const stock = getPublicStockStatus(product);
           return (
             <Card key={product.id} className="hover:shadow-md transition-shadow">
               <CardContent className="pt-6">
@@ -106,9 +164,11 @@ export default function CatalogPage() {
                     {product.dosageForm} {product.strength ? `- ${product.strength}` : ""}
                   </p>
                 )}
+                {product.manufacturer && (
                 <p className="text-xs text-muted-foreground mb-3">
                   by {product.manufacturer}
                 </p>
+                )}
                 <div className="flex items-center justify-between pt-3 border-t">
                   <span className="text-lg font-bold text-emerald-600">
                     {product.price} {product.currency}
@@ -132,6 +192,8 @@ export default function CatalogPage() {
           <h3 className="font-semibold text-lg mb-2">No products found</h3>
           <p className="text-muted-foreground">Try adjusting your search or filter criteria</p>
         </div>
+      )}
+        </>
       )}
     </div>
   );

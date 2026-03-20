@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Heart, Droplet, Syringe, MessageCircle, Cross, Scale, Truck, Pill } from "lucide-react";
-import { pharmacyServices } from "@/lib/pharmacy-demo-data";
+import { getPublicPharmacyServices } from "@/lib/data/public";
 
 export const metadata: Metadata = {
   title: "Services Pharmaceutiques",
@@ -24,7 +24,9 @@ const iconMap: Record<string, React.ReactNode> = {
   Truck: <Truck className="h-8 w-8" />,
 };
 
-export default function PharmacyServicesPage() {
+export default async function PharmacyServicesPage() {
+  const pharmacyServices = await getPublicPharmacyServices();
+
   return (
     <div className="container mx-auto px-4 py-8">
       <h1 className="text-3xl font-bold mb-2">Our Services</h1>
