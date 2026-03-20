@@ -133,7 +133,7 @@ export default function ConsultationNotesPage() {
         id: `cn-${Date.now()}`,
         appointmentId: editingApptId,
         patientId: appt.patientId,
-        doctorId: doctorId,
+        doctorId: appt.doctorId,
         date: appt.date,
         ...formData,
         createdAt: now,
