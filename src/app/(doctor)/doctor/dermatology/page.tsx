@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import {
   Camera, Plus, MapPin, Calendar, Tag, Eye,
-  CheckCircle, Search, Save,
+  AlertTriangle, CheckCircle, Search, Save,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
