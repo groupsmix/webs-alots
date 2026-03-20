@@ -3556,3 +3556,629 @@ export async function fetchParapharmacyProducts(clinicId: string): Promise<Produ
     };
   });
 }
+
+// ─────────────────────────────────────────────
+// PEDIATRICIAN — Growth Measurements
+// ─────────────────────────────────────────────
+
+export interface GrowthMeasurementView {
+  id: string;
+  patientId: string;
+  patientName: string;
+  doctorId: string;
+  measuredAt: string;
+  ageMonths: number;
+  weightKg: number | null;
+  heightCm: number | null;
+  headCircCm: number | null;
+  bmi: number | null;
+  notes: string;
+}
+
+interface GrowthMeasurementRaw {
+  id: string;
+  clinic_id: string;
+  patient_id: string;
+  doctor_id: string;
+  measured_at: string;
+  age_months: number;
+  weight_kg: number | null;
+  height_cm: number | null;
+  head_circ_cm: number | null;
+  bmi: number | null;
+  notes: string | null;
+}
+
+export async function fetchGrowthMeasurements(clinicId: string, patientId?: string): Promise<GrowthMeasurementView[]> {
+  await ensureLookups(clinicId);
+  const eq: [string, unknown][] = [["clinic_id", clinicId]];
+  if (patientId) eq.push(["patient_id", patientId]);
+  const rows = await fetchRows<GrowthMeasurementRaw>("growth_measurements", {
+    eq,
+    order: ["measured_at", { ascending: true }],
+  });
+  return rows.map((r) => ({
+    id: r.id,
+    patientId: r.patient_id,
+    patientName: _userMap?.get(r.patient_id)?.name ?? "Patient",
+    doctorId: r.doctor_id,
+    measuredAt: r.measured_at,
+    ageMonths: r.age_months,
+    weightKg: r.weight_kg,
+    heightCm: r.height_cm,
+    headCircCm: r.head_circ_cm,
+    bmi: r.bmi,
+    notes: r.notes ?? "",
+  }));
+}
+
+export async function createGrowthMeasurement(data: {
+  clinic_id: string;
+  patient_id: string;
+  doctor_id: string;
+  measured_at: string;
+  age_months: number;
+  weight_kg?: number;
+  height_cm?: number;
+  head_circ_cm?: number;
+  bmi?: number;
+  notes?: string;
+}): Promise<string | null> {
+  const supabase = createClient();
+  const { data: row, error } = await supabase
+    .from("growth_measurements")
+    .insert(data)
+    .select("id")
+    .single();
+  if (error) { console.error("[data] growth_measurements insert:", error.message); return null; }
+  return row?.id ?? null;
+}
+
+// ─────────────────────────────────────────────
+// PEDIATRICIAN — Vaccinations
+// ─────────────────────────────────────────────
+
+export interface VaccinationView {
+  id: string;
+  patientId: string;
+  patientName: string;
+  doctorId: string;
+  vaccineName: string;
+  doseNumber: number;
+  scheduledDate: string;
+  administeredDate: string | null;
+  status: "scheduled" | "administered" | "overdue" | "skipped";
+  lotNumber: string;
+  site: string;
+  notes: string;
+}
+
+interface VaccinationRaw {
+  id: string;
+  clinic_id: string;
+  patient_id: string;
+  doctor_id: string | null;
+  vaccine_name: string;
+  dose_number: number;
+  scheduled_date: string;
+  administered_date: string | null;
+  status: string;
+  lot_number: string | null;
+  site: string | null;
+  notes: string | null;
+}
+
+export async function fetchVaccinations(clinicId: string, patientId?: string): Promise<VaccinationView[]> {
+  await ensureLookups(clinicId);
+  const eq: [string, unknown][] = [["clinic_id", clinicId]];
+  if (patientId) eq.push(["patient_id", patientId]);
+  const rows = await fetchRows<VaccinationRaw>("vaccinations", {
+    eq,
+    order: ["scheduled_date", { ascending: true }],
+  });
+  return rows.map((r) => ({
+    id: r.id,
+    patientId: r.patient_id,
+    patientName: _userMap?.get(r.patient_id)?.name ?? "Patient",
+    doctorId: r.doctor_id ?? "",
+    vaccineName: r.vaccine_name,
+    doseNumber: r.dose_number,
+    scheduledDate: r.scheduled_date,
+    administeredDate: r.administered_date,
+    status: r.status as VaccinationView["status"],
+    lotNumber: r.lot_number ?? "",
+    site: r.site ?? "",
+    notes: r.notes ?? "",
+  }));
+}
+
+export async function createVaccination(data: {
+  clinic_id: string;
+  patient_id: string;
+  doctor_id?: string;
+  vaccine_name: string;
+  dose_number: number;
+  scheduled_date: string;
+  administered_date?: string;
+  status?: string;
+  lot_number?: string;
+  site?: string;
+  notes?: string;
+}): Promise<string | null> {
+  const supabase = createClient();
+  const { data: row, error } = await supabase
+    .from("vaccinations")
+    .insert(data)
+    .select("id")
+    .single();
+  if (error) { console.error("[data] vaccinations insert:", error.message); return null; }
+  return row?.id ?? null;
+}
+
+export async function updateVaccination(id: string, updates: Record<string, unknown>): Promise<boolean> {
+  const supabase = createClient();
+  const { error } = await supabase.from("vaccinations").update(updates).eq("id", id);
+  if (error) { console.error("[data] vaccinations update:", error.message); return false; }
+  return true;
+}
+
+// ─────────────────────────────────────────────
+// PEDIATRICIAN — Developmental Milestones
+// ─────────────────────────────────────────────
+
+export interface MilestoneView {
+  id: string;
+  patientId: string;
+  patientName: string;
+  category: "motor" | "language" | "social" | "cognitive";
+  milestone: string;
+  expectedAgeMonths: number | null;
+  achievedDate: string | null;
+  status: "pending" | "achieved" | "delayed" | "concern";
+  notes: string;
+}
+
+interface MilestoneRaw {
+  id: string;
+  clinic_id: string;
+  patient_id: string;
+  doctor_id: string | null;
+  category: string;
+  milestone: string;
+  expected_age_months: number | null;
+  achieved_date: string | null;
+  status: string;
+  notes: string | null;
+}
+
+export async function fetchMilestones(clinicId: string, patientId?: string): Promise<MilestoneView[]> {
+  await ensureLookups(clinicId);
+  const eq: [string, unknown][] = [["clinic_id", clinicId]];
+  if (patientId) eq.push(["patient_id", patientId]);
+  const rows = await fetchRows<MilestoneRaw>("developmental_milestones", {
+    eq,
+    order: ["expected_age_months", { ascending: true }],
+  });
+  return rows.map((r) => ({
+    id: r.id,
+    patientId: r.patient_id,
+    patientName: _userMap?.get(r.patient_id)?.name ?? "Patient",
+    category: r.category as MilestoneView["category"],
+    milestone: r.milestone,
+    expectedAgeMonths: r.expected_age_months,
+    achievedDate: r.achieved_date,
+    status: r.status as MilestoneView["status"],
+    notes: r.notes ?? "",
+  }));
+}
+
+export async function createMilestone(data: {
+  clinic_id: string;
+  patient_id: string;
+  doctor_id?: string;
+  category: string;
+  milestone: string;
+  expected_age_months?: number;
+  achieved_date?: string;
+  status?: string;
+  notes?: string;
+}): Promise<string | null> {
+  const supabase = createClient();
+  const { data: row, error } = await supabase
+    .from("developmental_milestones")
+    .insert(data)
+    .select("id")
+    .single();
+  if (error) { console.error("[data] developmental_milestones insert:", error.message); return null; }
+  return row?.id ?? null;
+}
+
+export async function updateMilestone(id: string, updates: Record<string, unknown>): Promise<boolean> {
+  const supabase = createClient();
+  const { error } = await supabase.from("developmental_milestones").update(updates).eq("id", id);
+  if (error) { console.error("[data] developmental_milestones update:", error.message); return false; }
+  return true;
+}
+
+// ─────────────────────────────────────────────
+// GYNECOLOGIST — Pregnancies
+// ─────────────────────────────────────────────
+
+export interface PregnancyView {
+  id: string;
+  patientId: string;
+  patientName: string;
+  doctorId: string;
+  lmpDate: string;
+  eddDate: string;
+  status: "active" | "delivered" | "miscarriage" | "ectopic" | "terminated";
+  gravida: number | null;
+  para: number | null;
+  bloodType: string;
+  rhFactor: string;
+  riskFactors: string[];
+  birthPlanNotes: string;
+  deliveryDate: string | null;
+  deliveryType: string | null;
+  babyWeightKg: number | null;
+  babyGender: string | null;
+  notes: string;
+  gestationalWeeks: number;
+  gestationalDays: number;
+  trimester: number;
+}
+
+interface PregnancyRaw {
+  id: string;
+  clinic_id: string;
+  patient_id: string;
+  doctor_id: string;
+  lmp_date: string;
+  edd_date: string;
+  status: string;
+  gravida: number | null;
+  para: number | null;
+  blood_type: string | null;
+  rh_factor: string | null;
+  risk_factors: string[] | null;
+  birth_plan_notes: string | null;
+  delivery_date: string | null;
+  delivery_type: string | null;
+  baby_weight_kg: number | null;
+  baby_gender: string | null;
+  notes: string | null;
+  created_at: string;
+}
+
+function calcGestationalAge(lmpDate: string): { weeks: number; days: number; trimester: number } {
+  const lmp = new Date(lmpDate);
+  const now = new Date();
+  const diffMs = now.getTime() - lmp.getTime();
+  const totalDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+  const weeks = Math.floor(totalDays / 7);
+  const days = totalDays % 7;
+  const trimester = weeks < 13 ? 1 : weeks < 27 ? 2 : 3;
+  return { weeks, days, trimester };
+}
+
+export async function fetchPregnancies(clinicId: string, patientId?: string): Promise<PregnancyView[]> {
+  await ensureLookups(clinicId);
+  const eq: [string, unknown][] = [["clinic_id", clinicId]];
+  if (patientId) eq.push(["patient_id", patientId]);
+  const rows = await fetchRows<PregnancyRaw>("pregnancies", {
+    eq,
+    order: ["created_at", { ascending: false }],
+  });
+  return rows.map((r) => {
+    const ga = calcGestationalAge(r.lmp_date);
+    return {
+      id: r.id,
+      patientId: r.patient_id,
+      patientName: _userMap?.get(r.patient_id)?.name ?? "Patient",
+      doctorId: r.doctor_id,
+      lmpDate: r.lmp_date,
+      eddDate: r.edd_date,
+      status: r.status as PregnancyView["status"],
+      gravida: r.gravida,
+      para: r.para,
+      bloodType: r.blood_type ?? "",
+      rhFactor: r.rh_factor ?? "",
+      riskFactors: (r.risk_factors ?? []) as string[],
+      birthPlanNotes: r.birth_plan_notes ?? "",
+      deliveryDate: r.delivery_date,
+      deliveryType: r.delivery_type,
+      babyWeightKg: r.baby_weight_kg,
+      babyGender: r.baby_gender,
+      notes: r.notes ?? "",
+      gestationalWeeks: ga.weeks,
+      gestationalDays: ga.days,
+      trimester: ga.trimester,
+    };
+  });
+}
+
+export async function createPregnancy(data: {
+  clinic_id: string;
+  patient_id: string;
+  doctor_id: string;
+  lmp_date: string;
+  edd_date: string;
+  gravida?: number;
+  para?: number;
+  blood_type?: string;
+  rh_factor?: string;
+  risk_factors?: string[];
+  birth_plan_notes?: string;
+  notes?: string;
+}): Promise<string | null> {
+  const supabase = createClient();
+  const { data: row, error } = await supabase
+    .from("pregnancies")
+    .insert(data)
+    .select("id")
+    .single();
+  if (error) { console.error("[data] pregnancies insert:", error.message); return null; }
+  return row?.id ?? null;
+}
+
+export async function updatePregnancy(id: string, updates: Record<string, unknown>): Promise<boolean> {
+  const supabase = createClient();
+  const { error } = await supabase.from("pregnancies").update(updates).eq("id", id);
+  if (error) { console.error("[data] pregnancies update:", error.message); return false; }
+  return true;
+}
+
+// ─────────────────────────────────────────────
+// GYNECOLOGIST — Ultrasound Records
+// ─────────────────────────────────────────────
+
+export interface UltrasoundView {
+  id: string;
+  pregnancyId: string;
+  patientId: string;
+  patientName: string;
+  doctorId: string;
+  scanDate: string;
+  trimester: number;
+  gestationalWeeks: number | null;
+  gestationalDays: number | null;
+  measurements: Record<string, unknown>;
+  findings: string;
+  imageUrls: string[];
+  notes: string;
+}
+
+interface UltrasoundRaw {
+  id: string;
+  clinic_id: string;
+  pregnancy_id: string;
+  patient_id: string;
+  doctor_id: string;
+  scan_date: string;
+  trimester: number;
+  gestational_weeks: number | null;
+  gestational_days: number | null;
+  measurements: Record<string, unknown> | null;
+  findings: string | null;
+  image_urls: string[] | null;
+  notes: string | null;
+}
+
+export async function fetchUltrasounds(clinicId: string, pregnancyId?: string): Promise<UltrasoundView[]> {
+  await ensureLookups(clinicId);
+  const eq: [string, unknown][] = [["clinic_id", clinicId]];
+  if (pregnancyId) eq.push(["pregnancy_id", pregnancyId]);
+  const rows = await fetchRows<UltrasoundRaw>("ultrasound_records", {
+    eq,
+    order: ["scan_date", { ascending: false }],
+  });
+  return rows.map((r) => ({
+    id: r.id,
+    pregnancyId: r.pregnancy_id,
+    patientId: r.patient_id,
+    patientName: _userMap?.get(r.patient_id)?.name ?? "Patient",
+    doctorId: r.doctor_id,
+    scanDate: r.scan_date,
+    trimester: r.trimester,
+    gestationalWeeks: r.gestational_weeks,
+    gestationalDays: r.gestational_days,
+    measurements: r.measurements ?? {},
+    findings: r.findings ?? "",
+    imageUrls: (r.image_urls ?? []) as string[],
+    notes: r.notes ?? "",
+  }));
+}
+
+export async function createUltrasound(data: {
+  clinic_id: string;
+  pregnancy_id: string;
+  patient_id: string;
+  doctor_id: string;
+  scan_date: string;
+  trimester: number;
+  gestational_weeks?: number;
+  gestational_days?: number;
+  measurements?: Record<string, unknown>;
+  findings?: string;
+  image_urls?: string[];
+  notes?: string;
+}): Promise<string | null> {
+  const supabase = createClient();
+  const { data: row, error } = await supabase
+    .from("ultrasound_records")
+    .insert(data)
+    .select("id")
+    .single();
+  if (error) { console.error("[data] ultrasound_records insert:", error.message); return null; }
+  return row?.id ?? null;
+}
+
+// ─────────────────────────────────────────────
+// OPHTHALMOLOGIST — Vision Tests
+// ─────────────────────────────────────────────
+
+export interface VisionTestView {
+  id: string;
+  patientId: string;
+  patientName: string;
+  doctorId: string;
+  testDate: string;
+  odAcuity: string;
+  osAcuity: string;
+  odSphere: number | null;
+  odCylinder: number | null;
+  odAxis: number | null;
+  osSphere: number | null;
+  osCylinder: number | null;
+  osAxis: number | null;
+  odAdd: number | null;
+  osAdd: number | null;
+  pdMm: number | null;
+  notes: string;
+}
+
+interface VisionTestRaw {
+  id: string;
+  clinic_id: string;
+  patient_id: string;
+  doctor_id: string;
+  test_date: string;
+  od_acuity: string | null;
+  os_acuity: string | null;
+  od_sphere: number | null;
+  od_cylinder: number | null;
+  od_axis: number | null;
+  os_sphere: number | null;
+  os_cylinder: number | null;
+  os_axis: number | null;
+  od_add: number | null;
+  os_add: number | null;
+  pd_mm: number | null;
+  notes: string | null;
+}
+
+export async function fetchVisionTests(clinicId: string, patientId?: string): Promise<VisionTestView[]> {
+  await ensureLookups(clinicId);
+  const eq: [string, unknown][] = [["clinic_id", clinicId]];
+  if (patientId) eq.push(["patient_id", patientId]);
+  const rows = await fetchRows<VisionTestRaw>("vision_tests", {
+    eq,
+    order: ["test_date", { ascending: false }],
+  });
+  return rows.map((r) => ({
+    id: r.id,
+    patientId: r.patient_id,
+    patientName: _userMap?.get(r.patient_id)?.name ?? "Patient",
+    doctorId: r.doctor_id,
+    testDate: r.test_date,
+    odAcuity: r.od_acuity ?? "",
+    osAcuity: r.os_acuity ?? "",
+    odSphere: r.od_sphere,
+    odCylinder: r.od_cylinder,
+    odAxis: r.od_axis,
+    osSphere: r.os_sphere,
+    osCylinder: r.os_cylinder,
+    osAxis: r.os_axis,
+    odAdd: r.od_add,
+    osAdd: r.os_add,
+    pdMm: r.pd_mm,
+    notes: r.notes ?? "",
+  }));
+}
+
+export async function createVisionTest(data: {
+  clinic_id: string;
+  patient_id: string;
+  doctor_id: string;
+  test_date: string;
+  od_acuity?: string;
+  os_acuity?: string;
+  od_sphere?: number;
+  od_cylinder?: number;
+  od_axis?: number;
+  os_sphere?: number;
+  os_cylinder?: number;
+  os_axis?: number;
+  od_add?: number;
+  os_add?: number;
+  pd_mm?: number;
+  notes?: string;
+}): Promise<string | null> {
+  const supabase = createClient();
+  const { data: row, error } = await supabase
+    .from("vision_tests")
+    .insert(data)
+    .select("id")
+    .single();
+  if (error) { console.error("[data] vision_tests insert:", error.message); return null; }
+  return row?.id ?? null;
+}
+
+// ─────────────────────────────────────────────
+// OPHTHALMOLOGIST — IOP Measurements
+// ─────────────────────────────────────────────
+
+export interface IopMeasurementView {
+  id: string;
+  patientId: string;
+  patientName: string;
+  doctorId: string;
+  measuredAt: string;
+  odPressure: number;
+  osPressure: number;
+  method: string;
+  notes: string;
+}
+
+interface IopMeasurementRaw {
+  id: string;
+  clinic_id: string;
+  patient_id: string;
+  doctor_id: string;
+  measured_at: string;
+  od_pressure: number;
+  os_pressure: number;
+  method: string | null;
+  notes: string | null;
+}
+
+export async function fetchIopMeasurements(clinicId: string, patientId?: string): Promise<IopMeasurementView[]> {
+  await ensureLookups(clinicId);
+  const eq: [string, unknown][] = [["clinic_id", clinicId]];
+  if (patientId) eq.push(["patient_id", patientId]);
+  const rows = await fetchRows<IopMeasurementRaw>("iop_measurements", {
+    eq,
+    order: ["measured_at", { ascending: true }],
+  });
+  return rows.map((r) => ({
+    id: r.id,
+    patientId: r.patient_id,
+    patientName: _userMap?.get(r.patient_id)?.name ?? "Patient",
+    doctorId: r.doctor_id,
+    measuredAt: r.measured_at,
+    odPressure: r.od_pressure,
+    osPressure: r.os_pressure,
+    method: r.method ?? "goldmann",
+    notes: r.notes ?? "",
+  }));
+}
+
+export async function createIopMeasurement(data: {
+  clinic_id: string;
+  patient_id: string;
+  doctor_id: string;
+  measured_at: string;
+  od_pressure: number;
+  os_pressure: number;
+  method?: string;
+  notes?: string;
+}): Promise<string | null> {
+  const supabase = createClient();
+  const { data: row, error } = await supabase
+    .from("iop_measurements")
+    .insert(data)
+    .select("id")
+    .single();
+  if (error) { console.error("[data] iop_measurements insert:", error.message); return null; }
+  return row?.id ?? null;
+}
