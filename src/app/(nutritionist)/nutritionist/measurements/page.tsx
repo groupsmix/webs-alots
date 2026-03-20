@@ -1,0 +1,39 @@
+"use client";
+
+import { useState, useEffect, useCallback } from "react";
+import { Scale } from "lucide-react";
+import { BodyMeasurementTracker } from "@/components/para-medical/body-measurement-tracker";
+import { getCurrentUser } from "@/lib/data/client";
+import type { BodyMeasurement } from "@/lib/types/para-medical";
+
+export default function MeasurementsPage() {
+  const [measurements, setMeasurements] = useState<BodyMeasurement[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const load = useCallback(async () => {
+    const user = await getCurrentUser();
+    if (!user?.clinic_id) { setLoading(false); return; }
+    setMeasurements([]);
+    setLoading(false);
+  }, []);
+
+  useEffect(() => { load(); }, [load]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <p className="text-sm text-muted-foreground">Loading measurements...</p>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <div className="flex items-center gap-3 mb-6">
+        <Scale className="h-6 w-6 text-blue-600" />
+        <h1 className="text-2xl font-bold">Body Measurements</h1>
+      </div>
+      <BodyMeasurementTracker measurements={measurements} />
+    </div>
+  );
+}

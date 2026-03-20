@@ -1,0 +1,39 @@
+"use client";
+
+import { useState, useEffect, useCallback } from "react";
+import { Package } from "lucide-react";
+import { LensInventoryManager } from "@/components/para-medical/lens-inventory-manager";
+import { getCurrentUser } from "@/lib/data/client";
+import type { LensInventoryItem } from "@/lib/types/para-medical";
+
+export default function LensInventoryPage() {
+  const [items, setItems] = useState<LensInventoryItem[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const load = useCallback(async () => {
+    const user = await getCurrentUser();
+    if (!user?.clinic_id) { setLoading(false); return; }
+    setItems([]);
+    setLoading(false);
+  }, []);
+
+  useEffect(() => { load(); }, [load]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <p className="text-sm text-muted-foreground">Loading lens inventory...</p>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <div className="flex items-center gap-3 mb-6">
+        <Package className="h-6 w-6 text-blue-600" />
+        <h1 className="text-2xl font-bold">Lens Inventory</h1>
+      </div>
+      <LensInventoryManager items={items} />
+    </div>
+  );
+}
