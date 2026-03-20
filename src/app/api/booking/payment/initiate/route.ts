@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { initiatePayment } from "@/lib/demo-data";
+import { createClient } from "@/lib/supabase-server";
+import { clinicConfig } from "@/config/clinic.config";
 
 export const runtime = "edge";
 
@@ -26,24 +27,90 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const result = initiatePayment(
-      body.appointmentId,
-      body.patientId,
-      body.patientName,
-      body.amount,
-      body.paymentType,
-      body.method,
-    );
+    const supabase = await createClient();
 
-    if (!result.success) {
-      return NextResponse.json({ error: result.error }, { status: 400 });
+    // Verify the appointment exists
+    const { data: appt, error: apptError } = await supabase
+      .from("appointments")
+      .select("id")
+      .eq("id", body.appointmentId)
+      .eq("clinic_id", clinicConfig.clinicId)
+      .single();
+
+    if (apptError || !appt) {
+      return NextResponse.json({ error: "Appointment not found" }, { status: 404 });
+    }
+
+    // Check for existing active payment on this appointment
+    const { data: existingPayment } = await supabase
+      .from("payments")
+      .select("id")
+      .eq("appointment_id", body.appointmentId)
+      .eq("clinic_id", clinicConfig.clinicId)
+      .not("status", "in", '("refunded","failed")')
+      .limit(1)
+      .single();
+
+    if (existingPayment) {
+      return NextResponse.json({ error: "A payment already exists for this appointment" }, { status: 400 });
+    }
+
+    // Find or create patient
+    let patientId = body.patientId;
+    if (patientId.startsWith("patient-")) {
+      const { data: existing } = await supabase
+        .from("users")
+        .select("id")
+        .eq("clinic_id", clinicConfig.clinicId)
+        .eq("name", body.patientName)
+        .eq("role", "patient")
+        .limit(1)
+        .single();
+
+      if (existing) {
+        patientId = existing.id;
+      } else {
+        const { data: newPatient } = await supabase
+          .from("users")
+          .insert({
+            clinic_id: clinicConfig.clinicId,
+            name: body.patientName,
+            role: "patient",
+          })
+          .select("id")
+          .single();
+        if (newPatient) patientId = newPatient.id;
+      }
+    }
+
+    const method = body.method ?? "online";
+    const gatewaySessionId = method === "online" ? crypto.randomUUID() : null;
+
+    const { data: payment, error: insertError } = await supabase
+      .from("payments")
+      .insert({
+        clinic_id: clinicConfig.clinicId,
+        appointment_id: body.appointmentId,
+        patient_id: patientId,
+        amount: body.amount,
+        method,
+        status: "pending",
+        payment_type: body.paymentType,
+        gateway_session_id: gatewaySessionId,
+        refunded_amount: 0,
+      })
+      .select("id")
+      .single();
+
+    if (insertError || !payment) {
+      return NextResponse.json({ error: insertError?.message ?? "Failed to initiate payment" }, { status: 500 });
     }
 
     return NextResponse.json({
       status: "initiated",
       message: "Payment initiated",
-      paymentId: result.paymentId,
-      gatewaySessionId: result.gatewaySessionId,
+      paymentId: payment.id,
+      gatewaySessionId,
     });
   } catch {
     return NextResponse.json({ error: "Failed to initiate payment" }, { status: 500 });
