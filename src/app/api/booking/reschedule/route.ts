@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { rescheduleAppointment } from "@/lib/demo-data";
+import { createClient } from "@/lib/supabase-server";
 
 export const runtime = "edge";
 
@@ -31,16 +31,37 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Invalid time format (expected HH:MM)" }, { status: 400 });
     }
 
-    const result = rescheduleAppointment(body.appointmentId, body.newDate, body.newTime);
+    const supabase = await createClient();
 
-    if (!result.success) {
-      return NextResponse.json({ error: result.error }, { status: 400 });
+    // Get the existing appointment
+    const { data: existing, error: fetchError } = await supabase
+      .from("appointments")
+      .select("*")
+      .eq("id", body.appointmentId)
+      .single();
+
+    if (fetchError || !existing) {
+      return NextResponse.json({ error: "Appointment not found" }, { status: 404 });
+    }
+
+    // Update the existing appointment with new date/time
+    const { error: updateError } = await supabase
+      .from("appointments")
+      .update({
+        appointment_date: body.newDate,
+        start_time: body.newTime,
+        status: "confirmed",
+      })
+      .eq("id", body.appointmentId);
+
+    if (updateError) {
+      return NextResponse.json({ error: updateError.message }, { status: 400 });
     }
 
     return NextResponse.json({
       status: "rescheduled",
       message: "Appointment rescheduled successfully",
-      newAppointmentId: result.newAppointmentId,
+      newAppointmentId: body.appointmentId,
     });
   } catch {
     return NextResponse.json({ error: "Failed to reschedule appointment" }, { status: 500 });

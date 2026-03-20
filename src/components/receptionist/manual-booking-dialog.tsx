@@ -67,6 +67,7 @@ export function ManualBookingDialog({ trigger, onBook }: ManualBookingDialogProp
     }
     load();
   }, []);
+
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
   const [time, setTime] = useState("");
   const [notes, setNotes] = useState("");

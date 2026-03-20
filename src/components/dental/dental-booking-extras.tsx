@@ -1,10 +1,12 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { Stethoscope, Clock, Shield } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { dentalTreatmentTypes } from "@/lib/dental-demo-data";
+import { fetchDentalTreatmentTypes, type DentalTreatmentTypeView } from "@/lib/data/client";
+import { clinicConfig } from "@/config/clinic.config";
 
 interface DentalBookingExtrasProps {
   selectedTreatment: string;
@@ -19,6 +21,16 @@ export function DentalBookingExtras({
   sedationRequested,
   onSedationChange,
 }: DentalBookingExtrasProps) {
+  const [dentalTreatmentTypes, setDentalTreatmentTypes] = useState<DentalTreatmentTypeView[]>([]);
+
+  useEffect(() => {
+    const clinicId = clinicConfig.clinicId;
+    if (!clinicId) return;
+    fetchDentalTreatmentTypes(clinicId).then(setDentalTreatmentTypes).catch((err) => {
+      console.error("[dental-booking-extras] failed to load data:", err);
+    });
+  }, []);
+
   const categories = Array.from(new Set(dentalTreatmentTypes.map((t) => t.category)));
 
   return (

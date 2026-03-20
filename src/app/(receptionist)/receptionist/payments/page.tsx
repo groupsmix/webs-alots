@@ -9,10 +9,9 @@ import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   getCurrentUser,
-  fetchAppointments,
+  fetchTodayAppointments,
   fetchInvoices,
-  fetchPatients,
-  type PatientView,
+  type InvoiceView,
 } from "@/lib/data/client";
 import { PaymentDialog } from "@/components/receptionist/payment-dialog";
 
@@ -30,49 +29,35 @@ interface PaymentEntry {
 export default function PaymentsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [paymentEntries, setPaymentEntries] = useState<PaymentEntry[]>([]);
-  const [patientList, setPatientList] = useState<PatientView[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function load() {
       const user = await getCurrentUser();
       if (!user?.clinic_id) { setLoading(false); return; }
-      const [appts, invoices, pts] = await Promise.all([
-        fetchAppointments(user.clinic_id),
-        fetchInvoices(user.clinic_id),
-        fetchPatients(user.clinic_id),
+      const clinicId = user.clinic_id;
+      const [appts, invoices] = await Promise.all([
+        fetchTodayAppointments(clinicId),
+        fetchInvoices(clinicId),
       ]);
-      setPatientList(pts);
-
-      // Build payment entries from invoices (real payment data)
-      const invoiceEntries: PaymentEntry[] = invoices.map((inv) => ({
-        id: inv.id,
-        appointmentId: "",
-        patientName: inv.patientName,
-        serviceName: "",
-        date: inv.date,
-        amount: inv.amount,
-        method: inv.method || "cash",
-        status: (inv.status === "paid" ? "paid" : "pending") as "paid" | "pending",
-      }));
-
-      // Also add today's appointments that don't have invoices yet as pending
-      const today = new Date().toISOString().split("T")[0];
-      const invoicePatientDates = new Set(invoices.map((inv) => `${inv.patientName}-${inv.date}`));
-      const apptEntries: PaymentEntry[] = appts
-        .filter((a) => a.date === today && !invoicePatientDates.has(`${a.patientName}-${a.date}`))
-        .map((a) => ({
-          id: `appt-${a.id}`,
+      const invoiceByAppt = new Map<string, InvoiceView>();
+      for (const inv of invoices) {
+        if (inv.appointmentId) invoiceByAppt.set(inv.appointmentId, inv);
+      }
+      const entries: PaymentEntry[] = appts.map((a) => {
+        const inv = invoiceByAppt.get(a.id);
+        return {
+          id: inv?.id ?? `pay-${a.id}`,
           appointmentId: a.id,
           patientName: a.patientName,
           serviceName: a.serviceName,
           date: a.date,
-          amount: 0,
-          method: "",
-          status: "pending" as const,
-        }));
-
-      setPaymentEntries([...invoiceEntries, ...apptEntries]);
+          amount: inv?.amount ?? 0,
+          method: inv?.method ?? "cash",
+          status: (inv?.status === "paid" ? "paid" : "pending") as "paid" | "pending",
+        };
+      });
+      setPaymentEntries(entries);
       setLoading(false);
     }
     load();
@@ -157,7 +142,6 @@ export default function PaymentsPage() {
         <CardContent>
           <div className="space-y-3">
             {filteredEntries.map((entry) => {
-              const patient = patientList.find((p) => p.name === entry.patientName);
               return (
                 <div key={entry.id} className="flex items-center gap-3 rounded-lg border p-3">
                   <Avatar>
@@ -168,7 +152,6 @@ export default function PaymentsPage() {
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium">{entry.patientName}</p>
                     <p className="text-xs text-muted-foreground">{entry.serviceName}</p>
-                    {patient && <p className="text-xs text-muted-foreground">{patient.phone}</p>}
                   </div>
                   <div className="text-right mr-2">
                     <p className="text-sm font-bold">{entry.amount} MAD</p>

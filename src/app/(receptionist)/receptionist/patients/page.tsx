@@ -20,8 +20,8 @@ export default function ReceptionistPatientsPage() {
     async function load() {
       const user = await getCurrentUser();
       if (!user?.clinic_id) { setLoading(false); return; }
-      const pts = await fetchPatients(user.clinic_id);
-      setPatients(pts);
+      const data = await fetchPatients(user.clinic_id);
+      setPatients(data);
       setLoading(false);
     }
     load();

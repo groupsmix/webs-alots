@@ -5,7 +5,7 @@ import { Clock, X, Bell } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import type { WaitingListEntry } from "@/lib/demo-data";
+import type { WaitingListView } from "@/lib/data/client";
 
 interface WaitingListStatusProps {
   patientId: string;
@@ -25,7 +25,7 @@ const statusVariant: Record<string, "default" | "secondary" | "destructive" | "o
  * and allows them to remove themselves.
  */
 export function WaitingListStatus({ patientId }: WaitingListStatusProps) {
-  const [entries, setEntries] = useState<WaitingListEntry[]>([]);
+  const [entries, setEntries] = useState<WaitingListView[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchEntries = useCallback(async () => {

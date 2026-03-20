@@ -65,6 +65,7 @@ export function WalkInDialog({ trigger, onRegister }: WalkInDialogProps) {
     }
     load();
   }, []);
+
   const [patientId, setPatientId] = useState("");
   const [newPatientName, setNewPatientName] = useState("");
   const [newPatientPhone, setNewPatientPhone] = useState("");
