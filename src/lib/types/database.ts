@@ -962,6 +962,81 @@ export interface OpticalPrescriptionRow {
   updated_at: string;
 }
 
+// ---- Lab & Clinic/Center Tables (Migration 00012) ----
+
+export type LabTestOrderStatus =
+  | "pending"
+  | "in_progress"
+  | "completed"
+  | "awaiting_validation"
+  | "validated"
+  | "cancelled";
+
+export type LabTestPriority = "normal" | "urgent" | "stat";
+
+export interface LabTestOrder {
+  id: string;
+  clinic_id: string;
+  patient_id: string;
+  doctor_id: string;
+  test_name: string;
+  test_category: string;
+  status: LabTestOrderStatus;
+  priority: LabTestPriority;
+  ordered_at: string;
+  started_at: string | null;
+  completed_at: string | null;
+  validated_at: string | null;
+  validated_by: string | null;
+  results: Record<string, unknown>;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Department {
+  id: string;
+  clinic_id: string;
+  name: string;
+  code: string | null;
+  head_doctor_id: string | null;
+  is_active: boolean;
+  created_at: string;
+}
+
+export type BedStatus = "available" | "occupied" | "maintenance" | "reserved";
+
+export interface Bed {
+  id: string;
+  clinic_id: string;
+  department_id: string;
+  bed_number: string;
+  ward: string | null;
+  status: BedStatus;
+  patient_id: string | null;
+  admitted_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export type AdmissionStatus = "admitted" | "discharged" | "transferred";
+
+export interface Admission {
+  id: string;
+  clinic_id: string;
+  patient_id: string;
+  doctor_id: string;
+  department_id: string;
+  bed_id: string | null;
+  admission_date: string;
+  discharge_date: string | null;
+  status: AdmissionStatus;
+  diagnosis: string | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 // ---- Supabase Database Schema (for use with supabase-js typed client) ----
 
 export interface Database {
@@ -1012,6 +1087,7 @@ export interface Database {
       before_after_photos: { Row: BeforeAfterPhoto; Insert: Partial<BeforeAfterPhoto> & Pick<BeforeAfterPhoto, "clinic_id" | "patient_id">; Update: Partial<BeforeAfterPhoto> };
       pain_questionnaires: { Row: PainQuestionnaire; Insert: Partial<PainQuestionnaire> & Pick<PainQuestionnaire, "clinic_id" | "patient_id" | "pain_level">; Update: Partial<PainQuestionnaire> };
       clinic_types: { Row: ClinicTypeRecord; Insert: Partial<ClinicTypeRecord> & Pick<ClinicTypeRecord, "type_key" | "name_fr" | "name_ar" | "category">; Update: Partial<ClinicTypeRecord> };
+<<<<<<< HEAD
       // Para-medical tables
       exercise_programs: { Row: ExerciseProgramRow; Insert: Partial<ExerciseProgramRow> & Pick<ExerciseProgramRow, "clinic_id" | "patient_id" | "therapist_id" | "title">; Update: Partial<ExerciseProgramRow> };
       physio_sessions: { Row: PhysioSessionRow; Insert: Partial<PhysioSessionRow> & Pick<PhysioSessionRow, "clinic_id" | "patient_id" | "therapist_id">; Update: Partial<PhysioSessionRow> };
@@ -1026,6 +1102,11 @@ export interface Database {
       lens_inventory: { Row: LensInventoryRow; Insert: Partial<LensInventoryRow> & Pick<LensInventoryRow, "clinic_id" | "type">; Update: Partial<LensInventoryRow> };
       frame_catalog: { Row: FrameCatalogRow; Insert: Partial<FrameCatalogRow> & Pick<FrameCatalogRow, "clinic_id" | "brand" | "model">; Update: Partial<FrameCatalogRow> };
       optical_prescriptions: { Row: OpticalPrescriptionRow; Insert: Partial<OpticalPrescriptionRow> & Pick<OpticalPrescriptionRow, "clinic_id" | "patient_id">; Update: Partial<OpticalPrescriptionRow> };
+      // New tables (migration 00012)
+      lab_test_orders: { Row: LabTestOrder; Insert: Partial<LabTestOrder> & Pick<LabTestOrder, "clinic_id" | "patient_id" | "doctor_id" | "test_name">; Update: Partial<LabTestOrder> };
+      departments: { Row: Department; Insert: Partial<Department> & Pick<Department, "clinic_id" | "name">; Update: Partial<Department> };
+      beds: { Row: Bed; Insert: Partial<Bed> & Pick<Bed, "clinic_id" | "department_id" | "bed_number">; Update: Partial<Bed> };
+      admissions: { Row: Admission; Insert: Partial<Admission> & Pick<Admission, "clinic_id" | "patient_id" | "doctor_id" | "department_id">; Update: Partial<Admission> };
     };
   };
 }
