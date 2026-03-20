@@ -368,7 +368,7 @@ export interface DispatchResult {
 
 /**
  * Dispatches a notification across all configured channels.
- * In production, this would integrate with Supabase + WhatsApp API.
+ * Integrates with WhatsApp API (whatsapp.ts) and Supabase notifications table.
  */
 export async function dispatchNotification(
   trigger: NotificationTrigger,
@@ -391,17 +391,34 @@ export async function dispatchNotification(
       switch (channel) {
         case "whatsapp": {
           const body = substituteVariables(template.whatsappBody, variables);
-          // In production: call sendWhatsAppMessage from whatsapp.ts
-          console.log(`[WhatsApp] To: ${recipientId}, Body: ${body}`);
-          results.push({ channel: "whatsapp", success: true, messageId: `wa_${Date.now()}` });
+          // Dynamically import to avoid pulling server-only code into client bundles
+          const { sendTextMessage } = await import("./whatsapp");
+          const waResult = await sendTextMessage(recipientId, body);
+          results.push({
+            channel: "whatsapp",
+            success: waResult.success,
+            messageId: waResult.messageId,
+            error: waResult.error,
+          });
           break;
         }
         case "in_app": {
           const title = substituteVariables(template.subject, variables);
           const body = substituteVariables(template.body, variables);
-          // In production: insert into Supabase notifications table
-          console.log(`[In-App] To: ${recipientId}, Title: ${title}, Body: ${body}`);
-          results.push({ channel: "in_app", success: true, messageId: `ia_${Date.now()}` });
+          const { insertInAppNotification } = await import("./notification-persist");
+          const inAppResult = await insertInAppNotification({
+            userId: recipientId,
+            trigger,
+            title,
+            message: body,
+            priority: template.priority,
+          });
+          results.push({
+            channel: "in_app",
+            success: inAppResult.success,
+            messageId: inAppResult.id,
+            error: inAppResult.error,
+          });
           break;
         }
         case "email": {
@@ -413,8 +430,14 @@ export async function dispatchNotification(
         }
         case "sms": {
           const body = substituteVariables(template.whatsappBody, variables);
-          console.log(`[SMS] To: ${recipientId}, Body: ${body}`);
-          results.push({ channel: "sms", success: true, messageId: `sms_${Date.now()}` });
+          const { sendSms } = await import("./sms");
+          const smsResult = await sendSms(recipientId, body);
+          results.push({
+            channel: "sms",
+            success: smsResult.success,
+            messageId: smsResult.messageId,
+            error: smsResult.error,
+          });
           break;
         }
       }

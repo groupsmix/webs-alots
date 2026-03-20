@@ -8,7 +8,7 @@ import {
 } from "recharts";
 import {
   Users, TrendingUp, Calendar, XCircle, Globe, Footprints,
-  Star, Clock, RefreshCw, BarChart3,
+  Star, Clock, RefreshCw, BarChart3, Download,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -19,6 +19,7 @@ import {
   fetchAnalytics,
   type AnalyticsData,
 } from "@/lib/data/client";
+import { exportToCSV } from "@/lib/export-data";
 
 const COLORS = [
   "#2563eb", "#7c3aed", "#db2777", "#ea580c",
@@ -98,10 +99,36 @@ export function AnalyticsDashboard({ role = "admin" }: { role?: "admin" | "docto
         <h1 className="text-2xl font-bold">
           {role === "admin" ? "Analytics & Reports" : "My Analytics"}
         </h1>
-        <Badge variant="outline" className="text-xs">
-          <RefreshCw className="h-3 w-3 mr-1" />
-          Live Data
-        </Badge>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={() => {
+            exportToCSV(
+              dailyAnalytics.map((d) => ({
+                date: d.date,
+                patients: d.patientCount,
+                revenue: d.revenue,
+                noShows: d.noShows,
+                onlineBookings: d.onlineBookings,
+                walkIns: d.walkIns,
+              })),
+              [
+                { key: "date", label: "Date" },
+                { key: "patients", label: "Patients" },
+                { key: "revenue", label: "Revenue (MAD)" },
+                { key: "noShows", label: "No-Shows" },
+                { key: "onlineBookings", label: "Online Bookings" },
+                { key: "walkIns", label: "Walk-Ins" },
+              ],
+              `analytics-${new Date().toISOString().split("T")[0]}.csv`,
+            );
+          }}>
+            <Download className="h-4 w-4 mr-1" />
+            Export CSV
+          </Button>
+          <Badge variant="outline" className="text-xs">
+            <RefreshCw className="h-3 w-3 mr-1" />
+            Live Data
+          </Badge>
+        </div>
       </div>
 
       {/* KPI Cards */}
