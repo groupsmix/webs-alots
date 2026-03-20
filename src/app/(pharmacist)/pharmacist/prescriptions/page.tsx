@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -9,10 +9,13 @@ import {
   Clock, Check, Eye, AlertCircle, Package, Truck,
   Search, Phone, MessageCircle, RefreshCw, X, ClipboardList,
 } from "lucide-react";
-import { pharmacyPrescriptions } from "@/lib/pharmacy-demo-data";
-import type { PharmacyPrescription } from "@/lib/pharmacy-demo-data";
+import { clinicConfig } from "@/config/clinic.config";
+import { fetchPrescriptionRequests } from "@/lib/data/client";
+import type { PharmacyPrescriptionView } from "@/lib/data/client";
 
-const statusConfig: Record<PharmacyPrescription["status"], { label: string; color: string; icon: React.ReactNode }> = {
+type PrescriptionStatus = "pending" | "reviewing" | "partially-ready" | "ready" | "picked-up" | "delivered" | "rejected";
+
+const statusConfig: Record<PrescriptionStatus, { label: string; color: string; icon: React.ReactNode }> = {
   pending: { label: "Pending", color: "bg-yellow-100 text-yellow-700", icon: <Clock className="h-3 w-3" /> },
   reviewing: { label: "Reviewing", color: "bg-blue-100 text-blue-700", icon: <Eye className="h-3 w-3" /> },
   "partially-ready": { label: "Partial", color: "bg-orange-100 text-orange-700", icon: <AlertCircle className="h-3 w-3" /> },
@@ -22,13 +25,29 @@ const statusConfig: Record<PharmacyPrescription["status"], { label: string; colo
   rejected: { label: "Rejected", color: "bg-red-100 text-red-700", icon: <X className="h-3 w-3" /> },
 };
 
-const statusFilters: PharmacyPrescription["status"][] = ["pending", "reviewing", "partially-ready", "ready", "picked-up", "delivered"];
+const statusFilters: PrescriptionStatus[] = ["pending", "reviewing", "partially-ready", "ready", "picked-up", "delivered"];
 
 export default function PrescriptionsPage() {
+  const [allPrescriptions, setAllPrescriptions] = useState<PharmacyPrescriptionView[]>([]);
+  const [loading, setLoading] = useState(true);
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
 
-  const filtered = pharmacyPrescriptions.filter((rx) => {
+  useEffect(() => {
+    fetchPrescriptionRequests(clinicConfig.clinicId)
+      .then(setAllPrescriptions)
+      .finally(() => setLoading(false));
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[50vh]">
+        <div className="animate-pulse text-muted-foreground">Loading prescriptions...</div>
+      </div>
+    );
+  }
+
+  const filtered = allPrescriptions.filter((rx) => {
     if (filterStatus !== "all" && rx.status !== filterStatus) return false;
     if (searchQuery && !rx.patientName.toLowerCase().includes(searchQuery.toLowerCase())) return false;
     return true;
@@ -42,7 +61,7 @@ export default function PrescriptionsPage() {
           <p className="text-muted-foreground text-sm">Manage incoming prescription orders</p>
         </div>
         <Badge className="bg-yellow-100 text-yellow-700 border-0">
-          {pharmacyPrescriptions.filter((rx) => rx.status === "pending").length} pending
+          {allPrescriptions.filter((rx) => rx.status === "pending").length} pending
         </Badge>
       </div>
 
@@ -79,7 +98,7 @@ export default function PrescriptionsPage() {
       {/* Prescription Cards */}
       <div className="space-y-4">
         {filtered.map((rx) => {
-          const status = statusConfig[rx.status];
+          const status = statusConfig[rx.status as PrescriptionStatus] ?? statusConfig.pending;
           const availableCount = rx.items.filter((i) => i.available).length;
 
           return (

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -10,21 +10,21 @@ import {
   TrendingUp, Plus, CreditCard, Cake, UserPlus,
   ArrowDown, ArrowUp, History,
 } from "lucide-react";
-import {
-  loyaltyMembers,
-  loyaltyTransactions,
-  getPointsValue,
-} from "@/lib/pharmacy-demo-data";
-import type { LoyaltyMember, LoyaltyTransaction } from "@/lib/pharmacy-demo-data";
+import { clinicConfig } from "@/config/clinic.config";
+import { fetchLoyaltyMembers, fetchLoyaltyTransactions, getPointsValue } from "@/lib/data/client";
+import type { LoyaltyMemberView, LoyaltyTransactionView } from "@/lib/data/client";
 
-const tierConfig: Record<LoyaltyMember["tier"], { label: string; color: string; icon: React.ReactNode; min: number }> = {
+type LoyaltyTier = "bronze" | "silver" | "gold" | "platinum";
+type TransactionType = "earned" | "redeemed" | "birthday_bonus" | "referral_bonus" | "expired";
+
+const tierConfig: Record<LoyaltyTier, { label: string; color: string; icon: React.ReactNode; min: number }> = {
   bronze: { label: "Bronze", color: "bg-orange-100 text-orange-700", icon: <Medal className="h-3 w-3" />, min: 0 },
   silver: { label: "Silver", color: "bg-gray-200 text-gray-700", icon: <Award className="h-3 w-3" />, min: 1000 },
   gold: { label: "Gold", color: "bg-yellow-100 text-yellow-700", icon: <Star className="h-3 w-3" />, min: 3000 },
   platinum: { label: "Platinum", color: "bg-purple-100 text-purple-700", icon: <Crown className="h-3 w-3" />, min: 5000 },
 };
 
-const transactionTypeConfig: Record<LoyaltyTransaction["type"], { label: string; color: string }> = {
+const transactionTypeConfig: Record<TransactionType, { label: string; color: string }> = {
   earned: { label: "Earned", color: "text-emerald-600" },
   redeemed: { label: "Redeemed", color: "text-red-600" },
   birthday_bonus: { label: "Birthday", color: "text-pink-600" },
@@ -33,23 +33,41 @@ const transactionTypeConfig: Record<LoyaltyTransaction["type"], { label: string;
 };
 
 export default function LoyaltyPage() {
+  const [allMembers, setAllMembers] = useState<LoyaltyMemberView[]>([]);
+  const [allTransactions, setAllTransactions] = useState<LoyaltyTransactionView[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedMember, setSelectedMember] = useState<string | null>(null);
   const [view, setView] = useState<"members" | "transactions">("members");
 
-  const filteredMembers = loyaltyMembers.filter(
+  useEffect(() => {
+    const cId = clinicConfig.clinicId;
+    Promise.all([fetchLoyaltyMembers(cId), fetchLoyaltyTransactions(cId)])
+      .then(([m, t]) => { setAllMembers(m); setAllTransactions(t); })
+      .finally(() => setLoading(false));
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[50vh]">
+        <div className="animate-pulse text-muted-foreground">Loading loyalty data...</div>
+      </div>
+    );
+  }
+
+  const filteredMembers = allMembers.filter(
     (m) => m.patientName.toLowerCase().includes(searchQuery.toLowerCase()) ||
       m.phone.includes(searchQuery) ||
       m.referralCode.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const totalMembers = loyaltyMembers.length;
-  const totalPointsIssued = loyaltyMembers.reduce((sum, m) => sum + m.totalPoints, 0);
-  const totalRedeemed = loyaltyMembers.reduce((sum, m) => sum + m.redeemedPoints, 0);
+  const totalMembers = allMembers.length;
+  const totalPointsIssued = allMembers.reduce((sum, m) => sum + m.totalPoints, 0);
+  const totalRedeemed = allMembers.reduce((sum, m) => sum + m.redeemedPoints, 0);
 
   const memberTransactions = selectedMember
-    ? loyaltyTransactions.filter((t) => t.memberId === selectedMember)
-    : loyaltyTransactions;
+    ? allTransactions.filter((t) => t.memberId === selectedMember)
+    : allTransactions;
 
   return (
     <div>
@@ -173,7 +191,7 @@ export default function LoyaltyPage() {
       {view === "members" && (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {filteredMembers.map((member) => {
-            const tier = tierConfig[member.tier];
+            const tier = tierConfig[member.tier as LoyaltyTier] ?? tierConfig.bronze;
             return (
               <Card key={member.id} className="hover:shadow-md transition-shadow">
                 <CardContent className="pt-6">
@@ -249,7 +267,7 @@ export default function LoyaltyPage() {
             {selectedMember && (
               <div className="py-3 border-b flex items-center justify-between">
                 <p className="text-sm font-medium">
-                  Transactions for: {loyaltyMembers.find((m) => m.id === selectedMember)?.patientName}
+                  Transactions for: {allMembers.find((m) => m.id === selectedMember)?.patientName}
                 </p>
                 <Button variant="ghost" size="sm" onClick={() => setSelectedMember(null)}>
                   Show All
@@ -269,8 +287,8 @@ export default function LoyaltyPage() {
                 </thead>
                 <tbody>
                   {memberTransactions.map((tx) => {
-                    const config = transactionTypeConfig[tx.type];
-                    const member = loyaltyMembers.find((m) => m.id === tx.memberId);
+                    const config = transactionTypeConfig[tx.type as TransactionType] ?? transactionTypeConfig.earned;
+                    const member = allMembers.find((m) => m.id === tx.memberId);
                     return (
                       <tr key={tx.id} className="border-b hover:bg-muted/50 text-sm">
                         <td className="py-3 px-2">{tx.date}</td>
