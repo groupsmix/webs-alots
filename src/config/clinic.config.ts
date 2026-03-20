@@ -54,6 +54,9 @@ export interface ClinicConfig {
     maxAdvanceDays: number;
     maxPerSlot: number;
     cancellationHours: number;
+    depositAmount?: number;
+    depositPercentage?: number;
+    maxRecurringWeeks: number;
   };
 
   /** Feature flags based on tier */
@@ -68,6 +71,9 @@ export interface ClinicConfig {
     multiDoctor: boolean;
     onlinePayment: boolean;
     whatsappNotifications: boolean;
+    waitingList: boolean;
+    emergencySlots: boolean;
+    recurringBookings: boolean;
   };
 }
 
@@ -109,6 +115,9 @@ export const clinicConfig: ClinicConfig = {
     maxAdvanceDays: 30,
     maxPerSlot: 1,
     cancellationHours: 24,
+    depositAmount: undefined,
+    depositPercentage: 20,
+    maxRecurringWeeks: 12,
   },
 
   features: {
@@ -122,5 +131,8 @@ export const clinicConfig: ClinicConfig = {
     multiDoctor: false,
     onlinePayment: false,
     whatsappNotifications: false,
+    waitingList: true,
+    emergencySlots: true,
+    recurringBookings: true,
   },
 };
