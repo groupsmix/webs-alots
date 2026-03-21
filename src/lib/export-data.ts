@@ -79,7 +79,7 @@ const appointmentColumns: { key: keyof ExportableAppointment; label: string }[] 
 
 export function exportAppointments(appointments: ExportableAppointment[], filenamePrefix = "appointments") {
   const date = new Date().toISOString().split("T")[0];
-  exportToCSV(appointments, appointmentColumns, `${filenamePrefix}-${date}.csv`);
+  exportToCSV(appointments as unknown as Record<string, unknown>[], appointmentColumns as { key: string; label: string }[], `${filenamePrefix}-${date}.csv`);
 }
 
 // ---------- Patient export ----------
@@ -109,7 +109,7 @@ const patientColumns: { key: keyof ExportablePatient; label: string }[] = [
 
 export function exportPatients(patients: ExportablePatient[], filenamePrefix = "patients") {
   const date = new Date().toISOString().split("T")[0];
-  exportToCSV(patients, patientColumns, `${filenamePrefix}-${date}.csv`);
+  exportToCSV(patients as unknown as Record<string, unknown>[], patientColumns as { key: string; label: string }[], `${filenamePrefix}-${date}.csv`);
 }
 
 // ---------- Invoice export ----------
@@ -135,5 +135,5 @@ const invoiceColumns: { key: keyof ExportableInvoice; label: string }[] = [
 
 export function exportInvoices(invoices: ExportableInvoice[], filenamePrefix = "invoices") {
   const date = new Date().toISOString().split("T")[0];
-  exportToCSV(invoices, invoiceColumns, `${filenamePrefix}-${date}.csv`);
+  exportToCSV(invoices as unknown as Record<string, unknown>[], invoiceColumns as { key: string; label: string }[], `${filenamePrefix}-${date}.csv`);
 }

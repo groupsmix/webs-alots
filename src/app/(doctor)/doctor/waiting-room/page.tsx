@@ -121,7 +121,7 @@ export default function WaitingRoomPage() {
                       <span>Scheduled: {entry.scheduledTime}</span>
                       <span className="flex items-center gap-1">
                         <Clock className="h-3 w-3" />
-                        Waiting: {getWaitTime(entry.arrivedAt)}
+                        Waiting: {getWaitTime(entry.arrivedAt ?? entry.scheduledTime)}
                       </span>
                     </div>
                     <Button
@@ -164,7 +164,7 @@ export default function WaitingRoomPage() {
                       </div>
                     </div>
                     <div className="text-xs text-muted-foreground mb-3">
-                      In session for: {getWaitTime(entry.arrivedAt)}
+                      In session for: {getWaitTime(entry.arrivedAt ?? entry.scheduledTime)}
                     </div>
                     <Button
                       size="sm"

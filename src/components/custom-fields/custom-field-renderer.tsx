@@ -113,7 +113,6 @@ function renderFieldInput(
         <Select
           value={(value as string) ?? ""}
           onValueChange={(v) => onChange(field.field_key, v)}
-          disabled={disabled}
         >
           <SelectTrigger id={field.field_key}>
             <SelectValue placeholder={field.placeholder ?? "Sélectionner..."} />
