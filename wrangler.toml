@@ -9,6 +9,12 @@ compatibility_flags = ["nodejs_compat"]
 directory = ".open-next/assets"
 binding = "ASSETS"
 
+# ---- Cron Triggers ----
+# Appointment reminders: every 30 minutes
+# Subscription renewal check: daily at 2am UTC
+[triggers]
+crons = ["*/30 * * * *", "0 2 * * *"]
+
 # ---- Staging Environment ----
 # Deploy with: wrangler deploy --env staging
 # URL: staging.yourdomain.com
