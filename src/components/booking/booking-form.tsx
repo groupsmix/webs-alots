@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
-import { ChevronLeft, ChevronRight, Check, Stethoscope, User, ShieldCheck, Repeat, Users } from "lucide-react";
+import { ChevronLeft, ChevronRight, Check, Stethoscope, User, ShieldCheck, Repeat, Users, Loader2 } from "lucide-react";
 import { fetchDoctors, fetchServices, type DoctorView, type ServiceView } from "@/lib/data/client";
 import { clinicConfig } from "@/config/clinic.config";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -221,7 +221,11 @@ export function BookingForm() {
     }
   };
 
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const handleConfirm = async () => {
+    if (isSubmitting) return;
+    setIsSubmitting(true);
     try {
       if (isRecurring && clinicConfig.features.recurringBookings) {
         const res = await fetch("/api/booking/recurring", {
@@ -273,6 +277,8 @@ export function BookingForm() {
       setSubmitted(true);
     } catch {
       setSubmitted(true);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -700,8 +706,13 @@ export function BookingForm() {
               <ChevronRight className="h-4 w-4 ml-1" />
             </Button>
           ) : (
-            <Button onClick={handleConfirm}>
-              {isRecurring ? "Confirm Recurring Booking" : "Confirm Booking"}
+            <Button onClick={handleConfirm} disabled={isSubmitting}>
+              {isSubmitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              {isSubmitting
+                ? "Submitting…"
+                : isRecurring
+                  ? "Confirm Recurring Booking"
+                  : "Confirm Booking"}
             </Button>
           )}
         </div>

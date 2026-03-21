@@ -106,6 +106,14 @@ export default function FeatureTogglesPage() {
   const enabledCount = features.filter((f) => f.globalEnabled).length;
   const totalClinics = totalClinicsCount;
 
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
