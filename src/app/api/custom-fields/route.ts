@@ -52,6 +52,28 @@ export async function GET(request: NextRequest) {
  */
 export async function POST(request: NextRequest) {
   try {
+    const supabase = await createClient();
+
+    // Verify the caller is authenticated
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+    }
+
+    // Only super_admin can create custom field definitions
+    const { data: profile } = await supabase
+      .from("users")
+      .select("role")
+      .eq("auth_id", user.id)
+      .single();
+
+    if (!profile || profile.role !== "super_admin") {
+      return NextResponse.json({ error: "Forbidden — super_admin only" }, { status: 403 });
+    }
+
     const body = await request.json();
 
     const {
@@ -76,8 +98,6 @@ export async function POST(request: NextRequest) {
         { status: 400 },
       );
     }
-
-    const supabase = await createClient();
 
     const { data, error } = await supabase
       .from("custom_field_definitions")
@@ -124,6 +144,28 @@ export async function POST(request: NextRequest) {
  */
 export async function PATCH(request: NextRequest) {
   try {
+    const supabase = await createClient();
+
+    // Verify the caller is authenticated
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+    }
+
+    // Only super_admin can update custom field definitions
+    const { data: profile } = await supabase
+      .from("users")
+      .select("role")
+      .eq("auth_id", user.id)
+      .single();
+
+    if (!profile || profile.role !== "super_admin") {
+      return NextResponse.json({ error: "Forbidden — super_admin only" }, { status: 403 });
+    }
+
     const body = await request.json();
     const { id, ...updates } = body;
 
@@ -133,8 +175,6 @@ export async function PATCH(request: NextRequest) {
         { status: 400 },
       );
     }
-
-    const supabase = await createClient();
 
     // Prevent modifying system field keys
     const allowedUpdates: Record<string, unknown> = {};
@@ -180,6 +220,28 @@ export async function PATCH(request: NextRequest) {
  * System fields cannot be deleted.
  */
 export async function DELETE(request: NextRequest) {
+  const supabase = await createClient();
+
+  // Verify the caller is authenticated
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+  }
+
+  // Only super_admin can delete custom field definitions
+  const { data: profile } = await supabase
+    .from("users")
+    .select("role")
+    .eq("auth_id", user.id)
+    .single();
+
+  if (!profile || profile.role !== "super_admin") {
+    return NextResponse.json({ error: "Forbidden — super_admin only" }, { status: 403 });
+  }
+
   const id = request.nextUrl.searchParams.get("id");
 
   if (!id) {
@@ -188,8 +250,6 @@ export async function DELETE(request: NextRequest) {
       { status: 400 },
     );
   }
-
-  const supabase = await createClient();
 
   // Check if it's a system field
   const { data: existing } = await supabase
