@@ -34,7 +34,8 @@ export function ScheduleView() {
   const [todayAppointments, setTodayAppointments] = useState<AppointmentView[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const load = useCallback(async () => {
+  useEffect(() => {
+    async function load() {
     const user = await getCurrentUser();
     if (!user?.clinic_id) { setLoading(false); return; }
     const appts = await fetchAppointments(user.clinic_id);
@@ -42,9 +43,9 @@ export function ScheduleView() {
     const filtered = appts.filter((a) => a.date === today);
     setTodayAppointments(filtered.length > 0 ? filtered : appts.slice(0, 6));
     setLoading(false);
+  }
+    load();
   }, []);
-
-  useEffect(() => { load(); }, [load]);
 
   if (loading) {
     return (

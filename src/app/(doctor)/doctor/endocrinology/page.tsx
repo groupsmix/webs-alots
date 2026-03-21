@@ -55,7 +55,8 @@ export default function EndocrinologyPage() {
     dietPlan: "", exercisePlan: "", monitoringFrequency: "daily", notes: "",
   });
 
-  const load = useCallback(async () => {
+  useEffect(() => {
+    async function load() {
     const user = await getCurrentUser();
     if (!user?.clinic_id) { setLoading(false); return; }
     const [s, h, d] = await Promise.all([
@@ -67,9 +68,9 @@ export default function EndocrinologyPage() {
     setHormones(h);
     setDiabetes(d);
     setLoading(false);
+  }
+    load();
   }, []);
-
-  useEffect(() => { load(); }, [load]);
 
   if (loading) {
     return (

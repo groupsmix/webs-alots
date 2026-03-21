@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { OdontogramChart } from "@/components/dental/odontogram-chart";
@@ -13,28 +13,31 @@ export default function DoctorOdontogramPage() {
   const [entries, setEntries] = useState<OdontogramView[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const loadPatients = useCallback(async () => {
-    const user = await getCurrentUser();
-    if (!user?.clinic_id) { setLoading(false); return; }
-    const pts = await fetchPatients(user.clinic_id);
-    setPatients(pts);
-    if (pts.length > 0) {
-      setSelectedPatient(pts[0].id);
-      const data = await fetchOdontogram(user.clinic_id, pts[0].id);
-      setEntries(data);
+  useEffect(() => {
+    async function loadPatients() {
+      const user = await getCurrentUser();
+      if (!user?.clinic_id) { setLoading(false); return; }
+      const pts = await fetchPatients(user.clinic_id);
+      setPatients(pts);
+      if (pts.length > 0) {
+        setSelectedPatient(pts[0].id);
+        const data = await fetchOdontogram(user.clinic_id, pts[0].id);
+        setEntries(data);
+      }
+      setLoading(false);
     }
-    setLoading(false);
+    loadPatients();
   }, []);
 
-  useEffect(() => { loadPatients(); }, [loadPatients]);
-
   useEffect(() => {
-    if (!selectedPatient) return;
-    getCurrentUser().then(async (user) => {
+    async function loadOdontogram() {
+      if (!selectedPatient) return;
+      const user = await getCurrentUser();
       if (!user?.clinic_id) return;
       const data = await fetchOdontogram(user.clinic_id, selectedPatient);
       setEntries(data);
-    });
+    }
+    loadOdontogram();
   }, [selectedPatient]);
 
   if (loading) {

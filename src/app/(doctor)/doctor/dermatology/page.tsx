@@ -55,7 +55,8 @@ export default function DermatologyPage() {
     notes: "", treatmentName: "", treatmentNotes: "",
   });
 
-  const load = useCallback(async () => {
+  useEffect(() => {
+    async function load() {
     const user = await getCurrentUser();
     if (!user?.clinic_id) { setLoading(false); return; }
     const [p, c] = await Promise.all([
@@ -65,9 +66,9 @@ export default function DermatologyPage() {
     setPhotos(p);
     setConditions(c);
     setLoading(false);
+  }
+    load();
   }, []);
-
-  useEffect(() => { load(); }, [load]);
 
   if (loading) {
     return (

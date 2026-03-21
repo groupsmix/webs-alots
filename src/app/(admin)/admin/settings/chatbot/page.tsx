@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import {
   Bot,
   Plus,
@@ -86,59 +86,58 @@ export default function ChatbotSettingsPage() {
   const [saving, setSaving] = useState(false);
   const [savedMessage, setSavedMessage] = useState<string | null>(null);
 
-  const loadData = useCallback(async () => {
-    const supabase = getSupabase();
-
-    // Get current user's clinic
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) return;
-
-    const { data: profile } = await supabase
-      .from("users")
-      .select("clinic_id")
-      .eq("auth_id", user.id)
-      .single();
-
-    if (!profile?.clinic_id) return;
-    setClinicId(profile.clinic_id as string);
-
-    // Load chatbot config
-    const { data: configData } = await supabase
-      .from("chatbot_config")
-      .select("enabled, intelligence, greeting, language")
-      .eq("clinic_id", profile.clinic_id)
-      .single();
-
-    if (configData) {
-      const row = configData as Record<string, unknown>;
-      setConfig({
-        enabled: row.enabled as boolean,
-        intelligence: row.intelligence as ChatbotConfig["intelligence"],
-        greeting:
-          (row.greeting as string) || "Bonjour ! Comment puis-je vous aider ?",
-        language: (row.language as string) || "fr",
-      });
-    }
-
-    // Load FAQs
-    const { data: faqData } = await supabase
-      .from("chatbot_faqs")
-      .select("id, question, answer, keywords, sort_order, is_active")
-      .eq("clinic_id", profile.clinic_id)
-      .order("sort_order", { ascending: true });
-
-    if (faqData) {
-      setFaqs(faqData as FaqEntry[]);
-    }
-
-    setLoading(false);
-  }, []);
-
   useEffect(() => {
+    async function loadData() {
+      const supabase = getSupabase();
+
+      // Get current user's clinic
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data: profile } = await supabase
+        .from("users")
+        .select("clinic_id")
+        .eq("auth_id", user.id)
+        .single();
+
+      if (!profile?.clinic_id) return;
+      setClinicId(profile.clinic_id as string);
+
+      // Load chatbot config
+      const { data: configData } = await supabase
+        .from("chatbot_config")
+        .select("enabled, intelligence, greeting, language")
+        .eq("clinic_id", profile.clinic_id)
+        .single();
+
+      if (configData) {
+        const row = configData as Record<string, unknown>;
+        setConfig({
+          enabled: row.enabled as boolean,
+          intelligence: row.intelligence as ChatbotConfig["intelligence"],
+          greeting:
+            (row.greeting as string) || "Bonjour ! Comment puis-je vous aider ?",
+          language: (row.language as string) || "fr",
+        });
+      }
+
+      // Load FAQs
+      const { data: faqData } = await supabase
+        .from("chatbot_faqs")
+        .select("id, question, answer, keywords, sort_order, is_active")
+        .eq("clinic_id", profile.clinic_id)
+        .order("sort_order", { ascending: true });
+
+      if (faqData) {
+        setFaqs(faqData as FaqEntry[]);
+      }
+
+      setLoading(false);
+    }
     loadData();
-  }, [loadData]);
+  }, []);
 
   async function saveConfig() {
     if (!clinicId) return;

@@ -16,15 +16,16 @@ export default function PatientPrescriptionsPage() {
   const [patientPrescriptions, setPatientPrescriptions] = useState<PrescriptionView[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const load = useCallback(async () => {
+  useEffect(() => {
+    async function load() {
     const user = await getCurrentUser();
     if (!user?.clinic_id) { setLoading(false); return; }
     const rxs = await fetchPrescriptions(user.clinic_id);
     setPatientPrescriptions(rxs.filter(rx => rx.patientId === user.id));
     setLoading(false);
+  }
+    load();
   }, []);
-
-  useEffect(() => { load(); }, [load]);
 
   if (loading) {
     return (

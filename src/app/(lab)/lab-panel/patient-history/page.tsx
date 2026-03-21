@@ -42,21 +42,27 @@ export default function PatientHistoryPage() {
   }, []);
 
   useEffect(() => {
-    if (!selectedPatientId) { setPatientOrders([]); return; }
-    setOrdersLoading(true);
-    setSelectedOrderId(null);
-    setSelectedOrderResults([]);
-    fetchPatientLabOrders(clinicConfig.clinicId, selectedPatientId)
-      .then(setPatientOrders)
-      .finally(() => setOrdersLoading(false));
+    function loadOrders() {
+      if (!selectedPatientId) { setPatientOrders([]); return; }
+      setOrdersLoading(true);
+      setSelectedOrderId(null);
+      setSelectedOrderResults([]);
+      fetchPatientLabOrders(clinicConfig.clinicId, selectedPatientId)
+        .then(setPatientOrders)
+        .finally(() => setOrdersLoading(false));
+    }
+    loadOrders();
   }, [selectedPatientId]);
 
   useEffect(() => {
-    if (!selectedOrderId) { setSelectedOrderResults([]); return; }
-    setResultsLoading(true);
-    fetchLabTestResults(selectedOrderId)
-      .then(setSelectedOrderResults)
-      .finally(() => setResultsLoading(false));
+    function loadResults() {
+      if (!selectedOrderId) { setSelectedOrderResults([]); return; }
+      setResultsLoading(true);
+      fetchLabTestResults(selectedOrderId)
+        .then(setSelectedOrderResults)
+        .finally(() => setResultsLoading(false));
+    }
+    loadResults();
   }, [selectedOrderId]);
 
   if (loading) {

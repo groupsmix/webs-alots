@@ -10,14 +10,15 @@ export default function TherapyPlansPage() {
   const [plans, setPlans] = useState<TherapyPlan[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const load = useCallback(async () => {
+  useEffect(() => {
+    async function load() {
     const user = await getCurrentUser();
     if (!user?.clinic_id) { setLoading(false); return; }
     setPlans([]);
     setLoading(false);
+  }
+    load();
   }, []);
-
-  useEffect(() => { load(); }, [load]);
 
   if (loading) {
     return (

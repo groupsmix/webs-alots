@@ -82,14 +82,22 @@ export default function EquipmentInventoryPage() {
     return map[c] ?? c;
   }, [t]);
 
-  const reload = useCallback(() => {
+  function reload() {
     setLoading(true);
     fetchEquipmentInventory(clinicConfig.clinicId)
       .then(setItems)
       .finally(() => setLoading(false));
-  }, []);
+  }
 
-  useEffect(() => { reload(); }, [reload]);
+  useEffect(() => {
+    function init() {
+      setLoading(true);
+      fetchEquipmentInventory(clinicConfig.clinicId)
+        .then(setItems)
+        .finally(() => setLoading(false));
+    }
+    init();
+  }, []);
 
   const openAddDialog = () => {
     setEditingItem(null);

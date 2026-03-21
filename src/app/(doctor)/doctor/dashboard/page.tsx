@@ -61,7 +61,8 @@ export default function DoctorDashboardPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
 
-  const load = useCallback(async () => {
+  useEffect(() => {
+    async function load() {
     const user = await getCurrentUser();
     if (!user?.clinic_id) { setLoading(false); return; }
     const [appts, pts, wr, inv] = await Promise.all([
@@ -75,9 +76,9 @@ export default function DoctorDashboardPage() {
     setWaitingRoomEntries(wr);
     setInvoices(inv);
     setLoading(false);
+  }
+    load();
   }, []);
-
-  useEffect(() => { load(); }, [load]);
 
   // ── Derived KPIs ──
 

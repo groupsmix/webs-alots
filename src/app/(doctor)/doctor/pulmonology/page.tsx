@@ -43,7 +43,8 @@ export default function PulmonologyPage() {
     interpretation: "", notes: "",
   });
 
-  const load = useCallback(async () => {
+  useEffect(() => {
+    async function load() {
     const user = await getCurrentUser();
     if (!user?.clinic_id) { setLoading(false); return; }
     const [s, r] = await Promise.all([
@@ -53,9 +54,9 @@ export default function PulmonologyPage() {
     setSpirometry(s);
     setRespTests(r);
     setLoading(false);
+  }
+    load();
   }, []);
-
-  useEffect(() => { load(); }, [load]);
 
   if (loading) {
     return (

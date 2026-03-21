@@ -36,7 +36,8 @@ export default function MedicalHistoryPage() {
   const [patient, setPatient] = useState<{ dateOfBirth: string; gender: string; insurance: string; allergies: string[] } | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const load = useCallback(async () => {
+  useEffect(() => {
+    async function load() {
     const user = await getCurrentUser();
     if (!user?.clinic_id) { setLoading(false); return; }
     const [appts, rxs, notes] = await Promise.all([
@@ -49,9 +50,9 @@ export default function MedicalHistoryPage() {
     setConsultNotes(notes);
     setPatient({ dateOfBirth: "", gender: "", insurance: "", allergies: [] });
     setLoading(false);
+  }
+    load();
   }, []);
-
-  useEffect(() => { load(); }, [load]);
 
   if (loading || !patient) {
     return (

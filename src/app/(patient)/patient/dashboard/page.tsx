@@ -38,7 +38,8 @@ export default function PatientDashboardPage() {
   const [userName, setUserName] = useState("");
   const [loading, setLoading] = useState(true);
 
-  const load = useCallback(async () => {
+  useEffect(() => {
+    async function load() {
     const user = await getCurrentUser();
     if (!user?.clinic_id) { setLoading(false); return; }
     setUserName(user.name);
@@ -53,9 +54,9 @@ export default function PatientDashboardPage() {
     setInvoicesList(invs);
     setNotificationsList(notifs);
     setLoading(false);
+  }
+    load();
   }, []);
-
-  useEffect(() => { load(); }, [load]);
 
   if (loading) {
     return (

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { MaterialStockAlert } from "@/components/dental/material-stock-alert";
 import { getCurrentUser, fetchProducts, type ProductView } from "@/lib/data/client";
 
@@ -8,15 +8,16 @@ export default function DoctorStockPage() {
   const [stock, setStock] = useState<ProductView[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const load = useCallback(async () => {
-    const user = await getCurrentUser();
-    if (!user?.clinic_id) { setLoading(false); return; }
-    const products = await fetchProducts(user.clinic_id);
-    setStock(products);
-    setLoading(false);
+  useEffect(() => {
+    async function load() {
+      const user = await getCurrentUser();
+      if (!user?.clinic_id) { setLoading(false); return; }
+      const products = await fetchProducts(user.clinic_id);
+      setStock(products);
+      setLoading(false);
+    }
+    load();
   }, []);
-
-  useEffect(() => { load(); }, [load]);
 
   if (loading) {
     return (

@@ -90,15 +90,24 @@ export default function EquipmentMaintenancePage() {
     return map[s] ?? s;
   }, [t]);
 
-  const reload = useCallback(() => {
+  function reload() {
     setLoading(true);
     const cId = clinicConfig.clinicId;
     Promise.all([fetchEquipmentMaintenance(cId), fetchEquipmentInventory(cId)])
       .then(([r, e]) => { setRecords(r); setEquipment(e); })
       .finally(() => setLoading(false));
-  }, []);
+  }
 
-  useEffect(() => { reload(); }, [reload]);
+  useEffect(() => {
+    function init() {
+      setLoading(true);
+      const cId = clinicConfig.clinicId;
+      Promise.all([fetchEquipmentMaintenance(cId), fetchEquipmentInventory(cId)])
+        .then(([r, e]) => { setRecords(r); setEquipment(e); })
+        .finally(() => setLoading(false));
+    }
+    init();
+  }, []);
 
   const openAddDialog = () => {
     setEditingRecord(null);

@@ -25,7 +25,8 @@ export function MedicalRecord({ patientId }: { patientId?: string }) {
   const [patientAppts, setPatientAppts] = useState<AppointmentView[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const load = useCallback(async () => {
+  useEffect(() => {
+    async function load() {
     const user = await getCurrentUser();
     if (!user?.clinic_id) { setLoading(false); return; }
     const pid = patientId ?? user.id;
@@ -45,9 +46,9 @@ export function MedicalRecord({ patientId }: { patientId?: string }) {
         .slice(0, 5),
     );
     setLoading(false);
+  }
+    load();
   }, [patientId]);
-
-  useEffect(() => { load(); }, [load]);
 
   if (loading) {
     return (

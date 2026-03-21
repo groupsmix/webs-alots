@@ -9,15 +9,16 @@ export default function DoctorSterilizationPage() {
   const [log, setLog] = useState<SterilizationEntry[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const load = useCallback(async () => {
+  useEffect(() => {
+    async function load() {
     const user = await getCurrentUser();
     if (!user?.clinic_id) { setLoading(false); return; }
     const data = await fetchSterilizationLog(user.clinic_id);
     setLog(data as unknown as SterilizationEntry[]);
     setLoading(false);
+  }
+    load();
   }, []);
-
-  useEffect(() => { load(); }, [load]);
 
   if (loading) {
     return (

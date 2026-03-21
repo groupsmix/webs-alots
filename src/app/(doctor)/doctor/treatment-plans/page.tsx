@@ -9,7 +9,8 @@ export default function DoctorTreatmentPlansPage() {
   const [plans, setPlans] = useState<TreatmentPlan[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const load = useCallback(async () => {
+  useEffect(() => {
+    async function load() {
     const user = await getCurrentUser();
     if (!user?.clinic_id) { setLoading(false); return; }
     const data = await fetchTreatmentPlans(user.clinic_id, user.id);
@@ -18,9 +19,9 @@ export default function DoctorTreatmentPlansPage() {
       steps: p.steps.map((s, i) => ({ ...s, step: i + 1 })),
     })) as unknown as TreatmentPlan[]);
     setLoading(false);
+  }
+    load();
   }, []);
-
-  useEffect(() => { load(); }, [load]);
 
   if (loading) {
     return (

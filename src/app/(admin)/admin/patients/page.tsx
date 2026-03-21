@@ -35,7 +35,8 @@ export default function AdminPatientDatabasePage() {
   const [prescriptionsList, setPrescriptionsList] = useState<PrescriptionView[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const load = useCallback(async () => {
+  useEffect(() => {
+    async function load() {
     const user = await getCurrentUser();
     if (!user?.clinic_id) { setLoading(false); return; }
     const [p, a, rx] = await Promise.all([
@@ -47,9 +48,9 @@ export default function AdminPatientDatabasePage() {
     setAppointmentsList(a);
     setPrescriptionsList(rx);
     setLoading(false);
+  }
+    load();
   }, []);
-
-  useEffect(() => { load(); }, [load]);
 
   const patients = patientsList;
   const appointments = appointmentsList;

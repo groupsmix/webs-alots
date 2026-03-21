@@ -16,7 +16,8 @@ export default function DoctorCertificatesPage() {
   const [patients, setPatients] = useState<PatientView[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const load = useCallback(async () => {
+  useEffect(() => {
+    async function load() {
     const user = await getCurrentUser();
     if (!user?.clinic_id) { setLoading(false); return; }
     const [certs, pts] = await Promise.all([
@@ -26,9 +27,9 @@ export default function DoctorCertificatesPage() {
     setCertificates(certs);
     setPatients(pts);
     setLoading(false);
+  }
+    load();
   }, []);
-
-  useEffect(() => { load(); }, [load]);
 
   if (loading) {
     return (

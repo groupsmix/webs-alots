@@ -48,15 +48,16 @@ export default function UrologyPage() {
     diagnosis: "", plan: "",
   });
 
-  const load = useCallback(async () => {
+  useEffect(() => {
+    async function load() {
     const user = await getCurrentUser();
     if (!user?.clinic_id) { setLoading(false); return; }
     const e = await fetchUrologyExams(user.clinic_id);
     setExams(e);
     setLoading(false);
+  }
+    load();
   }, []);
-
-  useEffect(() => { load(); }, [load]);
 
   if (loading) {
     return (

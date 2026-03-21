@@ -33,7 +33,8 @@ export default function WorkingHoursPage() {
   const [selectedDoctor, setSelectedDoctor] = useState("");
   const [loading, setLoading] = useState(true);
 
-  const load = useCallback(async () => {
+  useEffect(() => {
+    async function load() {
     const user = await getCurrentUser();
     if (!user?.clinic_id) { setLoading(false); return; }
     const docs = await fetchDoctors(user.clinic_id);
@@ -42,9 +43,9 @@ export default function WorkingHoursPage() {
     setSchedules(initialSchedules);
     if (docs.length > 0) setSelectedDoctor(docs[0].id);
     setLoading(false);
+  }
+    load();
   }, []);
-
-  useEffect(() => { load(); }, [load]);
   const [saved, setSaved] = useState(false);
 
   const currentSchedule = schedules.find((s) => s.doctorId === selectedDoctor);

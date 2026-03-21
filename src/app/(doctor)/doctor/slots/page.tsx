@@ -37,15 +37,16 @@ export default function NextAvailableSlotsPage() {
   const [timeSlots, setTimeSlots] = useState<TimeSlotView[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const load = useCallback(async () => {
+  useEffect(() => {
+    async function load() {
     const user = await getCurrentUser();
     if (!user?.clinic_id) { setLoading(false); return; }
     const ts = await fetchTimeSlots(user.clinic_id);
     setTimeSlots(ts);
     setLoading(false);
+  }
+    load();
   }, []);
-
-  useEffect(() => { load(); }, [load]);
 
   if (loading) {
     return (

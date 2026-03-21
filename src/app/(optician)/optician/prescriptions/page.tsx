@@ -10,14 +10,15 @@ export default function OpticalPrescriptionsPage() {
   const [prescriptions, setPrescriptions] = useState<OpticalPrescription[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const load = useCallback(async () => {
+  useEffect(() => {
+    async function load() {
     const user = await getCurrentUser();
     if (!user?.clinic_id) { setLoading(false); return; }
     setPrescriptions([]);
     setLoading(false);
+  }
+    load();
   }, []);
-
-  useEffect(() => { load(); }, [load]);
 
   if (loading) {
     return (

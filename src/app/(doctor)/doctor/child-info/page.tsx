@@ -86,7 +86,8 @@ export default function ChildInfoPage() {
     notes: "",
   });
 
-  const load = useCallback(async () => {
+  useEffect(() => {
+    async function load() {
     const user = await getCurrentUser();
     if (!user?.clinic_id) { setLoading(false); return; }
     const [m, p] = await Promise.all([
@@ -96,9 +97,9 @@ export default function ChildInfoPage() {
     setMilestones(m);
     setPatients(p);
     setLoading(false);
+  }
+    load();
   }, [selectedPatient]);
-
-  useEffect(() => { load(); }, [load]);
 
   const handleSave = async () => {
     const user = await getCurrentUser();
