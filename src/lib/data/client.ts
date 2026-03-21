@@ -112,6 +112,8 @@ export interface AppointmentView {
   rescheduledFrom?: string;
   isEmergency?: boolean;
   notes?: string;
+  recurrenceGroupId?: string;
+  recurrencePattern?: string;
 }
 
 interface AppointmentRaw {
@@ -131,6 +133,8 @@ interface AppointmentRaw {
   cancellation_reason: string | null;
   rescheduled_from: string | null;
   is_emergency: boolean;
+  recurrence_group_id: string | null;
+  recurrence_pattern: string | null;
   created_at: string;
 }
 
@@ -186,6 +190,8 @@ function mapAppointment(raw: AppointmentRaw): AppointmentView {
     rescheduledFrom: raw.rescheduled_from ?? undefined,
     isEmergency: raw.is_emergency ?? false,
     notes: raw.notes ?? undefined,
+    recurrenceGroupId: raw.recurrence_group_id ?? undefined,
+    recurrencePattern: raw.recurrence_pattern ?? undefined,
   };
 }
 
@@ -383,10 +389,13 @@ export async function fetchServices(clinicId: string): Promise<ServiceView[]> {
 
 export interface ReviewView {
   id: string;
+  patientId: string;
   patientName: string;
+  doctorName: string;
   rating: number;
   comment: string;
   date: string;
+  status: string;
   replied: boolean;
   response?: string;
 }
@@ -395,6 +404,7 @@ interface ReviewRaw {
   id: string;
   patient_id: string;
   clinic_id: string;
+  doctor_id: string | null;
   stars: number;
   comment: string | null;
   response: string | null;
@@ -410,10 +420,13 @@ export async function fetchReviews(clinicId: string): Promise<ReviewView[]> {
   });
   return rows.map((r) => ({
     id: r.id,
+    patientId: r.patient_id,
     patientName: _userMap?.get(r.patient_id)?.name ?? "Patient",
+    doctorName: r.doctor_id ? (_userMap?.get(r.doctor_id)?.name ?? "Doctor") : "General",
     rating: r.stars,
     comment: r.comment ?? "",
     date: r.created_at?.split("T")[0] ?? "",
+    status: r.is_visible ? "published" : "pending",
     replied: !!r.response,
     response: r.response ?? undefined,
   }));
@@ -588,6 +601,7 @@ export interface ConsultationNoteView {
   appointmentId: string;
   patientId: string;
   patientName: string;
+  doctorName: string;
   date: string;
   diagnosis: string;
   notes: string;
@@ -625,6 +639,7 @@ export async function fetchConsultationNotes(clinicId: string, doctorId?: string
     appointmentId: r.appointment_id,
     patientId: r.patient_id,
     patientName: _userMap?.get(r.patient_id)?.name ?? "Patient",
+    doctorName: _userMap?.get(r.doctor_id)?.name ?? "Doctor",
     date: r.created_at?.split("T")[0] ?? "",
     diagnosis: r.diagnosis ?? "",
     notes: r.notes ?? "",
@@ -693,6 +708,7 @@ export interface NotificationView {
   channel: string;
   status: string;
   priority: string;
+  read: boolean;
   createdAt: string;
   readAt?: string;
 }
@@ -723,6 +739,7 @@ export async function fetchNotifications(userId: string): Promise<NotificationVi
     channel: r.channel ?? "in_app",
     status: r.is_read ? "read" : "delivered",
     priority: "normal",
+    read: r.is_read ?? false,
     createdAt: r.sent_at ?? "",
     readAt: r.is_read ? r.sent_at : undefined,
   }));
@@ -1333,11 +1350,14 @@ export interface TreatmentPlanView {
   id: string;
   patientId: string;
   patientName: string;
+  doctorId: string;
+  doctorName: string;
   title: string;
-  steps: { step: number; description: string; status: string; date: string | null }[];
+  steps: { step: number; description: string; status: "pending" | "in_progress" | "completed"; date: string | null; cost: number; toothNumbers?: number[] }[];
   totalCost: number;
-  status: string;
+  status: "planned" | "in_progress" | "completed" | "cancelled";
   createdAt: string;
+  updatedAt: string;
 }
 
 interface TreatmentPlanRaw {
@@ -1346,10 +1366,11 @@ interface TreatmentPlanRaw {
   patient_id: string;
   doctor_id: string;
   title: string;
-  steps: { step: number; description: string; status: string; date: string | null }[] | null;
+  steps: { step: number; description: string; status: string; date: string | null; cost?: number; toothNumbers?: number[] }[] | null;
   total_cost: number | null;
   status: string;
   created_at: string;
+  updated_at: string;
 }
 
 export async function fetchTreatmentPlans(clinicId: string, doctorId?: string): Promise<TreatmentPlanView[]> {
@@ -1364,11 +1385,14 @@ export async function fetchTreatmentPlans(clinicId: string, doctorId?: string): 
     id: r.id,
     patientId: r.patient_id,
     patientName: _userMap?.get(r.patient_id)?.name ?? "Patient",
+    doctorId: r.doctor_id,
+    doctorName: _userMap?.get(r.doctor_id)?.name ?? "Doctor",
     title: r.title,
-    steps: r.steps ?? [],
+    steps: (r.steps ?? []).map((s) => ({ ...s, status: s.status as "pending" | "in_progress" | "completed", cost: s.cost ?? 0, toothNumbers: s.toothNumbers })),
     totalCost: r.total_cost ?? 0,
-    status: r.status,
+    status: r.status as "planned" | "in_progress" | "completed" | "cancelled",
     createdAt: r.created_at?.split("T")[0] ?? "",
+    updatedAt: r.updated_at?.split("T")[0] ?? "",
   }));
 }
 
@@ -1454,6 +1478,7 @@ export async function fetchSterilizationLog(clinicId: string): Promise<Steriliza
 export interface InstallmentView {
   id: string;
   treatmentPlanId: string;
+  patientId: string;
   patientName: string;
   amount: number;
   dueDate: string;
@@ -1481,6 +1506,7 @@ export async function fetchInstallments(clinicId: string): Promise<InstallmentVi
   return rows.map((r) => ({
     id: r.id,
     treatmentPlanId: r.treatment_plan_id,
+    patientId: r.patient_id,
     patientName: _userMap?.get(r.patient_id)?.name ?? "Patient",
     amount: r.amount,
     dueDate: r.due_date,

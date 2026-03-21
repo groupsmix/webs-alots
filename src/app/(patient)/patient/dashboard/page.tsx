@@ -45,7 +45,7 @@ export default function PatientDashboardPage() {
       fetchPatientAppointments(user.clinic_id, user.id),
       fetchPrescriptions(user.clinic_id),
       fetchInvoices(user.clinic_id),
-      fetchNotifications(user.clinic_id, user.id),
+      fetchNotifications(user.id),
     ]);
     setAppointmentsList(appts);
     setPrescriptionsList(rxs.filter(rx => rx.patientId === user.id));

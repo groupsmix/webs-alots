@@ -37,7 +37,7 @@ export default function PatientToothMapPage() {
         Visual overview of your dental health. Click on any tooth for details.
       </p>
       {entries.length > 0 ? (
-        <OdontogramChart entries={entries.map(e => ({ toothNumber: e.toothNumber, status: e.status as "healthy" | "decayed" | "filled" | "missing" | "crown" | "implant" | "root_canal" | "extraction_needed", notes: e.notes, lastUpdated: e.lastUpdated }))} editable={false} />
+        <OdontogramChart entries={entries.map(e => ({ toothNumber: e.toothNumber, status: e.status as "healthy" | "decayed" | "filled" | "missing" | "crown" | "implant" | "root_canal" | "extraction_needed", notes: e.notes ?? "", lastUpdated: e.lastUpdated ?? "" }))} editable={false} />
       ) : (
         <p className="text-muted-foreground">No dental records found.</p>
       )}

@@ -4,18 +4,18 @@ import { useState, useEffect, useCallback } from "react";
 import { InstallmentTracker } from "@/components/installments/installment-tracker";
 import {
   getCurrentUser,
-  fetchInstallments,
-  type InstallmentView,
+  fetchInstallmentPlans,
+  type InstallmentPlanView,
 } from "@/lib/data/client";
 
 export default function PatientPaymentPlanPage() {
-  const [myPlans, setMyPlans] = useState<InstallmentView[]>([]);
+  const [myPlans, setMyPlans] = useState<InstallmentPlanView[]>([]);
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
     const user = await getCurrentUser();
     if (!user?.clinic_id) { setLoading(false); return; }
-    const plans = await fetchInstallments(user.clinic_id);
+    const plans = await fetchInstallmentPlans(user.clinic_id);
     setMyPlans(plans.filter(p => p.patientId === user.id));
     setLoading(false);
   }, []);
