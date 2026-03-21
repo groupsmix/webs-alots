@@ -59,7 +59,7 @@ export default async function LabHomePage() {
                 Access your results online with your secure patient code.
               </p>
               <div className="flex flex-wrap gap-3">
-                <Link href="/lab/results" className={linkBtnPrimary}>
+                <Link href="/lab/my-results" className={linkBtnPrimary}>
                   <FileText className="mr-2 h-4 w-4" />
                   Access Results
                 </Link>
@@ -208,7 +208,7 @@ export default async function LabHomePage() {
             Use your patient code to securely access your lab and radiology results online. No need to visit the lab.
           </p>
           <div className="flex justify-center gap-3">
-            <Link href="/lab/results" className="inline-flex items-center justify-center rounded-lg bg-white text-blue-600 px-4 py-2 text-sm font-medium hover:bg-blue-50 transition-colors">
+            <Link href="/lab/my-results" className="inline-flex items-center justify-center rounded-lg bg-white text-blue-600 px-4 py-2 text-sm font-medium hover:bg-blue-50 transition-colors">
               <FileText className="mr-2 h-4 w-4" />
               View Results
             </Link>
