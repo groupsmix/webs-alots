@@ -38,6 +38,7 @@ export interface PublicService {
   price: number;
   currency: string;
   active: boolean;
+  category: string;
 }
 
 export interface PublicDoctor {
@@ -188,7 +189,7 @@ export async function getPublicServices(): Promise<PublicService[]> {
 
   const { data, error } = await supabase
     .from("services")
-    .select("id, name, description, duration_min, price, is_active")
+    .select("id, name, description, duration_min, price, is_active, category")
     .eq("clinic_id", clinicId)
     .order("name", { ascending: true });
 
@@ -202,6 +203,7 @@ export async function getPublicServices(): Promise<PublicService[]> {
     price: s.price ?? 0,
     currency: clinicConfig.currency,
     active: (s as Record<string, unknown>).is_active as boolean ?? true,
+    category: (s as Record<string, unknown>).category as string ?? "General",
   }));
 }
 
