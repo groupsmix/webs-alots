@@ -12,8 +12,11 @@
  * undefined for optional/missing manifests instead of throwing.
  */
 
-const fs = require("fs");
-const path = require("path");
+import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const HANDLER_PATH = path.join(
   __dirname,
