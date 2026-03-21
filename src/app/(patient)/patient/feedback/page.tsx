@@ -18,6 +18,12 @@ export default function PatientFeedbackPage() {
   const [doctors, setDoctors] = useState<DoctorView[]>([]);
   const [pastFeedback, setPastFeedback] = useState<ReviewView[]>([]);
   const [pageLoading, setPageLoading] = useState(true);
+  const [selectedDoctor, setSelectedDoctor] = useState("");
+  const [rating, setRating] = useState(0);
+  const [hoverRating, setHoverRating] = useState(0);
+  const [comment, setComment] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
 
   const loadData = useCallback(async () => {
     const user = await getCurrentUser();
@@ -40,12 +46,6 @@ export default function PatientFeedbackPage() {
       </div>
     );
   }
-  const [selectedDoctor, setSelectedDoctor] = useState("");
-  const [rating, setRating] = useState(0);
-  const [hoverRating, setHoverRating] = useState(0);
-  const [comment, setComment] = useState("");
-  const [submitting, setSubmitting] = useState(false);
-  const [submitted, setSubmitted] = useState(false);
 
   const handleSubmit = () => {
     if (!selectedDoctor || rating === 0) return;

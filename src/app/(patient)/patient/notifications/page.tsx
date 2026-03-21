@@ -96,6 +96,17 @@ function formatTimeAgo(dateStr: string): string {
 export default function PatientNotificationsPage() {
   const [notifications, setNotifications] = useState<Array<NotificationView & { type: NotificationType; time: string }>>([]);
   const [pageLoading, setPageLoading] = useState(true);
+  const [filter, setFilter] = useState<"all" | "unread">("all");
+  const [prefsOpen, setPrefsOpen] = useState(false);
+  const [prefs, setPrefs] = useState({
+    whatsapp: true,
+    in_app: true,
+    reminders: true,
+    confirmations: true,
+    payments: true,
+    prescriptions: true,
+  });
+  const [savedPrefs, setSavedPrefs] = useState(false);
 
   useEffect(() => {
     getCurrentUser().then(async (user) => {
@@ -117,17 +128,6 @@ export default function PatientNotificationsPage() {
       </div>
     );
   }
-  const [filter, setFilter] = useState<"all" | "unread">("all");
-  const [prefsOpen, setPrefsOpen] = useState(false);
-  const [prefs, setPrefs] = useState({
-    whatsapp: true,
-    in_app: true,
-    reminders: true,
-    confirmations: true,
-    payments: true,
-    prescriptions: true,
-  });
-  const [savedPrefs, setSavedPrefs] = useState(false);
 
   const displayed = filter === "unread" ? notifications.filter((n) => !n.read) : notifications;
   const unreadCount = notifications.filter((n) => !n.read).length;

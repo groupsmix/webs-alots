@@ -57,6 +57,12 @@ export default function PharmacistDashboardPage() {
   const [members, setMembers] = useState<LoyaltyMemberView[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // ── Date boundaries ──
+  const now = useMemo(() => new Date(), []);
+  const todayStr = toDateStr(now);
+  const weekStart = toDateStr(startOfWeek(now));
+  const monthStart = toDateStr(startOfMonth(now));
+
   useEffect(() => {
     const cId = clinicConfig.clinicId;
     Promise.all([
@@ -76,24 +82,10 @@ export default function PharmacistDashboardPage() {
       .finally(() => setLoading(false));
   }, []);
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[50vh]">
-        <div className="animate-pulse text-muted-foreground">Loading dashboard...</div>
-      </div>
-    );
-  }
-
   const pendingRx = prescriptions.filter((p) => p.status === "pending" || p.status === "reviewing");
   const lowStock = getLowStockProducts(products);
   const outOfStock = getOutOfStockProducts(products);
   const expiring = getExpiringProducts(products, 90);
-
-  // ── Date boundaries ──
-  const now = useMemo(() => new Date(), []);
-  const todayStr = toDateStr(now);
-  const weekStart = toDateStr(startOfWeek(now));
-  const monthStart = toDateStr(startOfMonth(now));
 
   // ── Sales KPIs (daily / weekly / monthly) ──
   const todaySales = sales.filter((s) => s.date === todayStr);
@@ -122,6 +114,14 @@ export default function PharmacistDashboardPage() {
     () => Array.from(productSalesMap.values()).sort((a, b) => b.qty - a.qty).slice(0, 5),
     [productSalesMap],
   );
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[50vh]">
+        <div className="animate-pulse text-muted-foreground">Loading dashboard...</div>
+      </div>
+    );
+  }
 
   // ── Prescription fill rate ──
   const totalRx = prescriptions.length;
