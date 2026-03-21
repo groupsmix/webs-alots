@@ -243,9 +243,9 @@ CREATE INDEX IF NOT EXISTS idx_lab_test_items_test ON lab_test_items(test_id);
 -- lab_test_results.entered_by
 CREATE INDEX IF NOT EXISTS idx_lab_test_results_entered_by ON lab_test_results(entered_by);
 
--- radiology_orders.referring_doctor_id, reporting_doctor_id
-CREATE INDEX IF NOT EXISTS idx_radiology_orders_referring_doctor ON radiology_orders(referring_doctor_id);
-CREATE INDEX IF NOT EXISTS idx_radiology_orders_reporting_doctor ON radiology_orders(reporting_doctor_id);
+-- radiology_orders.ordering_doctor_id, radiologist_id
+CREATE INDEX IF NOT EXISTS idx_radiology_orders_ordering_doctor ON radiology_orders(ordering_doctor_id);
+CREATE INDEX IF NOT EXISTS idx_radiology_orders_radiologist ON radiology_orders(radiologist_id);
 
 -- ============================================================
 -- 00015 phase6_clinics_centers
@@ -259,9 +259,9 @@ CREATE INDEX IF NOT EXISTS idx_doctor_departments_clinic ON doctor_departments(c
 
 -- rooms.department_id (already indexed)
 
--- beds.clinic_id, department_id, patient_id, current_patient_id
+-- beds.clinic_id, current_patient_id
 CREATE INDEX IF NOT EXISTS idx_beds_clinic ON beds(clinic_id);
-CREATE INDEX IF NOT EXISTS idx_beds_department ON beds(department_id);
+CREATE INDEX IF NOT EXISTS idx_beds_current_patient ON beds(current_patient_id);
 
 -- admissions.bed_id, department_id, admitting_doctor_id, doctor_id
 CREATE INDEX IF NOT EXISTS idx_admissions_bed ON admissions(bed_id);
@@ -305,10 +305,9 @@ CREATE INDEX IF NOT EXISTS idx_custom_field_overrides_field ON custom_field_over
 -- 00017 lab_clinic_center_tables
 -- ============================================================
 
--- prosthetic_orders.clinic_id, patient_id, doctor_id, lab_id
+-- prosthetic_orders.clinic_id, dentist_id
 CREATE INDEX IF NOT EXISTS idx_prosthetic_orders_clinic ON prosthetic_orders(clinic_id);
-CREATE INDEX IF NOT EXISTS idx_prosthetic_orders_patient ON prosthetic_orders(patient_id);
-CREATE INDEX IF NOT EXISTS idx_prosthetic_orders_doctor ON prosthetic_orders(doctor_id);
+CREATE INDEX IF NOT EXISTS idx_prosthetic_orders_dentist ON prosthetic_orders(dentist_id);
 
 -- lab_materials.clinic_id
 CREATE INDEX IF NOT EXISTS idx_lab_materials_clinic ON lab_materials(clinic_id);
@@ -317,9 +316,9 @@ CREATE INDEX IF NOT EXISTS idx_lab_materials_clinic ON lab_materials(clinic_id);
 CREATE INDEX IF NOT EXISTS idx_lab_deliveries_clinic ON lab_deliveries(clinic_id);
 CREATE INDEX IF NOT EXISTS idx_lab_deliveries_order ON lab_deliveries(order_id);
 
--- lab_invoices.clinic_id, order_id
+-- lab_invoices.clinic_id, dentist_id
 CREATE INDEX IF NOT EXISTS idx_lab_invoices_clinic ON lab_invoices(clinic_id);
-CREATE INDEX IF NOT EXISTS idx_lab_invoices_order ON lab_invoices(order_id);
+CREATE INDEX IF NOT EXISTS idx_lab_invoices_dentist ON lab_invoices(dentist_id);
 
 -- ============================================================
 -- 00022 fix_schema_drift
