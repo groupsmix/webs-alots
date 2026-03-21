@@ -10,7 +10,7 @@ interface SheetProps {
   children: React.ReactNode
 }
 
-function Sheet({ open, onOpenChange, children }: SheetProps) {
+function Sheet({ open, children }: SheetProps) {
   if (!open) return null
   return <>{children}</>
 }

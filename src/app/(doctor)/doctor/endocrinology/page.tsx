@@ -18,7 +18,7 @@ import { getCurrentUser } from "@/lib/data/client";
 import {
   fetchBloodSugarReadings, createBloodSugarReading,
   fetchHormoneLevels, createHormoneLevel,
-  fetchDiabetesManagement, createDiabetesManagement, updateDiabetesManagement,
+  fetchDiabetesManagement, createDiabetesManagement,
   type BloodSugarReadingView, type HormoneLevelView, type DiabetesManagementView,
 } from "@/lib/data/specialists";
 

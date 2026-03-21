@@ -2030,6 +2030,7 @@ export interface BlogPostView {
 
 // Blog posts aren't in the DB schema — they may be stored in clinic config
 // For now we return empty; pages will fall back to demo data if empty
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export async function fetchBlogPosts(_clinicId: string): Promise<BlogPostView[]> {
   return [];
 }
@@ -4966,8 +4967,6 @@ export async function fetchClinicCenterDashboardKPIs(clinicId: string): Promise<
   const dischargesToday = admissions.filter(
     (a) => a.status === "discharged" && a.discharge_date && a.discharge_date.startsWith(todayStr),
   ).length;
-
-  const deptMap = new Map(departments.map((d) => [d.id, d.name]));
 
   const departmentPatientLoad: DepartmentPatientLoad[] = departments.map((dept) => {
     const deptBeds = beds.filter((b) => b.department_id === dept.id);

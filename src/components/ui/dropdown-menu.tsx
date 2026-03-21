@@ -40,7 +40,7 @@ interface DropdownMenuTriggerProps extends React.ComponentProps<"button"> {
   asChild?: boolean
 }
 
-function DropdownMenuTrigger({ className, children, asChild, ...props }: DropdownMenuTriggerProps) {
+function DropdownMenuTrigger({ className, children, ...props }: DropdownMenuTriggerProps) {
   return (
     <button type="button" className={cn("outline-none", className)} {...props}>
       {children}

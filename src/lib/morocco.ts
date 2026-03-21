@@ -11,9 +11,6 @@
 
 // ---- Phone Number Formatting ----
 
-/** Valid Moroccan mobile prefixes */
-const MOROCCO_MOBILE_PREFIXES = ["06", "07", "05"];
-const MOROCCO_LANDLINE_PREFIXES = ["05"];
 const MOROCCO_COUNTRY_CODE = "+212";
 
 /**

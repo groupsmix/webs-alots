@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
-  ClipboardList, Clock, Image, FileText,
+  ClipboardList, Clock, Image,
   ArrowRight, CheckCircle, Hourglass, AlertTriangle,
 } from "lucide-react";
 import Link from "next/link";

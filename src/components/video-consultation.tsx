@@ -51,7 +51,6 @@ const ICE_SERVERS: RTCConfiguration = {
 
 export function VideoConsultation({
   roomId,
-  userId: _userId,
   userName,
   onEnd,
 }: VideoConsultationProps) {
