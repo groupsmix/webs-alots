@@ -64,7 +64,7 @@ export default function LabDashboardPage() {
                 <ClipboardList className="h-6 w-6" />
               </div>
             </div>
-            <Link href="/lab/test-orders" className="text-sm text-blue-600 hover:underline mt-2 inline-flex items-center">
+            <Link href="/lab-panel/test-orders" className="text-sm text-blue-600 hover:underline mt-2 inline-flex items-center">
               View Orders <ArrowRight className="h-3 w-3 ml-1" />
             </Link>
           </CardContent>
@@ -81,7 +81,7 @@ export default function LabDashboardPage() {
                 <Hourglass className="h-6 w-6" />
               </div>
             </div>
-            <Link href="/lab/results" className="text-sm text-blue-600 hover:underline mt-2 inline-flex items-center">
+            <Link href="/lab-panel/results" className="text-sm text-blue-600 hover:underline mt-2 inline-flex items-center">
               Enter Results <ArrowRight className="h-3 w-3 ml-1" />
             </Link>
           </CardContent>
@@ -98,7 +98,7 @@ export default function LabDashboardPage() {
                 <CheckCircle className="h-6 w-6" />
               </div>
             </div>
-            <Link href="/lab/reports" className="text-sm text-blue-600 hover:underline mt-2 inline-flex items-center">
+            <Link href="/lab-panel/reports" className="text-sm text-blue-600 hover:underline mt-2 inline-flex items-center">
               View Reports <ArrowRight className="h-3 w-3 ml-1" />
             </Link>
           </CardContent>
@@ -125,7 +125,7 @@ export default function LabDashboardPage() {
           <CardContent className="pt-6">
             <div className="flex items-center justify-between mb-4">
               <h2 className="font-semibold text-lg">Recent Orders</h2>
-              <Link href="/lab/test-orders" className="text-sm text-blue-600 hover:underline">View All</Link>
+              <Link href="/lab-panel/test-orders" className="text-sm text-blue-600 hover:underline">View All</Link>
             </div>
             <div className="space-y-3">
               {orders.slice(0, 5).map((order) => (
