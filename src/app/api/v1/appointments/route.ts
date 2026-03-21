@@ -99,6 +99,13 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  // Build slot_start / slot_end from appointment_date + start_time / end_time.
+  // These are required NOT NULL columns in the appointments table.
+  const slotStart = `${body.appointment_date}T${body.start_time}`;
+  const slotEnd = body.end_time
+    ? `${body.appointment_date}T${body.end_time}`
+    : new Date(new Date(slotStart).getTime() + 30 * 60_000).toISOString(); // default 30 min
+
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("appointments")
@@ -109,8 +116,9 @@ export async function POST(request: NextRequest) {
       appointment_date: body.appointment_date,
       start_time: body.start_time,
       end_time: body.end_time || null,
+      slot_start: slotStart,
+      slot_end: slotEnd,
       status: body.status || "scheduled",
-      type: body.type || "consultation",
       notes: body.notes || null,
     })
     .select()
