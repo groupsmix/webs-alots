@@ -19,7 +19,7 @@ type TableName = keyof Database["public"]["Tables"];
 // ────────────────────────────────────────────
 
 async function query<T>(
-  table: TableName,
+  table: string,
   opts?: {
     select?: string;
     filters?: Record<string, unknown>;
@@ -30,11 +30,13 @@ async function query<T>(
   },
 ): Promise<T[]> {
   const supabase = await createClient();
-  let q = supabase.from(table).select(opts?.select ?? "*");
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let q = supabase.from(table as any).select(opts?.select ?? "*");
 
   if (opts?.eq) {
     for (const [col, val] of opts.eq) {
-      q = q.eq(col, val);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      q = q.eq(col, val as any);
     }
   }
   if (opts?.inFilter) {
@@ -56,17 +58,19 @@ async function query<T>(
 }
 
 async function queryOne<T>(
-  table: TableName,
+  table: string,
   opts?: {
     select?: string;
     eq?: [string, unknown][];
   },
 ): Promise<T | null> {
   const supabase = await createClient();
-  let q = supabase.from(table).select(opts?.select ?? "*");
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let q = supabase.from(table as any).select(opts?.select ?? "*");
   if (opts?.eq) {
     for (const [col, val] of opts.eq) {
-      q = q.eq(col, val);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      q = q.eq(col, val as any);
     }
   }
   const { data, error } = await q.single();
@@ -171,7 +175,7 @@ export async function updateClinicBranding(
   const supabase = await createClient();
   const { error } = await supabase
     .from("clinics")
-    .update(branding)
+    .update(branding as any)
     .eq("id", clinicId);
 
   if (error) {
@@ -966,7 +970,7 @@ export async function createAppointment(data: {
   };
   const { data: row, error } = await supabase
     .from("appointments")
-    .insert(enriched)
+    .insert(enriched as any)
     .select()
     .single();
   if (error) {
@@ -983,7 +987,7 @@ export async function createReview(data: {
   comment?: string;
 }): Promise<boolean> {
   const supabase = await createClient();
-  const { error } = await supabase.from("reviews").insert(data);
+  const { error } = await supabase.from("reviews").insert(data as any);
   if (error) {
     console.error("[data] Error creating review:", error.message);
     return false;
@@ -993,7 +997,7 @@ export async function createReview(data: {
 
 export async function updateReviewResponse(reviewId: string, response: string): Promise<boolean> {
   const supabase = await createClient();
-  const { error } = await supabase.from("reviews").update({ response }).eq("id", reviewId);
+  const { error } = await supabase.from("reviews").update({ response } as any).eq("id", reviewId);
   if (error) {
     console.error("[data] Error updating review:", error.message);
     return false;
@@ -1009,7 +1013,7 @@ export async function addToWaitingList(data: {
   preferred_date?: string;
 }): Promise<boolean> {
   const supabase = await createClient();
-  const { error } = await supabase.from("waiting_list").insert({ ...data, status: "waiting" });
+  const { error } = await supabase.from("waiting_list").insert({ ...data, status: "waiting" } as any);
   if (error) {
     console.error("[data] Error adding to waiting list:", error.message);
     return false;
@@ -1021,7 +1025,7 @@ export async function markNotificationRead(notificationId: string): Promise<bool
   const supabase = await createClient();
   const { error } = await supabase
     .from("notifications")
-    .update({ is_read: true })
+    .update({ is_read: true } as any)
     .eq("id", notificationId);
   if (error) return false;
   return true;
@@ -1049,7 +1053,7 @@ export async function createRadiologyOrder(data: {
       order_number: orderNumber,
       status: "pending",
       priority: data.priority ?? "normal",
-    })
+    } as any)
     .select("id, order_number")
     .single();
   if (error) {
@@ -1070,7 +1074,7 @@ export async function updateRadiologyOrderStatus(
   }
   const { error } = await supabase
     .from("radiology_orders")
-    .update(updateData)
+    .update(updateData as any)
     .eq("id", orderId);
   if (error) {
     console.error("[data] Error updating radiology order status:", error.message);
@@ -1101,7 +1105,7 @@ export async function saveRadiologyReport(
       reported_at: new Date().toISOString(),
       status: "reported",
       updated_at: new Date().toISOString(),
-    })
+    } as any)
     .eq("id", orderId);
   if (error) {
     console.error("[data] Error saving radiology report:", error.message);
@@ -1131,7 +1135,7 @@ export async function createRadiologyImage(data: {
       ...data,
       is_dicom: data.is_dicom ?? false,
       dicom_metadata: data.dicom_metadata ?? {},
-    })
+    } as any)
     .select("id")
     .single();
   if (error) {
@@ -1148,7 +1152,7 @@ export async function updateRadiologyOrderPdfUrl(
   const supabase = await createClient();
   const { error } = await supabase
     .from("radiology_orders")
-    .update({ pdf_url: pdfUrl, updated_at: new Date().toISOString() })
+    .update({ pdf_url: pdfUrl, updated_at: new Date().toISOString() } as any)
     .eq("id", orderId);
   if (error) {
     console.error("[data] Error updating radiology PDF URL:", error.message);
@@ -1168,7 +1172,7 @@ export async function updateLabOrderPdfUrl(
   const supabase = await createClient();
   const { error } = await supabase
     .from("lab_test_orders")
-    .update({ pdf_url: pdfUrl, updated_at: new Date().toISOString() })
+    .update({ pdf_url: pdfUrl, updated_at: new Date().toISOString() } as any)
     .eq("id", orderId);
   if (error) {
     console.error("[data] Error updating lab order PDF URL:", error.message);

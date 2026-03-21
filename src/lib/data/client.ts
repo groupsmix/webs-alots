@@ -60,7 +60,7 @@ export function clearUserCache() {
 // ── Generic fetch helper ──
 
 async function fetchRows<T>(
-  table: TableName,
+  table: string,
   opts?: {
     select?: string;
     eq?: [string, unknown][];
@@ -72,10 +72,12 @@ async function fetchRows<T>(
   },
 ): Promise<T[]> {
   const supabase = createClient();
-  let q = supabase.from(table).select(opts?.select ?? "*");
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let q = supabase.from(table as any).select(opts?.select ?? "*");
   if (opts?.eq) {
     for (const [col, val] of opts.eq) {
-      q = q.eq(col, val);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      q = q.eq(col, val as any);
     }
   }
   if (opts?.inFilter) {
@@ -925,7 +927,7 @@ export async function createPayment(data: {
     status: data.status ?? "completed",
     payment_type: "full",
     refunded_amount: 0,
-  });
+  } as any);
   if (error) {
     console.error("[data] create payment:", error.message);
     return false;
@@ -940,7 +942,7 @@ export async function upsertReview(data: {
   comment?: string;
 }): Promise<boolean> {
   const supabase = createClient();
-  const { error } = await supabase.from("reviews").insert(data);
+  const { error } = await supabase.from("reviews").insert(data as any);
   if (error) {
     console.error("[data] create review:", error.message);
     return false;
@@ -950,7 +952,7 @@ export async function upsertReview(data: {
 
 export async function updateReviewResponse(reviewId: string, response: string): Promise<boolean> {
   const supabase = createClient();
-  const { error } = await supabase.from("reviews").update({ response }).eq("id", reviewId);
+  const { error } = await supabase.from("reviews").update({ response } as any).eq("id", reviewId);
   return !error;
 }
 
@@ -963,7 +965,7 @@ export async function createPrescription(data: {
   appointment_id?: string;
 }): Promise<boolean> {
   const supabase = createClient();
-  const { error } = await supabase.from("prescriptions").insert(data);
+  const { error } = await supabase.from("prescriptions").insert(data as any);
   if (error) {
     console.error("[data] create prescription:", error.message);
     return false;
@@ -1004,7 +1006,7 @@ export async function createConsultationNote(data: {
   const supabase = createClient();
   const { data: result, error } = await supabase
     .from("consultation_notes")
-    .insert(data)
+    .insert(data as any)
     .select("id")
     .single();
   if (error) {
@@ -1026,7 +1028,7 @@ export async function updateConsultationNote(
   const supabase = createClient();
   const { error } = await supabase
     .from("consultation_notes")
-    .update({ ...data, updated_at: new Date().toISOString() })
+    .update({ ...data, updated_at: new Date().toISOString() } as any)
     .eq("id", id);
   if (error) {
     console.error("[data] update consultation note:", error.message);
@@ -1102,7 +1104,7 @@ export async function createTreatmentPlan(data: {
 }): Promise<string | null> {
   const supabase = createClient();
   const { data: result, error } = await supabase.from("treatment_plans")
-    .insert({ ...data, status: data.status ?? "planned" })
+    .insert({ ...data, status: data.status ?? "planned" } as any)
     .select("id")
     .single();
   if (error) {
@@ -1149,7 +1151,7 @@ export async function createSterilizationEntry(data: {
 }): Promise<string | null> {
   const supabase = createClient();
   const { data: result, error } = await supabase.from("sterilization_log")
-    .insert({ ...data, sterilized_at: new Date().toISOString() })
+    .insert({ ...data, sterilized_at: new Date().toISOString() } as any)
     .select("id")
     .single();
   if (error) {
@@ -1197,7 +1199,7 @@ export async function createBeforeAfterPhoto(data: {
   const supabase = createClient();
   const { data: result, error } = await supabase
     .from("before_after_photos")
-    .insert(data)
+    .insert(data as any)
     .select("id")
     .single();
   if (error) {
@@ -1220,7 +1222,7 @@ export async function updateBeforeAfterPhoto(
   const supabase = createClient();
   const { error } = await supabase
     .from("before_after_photos")
-    .update({ ...data, updated_at: new Date().toISOString() })
+    .update({ ...data, updated_at: new Date().toISOString() } as any)
     .eq("id", id);
   if (error) {
     console.error("[data] update before/after photo:", error.message);
@@ -1306,7 +1308,7 @@ export async function createMedicalCertificate(data: {
   const supabase = createClient();
   const { data: result, error } = await supabase
     .from("medical_certificates")
-    .insert(data)
+    .insert(data as any)
     .select("id")
     .single();
   if (error) {
@@ -2519,7 +2521,7 @@ export async function addToWaitingList(data: {
     .insert({
       ...data,
       status: "waiting",
-    })
+    } as any)
     .select("id")
     .single();
 
@@ -2553,7 +2555,7 @@ export async function createAppointment(data: {
     .insert({
       ...data,
       status: "confirmed",
-    })
+    } as any)
     .select("id")
     .single();
 
@@ -3120,7 +3122,7 @@ export async function createLabTestOrder(data: {
       priority: data.priority ?? "normal",
       clinical_notes: data.clinical_notes ?? null,
       fasting_required: data.fasting_required ?? false,
-    })
+    } as any)
     .select("id")
     .single();
   if (error) {
@@ -3138,7 +3140,7 @@ export async function createLabTestOrder(data: {
       test_name: catalogMap.get(testId) ?? "Test",
       status: "pending",
     }));
-    await supabase.from("lab_test_items").insert(items);
+    await supabase.from("lab_test_items").insert(items as any);
   }
   return orderId;
 }
@@ -3158,7 +3160,7 @@ export async function updateLabOrderStatus(
   }
   const { error } = await supabase
     .from("lab_test_orders")
-    .update(updateData)
+    .update(updateData as any)
     .eq("id", orderId);
   if (error) {
     console.error("[data] update lab order status:", error.message);
@@ -3177,7 +3179,7 @@ export async function assignLabTechnician(
     .update({
       assigned_technician_id: technicianId,
       updated_at: new Date().toISOString(),
-    })
+    } as any)
     .eq("id", orderId);
   if (error) {
     console.error("[data] assign lab technician:", error.message);
@@ -3212,7 +3214,7 @@ export async function saveLabTestResult(data: {
       notes: data.notes ?? null,
       entered_by: data.entered_by ?? null,
       entered_at: new Date().toISOString(),
-    })
+    } as any)
     .select("id")
     .single();
   if (error) {
@@ -3252,7 +3254,7 @@ export async function updateLabOrderPdfUrl(
   const supabase = createClient();
   const { error } = await supabase
     .from("lab_test_orders")
-    .update({ pdf_url: pdfUrl, updated_at: new Date().toISOString() })
+    .update({ pdf_url: pdfUrl, updated_at: new Date().toISOString() } as any)
     .eq("id", orderId);
   if (error) {
     console.error("[data] update lab order pdf url:", error.message);
@@ -3292,7 +3294,7 @@ export async function createParapharmacyProduct(data: {
       is_active: data.is_active ?? true,
       is_parapharmacy: true,
       requires_prescription: false,
-    })
+    } as any)
     .select("id")
     .single();
   if (error) {
@@ -3357,7 +3359,7 @@ export async function createParapharmacySale(data: {
       time: now.toTimeString().slice(0, 5),
       items: data.items,
       is_parapharmacy: true,
-    })
+    } as any)
     .select("id")
     .single();
   if (error) {
@@ -3405,7 +3407,7 @@ export async function adjustParapharmacyStock(
   if (error) {
     // Try insert if no stock row exists
     const { error: insertError } = await supabase.from("stock")
-      .insert({ product_id: productId, quantity: newQuantity });
+      .insert({ product_id: productId, quantity: newQuantity } as any);
     if (insertError) {
       console.error("[data] adjust stock:", insertError.message);
       return false;
@@ -3871,7 +3873,7 @@ export async function createEquipmentItem(data: {
       condition: data.condition ?? "new",
       is_available: data.is_available ?? true,
       is_rentable: data.is_rentable ?? false,
-    })
+    } as any)
     .select("id")
     .single();
   if (error) {
@@ -4225,7 +4227,7 @@ export async function createGrowthMeasurement(data: {
   const supabase = createClient();
   const { data: row, error } = await supabase
     .from("growth_measurements")
-    .insert(data)
+    .insert(data as any)
     .select("id")
     .single();
   if (error) { console.error("[data] growth_measurements insert:", error.message); return null; }
@@ -4305,7 +4307,7 @@ export async function createVaccination(data: {
 }): Promise<string | null> {
   const supabase = createClient();
   const { data: row, error } = await supabase.from("vaccinations")
-    .insert(data)
+    .insert(data as any)
     .select("id")
     .single();
   if (error) { console.error("[data] vaccinations insert:", error.message); return null; }
@@ -4382,7 +4384,7 @@ export async function createMilestone(data: {
 }): Promise<string | null> {
   const supabase = createClient();
   const { data: row, error } = await supabase.from("developmental_milestones")
-    .insert(data)
+    .insert(data as any)
     .select("id")
     .single();
   if (error) { console.error("[data] developmental_milestones insert:", error.message); return null; }
@@ -4510,7 +4512,7 @@ export async function createPregnancy(data: {
   const supabase = createClient();
   const { data: row, error } = await supabase
     .from("pregnancies")
-    .insert(data)
+    .insert(data as any)
     .select("id")
     .single();
   if (error) { console.error("[data] pregnancies insert:", error.message); return null; }
@@ -4601,7 +4603,7 @@ export async function createUltrasound(data: {
 }): Promise<string | null> {
   const supabase = createClient();
   const { data: row, error } = await supabase.from("ultrasound_records")
-    .insert(data)
+    .insert(data as any)
     .select("id")
     .single();
   if (error) { console.error("[data] ultrasound_records insert:", error.message); return null; }
@@ -4702,7 +4704,7 @@ export async function createVisionTest(data: {
   const supabase = createClient();
   const { data: row, error } = await supabase
     .from("vision_tests")
-    .insert(data)
+    .insert(data as any)
     .select("id")
     .single();
   if (error) { console.error("[data] vision_tests insert:", error.message); return null; }
@@ -4771,7 +4773,7 @@ export async function createIopMeasurement(data: {
   const supabase = createClient();
   const { data: row, error } = await supabase
     .from("iop_measurements")
-    .insert(data)
+    .insert(data as any)
     .select("id")
     .single();
   if (error) { console.error("[data] iop_measurements insert:", error.message); return null; }
