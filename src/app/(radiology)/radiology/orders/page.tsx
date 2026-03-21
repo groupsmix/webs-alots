@@ -1,32 +1,194 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import {
-  Search, Filter, AlertTriangle, Clock, CheckCircle,
-  Scan, ChevronDown, Image,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Search, Filter, ChevronDown, Scan, Plus,
+  FileText, Loader2,
 } from "lucide-react";
 import { clinicConfig } from "@/config/clinic.config";
-import { fetchRadiologyOrders } from "@/lib/data/client";
-import type { RadiologyOrderView } from "@/lib/data/client";
+import { fetchRadiologyOrders, fetchRadiologyTemplates } from "@/lib/data/client";
+import type { RadiologyOrderView, RadiologyTemplateView } from "@/lib/data/client";
 
 const statusOptions = ["all", "pending", "scheduled", "in_progress", "images_ready", "reported", "validated", "cancelled"] as const;
+const modalityOptions = ["xray", "ct", "mri", "ultrasound", "mammography", "pet", "fluoroscopy", "other"] as const;
+const priorityOptions = ["normal", "urgent", "stat"] as const;
 
 export default function RadiologyOrdersPage() {
   const [orders, setOrders] = useState<RadiologyOrderView[]>([]);
+  const [templates, setTemplates] = useState<RadiologyTemplateView[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
-  useEffect(() => {
-    fetchRadiologyOrders(clinicConfig.clinicId)
-      .then(setOrders)
-      .finally(() => setLoading(false));
+  const [newOrderOpen, setNewOrderOpen] = useState(false);
+  const [newOrderSaving, setNewOrderSaving] = useState(false);
+  const [newOrder, setNewOrder] = useState({
+    patientId: "",
+    modality: "xray" as string,
+    bodyPart: "",
+    clinicalIndication: "",
+    priority: "normal" as string,
+    scheduledAt: "",
+  });
+
+  const [reportDialogOpen, setReportDialogOpen] = useState(false);
+  const [reportOrderId, setReportOrderId] = useState<string | null>(null);
+  const [reportSaving, setReportSaving] = useState(false);
+  const [reportData, setReportData] = useState({
+    findings: "",
+    impression: "",
+    reportText: "",
+    templateId: "",
+  });
+
+  const [updatingStatusId, setUpdatingStatusId] = useState<string | null>(null);
+
+  const refreshOrders = useCallback(() => {
+    fetchRadiologyOrders(clinicConfig.clinicId).then(setOrders);
   }, []);
+
+  useEffect(() => {
+    Promise.all([
+      fetchRadiologyOrders(clinicConfig.clinicId),
+      fetchRadiologyTemplates(clinicConfig.clinicId),
+    ]).then(([o, t]) => {
+      setOrders(o);
+      setTemplates(t);
+      setLoading(false);
+    });
+  }, []);
+
+  const handleCreateOrder = async () => {
+    if (!newOrder.patientId || !newOrder.modality) return;
+    setNewOrderSaving(true);
+    try {
+      const res = await fetch("/api/radiology/orders", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          clinicId: clinicConfig.clinicId,
+          patientId: newOrder.patientId,
+          modality: newOrder.modality,
+          bodyPart: newOrder.bodyPart || undefined,
+          clinicalIndication: newOrder.clinicalIndication || undefined,
+          priority: newOrder.priority,
+          scheduledAt: newOrder.scheduledAt || undefined,
+        }),
+      });
+      if (res.ok) {
+        setNewOrderOpen(false);
+        setNewOrder({ patientId: "", modality: "xray", bodyPart: "", clinicalIndication: "", priority: "normal", scheduledAt: "" });
+        refreshOrders();
+      }
+    } finally {
+      setNewOrderSaving(false);
+    }
+  };
+
+  const handleStatusUpdate = async (orderId: string, newStatus: string) => {
+    setUpdatingStatusId(orderId);
+    try {
+      const res = await fetch("/api/radiology/orders", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ orderId, action: "status", status: newStatus }),
+      });
+      if (res.ok) refreshOrders();
+    } finally {
+      setUpdatingStatusId(null);
+    }
+  };
+
+  const openReportDialog = (order: RadiologyOrderView) => {
+    setReportOrderId(order.id);
+    setReportData({
+      findings: order.findings ?? "",
+      impression: order.impression ?? "",
+      reportText: order.reportText ?? "",
+      templateId: "",
+    });
+    setReportDialogOpen(true);
+  };
+
+  const handleApplyTemplate = (templateId: string) => {
+    const tpl = templates.find((t) => t.id === templateId);
+    if (!tpl) return;
+    const text = tpl.sections.map((s) => `## ${s.title}\n${s.content}`).join("\n\n");
+    setReportData((prev) => ({ ...prev, reportText: text, templateId }));
+  };
+
+  const handleSaveReport = async () => {
+    if (!reportOrderId) return;
+    setReportSaving(true);
+    try {
+      const res = await fetch("/api/radiology/orders", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          orderId: reportOrderId,
+          action: "report",
+          findings: reportData.findings,
+          impression: reportData.impression,
+          reportText: reportData.reportText,
+          templateId: reportData.templateId || undefined,
+        }),
+      });
+      if (res.ok) {
+        setReportDialogOpen(false);
+        refreshOrders();
+      }
+    } finally {
+      setReportSaving(false);
+    }
+  };
+
+  const handleGeneratePdf = async (order: RadiologyOrderView) => {
+    const res = await fetch("/api/radiology/report-pdf", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        orderId: order.id,
+        clinicId: clinicConfig.clinicId,
+        patientName: order.patientName,
+        modality: order.modality,
+        bodyPart: order.bodyPart,
+        findings: order.findings,
+        impression: order.impression,
+        reportText: order.reportText,
+        radiologistName: order.radiologistName,
+      }),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      if (data.pdfUrl) {
+        window.open(data.pdfUrl, "_blank");
+        refreshOrders();
+      }
+    }
+  };
 
   if (loading) {
     return (
@@ -45,6 +207,16 @@ export default function RadiologyOrdersPage() {
     return true;
   });
 
+  const getNextStatus = (current: string): string | null => {
+    const flow: Record<string, string> = {
+      pending: "scheduled",
+      scheduled: "in_progress",
+      in_progress: "images_ready",
+      images_ready: "reported",
+    };
+    return flow[current] ?? null;
+  };
+
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
@@ -52,6 +224,66 @@ export default function RadiologyOrdersPage() {
           <h1 className="text-2xl font-bold">Study Orders</h1>
           <p className="text-muted-foreground text-sm">{orders.length} total orders</p>
         </div>
+        <Dialog open={newOrderOpen} onOpenChange={setNewOrderOpen}>
+          <DialogTrigger asChild>
+            <Button><Plus className="h-4 w-4 mr-2" /> New Order</Button>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-lg">
+            <DialogHeader>
+              <DialogTitle>Create Radiology Order</DialogTitle>
+              <DialogDescription>Request a new imaging study for a patient.</DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+              <div className="grid gap-2">
+                <Label htmlFor="patientId">Patient ID</Label>
+                <Input id="patientId" placeholder="Patient UUID" value={newOrder.patientId} onChange={(e) => setNewOrder((p) => ({ ...p, patientId: e.target.value }))} />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="grid gap-2">
+                  <Label>Modality</Label>
+                  <Select value={newOrder.modality} onValueChange={(v) => setNewOrder((p) => ({ ...p, modality: v }))}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {modalityOptions.map((m) => (
+                        <SelectItem key={m} value={m}>{m.toUpperCase()}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="grid gap-2">
+                  <Label>Priority</Label>
+                  <Select value={newOrder.priority} onValueChange={(v) => setNewOrder((p) => ({ ...p, priority: v }))}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {priorityOptions.map((pr) => (
+                        <SelectItem key={pr} value={pr} className="capitalize">{pr}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="bodyPart">Body Part</Label>
+                <Input id="bodyPart" placeholder="e.g., Chest, Knee, Brain" value={newOrder.bodyPart} onChange={(e) => setNewOrder((p) => ({ ...p, bodyPart: e.target.value }))} />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="indication">Clinical Indication</Label>
+                <Textarea id="indication" placeholder="Reason for imaging..." value={newOrder.clinicalIndication} onChange={(e) => setNewOrder((p) => ({ ...p, clinicalIndication: e.target.value }))} rows={2} />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="scheduledAt">Scheduled Date/Time</Label>
+                <Input id="scheduledAt" type="datetime-local" value={newOrder.scheduledAt} onChange={(e) => setNewOrder((p) => ({ ...p, scheduledAt: e.target.value }))} />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setNewOrderOpen(false)}>Cancel</Button>
+              <Button onClick={handleCreateOrder} disabled={newOrderSaving || !newOrder.patientId}>
+                {newOrderSaving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                Create Order
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
 
       <div className="flex flex-col sm:flex-row gap-3 mb-6">
@@ -108,7 +340,7 @@ export default function RadiologyOrdersPage() {
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                     <div>
                       <p className="text-muted-foreground text-xs">Ordering Doctor</p>
-                      <p className="font-medium">{order.orderingDoctorName ?? "—"}</p>
+                      <p className="font-medium">{order.orderingDoctorName ?? "\u2014"}</p>
                     </div>
                     <div>
                       <p className="text-muted-foreground text-xs">Radiologist</p>
@@ -116,7 +348,7 @@ export default function RadiologyOrdersPage() {
                     </div>
                     <div>
                       <p className="text-muted-foreground text-xs">Scheduled</p>
-                      <p className="font-medium">{order.scheduledAt ? new Date(order.scheduledAt).toLocaleString() : "—"}</p>
+                      <p className="font-medium">{order.scheduledAt ? new Date(order.scheduledAt).toLocaleString() : "\u2014"}</p>
                     </div>
                     <div>
                       <p className="text-muted-foreground text-xs">Images</p>
@@ -141,6 +373,49 @@ export default function RadiologyOrdersPage() {
                       <p className="font-medium">{order.impression}</p>
                     </div>
                   )}
+
+                  <div className="flex flex-wrap gap-2 pt-2">
+                    {getNextStatus(order.status) && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={(e) => { e.stopPropagation(); handleStatusUpdate(order.id, getNextStatus(order.status)!); }}
+                        disabled={updatingStatusId === order.id}
+                      >
+                        {updatingStatusId === order.id && <Loader2 className="h-3 w-3 mr-1 animate-spin" />}
+                        Move to {getNextStatus(order.status)!.replace("_", " ")}
+                      </Button>
+                    )}
+                    {order.status !== "cancelled" && order.status !== "validated" && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={(e) => { e.stopPropagation(); openReportDialog(order); }}
+                      >
+                        <FileText className="h-3 w-3 mr-1" /> Write Report
+                      </Button>
+                    )}
+                    {(order.status === "reported" || order.status === "validated") && order.findings && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={(e) => { e.stopPropagation(); handleGeneratePdf(order); }}
+                      >
+                        Generate PDF
+                      </Button>
+                    )}
+                    {order.status !== "cancelled" && order.status !== "validated" && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="text-red-600 hover:text-red-700"
+                        onClick={(e) => { e.stopPropagation(); handleStatusUpdate(order.id, "cancelled"); }}
+                        disabled={updatingStatusId === order.id}
+                      >
+                        Cancel Order
+                      </Button>
+                    )}
+                  </div>
                 </div>
               )}
             </CardContent>
@@ -154,6 +429,49 @@ export default function RadiologyOrdersPage() {
           </div>
         )}
       </div>
+
+      <Dialog open={reportDialogOpen} onOpenChange={setReportDialogOpen}>
+        <DialogContent className="sm:max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Write Radiology Report</DialogTitle>
+            <DialogDescription>Enter findings and impression for this study.</DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            {templates.length > 0 && (
+              <div className="grid gap-2">
+                <Label>Load from Template</Label>
+                <Select value={reportData.templateId} onValueChange={handleApplyTemplate}>
+                  <SelectTrigger><SelectValue placeholder="Select a template..." /></SelectTrigger>
+                  <SelectContent>
+                    {templates.map((t) => (
+                      <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+            <div className="grid gap-2">
+              <Label htmlFor="findings">Findings</Label>
+              <Textarea id="findings" placeholder="Describe the findings..." value={reportData.findings} onChange={(e) => setReportData((p) => ({ ...p, findings: e.target.value }))} rows={4} />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="impression">Impression</Label>
+              <Textarea id="impression" placeholder="Summary / Impression..." value={reportData.impression} onChange={(e) => setReportData((p) => ({ ...p, impression: e.target.value }))} rows={3} />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="reportText">Full Report</Label>
+              <Textarea id="reportText" placeholder="Complete report text..." value={reportData.reportText} onChange={(e) => setReportData((p) => ({ ...p, reportText: e.target.value }))} rows={6} />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setReportDialogOpen(false)}>Cancel</Button>
+            <Button onClick={handleSaveReport} disabled={reportSaving || (!reportData.findings && !reportData.impression && !reportData.reportText)}>
+              {reportSaving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              Save Report
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

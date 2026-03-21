@@ -3,8 +3,9 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search, FileText, Download, Scan } from "lucide-react";
+import { Search, FileText, Download, Scan, Loader2 } from "lucide-react";
 import { clinicConfig } from "@/config/clinic.config";
 import { fetchRadiologyOrders } from "@/lib/data/client";
 import type { RadiologyOrderView } from "@/lib/data/client";
@@ -14,12 +15,45 @@ export default function RadiologyReportsPage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [generatingPdf, setGeneratingPdf] = useState<string | null>(null);
 
   useEffect(() => {
     fetchRadiologyOrders(clinicConfig.clinicId)
       .then((all) => setOrders(all.filter((o) => o.status === "reported" || o.status === "validated")))
       .finally(() => setLoading(false));
   }, []);
+
+  const handleGeneratePdf = async (order: RadiologyOrderView) => {
+    setGeneratingPdf(order.id);
+    try {
+      const res = await fetch("/api/radiology/report-pdf", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          orderId: order.id,
+          clinicId: clinicConfig.clinicId,
+          patientName: order.patientName,
+          modality: order.modality,
+          bodyPart: order.bodyPart,
+          findings: order.findings,
+          impression: order.impression,
+          reportText: order.reportText,
+          radiologistName: order.radiologistName,
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.pdfUrl) {
+          window.open(data.pdfUrl, "_blank");
+          // Refresh to get updated pdfUrl
+          fetchRadiologyOrders(clinicConfig.clinicId)
+            .then((all) => setOrders(all.filter((o) => o.status === "reported" || o.status === "validated")));
+        }
+      }
+    } finally {
+      setGeneratingPdf(null);
+    }
+  };
 
   if (loading) {
     return (
@@ -69,15 +103,26 @@ export default function RadiologyReportsPage() {
                   <Badge className={order.status === "validated" ? "bg-green-100 text-green-700 border-0" : "bg-emerald-100 text-emerald-700 border-0"}>
                     {order.status}
                   </Badge>
-                  {order.pdfUrl && (
+                  {order.pdfUrl ? (
                     <a
                       href={order.pdfUrl}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="inline-flex items-center rounded-md border px-3 py-1 text-xs font-medium hover:bg-muted transition-colors"
+                      onClick={(e) => e.stopPropagation()}
                     >
                       <Download className="h-3 w-3 mr-1" /> PDF
                     </a>
+                  ) : (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={(e) => { e.stopPropagation(); handleGeneratePdf(order); }}
+                      disabled={generatingPdf === order.id}
+                    >
+                      {generatingPdf === order.id ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <Download className="h-3 w-3 mr-1" />}
+                      Generate PDF
+                    </Button>
                   )}
                 </div>
               </div>
@@ -103,7 +148,7 @@ export default function RadiologyReportsPage() {
                     </div>
                   )}
                   <div className="text-sm text-muted-foreground">
-                    <p>Radiologist: {order.radiologistName ?? "—"} &middot; Reported: {order.reportedAt ? new Date(order.reportedAt).toLocaleString() : "—"}</p>
+                    <p>Radiologist: {order.radiologistName ?? "\u2014"} &middot; Reported: {order.reportedAt ? new Date(order.reportedAt).toLocaleString() : "\u2014"}</p>
                   </div>
                 </div>
               )}
