@@ -66,8 +66,8 @@ export default function LoginPage() {
             <Heart className="h-5 w-5 text-primary-foreground" />
           </div>
         </div>
-        <h1 className="text-xl font-bold">Health Portal</h1>
-        <p className="text-sm text-muted-foreground">Sign in to manage your health</p>
+        <h1 className="text-xl font-bold">Portail Santé</h1>
+        <p className="text-sm text-muted-foreground">Connectez-vous pour gérer votre santé</p>
       </div>
 
       <Card>
@@ -80,12 +80,12 @@ export default function LoginPage() {
             )}
           </div>
           <CardTitle className="text-xl">
-            {step === "phone" ? "Sign In" : "Verify Your Number"}
+            {step === "phone" ? "Connexion" : "Vérifiez votre numéro"}
           </CardTitle>
           <CardDescription>
             {step === "phone"
-              ? "Enter your phone number to receive a verification code."
-              : `We sent a 6-digit code to ${phone}`}
+              ? "Entrez votre numéro de téléphone pour recevoir un code de vérification."
+              : `Nous avons envoyé un code à 6 chiffres au ${phone}`}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -98,7 +98,7 @@ export default function LoginPage() {
           {step === "phone" ? (
             <form className="space-y-4" onSubmit={handleSendOTP}>
               <div className="space-y-2">
-                <Label htmlFor="phone">Phone Number</Label>
+                <Label htmlFor="phone">Numéro de téléphone</Label>
                 <Input
                   id="phone"
                   type="tel"
@@ -109,17 +109,17 @@ export default function LoginPage() {
                   className="text-base"
                 />
                 <p className="text-xs text-muted-foreground">
-                  We&apos;ll send you a one-time verification code via SMS.
+                  Nous vous enverrons un code de vérification unique par SMS.
                 </p>
               </div>
               <Button type="submit" className="w-full" disabled={loading}>
-                {loading ? "Sending Code..." : "Send Verification Code"}
+                {loading ? "Envoi du code..." : "Envoyer le code de vérification"}
               </Button>
             </form>
           ) : (
             <form className="space-y-4" onSubmit={handleVerifyOTP}>
               <div className="space-y-2">
-                <Label htmlFor="otp">Verification Code</Label>
+                <Label htmlFor="otp">Code de vérification</Label>
                 <Input
                   id="otp"
                   placeholder="000000"
@@ -131,18 +131,18 @@ export default function LoginPage() {
                   autoFocus
                 />
                 <p className="text-xs text-muted-foreground text-center">
-                  Didn&apos;t receive the code?{" "}
+                  Vous n&apos;avez pas reçu le code ?{" "}
                   <button
                     type="button"
                     className="text-primary hover:underline"
                     onClick={() => handleSendOTP()}
                   >
-                    Resend
+                    Renvoyer
                   </button>
                 </p>
               </div>
               <Button type="submit" className="w-full" disabled={loading}>
-                {loading ? "Verifying..." : "Verify & Sign In"}
+                {loading ? "Vérification..." : "Vérifier et se connecter"}
               </Button>
               <Button
                 type="button"
@@ -155,19 +155,19 @@ export default function LoginPage() {
                 }}
               >
                 <ArrowLeft className="h-4 w-4 mr-1" />
-                Use a different number
+                Utiliser un autre numéro
               </Button>
             </form>
           )}
         </CardContent>
         <CardFooter className="justify-center border-t pt-4">
           <p className="text-sm text-muted-foreground">
-            Don&apos;t have an account?{" "}
+            Vous n&apos;avez pas de compte ?{" "}
             <Link
               href="/register"
               className="text-primary hover:underline font-medium"
             >
-              Register
+              S&apos;inscrire
             </Link>
           </p>
         </CardFooter>
