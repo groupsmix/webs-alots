@@ -31,6 +31,7 @@ export default function BookingPage() {
     <div className="container mx-auto max-w-2xl px-4 py-12">
       <script
         type="application/ld+json"
+        // SAFETY: JSON.stringify of a server-controlled object with no user-sourced content.
         dangerouslySetInnerHTML={{ __html: JSON.stringify(bookingSchema) }}
       />
       <BookingForm />

@@ -20,6 +20,7 @@ import {
   buildUploadKey,
   getPresignedUploadUrl,
 } from "@/lib/r2";
+import { createClient } from "@/lib/supabase-server";
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
 
@@ -33,6 +34,16 @@ const ALLOWED_TYPES = new Set([
 ]);
 
 export async function POST(request: NextRequest) {
+  // Verify authentication before accepting uploads
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+  }
+
   if (!isR2Configured()) {
     return NextResponse.json(
       { error: "File storage is not configured" },
@@ -81,6 +92,16 @@ export async function POST(request: NextRequest) {
 }
 
 export async function GET(request: NextRequest) {
+  // Verify authentication before generating presigned URLs
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+  }
+
   if (!isR2Configured()) {
     return NextResponse.json(
       { error: "File storage is not configured" },
