@@ -38,7 +38,8 @@ export interface ChatbotClinicContext {
 export async function fetchChatbotContext(clinicId: string): Promise<ChatbotClinicContext> {
   const supabase = await createClient();
 
-  const [clinicRes, servicesRes, doctorsRes, slotsRes, faqsRes, configRes] =
+  // Query known tables via typed client
+  const [clinicRes, servicesRes, doctorsRes, slotsRes] =
     await Promise.all([
       supabase
         .from("clinics")
@@ -56,21 +57,26 @@ export async function fetchChatbotContext(clinicId: string): Promise<ChatbotClin
         .eq("role", "doctor"),
       supabase
         .from("time_slots")
-        .select("day_of_week, start_time, end_time, is_available")
-        .eq("clinic_id", clinicId)
-        .eq("is_available", true),
-      supabase
-        .from("chatbot_faqs")
-        .select("question, answer, keywords")
-        .eq("clinic_id", clinicId)
-        .eq("is_active", true)
-        .order("sort_order", { ascending: true }),
-      supabase
-        .from("chatbot_config")
-        .select("enabled, intelligence, greeting, language")
-        .eq("clinic_id", clinicId)
-        .single(),
+        .select("day_of_week, start_time, end_time")
+        .eq("clinic_id", clinicId),
     ]);
+
+  // Query chatbot tables (not yet in generated DB types) via untyped client
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const untypedSupabase = supabase as any;
+  const [faqsRes, configRes] = await Promise.all([
+    untypedSupabase
+      .from("chatbot_faqs")
+      .select("question, answer, keywords")
+      .eq("clinic_id", clinicId)
+      .eq("is_active", true)
+      .order("sort_order", { ascending: true }) as Promise<{ data: { question: string; answer: string; keywords: string[] }[] | null }>,
+    untypedSupabase
+      .from("chatbot_config")
+      .select("enabled, intelligence, greeting, language")
+      .eq("clinic_id", clinicId)
+      .single() as Promise<{ data: Record<string, unknown> | null }>,
+  ]);
 
   const clinicData = clinicRes.data as Record<string, unknown> | null;
 
@@ -91,7 +97,7 @@ export async function fetchChatbotContext(clinicId: string): Promise<ChatbotClin
       : null,
     services: ((servicesRes.data ?? []) as { name: string; price: number | null; category: string | null; duration_minutes: number }[]),
     doctors: ((doctorsRes.data ?? []) as { name: string; phone: string | null; email: string | null }[]),
-    workingHours: ((slotsRes.data ?? []) as { day_of_week: number; start_time: string; end_time: string; is_available: boolean }[]),
+    workingHours: ((slotsRes.data ?? []) as unknown as { day_of_week: number; start_time: string; end_time: string; is_available: boolean }[]),
     faqs: ((faqsRes.data ?? []) as { question: string; answer: string; keywords: string[] }[]),
     chatbotConfig: configRes.data
       ? {
