@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   LogIn, Search, Ban, CheckCircle, Eye, Filter,
   Building2, Mail, Phone, MapPin, Calendar, Users, TrendingUp,
@@ -41,6 +42,7 @@ type FilterType = "all" | "doctor" | "dentist" | "pharmacy";
 type FilterStatus = "all" | "active" | "suspended" | "trial";
 
 export default function AllClinicsPage() {
+  const router = useRouter();
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState<FilterType>("all");
   const [statusFilter, setStatusFilter] = useState<FilterStatus>("all");
@@ -298,7 +300,30 @@ export default function AllClinicsPage() {
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setLoginOpen(false)}>Cancel</Button>
-              <Button onClick={() => setLoginOpen(false)}><LogIn className="h-4 w-4 mr-1" />Continue as {loginClinic.ownerName.split(" ")[0] || "Admin"}</Button>
+              <Button disabled={actionLoading} onClick={async () => {
+                setActionLoading(true);
+                try {
+                  const res = await fetch("/api/impersonate", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ clinicId: loginClinic.id, clinicName: loginClinic.name }),
+                  });
+                  if (res.ok) {
+                    setLoginOpen(false);
+                    router.push("/admin/dashboard");
+                  } else {
+                    const data = await res.json();
+                    console.error("Impersonation failed:", data.error);
+                  }
+                } catch (err) {
+                  console.error("Impersonation error:", err);
+                } finally {
+                  setActionLoading(false);
+                }
+              }}>
+                {actionLoading && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}
+                <LogIn className="h-4 w-4 mr-1" />Continue as {loginClinic.ownerName.split(" ")[0] || "Admin"}
+              </Button>
             </DialogFooter>
           </DialogContent>
         )}

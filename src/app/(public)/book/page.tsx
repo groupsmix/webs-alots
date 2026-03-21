@@ -12,8 +12,27 @@ export const metadata: Metadata = {
 };
 
 export default function BookingPage() {
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://example.com";
+
+  const bookingSchema = {
+    "@context": "https://schema.org",
+    "@type": "ReserveAction",
+    target: {
+      "@type": "EntryPoint",
+      urlTemplate: `${baseUrl}/book`,
+      actionPlatform: ["http://schema.org/DesktopWebPlatform", "http://schema.org/MobileWebPlatform"],
+    },
+    result: {
+      "@type": "MedicalAppointment",
+    },
+  };
+
   return (
     <div className="container mx-auto max-w-2xl px-4 py-12">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(bookingSchema) }}
+      />
       <BookingForm />
     </div>
   );

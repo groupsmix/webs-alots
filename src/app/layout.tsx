@@ -16,6 +16,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
+  manifest: "/manifest.webmanifest",
   title: {
     default: "Health SaaS Platform — Gestion Médicale en Ligne",
     template: "%s | Health SaaS Platform",
