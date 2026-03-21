@@ -685,7 +685,8 @@ interface TimeSlotRaw {
   end_time: string;
   max_capacity: number;
   buffer_minutes: number;
-  buffer_min: number;
+  buffer_min: number | null;
+  is_available: boolean;
   is_active: boolean;
 }
 
