@@ -5,8 +5,8 @@ import {
   type NotificationChannel,
   type TemplateVariables,
 } from "@/lib/notifications";
+import type { NotificationChannel as DBNotificationChannel, UserRole } from "@/lib/types/database";
 import { createClient } from "@/lib/supabase-server";
-import type { UserRole } from "@/lib/types/database";
 
 export const runtime = "edge";
 
@@ -82,7 +82,7 @@ export async function POST(request: NextRequest) {
  * GET /api/notifications
  *
  * Returns notification history for a user.
- * Query params: userId, channel, trigger, status, limit
+ * Query params: userId, channel, type, limit, offset
  */
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
@@ -95,7 +95,49 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  // TODO: Fetch from Supabase notifications table
-  // For now, return empty array (demo data is rendered client-side)
-  return NextResponse.json({ notifications: [], total: 0 });
+  try {
+    const supabase = await createClient();
+
+    const channel = searchParams.get("channel");
+    const type = searchParams.get("type");
+    const limit = Math.min(parseInt(searchParams.get("limit") ?? "50", 10) || 50, 100);
+    const offset = parseInt(searchParams.get("offset") ?? "0", 10) || 0;
+
+    let query = supabase
+      .from("notifications")
+      .select("*", { count: "exact" })
+      .eq("user_id", userId);
+
+    if (channel) {
+      query = query.eq("channel", channel as DBNotificationChannel);
+    }
+
+    if (type) {
+      query = query.eq("type", type);
+    }
+
+    query = query
+      .order("sent_at", { ascending: false })
+      .range(offset, offset + limit - 1);
+
+    const { data: notifications, error, count } = await query;
+
+    if (error) {
+      console.error("[GET /api/notifications] Query error:", error.message);
+      return NextResponse.json(
+        { error: "Failed to fetch notifications" },
+        { status: 500 },
+      );
+    }
+
+    return NextResponse.json({
+      notifications: notifications ?? [],
+      total: count ?? 0,
+    });
+  } catch {
+    return NextResponse.json(
+      { error: "Failed to fetch notifications" },
+      { status: 500 },
+    );
+  }
 }

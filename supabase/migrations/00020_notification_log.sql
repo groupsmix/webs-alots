@@ -1,9 +1,9 @@
 -- ============================================================
 -- Migration 00020: Add notification_log table
 --
--- The reminder-24h edge function inserts into notification_log
--- but the table was never created. This migration adds it with
--- proper foreign keys, indexes, and RLS policies.
+-- The cron reminder system and notification engine insert into
+-- notification_log. This migration adds the table with proper
+-- foreign keys, indexes, and RLS policies.
 -- ============================================================
 
 -- ============================================================
