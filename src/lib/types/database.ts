@@ -2218,6 +2218,46 @@ export type InvoiceItem = {
   created_at: string;
 }
 
+// ---- Chatbot & Notification tables (migrations 00008, 00020) ----
+
+export type ChatbotConfig = {
+  id: string;
+  clinic_id: string;
+  enabled: boolean;
+  intelligence: string;
+  greeting: string | null;
+  language: string | null;
+  accent_color: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export type ChatbotFaq = {
+  id: string;
+  clinic_id: string;
+  question: string;
+  answer: string;
+  keywords: string[];
+  sort_order: number;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export type NotificationLogEntry = {
+  id: string;
+  appointment_id: string | null;
+  clinic_id: string | null;
+  trigger: string;
+  channel: string;
+  recipient_phone: string | null;
+  recipient_name: string | null;
+  body: string | null;
+  status: string;
+  error_message: string | null;
+  created_at: string;
+}
+
 // ---- Supabase Database Schema (for use with supabase-js typed client) ----
 
 export type Database = {
@@ -2356,6 +2396,10 @@ export type Database = {
       xray_records: { Row: XRayRecord; Insert: Partial<XRayRecord> & Pick<XRayRecord, "clinic_id" | "patient_id" | "doctor_id" | "body_part">; Update: Partial<XRayRecord>; Relationships: [] };
       invoices: { Row: Invoice; Insert: Partial<Invoice> & Pick<Invoice, "clinic_id" | "patient_id" | "invoice_number">; Update: Partial<Invoice>; Relationships: [] };
       invoice_items: { Row: InvoiceItem; Insert: Partial<InvoiceItem> & Pick<InvoiceItem, "invoice_id" | "description" | "quantity" | "unit_price" | "total">; Update: Partial<InvoiceItem>; Relationships: [] };
+      // Chatbot & Notification tables
+      chatbot_config: { Row: ChatbotConfig; Insert: Partial<ChatbotConfig> & Pick<ChatbotConfig, "clinic_id">; Update: Partial<ChatbotConfig>; Relationships: [] };
+      chatbot_faqs: { Row: ChatbotFaq; Insert: Partial<ChatbotFaq> & Pick<ChatbotFaq, "clinic_id" | "question" | "answer">; Update: Partial<ChatbotFaq>; Relationships: [] };
+      notification_log: { Row: NotificationLogEntry; Insert: Partial<NotificationLogEntry> & Pick<NotificationLogEntry, "trigger" | "channel">; Update: Partial<NotificationLogEntry>; Relationships: [] };
     };
     Views: {
       [_ in never]: never
