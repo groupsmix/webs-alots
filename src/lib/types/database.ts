@@ -68,6 +68,7 @@ export type ClinicTier = "vitrine" | "cabinet" | "pro" | "premium" | "saas";
 
 export type AppointmentStatus =
   | "pending"
+  | "scheduled"
   | "confirmed"
   | "checked_in"
   | "in_progress"
@@ -78,7 +79,7 @@ export type AppointmentStatus =
 
 export type BookingSource = "online" | "phone" | "walk_in" | "whatsapp";
 
-export type PaymentMethod = "cash" | "card" | "transfer" | "online";
+export type PaymentMethod = "cash" | "card" | "transfer" | "online" | "insurance";
 
 export type PaymentStatus = "pending" | "completed" | "refunded" | "failed";
 
@@ -139,7 +140,7 @@ export type PurchaseOrderStatus =
 
 export type ClinicStatus = "active" | "inactive" | "suspended";
 
-export interface ClinicTypeRecord {
+export type ClinicTypeRecord = {
   id: string;
   type_key: string;
   name_fr: string;
@@ -152,7 +153,7 @@ export interface ClinicTypeRecord {
   created_at: string;
 }
 
-export interface Clinic {
+export type Clinic = {
   id: string;
   name: string;
   type: ClinicType;
@@ -172,7 +173,7 @@ export interface Clinic {
   updated_at: string;
 }
 
-export interface User {
+export type User = {
   id: string;
   auth_id: string | null;
   clinic_id: string | null;
@@ -187,7 +188,7 @@ export interface User {
   updated_at: string;
 }
 
-export interface Service {
+export type Service = {
   id: string;
   clinic_id: string;
   name: string;
@@ -200,7 +201,7 @@ export interface Service {
   created_at: string;
 }
 
-export interface TimeSlot {
+export type TimeSlot = {
   id: string;
   clinic_id: string;
   doctor_id: string;
@@ -217,7 +218,7 @@ export type RecurrencePattern = "weekly" | "biweekly" | "monthly";
 
 export type PaymentType = "deposit" | "full";
 
-export interface Appointment {
+export type Appointment = {
   id: string;
   clinic_id: string;
   patient_id: string;
@@ -245,7 +246,7 @@ export interface Appointment {
   updated_at: string;
 }
 
-export interface WaitingListEntry {
+export type WaitingListEntry = {
   id: string;
   clinic_id: string;
   patient_id: string;
@@ -258,7 +259,7 @@ export interface WaitingListEntry {
   created_at: string;
 }
 
-export interface Notification {
+export type Notification = {
   id: string;
   clinic_id: string;
   user_id: string;
@@ -270,7 +271,7 @@ export interface Notification {
   sent_at: string;
 }
 
-export interface Payment {
+export type Payment = {
   id: string;
   clinic_id: string;
   appointment_id: string | null;
@@ -285,7 +286,7 @@ export interface Payment {
   created_at: string;
 }
 
-export interface Review {
+export type Review = {
   id: string;
   clinic_id: string;
   patient_id: string;
@@ -297,7 +298,7 @@ export interface Review {
   created_at: string;
 }
 
-export interface Document {
+export type Document = {
   id: string;
   clinic_id: string;
   user_id: string;
@@ -308,7 +309,7 @@ export interface Document {
   created_at: string;
 }
 
-export interface ClinicHoliday {
+export type ClinicHoliday = {
   id: string;
   clinic_id: string;
   title: string;
@@ -319,7 +320,7 @@ export interface ClinicHoliday {
 
 // ---- Doctor Extras ----
 
-export interface ConsultationNote {
+export type ConsultationNote = {
   id: string;
   clinic_id: string;
   appointment_id: string;
@@ -331,7 +332,7 @@ export interface ConsultationNote {
   updated_at: string;
 }
 
-export interface Prescription {
+export type Prescription = {
   id: string;
   clinic_id: string;
   appointment_id: string | null;
@@ -343,13 +344,13 @@ export interface Prescription {
   created_at: string;
 }
 
-export interface PrescriptionItem {
+export type PrescriptionItem = {
   name: string;
   dosage: string;
   duration: string;
 }
 
-export interface FamilyMember {
+export type FamilyMember = {
   id: string;
   primary_user_id: string;
   member_user_id: string;
@@ -359,7 +360,7 @@ export interface FamilyMember {
 
 // ---- Dentist Extras ----
 
-export interface OdontogramEntry {
+export type OdontogramEntry = {
   id: string;
   clinic_id: string;
   patient_id: string;
@@ -369,7 +370,7 @@ export interface OdontogramEntry {
   updated_at: string;
 }
 
-export interface TreatmentPlan {
+export type TreatmentPlan = {
   id: string;
   clinic_id: string;
   patient_id: string;
@@ -382,14 +383,14 @@ export interface TreatmentPlan {
   updated_at: string;
 }
 
-export interface TreatmentStep {
+export type TreatmentStep = {
   step: number;
   description: string;
   status: "pending" | "in_progress" | "completed";
   date: string | null;
 }
 
-export interface LabOrder {
+export type LabOrder = {
   id: string;
   clinic_id: string;
   patient_id: string;
@@ -402,7 +403,7 @@ export interface LabOrder {
   updated_at: string;
 }
 
-export interface Installment {
+export type Installment = {
   id: string;
   clinic_id: string;
   treatment_plan_id: string;
@@ -417,7 +418,7 @@ export interface Installment {
 
 export type SterilizationMethod = "autoclave" | "chemical" | "dry_heat";
 
-export interface SterilizationLogEntry {
+export type SterilizationLogEntry = {
   id: string;
   clinic_id: string;
   tool_name: string;
@@ -431,7 +432,7 @@ export interface SterilizationLogEntry {
 
 // ---- Advanced Booking Extras ----
 
-export interface EmergencySlot {
+export type EmergencySlot = {
   id: string;
   clinic_id: string;
   doctor_id: string;
@@ -443,7 +444,7 @@ export interface EmergencySlot {
   created_at: string;
 }
 
-export interface AppointmentDoctor {
+export type AppointmentDoctor = {
   id: string;
   appointment_id: string;
   doctor_id: string;
@@ -453,7 +454,7 @@ export interface AppointmentDoctor {
 
 // ---- Pharmacy Extras ----
 
-export interface Product {
+export type Product = {
   id: string;
   clinic_id: string;
   name: string;
@@ -472,7 +473,7 @@ export interface Product {
   created_at: string;
 }
 
-export interface StockEntry {
+export type StockEntry = {
   id: string;
   clinic_id: string;
   product_id: string;
@@ -483,7 +484,7 @@ export interface StockEntry {
   updated_at: string;
 }
 
-export interface Supplier {
+export type Supplier = {
   id: string;
   clinic_id: string;
   name: string;
@@ -500,7 +501,7 @@ export interface Supplier {
   created_at: string;
 }
 
-export interface PrescriptionRequest {
+export type PrescriptionRequest = {
   id: string;
   clinic_id: string;
   patient_id: string;
@@ -512,7 +513,7 @@ export interface PrescriptionRequest {
   updated_at: string;
 }
 
-export interface LoyaltyPoints {
+export type LoyaltyPoints = {
   id: string;
   clinic_id: string;
   patient_id: string;
@@ -533,7 +534,7 @@ export interface LoyaltyPoints {
 
 export type LoyaltyTransactionType = "earned" | "redeemed" | "birthday_bonus" | "referral_bonus" | "expired";
 
-export interface LoyaltyTransaction {
+export type LoyaltyTransaction = {
   id: string;
   clinic_id: string;
   patient_id: string;
@@ -545,7 +546,7 @@ export interface LoyaltyTransaction {
   created_at: string;
 }
 
-export interface PurchaseOrder {
+export type PurchaseOrder = {
   id: string;
   clinic_id: string;
   supplier_id: string;
@@ -562,7 +563,7 @@ export interface PurchaseOrder {
   updated_at: string;
 }
 
-export interface PurchaseOrderItem {
+export type PurchaseOrderItem = {
   id: string;
   purchase_order_id: string;
   product_id: string;
@@ -593,7 +594,7 @@ export type SalePaymentMethod = "cash" | "card" | "insurance";
 
 export type LoyaltyTier = "bronze" | "silver" | "gold" | "platinum";
 
-export interface BlogPost {
+export type BlogPost = {
   id: string;
   clinic_id: string | null;
   title: string;
@@ -609,7 +610,7 @@ export interface BlogPost {
   updated_at: string;
 }
 
-export interface Announcement {
+export type Announcement = {
   id: string;
   title: string;
   message: string;
@@ -624,7 +625,7 @@ export interface Announcement {
   updated_at: string;
 }
 
-export interface ActivityLog {
+export type ActivityLog = {
   id: string;
   action: string;
   description: string | null;
@@ -636,7 +637,7 @@ export interface ActivityLog {
   created_at: string;
 }
 
-export interface PlatformBilling {
+export type PlatformBilling = {
   id: string;
   clinic_id: string;
   clinic_name: string | null;
@@ -653,7 +654,7 @@ export interface PlatformBilling {
   updated_at: string;
 }
 
-export interface FeatureDefinition {
+export type FeatureDefinition = {
   id: string;
   name: string;
   description: string | null;
@@ -665,7 +666,7 @@ export interface FeatureDefinition {
   updated_at: string;
 }
 
-export interface ClinicFeatureOverride {
+export type ClinicFeatureOverride = {
   id: string;
   clinic_id: string;
   feature_id: string;
@@ -673,7 +674,7 @@ export interface ClinicFeatureOverride {
   created_at: string;
 }
 
-export interface PricingTier {
+export type PricingTier = {
   id: string;
   slug: TierSlug;
   name: string;
@@ -688,7 +689,7 @@ export interface PricingTier {
   updated_at: string;
 }
 
-export interface Subscription {
+export type Subscription = {
   id: string;
   clinic_id: string;
   clinic_name: string | null;
@@ -709,7 +710,7 @@ export interface Subscription {
   updated_at: string;
 }
 
-export interface SubscriptionInvoice {
+export type SubscriptionInvoice = {
   id: string;
   subscription_id: string;
   date: string;
@@ -720,7 +721,7 @@ export interface SubscriptionInvoice {
   created_at: string;
 }
 
-export interface FeatureToggle {
+export type FeatureToggle = {
   id: string;
   key: string;
   label: string;
@@ -733,7 +734,7 @@ export interface FeatureToggle {
   updated_at: string;
 }
 
-export interface Sale {
+export type Sale = {
   id: string;
   clinic_id: string;
   date: string;
@@ -749,7 +750,7 @@ export interface Sale {
   created_at: string;
 }
 
-export interface OnDutySchedule {
+export type OnDutySchedule = {
   id: string;
   clinic_id: string;
   date: string;
@@ -760,7 +761,7 @@ export interface OnDutySchedule {
   created_at: string;
 }
 
-export interface BeforeAfterPhoto {
+export type BeforeAfterPhoto = {
   id: string;
   clinic_id: string;
   patient_id: string;
@@ -775,7 +776,7 @@ export interface BeforeAfterPhoto {
   updated_at: string;
 }
 
-export interface PainQuestionnaire {
+export type PainQuestionnaire = {
   id: string;
   clinic_id: string;
   patient_id: string;
@@ -801,7 +802,7 @@ export type BedStatus = "available" | "occupied" | "maintenance" | "reserved";
 
 export type AdmissionStatus = "admitted" | "discharged" | "transferred";
 
-export interface Department {
+export type Department = {
   id: string;
   clinic_id: string;
   name: string;
@@ -814,7 +815,7 @@ export interface Department {
   updated_at: string;
 }
 
-export interface DoctorDepartment {
+export type DoctorDepartment = {
   id: string;
   doctor_id: string;
   department_id: string;
@@ -823,7 +824,7 @@ export interface DoctorDepartment {
   joined_at: string;
 }
 
-export interface Room {
+export type Room = {
   id: string;
   clinic_id: string;
   department_id: string | null;
@@ -835,7 +836,7 @@ export interface Room {
   created_at: string;
 }
 
-export interface Bed {
+export type Bed = {
   id: string;
   clinic_id: string;
   room_id: string;
@@ -846,7 +847,7 @@ export interface Bed {
   updated_at: string;
 }
 
-export interface Admission {
+export type Admission = {
   id: string;
   clinic_id: string;
   patient_id: string;
@@ -868,7 +869,7 @@ export type ConsentType = "before_after" | "marketing" | "medical_record";
 
 export type PatientPackageStatus = "active" | "completed" | "expired" | "cancelled";
 
-export interface PhotoConsentForm {
+export type PhotoConsentForm = {
   id: string;
   clinic_id: string;
   patient_id: string;
@@ -881,7 +882,7 @@ export interface PhotoConsentForm {
   created_at: string;
 }
 
-export interface TreatmentPackage {
+export type TreatmentPackage = {
   id: string;
   clinic_id: string;
   name: string;
@@ -895,7 +896,7 @@ export interface TreatmentPackage {
   updated_at: string;
 }
 
-export interface PatientPackage {
+export type PatientPackage = {
   id: string;
   clinic_id: string;
   patient_id: string;
@@ -910,7 +911,7 @@ export interface PatientPackage {
   updated_at: string;
 }
 
-export interface ConsultationPhoto {
+export type ConsultationPhoto = {
   id: string;
   clinic_id: string;
   patient_id: string;
@@ -936,7 +937,7 @@ export type IVFProtocolType = "long" | "short" | "antagonist" | "natural" | "min
 
 export type IVFTimelineEventType = "medication_start" | "scan" | "blood_test" | "trigger" | "retrieval" | "fertilization_report" | "transfer" | "beta_test" | "follow_up" | "other";
 
-export interface IVFCycle {
+export type IVFCycle = {
   id: string;
   clinic_id: string;
   patient_id: string;
@@ -962,7 +963,7 @@ export interface IVFCycle {
   updated_at: string;
 }
 
-export interface IVFProtocol {
+export type IVFProtocol = {
   id: string;
   clinic_id: string;
   name: string;
@@ -976,7 +977,7 @@ export interface IVFProtocol {
   updated_at: string;
 }
 
-export interface IVFTimelineEvent {
+export type IVFTimelineEvent = {
   id: string;
   cycle_id: string;
   clinic_id: string;
@@ -998,7 +999,7 @@ export type DialysisRecurrencePattern = "mon_wed_fri" | "tue_thu_sat" | "custom"
 
 export type DialysisAccessType = "fistula" | "graft" | "catheter";
 
-export interface DialysisMachine {
+export type DialysisMachine = {
   id: string;
   clinic_id: string;
   machine_name: string;
@@ -1012,7 +1013,7 @@ export interface DialysisMachine {
   updated_at: string;
 }
 
-export interface DialysisSession {
+export type DialysisSession = {
   id: string;
   clinic_id: string;
   patient_id: string;
@@ -1059,7 +1060,7 @@ export type DeliveryCondition = "good" | "damaged" | "incomplete";
 
 export type LabInvoiceStatus = "draft" | "sent" | "paid" | "overdue" | "cancelled";
 
-export interface ProstheticOrder {
+export type ProstheticOrder = {
   id: string;
   clinic_id: string;
   dentist_id: string | null;
@@ -1085,7 +1086,7 @@ export interface ProstheticOrder {
   updated_at: string;
 }
 
-export interface LabMaterial {
+export type LabMaterial = {
   id: string;
   clinic_id: string;
   name: string;
@@ -1103,7 +1104,7 @@ export interface LabMaterial {
   updated_at: string;
 }
 
-export interface LabDelivery {
+export type LabDelivery = {
   id: string;
   clinic_id: string;
   order_id: string;
@@ -1115,7 +1116,7 @@ export interface LabDelivery {
   created_at: string;
 }
 
-export interface LabInvoice {
+export type LabInvoice = {
   id: string;
   clinic_id: string;
   invoice_number: string;
@@ -1137,7 +1138,7 @@ export interface LabInvoice {
 
 // ---- Para-Medical Extras ----
 
-export interface ExerciseProgramRow {
+export type ExerciseProgramRow = {
   id: string;
   clinic_id: string;
   patient_id: string;
@@ -1153,7 +1154,7 @@ export interface ExerciseProgramRow {
   updated_at: string;
 }
 
-export interface PhysioSessionRow {
+export type PhysioSessionRow = {
   id: string;
   clinic_id: string;
   patient_id: string;
@@ -1169,7 +1170,7 @@ export interface PhysioSessionRow {
   created_at: string;
 }
 
-export interface ProgressPhotoRow {
+export type ProgressPhotoRow = {
   id: string;
   clinic_id: string;
   patient_id: string;
@@ -1180,7 +1181,7 @@ export interface ProgressPhotoRow {
   created_at: string;
 }
 
-export interface MealPlanRow {
+export type MealPlanRow = {
   id: string;
   clinic_id: string;
   patient_id: string;
@@ -1197,7 +1198,7 @@ export interface MealPlanRow {
   updated_at: string;
 }
 
-export interface BodyMeasurementRow {
+export type BodyMeasurementRow = {
   id: string;
   clinic_id: string;
   patient_id: string;
@@ -1215,7 +1216,7 @@ export interface BodyMeasurementRow {
   created_at: string;
 }
 
-export interface TherapySessionNoteRow {
+export type TherapySessionNoteRow = {
   id: string;
   clinic_id: string;
   patient_id: string;
@@ -1236,7 +1237,7 @@ export interface TherapySessionNoteRow {
   updated_at: string;
 }
 
-export interface TherapyPlanRow {
+export type TherapyPlanRow = {
   id: string;
   clinic_id: string;
   patient_id: string;
@@ -1252,7 +1253,7 @@ export interface TherapyPlanRow {
   updated_at: string;
 }
 
-export interface SpeechExerciseRow {
+export type SpeechExerciseRow = {
   id: string;
   clinic_id: string;
   name: string;
@@ -1266,7 +1267,7 @@ export interface SpeechExerciseRow {
   created_at: string;
 }
 
-export interface SpeechSessionRow {
+export type SpeechSessionRow = {
   id: string;
   clinic_id: string;
   patient_id: string;
@@ -1282,7 +1283,7 @@ export interface SpeechSessionRow {
   created_at: string;
 }
 
-export interface SpeechProgressReportRow {
+export type SpeechProgressReportRow = {
   id: string;
   clinic_id: string;
   patient_id: string;
@@ -1300,7 +1301,7 @@ export interface SpeechProgressReportRow {
   created_at: string;
 }
 
-export interface LensInventoryRow {
+export type LensInventoryRow = {
   id: string;
   clinic_id: string;
   type: "single_vision" | "bifocal" | "progressive" | "contact" | "sunglasses";
@@ -1316,7 +1317,7 @@ export interface LensInventoryRow {
   updated_at: string;
 }
 
-export interface FrameCatalogRow {
+export type FrameCatalogRow = {
   id: string;
   clinic_id: string;
   brand: string;
@@ -1335,7 +1336,7 @@ export interface FrameCatalogRow {
   updated_at: string;
 }
 
-export interface OpticalPrescriptionRow {
+export type OpticalPrescriptionRow = {
   id: string;
   clinic_id: string;
   patient_id: string;
@@ -1370,7 +1371,7 @@ export type CustomFieldEntityType =
   | "product"
   | "lab_order";
 
-export interface CustomFieldDefinitionRow {
+export type CustomFieldDefinitionRow = {
   id: string;
   clinic_type_key: string;
   entity_type: CustomFieldEntityType;
@@ -1391,7 +1392,7 @@ export interface CustomFieldDefinitionRow {
   updated_at: string;
 }
 
-export interface CustomFieldValuesRow {
+export type CustomFieldValuesRow = {
   id: string;
   clinic_id: string;
   entity_type: CustomFieldEntityType;
@@ -1401,7 +1402,7 @@ export interface CustomFieldValuesRow {
   updated_at: string;
 }
 
-export interface CustomFieldOverrideRow {
+export type CustomFieldOverrideRow = {
   id: string;
   clinic_id: string;
   field_definition_id: string;
@@ -1412,7 +1413,7 @@ export interface CustomFieldOverrideRow {
 }
 // ---- Diagnostic Center: Analysis Lab ----
 
-export interface LabTestCatalog {
+export type LabTestCatalog = {
   id: string;
   clinic_id: string;
   name: string;
@@ -1430,7 +1431,7 @@ export interface LabTestCatalog {
   created_at: string;
 }
 
-export interface LabTestOrder {
+export type LabTestOrder = {
   id: string;
   clinic_id: string;
   patient_id: string;
@@ -1450,7 +1451,7 @@ export interface LabTestOrder {
   updated_at: string;
 }
 
-export interface LabTestItem {
+export type LabTestItem = {
   id: string;
   order_id: string;
   test_id: string;
@@ -1459,7 +1460,7 @@ export interface LabTestItem {
   created_at: string;
 }
 
-export interface LabTestResult {
+export type LabTestResult = {
   id: string;
   order_id: string;
   test_item_id: string;
@@ -1476,7 +1477,7 @@ export interface LabTestResult {
 
 // ---- Diagnostic Center: Radiology ----
 
-export interface RadiologyOrder {
+export type RadiologyOrder = {
   id: string;
   clinic_id: string;
   patient_id: string;
@@ -1500,7 +1501,7 @@ export interface RadiologyOrder {
   updated_at: string;
 }
 
-export interface RadiologyImage {
+export type RadiologyImage = {
   id: string;
   order_id: string;
   clinic_id: string;
@@ -1517,7 +1518,7 @@ export interface RadiologyImage {
   uploaded_at: string;
 }
 
-export interface RadiologyReportTemplate {
+export type RadiologyReportTemplate = {
   id: string;
   clinic_id: string;
   name: string;
@@ -1533,7 +1534,7 @@ export interface RadiologyReportTemplate {
 
 // ---- Medical Equipment Store ----
 
-export interface EquipmentInventory {
+export type EquipmentInventory = {
   id: string;
   clinic_id: string;
   name: string;
@@ -1557,7 +1558,7 @@ export interface EquipmentInventory {
   updated_at: string;
 }
 
-export interface EquipmentRental {
+export type EquipmentRental = {
   id: string;
   clinic_id: string;
   equipment_id: string;
@@ -1579,7 +1580,7 @@ export interface EquipmentRental {
   updated_at: string;
 }
 
-export interface EquipmentMaintenance {
+export type EquipmentMaintenance = {
   id: string;
   clinic_id: string;
   equipment_id: string;
@@ -1597,7 +1598,7 @@ export interface EquipmentMaintenance {
 
 // ---- Parapharmacy ----
 
-export interface ParapharmacyCategory {
+export type ParapharmacyCategory = {
   id: string;
   clinic_id: string;
   name: string;
@@ -1612,105 +1613,115 @@ export interface ParapharmacyCategory {
 
 // ---- Supabase Database Schema (for use with supabase-js typed client) ----
 
-export interface Database {
+export type Database = {
   public: {
     Tables: {
-      clinics: { Row: Clinic; Insert: Partial<Clinic> & Pick<Clinic, "name" | "type">; Update: Partial<Clinic> };
-      users: { Row: User; Insert: Partial<User> & Pick<User, "role" | "name">; Update: Partial<User> };
-      services: { Row: Service; Insert: Partial<Service> & Pick<Service, "clinic_id" | "name">; Update: Partial<Service> };
-      time_slots: { Row: TimeSlot; Insert: Partial<TimeSlot> & Pick<TimeSlot, "clinic_id" | "doctor_id" | "day_of_week" | "start_time" | "end_time">; Update: Partial<TimeSlot> };
-      appointments: { Row: Appointment; Insert: Partial<Appointment> & Pick<Appointment, "clinic_id" | "patient_id" | "doctor_id" | "appointment_date" | "start_time" | "end_time">; Update: Partial<Appointment> };
-      waiting_list: { Row: WaitingListEntry; Insert: Partial<WaitingListEntry> & Pick<WaitingListEntry, "clinic_id" | "patient_id" | "doctor_id">; Update: Partial<WaitingListEntry> };
-      notifications: { Row: Notification; Insert: Partial<Notification> & Pick<Notification, "clinic_id" | "user_id" | "type" | "channel">; Update: Partial<Notification> };
-      payments: { Row: Payment; Insert: Partial<Payment> & Pick<Payment, "clinic_id" | "patient_id" | "amount">; Update: Partial<Payment> };
-      reviews: { Row: Review; Insert: Partial<Review> & Pick<Review, "clinic_id" | "patient_id" | "stars">; Update: Partial<Review> };
-      documents: { Row: Document; Insert: Partial<Document> & Pick<Document, "clinic_id" | "user_id" | "type" | "file_url">; Update: Partial<Document> };
-      clinic_holidays: { Row: ClinicHoliday; Insert: Partial<ClinicHoliday> & Pick<ClinicHoliday, "clinic_id" | "title" | "start_date" | "end_date">; Update: Partial<ClinicHoliday> };
-      consultation_notes: { Row: ConsultationNote; Insert: Partial<ConsultationNote> & Pick<ConsultationNote, "clinic_id" | "appointment_id" | "doctor_id" | "patient_id">; Update: Partial<ConsultationNote> };
-      prescriptions: { Row: Prescription; Insert: Partial<Prescription> & Pick<Prescription, "clinic_id" | "doctor_id" | "patient_id">; Update: Partial<Prescription> };
-      family_members: { Row: FamilyMember; Insert: Partial<FamilyMember> & Pick<FamilyMember, "primary_user_id" | "member_user_id" | "relationship">; Update: Partial<FamilyMember> };
-      odontogram: { Row: OdontogramEntry; Insert: Partial<OdontogramEntry> & Pick<OdontogramEntry, "clinic_id" | "patient_id" | "tooth_number">; Update: Partial<OdontogramEntry> };
-      treatment_plans: { Row: TreatmentPlan; Insert: Partial<TreatmentPlan> & Pick<TreatmentPlan, "clinic_id" | "patient_id" | "doctor_id" | "title">; Update: Partial<TreatmentPlan> };
-      lab_orders: { Row: LabOrder; Insert: Partial<LabOrder> & Pick<LabOrder, "clinic_id" | "patient_id" | "doctor_id" | "description">; Update: Partial<LabOrder> };
-      installments: { Row: Installment; Insert: Partial<Installment> & Pick<Installment, "clinic_id" | "treatment_plan_id" | "patient_id" | "amount" | "due_date">; Update: Partial<Installment> };
-      sterilization_log: { Row: SterilizationLogEntry; Insert: Partial<SterilizationLogEntry> & Pick<SterilizationLogEntry, "clinic_id" | "tool_name">; Update: Partial<SterilizationLogEntry> };
-      products: { Row: Product; Insert: Partial<Product> & Pick<Product, "clinic_id" | "name">; Update: Partial<Product> };
-      stock: { Row: StockEntry; Insert: Partial<StockEntry> & Pick<StockEntry, "clinic_id" | "product_id">; Update: Partial<StockEntry> };
-      suppliers: { Row: Supplier; Insert: Partial<Supplier> & Pick<Supplier, "clinic_id" | "name">; Update: Partial<Supplier> };
-      prescription_requests: { Row: PrescriptionRequest; Insert: Partial<PrescriptionRequest> & Pick<PrescriptionRequest, "clinic_id" | "patient_id" | "image_url">; Update: Partial<PrescriptionRequest> };
-      loyalty_points: { Row: LoyaltyPoints; Insert: Partial<LoyaltyPoints> & Pick<LoyaltyPoints, "clinic_id" | "patient_id">; Update: Partial<LoyaltyPoints> };
-      loyalty_transactions: { Row: LoyaltyTransaction; Insert: Partial<LoyaltyTransaction> & Pick<LoyaltyTransaction, "clinic_id" | "patient_id" | "points">; Update: Partial<LoyaltyTransaction> };
-      purchase_orders: { Row: PurchaseOrder; Insert: Partial<PurchaseOrder> & Pick<PurchaseOrder, "clinic_id" | "supplier_id">; Update: Partial<PurchaseOrder> };
-      purchase_order_items: { Row: PurchaseOrderItem; Insert: Partial<PurchaseOrderItem> & Pick<PurchaseOrderItem, "purchase_order_id" | "product_id" | "quantity">; Update: Partial<PurchaseOrderItem> };
-      emergency_slots: { Row: EmergencySlot; Insert: Partial<EmergencySlot> & Pick<EmergencySlot, "clinic_id" | "doctor_id" | "slot_date" | "start_time" | "end_time">; Update: Partial<EmergencySlot> };
-      appointment_doctors: { Row: AppointmentDoctor; Insert: Partial<AppointmentDoctor> & Pick<AppointmentDoctor, "appointment_id" | "doctor_id">; Update: Partial<AppointmentDoctor> };
+      clinics: { Row: Clinic; Insert: Partial<Clinic> & Pick<Clinic, "name" | "type">; Update: Partial<Clinic>; Relationships: [] };
+      users: { Row: User; Insert: Partial<User> & Pick<User, "role" | "name">; Update: Partial<User>; Relationships: [] };
+      services: { Row: Service; Insert: Partial<Service> & Pick<Service, "clinic_id" | "name">; Update: Partial<Service>; Relationships: [] };
+      time_slots: { Row: TimeSlot; Insert: Partial<TimeSlot> & Pick<TimeSlot, "clinic_id" | "doctor_id" | "day_of_week" | "start_time" | "end_time">; Update: Partial<TimeSlot>; Relationships: [] };
+      appointments: { Row: Appointment; Insert: Partial<Appointment> & Pick<Appointment, "clinic_id" | "patient_id" | "doctor_id" | "appointment_date" | "start_time" | "end_time">; Update: Partial<Appointment>; Relationships: [] };
+      waiting_list: { Row: WaitingListEntry; Insert: Partial<WaitingListEntry> & Pick<WaitingListEntry, "clinic_id" | "patient_id" | "doctor_id">; Update: Partial<WaitingListEntry>; Relationships: [] };
+      notifications: { Row: Notification; Insert: Partial<Notification> & Pick<Notification, "clinic_id" | "user_id" | "type" | "channel">; Update: Partial<Notification>; Relationships: [] };
+      payments: { Row: Payment; Insert: Partial<Payment> & Pick<Payment, "clinic_id" | "patient_id" | "amount">; Update: Partial<Payment>; Relationships: [] };
+      reviews: { Row: Review; Insert: Partial<Review> & Pick<Review, "clinic_id" | "patient_id" | "stars">; Update: Partial<Review>; Relationships: [] };
+      documents: { Row: Document; Insert: Partial<Document> & Pick<Document, "clinic_id" | "user_id" | "type" | "file_url">; Update: Partial<Document>; Relationships: [] };
+      clinic_holidays: { Row: ClinicHoliday; Insert: Partial<ClinicHoliday> & Pick<ClinicHoliday, "clinic_id" | "title" | "start_date" | "end_date">; Update: Partial<ClinicHoliday>; Relationships: [] };
+      consultation_notes: { Row: ConsultationNote; Insert: Partial<ConsultationNote> & Pick<ConsultationNote, "clinic_id" | "appointment_id" | "doctor_id" | "patient_id">; Update: Partial<ConsultationNote>; Relationships: [] };
+      prescriptions: { Row: Prescription; Insert: Partial<Prescription> & Pick<Prescription, "clinic_id" | "doctor_id" | "patient_id">; Update: Partial<Prescription>; Relationships: [] };
+      family_members: { Row: FamilyMember; Insert: Partial<FamilyMember> & Pick<FamilyMember, "primary_user_id" | "member_user_id" | "relationship">; Update: Partial<FamilyMember>; Relationships: [] };
+      odontogram: { Row: OdontogramEntry; Insert: Partial<OdontogramEntry> & Pick<OdontogramEntry, "clinic_id" | "patient_id" | "tooth_number">; Update: Partial<OdontogramEntry>; Relationships: [] };
+      treatment_plans: { Row: TreatmentPlan; Insert: Partial<TreatmentPlan> & Pick<TreatmentPlan, "clinic_id" | "patient_id" | "doctor_id" | "title">; Update: Partial<TreatmentPlan>; Relationships: [] };
+      lab_orders: { Row: LabOrder; Insert: Partial<LabOrder> & Pick<LabOrder, "clinic_id" | "patient_id" | "doctor_id" | "description">; Update: Partial<LabOrder>; Relationships: [] };
+      installments: { Row: Installment; Insert: Partial<Installment> & Pick<Installment, "clinic_id" | "treatment_plan_id" | "patient_id" | "amount" | "due_date">; Update: Partial<Installment>; Relationships: [] };
+      sterilization_log: { Row: SterilizationLogEntry; Insert: Partial<SterilizationLogEntry> & Pick<SterilizationLogEntry, "clinic_id" | "tool_name">; Update: Partial<SterilizationLogEntry>; Relationships: [] };
+      products: { Row: Product; Insert: Partial<Product> & Pick<Product, "clinic_id" | "name">; Update: Partial<Product>; Relationships: [] };
+      stock: { Row: StockEntry; Insert: Partial<StockEntry> & Pick<StockEntry, "clinic_id" | "product_id">; Update: Partial<StockEntry>; Relationships: [] };
+      suppliers: { Row: Supplier; Insert: Partial<Supplier> & Pick<Supplier, "clinic_id" | "name">; Update: Partial<Supplier>; Relationships: [] };
+      prescription_requests: { Row: PrescriptionRequest; Insert: Partial<PrescriptionRequest> & Pick<PrescriptionRequest, "clinic_id" | "patient_id" | "image_url">; Update: Partial<PrescriptionRequest>; Relationships: [] };
+      loyalty_points: { Row: LoyaltyPoints; Insert: Partial<LoyaltyPoints> & Pick<LoyaltyPoints, "clinic_id" | "patient_id">; Update: Partial<LoyaltyPoints>; Relationships: [] };
+      loyalty_transactions: { Row: LoyaltyTransaction; Insert: Partial<LoyaltyTransaction> & Pick<LoyaltyTransaction, "clinic_id" | "patient_id" | "points">; Update: Partial<LoyaltyTransaction>; Relationships: [] };
+      purchase_orders: { Row: PurchaseOrder; Insert: Partial<PurchaseOrder> & Pick<PurchaseOrder, "clinic_id" | "supplier_id">; Update: Partial<PurchaseOrder>; Relationships: [] };
+      purchase_order_items: { Row: PurchaseOrderItem; Insert: Partial<PurchaseOrderItem> & Pick<PurchaseOrderItem, "purchase_order_id" | "product_id" | "quantity">; Update: Partial<PurchaseOrderItem>; Relationships: [] };
+      emergency_slots: { Row: EmergencySlot; Insert: Partial<EmergencySlot> & Pick<EmergencySlot, "clinic_id" | "doctor_id" | "slot_date" | "start_time" | "end_time">; Update: Partial<EmergencySlot>; Relationships: [] };
+      appointment_doctors: { Row: AppointmentDoctor; Insert: Partial<AppointmentDoctor> & Pick<AppointmentDoctor, "appointment_id" | "doctor_id">; Update: Partial<AppointmentDoctor>; Relationships: [] };
       // New tables (migration 00005)
-      blog_posts: { Row: BlogPost; Insert: Partial<BlogPost> & Pick<BlogPost, "title">; Update: Partial<BlogPost> };
-      announcements: { Row: Announcement; Insert: Partial<Announcement> & Pick<Announcement, "title" | "message">; Update: Partial<Announcement> };
-      activity_logs: { Row: ActivityLog; Insert: Partial<ActivityLog> & Pick<ActivityLog, "action" | "type">; Update: Partial<ActivityLog> };
-      platform_billing: { Row: PlatformBilling; Insert: Partial<PlatformBilling> & Pick<PlatformBilling, "clinic_id" | "invoice_date" | "due_date">; Update: Partial<PlatformBilling> };
-      feature_definitions: { Row: FeatureDefinition; Insert: Partial<FeatureDefinition> & Pick<FeatureDefinition, "name" | "key">; Update: Partial<FeatureDefinition> };
-      clinic_feature_overrides: { Row: ClinicFeatureOverride; Insert: Partial<ClinicFeatureOverride> & Pick<ClinicFeatureOverride, "clinic_id" | "feature_id">; Update: Partial<ClinicFeatureOverride> };
-      pricing_tiers: { Row: PricingTier; Insert: Partial<PricingTier> & Pick<PricingTier, "slug" | "name">; Update: Partial<PricingTier> };
-      subscriptions: { Row: Subscription; Insert: Partial<Subscription> & Pick<Subscription, "clinic_id" | "system_type" | "tier_slug" | "current_period_start" | "current_period_end">; Update: Partial<Subscription> };
-      subscription_invoices: { Row: SubscriptionInvoice; Insert: Partial<SubscriptionInvoice> & Pick<SubscriptionInvoice, "subscription_id" | "date" | "amount">; Update: Partial<SubscriptionInvoice> };
-      feature_toggles: { Row: FeatureToggle; Insert: Partial<FeatureToggle> & Pick<FeatureToggle, "key" | "label">; Update: Partial<FeatureToggle> };
-      sales: { Row: Sale; Insert: Partial<Sale> & Pick<Sale, "clinic_id">; Update: Partial<Sale> };
-      on_duty_schedule: { Row: OnDutySchedule; Insert: Partial<OnDutySchedule> & Pick<OnDutySchedule, "clinic_id" | "date" | "start_time" | "end_time">; Update: Partial<OnDutySchedule> };
-      before_after_photos: { Row: BeforeAfterPhoto; Insert: Partial<BeforeAfterPhoto> & Pick<BeforeAfterPhoto, "clinic_id" | "patient_id">; Update: Partial<BeforeAfterPhoto> };
-      pain_questionnaires: { Row: PainQuestionnaire; Insert: Partial<PainQuestionnaire> & Pick<PainQuestionnaire, "clinic_id" | "patient_id" | "pain_level">; Update: Partial<PainQuestionnaire> };
-      clinic_types: { Row: ClinicTypeRecord; Insert: Partial<ClinicTypeRecord> & Pick<ClinicTypeRecord, "type_key" | "name_fr" | "name_ar" | "category">; Update: Partial<ClinicTypeRecord> };
+      blog_posts: { Row: BlogPost; Insert: Partial<BlogPost> & Pick<BlogPost, "title">; Update: Partial<BlogPost>; Relationships: [] };
+      announcements: { Row: Announcement; Insert: Partial<Announcement> & Pick<Announcement, "title" | "message">; Update: Partial<Announcement>; Relationships: [] };
+      activity_logs: { Row: ActivityLog; Insert: Partial<ActivityLog> & Pick<ActivityLog, "action" | "type">; Update: Partial<ActivityLog>; Relationships: [] };
+      platform_billing: { Row: PlatformBilling; Insert: Partial<PlatformBilling> & Pick<PlatformBilling, "clinic_id" | "invoice_date" | "due_date">; Update: Partial<PlatformBilling>; Relationships: [] };
+      feature_definitions: { Row: FeatureDefinition; Insert: Partial<FeatureDefinition> & Pick<FeatureDefinition, "name" | "key">; Update: Partial<FeatureDefinition>; Relationships: [] };
+      clinic_feature_overrides: { Row: ClinicFeatureOverride; Insert: Partial<ClinicFeatureOverride> & Pick<ClinicFeatureOverride, "clinic_id" | "feature_id">; Update: Partial<ClinicFeatureOverride>; Relationships: [] };
+      pricing_tiers: { Row: PricingTier; Insert: Partial<PricingTier> & Pick<PricingTier, "slug" | "name">; Update: Partial<PricingTier>; Relationships: [] };
+      subscriptions: { Row: Subscription; Insert: Partial<Subscription> & Pick<Subscription, "clinic_id" | "system_type" | "tier_slug" | "current_period_start" | "current_period_end">; Update: Partial<Subscription>; Relationships: [] };
+      subscription_invoices: { Row: SubscriptionInvoice; Insert: Partial<SubscriptionInvoice> & Pick<SubscriptionInvoice, "subscription_id" | "date" | "amount">; Update: Partial<SubscriptionInvoice>; Relationships: [] };
+      feature_toggles: { Row: FeatureToggle; Insert: Partial<FeatureToggle> & Pick<FeatureToggle, "key" | "label">; Update: Partial<FeatureToggle>; Relationships: [] };
+      sales: { Row: Sale; Insert: Partial<Sale> & Pick<Sale, "clinic_id">; Update: Partial<Sale>; Relationships: [] };
+      on_duty_schedule: { Row: OnDutySchedule; Insert: Partial<OnDutySchedule> & Pick<OnDutySchedule, "clinic_id" | "date" | "start_time" | "end_time">; Update: Partial<OnDutySchedule>; Relationships: [] };
+      before_after_photos: { Row: BeforeAfterPhoto; Insert: Partial<BeforeAfterPhoto> & Pick<BeforeAfterPhoto, "clinic_id" | "patient_id">; Update: Partial<BeforeAfterPhoto>; Relationships: [] };
+      pain_questionnaires: { Row: PainQuestionnaire; Insert: Partial<PainQuestionnaire> & Pick<PainQuestionnaire, "clinic_id" | "patient_id" | "pain_level">; Update: Partial<PainQuestionnaire>; Relationships: [] };
+      clinic_types: { Row: ClinicTypeRecord; Insert: Partial<ClinicTypeRecord> & Pick<ClinicTypeRecord, "type_key" | "name_fr" | "name_ar" | "category">; Update: Partial<ClinicTypeRecord>; Relationships: [] };
       // Para-medical tables
-      exercise_programs: { Row: ExerciseProgramRow; Insert: Partial<ExerciseProgramRow> & Pick<ExerciseProgramRow, "clinic_id" | "patient_id" | "therapist_id" | "title">; Update: Partial<ExerciseProgramRow> };
-      physio_sessions: { Row: PhysioSessionRow; Insert: Partial<PhysioSessionRow> & Pick<PhysioSessionRow, "clinic_id" | "patient_id" | "therapist_id">; Update: Partial<PhysioSessionRow> };
-      progress_photos: { Row: ProgressPhotoRow; Insert: Partial<ProgressPhotoRow> & Pick<ProgressPhotoRow, "clinic_id" | "patient_id" | "photo_url">; Update: Partial<ProgressPhotoRow> };
-      meal_plans: { Row: MealPlanRow; Insert: Partial<MealPlanRow> & Pick<MealPlanRow, "clinic_id" | "patient_id" | "nutritionist_id" | "title">; Update: Partial<MealPlanRow> };
-      body_measurements: { Row: BodyMeasurementRow; Insert: Partial<BodyMeasurementRow> & Pick<BodyMeasurementRow, "clinic_id" | "patient_id">; Update: Partial<BodyMeasurementRow> };
-      therapy_session_notes: { Row: TherapySessionNoteRow; Insert: Partial<TherapySessionNoteRow> & Pick<TherapySessionNoteRow, "clinic_id" | "patient_id" | "therapist_id">; Update: Partial<TherapySessionNoteRow> };
-      therapy_plans: { Row: TherapyPlanRow; Insert: Partial<TherapyPlanRow> & Pick<TherapyPlanRow, "clinic_id" | "patient_id" | "therapist_id">; Update: Partial<TherapyPlanRow> };
-      speech_exercises: { Row: SpeechExerciseRow; Insert: Partial<SpeechExerciseRow> & Pick<SpeechExerciseRow, "clinic_id" | "name" | "category">; Update: Partial<SpeechExerciseRow> };
-      speech_sessions: { Row: SpeechSessionRow; Insert: Partial<SpeechSessionRow> & Pick<SpeechSessionRow, "clinic_id" | "patient_id" | "therapist_id">; Update: Partial<SpeechSessionRow> };
-      speech_progress_reports: { Row: SpeechProgressReportRow; Insert: Partial<SpeechProgressReportRow> & Pick<SpeechProgressReportRow, "clinic_id" | "patient_id" | "therapist_id">; Update: Partial<SpeechProgressReportRow> };
-      lens_inventory: { Row: LensInventoryRow; Insert: Partial<LensInventoryRow> & Pick<LensInventoryRow, "clinic_id" | "type">; Update: Partial<LensInventoryRow> };
-      frame_catalog: { Row: FrameCatalogRow; Insert: Partial<FrameCatalogRow> & Pick<FrameCatalogRow, "clinic_id" | "brand" | "model">; Update: Partial<FrameCatalogRow> };
-      optical_prescriptions: { Row: OpticalPrescriptionRow; Insert: Partial<OpticalPrescriptionRow> & Pick<OpticalPrescriptionRow, "clinic_id" | "patient_id">; Update: Partial<OpticalPrescriptionRow> };
+      exercise_programs: { Row: ExerciseProgramRow; Insert: Partial<ExerciseProgramRow> & Pick<ExerciseProgramRow, "clinic_id" | "patient_id" | "therapist_id" | "title">; Update: Partial<ExerciseProgramRow>; Relationships: [] };
+      physio_sessions: { Row: PhysioSessionRow; Insert: Partial<PhysioSessionRow> & Pick<PhysioSessionRow, "clinic_id" | "patient_id" | "therapist_id">; Update: Partial<PhysioSessionRow>; Relationships: [] };
+      progress_photos: { Row: ProgressPhotoRow; Insert: Partial<ProgressPhotoRow> & Pick<ProgressPhotoRow, "clinic_id" | "patient_id" | "photo_url">; Update: Partial<ProgressPhotoRow>; Relationships: [] };
+      meal_plans: { Row: MealPlanRow; Insert: Partial<MealPlanRow> & Pick<MealPlanRow, "clinic_id" | "patient_id" | "nutritionist_id" | "title">; Update: Partial<MealPlanRow>; Relationships: [] };
+      body_measurements: { Row: BodyMeasurementRow; Insert: Partial<BodyMeasurementRow> & Pick<BodyMeasurementRow, "clinic_id" | "patient_id">; Update: Partial<BodyMeasurementRow>; Relationships: [] };
+      therapy_session_notes: { Row: TherapySessionNoteRow; Insert: Partial<TherapySessionNoteRow> & Pick<TherapySessionNoteRow, "clinic_id" | "patient_id" | "therapist_id">; Update: Partial<TherapySessionNoteRow>; Relationships: [] };
+      therapy_plans: { Row: TherapyPlanRow; Insert: Partial<TherapyPlanRow> & Pick<TherapyPlanRow, "clinic_id" | "patient_id" | "therapist_id">; Update: Partial<TherapyPlanRow>; Relationships: [] };
+      speech_exercises: { Row: SpeechExerciseRow; Insert: Partial<SpeechExerciseRow> & Pick<SpeechExerciseRow, "clinic_id" | "name" | "category">; Update: Partial<SpeechExerciseRow>; Relationships: [] };
+      speech_sessions: { Row: SpeechSessionRow; Insert: Partial<SpeechSessionRow> & Pick<SpeechSessionRow, "clinic_id" | "patient_id" | "therapist_id">; Update: Partial<SpeechSessionRow>; Relationships: [] };
+      speech_progress_reports: { Row: SpeechProgressReportRow; Insert: Partial<SpeechProgressReportRow> & Pick<SpeechProgressReportRow, "clinic_id" | "patient_id" | "therapist_id">; Update: Partial<SpeechProgressReportRow>; Relationships: [] };
+      lens_inventory: { Row: LensInventoryRow; Insert: Partial<LensInventoryRow> & Pick<LensInventoryRow, "clinic_id" | "type">; Update: Partial<LensInventoryRow>; Relationships: [] };
+      frame_catalog: { Row: FrameCatalogRow; Insert: Partial<FrameCatalogRow> & Pick<FrameCatalogRow, "clinic_id" | "brand" | "model">; Update: Partial<FrameCatalogRow>; Relationships: [] };
+      optical_prescriptions: { Row: OpticalPrescriptionRow; Insert: Partial<OpticalPrescriptionRow> & Pick<OpticalPrescriptionRow, "clinic_id" | "patient_id">; Update: Partial<OpticalPrescriptionRow>; Relationships: [] };
       // Custom Fields (migration 00012)
-      custom_field_definitions: { Row: CustomFieldDefinitionRow; Insert: Partial<CustomFieldDefinitionRow> & Pick<CustomFieldDefinitionRow, "clinic_type_key" | "entity_type" | "field_key" | "field_type" | "label_fr">; Update: Partial<CustomFieldDefinitionRow> };
-      custom_field_values: { Row: CustomFieldValuesRow; Insert: Partial<CustomFieldValuesRow> & Pick<CustomFieldValuesRow, "clinic_id" | "entity_type" | "entity_id">; Update: Partial<CustomFieldValuesRow> };
-      custom_field_overrides: { Row: CustomFieldOverrideRow; Insert: Partial<CustomFieldOverrideRow> & Pick<CustomFieldOverrideRow, "clinic_id" | "field_definition_id">; Update: Partial<CustomFieldOverrideRow> };
+      custom_field_definitions: { Row: CustomFieldDefinitionRow; Insert: Partial<CustomFieldDefinitionRow> & Pick<CustomFieldDefinitionRow, "clinic_type_key" | "entity_type" | "field_key" | "field_type" | "label_fr">; Update: Partial<CustomFieldDefinitionRow>; Relationships: [] };
+      custom_field_values: { Row: CustomFieldValuesRow; Insert: Partial<CustomFieldValuesRow> & Pick<CustomFieldValuesRow, "clinic_id" | "entity_type" | "entity_id">; Update: Partial<CustomFieldValuesRow>; Relationships: [] };
+      custom_field_overrides: { Row: CustomFieldOverrideRow; Insert: Partial<CustomFieldOverrideRow> & Pick<CustomFieldOverrideRow, "clinic_id" | "field_definition_id">; Update: Partial<CustomFieldOverrideRow>; Relationships: [] };
       // Phase 4 & 5 tables
-      lab_test_catalog: { Row: LabTestCatalog; Insert: Partial<LabTestCatalog> & Pick<LabTestCatalog, "clinic_id" | "name">; Update: Partial<LabTestCatalog> };
-      lab_test_orders: { Row: LabTestOrder; Insert: Partial<LabTestOrder> & Pick<LabTestOrder, "clinic_id" | "patient_id" | "order_number">; Update: Partial<LabTestOrder> };
-      lab_test_items: { Row: LabTestItem; Insert: Partial<LabTestItem> & Pick<LabTestItem, "order_id" | "test_id" | "test_name">; Update: Partial<LabTestItem> };
-      lab_test_results: { Row: LabTestResult; Insert: Partial<LabTestResult> & Pick<LabTestResult, "order_id" | "test_item_id" | "parameter_name">; Update: Partial<LabTestResult> };
-      radiology_orders: { Row: RadiologyOrder; Insert: Partial<RadiologyOrder> & Pick<RadiologyOrder, "clinic_id" | "patient_id" | "order_number" | "modality">; Update: Partial<RadiologyOrder> };
-      radiology_images: { Row: RadiologyImage; Insert: Partial<RadiologyImage> & Pick<RadiologyImage, "order_id" | "clinic_id" | "file_url">; Update: Partial<RadiologyImage> };
-      radiology_report_templates: { Row: RadiologyReportTemplate; Insert: Partial<RadiologyReportTemplate> & Pick<RadiologyReportTemplate, "clinic_id" | "name" | "template_text">; Update: Partial<RadiologyReportTemplate> };
-      equipment_inventory: { Row: EquipmentInventory; Insert: Partial<EquipmentInventory> & Pick<EquipmentInventory, "clinic_id" | "name">; Update: Partial<EquipmentInventory> };
-      equipment_rentals: { Row: EquipmentRental; Insert: Partial<EquipmentRental> & Pick<EquipmentRental, "clinic_id" | "equipment_id" | "client_name" | "rental_start">; Update: Partial<EquipmentRental> };
-      equipment_maintenance: { Row: EquipmentMaintenance; Insert: Partial<EquipmentMaintenance> & Pick<EquipmentMaintenance, "clinic_id" | "equipment_id">; Update: Partial<EquipmentMaintenance> };
-      parapharmacy_categories: { Row: ParapharmacyCategory; Insert: Partial<ParapharmacyCategory> & Pick<ParapharmacyCategory, "clinic_id" | "name" | "slug">; Update: Partial<ParapharmacyCategory> };
+      lab_test_catalog: { Row: LabTestCatalog; Insert: Partial<LabTestCatalog> & Pick<LabTestCatalog, "clinic_id" | "name">; Update: Partial<LabTestCatalog>; Relationships: [] };
+      lab_test_orders: { Row: LabTestOrder; Insert: Partial<LabTestOrder> & Pick<LabTestOrder, "clinic_id" | "patient_id" | "order_number">; Update: Partial<LabTestOrder>; Relationships: [] };
+      lab_test_items: { Row: LabTestItem; Insert: Partial<LabTestItem> & Pick<LabTestItem, "order_id" | "test_id" | "test_name">; Update: Partial<LabTestItem>; Relationships: [] };
+      lab_test_results: { Row: LabTestResult; Insert: Partial<LabTestResult> & Pick<LabTestResult, "order_id" | "test_item_id" | "parameter_name">; Update: Partial<LabTestResult>; Relationships: [] };
+      radiology_orders: { Row: RadiologyOrder; Insert: Partial<RadiologyOrder> & Pick<RadiologyOrder, "clinic_id" | "patient_id" | "order_number" | "modality">; Update: Partial<RadiologyOrder>; Relationships: [] };
+      radiology_images: { Row: RadiologyImage; Insert: Partial<RadiologyImage> & Pick<RadiologyImage, "order_id" | "clinic_id" | "file_url">; Update: Partial<RadiologyImage>; Relationships: [] };
+      radiology_report_templates: { Row: RadiologyReportTemplate; Insert: Partial<RadiologyReportTemplate> & Pick<RadiologyReportTemplate, "clinic_id" | "name" | "template_text">; Update: Partial<RadiologyReportTemplate>; Relationships: [] };
+      equipment_inventory: { Row: EquipmentInventory; Insert: Partial<EquipmentInventory> & Pick<EquipmentInventory, "clinic_id" | "name">; Update: Partial<EquipmentInventory>; Relationships: [] };
+      equipment_rentals: { Row: EquipmentRental; Insert: Partial<EquipmentRental> & Pick<EquipmentRental, "clinic_id" | "equipment_id" | "client_name" | "rental_start">; Update: Partial<EquipmentRental>; Relationships: [] };
+      equipment_maintenance: { Row: EquipmentMaintenance; Insert: Partial<EquipmentMaintenance> & Pick<EquipmentMaintenance, "clinic_id" | "equipment_id">; Update: Partial<EquipmentMaintenance>; Relationships: [] };
+      parapharmacy_categories: { Row: ParapharmacyCategory; Insert: Partial<ParapharmacyCategory> & Pick<ParapharmacyCategory, "clinic_id" | "name" | "slug">; Update: Partial<ParapharmacyCategory>; Relationships: [] };
       // Phase 6: Clinics & Centers
-      departments: { Row: Department; Insert: Partial<Department> & Pick<Department, "clinic_id" | "name">; Update: Partial<Department> };
-      doctor_departments: { Row: DoctorDepartment; Insert: Partial<DoctorDepartment> & Pick<DoctorDepartment, "doctor_id" | "department_id" | "clinic_id">; Update: Partial<DoctorDepartment> };
-      rooms: { Row: Room; Insert: Partial<Room> & Pick<Room, "clinic_id" | "room_number" | "room_type">; Update: Partial<Room> };
-      beds: { Row: Bed; Insert: Partial<Bed> & Pick<Bed, "clinic_id" | "room_id" | "bed_number">; Update: Partial<Bed> };
-      admissions: { Row: Admission; Insert: Partial<Admission> & Pick<Admission, "clinic_id" | "patient_id" | "bed_id">; Update: Partial<Admission> };
-      photo_consent_forms: { Row: PhotoConsentForm; Insert: Partial<PhotoConsentForm> & Pick<PhotoConsentForm, "clinic_id" | "patient_id">; Update: Partial<PhotoConsentForm> };
-      treatment_packages: { Row: TreatmentPackage; Insert: Partial<TreatmentPackage> & Pick<TreatmentPackage, "clinic_id" | "name">; Update: Partial<TreatmentPackage> };
-      patient_packages: { Row: PatientPackage; Insert: Partial<PatientPackage> & Pick<PatientPackage, "clinic_id" | "patient_id" | "package_id" | "sessions_total">; Update: Partial<PatientPackage> };
-      consultation_photos: { Row: ConsultationPhoto; Insert: Partial<ConsultationPhoto> & Pick<ConsultationPhoto, "clinic_id" | "patient_id" | "photo_url">; Update: Partial<ConsultationPhoto> };
-      ivf_cycles: { Row: IVFCycle; Insert: Partial<IVFCycle> & Pick<IVFCycle, "clinic_id" | "patient_id" | "cycle_type">; Update: Partial<IVFCycle> };
-      ivf_protocols: { Row: IVFProtocol; Insert: Partial<IVFProtocol> & Pick<IVFProtocol, "clinic_id" | "name" | "protocol_type">; Update: Partial<IVFProtocol> };
-      ivf_timeline_events: { Row: IVFTimelineEvent; Insert: Partial<IVFTimelineEvent> & Pick<IVFTimelineEvent, "cycle_id" | "clinic_id" | "event_type" | "event_date" | "title">; Update: Partial<IVFTimelineEvent> };
-      dialysis_machines: { Row: DialysisMachine; Insert: Partial<DialysisMachine> & Pick<DialysisMachine, "clinic_id" | "machine_name">; Update: Partial<DialysisMachine> };
-      dialysis_sessions: { Row: DialysisSession; Insert: Partial<DialysisSession> & Pick<DialysisSession, "clinic_id" | "patient_id" | "session_date" | "start_time">; Update: Partial<DialysisSession> };
-      prosthetic_orders: { Row: ProstheticOrder; Insert: Partial<ProstheticOrder> & Pick<ProstheticOrder, "clinic_id" | "order_type">; Update: Partial<ProstheticOrder> };
-      lab_materials: { Row: LabMaterial; Insert: Partial<LabMaterial> & Pick<LabMaterial, "clinic_id" | "name" | "category">; Update: Partial<LabMaterial> };
-      lab_deliveries: { Row: LabDelivery; Insert: Partial<LabDelivery> & Pick<LabDelivery, "clinic_id" | "order_id">; Update: Partial<LabDelivery> };
-      lab_invoices: { Row: LabInvoice; Insert: Partial<LabInvoice> & Pick<LabInvoice, "clinic_id" | "invoice_number">; Update: Partial<LabInvoice> };
-      // Lab test orders (migration 00012)
-      lab_test_orders: { Row: LabTestOrder; Insert: Partial<LabTestOrder> & Pick<LabTestOrder, "clinic_id" | "patient_id" | "doctor_id" | "test_name">; Update: Partial<LabTestOrder> };
+      departments: { Row: Department; Insert: Partial<Department> & Pick<Department, "clinic_id" | "name">; Update: Partial<Department>; Relationships: [] };
+      doctor_departments: { Row: DoctorDepartment; Insert: Partial<DoctorDepartment> & Pick<DoctorDepartment, "doctor_id" | "department_id" | "clinic_id">; Update: Partial<DoctorDepartment>; Relationships: [] };
+      rooms: { Row: Room; Insert: Partial<Room> & Pick<Room, "clinic_id" | "room_number" | "room_type">; Update: Partial<Room>; Relationships: [] };
+      beds: { Row: Bed; Insert: Partial<Bed> & Pick<Bed, "clinic_id" | "room_id" | "bed_number">; Update: Partial<Bed>; Relationships: [] };
+      admissions: { Row: Admission; Insert: Partial<Admission> & Pick<Admission, "clinic_id" | "patient_id" | "bed_id">; Update: Partial<Admission>; Relationships: [] };
+      photo_consent_forms: { Row: PhotoConsentForm; Insert: Partial<PhotoConsentForm> & Pick<PhotoConsentForm, "clinic_id" | "patient_id">; Update: Partial<PhotoConsentForm>; Relationships: [] };
+      treatment_packages: { Row: TreatmentPackage; Insert: Partial<TreatmentPackage> & Pick<TreatmentPackage, "clinic_id" | "name">; Update: Partial<TreatmentPackage>; Relationships: [] };
+      patient_packages: { Row: PatientPackage; Insert: Partial<PatientPackage> & Pick<PatientPackage, "clinic_id" | "patient_id" | "package_id" | "sessions_total">; Update: Partial<PatientPackage>; Relationships: [] };
+      consultation_photos: { Row: ConsultationPhoto; Insert: Partial<ConsultationPhoto> & Pick<ConsultationPhoto, "clinic_id" | "patient_id" | "photo_url">; Update: Partial<ConsultationPhoto>; Relationships: [] };
+      ivf_cycles: { Row: IVFCycle; Insert: Partial<IVFCycle> & Pick<IVFCycle, "clinic_id" | "patient_id" | "cycle_type">; Update: Partial<IVFCycle>; Relationships: [] };
+      ivf_protocols: { Row: IVFProtocol; Insert: Partial<IVFProtocol> & Pick<IVFProtocol, "clinic_id" | "name" | "protocol_type">; Update: Partial<IVFProtocol>; Relationships: [] };
+      ivf_timeline_events: { Row: IVFTimelineEvent; Insert: Partial<IVFTimelineEvent> & Pick<IVFTimelineEvent, "cycle_id" | "clinic_id" | "event_type" | "event_date" | "title">; Update: Partial<IVFTimelineEvent>; Relationships: [] };
+      dialysis_machines: { Row: DialysisMachine; Insert: Partial<DialysisMachine> & Pick<DialysisMachine, "clinic_id" | "machine_name">; Update: Partial<DialysisMachine>; Relationships: [] };
+      dialysis_sessions: { Row: DialysisSession; Insert: Partial<DialysisSession> & Pick<DialysisSession, "clinic_id" | "patient_id" | "session_date" | "start_time">; Update: Partial<DialysisSession>; Relationships: [] };
+      prosthetic_orders: { Row: ProstheticOrder; Insert: Partial<ProstheticOrder> & Pick<ProstheticOrder, "clinic_id" | "order_type">; Update: Partial<ProstheticOrder>; Relationships: [] };
+      lab_materials: { Row: LabMaterial; Insert: Partial<LabMaterial> & Pick<LabMaterial, "clinic_id" | "name" | "category">; Update: Partial<LabMaterial>; Relationships: [] };
+      lab_deliveries: { Row: LabDelivery; Insert: Partial<LabDelivery> & Pick<LabDelivery, "clinic_id" | "order_id">; Update: Partial<LabDelivery>; Relationships: [] };
+      lab_invoices: { Row: LabInvoice; Insert: Partial<LabInvoice> & Pick<LabInvoice, "clinic_id" | "invoice_number">; Update: Partial<LabInvoice>; Relationships: [] };
+    };
+    Views: {
+      [_ in never]: never
+    };
+    Functions: {
+      [_ in never]: never
+    };
+    Enums: {
+      [_ in never]: never
+    };
+    CompositeTypes: {
+      [_ in never]: never
     };
   };
 }
