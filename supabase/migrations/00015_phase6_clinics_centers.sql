@@ -1,5 +1,5 @@
 -- ============================================================
--- Migration 00011: Phase 6 — Clinics & Centers
+-- Migration 00015: Phase 6 — Clinics & Centers
 -- Tables for Polyclinic, Aesthetic Clinic, IVF Center,
 -- Dialysis Center, and Dental Lab.
 -- ============================================================

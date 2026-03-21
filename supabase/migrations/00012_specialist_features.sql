@@ -1,5 +1,5 @@
 -- ============================================================
--- Migration 00011: Medical Specialist Features (Tasks 9-15)
+-- Migration 00012: Medical Specialist Features (Tasks 9-15)
 -- Adds tables for Dermatologist, Cardiologist, ENT, Orthopedist,
 -- Psychiatrist, Neurologist, and remaining specialists.
 -- ============================================================

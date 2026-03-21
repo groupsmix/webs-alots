@@ -1,5 +1,5 @@
 -- ============================================================
--- Migration 00012: Custom Fields Engine (Phase 9, Tasks 38-39)
+-- Migration 00016: Custom Fields Engine (Phase 9, Tasks 38-39)
 -- Flexible custom field definitions per clinic type, stored
 -- with JSONB values for appointments, patients, consultations,
 -- products, and lab orders.

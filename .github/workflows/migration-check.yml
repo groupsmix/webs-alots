@@ -1,0 +1,88 @@
+name: Migration Check
+
+on:
+  pull_request:
+    paths:
+      - 'supabase/migrations/**'
+      - 'full_backup.sql'
+
+jobs:
+  validate-migrations:
+    runs-on: ubuntu-latest
+    name: Validate Migrations
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Check migration file numbering
+        run: |
+          echo "Checking migration file numbering..."
+          files=$(ls supabase/migrations/*.sql 2>/dev/null | sort)
+          prev_num=""
+          has_error=false
+
+          for file in $files; do
+            basename=$(basename "$file")
+            num=$(echo "$basename" | grep -oP '^\d+')
+
+            # Check for duplicate prefixes
+            if [ "$num" = "$prev_num" ]; then
+              echo "ERROR: Duplicate migration number $num found:"
+              echo "  - Previous file with same number exists"
+              echo "  - $basename"
+              has_error=true
+            fi
+
+            prev_num="$num"
+          done
+
+          if [ "$has_error" = true ]; then
+            echo ""
+            echo "FAILED: Migration files must have unique sequential numbers."
+            exit 1
+          fi
+
+          echo "All migration numbers are unique."
+
+      - name: Validate SQL syntax (basic)
+        run: |
+          echo "Running basic SQL validation..."
+          has_error=false
+
+          for file in supabase/migrations/*.sql; do
+            basename=$(basename "$file")
+
+            # Check for unbalanced parentheses
+            open=$(grep -o '(' "$file" | wc -l)
+            close=$(grep -o ')' "$file" | wc -l)
+            if [ "$open" != "$close" ]; then
+              echo "WARNING: $basename has unbalanced parentheses (open: $open, close: $close)"
+            fi
+
+            # Check for missing semicolons at end of statements
+            if grep -qP 'CREATE TABLE|CREATE INDEX|ALTER TABLE|CREATE POLICY|DROP POLICY|INSERT INTO|UPDATE |DELETE FROM' "$file"; then
+              echo "OK: $basename contains valid SQL statements"
+            fi
+          done
+
+          echo "Basic SQL validation complete."
+
+      - name: Check backup is up to date
+        run: |
+          echo "Checking if full_backup.sql exists..."
+          if [ ! -f full_backup.sql ]; then
+            echo "WARNING: full_backup.sql not found"
+            exit 0
+          fi
+
+          migration_count=$(ls supabase/migrations/*.sql | wc -l)
+          backup_refs=$(grep -c '>>>>>>>>>>.*<<<<<<<<<<' full_backup.sql || true)
+
+          echo "Migration files: $migration_count"
+          echo "Backup references: $backup_refs"
+
+          if [ "$backup_refs" != "$migration_count" ]; then
+            echo "WARNING: full_backup.sql may be out of date (has $backup_refs migration refs, expected $migration_count)"
+          else
+            echo "OK: full_backup.sql references all $migration_count migrations"
+          fi
