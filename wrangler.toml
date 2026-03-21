@@ -21,17 +21,17 @@ ROOT_DOMAIN = "groupsmix.com"
 NEXT_PUBLIC_SITE_URL = "https://groupsmix.com"
 R2_BUCKET_NAME = "webs-alots-uploads"
 
-# ---- Cron Triggers ----
-# Appointment reminders: every 30 minutes
-# Subscription renewal check: daily at 2am UTC
-[triggers]
-crons = ["*/30 * * * *", "0 2 * * *"]
-
 # ---- Workers Routes (custom domain + wildcard subdomains) ----
 routes = [
   { pattern = "groupsmix.com/*", zone_name = "groupsmix.com" },
   { pattern = "*.groupsmix.com/*", zone_name = "groupsmix.com" },
 ]
+
+# ---- Cron Triggers ----
+# Appointment reminders: every 30 minutes
+# Subscription renewal check: daily at 2am UTC
+[triggers]
+crons = ["*/30 * * * *", "0 2 * * *"]
 
 # ---- Staging Environment ----
 # Deploy with: wrangler deploy --env staging
