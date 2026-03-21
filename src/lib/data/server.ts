@@ -27,7 +27,8 @@ async function query<T>(
   },
 ): Promise<T[]> {
   const supabase = await createClient();
-  let q = supabase.from(table).select(opts?.select ?? "*");
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let q = (supabase.from as any)(table).select(opts?.select ?? "*");
 
   if (opts?.eq) {
     for (const [col, val] of opts.eq) {
@@ -60,7 +61,8 @@ async function queryOne<T>(
   },
 ): Promise<T | null> {
   const supabase = await createClient();
-  let q = supabase.from(table).select(opts?.select ?? "*");
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let q = (supabase.from as any)(table).select(opts?.select ?? "*");
   if (opts?.eq) {
     for (const [col, val] of opts.eq) {
       q = q.eq(col, val);
@@ -158,7 +160,7 @@ export async function getClinicBranding(clinicId: string): Promise<ClinicBrandin
     .single();
 
   if (error) return null;
-  return data as ClinicBrandingRow;
+  return data as unknown as ClinicBrandingRow;
 }
 
 export async function updateClinicBranding(
@@ -1040,8 +1042,8 @@ export async function createRadiologyOrder(data: {
 }): Promise<{ id: string; order_number: string } | null> {
   const supabase = await createClient();
   const orderNumber = `RAD-${Date.now().toString(36).toUpperCase()}`;
-  const { data: row, error } = await supabase
-    .from("radiology_orders")
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: row, error } = await (supabase.from as any)("radiology_orders")
     .insert({
       ...data,
       order_number: orderNumber,

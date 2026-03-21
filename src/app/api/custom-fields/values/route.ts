@@ -26,7 +26,7 @@ export async function GET(request: NextRequest) {
     .from("custom_field_values")
     .select("*")
     .eq("clinic_id", clinicId)
-    .eq("entity_type", entityType)
+    .eq("entity_type", entityType as unknown as never)
     .eq("entity_id", entityId)
     .single();
 

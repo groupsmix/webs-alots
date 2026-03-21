@@ -64,7 +64,7 @@ export async function GET(request: NextRequest) {
     query = query.eq("appointment_date", date);
   }
   if (status) {
-    query = query.eq("status", status);
+    query = query.eq("status", status as unknown as never);
   }
 
   const { data, count, error } = await query;

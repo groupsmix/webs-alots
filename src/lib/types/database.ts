@@ -170,6 +170,18 @@ export type Clinic = {
   city: string | null;
   features: Record<string, boolean>;
   logo_url: string | null;
+  favicon_url: string | null;
+  primary_color: string | null;
+  secondary_color: string | null;
+  heading_font: string | null;
+  body_font: string | null;
+  hero_image_url: string | null;
+  tagline: string | null;
+  cover_photo_url: string | null;
+  template_id: string | null;
+  section_visibility: Record<string, boolean> | null;
+  phone: string | null;
+  address: string | null;
   created_at: string;
   updated_at: string;
 }

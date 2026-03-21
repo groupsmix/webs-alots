@@ -20,7 +20,8 @@ async function fetchRows<T>(
   },
 ): Promise<T[]> {
   const supabase = createClient();
-  let q = supabase.from(table).select(opts?.select ?? "*");
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let q = (supabase.from as any)(table).select(opts?.select ?? "*");
   if (opts?.eq) {
     for (const [col, val] of opts.eq) {
       q = q.eq(col, val);
@@ -127,8 +128,8 @@ export async function createSkinCondition(data: {
   notes?: string; treatments?: unknown[];
 }): Promise<string | null> {
   const supabase = createClient();
-  const { data: result, error } = await supabase
-    .from("skin_conditions").insert(data).select("id").single();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: result, error } = await (supabase.from as any)("skin_conditions").insert(data).select("id").single();
   if (error) { console.error("[specialists] create skin condition:", error.message); return null; }
   return result?.id ?? null;
 }
@@ -138,7 +139,8 @@ export async function updateSkinCondition(
   data: { status?: string; severity?: string; notes?: string; treatments?: unknown[] },
 ): Promise<boolean> {
   const supabase = createClient();
-  const { error } = await supabase.from("skin_conditions")
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error } = await (supabase.from as any)("skin_conditions")
     .update({ ...data, updated_at: new Date().toISOString() }).eq("id", id);
   if (error) { console.error("[specialists] update skin condition:", error.message); return false; }
   return true;
@@ -276,8 +278,8 @@ export async function createHeartMonitoringNote(data: {
   severity?: string; is_alert?: boolean;
 }): Promise<string | null> {
   const supabase = createClient();
-  const { data: result, error } = await supabase
-    .from("heart_monitoring_notes").insert(data).select("id").single();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: result, error } = await (supabase.from as any)("heart_monitoring_notes").insert(data).select("id").single();
   if (error) { console.error("[specialists] create heart note:", error.message); return null; }
   return result?.id ?? null;
 }
@@ -331,8 +333,8 @@ export async function createHearingTest(data: {
   hearing_loss_type?: string; hearing_loss_degree?: string; notes?: string;
 }): Promise<string | null> {
   const supabase = createClient();
-  const { data: result, error } = await supabase
-    .from("hearing_tests").insert(data).select("id").single();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: result, error } = await (supabase.from as any)("hearing_tests").insert(data).select("id").single();
   if (error) { console.error("[specialists] create hearing test:", error.message); return null; }
   return result?.id ?? null;
 }
@@ -373,8 +375,8 @@ export async function createENTExam(data: {
   diagnosis?: string; plan?: string;
 }): Promise<string | null> {
   const supabase = createClient();
-  const { data: result, error } = await supabase
-    .from("ent_exam_records").insert(data).select("id").single();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: result, error } = await (supabase.from as any)("ent_exam_records").insert(data).select("id").single();
   if (error) { console.error("[specialists] create ENT exam:", error.message); return null; }
   return result?.id ?? null;
 }
@@ -475,8 +477,8 @@ export async function createFractureRecord(data: {
   xray_record_id?: string;
 }): Promise<string | null> {
   const supabase = createClient();
-  const { data: result, error } = await supabase
-    .from("fracture_records").insert(data).select("id").single();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: result, error } = await (supabase.from as any)("fracture_records").insert(data).select("id").single();
   if (error) { console.error("[specialists] create fracture record:", error.message); return null; }
   return result?.id ?? null;
 }
@@ -602,8 +604,8 @@ export async function createPsychSessionNote(data: {
   is_confidential?: boolean; access_level?: string;
 }): Promise<string | null> {
   const supabase = createClient();
-  const { data: result, error } = await supabase
-    .from("psych_session_notes").insert(data).select("id").single();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: result, error } = await (supabase.from as any)("psych_session_notes").insert(data).select("id").single();
   if (error) { console.error("[specialists] create psych note:", error.message); return null; }
   return result?.id ?? null;
 }
@@ -657,8 +659,8 @@ export async function createPsychMedication(data: {
   reason?: string; notes?: string;
 }): Promise<string | null> {
   const supabase = createClient();
-  const { data: result, error } = await supabase
-    .from("psych_medications").insert(data).select("id").single();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: result, error } = await (supabase.from as any)("psych_medications").insert(data).select("id").single();
   if (error) { console.error("[specialists] create psych medication:", error.message); return null; }
   return result?.id ?? null;
 }
@@ -779,8 +781,8 @@ export async function createNeuroExam(data: {
   gait?: Record<string, string>; diagnosis?: string; plan?: string; notes?: string;
 }): Promise<string | null> {
   const supabase = createClient();
-  const { data: result, error } = await supabase
-    .from("neuro_exam_records").insert(data).select("id").single();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: result, error } = await (supabase.from as any)("neuro_exam_records").insert(data).select("id").single();
   if (error) { console.error("[specialists] create neuro exam:", error.message); return null; }
   return result?.id ?? null;
 }
@@ -830,8 +832,8 @@ export async function createUrologyExam(data: {
   lab_results?: Record<string, string>; diagnosis?: string; plan?: string;
 }): Promise<string | null> {
   const supabase = createClient();
-  const { data: result, error } = await supabase
-    .from("urology_exams").insert(data).select("id").single();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: result, error } = await (supabase.from as any)("urology_exams").insert(data).select("id").single();
   if (error) { console.error("[specialists] create urology exam:", error.message); return null; }
   return result?.id ?? null;
 }
@@ -1135,8 +1137,8 @@ export async function createJointAssessment(data: {
   functional_status?: string; notes?: string;
 }): Promise<string | null> {
   const supabase = createClient();
-  const { data: result, error } = await supabase
-    .from("joint_assessments").insert(data).select("id").single();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: result, error } = await (supabase.from as any)("joint_assessments").insert(data).select("id").single();
   if (error) { console.error("[specialists] create joint assessment:", error.message); return null; }
   return result?.id ?? null;
 }
@@ -1180,8 +1182,8 @@ export async function createMobilityTest(data: {
   strength_score?: number; pain_during_test?: number; notes?: string;
 }): Promise<string | null> {
   const supabase = createClient();
-  const { data: result, error } = await supabase
-    .from("mobility_tests").insert(data).select("id").single();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: result, error } = await (supabase.from as any)("mobility_tests").insert(data).select("id").single();
   if (error) { console.error("[specialists] create mobility test:", error.message); return null; }
   return result?.id ?? null;
 }

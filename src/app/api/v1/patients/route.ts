@@ -96,8 +96,8 @@ export async function POST(request: NextRequest) {
   }
 
   const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("users")
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, error } = await (supabase.from as any)("users")
     .insert({
       clinic_id: auth.clinicId,
       role: "patient",
