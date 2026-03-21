@@ -60,16 +60,16 @@ export async function POST(request: NextRequest) {
         const clinicId = session.metadata?.clinic_id;
 
         // Record payment in Supabase
-        if (clinicId || patientId) {
+        if (clinicId && patientId) {
           await supabase.from("payments").insert({
-            clinic_id: clinicId || null,
-            patient_id: patientId || null,
+            clinic_id: clinicId,
+            patient_id: patientId,
             appointment_id: appointmentId || null,
             amount: (session.amount_total || 0) / 100, // Convert from centimes
-            method: "stripe",
+            method: "online",
             status: "completed",
             reference: session.id,
-            payment_type: "online",
+            payment_type: "full",
           });
         }
 
