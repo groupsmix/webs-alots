@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase-server";
+import type { ClinicType } from "@/lib/types/database";
 
 export const runtime = "edge";
 
@@ -89,7 +90,7 @@ export async function POST(request: NextRequest) {
     const { data: clinic, error: clinicError } = await supabase.from("clinics")
       .insert({
         name: body.clinic_name,
-        type: legacyType,
+        type: legacyType as ClinicType,
         clinic_type_key: body.clinic_type_key,
         tier: "pro",
         status: "active",
