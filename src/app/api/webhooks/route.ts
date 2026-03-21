@@ -7,6 +7,48 @@ import {
 export const runtime = "edge";
 
 /**
+ * Verifies the Meta webhook signature (X-Hub-Signature-256) using HMAC-SHA256.
+ * Returns true if the signature is valid, false otherwise.
+ */
+async function verifyWebhookSignature(
+  rawBody: string,
+  signatureHeader: string | null,
+): Promise<boolean> {
+  const appSecret = process.env.META_APP_SECRET;
+  if (!appSecret || !signatureHeader) return false;
+
+  const expectedPrefix = "sha256=";
+  if (!signatureHeader.startsWith(expectedPrefix)) return false;
+
+  const receivedSignature = signatureHeader.slice(expectedPrefix.length);
+
+  const encoder = new TextEncoder();
+  const key = await crypto.subtle.importKey(
+    "raw",
+    encoder.encode(appSecret),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"],
+  );
+  const signatureBuffer = await crypto.subtle.sign(
+    "HMAC",
+    key,
+    encoder.encode(rawBody),
+  );
+  const computedSignature = Array.from(new Uint8Array(signatureBuffer))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+
+  // Constant-time comparison to prevent timing attacks
+  if (computedSignature.length !== receivedSignature.length) return false;
+  let mismatch = 0;
+  for (let i = 0; i < computedSignature.length; i++) {
+    mismatch |= computedSignature.charCodeAt(i) ^ receivedSignature.charCodeAt(i);
+  }
+  return mismatch === 0;
+}
+
+/**
  * Extracts the message text from a WhatsApp webhook payload.
  */
 function extractMessageText(entry: Record<string, unknown>): string | null {
@@ -36,7 +78,19 @@ function extractMessageText(entry: Record<string, unknown>): string | null {
  */
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
+    const rawBody = await request.text();
+
+    // Verify Meta webhook signature
+    const signatureHeader = request.headers.get("x-hub-signature-256");
+    const isValid = await verifyWebhookSignature(rawBody, signatureHeader);
+    if (!isValid) {
+      return NextResponse.json(
+        { error: "Invalid webhook signature" },
+        { status: 401 },
+      );
+    }
+
+    const body = JSON.parse(rawBody) as Record<string, unknown>;
     const entries = (body.entry || []) as Array<Record<string, unknown>>;
 
     for (const entry of entries) {

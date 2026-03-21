@@ -3,6 +3,7 @@ import { Clock, CreditCard } from "lucide-react";
 import Link from "next/link";
 import { getPublicServices } from "@/lib/data/public";
 import { defaultWebsiteConfig } from "@/lib/website-config";
+import { safeJsonLdStringify } from "@/lib/json-ld";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 
@@ -48,7 +49,9 @@ export default async function ServicesPage() {
     <div className="container mx-auto px-4 py-12">
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(servicesSchema) }}
+        // SAFETY: safeJsonLdStringify escapes "<" to prevent </script> injection
+        // from database-sourced fields (service name, description, price).
+        dangerouslySetInnerHTML={{ __html: safeJsonLdStringify(servicesSchema) }}
       />
       <div className="text-center mb-12">
         <h1 className="text-3xl font-bold mb-4">{cfg.title}</h1>

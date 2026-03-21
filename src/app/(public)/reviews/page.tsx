@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Star } from "lucide-react";
 import { getPublicReviews, getPublicAverageRating } from "@/lib/data/public";
 import { defaultWebsiteConfig } from "@/lib/website-config";
+import { safeJsonLdStringify } from "@/lib/json-ld";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
@@ -64,7 +65,9 @@ export default async function ReviewsPage() {
     <div className="container mx-auto px-4 py-12">
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(reviewsSchema) }}
+        // SAFETY: safeJsonLdStringify escapes "<" to prevent </script> injection
+        // from database-sourced fields (patientName, comment, date).
+        dangerouslySetInnerHTML={{ __html: safeJsonLdStringify(reviewsSchema) }}
       />
       <div className="text-center mb-12">
         <h1 className="text-3xl font-bold mb-4">{cfg.title}</h1>

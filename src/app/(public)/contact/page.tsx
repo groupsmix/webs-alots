@@ -52,6 +52,8 @@ export default function ContactPage() {
     <div className="container mx-auto px-4 py-12">
       <script
         type="application/ld+json"
+        // SAFETY: JSON.stringify of a server-controlled object built from static
+        // config values (defaultWebsiteConfig). No user-sourced content.
         dangerouslySetInnerHTML={{ __html: JSON.stringify(contactSchema) }}
       />
       <div className="text-center mb-12">

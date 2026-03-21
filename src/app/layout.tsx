@@ -61,6 +61,8 @@ export default async function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
+        {/* SAFETY: dangerouslySetInnerHTML is safe here — JSON.stringify of a
+            server-controlled object with no user-sourced content. */}
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
