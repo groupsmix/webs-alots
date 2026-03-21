@@ -8,7 +8,7 @@ import { buttonVariants } from "@/components/ui/button";
 const navLinks = [
   { href: "/lab", label: "Home" },
   { href: "/lab/tests", label: "Tests & Exams" },
-  { href: "/lab/results", label: "Results" },
+  { href: "/lab/my-results", label: "Results" },
   { href: "/lab/collection-points", label: "Collection Points" },
   { href: "/lab/contact", label: "Contact" },
 ];
@@ -36,7 +36,7 @@ export function LabHeader() {
               {link.label}
             </Link>
           ))}
-          <Link href="/lab/results" className={buttonVariants({ className: "bg-blue-600 hover:bg-blue-700" })}>
+          <Link href="/lab/my-results" className={buttonVariants({ className: "bg-blue-600 hover:bg-blue-700" })}>
             Access Results
           </Link>
         </nav>
@@ -64,7 +64,7 @@ export function LabHeader() {
               </Link>
             ))}
             <Link
-              href="/lab/results"
+              href="/lab/my-results"
               className={buttonVariants({ className: "mt-2 bg-blue-600 hover:bg-blue-700" })}
               onClick={() => setMobileMenuOpen(false)}
             >

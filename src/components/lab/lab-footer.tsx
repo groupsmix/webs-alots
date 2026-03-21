@@ -16,7 +16,7 @@ export function LabFooter() {
             <h3 className="font-semibold mb-2">Quick Links</h3>
             <nav className="flex flex-col gap-1">
               <Link href="/lab/tests" className="text-sm text-muted-foreground hover:text-foreground">Tests &amp; Exams</Link>
-              <Link href="/lab/results" className="text-sm text-muted-foreground hover:text-foreground">Access Results</Link>
+              <Link href="/lab/my-results" className="text-sm text-muted-foreground hover:text-foreground">Access Results</Link>
               <Link href="/lab/collection-points" className="text-sm text-muted-foreground hover:text-foreground">Collection Points</Link>
               <Link href="/lab/contact" className="text-sm text-muted-foreground hover:text-foreground">Contact</Link>
             </nav>
