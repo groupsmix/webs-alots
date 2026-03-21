@@ -1156,3 +1156,23 @@ export async function updateRadiologyOrderPdfUrl(
   }
   return true;
 }
+
+// ────────────────────────────────────────────
+// Lab — Mutations (server-side)
+// ────────────────────────────────────────────
+
+export async function updateLabOrderPdfUrl(
+  orderId: string,
+  pdfUrl: string,
+): Promise<boolean> {
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("lab_test_orders")
+    .update({ pdf_url: pdfUrl, updated_at: new Date().toISOString() })
+    .eq("id", orderId);
+  if (error) {
+    console.error("[data] Error updating lab order PDF URL:", error.message);
+    return false;
+  }
+  return true;
+}
