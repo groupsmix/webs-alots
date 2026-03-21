@@ -21,9 +21,35 @@ export default async function ServicesPage() {
   const cfg = defaultWebsiteConfig.services;
 
   const services = await getPublicServices();
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://example.com";
+
+  const servicesSchema = {
+    "@context": "https://schema.org",
+    "@type": "MedicalBusiness",
+    url: `${baseUrl}/services`,
+    name: cfg.title,
+    hasOfferCatalog: {
+      "@type": "OfferCatalog",
+      name: "Medical Services",
+      itemListElement: services.filter((s) => s.active).map((s) => ({
+        "@type": "Offer",
+        itemOffered: {
+          "@type": "MedicalProcedure",
+          name: s.name,
+          description: s.description,
+        },
+        price: s.price,
+        priceCurrency: s.currency,
+      })),
+    },
+  };
 
   return (
     <div className="container mx-auto px-4 py-12">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(servicesSchema) }}
+      />
       <div className="text-center mb-12">
         <h1 className="text-3xl font-bold mb-4">{cfg.title}</h1>
         <p className="text-muted-foreground max-w-2xl mx-auto">

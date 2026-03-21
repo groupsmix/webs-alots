@@ -38,8 +38,34 @@ export default async function ReviewsPage() {
   const reviews = await getPublicReviews();
   const avgRating = await getPublicAverageRating();
 
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://example.com";
+
+  const reviewsSchema = {
+    "@context": "https://schema.org",
+    "@type": "MedicalBusiness",
+    url: `${baseUrl}/reviews`,
+    aggregateRating: {
+      "@type": "AggregateRating",
+      ratingValue: avgRating,
+      reviewCount: reviews.length,
+      bestRating: 5,
+      worstRating: 1,
+    },
+    review: reviews.slice(0, 10).map((r) => ({
+      "@type": "Review",
+      author: { "@type": "Person", name: r.patientName },
+      reviewRating: { "@type": "Rating", ratingValue: r.rating, bestRating: 5 },
+      reviewBody: r.comment,
+      datePublished: r.date,
+    })),
+  };
+
   return (
     <div className="container mx-auto px-4 py-12">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(reviewsSchema) }}
+      />
       <div className="text-center mb-12">
         <h1 className="text-3xl font-bold mb-4">{cfg.title}</h1>
         <p className="text-muted-foreground max-w-2xl mx-auto mb-6">

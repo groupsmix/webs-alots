@@ -424,8 +424,19 @@ export async function dispatchNotification(
         case "email": {
           const subject = substituteVariables(template.subject, variables);
           const body = substituteVariables(template.body, variables);
-          console.log(`[Email] To: ${recipientId}, Subject: ${subject}, Body: ${body}`);
-          results.push({ channel: "email", success: true, messageId: `em_${Date.now()}` });
+          const { sendNotificationEmail } = await import("./email");
+          const emailResult = await sendNotificationEmail(
+            recipientId,
+            subject,
+            body,
+            variables.clinic_name,
+          );
+          results.push({
+            channel: "email",
+            success: emailResult.success,
+            messageId: emailResult.messageId,
+            error: emailResult.error,
+          });
           break;
         }
         case "sms": {
