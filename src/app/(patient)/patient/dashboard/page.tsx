@@ -17,6 +17,7 @@ import {
   type InvoiceView,
   type NotificationView,
 } from "@/lib/data/client";
+import { ErrorBoundary } from "@/components/ui/error-boundary";
 
 const quickLinks = [
   { icon: Calendar, label: "My Appointments", description: "View & manage bookings", href: "/patient/appointments" },
@@ -103,6 +104,7 @@ export default function PatientDashboardPage() {
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2 mb-8">
+        <ErrorBoundary section="Upcoming Appointments" compact>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-base">Upcoming Appointments</CardTitle>
@@ -144,7 +146,9 @@ export default function PatientDashboardPage() {
             )}
           </CardContent>
         </Card>
+        </ErrorBoundary>
 
+        <ErrorBoundary section="Prescriptions" compact>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-base">Recent Prescriptions</CardTitle>
@@ -181,6 +185,7 @@ export default function PatientDashboardPage() {
             )}
           </CardContent>
         </Card>
+        </ErrorBoundary>
       </div>
 
       {pendingInvoices.length > 0 && (
