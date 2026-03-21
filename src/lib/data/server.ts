@@ -109,10 +109,20 @@ export interface ClinicRow {
   id: string;
   name: string;
   type: string;
-  config: Record<string, unknown> | null;
-  tier: string | null;
-  status: string | null;
-  created_at: string | null;
+  tier: string;
+  subdomain: string | null;
+  domain: string | null;
+  clinic_type_key: string | null;
+  config: Record<string, unknown>;
+  status: string;
+  is_active: boolean;
+  owner_name: string | null;
+  owner_email: string | null;
+  owner_phone: string | null;
+  city: string | null;
+  features: Record<string, boolean>;
+  created_at: string;
+  updated_at: string;
 }
 
 export async function getClinics(): Promise<ClinicRow[]> {
@@ -180,7 +190,11 @@ export interface UserRow {
   phone: string | null;
   email: string | null;
   clinic_id: string | null;
-  created_at: string | null;
+  avatar_url: string | null;
+  is_active: boolean;
+  metadata: Record<string, unknown>;
+  created_at: string;
+  updated_at: string;
 }
 
 export async function getClinicUsers(clinicId: string, role?: string): Promise<UserRow[]> {
@@ -216,9 +230,13 @@ export interface ServiceRow {
   id: string;
   clinic_id: string;
   name: string;
-  price: number | null;
+  description: string | null;
   duration_minutes: number;
+  duration_min: number;
+  price: number | null;
   category: string | null;
+  is_active: boolean;
+  created_at: string;
 }
 
 export async function getServices(clinicId: string): Promise<ServiceRow[]> {
@@ -233,18 +251,30 @@ export async function getServices(clinicId: string): Promise<ServiceRow[]> {
 
 export interface AppointmentRow {
   id: string;
+  clinic_id: string;
   patient_id: string;
   doctor_id: string;
-  clinic_id: string;
   service_id: string | null;
   slot_start: string;
   slot_end: string;
+  appointment_date: string;
+  start_time: string;
+  end_time: string;
   status: string;
   is_first_visit: boolean;
+  is_walk_in: boolean;
   insurance_flag: boolean;
-  source: string | null;
+  booking_source: string;
   notes: string | null;
-  created_at: string | null;
+  cancelled_at: string | null;
+  cancellation_reason: string | null;
+  rescheduled_from: string | null;
+  is_emergency: boolean;
+  recurrence_group_id: string | null;
+  recurrence_pattern: string | null;
+  recurrence_index: number | null;
+  created_at: string;
+  updated_at: string;
 }
 
 export async function getAppointments(clinicId: string): Promise<AppointmentRow[]> {
@@ -300,14 +330,15 @@ export async function getTodayAppointments(clinicId: string, doctorId?: string):
 
 export interface TimeSlotRow {
   id: string;
-  doctor_id: string;
   clinic_id: string;
+  doctor_id: string;
   day_of_week: number;
   start_time: string;
   end_time: string;
-  is_available: boolean;
   max_capacity: number;
   buffer_minutes: number;
+  buffer_min: number;
+  is_active: boolean;
 }
 
 export async function getTimeSlots(clinicId: string, doctorId?: string): Promise<TimeSlotRow[]> {
@@ -326,13 +357,16 @@ export async function getTimeSlots(clinicId: string, doctorId?: string): Promise
 export interface PaymentRow {
   id: string;
   clinic_id: string;
-  patient_id: string;
   appointment_id: string | null;
+  patient_id: string;
   amount: number;
   method: string | null;
   status: string;
-  ref: string | null;
-  created_at: string | null;
+  reference: string | null;
+  payment_type: string;
+  gateway_session_id: string | null;
+  refunded_amount: number;
+  created_at: string;
 }
 
 export async function getPayments(clinicId: string): Promise<PaymentRow[]> {
@@ -355,12 +389,14 @@ export async function getPaymentsByPatient(clinicId: string, patientId: string):
 
 export interface ReviewRow {
   id: string;
-  patient_id: string;
   clinic_id: string;
+  patient_id: string;
+  doctor_id: string | null;
   stars: number;
   comment: string | null;
   response: string | null;
-  created_at: string | null;
+  is_visible: boolean;
+  created_at: string;
 }
 
 export async function getReviews(clinicId: string): Promise<ReviewRow[]> {
@@ -376,12 +412,14 @@ export async function getReviews(clinicId: string): Promise<ReviewRow[]> {
 
 export interface NotificationRow {
   id: string;
+  clinic_id: string;
   user_id: string;
   type: string;
   channel: string;
-  message: string | null;
-  sent_at: string | null;
-  read_at: string | null;
+  title: string | null;
+  body: string | null;
+  is_read: boolean;
+  sent_at: string;
 }
 
 export async function getNotifications(userId: string): Promise<NotificationRow[]> {
@@ -397,11 +435,13 @@ export async function getNotifications(userId: string): Promise<NotificationRow[
 
 export interface DocumentRow {
   id: string;
-  user_id: string;
   clinic_id: string;
+  user_id: string;
   type: string;
   file_url: string;
-  uploaded_at: string | null;
+  file_name: string | null;
+  file_size: number | null;
+  created_at: string;
 }
 
 export async function getDocuments(clinicId: string, userId?: string): Promise<DocumentRow[]> {
@@ -419,12 +459,14 @@ export async function getDocuments(clinicId: string, userId?: string): Promise<D
 
 export interface PrescriptionRow {
   id: string;
-  patient_id: string;
-  doctor_id: string;
+  clinic_id: string;
   appointment_id: string | null;
-  content: unknown;
+  doctor_id: string;
+  patient_id: string;
+  items: { name: string; dosage: string; duration: string }[];
+  notes: string | null;
   pdf_url: string | null;
-  created_at: string | null;
+  created_at: string;
 }
 
 export async function getPrescriptions(clinicId: string, doctorId?: string): Promise<PrescriptionRow[]> {
@@ -460,12 +502,14 @@ export async function getPatientPrescriptions(patientId: string): Promise<Prescr
 
 export interface ConsultationNoteRow {
   id: string;
-  patient_id: string;
-  doctor_id: string;
+  clinic_id: string;
   appointment_id: string;
+  doctor_id: string;
+  patient_id: string;
   notes: string | null;
-  private: boolean;
-  created_at: string | null;
+  diagnosis: string | null;
+  created_at: string;
+  updated_at: string;
 }
 
 export async function getConsultationNotes(doctorId: string): Promise<ConsultationNoteRow[]> {
@@ -481,13 +525,15 @@ export async function getConsultationNotes(doctorId: string): Promise<Consultati
 
 export interface WaitingListRow {
   id: string;
+  clinic_id: string;
   patient_id: string;
   doctor_id: string;
-  clinic_id: string;
-  service_id: string | null;
   preferred_date: string | null;
+  preferred_time: string | null;
+  service_id: string | null;
   status: string;
-  created_at: string | null;
+  notified_at: string | null;
+  created_at: string;
 }
 
 export async function getWaitingList(clinicId: string): Promise<WaitingListRow[]> {
@@ -504,10 +550,9 @@ export async function getWaitingList(clinicId: string): Promise<WaitingListRow[]
 export interface FamilyMemberRow {
   id: string;
   primary_user_id: string;
-  name: string;
-  phone: string | null;
+  member_user_id: string;
   relationship: string;
-  created_at: string | null;
+  created_at: string;
 }
 
 export async function getFamilyMembers(userId: string): Promise<FamilyMemberRow[]> {
@@ -522,11 +567,12 @@ export async function getFamilyMembers(userId: string): Promise<FamilyMemberRow[
 
 export interface OdontogramRow {
   id: string;
+  clinic_id: string;
   patient_id: string;
   tooth_number: number;
   status: string;
   notes: string | null;
-  updated_at: string | null;
+  updated_at: string;
 }
 
 export async function getOdontogram(patientId: string): Promise<OdontogramRow[]> {
@@ -542,12 +588,15 @@ export async function getOdontogram(patientId: string): Promise<OdontogramRow[]>
 
 export interface TreatmentPlanRow {
   id: string;
+  clinic_id: string;
   patient_id: string;
   doctor_id: string;
-  steps: unknown;
-  status: string;
+  title: string;
+  steps: { step: number; description: string; status: string; date: string | null }[];
   total_cost: number | null;
-  created_at: string | null;
+  status: string;
+  created_at: string;
+  updated_at: string;
 }
 
 export async function getTreatmentPlans(clinicId: string, doctorId?: string): Promise<TreatmentPlanRow[]> {
@@ -572,12 +621,15 @@ export async function getPatientTreatmentPlans(patientId: string): Promise<Treat
 
 export interface LabOrderRow {
   id: string;
-  doctor_id: string;
-  patient_id: string;
   clinic_id: string;
-  details: string;
+  patient_id: string;
+  doctor_id: string;
+  lab_name: string | null;
+  description: string;
   status: string;
-  created_at: string | null;
+  due_date: string | null;
+  created_at: string;
+  updated_at: string;
 }
 
 export async function getLabOrders(clinicId: string): Promise<LabOrderRow[]> {
@@ -593,6 +645,7 @@ export async function getLabOrders(clinicId: string): Promise<LabOrderRow[]> {
 
 export interface InstallmentRow {
   id: string;
+  clinic_id: string;
   treatment_plan_id: string;
   patient_id: string;
   amount: number;
@@ -600,6 +653,7 @@ export interface InstallmentRow {
   paid_date: string | null;
   status: string;
   receipt_url: string | null;
+  created_at: string;
 }
 
 export async function getInstallments(treatmentPlanId: string): Promise<InstallmentRow[]> {
@@ -624,8 +678,12 @@ export interface SterilizationLogRow {
   id: string;
   clinic_id: string;
   tool_name: string;
+  sterilized_by: string | null;
   sterilized_at: string;
   next_due: string | null;
+  method: string;
+  notes: string | null;
+  created_at: string;
 }
 
 export async function getSterilizationLog(clinicId: string): Promise<SterilizationLogRow[]> {
@@ -643,10 +701,19 @@ export interface ProductRow {
   id: string;
   clinic_id: string;
   name: string;
+  generic_name: string | null;
   category: string | null;
+  description: string | null;
   price: number | null;
+  currency: string;
   requires_prescription: boolean;
+  manufacturer: string | null;
   barcode: string | null;
+  dosage_form: string | null;
+  strength: string | null;
+  image_url: string | null;
+  is_active: boolean;
+  created_at: string;
 }
 
 export async function getProducts(clinicId: string): Promise<ProductRow[]> {
@@ -661,12 +728,13 @@ export async function getProducts(clinicId: string): Promise<ProductRow[]> {
 
 export interface StockRow {
   id: string;
-  product_id: string;
   clinic_id: string;
+  product_id: string;
   quantity: number;
   min_threshold: number;
   expiry_date: string | null;
-  supplier_id: string | null;
+  batch_number: string | null;
+  updated_at: string;
 }
 
 export async function getStock(clinicId: string): Promise<StockRow[]> {
@@ -683,9 +751,17 @@ export interface SupplierRow {
   id: string;
   clinic_id: string;
   name: string;
-  phone: string | null;
-  email: string | null;
-  products: unknown;
+  contact_phone: string | null;
+  contact_email: string | null;
+  contact_person: string | null;
+  address: string | null;
+  city: string | null;
+  categories: string[];
+  rating: number;
+  payment_terms: string | null;
+  delivery_days: number;
+  is_active: boolean;
+  created_at: string;
 }
 
 export async function getSuppliers(clinicId: string): Promise<SupplierRow[]> {
@@ -700,12 +776,14 @@ export async function getSuppliers(clinicId: string): Promise<SupplierRow[]> {
 
 export interface PrescriptionRequestRow {
   id: string;
-  patient_id: string;
   clinic_id: string;
+  patient_id: string;
   image_url: string;
   status: string;
   notes: string | null;
-  ready_at: string | null;
+  delivery_requested: boolean;
+  created_at: string;
+  updated_at: string;
 }
 
 export async function getPrescriptionRequests(clinicId: string): Promise<PrescriptionRequestRow[]> {
@@ -721,10 +799,21 @@ export async function getPrescriptionRequests(clinicId: string): Promise<Prescri
 
 export interface LoyaltyPointsRow {
   id: string;
-  patient_id: string;
   clinic_id: string;
+  patient_id: string;
   points: number;
-  last_updated: string | null;
+  available_points: number;
+  redeemed_points: number;
+  tier: string;
+  referral_code: string | null;
+  referred_by: string | null;
+  total_purchases: number;
+  date_of_birth: string | null;
+  birthday_reward_claimed: boolean;
+  birthday_reward_year: number | null;
+  last_earned: string | null;
+  created_at: string;
+  updated_at: string;
 }
 
 export async function getLoyaltyPoints(clinicId: string): Promise<LoyaltyPointsRow[]> {
@@ -929,7 +1018,7 @@ export async function markNotificationRead(notificationId: string): Promise<bool
   const supabase = await createClient();
   const { error } = await supabase
     .from("notifications")
-    .update({ read_at: new Date().toISOString() })
+    .update({ is_read: true })
     .eq("id", notificationId);
   if (error) return false;
   return true;

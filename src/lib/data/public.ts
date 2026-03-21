@@ -192,7 +192,7 @@ export async function getPublicServices(): Promise<PublicService[]> {
 
   const { data, error } = await supabase
     .from("services")
-    .select("id, name, description, duration_min, price, is_active, category")
+    .select("id, name, description, duration_minutes, duration_min, price, is_active, category")
     .eq("clinic_id", clinicId)
     .order("name", { ascending: true });
 
@@ -201,12 +201,12 @@ export async function getPublicServices(): Promise<PublicService[]> {
   return data.map((s) => ({
     id: s.id,
     name: s.name,
-    description: (s as Record<string, unknown>).description as string ?? "",
-    duration: (s as Record<string, unknown>).duration_min as number ?? 30,
+    description: (s.description as string) ?? "",
+    duration: (s.duration_minutes as number) ?? (s.duration_min as number) ?? 30,
     price: s.price ?? 0,
     currency: clinicConfig.currency,
-    active: (s as Record<string, unknown>).is_active as boolean ?? true,
-    category: (s as Record<string, unknown>).category as string ?? "General",
+    active: (s.is_active as boolean) ?? true,
+    category: (s.category as string) ?? "General",
   }));
 }
 
@@ -281,9 +281,9 @@ export async function getPublicTimeSlots(
 
   let q = supabase
     .from("time_slots")
-    .select("id, doctor_id, day_of_week, start_time, end_time, is_available, max_capacity, buffer_minutes")
+    .select("id, doctor_id, day_of_week, start_time, end_time, is_active, max_capacity, buffer_minutes")
     .eq("clinic_id", clinicId)
-    .eq("is_available", true);
+    .eq("is_active", true);
 
   if (doctorId) {
     q = q.eq("doctor_id", doctorId);
@@ -301,7 +301,7 @@ export async function getPublicTimeSlots(
     endTime: ts.end_time,
     maxCapacity: ts.max_capacity ?? 1,
     bufferMinutes: ts.buffer_minutes ?? 10,
-    isAvailable: ts.is_available ?? true,
+    isAvailable: (ts.is_active as boolean) ?? true,
   }));
 }
 
@@ -428,7 +428,7 @@ export async function getPublicPharmacyProducts(): Promise<PublicPharmacyProduct
   if (!products) return [];
 
   const stockMap = new Map(
-    ((stockRows ?? []) as { product_id: string; quantity: number; min_threshold: number; expiry_date: string | null; supplier_id: string | null }[])
+    ((stockRows ?? []) as { product_id: string; quantity: number; min_threshold: number; expiry_date: string | null; batch_number: string | null }[])
       .map((s) => [s.product_id, s]),
   );
 
