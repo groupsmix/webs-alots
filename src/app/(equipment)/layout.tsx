@@ -1,22 +1,57 @@
 "use client";
 
-import { useState } from "react";
+import { useState, createContext, useContext, useCallback } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard, Package, HandCoins, Wrench,
-  Menu, X, Stethoscope,
+  Menu, X, Stethoscope, Languages,
 } from "lucide-react";
 import { SignOutButton } from "@/components/sign-out-button";
 
+export type EquipmentLocale = "fr" | "ar";
+
+interface EquipmentI18nContextValue {
+  locale: EquipmentLocale;
+  setLocale: (l: EquipmentLocale) => void;
+  toggleLocale: () => void;
+  isRtl: boolean;
+}
+
+const EquipmentI18nContext = createContext<EquipmentI18nContextValue>({
+  locale: "fr",
+  setLocale: () => {},
+  toggleLocale: () => {},
+  isRtl: false,
+});
+
+export function useEquipmentLocale() {
+  return useContext(EquipmentI18nContext);
+}
+
+const navLabels: Record<string, Record<EquipmentLocale, string>> = {
+  "/equipment/dashboard": { fr: "Tableau de bord", ar: "لوحة التحكم" },
+  "/equipment/inventory": { fr: "Inventaire", ar: "المخزون" },
+  "/equipment/rentals": { fr: "Locations", ar: "الإيجارات" },
+  "/equipment/maintenance": { fr: "Maintenance", ar: "الصيانة" },
+};
+
 const navItems = [
-  { href: "/equipment/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/equipment/inventory", label: "Inventory", icon: Package },
-  { href: "/equipment/rentals", label: "Rentals", icon: HandCoins },
-  { href: "/equipment/maintenance", label: "Maintenance", icon: Wrench },
+  { href: "/equipment/dashboard", icon: LayoutDashboard },
+  { href: "/equipment/inventory", icon: Package },
+  { href: "/equipment/rentals", icon: HandCoins },
+  { href: "/equipment/maintenance", icon: Wrench },
 ];
 
-function SidebarContent({ pathname, onNavClick }: { pathname: string; onNavClick?: () => void }) {
+function SidebarContent({
+  pathname,
+  locale,
+  onNavClick,
+}: {
+  pathname: string;
+  locale: EquipmentLocale;
+  onNavClick?: () => void;
+}) {
   return (
     <>
       <nav className="space-y-1 flex-1">
@@ -34,7 +69,7 @@ function SidebarContent({ pathname, onNavClick }: { pathname: string; onNavClick
               }`}
             >
               <item.icon className="h-4 w-4" />
-              {item.label}
+              {navLabels[item.href]?.[locale] ?? item.href}
             </Link>
           );
         })}
@@ -53,52 +88,82 @@ export default function EquipmentLayout({
 }) {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [locale, setLocale] = useState<EquipmentLocale>("fr");
+
+  const toggleLocale = useCallback(() => {
+    setLocale((prev) => (prev === "fr" ? "ar" : "fr"));
+  }, []);
+
+  const isRtl = locale === "ar";
+  const title = locale === "fr" ? "Matériel Médical" : "معدات طبية";
+  const shortTitle = locale === "fr" ? "Matériel" : "معدات";
 
   return (
-    <div className="flex min-h-screen">
-      <div className="fixed top-0 left-0 right-0 z-40 flex items-center gap-3 border-b bg-card px-4 py-3 md:hidden">
-        <button
-          onClick={() => setMobileOpen(true)}
-          className="rounded-md p-1.5 hover:bg-muted"
-          aria-label="Open menu"
-        >
-          <Menu className="h-5 w-5" />
-        </button>
-        <div className="flex items-center gap-2">
-          <Stethoscope className="h-4 w-4 text-amber-600" />
-          <h2 className="text-sm font-semibold">Medical Equipment</h2>
-        </div>
-      </div>
-
-      {mobileOpen && (
-        <div className="fixed inset-0 z-50 md:hidden">
-          <div className="absolute inset-0 bg-black/50" onClick={() => setMobileOpen(false)} />
-          <aside className="absolute left-0 top-0 bottom-0 w-64 bg-card p-4 flex flex-col shadow-xl">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2">
-                <Stethoscope className="h-5 w-5 text-amber-600" />
-                <h2 className="text-lg font-semibold">Equipment</h2>
-              </div>
-              <button onClick={() => setMobileOpen(false)} className="rounded-md p-1 hover:bg-muted" aria-label="Close menu">
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-            <SidebarContent pathname={pathname} onNavClick={() => setMobileOpen(false)} />
-          </aside>
-        </div>
-      )}
-
-      <aside className="hidden w-64 border-r bg-card p-4 md:flex md:flex-col">
-        <div className="flex items-center gap-2 mb-6">
-          <div className="h-8 w-8 rounded-lg bg-amber-600 flex items-center justify-center">
-            <Stethoscope className="h-4 w-4 text-white" />
+    <EquipmentI18nContext.Provider value={{ locale, setLocale, toggleLocale, isRtl }}>
+      <div className="flex min-h-screen" dir={isRtl ? "rtl" : "ltr"}>
+        {/* Mobile header */}
+        <div className="fixed top-0 left-0 right-0 z-40 flex items-center gap-3 border-b bg-card px-4 py-3 md:hidden">
+          <button
+            onClick={() => setMobileOpen(true)}
+            className="rounded-md p-1.5 hover:bg-muted"
+            aria-label="Open menu"
+          >
+            <Menu className="h-5 w-5" />
+          </button>
+          <div className="flex items-center gap-2 flex-1">
+            <Stethoscope className="h-4 w-4 text-amber-600" />
+            <h2 className="text-sm font-semibold">{shortTitle}</h2>
           </div>
-          <h2 className="text-lg font-semibold">Equipment</h2>
+          <button
+            onClick={toggleLocale}
+            className="rounded-md p-1.5 hover:bg-muted flex items-center gap-1 text-xs text-muted-foreground"
+            aria-label="Toggle language"
+          >
+            <Languages className="h-4 w-4" />
+            {locale === "fr" ? "عربي" : "FR"}
+          </button>
         </div>
-        <SidebarContent pathname={pathname} />
-      </aside>
 
-      <main className="flex-1 p-6 pt-16 md:pt-6">{children}</main>
-    </div>
+        {/* Mobile sidebar */}
+        {mobileOpen && (
+          <div className="fixed inset-0 z-50 md:hidden">
+            <div className="absolute inset-0 bg-black/50" onClick={() => setMobileOpen(false)} />
+            <aside className="absolute left-0 top-0 bottom-0 w-64 bg-card p-4 flex flex-col shadow-xl">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <Stethoscope className="h-5 w-5 text-amber-600" />
+                  <h2 className="text-lg font-semibold">{shortTitle}</h2>
+                </div>
+                <button onClick={() => setMobileOpen(false)} className="rounded-md p-1 hover:bg-muted" aria-label="Close menu">
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+              <SidebarContent pathname={pathname} locale={locale} onNavClick={() => setMobileOpen(false)} />
+            </aside>
+          </div>
+        )}
+
+        {/* Desktop sidebar */}
+        <aside className="hidden w-64 border-r bg-card p-4 md:flex md:flex-col">
+          <div className="flex items-center gap-2 mb-6">
+            <div className="h-8 w-8 rounded-lg bg-amber-600 flex items-center justify-center">
+              <Stethoscope className="h-4 w-4 text-white" />
+            </div>
+            <h2 className="text-lg font-semibold flex-1">{title}</h2>
+            <button
+              onClick={toggleLocale}
+              className="rounded-md p-1.5 hover:bg-muted flex items-center gap-1 text-xs text-muted-foreground"
+              title={locale === "fr" ? "Switch to Arabic" : "Passer au français"}
+            >
+              <Languages className="h-4 w-4" />
+              {locale === "fr" ? "عربي" : "FR"}
+            </button>
+          </div>
+          <SidebarContent pathname={pathname} locale={locale} />
+        </aside>
+
+        <main className="flex-1 p-6 pt-16 md:pt-6">{children}</main>
+      </div>
+    </EquipmentI18nContext.Provider>
   );
 }

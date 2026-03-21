@@ -3517,6 +3517,243 @@ export async function fetchEquipmentMaintenance(clinicId: string): Promise<Equip
 }
 
 // ─────────────────────────────────────────────
+// Medical Equipment — Inventory Mutations
+// ─────────────────────────────────────────────
+
+export async function createEquipmentItem(data: {
+  clinic_id: string;
+  name: string;
+  description?: string;
+  category: string;
+  serial_number?: string;
+  model?: string;
+  manufacturer?: string;
+  purchase_date?: string;
+  purchase_price?: number;
+  currency?: string;
+  condition?: string;
+  is_available?: boolean;
+  is_rentable?: boolean;
+  rental_price_daily?: number;
+  rental_price_weekly?: number;
+  rental_price_monthly?: number;
+  image_url?: string;
+  notes?: string;
+}): Promise<string | null> {
+  const supabase = createClient();
+  const { data: result, error } = await supabase
+    .from("equipment_inventory")
+    .insert({
+      ...data,
+      currency: data.currency ?? "MAD",
+      condition: data.condition ?? "new",
+      is_available: data.is_available ?? true,
+      is_rentable: data.is_rentable ?? false,
+    })
+    .select("id")
+    .single();
+  if (error) {
+    console.error("[data] create equipment item:", error.message);
+    return null;
+  }
+  return result?.id ?? null;
+}
+
+export async function updateEquipmentItem(
+  id: string,
+  data: Partial<{
+    name: string;
+    description: string | null;
+    category: string;
+    serial_number: string | null;
+    model: string | null;
+    manufacturer: string | null;
+    purchase_date: string | null;
+    purchase_price: number | null;
+    currency: string;
+    condition: string;
+    is_available: boolean;
+    is_rentable: boolean;
+    rental_price_daily: number | null;
+    rental_price_weekly: number | null;
+    rental_price_monthly: number | null;
+    image_url: string | null;
+    notes: string | null;
+  }>,
+): Promise<boolean> {
+  const supabase = createClient();
+  const { error } = await supabase
+    .from("equipment_inventory")
+    .update({ ...data, updated_at: new Date().toISOString() } as never)
+    .eq("id", id);
+  if (error) {
+    console.error("[data] update equipment item:", error.message);
+    return false;
+  }
+  return true;
+}
+
+export async function deleteEquipmentItem(id: string): Promise<boolean> {
+  const supabase = createClient();
+  const { error } = await supabase.from("equipment_inventory").delete().eq("id", id);
+  if (error) {
+    console.error("[data] delete equipment item:", error.message);
+    return false;
+  }
+  return true;
+}
+
+// ─────────────────────────────────────────────
+// Medical Equipment — Rental Mutations
+// ─────────────────────────────────────────────
+
+export async function createEquipmentRental(data: {
+  clinic_id: string;
+  equipment_id: string;
+  client_name: string;
+  client_phone?: string;
+  client_id_number?: string;
+  rental_start: string;
+  rental_end?: string;
+  status?: string;
+  condition_out: string;
+  deposit_amount?: number;
+  rental_amount?: number;
+  currency?: string;
+  payment_status?: string;
+  notes?: string;
+}): Promise<string | null> {
+  const supabase = createClient();
+  const { data: result, error } = await supabase
+    .from("equipment_rentals")
+    .insert({
+      ...data,
+      status: data.status ?? "active",
+      currency: data.currency ?? "MAD",
+      payment_status: data.payment_status ?? "pending",
+    } as never)
+    .select("id")
+    .single();
+  if (error) {
+    console.error("[data] create equipment rental:", error.message);
+    return null;
+  }
+  return result?.id ?? null;
+}
+
+export async function updateEquipmentRental(
+  id: string,
+  data: Partial<{
+    client_name: string;
+    client_phone: string | null;
+    client_id_number: string | null;
+    rental_start: string;
+    rental_end: string | null;
+    actual_return: string | null;
+    status: string;
+    condition_out: string;
+    condition_in: string | null;
+    deposit_amount: number | null;
+    rental_amount: number | null;
+    currency: string;
+    payment_status: string;
+    notes: string | null;
+  }>,
+): Promise<boolean> {
+  const supabase = createClient();
+  const { error } = await supabase
+    .from("equipment_rentals")
+    .update(data as never)
+    .eq("id", id);
+  if (error) {
+    console.error("[data] update equipment rental:", error.message);
+    return false;
+  }
+  return true;
+}
+
+export async function deleteEquipmentRental(id: string): Promise<boolean> {
+  const supabase = createClient();
+  const { error } = await supabase.from("equipment_rentals").delete().eq("id", id);
+  if (error) {
+    console.error("[data] delete equipment rental:", error.message);
+    return false;
+  }
+  return true;
+}
+
+// ─────────────────────────────────────────────
+// Medical Equipment — Maintenance Mutations
+// ─────────────────────────────────────────────
+
+export async function createEquipmentMaintenance(data: {
+  clinic_id: string;
+  equipment_id: string;
+  type: string;
+  description?: string;
+  performed_by?: string;
+  performed_at: string;
+  next_due?: string;
+  cost?: number;
+  currency?: string;
+  status?: string;
+  notes?: string;
+}): Promise<string | null> {
+  const supabase = createClient();
+  const { data: result, error } = await supabase
+    .from("equipment_maintenance")
+    .insert({
+      ...data,
+      currency: data.currency ?? "MAD",
+      status: data.status ?? "scheduled",
+    } as never)
+    .select("id")
+    .single();
+  if (error) {
+    console.error("[data] create equipment maintenance:", error.message);
+    return null;
+  }
+  return result?.id ?? null;
+}
+
+export async function updateEquipmentMaintenance(
+  id: string,
+  data: Partial<{
+    equipment_id: string;
+    type: string;
+    description: string | null;
+    performed_by: string | null;
+    performed_at: string;
+    next_due: string | null;
+    cost: number | null;
+    currency: string;
+    status: string;
+    notes: string | null;
+  }>,
+): Promise<boolean> {
+  const supabase = createClient();
+  const { error } = await supabase
+    .from("equipment_maintenance")
+    .update(data as never)
+    .eq("id", id);
+  if (error) {
+    console.error("[data] update equipment maintenance:", error.message);
+    return false;
+  }
+  return true;
+}
+
+export async function deleteEquipmentMaintenance(id: string): Promise<boolean> {
+  const supabase = createClient();
+  const { error } = await supabase.from("equipment_maintenance").delete().eq("id", id);
+  if (error) {
+    console.error("[data] delete equipment maintenance:", error.message);
+    return false;
+  }
+  return true;
+}
+
+// ─────────────────────────────────────────────
 // Parapharmacy — Categories
 // ─────────────────────────────────────────────
 

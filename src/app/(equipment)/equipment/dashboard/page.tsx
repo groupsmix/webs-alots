@@ -5,14 +5,18 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
   Package, HandCoins, Wrench, Clock,
-  ArrowRight, AlertTriangle, CheckCircle,
+  ArrowRight, AlertTriangle, CheckCircle, Bell,
 } from "lucide-react";
 import Link from "next/link";
 import { clinicConfig } from "@/config/clinic.config";
 import { fetchEquipmentInventory, fetchEquipmentRentals, fetchEquipmentMaintenance } from "@/lib/data/client";
 import type { EquipmentItemView, EquipmentRentalView, EquipmentMaintenanceView } from "@/lib/data/client";
+import { useEquipmentLocale } from "../../layout";
+import { useEquipmentI18n } from "@/lib/hooks/use-equipment-i18n";
 
 export default function EquipmentDashboardPage() {
+  const { locale } = useEquipmentLocale();
+  const { t } = useEquipmentI18n(locale);
   const [inventory, setInventory] = useState<EquipmentItemView[]>([]);
   const [rentals, setRentals] = useState<EquipmentRentalView[]>([]);
   const [maintenance, setMaintenance] = useState<EquipmentMaintenanceView[]>([]);
@@ -36,7 +40,7 @@ export default function EquipmentDashboardPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[50vh]">
-        <div className="animate-pulse text-muted-foreground">Loading dashboard...</div>
+        <div className="animate-pulse text-muted-foreground">{t("loading")}</div>
       </div>
     );
   }
@@ -47,34 +51,87 @@ export default function EquipmentDashboardPage() {
   const upcomingMaint = maintenance.filter((m) => m.status === "scheduled");
   const needsRepair = inventory.filter((i) => i.condition === "needs_repair");
 
+  const now = new Date();
+  const overdueMaint = maintenance.filter((m) => {
+    if (m.status !== "scheduled" || !m.nextDue) return false;
+    return new Date(m.nextDue) < now;
+  });
+
+  const dateFmt = locale === "ar" ? "ar-MA" : "fr-FR";
+  const statusLabel = (s: string) => {
+    const map: Record<string, string> = {
+      active: locale === "fr" ? "Active" : "نشط",
+      overdue: locale === "fr" ? "En retard" : "متأخر",
+      reserved: locale === "fr" ? "Réservé" : "محجوز",
+    };
+    return map[s] ?? s;
+  };
+
+  const typeLabel = (tp: string) => {
+    const map: Record<string, string> = {
+      routine: t("typeRoutine"),
+      repair: t("typeRepair"),
+      calibration: t("typeCalibration"),
+      inspection: t("typeInspection"),
+      cleaning: t("typeCleaning"),
+    };
+    return map[tp] ?? tp;
+  };
+
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold">Equipment Dashboard</h1>
-          <p className="text-muted-foreground text-sm">Overview of medical equipment operations</p>
+          <h1 className="text-2xl font-bold">{t("dashboardTitle")}</h1>
+          <p className="text-muted-foreground text-sm">{t("dashboardSubtitle")}</p>
         </div>
         <Badge variant="outline" className="text-amber-600 border-amber-600">
           <Clock className="h-3 w-3 mr-1" />
-          {new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}
+          {now.toLocaleDateString(dateFmt, { weekday: "long", month: "long", day: "numeric" })}
         </Badge>
       </div>
+
+      {/* Maintenance alerts banner */}
+      {(overdueMaint.length > 0 || overdueRentals.length > 0) && (
+        <Card className="mb-6 border-red-200 dark:border-red-900 bg-red-50/50 dark:bg-red-950/10">
+          <CardContent className="pt-4 pb-4">
+            <div className="flex items-center gap-2 mb-2">
+              <Bell className="h-5 w-5 text-red-600" />
+              <h3 className="font-semibold text-sm text-red-700">
+                {locale === "fr" ? "Alertes" : "تنبيهات"}
+              </h3>
+            </div>
+            <div className="space-y-1">
+              {overdueMaint.length > 0 && (
+                <p className="text-sm text-red-600">
+                  {overdueMaint.length} {t("overdueMaintenance").toLowerCase()}
+                </p>
+              )}
+              {overdueRentals.length > 0 && (
+                <p className="text-sm text-red-600">
+                  {overdueRentals.length} {t("overdueReturns").toLowerCase()}
+                </p>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-6">
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground">Total Equipment</p>
+                <p className="text-sm text-muted-foreground">{t("totalEquipment")}</p>
                 <p className="text-3xl font-bold">{inventory.length}</p>
-                <p className="text-xs text-muted-foreground">{available.length} available</p>
+                <p className="text-xs text-muted-foreground">{available.length} {t("available")}</p>
               </div>
               <div className="h-12 w-12 rounded-lg bg-amber-100 dark:bg-amber-900/30 text-amber-600 flex items-center justify-center">
                 <Package className="h-6 w-6" />
               </div>
             </div>
             <Link href="/equipment/inventory" className="text-sm text-amber-600 hover:underline mt-2 inline-flex items-center">
-              View Inventory <ArrowRight className="h-3 w-3 ml-1" />
+              {t("viewInventory")} <ArrowRight className="h-3 w-3 ms-1" />
             </Link>
           </CardContent>
         </Card>
@@ -83,7 +140,7 @@ export default function EquipmentDashboardPage() {
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground">Active Rentals</p>
+                <p className="text-sm text-muted-foreground">{t("activeRentals")}</p>
                 <p className="text-3xl font-bold text-blue-600">{activeRentals.length}</p>
               </div>
               <div className="h-12 w-12 rounded-lg bg-blue-100 dark:bg-blue-900/30 text-blue-600 flex items-center justify-center">
@@ -91,7 +148,7 @@ export default function EquipmentDashboardPage() {
               </div>
             </div>
             <Link href="/equipment/rentals" className="text-sm text-amber-600 hover:underline mt-2 inline-flex items-center">
-              View Rentals <ArrowRight className="h-3 w-3 ml-1" />
+              {t("viewRentals")} <ArrowRight className="h-3 w-3 ms-1" />
             </Link>
           </CardContent>
         </Card>
@@ -100,7 +157,7 @@ export default function EquipmentDashboardPage() {
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground">Overdue Returns</p>
+                <p className="text-sm text-muted-foreground">{t("overdueReturns")}</p>
                 <p className="text-3xl font-bold text-red-500">{overdueRentals.length}</p>
               </div>
               <div className="h-12 w-12 rounded-lg bg-red-100 dark:bg-red-900/30 text-red-600 flex items-center justify-center">
@@ -114,7 +171,7 @@ export default function EquipmentDashboardPage() {
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground">Scheduled Maintenance</p>
+                <p className="text-sm text-muted-foreground">{t("scheduledMaintenance")}</p>
                 <p className="text-3xl font-bold text-orange-500">{upcomingMaint.length}</p>
               </div>
               <div className="h-12 w-12 rounded-lg bg-orange-100 dark:bg-orange-900/30 text-orange-600 flex items-center justify-center">
@@ -122,7 +179,7 @@ export default function EquipmentDashboardPage() {
               </div>
             </div>
             <Link href="/equipment/maintenance" className="text-sm text-amber-600 hover:underline mt-2 inline-flex items-center">
-              View Schedule <ArrowRight className="h-3 w-3 ml-1" />
+              {t("viewSchedule")} <ArrowRight className="h-3 w-3 ms-1" />
             </Link>
           </CardContent>
         </Card>
@@ -133,8 +190,8 @@ export default function EquipmentDashboardPage() {
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="font-semibold text-lg">Active Rentals</h2>
-              <Link href="/equipment/rentals" className="text-sm text-amber-600 hover:underline">View All</Link>
+              <h2 className="font-semibold text-lg">{t("activeRentalsTitle")}</h2>
+              <Link href="/equipment/rentals" className="text-sm text-amber-600 hover:underline">{t("viewAll")}</Link>
             </div>
             <div className="space-y-3">
               {[...overdueRentals, ...activeRentals].slice(0, 5).map((rental) => (
@@ -142,16 +199,16 @@ export default function EquipmentDashboardPage() {
                   <div>
                     <p className="font-medium text-sm">{rental.equipmentName}</p>
                     <p className="text-xs text-muted-foreground">
-                      {rental.clientName} &middot; Since {new Date(rental.rentalStart).toLocaleDateString()}
+                      {rental.clientName} &middot; {t("since")} {new Date(rental.rentalStart).toLocaleDateString(dateFmt)}
                     </p>
                   </div>
                   <Badge className={rental.status === "overdue" ? "bg-red-100 text-red-700 border-0" : "bg-blue-100 text-blue-700 border-0"}>
-                    {rental.status}
+                    {statusLabel(rental.status)}
                   </Badge>
                 </div>
               ))}
               {activeRentals.length === 0 && overdueRentals.length === 0 && (
-                <p className="text-sm text-muted-foreground text-center py-4">No active rentals</p>
+                <p className="text-sm text-muted-foreground text-center py-4">{t("noActiveRentals")}</p>
               )}
             </div>
           </CardContent>
@@ -161,16 +218,16 @@ export default function EquipmentDashboardPage() {
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="font-semibold text-lg">Needs Attention</h2>
+              <h2 className="font-semibold text-lg">{t("needsAttention")}</h2>
             </div>
             <div className="space-y-3">
               {needsRepair.map((item) => (
                 <div key={item.id} className="flex items-center justify-between p-3 bg-orange-50 dark:bg-orange-950/10 rounded-lg">
                   <div>
                     <p className="font-medium text-sm">{item.name}</p>
-                    <p className="text-xs text-muted-foreground">S/N: {item.serialNumber ?? "N/A"}</p>
+                    <p className="text-xs text-muted-foreground">{t("serialNumber")}: {item.serialNumber ?? "N/A"}</p>
                   </div>
-                  <Badge className="bg-orange-100 text-orange-700 border-0">Needs Repair</Badge>
+                  <Badge className="bg-orange-100 text-orange-700 border-0">{t("needsRepair")}</Badge>
                 </div>
               ))}
               {upcomingMaint.slice(0, 3).map((m) => (
@@ -178,16 +235,16 @@ export default function EquipmentDashboardPage() {
                   <div>
                     <p className="font-medium text-sm">{m.equipmentName}</p>
                     <p className="text-xs text-muted-foreground">
-                      {m.type} &middot; Due: {m.nextDue ? new Date(m.nextDue).toLocaleDateString() : new Date(m.performedAt).toLocaleDateString()}
+                      {typeLabel(m.type)} &middot; {t("nextDue")}: {m.nextDue ? new Date(m.nextDue).toLocaleDateString(dateFmt) : new Date(m.performedAt).toLocaleDateString(dateFmt)}
                     </p>
                   </div>
-                  <Badge variant="outline" className="text-xs capitalize">{m.type}</Badge>
+                  <Badge variant="outline" className="text-xs capitalize">{typeLabel(m.type)}</Badge>
                 </div>
               ))}
               {needsRepair.length === 0 && upcomingMaint.length === 0 && (
                 <div className="text-center py-4">
                   <CheckCircle className="h-8 w-8 text-emerald-500 mx-auto mb-2" />
-                  <p className="text-sm text-muted-foreground">All equipment in good condition</p>
+                  <p className="text-sm text-muted-foreground">{t("allEquipmentGood")}</p>
                 </div>
               )}
             </div>
