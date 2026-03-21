@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase-server";
+import type { ClinicType } from "@/lib/types/database";
 
 export const runtime = "edge";
 
@@ -34,7 +35,7 @@ export async function POST(request: NextRequest) {
     const supabase = await createClient();
 
     // Map category to the legacy clinic type field
-    const legacyTypeMap: Record<string, string> = {
+    const legacyTypeMap: Record<string, ClinicType> = {
       medical: "doctor",
       para_medical: "doctor",
       diagnostic: "doctor",
@@ -43,13 +44,13 @@ export async function POST(request: NextRequest) {
     };
 
     // Specific overrides for certain type_keys
-    const typeKeyOverrides: Record<string, string> = {
+    const typeKeyOverrides: Record<string, ClinicType> = {
       dental_clinic: "dentist",
       pharmacy: "pharmacy",
       parapharmacy: "pharmacy",
     };
 
-    const legacyType =
+    const legacyType: ClinicType =
       typeKeyOverrides[body.clinic_type_key] ??
       legacyTypeMap[body.category] ??
       "doctor";
