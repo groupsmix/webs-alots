@@ -22,6 +22,39 @@ interface OnboardingRequestBody {
  */
 export async function POST(request: NextRequest) {
   try {
+    const supabase = await createClient();
+
+    // Verify the caller is authenticated
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+    }
+
+    // Require email verification before allowing clinic creation
+    if (!user.email_confirmed_at) {
+      return NextResponse.json(
+        { error: "Email verification required before creating a clinic" },
+        { status: 403 },
+      );
+    }
+
+    // Prevent duplicate clinic creation: check if user already owns a clinic
+    const { data: existingProfile } = await supabase
+      .from("users")
+      .select("clinic_id")
+      .eq("auth_id", user.id)
+      .single();
+
+    if (existingProfile?.clinic_id) {
+      return NextResponse.json(
+        { error: "You have already created a clinic" },
+        { status: 409 },
+      );
+    }
+
     const body = (await request.json()) as OnboardingRequestBody;
 
     if (!body.clinic_type_key || !body.clinic_name || !body.owner_name || !body.phone) {
@@ -30,8 +63,6 @@ export async function POST(request: NextRequest) {
         { status: 400 },
       );
     }
-
-    const supabase = await createClient();
 
     // Map category to the legacy clinic type field
     const legacyTypeMap: Record<string, string> = {

@@ -5,7 +5,7 @@ import {
   type NotificationChannel,
   type TemplateVariables,
 } from "@/lib/notifications";
-import type { NotificationChannel as DBNotificationChannel } from "@/lib/types/database";
+import type { NotificationChannel as DBNotificationChannel, UserRole } from "@/lib/types/database";
 import { createClient } from "@/lib/supabase-server";
 
 export const runtime = "edge";
@@ -18,6 +18,29 @@ export const runtime = "edge";
  */
 export async function POST(request: NextRequest) {
   try {
+    const supabase = await createClient();
+
+    // Verify the caller is authenticated
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+    }
+
+    // Only admins and staff roles can dispatch notifications
+    const { data: profile } = await supabase
+      .from("users")
+      .select("role")
+      .eq("auth_id", user.id)
+      .single();
+
+    const allowedRoles: UserRole[] = ["super_admin", "clinic_admin", "receptionist", "doctor"];
+    if (!profile || !allowedRoles.includes(profile.role)) {
+      return NextResponse.json({ error: "Forbidden — insufficient permissions" }, { status: 403 });
+    }
+
     const body = await request.json();
 
     const {
