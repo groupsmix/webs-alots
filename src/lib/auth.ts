@@ -132,18 +132,6 @@ export async function signOut(): Promise<void> {
 // ============================================================
 
 /**
- * Get the current authenticated user's session.
- * Returns null if not authenticated.
- */
-export async function getSession() {
-  const supabase = await createClient();
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
-  return session;
-}
-
-/**
  * Get the current user's profile from the users table.
  * Returns null if not authenticated or profile not found.
  */
