@@ -141,6 +141,27 @@ const key = buildUploadKey(clinicId, "logos", "clinic-logo.png");
 const url = await uploadToR2(key, buffer, "image/png");
 ```
 
+## Production Security Checklist
+
+Before deploying to production, complete these steps:
+
+### 1. Remove or re-password seed users
+
+Migration `00019` creates seed users with a well-known default password (`seed-password-change-me`). In production you **must** either:
+
+- **Delete the seed accounts** from `auth.users` and `public.users`, or
+- **Change their passwords** via the Supabase Dashboard (Authentication > Users).
+
+To use a custom password during migration instead of the default, set the PostgreSQL variable before running the migration:
+
+```sql
+SET app.seed_user_password = 'your-strong-random-password';
+```
+
+### 2. Verify CSRF protection is active
+
+The middleware enforces Origin-header checks on all mutation requests (`POST`, `PUT`, `PATCH`, `DELETE`) to API routes. Ensure `NEXT_PUBLIC_SITE_URL` is set correctly in your environment so that legitimate requests are not blocked.
+
 ## Deploy on Cloudflare Workers
 
 This project deploys as a **Cloudflare Worker** using [OpenNext for Cloudflare](https://opennext.js.org/cloudflare), **not** Cloudflare Pages. The build produces a Worker bundle (`.open-next/worker.js`) and static assets (`.open-next/assets/`), both served by the Workers runtime.

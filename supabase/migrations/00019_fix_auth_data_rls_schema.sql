@@ -12,11 +12,26 @@
 -- Phone OTP login requires matching auth.users rows.
 -- The handle_new_auth_user trigger (00002) handles future signups,
 -- but seed users in public.users have no auth.users counterpart.
+--
+-- !! WARNING — DEV / SEED DATA ONLY !!
+-- The password below ('seed-password-change-me') is a well-known
+-- default visible in version control. These accounts MUST be
+-- deleted or have their passwords changed before any production
+-- deployment. See the "Production Security Checklist" section
+-- in README.md for details.
 -- ============================================================
 
 -- Temporarily disable the trigger so inserting into auth.users
 -- does not create duplicate public.users rows.
 ALTER TABLE auth.users DISABLE TRIGGER on_auth_user_created;
+
+-- Use SEED_USER_PASSWORD env var if set, otherwise fall back to
+-- the well-known default (acceptable for local dev only).
+DO $$ BEGIN
+  IF current_setting('app.seed_user_password', true) IS NULL THEN
+    PERFORM set_config('app.seed_user_password', 'seed-password-change-me', true);
+  END IF;
+END $$;
 
 INSERT INTO auth.users (
   id, instance_id, email, encrypted_password,
@@ -30,7 +45,7 @@ VALUES
   ('a0000000-0000-0000-0000-000000000001',
    '00000000-0000-0000-0000-000000000000',
    'admin@health-saas.ma',
-   crypt('seed-password-change-me', gen_salt('bf')),
+   crypt(current_setting('app.seed_user_password', true), gen_salt('bf')),
    now(), '+212600000001', now(),
    '{"provider":"phone","providers":["phone"]}'::jsonb,
    '{"role":"super_admin","name":"Admin Platform"}'::jsonb,
@@ -39,7 +54,7 @@ VALUES
   ('a0000000-0000-0000-0000-000000000002',
    '00000000-0000-0000-0000-000000000000',
    'nadia@dr-benali.ma',
-   crypt('seed-password-change-me', gen_salt('bf')),
+   crypt(current_setting('app.seed_user_password', true), gen_salt('bf')),
    now(), '+212611000001', now(),
    '{"provider":"phone","providers":["phone"]}'::jsonb,
    '{"role":"clinic_admin","name":"Nadia Benali"}'::jsonb,
@@ -48,7 +63,7 @@ VALUES
   ('a0000000-0000-0000-0000-000000000003',
    '00000000-0000-0000-0000-000000000000',
    'ahmed@dr-benali.ma',
-   crypt('seed-password-change-me', gen_salt('bf')),
+   crypt(current_setting('app.seed_user_password', true), gen_salt('bf')),
    now(), '+212611000002', now(),
    '{"provider":"phone","providers":["phone"]}'::jsonb,
    '{"role":"doctor","name":"Dr. Ahmed Benali"}'::jsonb,
@@ -57,7 +72,7 @@ VALUES
   ('a0000000-0000-0000-0000-000000000004',
    '00000000-0000-0000-0000-000000000000',
    'amina@dr-benali.ma',
-   crypt('seed-password-change-me', gen_salt('bf')),
+   crypt(current_setting('app.seed_user_password', true), gen_salt('bf')),
    now(), '+212611000003', now(),
    '{"provider":"phone","providers":["phone"]}'::jsonb,
    '{"role":"receptionist","name":"Amina Tazi"}'::jsonb,
@@ -66,7 +81,7 @@ VALUES
   ('a0000000-0000-0000-0000-000000000010',
    '00000000-0000-0000-0000-000000000000',
    'fatima.m@gmail.com',
-   crypt('seed-password-change-me', gen_salt('bf')),
+   crypt(current_setting('app.seed_user_password', true), gen_salt('bf')),
    now(), '+212622113344', now(),
    '{"provider":"phone","providers":["phone"]}'::jsonb,
    '{"role":"patient","name":"Fatima Zahra Mansouri"}'::jsonb,
@@ -75,7 +90,7 @@ VALUES
   ('a0000000-0000-0000-0000-000000000011',
    '00000000-0000-0000-0000-000000000000',
    'hassan.b@gmail.com',
-   crypt('seed-password-change-me', gen_salt('bf')),
+   crypt(current_setting('app.seed_user_password', true), gen_salt('bf')),
    now(), '+212633224455', now(),
    '{"provider":"phone","providers":["phone"]}'::jsonb,
    '{"role":"patient","name":"Hassan Bourkia"}'::jsonb,
@@ -84,7 +99,7 @@ VALUES
   ('a0000000-0000-0000-0000-000000000012',
    '00000000-0000-0000-0000-000000000000',
    'khadija.a@gmail.com',
-   crypt('seed-password-change-me', gen_salt('bf')),
+   crypt(current_setting('app.seed_user_password', true), gen_salt('bf')),
    now(), '+212644335566', now(),
    '{"provider":"phone","providers":["phone"]}'::jsonb,
    '{"role":"patient","name":"Khadija Alaoui"}'::jsonb,
@@ -93,7 +108,7 @@ VALUES
   ('a0000000-0000-0000-0000-000000000013',
    '00000000-0000-0000-0000-000000000000',
    'omar.f@gmail.com',
-   crypt('seed-password-change-me', gen_salt('bf')),
+   crypt(current_setting('app.seed_user_password', true), gen_salt('bf')),
    now(), '+212655446677', now(),
    '{"provider":"phone","providers":["phone"]}'::jsonb,
    '{"role":"patient","name":"Omar El Fassi"}'::jsonb,
@@ -102,7 +117,7 @@ VALUES
   ('a0000000-0000-0000-0000-000000000014',
    '00000000-0000-0000-0000-000000000000',
    'youssef.t@gmail.com',
-   crypt('seed-password-change-me', gen_salt('bf')),
+   crypt(current_setting('app.seed_user_password', true), gen_salt('bf')),
    now(), '+212666557788', now(),
    '{"provider":"phone","providers":["phone"]}'::jsonb,
    '{"role":"patient","name":"Youssef Tazi"}'::jsonb,
