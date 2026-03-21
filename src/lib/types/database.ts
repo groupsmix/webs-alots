@@ -207,7 +207,7 @@ export type Service = {
   name: string;
   description: string | null;
   duration_minutes: number;
-  duration_min: number;
+  duration_min: number | null;
   price: number | null;
   category: string | null;
   is_active: boolean;
@@ -223,7 +223,8 @@ export type TimeSlot = {
   end_time: string;
   max_capacity: number;
   buffer_minutes: number;
-  buffer_min: number;
+  buffer_min: number | null;
+  is_available: boolean;
   is_active: boolean;
 }
 
@@ -274,14 +275,16 @@ export type WaitingListEntry = {
 
 export type Notification = {
   id: string;
-  clinic_id: string;
+  clinic_id: string | null;
   user_id: string;
   type: string;
   channel: NotificationChannel;
+  message: string | null;
   title: string | null;
   body: string | null;
   is_read: boolean;
   sent_at: string;
+  read_at: string | null;
 }
 
 export type Payment = {
@@ -2226,7 +2229,7 @@ export type Database = {
       time_slots: { Row: TimeSlot; Insert: Partial<TimeSlot> & Pick<TimeSlot, "clinic_id" | "doctor_id" | "day_of_week" | "start_time" | "end_time">; Update: Partial<TimeSlot>; Relationships: [] };
       appointments: { Row: Appointment; Insert: Partial<Appointment> & Pick<Appointment, "clinic_id" | "patient_id" | "doctor_id" | "appointment_date" | "start_time" | "end_time">; Update: Partial<Appointment>; Relationships: [] };
       waiting_list: { Row: WaitingListEntry; Insert: Partial<WaitingListEntry> & Pick<WaitingListEntry, "clinic_id" | "patient_id" | "doctor_id">; Update: Partial<WaitingListEntry>; Relationships: [] };
-      notifications: { Row: Notification; Insert: Partial<Notification> & Pick<Notification, "clinic_id" | "user_id" | "type" | "channel">; Update: Partial<Notification>; Relationships: [] };
+      notifications: { Row: Notification; Insert: Partial<Notification> & Pick<Notification, "user_id" | "type" | "channel">; Update: Partial<Notification>; Relationships: [] };
       payments: { Row: Payment; Insert: Partial<Payment> & Pick<Payment, "clinic_id" | "patient_id" | "amount">; Update: Partial<Payment>; Relationships: [] };
       reviews: { Row: Review; Insert: Partial<Review> & Pick<Review, "clinic_id" | "patient_id" | "stars">; Update: Partial<Review>; Relationships: [] };
       documents: { Row: Document; Insert: Partial<Document> & Pick<Document, "clinic_id" | "user_id" | "type" | "file_url">; Update: Partial<Document>; Relationships: [] };
