@@ -47,7 +47,8 @@ export default function OrthopedicsPage() {
     milestones: [{ title: "", targetDate: "", completed: false }],
   });
 
-  const load = useCallback(async () => {
+  useEffect(() => {
+    async function load() {
     const user = await getCurrentUser();
     if (!user?.clinic_id) { setLoading(false); return; }
     const [x, f, r] = await Promise.all([
@@ -59,9 +60,9 @@ export default function OrthopedicsPage() {
     setFractures(f);
     setRehabPlans(r);
     setLoading(false);
+  }
+    load();
   }, []);
-
-  useEffect(() => { load(); }, [load]);
 
   if (loading) {
     return (

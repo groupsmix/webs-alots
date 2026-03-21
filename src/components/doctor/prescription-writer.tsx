@@ -38,16 +38,17 @@ export function PrescriptionWriter() {
   const [diagnosis, setDiagnosis] = useState("");
   const [loading, setLoading] = useState(true);
 
-  const load = useCallback(async () => {
+  useEffect(() => {
+    async function load() {
     const user = await getCurrentUser();
     if (!user?.clinic_id) { setLoading(false); return; }
     const pts = await fetchPatients(user.clinic_id);
     setPatients(pts);
     if (pts.length > 0) setSelectedPatient(pts[0].id);
     setLoading(false);
+  }
+    load();
   }, []);
-
-  useEffect(() => { load(); }, [load]);
 
   if (loading) {
     return (

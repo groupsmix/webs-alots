@@ -10,15 +10,16 @@ export default function ExerciseProgramsPage() {
   const [programs, setPrograms] = useState<ExerciseProgram[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const load = useCallback(async () => {
+  useEffect(() => {
+    async function load() {
     const user = await getCurrentUser();
     if (!user?.clinic_id) { setLoading(false); return; }
     // Data will come from Supabase once wired
     setPrograms([]);
     setLoading(false);
+  }
+    load();
   }, []);
-
-  useEffect(() => { load(); }, [load]);
 
   if (loading) {
     return (

@@ -53,7 +53,8 @@ export default function UltrasoundsPage() {
     efw: "", // Estimated fetal weight
   });
 
-  const load = useCallback(async () => {
+  useEffect(() => {
+    async function load() {
     const user = await getCurrentUser();
     if (!user?.clinic_id) { setLoading(false); return; }
     const [u, p] = await Promise.all([
@@ -63,9 +64,9 @@ export default function UltrasoundsPage() {
     setUltrasounds(u);
     setPregnancies(p);
     setLoading(false);
+  }
+    load();
   }, [selectedPregnancy]);
-
-  useEffect(() => { load(); }, [load]);
 
   const handleSave = async () => {
     const user = await getCurrentUser();

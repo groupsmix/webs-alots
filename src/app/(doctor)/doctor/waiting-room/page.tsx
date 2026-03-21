@@ -16,15 +16,16 @@ export default function WaitingRoomPage() {
   const [entries, setEntries] = useState<WaitingRoomEntry[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const load = useCallback(async () => {
+  useEffect(() => {
+    async function load() {
     const user = await getCurrentUser();
     if (!user?.clinic_id) { setLoading(false); return; }
     const wr = await fetchWaitingRoom(user.clinic_id);
     setEntries(wr);
     setLoading(false);
+  }
+    load();
   }, []);
-
-  useEffect(() => { load(); }, [load]);
 
   if (loading) {
     return (

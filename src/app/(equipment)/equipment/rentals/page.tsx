@@ -96,15 +96,24 @@ export default function EquipmentRentalsPage() {
     return map[c] ?? c;
   }, [t]);
 
-  const reload = useCallback(() => {
+  function reload() {
     setLoading(true);
     const cId = clinicConfig.clinicId;
     Promise.all([fetchEquipmentRentals(cId), fetchEquipmentInventory(cId)])
       .then(([r, e]) => { setRentals(r); setEquipment(e); })
       .finally(() => setLoading(false));
-  }, []);
+  }
 
-  useEffect(() => { reload(); }, [reload]);
+  useEffect(() => {
+    function init() {
+      setLoading(true);
+      const cId = clinicConfig.clinicId;
+      Promise.all([fetchEquipmentRentals(cId), fetchEquipmentInventory(cId)])
+        .then(([r, e]) => { setRentals(r); setEquipment(e); })
+        .finally(() => setLoading(false));
+    }
+    init();
+  }, []);
 
   const openAddDialog = () => {
     setEditingRental(null);

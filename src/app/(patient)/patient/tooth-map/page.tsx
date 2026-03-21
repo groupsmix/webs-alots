@@ -12,15 +12,16 @@ export default function PatientToothMapPage() {
   const [entries, setEntries] = useState<OdontogramView[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const load = useCallback(async () => {
+  useEffect(() => {
+    async function load() {
     const user = await getCurrentUser();
     if (!user?.clinic_id) { setLoading(false); return; }
     const data = await fetchOdontogram(user.clinic_id, user.id);
     setEntries(data);
     setLoading(false);
+  }
+    load();
   }, []);
-
-  useEffect(() => { load(); }, [load]);
 
   if (loading) {
     return (

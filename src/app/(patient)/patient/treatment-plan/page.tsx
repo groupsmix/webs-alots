@@ -12,15 +12,16 @@ export default function PatientTreatmentPlanPage() {
   const [myPlans, setMyPlans] = useState<TreatmentPlanView[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const load = useCallback(async () => {
+  useEffect(() => {
+    async function load() {
     const user = await getCurrentUser();
     if (!user?.clinic_id) { setLoading(false); return; }
     const plans = await fetchTreatmentPlans(user.clinic_id);
     setMyPlans(plans.filter(p => p.patientId === user.id));
     setLoading(false);
+  }
+    load();
   }, []);
-
-  useEffect(() => { load(); }, [load]);
 
   if (loading) {
     return (

@@ -34,15 +34,16 @@ export default function PatientAppointmentsPage() {
   const [patientAppointments, setPatientAppointments] = useState<AppointmentView[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const load = useCallback(async () => {
+  useEffect(() => {
+    async function load() {
     const user = await getCurrentUser();
     if (!user?.clinic_id) { setLoading(false); return; }
     const appts = await fetchPatientAppointments(user.clinic_id, user.id);
     setPatientAppointments(appts);
     setLoading(false);
-  }, []);
-
-  useEffect(() => { load(); }, [load, refreshKey]);
+  }
+    load();
+  }, [refreshKey]);
 
   if (loading) {
     return (

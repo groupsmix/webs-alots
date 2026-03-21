@@ -68,7 +68,8 @@ export default function ConsultationNotesPage() {
     privateNotes: "",
   });
 
-  const load = useCallback(async () => {
+  useEffect(() => {
+    async function load() {
     const user = await getCurrentUser();
     if (!user?.clinic_id) { setLoading(false); return; }
     const [appts, dbNotes] = await Promise.all([
@@ -78,9 +79,9 @@ export default function ConsultationNotesPage() {
     setApptList(appts);
     setNotes(dbNotes.map(mapDbNoteToLocal));
     setLoading(false);
+  }
+    load();
   }, []);
-
-  useEffect(() => { load(); }, [load]);
 
   if (loading) {
     return (

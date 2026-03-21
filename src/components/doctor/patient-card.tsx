@@ -29,7 +29,8 @@ export function PatientCard({ patientId }: { patientId?: string }) {
   const [patientAppts, setPatientAppts] = useState<AppointmentView[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const load = useCallback(async () => {
+  useEffect(() => {
+    async function load() {
     const user = await getCurrentUser();
     if (!user?.clinic_id) { setLoading(false); return; }
     const [pts, rxs, appts] = await Promise.all([
@@ -44,9 +45,9 @@ export function PatientCard({ patientId }: { patientId?: string }) {
       setPatientAppts(appts.filter((a) => a.patientId === found.id));
     }
     setLoading(false);
+  }
+    load();
   }, [patientId]);
-
-  useEffect(() => { load(); }, [load]);
 
   if (loading) {
     return (

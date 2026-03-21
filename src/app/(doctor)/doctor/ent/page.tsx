@@ -65,7 +65,8 @@ export default function ENTPage() {
     plan: "",
   });
 
-  const load = useCallback(async () => {
+  useEffect(() => {
+    async function load() {
     const user = await getCurrentUser();
     if (!user?.clinic_id) { setLoading(false); return; }
     const [t, e] = await Promise.all([
@@ -75,9 +76,9 @@ export default function ENTPage() {
     setHearingTests(t);
     setExams(e);
     setLoading(false);
+  }
+    load();
   }, []);
-
-  useEffect(() => { load(); }, [load]);
 
   if (loading) {
     return (

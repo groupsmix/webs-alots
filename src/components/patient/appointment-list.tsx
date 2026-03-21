@@ -55,16 +55,17 @@ export function AppointmentList({ patientId }: { patientId?: string }) {
   const [cancellingId, setCancellingId] = useState<string | null>(null);
   const [cancelError, setCancelError] = useState<string | null>(null);
 
-  const load = useCallback(async () => {
+  useEffect(() => {
+    async function load() {
     const user = await getCurrentUser();
     if (!user?.clinic_id) { setLoading(false); return; }
     const pid = patientId ?? user.id;
     const appts = await fetchPatientAppointments(user.clinic_id, pid);
     setAllAppts(appts);
     setLoading(false);
+  }
+    load();
   }, [patientId, refreshKey]);
-
-  useEffect(() => { load(); }, [load]);
 
   const upcoming = allAppts.filter(
     (a) => a.status === "scheduled" || a.status === "confirmed" || a.status === "in-progress",

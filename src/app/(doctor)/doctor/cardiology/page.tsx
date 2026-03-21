@@ -49,7 +49,8 @@ export default function CardiologyPage() {
     title: "", content: "", category: "general", severity: "normal", isAlert: false,
   });
 
-  const load = useCallback(async () => {
+  useEffect(() => {
+    async function load() {
     const user = await getCurrentUser();
     if (!user?.clinic_id) { setLoading(false); return; }
     const [e, b, n] = await Promise.all([
@@ -61,9 +62,9 @@ export default function CardiologyPage() {
     setBpReadings(b);
     setHeartNotes(n);
     setLoading(false);
+  }
+    load();
   }, []);
-
-  useEffect(() => { load(); }, [load]);
 
   if (loading) {
     return (

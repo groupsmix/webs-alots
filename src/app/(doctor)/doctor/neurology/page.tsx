@@ -46,7 +46,8 @@ export default function NeurologyPage() {
     diagnosis: "", plan: "", notes: "",
   });
 
-  const load = useCallback(async () => {
+  useEffect(() => {
+    async function load() {
     const user = await getCurrentUser();
     if (!user?.clinic_id) { setLoading(false); return; }
     const [e, x] = await Promise.all([
@@ -56,9 +57,9 @@ export default function NeurologyPage() {
     setEegs(e);
     setExams(x);
     setLoading(false);
+  }
+    load();
   }, []);
-
-  useEffect(() => { load(); }, [load]);
 
   if (loading) {
     return (

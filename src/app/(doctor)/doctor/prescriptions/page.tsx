@@ -105,7 +105,8 @@ export default function DoctorPrescriptionsPage() {
     { name: "", dosage: "", frequency: "", duration: "", instructions: "" },
   ]);
 
-  const load = useCallback(async () => {
+  useEffect(() => {
+    async function load() {
     const user = await getCurrentUser();
     if (!user?.clinic_id) { setLoading(false); return; }
     const [rxs, pts] = await Promise.all([
@@ -116,9 +117,9 @@ export default function DoctorPrescriptionsPage() {
     setPatients(pts);
     if (pts.length > 0) setSelectedPatient(pts[0].id);
     setLoading(false);
+  }
+    load();
   }, []);
-
-  useEffect(() => { load(); }, [load]);
 
   if (loading) {
     return (

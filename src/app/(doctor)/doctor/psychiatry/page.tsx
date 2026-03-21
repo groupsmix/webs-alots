@@ -39,7 +39,8 @@ export default function PsychiatryPage() {
     medicationName: "", dosage: "", frequency: "daily", reason: "", notes: "",
   });
 
-  const load = useCallback(async () => {
+  useEffect(() => {
+    async function load() {
     const user = await getCurrentUser();
     if (!user?.clinic_id) { setLoading(false); return; }
     const [s, m] = await Promise.all([
@@ -49,9 +50,9 @@ export default function PsychiatryPage() {
     setSessions(s);
     setMedications(m);
     setLoading(false);
+  }
+    load();
   }, []);
-
-  useEffect(() => { load(); }, [load]);
 
   if (loading) {
     return (

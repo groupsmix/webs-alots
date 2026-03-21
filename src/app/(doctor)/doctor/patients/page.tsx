@@ -32,7 +32,8 @@ export default function DoctorPatientsPage() {
   const [consultationNotes, setConsultationNotes] = useState<ConsultationNoteView[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const load = useCallback(async () => {
+  useEffect(() => {
+    async function load() {
     const user = await getCurrentUser();
     if (!user?.clinic_id) { setLoading(false); return; }
     const [pts, appts, rxs, notes] = await Promise.all([
@@ -46,9 +47,9 @@ export default function DoctorPatientsPage() {
     setPrescriptions(rxs);
     setConsultationNotes(notes);
     setLoading(false);
+  }
+    load();
   }, []);
-
-  useEffect(() => { load(); }, [load]);
 
   if (loading) {
     return (
