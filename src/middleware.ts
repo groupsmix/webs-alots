@@ -2,6 +2,7 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { extractSubdomain } from "@/lib/subdomain";
 import { TENANT_HEADERS } from "@/lib/tenant";
+import { rateLimitRules } from "@/lib/rate-limit";
 
 // Role to allowed route prefix mapping
 const ROLE_ROUTE_MAP: Record<string, string> = {
@@ -131,6 +132,22 @@ export async function middleware(request: NextRequest) {
       return NextResponse.json(
         { error: "CSRF validation failed: origin not allowed" },
         { status: 403 },
+      );
+    }
+  }
+
+  // --- Rate limiting for API mutations ---
+  if (pathname.startsWith("/api/") && MUTATION_METHODS.has(request.method)) {
+    const clientIp =
+      request.headers.get("cf-connecting-ip") ??
+      request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
+      "unknown";
+
+    const rule = rateLimitRules.find((r) => pathname.startsWith(r.prefix));
+    if (rule && !rule.limiter.check(clientIp)) {
+      return NextResponse.json(
+        { error: "Too many requests. Please try again later." },
+        { status: 429 },
       );
     }
   }
