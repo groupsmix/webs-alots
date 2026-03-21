@@ -3097,6 +3097,333 @@ export async function fetchLabTestResults(orderId: string): Promise<LabTestResul
 }
 
 // ─────────────────────────────────────────────
+// Analysis Lab — Mutations
+// ─────────────────────────────────────────────
+
+export async function createLabTestOrder(data: {
+  clinic_id: string;
+  patient_id: string;
+  ordering_doctor_id?: string;
+  assigned_technician_id?: string;
+  priority?: string;
+  clinical_notes?: string;
+  fasting_required?: boolean;
+  test_ids?: string[];
+}): Promise<string | null> {
+  const supabase = createClient();
+  const orderNumber = `LAB-${Date.now().toString(36).toUpperCase()}`;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: result, error } = await (supabase.from as any)("lab_test_orders")
+    .insert({
+      clinic_id: data.clinic_id,
+      patient_id: data.patient_id,
+      ordering_doctor_id: data.ordering_doctor_id ?? null,
+      assigned_technician_id: data.assigned_technician_id ?? null,
+      order_number: orderNumber,
+      status: "pending",
+      priority: data.priority ?? "normal",
+      clinical_notes: data.clinical_notes ?? null,
+      fasting_required: data.fasting_required ?? false,
+    })
+    .select("id")
+    .single();
+  if (error) {
+    console.error("[data] create lab test order:", error.message);
+    return null;
+  }
+  const orderId = result?.id as string;
+  // Insert test items if provided
+  if (data.test_ids && data.test_ids.length > 0 && orderId) {
+    const catalog = await fetchLabTestCatalog(data.clinic_id);
+    const catalogMap = new Map(catalog.map((c) => [c.id, c.name]));
+    const items = data.test_ids.map((testId) => ({
+      order_id: orderId,
+      test_id: testId,
+      test_name: catalogMap.get(testId) ?? "Test",
+      status: "pending",
+    }));
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (supabase.from as any)("lab_test_items").insert(items);
+  }
+  return orderId;
+}
+
+export async function updateLabOrderStatus(
+  orderId: string,
+  status: string,
+): Promise<boolean> {
+  const supabase = createClient();
+  const updateData: Record<string, unknown> = { status, updated_at: new Date().toISOString() };
+  if (status === "sample_collected") {
+    updateData.sample_collected_at = new Date().toISOString();
+  } else if (status === "completed") {
+    updateData.completed_at = new Date().toISOString();
+  } else if (status === "validated") {
+    updateData.validated_at = new Date().toISOString();
+  }
+  const { error } = await supabase
+    .from("lab_test_orders")
+    .update(updateData)
+    .eq("id", orderId);
+  if (error) {
+    console.error("[data] update lab order status:", error.message);
+    return false;
+  }
+  return true;
+}
+
+export async function assignLabTechnician(
+  orderId: string,
+  technicianId: string | null,
+): Promise<boolean> {
+  const supabase = createClient();
+  const { error } = await supabase
+    .from("lab_test_orders")
+    .update({
+      assigned_technician_id: technicianId,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", orderId);
+  if (error) {
+    console.error("[data] assign lab technician:", error.message);
+    return false;
+  }
+  return true;
+}
+
+export async function saveLabTestResult(data: {
+  order_id: string;
+  test_item_id: string;
+  parameter_name: string;
+  value: string;
+  unit?: string;
+  reference_min?: number;
+  reference_max?: number;
+  flag?: string;
+  notes?: string;
+  entered_by?: string;
+}): Promise<string | null> {
+  const supabase = createClient();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: result, error } = await (supabase.from as any)("lab_test_results")
+    .insert({
+      order_id: data.order_id,
+      test_item_id: data.test_item_id,
+      parameter_name: data.parameter_name,
+      value: data.value,
+      unit: data.unit ?? null,
+      reference_min: data.reference_min ?? null,
+      reference_max: data.reference_max ?? null,
+      flag: data.flag ?? "normal",
+      notes: data.notes ?? null,
+      entered_by: data.entered_by ?? null,
+      entered_at: new Date().toISOString(),
+    })
+    .select("id")
+    .single();
+  if (error) {
+    console.error("[data] save lab test result:", error.message);
+    return null;
+  }
+  return result?.id ?? null;
+}
+
+export async function updateLabTestResult(
+  resultId: string,
+  data: Partial<{
+    value: string;
+    unit: string;
+    reference_min: number | null;
+    reference_max: number | null;
+    flag: string;
+    notes: string | null;
+  }>,
+): Promise<boolean> {
+  const supabase = createClient();
+  const { error } = await supabase
+    .from("lab_test_results")
+    .update(data as never)
+    .eq("id", resultId);
+  if (error) {
+    console.error("[data] update lab test result:", error.message);
+    return false;
+  }
+  return true;
+}
+
+export async function updateLabOrderPdfUrl(
+  orderId: string,
+  pdfUrl: string,
+): Promise<boolean> {
+  const supabase = createClient();
+  const { error } = await supabase
+    .from("lab_test_orders")
+    .update({ pdf_url: pdfUrl, updated_at: new Date().toISOString() })
+    .eq("id", orderId);
+  if (error) {
+    console.error("[data] update lab order pdf url:", error.message);
+    return false;
+  }
+  return true;
+}
+
+// ─────────────────────────────────────────────
+// Parapharmacy — Mutations
+// ─────────────────────────────────────────────
+
+export async function createParapharmacyProduct(data: {
+  clinic_id: string;
+  name: string;
+  generic_name?: string;
+  category?: string;
+  description?: string;
+  price?: number;
+  manufacturer?: string;
+  dosage_form?: string;
+  strength?: string;
+  is_active?: boolean;
+}): Promise<string | null> {
+  const supabase = createClient();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: result, error } = await (supabase.from as any)("products")
+    .insert({
+      clinic_id: data.clinic_id,
+      name: data.name,
+      generic_name: data.generic_name ?? null,
+      category: data.category ?? "General",
+      description: data.description ?? null,
+      price: data.price ?? 0,
+      manufacturer: data.manufacturer ?? null,
+      dosage_form: data.dosage_form ?? null,
+      strength: data.strength ?? null,
+      is_active: data.is_active ?? true,
+      is_parapharmacy: true,
+      requires_prescription: false,
+    })
+    .select("id")
+    .single();
+  if (error) {
+    console.error("[data] create parapharmacy product:", error.message);
+    return null;
+  }
+  return result?.id ?? null;
+}
+
+export async function updateParapharmacyProduct(
+  id: string,
+  data: Partial<{
+    name: string;
+    generic_name: string | null;
+    category: string;
+    description: string | null;
+    price: number;
+    manufacturer: string | null;
+    dosage_form: string | null;
+    strength: string | null;
+    is_active: boolean;
+  }>,
+): Promise<boolean> {
+  const supabase = createClient();
+  const { error } = await supabase
+    .from("products")
+    .update({ ...data, updated_at: new Date().toISOString() } as never)
+    .eq("id", id);
+  if (error) {
+    console.error("[data] update parapharmacy product:", error.message);
+    return false;
+  }
+  return true;
+}
+
+export async function deleteParapharmacyProduct(id: string): Promise<boolean> {
+  const supabase = createClient();
+  const { error } = await supabase.from("products").delete().eq("id", id);
+  if (error) {
+    console.error("[data] delete parapharmacy product:", error.message);
+    return false;
+  }
+  return true;
+}
+
+export async function createParapharmacySale(data: {
+  clinic_id: string;
+  patient_name: string;
+  payment_method: string;
+  items: { product_id: string; product_name: string; quantity: number; unit_price: number }[];
+}): Promise<string | null> {
+  const supabase = createClient();
+  const total = data.items.reduce((sum, item) => sum + item.quantity * item.unit_price, 0);
+  const now = new Date();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: result, error } = await (supabase.from as any)("sales")
+    .insert({
+      clinic_id: data.clinic_id,
+      patient_name: data.patient_name,
+      payment_method: data.payment_method,
+      total,
+      date: now.toISOString().split("T")[0],
+      time: now.toTimeString().slice(0, 5),
+      items: data.items,
+      is_parapharmacy: true,
+    })
+    .select("id")
+    .single();
+  if (error) {
+    console.error("[data] create parapharmacy sale:", error.message);
+    return null;
+  }
+  // Update stock quantities
+  for (const item of data.items) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (supabase.rpc as any)("decrement_stock", {
+      p_product_id: item.product_id,
+      p_quantity: item.quantity,
+    }).then(({ error: rpcErr }: { error: { message: string } | null }) => {
+      if (rpcErr) {
+        // Fallback: manually update stock
+        supabase
+          .from("stock")
+          .select("quantity")
+          .eq("product_id", item.product_id)
+          .single()
+          .then(({ data: stockRow }) => {
+            if (stockRow) {
+              const newQty = Math.max(0, (stockRow as { quantity: number }).quantity - item.quantity);
+              supabase
+                .from("stock")
+                .update({ quantity: newQty } as never)
+                .eq("product_id", item.product_id);
+            }
+          });
+      }
+    });
+  }
+  return result?.id ?? null;
+}
+
+export async function adjustParapharmacyStock(
+  productId: string,
+  newQuantity: number,
+): Promise<boolean> {
+  const supabase = createClient();
+  const { error } = await supabase
+    .from("stock")
+    .update({ quantity: newQuantity, updated_at: new Date().toISOString() } as never)
+    .eq("product_id", productId);
+  if (error) {
+    // Try insert if no stock row exists
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error: insertError } = await (supabase.from as any)("stock")
+      .insert({ product_id: productId, quantity: newQuantity });
+    if (insertError) {
+      console.error("[data] adjust stock:", insertError.message);
+      return false;
+    }
+  }
+  return true;
+}
+
+// ─────────────────────────────────────────────
 // Radiology — Orders
 // ─────────────────────────────────────────────
 
