@@ -192,8 +192,10 @@ export interface Service {
   clinic_id: string;
   name: string;
   description: string | null;
+  duration_minutes: number;
   duration_min: number;
   price: number | null;
+  category: string | null;
   is_active: boolean;
   created_at: string;
 }
@@ -206,6 +208,7 @@ export interface TimeSlot {
   start_time: string;
   end_time: string;
   max_capacity: number;
+  buffer_minutes: number;
   buffer_min: number;
   is_active: boolean;
 }
@@ -220,6 +223,8 @@ export interface Appointment {
   patient_id: string;
   doctor_id: string;
   service_id: string | null;
+  slot_start: string;
+  slot_end: string;
   appointment_date: string;
   start_time: string;
   end_time: string;

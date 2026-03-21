@@ -863,9 +863,18 @@ export async function createAppointment(data: {
   notes?: string;
 }): Promise<AppointmentRow | null> {
   const supabase = await createClient();
+  // Also populate the normalised date/time columns
+  const startDate = new Date(data.slot_start);
+  const endDate = new Date(data.slot_end);
+  const enriched = {
+    ...data,
+    appointment_date: startDate.toISOString().split("T")[0],
+    start_time: startDate.toISOString().split("T")[1]?.slice(0, 5),
+    end_time: endDate.toISOString().split("T")[1]?.slice(0, 5),
+  };
   const { data: row, error } = await supabase
     .from("appointments")
-    .insert(data)
+    .insert(enriched)
     .select()
     .single();
   if (error) {
