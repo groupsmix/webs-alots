@@ -58,7 +58,7 @@ export default function WaitingRoomPage() {
     );
   };
 
-  const priorityOrder = { urgent: 0, normal: 1, "follow-up": 2 };
+  const priorityOrder: Record<string, number> = { urgent: 0, normal: 1, "follow-up": 2 };
   const sortedWaiting = [...waitingEntries].sort(
     (a, b) => priorityOrder[a.priority] - priorityOrder[b.priority]
   );
