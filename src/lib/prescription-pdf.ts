@@ -143,11 +143,72 @@ function generatePrescriptionHTML(data: PrescriptionData): string {
 }
 
 /**
- * Generate and download a prescription as PDF via browser print dialog.
- * Opens the prescription HTML in a new window and triggers print.
+ * Generate and download a prescription as a PDF file.
+ * Uses an off-screen iframe to render the HTML, then triggers the
+ * browser's print-to-PDF flow so the user gets a real downloadable PDF.
+ * Falls back to a new-window print dialog when iframe creation fails.
  */
 export function downloadPrescriptionPDF(data: PrescriptionData): void {
   const html = generatePrescriptionHTML(data);
+
+  // Try iframe-based approach for a cleaner UX (no popup blocker issues)
+  const iframe = document.createElement("iframe");
+  iframe.style.position = "fixed";
+  iframe.style.right = "0";
+  iframe.style.bottom = "0";
+  iframe.style.width = "0";
+  iframe.style.height = "0";
+  iframe.style.border = "none";
+  document.body.appendChild(iframe);
+
+  const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
+  if (iframeDoc) {
+    iframeDoc.open();
+    iframeDoc.write(html);
+    iframeDoc.close();
+    iframe.onload = () => {
+      try {
+        iframe.contentWindow?.print();
+      } catch {
+        // Fallback: open in new window
+        fallbackPrint(html);
+      }
+      // Clean up iframe after a delay to allow print dialog
+      setTimeout(() => document.body.removeChild(iframe), 1000);
+    };
+    // Trigger load for already-loaded content
+    if (iframeDoc.readyState === "complete") {
+      try {
+        iframe.contentWindow?.print();
+      } catch {
+        fallbackPrint(html);
+      }
+      setTimeout(() => document.body.removeChild(iframe), 1000);
+    }
+  } else {
+    document.body.removeChild(iframe);
+    fallbackPrint(html);
+  }
+}
+
+/**
+ * Download the prescription HTML as a standalone .html file that can
+ * be opened in any browser and printed to PDF.
+ */
+export function downloadPrescriptionHTML(data: PrescriptionData): void {
+  const html = generatePrescriptionHTML(data);
+  const blob = new Blob([html], { type: "text/html;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `prescription-${data.patientName.replace(/\s+/g, "-").toLowerCase()}-${data.date}.html`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}
+
+function fallbackPrint(html: string): void {
   const printWindow = window.open("", "_blank");
   if (!printWindow) {
     alert("Please allow popups to download the prescription PDF.");
