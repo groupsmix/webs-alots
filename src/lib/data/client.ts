@@ -118,16 +118,20 @@ export interface AppointmentView {
 
 interface AppointmentRaw {
   id: string;
+  clinic_id: string;
   patient_id: string;
   doctor_id: string;
   service_id: string | null;
+  slot_start: string;
+  slot_end: string;
   appointment_date: string;
   start_time: string;
   end_time: string;
   status: string;
   is_first_visit: boolean;
+  is_walk_in: boolean;
   insurance_flag: boolean;
-  booking_source: string | null;
+  booking_source: string;
   notes: string | null;
   cancelled_at: string | null;
   cancellation_reason: string | null;
@@ -135,7 +139,9 @@ interface AppointmentRaw {
   is_emergency: boolean;
   recurrence_group_id: string | null;
   recurrence_pattern: string | null;
+  recurrence_index: number | null;
   created_at: string;
+  updated_at: string;
 }
 
 // lookup maps built lazily
@@ -273,8 +279,9 @@ interface UserRaw {
   clinic_id: string | null;
   avatar_url: string | null;
   is_active: boolean;
-  metadata: Record<string, unknown> | null;
+  metadata: Record<string, unknown>;
   created_at: string;
+  updated_at: string;
 }
 
 function mapDoctor(raw: UserRaw): DoctorView {
@@ -357,10 +364,12 @@ interface ServiceRaw {
   clinic_id: string;
   name: string;
   description: string | null;
+  duration_minutes: number;
   duration_min: number;
   price: number | null;
-  is_active: boolean;
   category: string | null;
+  is_active: boolean;
+  created_at: string;
 }
 
 function mapService(raw: ServiceRaw): ServiceView {
@@ -512,13 +521,14 @@ export interface InvoiceView {
 interface PaymentRaw {
   id: string;
   clinic_id: string;
-  patient_id: string;
   appointment_id: string | null;
+  patient_id: string;
   amount: number;
   method: string | null;
   status: string;
   reference: string | null;
   payment_type: string;
+  gateway_session_id: string | null;
   refunded_amount: number;
   created_at: string;
 }
@@ -568,6 +578,7 @@ interface WaitingListRaw {
   preferred_time: string | null;
   service_id: string | null;
   status: string;
+  notified_at: string | null;
   created_at: string;
 }
 
@@ -624,6 +635,7 @@ interface ConsultationNoteRaw {
   notes: string | null;
   diagnosis: string | null;
   created_at: string;
+  updated_at: string;
 }
 
 export async function fetchConsultationNotes(clinicId: string, doctorId?: string): Promise<ConsultationNoteView[]> {
@@ -664,14 +676,15 @@ export interface TimeSlotView {
 
 interface TimeSlotRaw {
   id: string;
-  doctor_id: string;
   clinic_id: string;
+  doctor_id: string;
   day_of_week: number;
   start_time: string;
   end_time: string;
-  is_available: boolean;
   max_capacity: number;
   buffer_minutes: number;
+  buffer_min: number;
+  is_active: boolean;
 }
 
 export async function fetchTimeSlots(clinicId: string, doctorId?: string): Promise<TimeSlotView[]> {
@@ -691,7 +704,7 @@ export async function fetchTimeSlots(clinicId: string, doctorId?: string): Promi
     endTime: r.end_time,
     maxCapacity: r.max_capacity,
     bufferMinutes: r.buffer_minutes,
-    isAvailable: r.is_available,
+    isAvailable: r.is_active,
   }));
 }
 
