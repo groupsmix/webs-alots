@@ -74,6 +74,7 @@ export interface ClinicBranding {
   sectionVisibility: Record<string, boolean>;
   phone: string | null;
   address: string | null;
+  email: string | null;
 }
 
 // ── Helpers ──
@@ -90,7 +91,7 @@ export async function getPublicBranding(): Promise<ClinicBranding> {
 
   const { data, error } = await supabase
     .from("clinics")
-    .select("name, logo_url, favicon_url, primary_color, secondary_color, heading_font, body_font, hero_image_url, tagline, cover_photo_url, template_id, section_visibility, phone, address")
+    .select("name, logo_url, favicon_url, primary_color, secondary_color, heading_font, body_font, hero_image_url, tagline, cover_photo_url, template_id, section_visibility, phone, address, owner_email")
     .eq("id", clinicId)
     .single();
 
@@ -110,6 +111,7 @@ export async function getPublicBranding(): Promise<ClinicBranding> {
       sectionVisibility: {},
       phone: clinicConfig.contact.phone ?? null,
       address: clinicConfig.contact.address ?? null,
+      email: clinicConfig.contact.email ?? null,
     };
   }
 
@@ -128,6 +130,7 @@ export async function getPublicBranding(): Promise<ClinicBranding> {
     sectionVisibility: ((data as Record<string, unknown>).section_visibility as Record<string, boolean>) ?? {},
     phone: (data as Record<string, unknown>).phone as string | null ?? clinicConfig.contact.phone ?? null,
     address: (data as Record<string, unknown>).address as string | null ?? clinicConfig.contact.address ?? null,
+    email: (data as Record<string, unknown>).owner_email as string | null ?? clinicConfig.contact.email ?? null,
   };
 }
 
