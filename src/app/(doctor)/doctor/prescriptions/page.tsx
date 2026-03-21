@@ -99,6 +99,11 @@ export default function DoctorPrescriptionsPage() {
   const [showWriter, setShowWriter] = useState(false);
   const [selectedPatient, setSelectedPatient] = useState("");
   const [loading, setLoading] = useState(true);
+  const [diagnosis, setDiagnosis] = useState("");
+  const [notes, setNotes] = useState("");
+  const [medications, setMedications] = useState<MedicationEntry[]>([
+    { name: "", dosage: "", frequency: "", duration: "", instructions: "" },
+  ]);
 
   const load = useCallback(async () => {
     const user = await getCurrentUser();
@@ -122,11 +127,6 @@ export default function DoctorPrescriptionsPage() {
       </div>
     );
   }
-  const [diagnosis, setDiagnosis] = useState("");
-  const [notes, setNotes] = useState("");
-  const [medications, setMedications] = useState<MedicationEntry[]>([
-    { name: "", dosage: "", frequency: "", duration: "", instructions: "" },
-  ]);
 
   const addMedication = () => {
     setMedications([

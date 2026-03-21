@@ -58,6 +58,15 @@ export default function ConsultationNotesPage() {
   const [notes, setNotes] = useState<ConsultationNote[]>([]);
   const [apptList, setApptList] = useState<AppointmentView[]>([]);
   const [loading, setLoading] = useState(true);
+  const [editingApptId, setEditingApptId] = useState<string | null>(null);
+  const [showPrivate, setShowPrivate] = useState<Record<string, boolean>>({});
+  const [formData, setFormData] = useState({
+    chiefComplaint: "",
+    examination: "",
+    diagnosis: "",
+    plan: "",
+    privateNotes: "",
+  });
 
   const load = useCallback(async () => {
     const user = await getCurrentUser();
@@ -80,16 +89,6 @@ export default function ConsultationNotesPage() {
       </div>
     );
   }
-  const [editingApptId, setEditingApptId] = useState<string | null>(null);
-  const [showPrivate, setShowPrivate] = useState<Record<string, boolean>>({});
-
-  const [formData, setFormData] = useState({
-    chiefComplaint: "",
-    examination: "",
-    diagnosis: "",
-    plan: "",
-    privateNotes: "",
-  });
 
   const recentAppts = apptList
     .filter((a) => a.status === "completed" || a.status === "in-progress" || a.status === "confirmed")
