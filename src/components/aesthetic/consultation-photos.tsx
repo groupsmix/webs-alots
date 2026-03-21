@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import { Camera, Plus, MapPin, StickyNote } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -95,9 +96,9 @@ export function ConsultationPhotos({ photos, editable = false, onAddPhoto }: Con
             {photos.map((photo) => (
               <Card key={photo.id} className="cursor-pointer hover:ring-2 hover:ring-primary/50 transition-all" onClick={() => setSelectedPhoto(photo)}>
                 <CardContent className="p-2">
-                  <div className="aspect-square bg-muted rounded-lg mb-2 flex items-center justify-center overflow-hidden">
+                  <div className="relative aspect-square bg-muted rounded-lg mb-2 flex items-center justify-center overflow-hidden">
                     {photo.thumbnailUrl || photo.photoUrl ? (
-                      <img src={photo.thumbnailUrl || photo.photoUrl} alt="Consultation" className="w-full h-full object-cover rounded-lg" />
+                      <Image src={photo.thumbnailUrl || photo.photoUrl} alt="Consultation" fill className="object-cover rounded-lg" />
                     ) : (
                       <Camera className="h-8 w-8 text-muted-foreground" />
                     )}
@@ -130,9 +131,9 @@ export function ConsultationPhotos({ photos, editable = false, onAddPhoto }: Con
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-3">
-                  <div className="aspect-video bg-muted rounded-lg flex items-center justify-center overflow-hidden relative">
+                  <div className="relative aspect-video bg-muted rounded-lg flex items-center justify-center overflow-hidden">
                     {selectedPhoto.photoUrl ? (
-                      <img src={selectedPhoto.photoUrl} alt="Consultation" className="w-full h-full object-contain" />
+                      <Image src={selectedPhoto.photoUrl} alt="Consultation" fill className="object-contain" />
                     ) : (
                       <Camera className="h-12 w-12 text-muted-foreground" />
                     )}

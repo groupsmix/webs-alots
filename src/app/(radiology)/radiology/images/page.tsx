@@ -22,7 +22,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Search, Image, ExternalLink, Eye, FileImage, Upload, Loader2, X } from "lucide-react";
+import { Search, Image as ImageIcon, ExternalLink, Eye, FileImage, Upload, Loader2, X } from "lucide-react";
+import NextImage from "next/image";
 import Link from "next/link";
 import { clinicConfig } from "@/config/clinic.config";
 import { fetchRadiologyOrders } from "@/lib/data/client";
@@ -204,11 +205,11 @@ export default function RadiologyImagesPage() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {filtered.map((order) => (
           <Card key={order.id} className="overflow-hidden">
-            <div className="aspect-video bg-muted flex items-center justify-center">
+            <div className="relative aspect-video bg-muted flex items-center justify-center">
               {order.images.length > 0 && order.images[0].thumbnailUrl ? (
-                <img src={order.images[0].thumbnailUrl} alt={`${order.modality} - ${order.bodyPart}`} className="w-full h-full object-cover" />
+                <NextImage src={order.images[0].thumbnailUrl} alt={`${order.modality} - ${order.bodyPart}`} fill className="object-cover" />
               ) : order.images.length > 0 && order.images[0].fileUrl ? (
-                <img src={order.images[0].fileUrl} alt={`${order.modality} - ${order.bodyPart}`} className="w-full h-full object-cover" />
+                <NextImage src={order.images[0].fileUrl} alt={`${order.modality} - ${order.bodyPart}`} fill className="object-cover" />
               ) : (
                 <FileImage className="h-16 w-16 text-muted-foreground/30" />
               )}
@@ -248,7 +249,7 @@ export default function RadiologyImagesPage() {
 
       {filtered.length === 0 && (
         <div className="text-center py-12">
-          <Image className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
+          <ImageIcon className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
           <p className="text-muted-foreground">No images found</p>
           <Button variant="outline" className="mt-4" onClick={() => setUploadOpen(true)}>
             <Upload className="h-4 w-4 mr-2" /> Upload your first images

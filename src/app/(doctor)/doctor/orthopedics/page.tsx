@@ -2,9 +2,10 @@
 
 import { useState, useEffect, useCallback } from "react";
 import {
-  Bone, Plus, Save, Calendar, Image,
+  Bone, Plus, Save, Calendar, Image as ImageIcon,
   Target, CheckCircle, Clock, AlertTriangle,
 } from "lucide-react";
+import NextImage from "next/image";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -162,7 +163,7 @@ export default function OrthopedicsPage() {
           </div>
           {xrays.length === 0 ? (
             <Card><CardContent className="py-8 text-center">
-              <Image className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
+              <ImageIcon className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
               <p className="text-sm text-muted-foreground">No X-ray records.</p>
             </CardContent></Card>
           ) : (
@@ -170,11 +171,11 @@ export default function OrthopedicsPage() {
               {xrays.map((xray) => (
                 <Card key={xray.id}>
                   <CardContent className="p-4">
-                    <div className="aspect-video rounded-lg bg-muted flex items-center justify-center mb-3">
+                    <div className="relative aspect-video rounded-lg bg-muted flex items-center justify-center mb-3">
                       {xray.imageUrl ? (
-                        <img src={xray.imageUrl} alt={xray.bodyPart} className="rounded-lg object-cover w-full h-full" />
+                        <NextImage src={xray.imageUrl} alt={xray.bodyPart} fill className="rounded-lg object-cover" />
                       ) : (
-                        <Image className="h-8 w-8 text-muted-foreground" />
+                        <ImageIcon className="h-8 w-8 text-muted-foreground" />
                       )}
                     </div>
                     <div className="flex items-center justify-between mb-2">
@@ -346,7 +347,7 @@ export default function OrthopedicsPage() {
                 onChange={(e) => setXrayForm((p) => ({ ...p, bodyPart: e.target.value }))} />
             </div>
             <div className="border-2 border-dashed rounded-lg p-4 text-center">
-              <Image className="h-6 w-6 mx-auto text-muted-foreground mb-1" />
+              <ImageIcon className="h-6 w-6 mx-auto text-muted-foreground mb-1" />
               <p className="text-xs text-muted-foreground">Attach X-Ray Image</p>
               <Button variant="outline" size="sm" className="mt-2 text-xs">Browse</Button>
             </div>

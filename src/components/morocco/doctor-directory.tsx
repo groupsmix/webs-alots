@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import Image from "next/image";
 import {
   Search, MapPin, Star, Phone, Calendar,
   Filter, Globe, MessageCircle, Stethoscope,
@@ -252,9 +253,11 @@ export function DoctorDirectory({
                 {/* Avatar */}
                 <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
                   {doctor.avatar ? (
-                    <img
+                    <Image
                       src={doctor.avatar}
                       alt={doctor.name}
+                      width={64}
+                      height={64}
                       className="h-16 w-16 rounded-full object-cover"
                     />
                   ) : (
