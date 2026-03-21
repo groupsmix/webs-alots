@@ -55,8 +55,7 @@ export async function POST(request: NextRequest) {
       "doctor";
 
     // Create the clinic
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: clinic, error: clinicError } = await (supabase.from as any)("clinics")
+    const { data: clinic, error: clinicError } = await supabase.from("clinics")
       .insert({
         name: body.clinic_name,
         type: legacyType,
