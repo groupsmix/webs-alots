@@ -42,6 +42,9 @@ name = "webs-alots-staging"
 main = "worker-cron-handler.ts"
 compatibility_date = "2025-04-01"
 compatibility_flags = ["nodejs_compat"]
+routes = [
+  { pattern = "staging.groupsmix.com/*", zone_name = "groupsmix.com" },
+]
 
 [env.staging.assets]
 directory = ".open-next/assets"
