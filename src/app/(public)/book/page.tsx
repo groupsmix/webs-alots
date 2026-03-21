@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { BookingForm } from "@/components/booking/booking-form";
+import { ErrorBoundary } from "@/components/ui/error-boundary";
 
 export const metadata: Metadata = {
   title: "Prendre Rendez-vous",
@@ -33,7 +34,9 @@ export default function BookingPage() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(bookingSchema) }}
       />
-      <BookingForm />
+      <ErrorBoundary section="Booking Form">
+        <BookingForm />
+      </ErrorBoundary>
     </div>
   );
 }

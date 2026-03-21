@@ -11,6 +11,7 @@ import {
 } from "@/lib/data/client";
 import { LabDashboardKPIsComponent } from "@/components/admin/lab-dashboard-kpis";
 import { ClinicCenterDashboardKPIsComponent } from "@/components/admin/clinic-center-dashboard-kpis";
+import { ErrorBoundary } from "@/components/ui/error-boundary";
 
 const activityVariant: Record<string, "default" | "success" | "warning" | "destructive"> = {
   booking: "default",
@@ -136,12 +137,16 @@ export default function AdminDashboardPage() {
       </div>
       {/* Lab Dashboard KPIs (Task 36) */}
       <div className="mt-8">
-        <LabDashboardKPIsComponent />
+        <ErrorBoundary section="Lab KPIs" compact>
+          <LabDashboardKPIsComponent />
+        </ErrorBoundary>
       </div>
 
       {/* Clinic/Center Dashboard KPIs (Task 37) */}
       <div className="mt-8">
-        <ClinicCenterDashboardKPIsComponent />
+        <ErrorBoundary section="Clinic KPIs" compact>
+          <ClinicCenterDashboardKPIsComponent />
+        </ErrorBoundary>
       </div>
     </div>
   );
