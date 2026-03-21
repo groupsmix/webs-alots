@@ -69,7 +69,8 @@ async function fetchRows<T>(
   },
 ): Promise<T[]> {
   const supabase = createClient();
-  let q = supabase.from(table).select(opts?.select ?? "*");
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let q = (supabase.from as any)(table).select(opts?.select ?? "*");
   if (opts?.eq) {
     for (const [col, val] of opts.eq) {
       q = q.eq(col, val);
@@ -921,7 +922,7 @@ export async function createPayment(data: {
     status: data.status ?? "completed",
     payment_type: "full",
     refunded_amount: 0,
-  });
+  } as Record<string, unknown>);
   if (error) {
     console.error("[data] create payment:", error.message);
     return false;
@@ -1054,7 +1055,7 @@ export async function upsertOdontogramEntry(data: {
   dentition?: "adult" | "child";
 }): Promise<boolean> {
   const supabase = createClient();
-  const { error } = await supabase.from("odontogram").upsert(data, {
+  const { error } = await supabase.from("odontogram").upsert(data as Record<string, unknown>, {
     onConflict: "clinic_id,patient_id,tooth_number",
   });
   if (error) {
@@ -1099,7 +1100,7 @@ export async function createTreatmentPlan(data: {
   const supabase = createClient();
   const { data: result, error } = await supabase
     .from("treatment_plans")
-    .insert({ ...data, status: data.status ?? "planned" })
+    .insert({ ...data, status: data.status ?? "planned" } as Record<string, unknown>)
     .select("id")
     .single();
   if (error) {
@@ -1121,7 +1122,7 @@ export async function updateTreatmentPlan(
   const supabase = createClient();
   const { error } = await supabase
     .from("treatment_plans")
-    .update({ ...data, updated_at: new Date().toISOString() })
+    .update({ ...data, updated_at: new Date().toISOString() } as Record<string, unknown>)
     .eq("id", id);
   if (error) {
     console.error("[data] update treatment plan:", error.message);
@@ -1147,7 +1148,7 @@ export async function createSterilizationEntry(data: {
   const supabase = createClient();
   const { data: result, error } = await supabase
     .from("sterilization_log")
-    .insert({ ...data, sterilized_at: new Date().toISOString() })
+    .insert({ ...data, sterilized_at: new Date().toISOString() } as Record<string, unknown>)
     .select("id")
     .single();
   if (error) {
@@ -1169,7 +1170,7 @@ export async function updateSterilizationEntry(
   },
 ): Promise<boolean> {
   const supabase = createClient();
-  const { error } = await supabase.from("sterilization_log").update(data).eq("id", id);
+  const { error } = await supabase.from("sterilization_log").update(data as Record<string, unknown>).eq("id", id);
   if (error) {
     console.error("[data] update sterilization entry:", error.message);
     return false;
@@ -2044,6 +2045,7 @@ export interface WaitingRoomEntry {
   status: string;
   priority: string;
   checkedInAt?: string;
+  arrivedAt?: string;
 }
 
 export async function fetchWaitingRoom(clinicId: string): Promise<WaitingRoomEntry[]> {
@@ -2551,7 +2553,7 @@ export async function createAppointment(data: {
     .insert({
       ...data,
       status: "confirmed",
-    })
+    } as Record<string, unknown>)
     .select("id")
     .single();
 
@@ -2761,7 +2763,7 @@ export async function fetchClinicSubscription(clinicId: string): Promise<ClinicS
   const { data: tierData } = await supabase
     .from("pricing_tiers")
     .select("*")
-    .eq("slug", tierSlug)
+    .eq("slug", tierSlug as string)
     .single();
 
   // Fetch recent payments as invoices
@@ -3549,7 +3551,7 @@ export async function createEquipmentItem(data: {
       condition: data.condition ?? "new",
       is_available: data.is_available ?? true,
       is_rentable: data.is_rentable ?? false,
-    })
+    } as Record<string, unknown>)
     .select("id")
     .single();
   if (error) {
@@ -4469,10 +4471,10 @@ export interface LabDashboardKPIs {
   completedToday: number;
   completedThisWeek: number;
   averageTurnaroundHours: number;
-  recentTests: LabTestOrderView[];
+  recentTests: LabDashboardTestView[];
 }
 
-export interface LabTestOrderView {
+export interface LabDashboardTestView {
   id: string;
   patientName: string;
   doctorName: string;
@@ -4538,7 +4540,7 @@ export async function fetchLabDashboardKPIs(clinicId: string): Promise<LabDashbo
   }, 0);
   const avgTurnaround = completedWithTimes.length > 0 ? Math.round((totalTurnaround / completedWithTimes.length) * 10) / 10 : 0;
 
-  const recentTests: LabTestOrderView[] = rows.slice(0, 10).map((r) => ({
+  const recentTests: LabDashboardTestView[] = rows.slice(0, 10).map((r) => ({
     id: r.id,
     patientName: _userMap?.get(r.patient_id)?.name ?? "Patient",
     doctorName: _userMap?.get(r.doctor_id)?.name ?? "Doctor",

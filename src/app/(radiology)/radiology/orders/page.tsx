@@ -136,7 +136,7 @@ export default function RadiologyOrdersPage() {
   const handleApplyTemplate = (templateId: string) => {
     const tpl = templates.find((t) => t.id === templateId);
     if (!tpl) return;
-    const text = tpl.sections.map((s) => `## ${s.title}\n${s.content}`).join("\n\n");
+    const text = tpl.sections.map((s) => `## ${s.title}\n${s.defaultContent}`).join("\n\n");
     setReportData((prev) => ({ ...prev, reportText: text, templateId }));
   };
 
