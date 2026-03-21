@@ -35,7 +35,9 @@ export async function GET(request: NextRequest) {
     const todayStr = now.toISOString().split("T")[0];
     const tomorrowStr = twentyFourHoursFromNow.toISOString().split("T")[0];
 
-    // Fetch upcoming appointments that need reminders
+    // Fetch upcoming appointments that need reminders.
+    // Select both appointment_date/start_time and slot_start/slot_end
+    // since older records may only have slot_start/slot_end populated.
     const { data: appointments, error } = await supabase
       .from("appointments")
       .select(`
@@ -45,15 +47,17 @@ export async function GET(request: NextRequest) {
         doctor_id,
         appointment_date,
         start_time,
+        slot_start,
+        slot_end,
         status,
         patients:patient_id (id, name, phone),
         doctors:doctor_id (id, name),
         services:service_id (name)
       `)
-      .in("appointment_date", [todayStr, tomorrowStr])
       .in("status", ["confirmed", "pending"])
-      .order("appointment_date")
-      .order("start_time");
+      .or(
+        `appointment_date.in.(${todayStr},${tomorrowStr}),and(appointment_date.is.null,slot_start.gte.${now.toISOString()},slot_start.lte.${twentyFourHoursFromNow.toISOString()})`,
+      );
 
     if (error) {
       console.error("[Cron/Reminders] Query error:", error.message);
@@ -67,8 +71,21 @@ export async function GET(request: NextRequest) {
     const results: { appointmentId: string; type: string; success: boolean }[] = [];
 
     for (const appt of appointments) {
-      // Parse appointment datetime
-      const apptDatetime = new Date(`${appt.appointment_date}T${appt.start_time}`);
+      // Parse appointment datetime, falling back to slot_start when
+      // appointment_date or start_time are NULL.
+      let apptDatetime: Date;
+      const slotStart = appt.slot_start as string | null;
+
+      if (appt.appointment_date && appt.start_time) {
+        apptDatetime = new Date(`${appt.appointment_date}T${appt.start_time}`);
+      } else if (slotStart) {
+        apptDatetime = new Date(slotStart);
+      } else {
+        // Neither field is available — skip this appointment
+        continue;
+      }
+
+      if (isNaN(apptDatetime.getTime())) continue;
 
       // Determine which reminder to send
       const hoursUntil = (apptDatetime.getTime() - now.getTime()) / (1000 * 60 * 60);
@@ -83,6 +100,12 @@ export async function GET(request: NextRequest) {
 
       if (!trigger) continue;
 
+      // Discard appointments beyond 25 hours (twoHoursFromNow is used
+      // as the lower bound for 2h reminders above; twentyFourHoursFromNow
+      // caps the query window).
+      if (apptDatetime.getTime() > twentyFourHoursFromNow.getTime()) continue;
+      if (apptDatetime.getTime() < twoHoursFromNow.getTime() && trigger === "reminder_2h") continue;
+
       // Type-safe access to joined data
       const patient = appt.patients as unknown as { id: string; name: string; phone: string } | null;
       const doctor = appt.doctors as unknown as { id: string; name: string } | null;
@@ -90,14 +113,18 @@ export async function GET(request: NextRequest) {
 
       if (!patient) continue;
 
+      // Derive display date/time from the resolved datetime
+      const displayDate = appt.appointment_date ?? apptDatetime.toISOString().split("T")[0];
+      const displayTime = appt.start_time ?? apptDatetime.toISOString().split("T")[1]?.slice(0, 5) ?? "";
+
       const dispatchResults = await dispatchNotification(
         trigger,
         {
           patientName: patient.name,
           doctorName: doctor?.name ?? "Doctor",
           clinicName: "",
-          date: appt.appointment_date,
-          time: appt.start_time,
+          date: displayDate,
+          time: displayTime,
           serviceName: service?.name ?? "Appointment",
         },
         patient.id,
