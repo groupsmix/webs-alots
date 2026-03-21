@@ -301,11 +301,7 @@ export async function processRenewal(
       status: "active",
       current_period_start: nextPeriod.start,
       current_period_end: nextPeriod.end,
-      last_payment_date: new Date().toISOString(),
-      last_payment_amount: amount,
-      next_payment_date: nextPeriod.end,
-      next_payment_amount: amount,
-    })
+    } as Record<string, unknown>)
     .eq("clinic_id", clinicId);
 
   // Log the event
@@ -368,9 +364,9 @@ async function logBillingEvent(
   await supabase.from("billing_events").insert({
     clinic_id: clinicId,
     type: event.type,
-    amount: event.amount,
-    currency: event.currency,
+    amount: event.amount ?? 0,
+    currency: event.currency ?? "MAD",
     description: event.description,
-    metadata: event.metadata,
+    metadata: event.metadata ?? {},
   });
 }

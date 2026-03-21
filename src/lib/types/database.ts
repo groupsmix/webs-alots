@@ -169,6 +169,7 @@ export type Clinic = {
   owner_phone: string | null;
   city: string | null;
   features: Record<string, boolean>;
+  logo_url: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -606,6 +607,7 @@ export type BlogPost = {
   slug: string | null;
   is_published: boolean;
   author_id: string | null;
+  published_at: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -810,6 +812,7 @@ export type Department = {
   head_doctor_id: string | null;
   description: string | null;
   floor: string | null;
+  code: string | null;
   is_active: boolean;
   created_at: string;
   updated_at: string;
@@ -840,9 +843,11 @@ export type Bed = {
   id: string;
   clinic_id: string;
   room_id: string;
+  department_id: string;
   bed_number: string;
   status: BedStatus;
   current_patient_id: string | null;
+  patient_id: string | null;
   notes: string | null;
   updated_at: string;
 }
@@ -854,6 +859,7 @@ export type Admission = {
   bed_id: string;
   department_id: string | null;
   admitting_doctor_id: string | null;
+  doctor_id: string;
   admission_date: string;
   discharge_date: string | null;
   diagnosis: string | null;
@@ -1611,6 +1617,592 @@ export type ParapharmacyCategory = {
   created_at: string;
 }
 
+// ---- Specialist / Missing Table Types ----
+
+export type BillingEvent = {
+  id: string;
+  clinic_id: string;
+  type: string;
+  amount: number;
+  currency: string;
+  description: string | null;
+  metadata: Record<string, unknown>;
+  created_at: string;
+}
+
+export type BloodPressureReading = {
+  id: string;
+  clinic_id: string;
+  patient_id: string;
+  doctor_id: string;
+  systolic: number;
+  diastolic: number;
+  heart_rate: number | null;
+  position: string | null;
+  notes: string | null;
+  measured_at: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export type BloodSugarReading = {
+  id: string;
+  clinic_id: string;
+  patient_id: string;
+  doctor_id: string;
+  glucose_level: number;
+  measurement_type: string;
+  meal_context: string | null;
+  notes: string | null;
+  measured_at: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export type ClinicApiKey = {
+  id: string;
+  clinic_id: string;
+  key_hash: string;
+  label: string | null;
+  active: boolean;
+  last_used_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export type ClinicSubscription = {
+  id: string;
+  clinic_id: string;
+  plan: string;
+  status: string;
+  current_period_start: string;
+  current_period_end: string;
+  amount: number;
+  currency: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export type CollectionPoint = {
+  id: string;
+  clinic_id: string;
+  name: string;
+  address: string | null;
+  city: string | null;
+  phone: string | null;
+  hours: Record<string, unknown>[] | null;
+  is_main_lab: boolean;
+  has_parking: boolean;
+  wheelchair_accessible: boolean;
+  lat: number | null;
+  lng: number | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export type DevelopmentalMilestone = {
+  id: string;
+  clinic_id: string;
+  patient_id: string;
+  doctor_id: string;
+  milestone_name: string;
+  category: string;
+  expected_age_months: number | null;
+  achieved_age_months: number | null;
+  status: string;
+  notes: string | null;
+  assessed_at: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export type DiabetesManagement = {
+  id: string;
+  clinic_id: string;
+  patient_id: string;
+  doctor_id: string;
+  diabetes_type: string;
+  hba1c: number | null;
+  treatment_plan: string | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export type ECGRecord = {
+  id: string;
+  clinic_id: string;
+  patient_id: string;
+  doctor_id: string;
+  heart_rate: number | null;
+  rhythm: string | null;
+  interpretation: string | null;
+  file_url: string | null;
+  notes: string | null;
+  recorded_at: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export type EEGRecord = {
+  id: string;
+  clinic_id: string;
+  patient_id: string;
+  doctor_id: string;
+  duration_minutes: number | null;
+  findings: string | null;
+  interpretation: string | null;
+  file_url: string | null;
+  notes: string | null;
+  recorded_at: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export type ENTExamRecord = {
+  id: string;
+  clinic_id: string;
+  patient_id: string;
+  doctor_id: string;
+  exam_type: string;
+  findings: string | null;
+  diagnosis: string | null;
+  treatment: string | null;
+  notes: string | null;
+  exam_date: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export type FractureRecord = {
+  id: string;
+  clinic_id: string;
+  patient_id: string;
+  doctor_id: string;
+  bone: string;
+  fracture_type: string;
+  side: string | null;
+  location_detail: string | null;
+  severity: string | null;
+  treatment: string | null;
+  surgery_required: boolean;
+  healing_status: string;
+  injury_date: string;
+  follow_up_date: string | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export type GrowthMeasurement = {
+  id: string;
+  clinic_id: string;
+  patient_id: string;
+  doctor_id: string;
+  weight_kg: number | null;
+  height_cm: number | null;
+  head_circumference_cm: number | null;
+  bmi: number | null;
+  percentile_weight: number | null;
+  percentile_height: number | null;
+  notes: string | null;
+  measured_at: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export type HearingTest = {
+  id: string;
+  clinic_id: string;
+  patient_id: string;
+  doctor_id: string;
+  test_type: string;
+  results: Record<string, unknown> | null;
+  right_ear_avg: number | null;
+  left_ear_avg: number | null;
+  interpretation: string | null;
+  notes: string | null;
+  tested_at: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export type HeartMonitoringNote = {
+  id: string;
+  clinic_id: string;
+  patient_id: string;
+  doctor_id: string;
+  note_type: string;
+  content: string;
+  severity: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export type HormoneLevel = {
+  id: string;
+  clinic_id: string;
+  patient_id: string;
+  doctor_id: string;
+  hormone_name: string;
+  value: number;
+  unit: string;
+  reference_range: string | null;
+  notes: string | null;
+  measured_at: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export type IOPMeasurement = {
+  id: string;
+  clinic_id: string;
+  patient_id: string;
+  doctor_id: string;
+  right_eye: number | null;
+  left_eye: number | null;
+  method: string | null;
+  notes: string | null;
+  measured_at: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export type JointAssessment = {
+  id: string;
+  clinic_id: string;
+  patient_id: string;
+  doctor_id: string;
+  joint: string;
+  side: string | null;
+  range_of_motion: Record<string, unknown> | null;
+  pain_level: number | null;
+  swelling: boolean;
+  stability: string | null;
+  notes: string | null;
+  assessed_at: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export type LabTest = {
+  id: string;
+  clinic_id: string;
+  name: string;
+  category: string;
+  description: string | null;
+  preparation_instructions: string | null;
+  turnaround_time: string | null;
+  price: number | null;
+  requires_fasting: boolean;
+  sample_type: string | null;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export type MedicalCertificate = {
+  id: string;
+  clinic_id: string;
+  patient_id: string;
+  doctor_id: string;
+  appointment_id: string | null;
+  type: string;
+  content: Record<string, unknown>;
+  pdf_url: string | null;
+  issued_date: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export type MobilityTest = {
+  id: string;
+  clinic_id: string;
+  patient_id: string;
+  doctor_id: string;
+  test_name: string;
+  score: number | null;
+  max_score: number | null;
+  interpretation: string | null;
+  notes: string | null;
+  tested_at: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export type NeuroExamRecord = {
+  id: string;
+  clinic_id: string;
+  patient_id: string;
+  doctor_id: string;
+  exam_type: string;
+  findings: string | null;
+  reflexes: Record<string, unknown> | null;
+  motor_function: string | null;
+  sensory_function: string | null;
+  cranial_nerves: string | null;
+  notes: string | null;
+  exam_date: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export type Pregnancy = {
+  id: string;
+  clinic_id: string;
+  patient_id: string;
+  doctor_id: string;
+  lmp_date: string | null;
+  edd_date: string | null;
+  gravida: number | null;
+  para: number | null;
+  status: string;
+  blood_type: string | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export type PsychMedication = {
+  id: string;
+  clinic_id: string;
+  patient_id: string;
+  doctor_id: string;
+  medication_name: string;
+  dosage: string;
+  frequency: string;
+  start_date: string;
+  end_date: string | null;
+  reason: string | null;
+  side_effects: string | null;
+  is_active: boolean;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export type PsychSessionNote = {
+  id: string;
+  clinic_id: string;
+  patient_id: string;
+  doctor_id: string;
+  session_date: string;
+  session_type: string;
+  duration_minutes: number | null;
+  presenting_issues: string | null;
+  session_notes: string | null;
+  interventions: string | null;
+  homework: string | null;
+  mood_rating: number | null;
+  risk_assessment: string | null;
+  next_session_date: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export type RehabPlan = {
+  id: string;
+  clinic_id: string;
+  patient_id: string;
+  doctor_id: string;
+  title: string;
+  diagnosis: string | null;
+  goals: string | null;
+  exercises: Record<string, unknown>[] | null;
+  frequency: string | null;
+  duration_weeks: number | null;
+  status: string;
+  start_date: string;
+  end_date: string | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export type RespiratoryTest = {
+  id: string;
+  clinic_id: string;
+  patient_id: string;
+  doctor_id: string;
+  test_type: string;
+  fev1: number | null;
+  fvc: number | null;
+  fev1_fvc_ratio: number | null;
+  peak_flow: number | null;
+  interpretation: string | null;
+  notes: string | null;
+  tested_at: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export type SkinCondition = {
+  id: string;
+  clinic_id: string;
+  patient_id: string;
+  doctor_id: string;
+  condition_name: string;
+  body_region: string;
+  severity: string | null;
+  status: string;
+  diagnosis_date: string;
+  treatments: Record<string, unknown>[] | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export type SkinPhoto = {
+  id: string;
+  clinic_id: string;
+  patient_id: string;
+  doctor_id: string;
+  body_region: string;
+  description: string | null;
+  image_url: string | null;
+  photo_date: string;
+  tags: string[] | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export type SpirometryRecord = {
+  id: string;
+  clinic_id: string;
+  patient_id: string;
+  doctor_id: string;
+  fev1: number | null;
+  fvc: number | null;
+  fev1_fvc_ratio: number | null;
+  pef: number | null;
+  interpretation: string | null;
+  notes: string | null;
+  tested_at: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export type UltrasoundRecord = {
+  id: string;
+  clinic_id: string;
+  patient_id: string;
+  doctor_id: string;
+  exam_type: string;
+  body_part: string | null;
+  findings: string | null;
+  impression: string | null;
+  images: string[] | null;
+  notes: string | null;
+  performed_at: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export type UrologyExam = {
+  id: string;
+  clinic_id: string;
+  patient_id: string;
+  doctor_id: string;
+  exam_type: string;
+  findings: string | null;
+  diagnosis: string | null;
+  treatment: string | null;
+  notes: string | null;
+  exam_date: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export type Vaccination = {
+  id: string;
+  clinic_id: string;
+  patient_id: string;
+  doctor_id: string;
+  vaccine_name: string;
+  dose_number: number | null;
+  batch_number: string | null;
+  site: string | null;
+  administered_at: string;
+  next_dose_date: string | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export type VisionTest = {
+  id: string;
+  clinic_id: string;
+  patient_id: string;
+  doctor_id: string;
+  right_eye_sphere: number | null;
+  right_eye_cylinder: number | null;
+  right_eye_axis: number | null;
+  right_eye_va: string | null;
+  left_eye_sphere: number | null;
+  left_eye_cylinder: number | null;
+  left_eye_axis: number | null;
+  left_eye_va: string | null;
+  pd: number | null;
+  notes: string | null;
+  tested_at: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export type XRayRecord = {
+  id: string;
+  clinic_id: string;
+  patient_id: string;
+  doctor_id: string;
+  body_part: string;
+  view_type: string | null;
+  findings: string | null;
+  impression: string | null;
+  file_url: string | null;
+  notes: string | null;
+  taken_at: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export type MedicalRecord = {
+  id: string;
+  clinic_id: string;
+  patient_id: string;
+  doctor_id: string | null;
+  record_type: string;
+  content: Record<string, unknown>;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export type Invoice = {
+  id: string;
+  clinic_id: string;
+  patient_id: string;
+  invoice_number: string;
+  amount: number;
+  tax: number;
+  total: number;
+  status: string;
+  due_date: string | null;
+  paid_at: string | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export type InvoiceItem = {
+  id: string;
+  invoice_id: string;
+  description: string;
+  quantity: number;
+  unit_price: number;
+  total: number;
+  created_at: string;
+}
+
 // ---- Supabase Database Schema (for use with supabase-js typed client) ----
 
 export type Database = {
@@ -1710,6 +2302,45 @@ export type Database = {
       lab_materials: { Row: LabMaterial; Insert: Partial<LabMaterial> & Pick<LabMaterial, "clinic_id" | "name" | "category">; Update: Partial<LabMaterial>; Relationships: [] };
       lab_deliveries: { Row: LabDelivery; Insert: Partial<LabDelivery> & Pick<LabDelivery, "clinic_id" | "order_id">; Update: Partial<LabDelivery>; Relationships: [] };
       lab_invoices: { Row: LabInvoice; Insert: Partial<LabInvoice> & Pick<LabInvoice, "clinic_id" | "invoice_number">; Update: Partial<LabInvoice>; Relationships: [] };
+      // Specialist tables
+      billing_events: { Row: BillingEvent; Insert: Partial<BillingEvent> & Pick<BillingEvent, "clinic_id" | "type" | "amount">; Update: Partial<BillingEvent>; Relationships: [] };
+      blood_pressure_readings: { Row: BloodPressureReading; Insert: Partial<BloodPressureReading> & Pick<BloodPressureReading, "clinic_id" | "patient_id" | "doctor_id" | "systolic" | "diastolic">; Update: Partial<BloodPressureReading>; Relationships: [] };
+      blood_sugar_readings: { Row: BloodSugarReading; Insert: Partial<BloodSugarReading> & Pick<BloodSugarReading, "clinic_id" | "patient_id" | "doctor_id" | "glucose_level">; Update: Partial<BloodSugarReading>; Relationships: [] };
+      clinic_api_keys: { Row: ClinicApiKey; Insert: Partial<ClinicApiKey> & Pick<ClinicApiKey, "clinic_id" | "key_hash">; Update: Partial<ClinicApiKey>; Relationships: [] };
+      clinic_subscriptions: { Row: ClinicSubscription; Insert: Partial<ClinicSubscription> & Pick<ClinicSubscription, "clinic_id" | "plan">; Update: Partial<ClinicSubscription>; Relationships: [] };
+      collection_points: { Row: CollectionPoint; Insert: Partial<CollectionPoint> & Pick<CollectionPoint, "clinic_id" | "name">; Update: Partial<CollectionPoint>; Relationships: [] };
+      developmental_milestones: { Row: DevelopmentalMilestone; Insert: Partial<DevelopmentalMilestone> & Pick<DevelopmentalMilestone, "clinic_id" | "patient_id" | "doctor_id" | "milestone_name">; Update: Partial<DevelopmentalMilestone>; Relationships: [] };
+      diabetes_management: { Row: DiabetesManagement; Insert: Partial<DiabetesManagement> & Pick<DiabetesManagement, "clinic_id" | "patient_id" | "doctor_id">; Update: Partial<DiabetesManagement>; Relationships: [] };
+      ecg_records: { Row: ECGRecord; Insert: Partial<ECGRecord> & Pick<ECGRecord, "clinic_id" | "patient_id" | "doctor_id">; Update: Partial<ECGRecord>; Relationships: [] };
+      eeg_records: { Row: EEGRecord; Insert: Partial<EEGRecord> & Pick<EEGRecord, "clinic_id" | "patient_id" | "doctor_id">; Update: Partial<EEGRecord>; Relationships: [] };
+      ent_exam_records: { Row: ENTExamRecord; Insert: Partial<ENTExamRecord> & Pick<ENTExamRecord, "clinic_id" | "patient_id" | "doctor_id" | "exam_type">; Update: Partial<ENTExamRecord>; Relationships: [] };
+      fracture_records: { Row: FractureRecord; Insert: Partial<FractureRecord> & Pick<FractureRecord, "clinic_id" | "patient_id" | "doctor_id" | "bone" | "fracture_type">; Update: Partial<FractureRecord>; Relationships: [] };
+      growth_measurements: { Row: GrowthMeasurement; Insert: Partial<GrowthMeasurement> & Pick<GrowthMeasurement, "clinic_id" | "patient_id" | "doctor_id">; Update: Partial<GrowthMeasurement>; Relationships: [] };
+      hearing_tests: { Row: HearingTest; Insert: Partial<HearingTest> & Pick<HearingTest, "clinic_id" | "patient_id" | "doctor_id" | "test_type">; Update: Partial<HearingTest>; Relationships: [] };
+      heart_monitoring_notes: { Row: HeartMonitoringNote; Insert: Partial<HeartMonitoringNote> & Pick<HeartMonitoringNote, "clinic_id" | "patient_id" | "doctor_id" | "note_type" | "content">; Update: Partial<HeartMonitoringNote>; Relationships: [] };
+      hormone_levels: { Row: HormoneLevel; Insert: Partial<HormoneLevel> & Pick<HormoneLevel, "clinic_id" | "patient_id" | "doctor_id" | "hormone_name" | "value" | "unit">; Update: Partial<HormoneLevel>; Relationships: [] };
+      iop_measurements: { Row: IOPMeasurement; Insert: Partial<IOPMeasurement> & Pick<IOPMeasurement, "clinic_id" | "patient_id" | "doctor_id">; Update: Partial<IOPMeasurement>; Relationships: [] };
+      joint_assessments: { Row: JointAssessment; Insert: Partial<JointAssessment> & Pick<JointAssessment, "clinic_id" | "patient_id" | "doctor_id" | "joint">; Update: Partial<JointAssessment>; Relationships: [] };
+      lab_tests: { Row: LabTest; Insert: Partial<LabTest> & Pick<LabTest, "clinic_id" | "name">; Update: Partial<LabTest>; Relationships: [] };
+      medical_certificates: { Row: MedicalCertificate; Insert: Partial<MedicalCertificate> & Pick<MedicalCertificate, "clinic_id" | "patient_id" | "doctor_id" | "type">; Update: Partial<MedicalCertificate>; Relationships: [] };
+      medical_records: { Row: MedicalRecord; Insert: Partial<MedicalRecord> & Pick<MedicalRecord, "clinic_id" | "patient_id" | "record_type">; Update: Partial<MedicalRecord>; Relationships: [] };
+      mobility_tests: { Row: MobilityTest; Insert: Partial<MobilityTest> & Pick<MobilityTest, "clinic_id" | "patient_id" | "doctor_id" | "test_name">; Update: Partial<MobilityTest>; Relationships: [] };
+      neuro_exam_records: { Row: NeuroExamRecord; Insert: Partial<NeuroExamRecord> & Pick<NeuroExamRecord, "clinic_id" | "patient_id" | "doctor_id" | "exam_type">; Update: Partial<NeuroExamRecord>; Relationships: [] };
+      pregnancies: { Row: Pregnancy; Insert: Partial<Pregnancy> & Pick<Pregnancy, "clinic_id" | "patient_id" | "doctor_id">; Update: Partial<Pregnancy>; Relationships: [] };
+      psych_medications: { Row: PsychMedication; Insert: Partial<PsychMedication> & Pick<PsychMedication, "clinic_id" | "patient_id" | "doctor_id" | "medication_name" | "dosage" | "frequency" | "start_date">; Update: Partial<PsychMedication>; Relationships: [] };
+      psych_session_notes: { Row: PsychSessionNote; Insert: Partial<PsychSessionNote> & Pick<PsychSessionNote, "clinic_id" | "patient_id" | "doctor_id" | "session_date">; Update: Partial<PsychSessionNote>; Relationships: [] };
+      rehab_plans: { Row: RehabPlan; Insert: Partial<RehabPlan> & Pick<RehabPlan, "clinic_id" | "patient_id" | "doctor_id" | "title">; Update: Partial<RehabPlan>; Relationships: [] };
+      respiratory_tests: { Row: RespiratoryTest; Insert: Partial<RespiratoryTest> & Pick<RespiratoryTest, "clinic_id" | "patient_id" | "doctor_id" | "test_type">; Update: Partial<RespiratoryTest>; Relationships: [] };
+      skin_conditions: { Row: SkinCondition; Insert: Partial<SkinCondition> & Pick<SkinCondition, "clinic_id" | "patient_id" | "doctor_id" | "condition_name" | "body_region">; Update: Partial<SkinCondition>; Relationships: [] };
+      skin_photos: { Row: SkinPhoto; Insert: Partial<SkinPhoto> & Pick<SkinPhoto, "clinic_id" | "patient_id" | "doctor_id" | "body_region">; Update: Partial<SkinPhoto>; Relationships: [] };
+      spirometry_records: { Row: SpirometryRecord; Insert: Partial<SpirometryRecord> & Pick<SpirometryRecord, "clinic_id" | "patient_id" | "doctor_id">; Update: Partial<SpirometryRecord>; Relationships: [] };
+      ultrasound_records: { Row: UltrasoundRecord; Insert: Partial<UltrasoundRecord> & Pick<UltrasoundRecord, "clinic_id" | "patient_id" | "doctor_id" | "exam_type">; Update: Partial<UltrasoundRecord>; Relationships: [] };
+      urology_exams: { Row: UrologyExam; Insert: Partial<UrologyExam> & Pick<UrologyExam, "clinic_id" | "patient_id" | "doctor_id" | "exam_type">; Update: Partial<UrologyExam>; Relationships: [] };
+      vaccinations: { Row: Vaccination; Insert: Partial<Vaccination> & Pick<Vaccination, "clinic_id" | "patient_id" | "doctor_id" | "vaccine_name">; Update: Partial<Vaccination>; Relationships: [] };
+      vision_tests: { Row: VisionTest; Insert: Partial<VisionTest> & Pick<VisionTest, "clinic_id" | "patient_id" | "doctor_id">; Update: Partial<VisionTest>; Relationships: [] };
+      xray_records: { Row: XRayRecord; Insert: Partial<XRayRecord> & Pick<XRayRecord, "clinic_id" | "patient_id" | "doctor_id" | "body_part">; Update: Partial<XRayRecord>; Relationships: [] };
+      invoices: { Row: Invoice; Insert: Partial<Invoice> & Pick<Invoice, "clinic_id" | "patient_id" | "invoice_number">; Update: Partial<Invoice>; Relationships: [] };
+      invoice_items: { Row: InvoiceItem; Insert: Partial<InvoiceItem> & Pick<InvoiceItem, "invoice_id" | "description" | "quantity" | "unit_price" | "total">; Update: Partial<InvoiceItem>; Relationships: [] };
     };
     Views: {
       [_ in never]: never
