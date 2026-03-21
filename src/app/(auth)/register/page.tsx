@@ -16,6 +16,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { registerPatient, verifyOTP } from "@/lib/auth";
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from "@/components/ui/select";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -79,8 +86,8 @@ export default function RegisterPage() {
             <Heart className="h-5 w-5 text-primary-foreground" />
           </div>
         </div>
-        <h1 className="text-xl font-bold">Health Portal</h1>
-        <p className="text-sm text-muted-foreground">Create your patient account</p>
+        <h1 className="text-xl font-bold">Portail Santé</h1>
+        <p className="text-sm text-muted-foreground">Créez votre compte patient</p>
       </div>
 
       <Card>
@@ -93,12 +100,12 @@ export default function RegisterPage() {
             )}
           </div>
           <CardTitle className="text-xl">
-            {step === "info" ? "Create Account" : "Verify Your Number"}
+            {step === "info" ? "Créer un compte" : "Vérifiez votre numéro"}
           </CardTitle>
           <CardDescription>
             {step === "info"
-              ? "Register to book appointments and access your health portal."
-              : `We sent a 6-digit code to ${phone}`}
+              ? "Inscrivez-vous pour prendre des rendez-vous et accéder à votre portail santé."
+              : `Nous avons envoyé un code à 6 chiffres au ${phone}`}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -112,20 +119,20 @@ export default function RegisterPage() {
             <form className="space-y-4" onSubmit={handleRegister}>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
-                  <Label htmlFor="firstName">First Name</Label>
+                  <Label htmlFor="firstName">Prénom</Label>
                   <Input
                     id="firstName"
-                    placeholder="Your first name"
+                    placeholder="Votre prénom"
                     value={firstName}
                     onChange={(e) => setFirstName(e.target.value)}
                     required
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="lastName">Last Name</Label>
+                  <Label htmlFor="lastName">Nom</Label>
                   <Input
                     id="lastName"
-                    placeholder="Your last name"
+                    placeholder="Votre nom"
                     value={lastName}
                     onChange={(e) => setLastName(e.target.value)}
                     required
@@ -133,7 +140,7 @@ export default function RegisterPage() {
                 </div>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="phone">Phone Number</Label>
+                <Label htmlFor="phone">Numéro de téléphone</Label>
                 <Input
                   id="phone"
                   type="tel"
@@ -144,7 +151,7 @@ export default function RegisterPage() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="email">Email (optional)</Label>
+                <Label htmlFor="email">E-mail (optionnel)</Label>
                 <Input
                   id="email"
                   type="email"
@@ -155,7 +162,7 @@ export default function RegisterPage() {
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
-                  <Label htmlFor="age">Age</Label>
+                  <Label htmlFor="age">Âge</Label>
                   <Input
                     id="age"
                     type="number"
@@ -165,41 +172,39 @@ export default function RegisterPage() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="gender">Gender</Label>
-                  <select
-                    id="gender"
-                    className="flex h-9 w-full rounded-lg border border-input bg-transparent px-3 py-1 text-sm"
-                    value={gender}
-                    onChange={(e) => setGender(e.target.value)}
-                  >
-                    <option value="">Select</option>
-                    <option value="M">Male</option>
-                    <option value="F">Female</option>
-                  </select>
+                  <Label htmlFor="gender">Genre</Label>
+                  <Select value={gender} onValueChange={setGender}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Sélectionner" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="M">Homme</SelectItem>
+                      <SelectItem value="F">Femme</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="insurance">Insurance Provider (optional)</Label>
-                <select
-                  id="insurance"
-                  className="flex h-9 w-full rounded-lg border border-input bg-transparent px-3 py-1 text-sm"
-                  value={insurance}
-                  onChange={(e) => setInsurance(e.target.value)}
-                >
-                  <option value="">No insurance</option>
-                  <option value="CNSS">CNSS</option>
-                  <option value="CNOPS">CNOPS</option>
-                  <option value="other">Other</option>
-                </select>
+                <Label htmlFor="insurance">Assurance (optionnel)</Label>
+                <Select value={insurance} onValueChange={setInsurance}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Pas d'assurance" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="CNSS">CNSS</SelectItem>
+                    <SelectItem value="CNOPS">CNOPS</SelectItem>
+                    <SelectItem value="other">Autre</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
               <Button type="submit" className="w-full" disabled={loading}>
-                {loading ? "Creating Account..." : "Create Account"}
+                {loading ? "Création du compte..." : "Créer un compte"}
               </Button>
             </form>
           ) : (
             <form className="space-y-4" onSubmit={handleVerifyOTP}>
               <div className="space-y-2">
-                <Label htmlFor="otp">Verification Code</Label>
+                <Label htmlFor="otp">Code de vérification</Label>
                 <Input
                   id="otp"
                   placeholder="000000"
@@ -211,11 +216,11 @@ export default function RegisterPage() {
                   autoFocus
                 />
                 <p className="text-xs text-muted-foreground text-center">
-                  Enter the 6-digit code sent to your phone.
+                  Entrez le code à 6 chiffres envoyé sur votre téléphone.
                 </p>
               </div>
               <Button type="submit" className="w-full" disabled={loading}>
-                {loading ? "Verifying..." : "Verify & Complete Registration"}
+                {loading ? "Vérification..." : "Vérifier et finaliser l'inscription"}
               </Button>
               <Button
                 type="button"
@@ -228,19 +233,19 @@ export default function RegisterPage() {
                 }}
               >
                 <ArrowLeft className="h-4 w-4 mr-1" />
-                Back to registration
+                Retour à l&apos;inscription
               </Button>
             </form>
           )}
         </CardContent>
         <CardFooter className="justify-center border-t pt-4">
           <p className="text-sm text-muted-foreground">
-            Already have an account?{" "}
+            Vous avez déjà un compte ?{" "}
             <Link
               href="/login"
               className="text-primary hover:underline font-medium"
             >
-              Sign In
+              Se connecter
             </Link>
           </p>
         </CardFooter>
