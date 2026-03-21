@@ -20,8 +20,8 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 interface AppointmentRow {
   id: string;
-  appointment_date: string;
-  start_time: string;
+  slot_start: string;
+  slot_end: string;
   status: string;
   patient: { name: string; phone: string | null } | null;
   doctor: { name: string; phone: string | null } | null;
@@ -87,17 +87,20 @@ serve(async () => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
 
-    const tomorrow = new Date();
+    const now = new Date();
+    const tomorrow = new Date(now);
     tomorrow.setDate(tomorrow.getDate() + 1);
-    const dateStr = tomorrow.toISOString().split("T")[0];
+    const windowStart = now.toISOString();
+    const windowEnd = tomorrow.toISOString();
 
-    // Fetch tomorrow's appointments
+    // Fetch appointments starting in the next 24 hours
     const { data: appointments } = await supabase
       .from("appointments")
       .select(
-        "id, appointment_date, start_time, status, patient:users!patient_id(name, phone), doctor:users!doctor_id(name, phone), clinic:clinics(name, owner_phone)",
+        "id, slot_start, slot_end, status, patient:users!patient_id(name, phone), doctor:users!doctor_id(name, phone), clinic:clinics(name, owner_phone)",
       )
-      .eq("appointment_date", dateStr)
+      .gte("slot_start", windowStart)
+      .lte("slot_start", windowEnd)
       .in("status", ["pending", "confirmed"]);
 
     const results: { appointmentId: string; sent: boolean }[] = [];
@@ -108,7 +111,9 @@ serve(async () => {
         continue;
       }
 
-      const body = `Reminder: You have an appointment with ${row.doctor?.name ?? "your doctor"} tomorrow at ${row.start_time}. ${row.clinic?.name ?? ""} — Please arrive 10 minutes early. Reply CONFIRM to confirm or CANCEL to cancel.`;
+      const slotDate = new Date(row.slot_start);
+      const timeStr = slotDate.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" });
+      const body = `Reminder: You have an appointment with ${row.doctor?.name ?? "your doctor"} tomorrow at ${timeStr}. ${row.clinic?.name ?? ""} — Please arrive 10 minutes early. Reply CONFIRM to confirm or CANCEL to cancel.`;
       const sent = await sendWhatsApp(row.patient.phone, body);
       results.push({ appointmentId: row.id, sent });
 

@@ -23,8 +23,8 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 interface AppointmentRow {
   id: string;
-  appointment_date: string;
-  start_time: string;
+  slot_start: string;
+  slot_end: string;
   status: string;
   patient: { name: string; phone: string | null } | null;
   doctor: { name: string; phone: string | null } | null;
@@ -104,7 +104,7 @@ serve(async (req: Request) => {
     const { data: appointment, error } = await supabase
       .from("appointments")
       .select(
-        "id, appointment_date, start_time, status, patient:users!patient_id(name, phone), doctor:users!doctor_id(name, phone), service:services(name), clinic:clinics(id, name, owner_phone)",
+        "id, slot_start, slot_end, status, patient:users!patient_id(name, phone), doctor:users!doctor_id(name, phone), service:services(name), clinic:clinics(id, name, owner_phone)",
       )
       .eq("id", appointmentId)
       .single();
@@ -117,18 +117,21 @@ serve(async (req: Request) => {
     }
 
     const apt = appointment as unknown as AppointmentRow;
+    const slotDate = new Date(apt.slot_start);
+    const dateStr = slotDate.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
+    const timeStr = slotDate.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" });
     const results: { recipient: string; sent: boolean }[] = [];
 
     // Send confirmation to patient
     if (apt.patient?.phone) {
-      const body = `Hello ${apt.patient.name}, your appointment with ${apt.doctor?.name ?? "our doctor"} is confirmed for ${apt.appointment_date} at ${apt.start_time}. Service: ${apt.service?.name ?? "N/A"}. — ${apt.clinic?.name ?? ""}`;
+      const body = `Hello ${apt.patient.name}, your appointment with ${apt.doctor?.name ?? "our doctor"} is confirmed for ${dateStr} at ${timeStr}. Service: ${apt.service?.name ?? "N/A"}. — ${apt.clinic?.name ?? ""}`;
       const sent = await sendWhatsApp(apt.patient.phone, body);
       results.push({ recipient: "patient", sent });
     }
 
     // Notify doctor
     if (apt.doctor?.phone) {
-      const body = `New appointment: ${apt.patient?.name ?? "A patient"} on ${apt.appointment_date} at ${apt.start_time}. Service: ${apt.service?.name ?? "N/A"}.`;
+      const body = `New appointment: ${apt.patient?.name ?? "A patient"} on ${dateStr} at ${timeStr}. Service: ${apt.service?.name ?? "N/A"}.`;
       const sent = await sendWhatsApp(apt.doctor.phone, body);
       results.push({ recipient: "doctor", sent });
     }
@@ -151,7 +154,7 @@ serve(async (req: Request) => {
           type: "new_booking",
           channel: "in_app",
           title: "New Appointment Booked",
-          message: `${apt.patient?.name ?? "A patient"} booked with ${apt.doctor?.name ?? "a doctor"} on ${apt.appointment_date} at ${apt.start_time}.`,
+          message: `${apt.patient?.name ?? "A patient"} booked with ${apt.doctor?.name ?? "a doctor"} on ${dateStr} at ${timeStr}.`,
           is_read: false,
         });
         results.push({ recipient: "clinic_notification", sent: true });
