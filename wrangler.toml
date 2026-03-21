@@ -1,6 +1,6 @@
 #:schema node_modules/wrangler/config-schema.json
 name = "webs-alots"
-main = ".open-next/worker.js"
+main = "worker-cron-handler.ts"
 compatibility_date = "2025-04-01"
 compatibility_flags = ["nodejs_compat"]
 
@@ -27,7 +27,7 @@ crons = ["*/30 * * * *", "0 2 * * *"]
 # Uses separate Supabase project for data isolation
 [env.staging]
 name = "webs-alots-staging"
-main = ".open-next/worker.js"
+main = "worker-cron-handler.ts"
 compatibility_date = "2025-04-01"
 compatibility_flags = ["nodejs_compat"]
 
