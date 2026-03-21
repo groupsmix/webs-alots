@@ -4,7 +4,6 @@ on:
   pull_request:
     paths:
       - 'supabase/migrations/**'
-      - 'full_backup.sql'
 
 jobs:
   validate-migrations:
@@ -66,23 +65,3 @@ jobs:
           done
 
           echo "Basic SQL validation complete."
-
-      - name: Check backup is up to date
-        run: |
-          echo "Checking if full_backup.sql exists..."
-          if [ ! -f full_backup.sql ]; then
-            echo "WARNING: full_backup.sql not found"
-            exit 0
-          fi
-
-          migration_count=$(ls supabase/migrations/*.sql | wc -l)
-          backup_refs=$(grep -c '>>>>>>>>>>.*<<<<<<<<<<' full_backup.sql || true)
-
-          echo "Migration files: $migration_count"
-          echo "Backup references: $backup_refs"
-
-          if [ "$backup_refs" != "$migration_count" ]; then
-            echo "WARNING: full_backup.sql may be out of date (has $backup_refs migration refs, expected $migration_count)"
-          else
-            echo "OK: full_backup.sql references all $migration_count migrations"
-          fi
