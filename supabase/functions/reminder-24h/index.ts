@@ -1,21 +1,39 @@
 /**
+ * @deprecated — DO NOT ENABLE THIS FUNCTION
+ *
  * Supabase Edge Function: reminder-24h
  *
- * Scheduled function (cron) that runs daily.
- * Finds all appointments happening in the next 24 hours
- * and sends WhatsApp reminders to patients.
+ * This function is DEPRECATED. The primary reminder system is the Next.js
+ * API route at /api/cron/reminders, which is more complete:
+ *   - Handles both 24-hour AND 2-hour reminders
+ *   - Uses the shared notification engine (dispatchNotification)
+ *   - Triggered by Cloudflare Cron via the Worker scheduled handler
  *
- * Invoke via Supabase cron or manual call:
- *   POST /functions/v1/reminder-24h
+ * If both systems are active, patients will receive DUPLICATE reminders.
  *
- * Required env vars (set in Supabase Dashboard > Edge Functions):
- *   SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
- *   WHATSAPP_PROVIDER (meta | twilio)
- *   WHATSAPP_PHONE_NUMBER_ID + WHATSAPP_ACCESS_TOKEN (for Meta)
- *   TWILIO_ACCOUNT_SID + TWILIO_AUTH_TOKEN + TWILIO_WHATSAPP_FROM (for Twilio)
+ * This file is kept for reference only. If you need to re-enable it,
+ * first disable the Cloudflare Cron trigger for reminders in wrangler.toml.
  */
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+
+// ---------- DISABLED ----------
+// This function immediately returns a deprecation notice.
+// The original implementation is preserved below for reference.
+
+serve(async () => {
+  return new Response(
+    JSON.stringify({
+      error: "DEPRECATED — use /api/cron/reminders instead",
+      docs: "This Supabase Edge Function is disabled. The Next.js API route at /api/cron/reminders handles both 24h and 2h reminders via the Cloudflare Worker scheduled handler.",
+    }),
+    { status: 410, headers: { "Content-Type": "application/json" } },
+  );
+});
+
+/*
+// ---------- ORIGINAL IMPLEMENTATION (for reference) ----------
+
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 interface AppointmentRow {
@@ -120,7 +138,7 @@ serve(async () => {
         recipient_name: row.patient.name,
         body,
         status: sent ? "sent" : "failed",
-      }).then(() => {/* ignore log errors */});
+      }).then(() => {/* ignore log errors * /});
     }
 
     return new Response(
@@ -139,3 +157,4 @@ serve(async () => {
     });
   }
 });
+*/

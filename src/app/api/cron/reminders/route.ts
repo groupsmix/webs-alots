@@ -6,28 +6,21 @@ import { dispatchNotification } from "@/lib/notifications";
  * GET /api/cron/reminders
  *
  * Automated appointment reminder endpoint.
- * Designed to be called by a cron job (e.g., Vercel Cron, GitHub Actions, or external scheduler).
+ * Called by the Cloudflare Worker scheduled handler (see worker-cron-handler.ts)
+ * every 30 minutes via the cron triggers defined in wrangler.toml.
  *
  * Sends two types of reminders:
  * - reminder_24h: For appointments happening in the next 24 hours
  * - reminder_2h: For appointments happening in the next 2 hours
  *
- * Protected by CRON_SECRET environment variable to prevent unauthorized access.
- *
- * Setup:
- * - Set CRON_SECRET env var on your deployment
- * - Configure a cron job to call: GET /api/cron/reminders?secret=YOUR_CRON_SECRET
- *   every 30 minutes (or as frequently as desired)
- *
- * For Vercel Cron, add to vercel.json:
- * { "crons": [{ "path": "/api/cron/reminders", "schedule": "0,30 * * * *" }] }
+ * Protected by CRON_SECRET via Authorization: Bearer header.
  */
 export async function GET(request: NextRequest) {
-  // Verify cron secret
-  const secret = request.nextUrl.searchParams.get("secret");
+  // Verify cron secret (Authorization: Bearer <CRON_SECRET>)
+  const authHeader = request.headers.get("authorization");
   const cronSecret = process.env.CRON_SECRET;
 
-  if (cronSecret && secret !== cronSecret) {
+  if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
