@@ -23,8 +23,10 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 interface AppointmentRow {
   id: string;
-  appointment_date: string;
-  start_time: string;
+  appointment_date: string | null;
+  start_time: string | null;
+  slot_start: string | null;
+  slot_end: string | null;
   status: string;
   patient: { name: string; phone: string | null } | null;
   doctor: { name: string; phone: string | null } | null;
@@ -100,11 +102,11 @@ serve(async (req: Request) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
 
-    // Fetch appointment with related data
+    // Fetch appointment with related data (include slot_start/slot_end as fallback)
     const { data: appointment, error } = await supabase
       .from("appointments")
       .select(
-        "id, appointment_date, start_time, status, patient:users!patient_id(name, phone), doctor:users!doctor_id(name, phone), service:services(name), clinic:clinics(id, name, owner_phone)",
+        "id, appointment_date, start_time, slot_start, slot_end, status, patient:users!patient_id(name, phone), doctor:users!doctor_id(name, phone), service:services(name), clinic:clinics(id, name, owner_phone)",
       )
       .eq("id", appointmentId)
       .single();
@@ -119,16 +121,32 @@ serve(async (req: Request) => {
     const apt = appointment as unknown as AppointmentRow;
     const results: { recipient: string; sent: boolean }[] = [];
 
+    // Derive display date/time, falling back to slot_start when
+    // appointment_date or start_time are NULL.
+    let displayDate = apt.appointment_date;
+    let displayTime = apt.start_time;
+
+    if ((!displayDate || !displayTime) && apt.slot_start) {
+      const slotDt = new Date(apt.slot_start);
+      if (!isNaN(slotDt.getTime())) {
+        displayDate = displayDate ?? slotDt.toISOString().split("T")[0];
+        displayTime = displayTime ?? slotDt.toISOString().split("T")[1]?.slice(0, 5) ?? null;
+      }
+    }
+
+    const dateStr = displayDate ?? "TBD";
+    const timeStr = displayTime ?? "TBD";
+
     // Send confirmation to patient
     if (apt.patient?.phone) {
-      const body = `Hello ${apt.patient.name}, your appointment with ${apt.doctor?.name ?? "our doctor"} is confirmed for ${apt.appointment_date} at ${apt.start_time}. Service: ${apt.service?.name ?? "N/A"}. — ${apt.clinic?.name ?? ""}`;
+      const body = `Hello ${apt.patient.name}, your appointment with ${apt.doctor?.name ?? "our doctor"} is confirmed for ${dateStr} at ${timeStr}. Service: ${apt.service?.name ?? "N/A"}. — ${apt.clinic?.name ?? ""}`;
       const sent = await sendWhatsApp(apt.patient.phone, body);
       results.push({ recipient: "patient", sent });
     }
 
     // Notify doctor
     if (apt.doctor?.phone) {
-      const body = `New appointment: ${apt.patient?.name ?? "A patient"} on ${apt.appointment_date} at ${apt.start_time}. Service: ${apt.service?.name ?? "N/A"}.`;
+      const body = `New appointment: ${apt.patient?.name ?? "A patient"} on ${dateStr} at ${timeStr}. Service: ${apt.service?.name ?? "N/A"}.`;
       const sent = await sendWhatsApp(apt.doctor.phone, body);
       results.push({ recipient: "doctor", sent });
     }
@@ -136,7 +154,7 @@ serve(async (req: Request) => {
     // Notify clinic via in-app notification
     if (apt.clinic?.id) {
       // Look up the clinic admin to use as the notification recipient
-      const { data: clinicAdmin } = await supabase
+      const { data: clinicAdmin, error: adminError } = await supabase
         .from("users")
         .select("id")
         .eq("clinic_id", apt.clinic.id)
@@ -144,17 +162,27 @@ serve(async (req: Request) => {
         .limit(1)
         .single();
 
-      if (clinicAdmin?.id) {
-        await supabase.from("notifications").insert({
+      if (adminError || !clinicAdmin?.id) {
+        console.error(
+          `[notify-booking] No clinic_admin found for clinic ${apt.clinic.id}:`,
+          adminError?.message ?? "no matching user",
+        );
+      } else {
+        const { error: insertError } = await supabase.from("notifications").insert({
           user_id: clinicAdmin.id,
           clinic_id: apt.clinic.id,
           type: "new_booking",
           channel: "in_app",
           title: "New Appointment Booked",
-          message: `${apt.patient?.name ?? "A patient"} booked with ${apt.doctor?.name ?? "a doctor"} on ${apt.appointment_date} at ${apt.start_time}.`,
+          body: `${apt.patient?.name ?? "A patient"} booked with ${apt.doctor?.name ?? "a doctor"} on ${dateStr} at ${timeStr}.`,
           is_read: false,
         });
-        results.push({ recipient: "clinic_notification", sent: true });
+
+        if (insertError) {
+          console.error("[notify-booking] Failed to insert notification:", insertError.message);
+        } else {
+          results.push({ recipient: "clinic_notification", sent: true });
+        }
       }
     }
 
