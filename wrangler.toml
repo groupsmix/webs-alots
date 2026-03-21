@@ -15,6 +15,18 @@ binding = "ASSETS"
 binding = "R2_BUCKET"
 bucket_name = "webs-alots-uploads"
 
+# ---- Non-Sensitive Environment Variables ----
+[vars]
+ROOT_DOMAIN = "groupsmix.com"
+NEXT_PUBLIC_SITE_URL = "https://groupsmix.com"
+R2_BUCKET_NAME = "webs-alots-uploads"
+
+# ---- Workers Routes (custom domain + wildcard subdomains) ----
+routes = [
+  { pattern = "groupsmix.com/*", zone_name = "groupsmix.com" },
+  { pattern = "*.groupsmix.com/*", zone_name = "groupsmix.com" },
+]
+
 # ---- Cron Triggers ----
 # Appointment reminders: every 30 minutes
 # Subscription renewal check: daily at 2am UTC
@@ -23,13 +35,16 @@ crons = ["*/30 * * * *", "0 2 * * *"]
 
 # ---- Staging Environment ----
 # Deploy with: wrangler deploy --env staging
-# URL: staging.yourdomain.com
+# URL: staging.groupsmix.com
 # Uses separate Supabase project for data isolation
 [env.staging]
 name = "webs-alots-staging"
 main = "worker-cron-handler.ts"
 compatibility_date = "2025-04-01"
 compatibility_flags = ["nodejs_compat"]
+routes = [
+  { pattern = "staging.groupsmix.com/*", zone_name = "groupsmix.com" },
+]
 
 [env.staging.assets]
 directory = ".open-next/assets"
@@ -38,6 +53,11 @@ binding = "ASSETS"
 [[env.staging.r2_buckets]]
 binding = "R2_BUCKET"
 bucket_name = "webs-alots-uploads"
+
+[env.staging.vars]
+ROOT_DOMAIN = "groupsmix.com"
+NEXT_PUBLIC_SITE_URL = "https://staging.groupsmix.com"
+R2_BUCKET_NAME = "webs-alots-uploads"
 
 # ---- Staging Cron Triggers ----
 # Same schedule as production
