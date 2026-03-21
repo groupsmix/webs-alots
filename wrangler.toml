@@ -4,7 +4,7 @@ main = ".open-next/worker.js"
 compatibility_date = "2025-04-01"
 compatibility_flags = ["nodejs_compat"]
 
-# Static assets served from Cloudflare Pages
+# Static assets served by the Workers runtime
 [assets]
 directory = ".open-next/assets"
 binding = "ASSETS"
@@ -38,3 +38,8 @@ binding = "ASSETS"
 [[env.staging.r2_buckets]]
 binding = "R2_BUCKET"
 bucket_name = "webs-alots-uploads"
+
+# ---- Staging Cron Triggers ----
+# Same schedule as production
+[env.staging.triggers]
+crons = ["*/30 * * * *", "0 2 * * *"]
