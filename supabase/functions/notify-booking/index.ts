@@ -135,14 +135,27 @@ serve(async (req: Request) => {
 
     // Notify clinic via in-app notification
     if (apt.clinic?.id) {
-      await supabase.from("notifications").insert({
-        clinic_id: apt.clinic.id,
-        type: "new_booking",
-        title: "New Appointment Booked",
-        message: `${apt.patient?.name ?? "A patient"} booked with ${apt.doctor?.name ?? "a doctor"} on ${apt.appointment_date} at ${apt.start_time}.`,
-        is_read: false,
-      });
-      results.push({ recipient: "clinic_notification", sent: true });
+      // Look up the clinic admin to use as the notification recipient
+      const { data: clinicAdmin } = await supabase
+        .from("users")
+        .select("id")
+        .eq("clinic_id", apt.clinic.id)
+        .eq("role", "clinic_admin")
+        .limit(1)
+        .single();
+
+      if (clinicAdmin?.id) {
+        await supabase.from("notifications").insert({
+          user_id: clinicAdmin.id,
+          clinic_id: apt.clinic.id,
+          type: "new_booking",
+          channel: "in_app",
+          title: "New Appointment Booked",
+          message: `${apt.patient?.name ?? "A patient"} booked with ${apt.doctor?.name ?? "a doctor"} on ${apt.appointment_date} at ${apt.start_time}.`,
+          is_read: false,
+        });
+        results.push({ recipient: "clinic_notification", sent: true });
+      }
     }
 
     return new Response(
