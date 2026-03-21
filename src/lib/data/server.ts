@@ -10,13 +10,16 @@
  */
 
 import { createClient } from "@/lib/supabase-server";
+import type { Database } from "@/lib/types/database";
+
+type TableName = keyof Database["public"]["Tables"];
 
 // ────────────────────────────────────────────
 // Helpers
 // ────────────────────────────────────────────
 
 async function query<T>(
-  table: string,
+  table: TableName,
   opts?: {
     select?: string;
     filters?: Record<string, unknown>;
@@ -27,8 +30,7 @@ async function query<T>(
   },
 ): Promise<T[]> {
   const supabase = await createClient();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let q = (supabase.from as any)(table).select(opts?.select ?? "*");
+  let q = supabase.from(table).select(opts?.select ?? "*");
 
   if (opts?.eq) {
     for (const [col, val] of opts.eq) {
@@ -54,15 +56,14 @@ async function query<T>(
 }
 
 async function queryOne<T>(
-  table: string,
+  table: TableName,
   opts?: {
     select?: string;
     eq?: [string, unknown][];
   },
 ): Promise<T | null> {
   const supabase = await createClient();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let q = (supabase.from as any)(table).select(opts?.select ?? "*");
+  let q = supabase.from(table).select(opts?.select ?? "*");
   if (opts?.eq) {
     for (const [col, val] of opts.eq) {
       q = q.eq(col, val);
@@ -1042,8 +1043,7 @@ export async function createRadiologyOrder(data: {
 }): Promise<{ id: string; order_number: string } | null> {
   const supabase = await createClient();
   const orderNumber = `RAD-${Date.now().toString(36).toUpperCase()}`;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: row, error } = await (supabase.from as any)("radiology_orders")
+  const { data: row, error } = await supabase.from("radiology_orders")
     .insert({
       ...data,
       order_number: orderNumber,

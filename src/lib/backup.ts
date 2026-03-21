@@ -59,8 +59,7 @@ export async function createBackup(
   let totalRecords = 0;
 
   for (const table of BACKUP_TABLES) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: rows, error } = await (supabase.from as any)(table)
+    const { data: rows, error } = await supabase.from(table)
       .select("*")
       .eq("clinic_id", clinicId)
       .order("created_at", { ascending: false });
@@ -168,8 +167,7 @@ export async function restoreBackup(
       clinic_id: targetClinicId,
     }));
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error } = await (supabase.from as any)(table)
+    const { error } = await supabase.from(table)
       .upsert(mappedRows, { onConflict: "id" });
 
     if (error) {
