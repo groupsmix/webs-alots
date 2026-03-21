@@ -2,7 +2,7 @@
 
 Multi-tenant health management platform for **doctors**, **dentists**, and **pharmacies** in Morocco.
 
-Built with **Next.js 16** (App Router) + **Supabase** + **Cloudflare Pages**.
+Built with **Next.js 16** (App Router) + **Supabase** + **Cloudflare Workers** (via [OpenNext](https://opennext.js.org/cloudflare)).
 
 ## Stack
 
@@ -11,7 +11,7 @@ Built with **Next.js 16** (App Router) + **Supabase** + **Cloudflare Pages**.
 | Frontend | Next.js 16, React 19, Tailwind CSS 4, shadcn/ui |
 | Backend | Supabase (Auth, Database, Storage, Edge Functions) |
 | Notifications | WhatsApp Business API (Meta Cloud API) |
-| Hosting | Cloudflare Pages (free) |
+| Hosting | Cloudflare Workers (via OpenNext) |
 | Payments | CMI Payment Gateway (optional) |
 
 ## User Roles
@@ -143,15 +143,28 @@ const url = await uploadToR2(key, buffer, "image/png");
 
 ## Deploy on Cloudflare Workers
 
+This project deploys as a **Cloudflare Worker** using [OpenNext for Cloudflare](https://opennext.js.org/cloudflare), **not** Cloudflare Pages. The build produces a Worker bundle (`.open-next/worker.js`) and static assets (`.open-next/assets/`), both served by the Workers runtime.
+
+> **Note:** If a Cloudflare Pages project is connected to this repo, it should be disconnected/deleted from the Cloudflare dashboard (**Workers & Pages > webs-alots > Settings > Delete**). Pages builds will always fail because the output directory structure doesn't match what Pages expects.
+
 ### Manual Deploy
 
 ```bash
 npm run deploy
 ```
 
+### Staging Deploy
+
+```bash
+# Deploy to the staging worker
+npm run build:cf && wrangler deploy --env staging
+```
+
+Staging uses a separate Supabase project for data isolation. Set `STAGING_SUPABASE_URL` and `STAGING_SUPABASE_ANON_KEY` in GitHub Actions secrets.
+
 ### Auto-Deploy via GitHub Actions
 
-Pushes to `main` automatically build and deploy to Cloudflare Workers. Add these secrets in your GitHub repo settings (**Settings > Secrets and variables > Actions**):
+Pushes to `main` and `staging` automatically build and deploy to Cloudflare Workers. Add these secrets in your GitHub repo settings (**Settings > Secrets and variables > Actions**):
 
 | Secret | Description |
 |---|---|
@@ -159,3 +172,5 @@ Pushes to `main` automatically build and deploy to Cloudflare Workers. Add these
 | `CLOUDFLARE_ACCOUNT_ID` | Your Cloudflare account ID |
 | `NEXT_PUBLIC_SUPABASE_URL` | Supabase project URL (used at build time) |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase anon key (used at build time) |
+| `STAGING_SUPABASE_URL` | Staging Supabase project URL (staging branch only) |
+| `STAGING_SUPABASE_ANON_KEY` | Staging Supabase anon key (staging branch only) |
