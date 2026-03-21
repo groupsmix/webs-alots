@@ -9,6 +9,12 @@ compatibility_flags = ["nodejs_compat"]
 directory = ".open-next/assets"
 binding = "ASSETS"
 
+# ---- R2 Storage Binding ----
+# File uploads (logos, photos, documents) stored in Cloudflare R2
+[[r2_buckets]]
+binding = "R2_BUCKET"
+bucket_name = "webs-alots-uploads"
+
 # ---- Cron Triggers ----
 # Appointment reminders: every 30 minutes
 # Subscription renewal check: daily at 2am UTC
@@ -28,3 +34,7 @@ compatibility_flags = ["nodejs_compat"]
 [env.staging.assets]
 directory = ".open-next/assets"
 binding = "ASSETS"
+
+[[env.staging.r2_buckets]]
+binding = "R2_BUCKET"
+bucket_name = "webs-alots-uploads"

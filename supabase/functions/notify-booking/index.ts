@@ -5,46 +5,155 @@
  * Sends WhatsApp notifications to:
  *   - Patient (booking confirmation)
  *   - Doctor (new appointment alert)
- *   - Receptionist (new booking notification)
+ *   - Receptionist (new booking notification via in-app)
+ *
+ * Invoke via Supabase DB webhook or manual call:
+ *   POST /functions/v1/notify-booking
+ *   Body: { "appointmentId": "uuid" }
+ *
+ * Required env vars (set in Supabase Dashboard > Edge Functions):
+ *   SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
+ *   WHATSAPP_PROVIDER (meta | twilio)
+ *   WHATSAPP_PHONE_NUMBER_ID + WHATSAPP_ACCESS_TOKEN (for Meta)
+ *   TWILIO_ACCOUNT_SID + TWILIO_AUTH_TOKEN + TWILIO_WHATSAPP_FROM (for Twilio)
  */
 
-// import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-// import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-// serve(async (req: Request) => {
-//   try {
-//     const { appointmentId } = await req.json();
-//
-//     const supabase = createClient(
-//       Deno.env.get("SUPABASE_URL")!,
-//       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-//     );
-//
-//     // Fetch appointment details
-//     const { data: appointment } = await supabase
-//       .from("appointments")
-//       .select("*, patient:users!patient_id(*), doctor:users!doctor_id(*)")
-//       .eq("id", appointmentId)
-//       .single();
-//
-//     if (!appointment) {
-//       return new Response(JSON.stringify({ error: "Appointment not found" }), {
-//         status: 404,
-//       });
-//     }
-//
-//     // TODO: Send WhatsApp notification to patient
-//     // TODO: Send WhatsApp notification to doctor
-//     // TODO: Send dashboard notification to receptionist
-//
-//     return new Response(JSON.stringify({ status: "notifications_sent" }), {
-//       headers: { "Content-Type": "application/json" },
-//     });
-//   } catch (error) {
-//     return new Response(JSON.stringify({ error: error.message }), {
-//       status: 500,
-//     });
-//   }
-// });
+interface AppointmentRow {
+  id: string;
+  appointment_date: string;
+  start_time: string;
+  status: string;
+  patient: { name: string; phone: string | null } | null;
+  doctor: { name: string; phone: string | null } | null;
+  service: { name: string } | null;
+  clinic: { id: string; name: string; owner_phone: string | null } | null;
+}
 
-export {};
+async function sendWhatsApp(to: string, body: string): Promise<boolean> {
+  const provider = Deno.env.get("WHATSAPP_PROVIDER") || "meta";
+
+  if (provider === "twilio") {
+    const sid = Deno.env.get("TWILIO_ACCOUNT_SID");
+    const token = Deno.env.get("TWILIO_AUTH_TOKEN");
+    const from = Deno.env.get("TWILIO_WHATSAPP_FROM");
+    if (!sid || !token || !from) return false;
+
+    const formData = new URLSearchParams();
+    formData.append("From", `whatsapp:${from}`);
+    formData.append("To", `whatsapp:${to}`);
+    formData.append("Body", body);
+
+    const resp = await fetch(
+      `https://api.twilio.com/2010-04-01/Accounts/${sid}/Messages.json`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Basic ${btoa(`${sid}:${token}`)}`,
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+        body: formData.toString(),
+      },
+    );
+    return resp.ok;
+  }
+
+  // Meta WhatsApp Business API
+  const phoneNumberId = Deno.env.get("WHATSAPP_PHONE_NUMBER_ID");
+  const accessToken = Deno.env.get("WHATSAPP_ACCESS_TOKEN");
+  if (!phoneNumberId || !accessToken) return false;
+
+  const resp = await fetch(
+    `https://graph.facebook.com/v21.0/${phoneNumberId}/messages`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        messaging_product: "whatsapp",
+        to,
+        type: "text",
+        text: { body },
+      }),
+    },
+  );
+  return resp.ok;
+}
+
+serve(async (req: Request) => {
+  try {
+    const { appointmentId } = await req.json();
+
+    if (!appointmentId) {
+      return new Response(
+        JSON.stringify({ error: "appointmentId is required" }),
+        { status: 400, headers: { "Content-Type": "application/json" } },
+      );
+    }
+
+    const supabase = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+    );
+
+    // Fetch appointment with related data
+    const { data: appointment, error } = await supabase
+      .from("appointments")
+      .select(
+        "id, appointment_date, start_time, status, patient:users!patient_id(name, phone), doctor:users!doctor_id(name, phone), service:services(name), clinic:clinics(id, name, owner_phone)",
+      )
+      .eq("id", appointmentId)
+      .single();
+
+    if (error || !appointment) {
+      return new Response(
+        JSON.stringify({ error: "Appointment not found" }),
+        { status: 404, headers: { "Content-Type": "application/json" } },
+      );
+    }
+
+    const apt = appointment as unknown as AppointmentRow;
+    const results: { recipient: string; sent: boolean }[] = [];
+
+    // Send confirmation to patient
+    if (apt.patient?.phone) {
+      const body = `Hello ${apt.patient.name}, your appointment with ${apt.doctor?.name ?? "our doctor"} is confirmed for ${apt.appointment_date} at ${apt.start_time}. Service: ${apt.service?.name ?? "N/A"}. — ${apt.clinic?.name ?? ""}`;
+      const sent = await sendWhatsApp(apt.patient.phone, body);
+      results.push({ recipient: "patient", sent });
+    }
+
+    // Notify doctor
+    if (apt.doctor?.phone) {
+      const body = `New appointment: ${apt.patient?.name ?? "A patient"} on ${apt.appointment_date} at ${apt.start_time}. Service: ${apt.service?.name ?? "N/A"}.`;
+      const sent = await sendWhatsApp(apt.doctor.phone, body);
+      results.push({ recipient: "doctor", sent });
+    }
+
+    // Notify clinic via in-app notification
+    if (apt.clinic?.id) {
+      await supabase.from("notifications").insert({
+        clinic_id: apt.clinic.id,
+        type: "new_booking",
+        title: "New Appointment Booked",
+        message: `${apt.patient?.name ?? "A patient"} booked with ${apt.doctor?.name ?? "a doctor"} on ${apt.appointment_date} at ${apt.start_time}.`,
+        is_read: false,
+      });
+      results.push({ recipient: "clinic_notification", sent: true });
+    }
+
+    return new Response(
+      JSON.stringify({ status: "notifications_sent", results }),
+      { headers: { "Content-Type": "application/json" } },
+    );
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Unknown error";
+    return new Response(JSON.stringify({ error: message }), {
+      status: 500,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+});
