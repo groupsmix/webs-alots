@@ -169,12 +169,15 @@ export async function getPublicAverageRating(): Promise<number> {
 
   // Fetch just the stars column (lightweight) since Supabase JS doesn't
   // support aggregate functions like AVG() directly.
-  // TODO: Replace with a Postgres function or materialized view for clinics
-  // with large review counts to avoid fetching all rows.
+  // Limit to the most recent 500 reviews to avoid fetching unbounded rows.
+  // For clinics with >500 reviews, consider a Postgres function or
+  // materialized view for exact averages.
   const { data } = await supabase
     .from("reviews")
     .select("stars")
-    .eq("clinic_id", clinicId);
+    .eq("clinic_id", clinicId)
+    .order("created_at", { ascending: false })
+    .limit(500);
 
   if (!data || data.length === 0) return 0;
   const sum = data.reduce((s, r) => s + r.stars, 0);
