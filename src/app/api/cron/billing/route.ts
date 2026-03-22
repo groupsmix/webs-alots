@@ -10,21 +10,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase-server";
 import { processRenewal } from "@/lib/subscription-billing";
-import { timingSafeEqual } from "@/lib/crypto-utils";
+import { verifyCronSecret } from "@/lib/cron-auth";
 
 export async function GET(request: NextRequest) {
-  // Verify cron secret
-  const authHeader = request.headers.get("authorization");
-  const cronSecret = process.env.CRON_SECRET;
-
-  if (!cronSecret) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  const providedToken = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : "";
-  if (!timingSafeEqual(providedToken, cronSecret)) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  // DRY: Use shared cron secret verification helper
+  const authError = verifyCronSecret(request);
+  if (authError) return authError;
 
   const supabase = await createClient();
 

@@ -106,8 +106,30 @@ export async function POST(request: NextRequest) {
       }
 
       case "payment_intent.payment_failed": {
+        // FIX (MED-06): Record failed payment in the database and log
+        // details instead of only logging to console.
         const intent = event.data.object;
-        console.error(`[Stripe Webhook] Payment failed: ${intent.id}`);
+        const failedClinicId = intent.metadata?.clinic_id;
+        const failedPatientId = intent.metadata?.patient_id;
+        const failedAppointmentId = intent.metadata?.appointment_id;
+
+        if (failedClinicId && failedPatientId) {
+          await supabase.from("payments").insert({
+            clinic_id: failedClinicId,
+            patient_id: failedPatientId,
+            appointment_id: failedAppointmentId || null,
+            amount: (intent.amount_total || 0) / 100,
+            method: "online",
+            status: PAYMENT_STATUS.FAILED,
+            reference: intent.id,
+            payment_type: "full",
+          });
+        }
+
+        console.error(
+          `[Stripe Webhook] Payment failed: ${intent.id}` +
+          ` (clinic=${failedClinicId ?? "unknown"}, patient=${failedPatientId ?? "unknown"})`,
+        );
         break;
       }
 

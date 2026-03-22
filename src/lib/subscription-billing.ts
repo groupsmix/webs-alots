@@ -102,9 +102,11 @@ export const SUBSCRIPTION_PLANS: PlanConfig[] = [
     priceYearly: 5990,
     currency: "MAD",
     features: ["Unlimited doctors", "Unlimited patients", "Unlimited appointments", "SMS & WhatsApp (500/mo)", "Custom domain", "Video consultations", "Full analytics"],
-    maxDoctors: Infinity,
-    maxPatients: Infinity,
-    maxAppointmentsPerMonth: Infinity,
+    // FIX (MED-02): Use Number.MAX_SAFE_INTEGER instead of Infinity.
+    // JSON.stringify({ max: Infinity }) produces null, breaking serialization.
+    maxDoctors: Number.MAX_SAFE_INTEGER,
+    maxPatients: Number.MAX_SAFE_INTEGER,
+    maxAppointmentsPerMonth: Number.MAX_SAFE_INTEGER,
     smsCredits: 500,
     whatsappCredits: 500,
     customDomain: true,
@@ -118,11 +120,11 @@ export const SUBSCRIPTION_PLANS: PlanConfig[] = [
     priceYearly: 9990,
     currency: "MAD",
     features: ["Everything in Professional", "API access", "Priority support", "Unlimited SMS & WhatsApp", "White-label branding", "Multi-location"],
-    maxDoctors: Infinity,
-    maxPatients: Infinity,
-    maxAppointmentsPerMonth: Infinity,
-    smsCredits: Infinity,
-    whatsappCredits: Infinity,
+    maxDoctors: Number.MAX_SAFE_INTEGER,
+    maxPatients: Number.MAX_SAFE_INTEGER,
+    maxAppointmentsPerMonth: Number.MAX_SAFE_INTEGER,
+    smsCredits: Number.MAX_SAFE_INTEGER,
+    whatsappCredits: Number.MAX_SAFE_INTEGER,
     customDomain: true,
     videoConsultation: true,
     apiAccess: true,
@@ -163,21 +165,22 @@ export function calculateNextPeriod(
   currentPeriodEnd: string,
   interval: BillingInterval,
 ): { start: string; end: string } {
+  // FIX (MED-01): Use UTC methods consistently to avoid DST-related
+  // date shifts when the server's local timezone observes DST.
   const start = new Date(currentPeriodEnd);
   const end = new Date(start);
   if (interval === "yearly") {
-    end.setFullYear(end.getFullYear() + 1);
+    end.setUTCFullYear(end.getUTCFullYear() + 1);
   } else {
     // Clamp to last day of target month to prevent overflow
     // (e.g. Jan 31 + 1 month → Feb 28, not Mar 3)
-    const dayOfMonth = end.getDate();
-    // Move to the 1st of the next month first, then attempt to restore
-    // the original day-of-month. If the target month has fewer days,
-    // clamp to its last day.
-    end.setDate(1);
-    end.setMonth(end.getMonth() + 1);
-    const lastDayOfTargetMonth = new Date(end.getFullYear(), end.getMonth() + 1, 0).getDate();
-    end.setDate(Math.min(dayOfMonth, lastDayOfTargetMonth));
+    const dayOfMonth = end.getUTCDate();
+    end.setUTCDate(1);
+    end.setUTCMonth(end.getUTCMonth() + 1);
+    const lastDayOfTargetMonth = new Date(
+      Date.UTC(end.getUTCFullYear(), end.getUTCMonth() + 1, 0),
+    ).getUTCDate();
+    end.setUTCDate(Math.min(dayOfMonth, lastDayOfTargetMonth));
   }
   return {
     start: start.toISOString().split("T")[0],

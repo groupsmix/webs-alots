@@ -10,10 +10,8 @@
 import { NextResponse } from "next/server";
 import { uploadToR2, isR2Configured, buildUploadKey } from "@/lib/r2";
 import { updateLabOrderPdfUrl } from "@/lib/data/server";
-import type { UserRole } from "@/lib/types/database";
 import { withAuth } from "@/lib/with-auth";
-
-const STAFF_ROLES: UserRole[] = ["super_admin", "clinic_admin", "receptionist", "doctor"];
+import { STAFF_ROLES } from "@/lib/auth-roles";
 
 interface LabResultItem {
   testName: string;

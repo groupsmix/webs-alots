@@ -6,6 +6,7 @@ import { findOrCreatePatient } from "@/lib/find-or-create-patient";
 import { APPOINTMENT_STATUS, BOOKING_SOURCE } from "@/lib/types/database";
 import type { TablesInsert } from "@/lib/types/database";
 import { computeEndTime } from "@/lib/timezone";
+import { STAFF_ROLES } from "@/lib/auth-roles";
 
 export const runtime = "edge";
 
@@ -66,6 +67,16 @@ export const POST = withAuth(async (request, { supabase }) => {
       // Input length validation to prevent DoS via oversized payloads
       if (body.patientName.length > 200 || (body.patientPhone && body.patientPhone.length > 30)) {
         return NextResponse.json({ error: "Input exceeds maximum allowed length" }, { status: 400 });
+      }
+
+      // FIX (MED-04): Validate occurrences against clinic config limit
+      // to prevent unbounded recurring booking creation.
+      const maxOccurrences = clinicConfig.booking.maxRecurringWeeks;
+      if (body.occurrences < 1 || body.occurrences > maxOccurrences) {
+        return NextResponse.json(
+          { error: `occurrences must be between 1 and ${maxOccurrences}` },
+          { status: 400 },
+        );
       }
 
       const services = await getPublicServices();
@@ -245,4 +256,4 @@ export const POST = withAuth(async (request, { supabase }) => {
     console.error("[recurring] Error:", err instanceof Error ? err.message : "Unknown error");
     return NextResponse.json({ error: "Failed to process recurring booking" }, { status: 500 });
   }
-}, null);
+}, STAFF_ROLES);

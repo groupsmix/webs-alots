@@ -384,6 +384,26 @@ export async function dispatchNotification(
 
   const results: DispatchResult[] = [];
 
+  // FIX (HIGH-01): Pre-fetch recipient contact info once instead of
+  // creating a new Supabase client per channel (N+1 problem).
+  const needsContactInfo = channels.some(
+    (ch) => ch === "whatsapp" || ch === "email" || ch === "sms",
+  );
+  let recipientPhone: string | null = null;
+  let recipientEmail: string | null = null;
+
+  if (needsContactInfo) {
+    const { createClient } = await import("@/lib/supabase-server");
+    const supabase = await createClient();
+    const { data: recipientData } = await supabase
+      .from("users")
+      .select("phone, email")
+      .eq("id", recipientId)
+      .single();
+    recipientPhone = recipientData?.phone ?? null;
+    recipientEmail = recipientData?.email ?? null;
+  }
+
   for (const channel of channels) {
     if (!template.channels.includes(channel)) continue;
 
@@ -391,16 +411,8 @@ export async function dispatchNotification(
       switch (channel) {
         case "whatsapp": {
           const body = substituteVariables(template.whatsappBody, variables);
-          // recipientId is a user UUID — look up the actual phone number
-          const { createClient } = await import("@/lib/supabase-server");
-          const waSupabase = await createClient();
-          const { data: waRecipient } = await waSupabase
-            .from("users")
-            .select("phone")
-            .eq("id", recipientId)
-            .single();
 
-          if (!waRecipient?.phone) {
+          if (!recipientPhone) {
             results.push({
               channel: "whatsapp",
               success: false,
@@ -410,7 +422,7 @@ export async function dispatchNotification(
           }
 
           const { sendTextMessage } = await import("./whatsapp");
-          const waResult = await sendTextMessage(waRecipient.phone, body);
+          const waResult = await sendTextMessage(recipientPhone, body);
           results.push({
             channel: "whatsapp",
             success: waResult.success,
@@ -442,16 +454,7 @@ export async function dispatchNotification(
           const subject = substituteVariables(template.subject, variables);
           const body = substituteVariables(template.body, variables);
 
-          // Look up the recipient's actual email address (recipientId is a UUID)
-          const { createClient } = await import("@/lib/supabase-server");
-          const supabase = await createClient();
-          const { data: recipient } = await supabase
-            .from("users")
-            .select("email")
-            .eq("id", recipientId)
-            .single();
-
-          if (!recipient?.email) {
+          if (!recipientEmail) {
             results.push({
               channel: "email",
               success: false,
@@ -462,7 +465,7 @@ export async function dispatchNotification(
 
           const { sendNotificationEmail } = await import("./email");
           const emailResult = await sendNotificationEmail(
-            recipient.email,
+            recipientEmail,
             subject,
             body,
             variables.clinic_name,
@@ -477,16 +480,8 @@ export async function dispatchNotification(
         }
         case "sms": {
           const body = substituteVariables(template.whatsappBody, variables);
-          // recipientId is a user UUID — look up the actual phone number
-          const { createClient: createSmsClient } = await import("@/lib/supabase-server");
-          const smsSupabase = await createSmsClient();
-          const { data: smsRecipient } = await smsSupabase
-            .from("users")
-            .select("phone")
-            .eq("id", recipientId)
-            .single();
 
-          if (!smsRecipient?.phone) {
+          if (!recipientPhone) {
             results.push({
               channel: "sms",
               success: false,
@@ -496,7 +491,7 @@ export async function dispatchNotification(
           }
 
           const { sendSms } = await import("./sms");
-          const smsResult = await sendSms(smsRecipient.phone, body);
+          const smsResult = await sendSms(recipientPhone, body);
           results.push({
             channel: "sms",
             success: smsResult.success,

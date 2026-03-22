@@ -5,12 +5,10 @@ import {
   type NotificationTrigger,
   type TemplateVariables,
 } from "@/lib/notifications";
-import type { UserRole } from "@/lib/types/database";
 import { withAuth } from "@/lib/with-auth";
+import { STAFF_ROLES } from "@/lib/auth-roles";
 
 export const runtime = "edge";
-
-const STAFF_ROLES: UserRole[] = ["super_admin", "clinic_admin", "receptionist", "doctor"];
 
 /**
  * POST /api/notifications/trigger

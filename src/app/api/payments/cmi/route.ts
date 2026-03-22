@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createCmiPayment, isCmiConfigured } from "@/lib/cmi";
 import { withAuth } from "@/lib/with-auth";
+import { STAFF_ROLES } from "@/lib/auth-roles";
 
 /**
  * POST /api/payments/cmi
@@ -82,4 +83,4 @@ export const POST = withAuth(async (request, { user }) => {
     console.error("[CMI] Error:", err instanceof Error ? err.message : "Unknown error");
     return NextResponse.json({ error: "Failed to create CMI payment" }, { status: 500 });
   }
-}, null);
+}, STAFF_ROLES);

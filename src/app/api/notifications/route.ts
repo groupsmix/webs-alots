@@ -5,8 +5,9 @@ import {
   type NotificationChannel,
   type TemplateVariables,
 } from "@/lib/notifications";
-import type { NotificationChannel as DBNotificationChannel, UserRole } from "@/lib/types/database";
+import type { NotificationChannel as DBNotificationChannel } from "@/lib/types/database";
 import { withAuth } from "@/lib/with-auth";
+import { STAFF_ROLES } from "@/lib/auth-roles";
 
 export const runtime = "edge";
 
@@ -16,7 +17,6 @@ export const runtime = "edge";
  * Dispatches a notification across configured channels.
  * Body: { trigger, variables, recipientId, channels }
  */
-const STAFF_ROLES: UserRole[] = ["super_admin", "clinic_admin", "receptionist", "doctor"];
 
 export const POST = withAuth(async (request, { supabase, profile }) => {
   try {
