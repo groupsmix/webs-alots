@@ -81,7 +81,7 @@ export const POST = withAuth(async (request, { profile }) => {
   }
 
   return NextResponse.json({ url, key });
-}, null);
+}, ["super_admin", "clinic_admin", "receptionist", "doctor"]);
 
 export const GET = withAuth(async (request, { profile }) => {
   if (!isR2Configured()) {
@@ -127,4 +127,4 @@ export const GET = withAuth(async (request, { profile }) => {
     : null;
 
   return NextResponse.json({ uploadUrl, publicUrl, key });
-}, null);
+}, ["super_admin", "clinic_admin", "receptionist", "doctor"]);

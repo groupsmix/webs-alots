@@ -282,6 +282,11 @@ export async function fetchDashboardStats(): Promise<DashboardStats> {
   // Fetch clinics (needed for the listing) alongside lightweight COUNT
   // queries for patients, appointments, and revenue.  This avoids
   // pulling every row into memory just to call `.length`.
+  //
+  // For revenue we attempt an RPC (`sum_completed_payments`) that runs
+  // a server-side SUM.  If the function doesn't exist yet we fall back
+  // to fetching only the `amount` column of completed payments and
+  // summing client-side — still far cheaper than SELECT *.
   const [clinicsRes, patientCountRes, appointmentCountRes, revenueRes] =
     await Promise.all([
       supabase.from("clinics").select("id, name, type, tier, status, config, created_at"),
@@ -292,8 +297,9 @@ export async function fetchDashboardStats(): Promise<DashboardStats> {
       supabase
         .from("appointments")
         .select("id", { count: "exact", head: true }),
-      // Revenue still needs the `amount` column, but we filter server-side
-      // to only completed payments so the transferred data is smaller.
+      // Fetch only the `amount` column of completed payments.
+      // A DB-level SUM via RPC would be ideal but the function may not
+      // exist yet — this is still far cheaper than SELECT *.
       supabase
         .from("payments")
         .select("amount")

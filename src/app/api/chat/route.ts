@@ -38,6 +38,11 @@ const MAX_MESSAGE_LENGTH = 2000;
 function sanitizeUserInput(text: string): string {
   return (
     text
+      // Normalize Unicode to NFKC to defeat homoglyph / compatibility-char
+      // bypasses (e.g. fullwidth "ｓｙｓｔｅｍ" → "system")
+      .normalize("NFKC")
+      // Strip zero-width / invisible characters often used to evade filters
+      .replace(/[\u200B-\u200F\u2028-\u202F\uFEFF\u00AD]/g, "")
       // Strip attempts to impersonate system/assistant roles
       // (covers whitespace/zero-width tricks between characters)
       .replace(/^\s*(s\s*y\s*s\s*t\s*e\s*m|a\s*s\s*s\s*i\s*s\s*t\s*a\s*n\s*t)\s*:/gi, "")
@@ -47,6 +52,8 @@ function sanitizeUserInput(text: string): string {
       .replace(/<\|im_(start|end)\|>\s*(system|assistant)?/gi, "")
       // Strip XML-style role tags
       .replace(/<\/?(system|assistant|instruction)[^>]*>/gi, "")
+      // Strip "ignore all previous instructions" style attacks
+      .replace(/ignore\s+(all\s+)?(previous|prior|above|earlier)\s+(instructions?|prompts?|context)/gi, "[filtered]")
       // Collapse excessive whitespace
       .replace(/\n{3,}/g, "\n\n")
       .trim()
