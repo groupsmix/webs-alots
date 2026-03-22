@@ -8514,6 +8514,22 @@ export type DocumentType =
 
 export type WaitingListStatus = "waiting" | "notified" | "booked" | "expired";
 
+/** Runtime constants for WaitingListStatus to eliminate magic strings. */
+export const WAITING_LIST_STATUS = {
+  WAITING: "waiting",
+  NOTIFIED: "notified",
+  BOOKED: "booked",
+  EXPIRED: "expired",
+} as const satisfies Record<string, WaitingListStatus>;
+
+/** Runtime constants for BookingSource to eliminate magic strings. */
+export const BOOKING_SOURCE = {
+  ONLINE: "online",
+  PHONE: "phone",
+  WALK_IN: "walk_in",
+  WHATSAPP: "whatsapp",
+} as const satisfies Record<string, BookingSource>;
+
 export type ToothStatus =
   | "healthy"
   | "decayed"

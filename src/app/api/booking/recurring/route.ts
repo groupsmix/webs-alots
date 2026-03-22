@@ -3,7 +3,7 @@ import { clinicConfig } from "@/config/clinic.config";
 import { getPublicServices } from "@/lib/data/public";
 import { withAuth } from "@/lib/with-auth";
 import { findOrCreatePatient } from "@/lib/find-or-create-patient";
-import { APPOINTMENT_STATUS } from "@/lib/types/database";
+import { APPOINTMENT_STATUS, BOOKING_SOURCE } from "@/lib/types/database";
 import type { TablesInsert } from "@/lib/types/database";
 
 export const runtime = "edge";
@@ -118,7 +118,7 @@ export const POST = withAuth(async (request, { supabase }) => {
           status: APPOINTMENT_STATUS.SCHEDULED,
           is_first_visit: insertIndex === 0 ? (body.isFirstVisit ?? false) : false,
           insurance_flag: body.hasInsurance ?? false,
-          booking_source: "online",
+          booking_source: BOOKING_SOURCE.ONLINE,
           recurrence_group_id: groupId,
           notes: `Recurring: ${body.pattern} (${insertIndex + 1}/${body.occurrences})`,
           is_emergency: false,
