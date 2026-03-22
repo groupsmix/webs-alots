@@ -10,11 +10,11 @@ interface DialogProps {
   children: React.ReactNode
 }
 
-function Dialog({ open, onOpenChange, children }: DialogProps) {
+function Dialog({ open, children }: DialogProps) {
   return <>{open ? children : null}</>
 }
 
-function DialogTrigger({ children, asChild, onClick, ...props }: React.ComponentProps<"button"> & { asChild?: boolean }) {
+function DialogTrigger({ children, onClick, ...props }: React.ComponentProps<"button"> & { asChild?: boolean }) {
   return <button type="button" onClick={onClick} {...props}>{children}</button>
 }
 

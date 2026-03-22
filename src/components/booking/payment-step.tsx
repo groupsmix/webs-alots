@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { clinicConfig } from "@/config/clinic.config";
-import { formatMAD, type MoroccanPaymentMethod } from "@/lib/morocco";
+import { type MoroccanPaymentMethod } from "@/lib/morocco";
 
 interface PaymentStepProps {
   appointmentId: string;

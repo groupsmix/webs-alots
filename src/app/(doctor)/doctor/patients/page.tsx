@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Search, User, Phone, Calendar, FileText, Pill, ClipboardList, AlertCircle } from "lucide-react";
+import { Search, User, Phone, Calendar, FileText, Pill, AlertCircle } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";

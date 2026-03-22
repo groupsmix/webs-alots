@@ -199,7 +199,7 @@ export default function IopTrackingPage() {
 
                         {/* Data points */}
                         <div className="flex items-end gap-1 h-32 pt-4 pb-2">
-                          {data.map((m, i) => {
+                          {data.map((m) => {
                             const maxP = 35;
                             const odH = Math.min((m.odPressure / maxP) * 100, 100);
                             const osH = Math.min((m.osPressure / maxP) * 100, 100);

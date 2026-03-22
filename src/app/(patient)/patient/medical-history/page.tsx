@@ -9,7 +9,6 @@ import {
   fetchPatientAppointments,
   fetchPrescriptions,
   fetchConsultationNotes,
-  type PatientView,
   type AppointmentView,
   type PrescriptionView,
   type ConsultationNoteView,

@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
   ClipboardList, AlertTriangle,
-  Clock, Users, DollarSign, ArrowRight,
+  Clock, DollarSign, ArrowRight,
   Check, Eye, AlertCircle, TrendingUp,
   Package, Pill, BarChart3,
 } from "lucide-react";
