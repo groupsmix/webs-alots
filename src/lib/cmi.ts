@@ -189,8 +189,17 @@ export async function verifyCmiCallback(
   }
 
   const expectedHash = await generateHash(fieldsToHash, config.secretKey);
+  const received = receivedHash.toLowerCase();
 
-  if (expectedHash !== receivedHash.toLowerCase()) {
+  // Constant-time comparison to prevent timing attacks
+  if (expectedHash.length !== received.length) {
+    return null;
+  }
+  let mismatch = 0;
+  for (let i = 0; i < expectedHash.length; i++) {
+    mismatch |= expectedHash.charCodeAt(i) ^ received.charCodeAt(i);
+  }
+  if (mismatch !== 0) {
     return null; // Invalid hash — potential tampering
   }
 

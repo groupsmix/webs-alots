@@ -33,9 +33,13 @@ export interface ClinicUser {
 }
 
 let _cachedUser: ClinicUser | null | undefined;
+let _cachedUserAt = 0;
+
+/** Cache TTL in milliseconds (5 minutes). */
+const CACHE_TTL_MS = 5 * 60 * 1000;
 
 export async function getCurrentUser(): Promise<ClinicUser | null> {
-  if (_cachedUser !== undefined) return _cachedUser;
+  if (_cachedUser !== undefined && Date.now() - _cachedUserAt < CACHE_TTL_MS) return _cachedUser;
   const supabase = createClient();
   const {
     data: { user },
@@ -50,11 +54,13 @@ export async function getCurrentUser(): Promise<ClinicUser | null> {
     .eq("auth_id", user.id)
     .single();
   _cachedUser = (data as ClinicUser) ?? null;
+  _cachedUserAt = Date.now();
   return _cachedUser;
 }
 
 export function clearUserCache() {
   _cachedUser = undefined;
+  _cachedUserAt = 0;
 }
 
 // ── Generic fetch helper ──
@@ -150,9 +156,10 @@ interface AppointmentRaw {
 // lookup maps built lazily
 let _userMap: Map<string, { name: string; phone: string; email: string }> | null = null;
 let _serviceMap: Map<string, { name: string; price: number }> | null = null;
+let _lookupsBuiltAt = 0;
 
 async function ensureLookups(clinicId: string) {
-  if (_userMap && _serviceMap) return;
+  if (_userMap && _serviceMap && Date.now() - _lookupsBuiltAt < CACHE_TTL_MS) return;
   const supabase = createClient();
   const [usersRes, servicesRes] = await Promise.all([
   supabase.from("users").select("id, name, phone, email").eq("clinic_id", clinicId),
@@ -170,11 +177,13 @@ async function ensureLookups(clinicId: string) {
       s,
     ]),
   );
+  _lookupsBuiltAt = Date.now();
 }
 
 export function clearLookupCache() {
   _userMap = null;
   _serviceMap = null;
+  _lookupsBuiltAt = 0;
 }
 
 function mapAppointment(raw: AppointmentRaw): AppointmentView {

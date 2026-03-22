@@ -21,6 +21,27 @@ interface ChatRequestBody {
  *   1. x-tenant-clinic-id header (set by middleware from subdomain)
  *   2. clinicId in request body (fallback)
  */
+/** Max number of conversation history messages sent to the LLM. */
+const MAX_HISTORY_LENGTH = 20;
+
+/** Max length of a single user message (characters). */
+const MAX_MESSAGE_LENGTH = 2000;
+
+/**
+ * Sanitize user-supplied text before it reaches the LLM.
+ * Strips common prompt-injection markers while keeping normal punctuation.
+ */
+function sanitizeUserInput(text: string): string {
+  return text
+    // Strip attempts to impersonate system/assistant roles
+    .replace(/^\s*(system|assistant)\s*:/gi, "")
+    // Remove markdown-style "instruction" fences that could confuse the model
+    .replace(/```(system|instructions?)[\s\S]*?```/gi, "")
+    // Collapse excessive whitespace
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
 export async function POST(request: NextRequest) {
   try {
     // Resolve clinic ID from tenant headers or request body
@@ -49,6 +70,17 @@ export async function POST(request: NextRequest) {
         { status: 400 },
       );
     }
+
+    // Sanitize and truncate user messages; limit conversation history length
+    const sanitizedMessages = body.messages
+      .slice(-MAX_HISTORY_LENGTH)
+      .map((m) => ({
+        ...m,
+        content:
+          m.role === "user"
+            ? sanitizeUserInput(m.content).slice(0, MAX_MESSAGE_LENGTH)
+            : m.content,
+      }));
 
     // Fetch clinic context from Supabase
     const ctx = await fetchChatbotContext(clinicId);
@@ -87,7 +119,7 @@ export async function POST(request: NextRequest) {
       const systemPrompt = buildSystemPrompt(ctx);
       const cfMessages = [
         { role: "system" as const, content: systemPrompt },
-        ...body.messages,
+        ...sanitizedMessages,
       ];
 
       const cfResponse = await fetch(
@@ -136,7 +168,7 @@ export async function POST(request: NextRequest) {
     const systemPrompt = buildSystemPrompt(ctx);
     const apiMessages = [
       { role: "system" as const, content: systemPrompt },
-      ...body.messages,
+      ...sanitizedMessages,
     ];
 
     const apiResponse = await fetch(`${baseUrl}/chat/completions`, {

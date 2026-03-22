@@ -89,6 +89,52 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Validate field_values keys against defined custom field definitions
+    if (typeof field_values !== "object" || field_values === null || Array.isArray(field_values)) {
+      return NextResponse.json(
+        { error: "field_values must be a plain object" },
+        { status: 400 },
+      );
+    }
+
+    const { data: definitions } = await supabase
+      .from("custom_field_definitions")
+      .select("field_key, field_type")
+      .eq("clinic_id", clinic_id)
+      .eq("entity_type", entity_type as unknown as never);
+
+    if (definitions && definitions.length > 0) {
+      const defMap = new Map(
+        (definitions as { field_key: string; field_type: string }[]).map((d) => [d.field_key, d.field_type]),
+      );
+      const unknownKeys = Object.keys(field_values).filter((k) => !defMap.has(k));
+      if (unknownKeys.length > 0) {
+        return NextResponse.json(
+          { error: `Unknown custom field keys: ${unknownKeys.join(", ")}` },
+          { status: 400 },
+        );
+      }
+
+      // Type-check values against declared field types
+      for (const [key, value] of Object.entries(field_values as Record<string, unknown>)) {
+        const expectedType = defMap.get(key);
+        if (!expectedType) continue;
+        const valid =
+          (expectedType === "text" && typeof value === "string") ||
+          (expectedType === "number" && typeof value === "number" && Number.isFinite(value)) ||
+          (expectedType === "boolean" && typeof value === "boolean") ||
+          (expectedType === "date" && typeof value === "string" && /^\d{4}-\d{2}-\d{2}/.test(value)) ||
+          (expectedType === "select" && typeof value === "string") ||
+          (expectedType === "multiselect" && Array.isArray(value));
+        if (!valid) {
+          return NextResponse.json(
+            { error: `Field "${key}" expects type "${expectedType}"` },
+            { status: 400 },
+          );
+        }
+      }
+    }
+
     // Upsert: insert or update on conflict
     const { data, error } = await supabase
       .from("custom_field_values")
@@ -152,6 +198,51 @@ export async function PATCH(request: NextRequest) {
         { error: "clinic_id, entity_type, entity_id, and field_values are required" },
         { status: 400 },
       );
+    }
+
+    // Validate field_values keys against defined custom field definitions
+    if (typeof field_values !== "object" || field_values === null || Array.isArray(field_values)) {
+      return NextResponse.json(
+        { error: "field_values must be a plain object" },
+        { status: 400 },
+      );
+    }
+
+    const { data: definitions } = await supabase
+      .from("custom_field_definitions")
+      .select("field_key, field_type")
+      .eq("clinic_id", clinic_id)
+      .eq("entity_type", entity_type as unknown as never);
+
+    if (definitions && definitions.length > 0) {
+      const defMap = new Map(
+        (definitions as { field_key: string; field_type: string }[]).map((d) => [d.field_key, d.field_type]),
+      );
+      const unknownKeys = Object.keys(field_values).filter((k) => !defMap.has(k));
+      if (unknownKeys.length > 0) {
+        return NextResponse.json(
+          { error: `Unknown custom field keys: ${unknownKeys.join(", ")}` },
+          { status: 400 },
+        );
+      }
+
+      for (const [key, value] of Object.entries(field_values as Record<string, unknown>)) {
+        const expectedType = defMap.get(key);
+        if (!expectedType) continue;
+        const valid =
+          (expectedType === "text" && typeof value === "string") ||
+          (expectedType === "number" && typeof value === "number" && Number.isFinite(value)) ||
+          (expectedType === "boolean" && typeof value === "boolean") ||
+          (expectedType === "date" && typeof value === "string" && /^\d{4}-\d{2}-\d{2}/.test(value)) ||
+          (expectedType === "select" && typeof value === "string") ||
+          (expectedType === "multiselect" && Array.isArray(value));
+        if (!valid) {
+          return NextResponse.json(
+            { error: `Field "${key}" expects type "${expectedType}"` },
+            { status: 400 },
+          );
+        }
+      }
     }
 
     // Get existing values
