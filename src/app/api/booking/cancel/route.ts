@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { clinicConfig } from "@/config/clinic.config";
 import { withAuth } from "@/lib/with-auth";
+import { APPOINTMENT_STATUS } from "@/lib/types/database";
+import { logAuditEvent } from "@/lib/audit-log";
 
 /**
  * Build a timezone-aware Date for a date + time string using the clinic's timezone.
@@ -59,7 +61,7 @@ export const runtime = "edge";
  *
  * Cancel an appointment if within the cancellation window.
  */
-export const POST = withAuth(async (request, { supabase }) => {
+export const POST = withAuth(async (request, { supabase, profile }) => {
   try {
     const body = (await request.json()) as { appointmentId: string; reason?: string };
 
@@ -84,7 +86,7 @@ export const POST = withAuth(async (request, { supabase }) => {
       return NextResponse.json({ error: "Appointment not found" }, { status: 404 });
     }
 
-    if (appt.status === "cancelled" || appt.status === "completed" || appt.status === "rescheduled") {
+    if (appt.status === APPOINTMENT_STATUS.CANCELLED || appt.status === APPOINTMENT_STATUS.COMPLETED || appt.status === APPOINTMENT_STATUS.RESCHEDULED) {
       return NextResponse.json(
         { error: "Appointment cannot be cancelled in its current state" },
         { status: 400 },
@@ -116,7 +118,7 @@ export const POST = withAuth(async (request, { supabase }) => {
     const { error: updateError } = await supabase
       .from("appointments")
       .update({
-        status: "cancelled",
+        status: APPOINTMENT_STATUS.CANCELLED,
         cancelled_at: new Date().toISOString(),
         cancellation_reason: body.reason ?? "Cancelled by patient",
       })
@@ -145,7 +147,16 @@ export const POST = withAuth(async (request, { supabase }) => {
         .eq("id", candidate.id);
     }
 
-    return NextResponse.json({ status: "cancelled", message: "Appointment cancelled successfully" });
+    await logAuditEvent({
+      supabase,
+      action: "appointment.cancelled",
+      type: "booking",
+      actor: profile.id,
+      clinicId: profile.clinic_id,
+      description: `Appointment ${body.appointmentId} cancelled. Reason: ${body.reason ?? "Cancelled by patient"}`,
+    });
+
+    return NextResponse.json({ status: APPOINTMENT_STATUS.CANCELLED, message: "Appointment cancelled successfully" });
   } catch (err) {
     console.error("[cancel] Error:", err instanceof Error ? err.message : "Unknown error");
     return NextResponse.json({ error: "Failed to cancel appointment" }, { status: 500 });
@@ -175,7 +186,7 @@ export const GET = withAuth(async (request, { supabase }) => {
     return NextResponse.json({ canCancel: false, reason: "Appointment not found" });
   }
 
-  if (appt.status === "cancelled" || appt.status === "completed" || appt.status === "rescheduled") {
+  if (appt.status === APPOINTMENT_STATUS.CANCELLED || appt.status === APPOINTMENT_STATUS.COMPLETED || appt.status === APPOINTMENT_STATUS.RESCHEDULED) {
     return NextResponse.json({
       canCancel: false,
       reason: "Appointment cannot be cancelled in its current state",

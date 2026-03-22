@@ -32,6 +32,8 @@ interface RateLimiter {
 export function createRateLimiter(options: RateLimiterOptions): RateLimiter {
   const { windowMs, max } = options;
   const store = new Map<string, RateLimitEntry>();
+  const createdAt = Date.now();
+  let coldStartWarned = false;
 
   // Prune expired entries periodically to prevent memory leaks
   let lastPrune = Date.now();
@@ -50,6 +52,16 @@ export function createRateLimiter(options: RateLimiterOptions): RateLimiter {
   return {
     check(key: string): boolean {
       const now = Date.now();
+
+      // Log a warning on the first request after a cold start so operators
+      // know the rate-limit state was reset (all previous counters lost).
+      if (!coldStartWarned) {
+        coldStartWarned = true;
+        console.warn(
+          `[rate-limit] Cold start detected — limiter created at ${new Date(createdAt).toISOString()}, first check at ${new Date(now).toISOString()}. Previous rate-limit state was lost.`,
+        );
+      }
+
       prune(now);
 
       const entry = store.get(key);

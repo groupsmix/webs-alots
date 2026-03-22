@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { clinicConfig } from "@/config/clinic.config";
+import { APPOINTMENT_STATUS } from "@/lib/types/database";
 import type { UserRole } from "@/lib/types/database";
 import { withAuth } from "@/lib/with-auth";
 
@@ -51,9 +52,9 @@ export const POST = withAuth(async (request, { supabase }) => {
     if (payment.appointment_id) {
       await supabase
         .from("appointments")
-        .update({ status: "confirmed" })
+        .update({ status: APPOINTMENT_STATUS.CONFIRMED })
         .eq("id", payment.appointment_id)
-        .in("status", ["pending", "scheduled"]);
+        .in("status", [APPOINTMENT_STATUS.PENDING, APPOINTMENT_STATUS.SCHEDULED]);
     }
 
     return NextResponse.json({ status: "confirmed", message: "Payment confirmed" });

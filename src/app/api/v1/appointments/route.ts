@@ -87,6 +87,25 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  // Input length validation to prevent oversized payloads
+  const lengthLimits: Record<string, number> = {
+    patient_id: 100,
+    doctor_id: 100,
+    appointment_date: 10,
+    start_time: 8,
+    end_time: 8,
+    status: 20,
+    notes: 2000,
+  };
+  for (const [field, maxLen] of Object.entries(lengthLimits)) {
+    if (typeof body[field] === "string" && body[field].length > maxLen) {
+      return NextResponse.json(
+        { error: `Field '${field}' exceeds maximum length of ${maxLen} characters` },
+        { status: 400 },
+      );
+    }
+  }
+
   // Build slot_start / slot_end from appointment_date + start_time / end_time.
   // These are required NOT NULL columns in the appointments table.
   const slotStart = `${body.appointment_date}T${body.start_time}`;

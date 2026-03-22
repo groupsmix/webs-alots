@@ -9,6 +9,8 @@ import {
   getPublicSpecialties,
 } from "@/lib/data/public";
 import { createClient } from "@/lib/supabase-server";
+import { APPOINTMENT_STATUS } from "@/lib/types/database";
+import { logAuditEvent } from "@/lib/audit-log";
 
 export const runtime = "edge";
 
@@ -186,7 +188,7 @@ export async function POST(request: NextRequest) {
         end_time: endTime,
         slot_start: slotStart,
         slot_end: slotEnd,
-        status: "confirmed",
+        status: APPOINTMENT_STATUS.CONFIRMED,
         is_first_visit: body.isFirstVisit,
         insurance_flag: body.hasInsurance,
         booking_source: "online",
@@ -208,7 +210,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Failed to create booking" }, { status: 500 });
     }
 
-    console.log("Booking created:", appointment.id);
+    // Audit log for healthcare compliance
+    await logAuditEvent({
+      supabase,
+      action: "appointment.created",
+      type: "booking",
+      clinicId: clinicConfig.clinicId,
+      description: `Appointment ${appointment.id} created for patient ${patientId} with doctor ${body.doctorId}`,
+    });
 
     return NextResponse.json({
       status: "created",
