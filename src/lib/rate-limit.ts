@@ -101,6 +101,12 @@ export const onboardingLimiter = createRateLimiter({
   max: 5,
 });
 
+/** Chat endpoint: 15 req / 60s per IP (prevent AI API abuse) */
+export const chatLimiter = createRateLimiter({
+  windowMs: 60_000,
+  max: 15,
+});
+
 /** Webhook ingress: 100 req / 60s per IP (higher limit for legitimate webhook traffic) */
 export const webhookLimiter = createRateLimiter({
   windowMs: 60_000,
@@ -120,6 +126,7 @@ export interface RateLimitRule {
 export const rateLimitRules: RateLimitRule[] = [
   { prefix: "/api/upload", limiter: uploadLimiter },
   { prefix: "/api/onboarding", limiter: onboardingLimiter },
+  { prefix: "/api/chat", limiter: chatLimiter },
   { prefix: "/api/webhooks", limiter: webhookLimiter },
   { prefix: "/api/notifications", limiter: apiMutationLimiter },
   // Catch-all for other API mutations (applied in middleware only to POST/PUT/PATCH/DELETE)

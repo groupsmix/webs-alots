@@ -4,6 +4,7 @@ import { withAuth } from "@/lib/with-auth";
 import { findOrCreatePatient } from "@/lib/find-or-create-patient";
 import { APPOINTMENT_STATUS, BOOKING_SOURCE } from "@/lib/types/database";
 import { logAuditEvent } from "@/lib/audit-log";
+import { computeEndTime } from "@/lib/timezone";
 
 export const runtime = "edge";
 
@@ -56,10 +57,14 @@ export const POST = withAuth(async (request, { supabase }) => {
         return NextResponse.json({ error: "Doctor not found" }, { status: 404 });
       }
 
-      // Calculate end time
-      const [hh, mm] = body.startTime.split(":").map(Number);
-      const endMinutes = hh * 60 + mm + body.durationMin;
-      const endTime = `${String(Math.floor(endMinutes / 60)).padStart(2, "0")}:${String(endMinutes % 60).padStart(2, "0")}`;
+      // Calculate end time with midnight overflow guard
+      const { endTime, overflows } = computeEndTime(body.startTime, body.durationMin);
+      if (overflows) {
+        return NextResponse.json(
+          { error: "Emergency slot would extend past midnight. Please choose an earlier time or shorter duration." },
+          { status: 400 },
+        );
+      }
 
       const { data: slot, error: insertError } = await supabase
         .from("emergency_slots")
