@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
   if (!auth) {
     return NextResponse.json(
       { error: "Unauthorized. Provide a valid API key as Bearer token." },
-      { status: 401 },
+      { status: 401, headers: corsHeaders },
     );
   }
 
@@ -59,7 +59,7 @@ export async function GET(request: NextRequest) {
 
   if (error) {
     console.error("[GET /api/v1/patients] Query error:", error.message);
-    return NextResponse.json({ error: "Failed to fetch patients" }, { status: 500 });
+    return NextResponse.json({ error: "Failed to fetch patients" }, { status: 500, headers: corsHeaders });
   }
 
   return NextResponse.json({
@@ -73,7 +73,7 @@ export async function POST(request: NextRequest) {
   if (!auth) {
     return NextResponse.json(
       { error: "Unauthorized. Provide a valid API key as Bearer token." },
-      { status: 401 },
+      { status: 401, headers: corsHeaders },
     );
   }
 
@@ -84,7 +84,7 @@ export async function POST(request: NextRequest) {
   if (missing.length > 0) {
     return NextResponse.json(
       { error: `Missing required fields: ${missing.join(", ")}` },
-      { status: 400 },
+      { status: 400, headers: corsHeaders },
     );
   }
 
@@ -101,7 +101,7 @@ export async function POST(request: NextRequest) {
     if (typeof body[field] === "string" && body[field].length > maxLen) {
       return NextResponse.json(
         { error: `Field '${field}' exceeds maximum length of ${maxLen} characters` },
-        { status: 400 },
+        { status: 400, headers: corsHeaders },
       );
     }
   }
@@ -124,7 +124,7 @@ export async function POST(request: NextRequest) {
 
   if (error) {
     console.error("[POST /api/v1/patients] Insert error:", error.message);
-    return NextResponse.json({ error: "Failed to create patient" }, { status: 500 });
+    return NextResponse.json({ error: "Failed to create patient" }, { status: 500, headers: corsHeaders });
   }
 
   return NextResponse.json({ data }, { status: 201, headers: corsHeaders });

@@ -9,6 +9,7 @@
 
 import { createClient } from "@/lib/supabase-server";
 import { clinicConfig } from "@/config/clinic.config";
+import { APPOINTMENT_STATUS } from "@/lib/types/database";
 
 // ── Types (match existing UI shapes) ──
 
@@ -351,7 +352,7 @@ export async function getPublicSlotBookingCounts(
     .eq("doctor_id", doctorId)
     .gte("slot_start", dayStart)
     .lte("slot_start", dayEnd)
-    .not("status", "in", '("cancelled","no_show")');
+    .not("status", "in", `("${APPOINTMENT_STATUS.CANCELLED}","${APPOINTMENT_STATUS.NO_SHOW}")`);
 
   if (error || !data) return {};
 

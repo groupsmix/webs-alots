@@ -10,6 +10,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase-server";
 import { authenticateApiKey } from "@/lib/api-auth";
+import { APPOINTMENT_STATUS } from "@/lib/types/database";
 
 /** Standard CORS headers for the public API. */
 const corsHeaders = {
@@ -29,7 +30,7 @@ export async function GET(request: NextRequest) {
   if (!auth) {
     return NextResponse.json(
       { error: "Unauthorized. Provide a valid API key as Bearer token." },
-      { status: 401 },
+      { status: 401, headers: corsHeaders },
     );
   }
 
@@ -58,7 +59,7 @@ export async function GET(request: NextRequest) {
 
   if (error) {
     console.error("[GET /api/v1/appointments] Query error:", error.message);
-    return NextResponse.json({ error: "Failed to fetch appointments" }, { status: 500 });
+    return NextResponse.json({ error: "Failed to fetch appointments" }, { status: 500, headers: corsHeaders });
   }
 
   return NextResponse.json({
@@ -83,7 +84,7 @@ export async function POST(request: NextRequest) {
   if (missing.length > 0) {
     return NextResponse.json(
       { error: `Missing required fields: ${missing.join(", ")}` },
-      { status: 400 },
+      { status: 400, headers: corsHeaders },
     );
   }
 
@@ -101,7 +102,7 @@ export async function POST(request: NextRequest) {
     if (typeof body[field] === "string" && body[field].length > maxLen) {
       return NextResponse.json(
         { error: `Field '${field}' exceeds maximum length of ${maxLen} characters` },
-        { status: 400 },
+        { status: 400, headers: corsHeaders },
       );
     }
   }
@@ -125,7 +126,7 @@ export async function POST(request: NextRequest) {
       end_time: body.end_time || null,
       slot_start: slotStart,
       slot_end: slotEnd,
-      status: body.status || "scheduled",
+      status: body.status || APPOINTMENT_STATUS.SCHEDULED,
       notes: body.notes || null,
     })
     .select()
@@ -133,7 +134,7 @@ export async function POST(request: NextRequest) {
 
   if (error) {
     console.error("[POST /api/v1/appointments] Insert error:", error.message);
-    return NextResponse.json({ error: "Failed to create appointment" }, { status: 500 });
+    return NextResponse.json({ error: "Failed to create appointment" }, { status: 500, headers: corsHeaders });
   }
 
   return NextResponse.json({ data }, { status: 201, headers: corsHeaders });

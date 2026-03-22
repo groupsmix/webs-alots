@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase-server";
 import { dispatchNotification } from "@/lib/notifications";
+import { APPOINTMENT_STATUS } from "@/lib/types/database";
 
 /**
  * GET /api/cron/reminders
@@ -55,7 +56,7 @@ export async function GET(request: NextRequest) {
         doctors:doctor_id (id, name),
         services:service_id (name)
       `)
-      .in("status", ["confirmed", "pending"])
+      .in("status", [APPOINTMENT_STATUS.CONFIRMED, APPOINTMENT_STATUS.PENDING])
       .or(
         `appointment_date.in.(${todayStr},${tomorrowStr}),and(appointment_date.is.null,slot_start.gte.${now.toISOString()},slot_start.lte.${twentyFourHoursFromNow.toISOString()})`,
       )
