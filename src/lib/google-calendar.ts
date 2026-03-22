@@ -193,7 +193,7 @@ export async function updateCalendarEvent(
   const validTokens = await getValidToken(tokens);
 
   const response = await fetch(
-    `${CALENDAR_API_BASE}/calendars/${encodeURIComponent(calendarId)}/events/${eventId}`,
+    `${CALENDAR_API_BASE}/calendars/${encodeURIComponent(calendarId)}/events/${encodeURIComponent(eventId)}`,
     {
       method: "PATCH",
       headers: {
@@ -224,7 +224,7 @@ export async function deleteCalendarEvent(
   const validTokens = await getValidToken(tokens);
 
   const response = await fetch(
-    `${CALENDAR_API_BASE}/calendars/${encodeURIComponent(calendarId)}/events/${eventId}`,
+    `${CALENDAR_API_BASE}/calendars/${encodeURIComponent(calendarId)}/events/${encodeURIComponent(eventId)}`,
     {
       method: "DELETE",
       headers: {

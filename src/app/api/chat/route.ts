@@ -30,17 +30,27 @@ const MAX_MESSAGE_LENGTH = 2000;
 
 /**
  * Sanitize user-supplied text before it reaches the LLM.
- * Strips common prompt-injection markers while keeping normal punctuation.
+ *
+ * Defence-in-depth: this is NOT a substitute for proper output
+ * filtering / guardrails on the LLM response, but it raises the
+ * bar against common injection patterns.
  */
 function sanitizeUserInput(text: string): string {
-  return text
-    // Strip attempts to impersonate system/assistant roles
-    .replace(/^\s*(system|assistant)\s*:/gi, "")
-    // Remove markdown-style "instruction" fences that could confuse the model
-    .replace(/```(system|instructions?)[\s\S]*?```/gi, "")
-    // Collapse excessive whitespace
-    .replace(/\n{3,}/g, "\n\n")
-    .trim();
+  return (
+    text
+      // Strip attempts to impersonate system/assistant roles
+      // (covers whitespace/zero-width tricks between characters)
+      .replace(/^\s*(s\s*y\s*s\s*t\s*e\s*m|a\s*s\s*s\s*i\s*s\s*t\s*a\s*n\s*t)\s*:/gi, "")
+      // Remove markdown-style "instruction" fences
+      .replace(/```(system|instructions?)[\s\S]*?```/gi, "")
+      // Strip ChatML-style markers (e.g. <|im_start|>system)
+      .replace(/<\|im_(start|end)\|>\s*(system|assistant)?/gi, "")
+      // Strip XML-style role tags
+      .replace(/<\/?(system|assistant|instruction)[^>]*>/gi, "")
+      // Collapse excessive whitespace
+      .replace(/\n{3,}/g, "\n\n")
+      .trim()
+  );
 }
 
 export async function POST(request: NextRequest) {
