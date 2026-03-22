@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import {
   Glasses, Search, AlertTriangle, Package,
 } from "lucide-react";
@@ -105,9 +106,9 @@ export function FrameCatalog({ frames }: FrameCatalogProps) {
         )}
         {filtered.map((frame) => (
           <Card key={frame.id} className={!frame.is_active ? "opacity-60" : ""}>
-            <div className="aspect-video bg-muted flex items-center justify-center overflow-hidden">
+            <div className="relative aspect-video bg-muted flex items-center justify-center overflow-hidden">
               {frame.photo_url ? (
-                <img src={frame.photo_url} alt={`${frame.brand} ${frame.model}`} className="w-full h-full object-cover" />
+                <Image src={frame.photo_url} alt={`${frame.brand} ${frame.model}`} fill className="object-cover" />
               ) : (
                 <Glasses className="h-12 w-12 text-muted-foreground" />
               )}

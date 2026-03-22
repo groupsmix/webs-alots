@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { Menu, X } from "lucide-react";
 import { useState } from "react";
 import { buttonVariants } from "@/components/ui/button";
@@ -30,8 +31,7 @@ export function PublicHeader({ logoUrl, clinicName }: PublicHeaderProps) {
       <div className="container mx-auto flex h-16 items-center justify-between px-4">
         <Link href="/" className="flex items-center gap-2 text-xl font-bold">
           {logoUrl && (
-            /* eslint-disable-next-line @next/next/no-img-element */
-            <img src={logoUrl} alt={displayName} className="h-8 w-auto" />
+            <Image src={logoUrl} alt={displayName} width={32} height={32} className="h-8 w-auto" />
           )}
           {displayName}
         </Link>
