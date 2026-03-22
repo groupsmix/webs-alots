@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { clinicConfig } from "@/config/clinic.config";
 import { withAuth } from "@/lib/with-auth";
 import { findOrCreatePatient } from "@/lib/find-or-create-patient";
+import { logAuditEvent } from "@/lib/audit-log";
+import { WAITING_LIST_STATUS } from "@/lib/types/database";
 
 export const runtime = "edge";
 
@@ -52,7 +54,7 @@ export const POST = withAuth(async (request, { supabase }) => {
         preferred_date: body.preferredDate,
         preferred_time: body.preferredTime ?? null,
         service_id: body.serviceId ?? null,
-        status: "waiting",
+        status: WAITING_LIST_STATUS.WAITING,
       })
       .select("id")
       .single();
@@ -61,6 +63,15 @@ export const POST = withAuth(async (request, { supabase }) => {
       console.error("[POST /api/booking/waiting-list] Error:", error?.message);
       return NextResponse.json({ error: "Failed to add to waiting list" }, { status: 400 });
     }
+
+    // Audit log for healthcare compliance
+    await logAuditEvent({
+      supabase,
+      action: "waiting_list.added",
+      type: "booking",
+      clinicId: clinicConfig.clinicId,
+      description: `Patient ${patientId} added to waiting list (entry ${entry.id}) for doctor ${body.doctorId} on ${body.preferredDate}`,
+    });
 
     return NextResponse.json({
       status: "added",
@@ -142,6 +153,15 @@ export const DELETE = withAuth(async (request, { supabase }) => {
       console.error("[DELETE /api/booking/waiting-list] Error:", error.message);
       return NextResponse.json({ error: "Failed to remove from waiting list" }, { status: 400 });
     }
+
+    // Audit log for healthcare compliance
+    await logAuditEvent({
+      supabase,
+      action: "waiting_list.removed",
+      type: "booking",
+      clinicId: clinicConfig.clinicId,
+      description: `Waiting list entry ${body.entryId} removed`,
+    });
 
     return NextResponse.json({ status: "removed", message: "Removed from waiting list" });
   } catch (err) {

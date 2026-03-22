@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { clinicConfig } from "@/config/clinic.config";
 import { withAuth } from "@/lib/with-auth";
-import { APPOINTMENT_STATUS } from "@/lib/types/database";
+import { APPOINTMENT_STATUS, WAITING_LIST_STATUS } from "@/lib/types/database";
 import { logAuditEvent } from "@/lib/audit-log";
 
 /**
@@ -135,7 +135,7 @@ export const POST = withAuth(async (request, { supabase, profile }) => {
       .eq("clinic_id", clinicConfig.clinicId)
       .eq("doctor_id", appt.doctor_id)
       .eq("preferred_date", appt.appointment_date)
-      .eq("status", "waiting")
+      .eq("status", WAITING_LIST_STATUS.WAITING)
       .order("created_at", { ascending: true })
       .limit(1)
       .single();
@@ -143,7 +143,7 @@ export const POST = withAuth(async (request, { supabase, profile }) => {
     if (candidate) {
       await supabase
         .from("waiting_list")
-        .update({ status: "notified", notified_at: new Date().toISOString() })
+        .update({ status: WAITING_LIST_STATUS.NOTIFIED, notified_at: new Date().toISOString() })
         .eq("id", candidate.id);
     }
 

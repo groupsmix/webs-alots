@@ -9,8 +9,9 @@ import {
   getPublicSpecialties,
 } from "@/lib/data/public";
 import { createClient } from "@/lib/supabase-server";
-import { APPOINTMENT_STATUS } from "@/lib/types/database";
+import { APPOINTMENT_STATUS, BOOKING_SOURCE } from "@/lib/types/database";
 import { logAuditEvent } from "@/lib/audit-log";
+import { findOrCreatePatient } from "@/lib/find-or-create-patient";
 
 export const runtime = "edge";
 
@@ -135,35 +136,14 @@ export async function POST(request: NextRequest) {
 
     const supabase = await createClient();
 
-    // Find or create a patient record
-    let patientId: string;
-    const { data: existingPatient } = await supabase
-      .from("users")
-      .select("id")
-      .eq("clinic_id", clinicConfig.clinicId)
-      .eq("phone", body.patient.phone)
-      .eq("role", "patient")
-      .single();
-
-    if (existingPatient) {
-      patientId = existingPatient.id;
-    } else {
-      const { data: newPatient, error: patientError } = await supabase
-        .from("users")
-        .insert({
-          clinic_id: clinicConfig.clinicId,
-          name: body.patient.name,
-          phone: body.patient.phone,
-          email: body.patient.email ?? null,
-          role: "patient",
-        })
-        .select("id")
-        .single();
-
-      if (patientError || !newPatient) {
-        return NextResponse.json({ error: "Failed to create patient record" }, { status: 500 });
-      }
-      patientId = newPatient.id;
+    // Find or create a patient record using the shared utility
+    // (prefers phone-based lookup to avoid name collisions)
+    const patientId = await findOrCreatePatient(
+      supabase, clinicConfig.clinicId, "patient-new", body.patient.name,
+      { phone: body.patient.phone, email: body.patient.email },
+    );
+    if (!patientId) {
+      return NextResponse.json({ error: "Failed to create patient record" }, { status: 500 });
     }
 
     // Calculate end time
@@ -191,7 +171,7 @@ export async function POST(request: NextRequest) {
         status: APPOINTMENT_STATUS.CONFIRMED,
         is_first_visit: body.isFirstVisit,
         insurance_flag: body.hasInsurance,
-        booking_source: "online",
+        booking_source: BOOKING_SOURCE.ONLINE,
         notes: body.patient.reason ?? null,
         is_emergency: false,
       })

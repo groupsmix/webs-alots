@@ -2,7 +2,8 @@ import { NextResponse } from "next/server";
 import { clinicConfig } from "@/config/clinic.config";
 import { withAuth } from "@/lib/with-auth";
 import { findOrCreatePatient } from "@/lib/find-or-create-patient";
-import { APPOINTMENT_STATUS } from "@/lib/types/database";
+import { APPOINTMENT_STATUS, BOOKING_SOURCE } from "@/lib/types/database";
+import { logAuditEvent } from "@/lib/audit-log";
 
 export const runtime = "edge";
 
@@ -149,7 +150,7 @@ export const POST = withAuth(async (request, { supabase }) => {
           status: APPOINTMENT_STATUS.CONFIRMED,
           is_first_visit: false,
           insurance_flag: false,
-          booking_source: "online",
+          booking_source: BOOKING_SOURCE.ONLINE,
           is_emergency: true,
         })
         .select("id")
@@ -164,6 +165,15 @@ export const POST = withAuth(async (request, { supabase }) => {
 
         return NextResponse.json({ error: "Failed to create appointment" }, { status: 500 });
       }
+
+      // Audit log for healthcare compliance
+      await logAuditEvent({
+        supabase,
+        action: "appointment.emergency_booked",
+        type: "booking",
+        clinicId: clinicConfig.clinicId,
+        description: `Emergency appointment ${appointment.id} created for patient ${patientId} with doctor ${claimedSlot.doctor_id} on ${claimedSlot.slot_date}`,
+      });
 
       return NextResponse.json({
         status: "booked",
