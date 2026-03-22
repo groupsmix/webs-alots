@@ -9,6 +9,7 @@ import {
   fetchInstallmentPlans,
   type InstallmentPlanView,
 } from "@/lib/data/client";
+import { PageLoader } from "@/components/ui/page-loader";
 
 export default function DoctorInstallmentsPage() {
   const [plans, setPlans] = useState<InstallmentPlanView[]>([]);
@@ -26,11 +27,7 @@ export default function DoctorInstallmentsPage() {
   }, []);
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <p className="text-sm text-muted-foreground">Loading installment plans...</p>
-      </div>
-    );
+    return <PageLoader message="Loading installment plans..." />;
   }
 
   const handleMarkPaid = (planId: string, installmentId: string) => {

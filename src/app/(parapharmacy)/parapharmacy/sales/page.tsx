@@ -17,6 +17,7 @@ import { Search, Receipt, DollarSign, Plus, Minus, ShoppingCart, Loader2, Trash2
 import { clinicConfig } from "@/config/clinic.config";
 import { fetchDailySales, fetchParapharmacyProducts, createParapharmacySale } from "@/lib/data/client";
 import type { DailySaleView, ProductView } from "@/lib/data/client";
+import { PageLoader } from "@/components/ui/page-loader";
 
 interface CartItem {
   productId: string;
@@ -122,11 +123,7 @@ export default function ParapharmacySalesPage() {
   });
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[50vh]">
-        <div className="animate-pulse text-muted-foreground">Loading sales...</div>
-      </div>
-    );
+    return <PageLoader message="Loading sales..." />;
   }
 
   const filtered = sales.filter((s) => {

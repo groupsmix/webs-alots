@@ -17,6 +17,7 @@ import {
   fetchUrologyExams, createUrologyExam,
   type UrologyExamView,
 } from "@/lib/data/specialists";
+import { PageLoader } from "@/components/ui/page-loader";
 
 const UROLOGY_TEMPLATES = [
   { value: "general", label: "General Urology Exam" },
@@ -60,11 +61,7 @@ export default function UrologyPage() {
   }, []);
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <p className="text-sm text-muted-foreground">Loading urology records...</p>
-      </div>
-    );
+    return <PageLoader message="Loading urology records..." />;
   }
 
   const handleAdd = async () => {

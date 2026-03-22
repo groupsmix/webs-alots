@@ -24,6 +24,7 @@ import {
   createLabTestOrder, updateLabOrderStatus, assignLabTechnician,
 } from "@/lib/data/client";
 import type { LabTestOrderView, LabTestCatalogView, PatientView } from "@/lib/data/client";
+import { PageLoader } from "@/components/ui/page-loader";
 
 const statusOptions = ["all", "pending", "sample_collected", "in_progress", "completed", "validated", "cancelled"] as const;
 const priorityOptions = ["normal", "urgent", "stat"] as const;
@@ -128,11 +129,7 @@ export default function TestOrdersPage() {
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[50vh]">
-        <div className="animate-pulse text-muted-foreground">Loading test orders...</div>
-      </div>
-    );
+    return <PageLoader message="Loading test orders..." />;
   }
 
   const filtered = orders.filter((o) => {

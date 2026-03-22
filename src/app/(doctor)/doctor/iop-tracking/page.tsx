@@ -29,6 +29,7 @@ import {
   type IopMeasurementView,
   type PatientView,
 } from "@/lib/data/client";
+import { PageLoader } from "@/components/ui/page-loader";
 
 const METHODS = [
   { value: "goldmann", label: "Goldmann Applanation" },
@@ -94,11 +95,7 @@ export default function IopTrackingPage() {
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <p className="text-sm text-muted-foreground">Loading IOP measurements...</p>
-      </div>
-    );
+    return <PageLoader message="Loading IOP measurements..." />;
   }
 
   // Group by patient for history chart

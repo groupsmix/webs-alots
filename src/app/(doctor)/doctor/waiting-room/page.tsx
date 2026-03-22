@@ -11,6 +11,7 @@ import {
   fetchWaitingRoom,
   type WaitingRoomEntry,
 } from "@/lib/data/client";
+import { PageLoader } from "@/components/ui/page-loader";
 
 export default function WaitingRoomPage() {
   const [entries, setEntries] = useState<WaitingRoomEntry[]>([]);
@@ -28,11 +29,7 @@ export default function WaitingRoomPage() {
   }, []);
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <p className="text-sm text-muted-foreground">Loading waiting room...</p>
-      </div>
-    );
+    return <PageLoader message="Loading waiting room..." />;
   }
 
   const waitingEntries = entries.filter((e) => e.status === "waiting");

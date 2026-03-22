@@ -8,6 +8,7 @@ import { Search, Package, AlertTriangle } from "lucide-react";
 import { clinicConfig } from "@/config/clinic.config";
 import { fetchParapharmacyProducts, getStockStatus, getExpiryStatus } from "@/lib/data/client";
 import type { ProductView } from "@/lib/data/client";
+import { PageLoader } from "@/components/ui/page-loader";
 
 export default function ParapharmacyInventoryPage() {
   const [products, setProducts] = useState<ProductView[]>([]);
@@ -22,11 +23,7 @@ export default function ParapharmacyInventoryPage() {
   }, []);
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[50vh]">
-        <div className="animate-pulse text-muted-foreground">Loading inventory...</div>
-      </div>
-    );
+    return <PageLoader message="Loading inventory..." />;
   }
 
   const filtered = products.filter((p) => {

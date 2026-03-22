@@ -9,6 +9,7 @@ import {
   fetchDoctorAppointments,
   type AppointmentView,
 } from "@/lib/data/client";
+import { PageLoader } from "@/components/ui/page-loader";
 
 const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
@@ -37,11 +38,7 @@ export default function DoctorSchedulePage() {
   }, []);
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <p className="text-sm text-muted-foreground">Loading schedule...</p>
-      </div>
-    );
+    return <PageLoader message="Loading schedule..." />;
   }
 
   return (

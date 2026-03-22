@@ -18,6 +18,7 @@ import {
   type NotificationView,
 } from "@/lib/data/client";
 import { ErrorBoundary } from "@/components/ui/error-boundary";
+import { PageLoader } from "@/components/ui/page-loader";
 
 const quickLinks = [
   { icon: Calendar, label: "My Appointments", description: "View & manage bookings", href: "/patient/appointments" },
@@ -59,11 +60,7 @@ export default function PatientDashboardPage() {
   }, []);
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <p className="text-sm text-muted-foreground">Loading dashboard...</p>
-      </div>
-    );
+    return <PageLoader message="Loading dashboard..." />;
   }
 
   const upcoming = appointmentsList.filter((a) => a.status === "scheduled" || a.status === "confirmed");

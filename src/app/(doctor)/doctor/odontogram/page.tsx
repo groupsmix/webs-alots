@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { OdontogramChart } from "@/components/dental/odontogram-chart";
 import { getCurrentUser, fetchPatients, fetchOdontogram, upsertOdontogramEntry, type PatientView, type OdontogramView } from "@/lib/data/client";
 import type { ToothStatus, OdontogramEntry } from "@/lib/types/dental";
+import { PageLoader } from "@/components/ui/page-loader";
 
 export default function DoctorOdontogramPage() {
   const [patients, setPatients] = useState<PatientView[]>([]);
@@ -41,11 +42,7 @@ export default function DoctorOdontogramPage() {
   }, [selectedPatient]);
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <p className="text-sm text-muted-foreground">Loading odontogram...</p>
-      </div>
-    );
+    return <PageLoader message="Loading odontogram..." />;
   }
 
   const handleUpdateEntry = async (toothNumber: number, status: ToothStatus, notes: string) => {

@@ -15,6 +15,7 @@ import {
 import { clinicConfig } from "@/config/clinic.config";
 import { ManualBookingDialog } from "./manual-booking-dialog";
 import { WalkInDialog } from "./walk-in-dialog";
+import { PageLoader } from "@/components/ui/page-loader";
 
 // Local appointment type that supports drag-and-drop rescheduling
 interface LocalAppointment extends AppointmentView {
@@ -174,11 +175,7 @@ export function ReceptionistBookingCalendar() {
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <p className="text-muted-foreground">Loading calendar...</p>
-      </div>
-    );
+    return <PageLoader message="Loading calendar..." />;
   }
 
   return (

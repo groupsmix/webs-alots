@@ -19,6 +19,7 @@ import {
   fetchMobilityTests, createMobilityTest,
   type JointAssessmentView, type MobilityTestView,
 } from "@/lib/data/specialists";
+import { PageLoader } from "@/components/ui/page-loader";
 
 const JOINTS = [
   "Left Shoulder", "Right Shoulder", "Left Elbow", "Right Elbow",
@@ -73,11 +74,7 @@ export default function RheumatologyPage() {
   }, []);
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <p className="text-sm text-muted-foreground">Loading rheumatology records...</p>
-      </div>
-    );
+    return <PageLoader message="Loading rheumatology records..." />;
   }
 
   const handleAddAssessment = async () => {

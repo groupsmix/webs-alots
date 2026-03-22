@@ -29,6 +29,7 @@ import {
   type VisionTestView,
   type PatientView,
 } from "@/lib/data/client";
+import { PageLoader } from "@/components/ui/page-loader";
 
 function formatRx(sphere: number | null, cylinder: number | null, axis: number | null): string {
   if (sphere === null && cylinder === null) return "—";
@@ -104,11 +105,7 @@ export default function VisionTestsPage() {
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <p className="text-sm text-muted-foreground">Loading vision test records...</p>
-      </div>
-    );
+    return <PageLoader message="Loading vision test records..." />;
   }
 
   return (

@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { TreatmentPlanBuilder } from "@/components/dental/treatment-plan-builder";
 import { getCurrentUser, fetchTreatmentPlans, updateTreatmentPlan } from "@/lib/data/client";
 import type { TreatmentPlan, TreatmentStep } from "@/lib/types/dental";
+import { PageLoader } from "@/components/ui/page-loader";
 
 export default function DoctorTreatmentPlansPage() {
   const [plans, setPlans] = useState<TreatmentPlan[]>([]);
@@ -24,11 +25,7 @@ export default function DoctorTreatmentPlansPage() {
   }, []);
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <p className="text-sm text-muted-foreground">Loading treatment plans...</p>
-      </div>
-    );
+    return <PageLoader message="Loading treatment plans..." />;
   }
 
   const handleUpdateStep = async (planId: string, stepIndex: number, status: TreatmentStep["status"]) => {

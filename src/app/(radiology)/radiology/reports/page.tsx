@@ -9,6 +9,7 @@ import { Search, FileText, Download, Scan, Loader2 } from "lucide-react";
 import { clinicConfig } from "@/config/clinic.config";
 import { fetchRadiologyOrders } from "@/lib/data/client";
 import type { RadiologyOrderView } from "@/lib/data/client";
+import { PageLoader } from "@/components/ui/page-loader";
 
 export default function RadiologyReportsPage() {
   const [orders, setOrders] = useState<RadiologyOrderView[]>([]);
@@ -56,11 +57,7 @@ export default function RadiologyReportsPage() {
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[50vh]">
-        <div className="animate-pulse text-muted-foreground">Loading reports...</div>
-      </div>
-    );
+    return <PageLoader message="Loading reports..." />;
   }
 
   const filtered = orders.filter((o) => {

@@ -5,6 +5,7 @@ import { BookOpen } from "lucide-react";
 import { SpeechExerciseLibrary } from "@/components/para-medical/speech-exercise-library";
 import { getCurrentUser } from "@/lib/data/client";
 import type { SpeechExercise } from "@/lib/types/para-medical";
+import { PageLoader } from "@/components/ui/page-loader";
 
 export default function ExerciseLibraryPage() {
   const [exercises, setExercises] = useState<SpeechExercise[]>([]);
@@ -21,11 +22,7 @@ export default function ExerciseLibraryPage() {
   }, []);
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <p className="text-sm text-muted-foreground">Loading exercise library...</p>
-      </div>
-    );
+    return <PageLoader message="Loading exercise library..." />;
   }
 
   return (

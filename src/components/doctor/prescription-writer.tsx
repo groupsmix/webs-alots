@@ -13,6 +13,7 @@ import {
   type PatientView,
 } from "@/lib/data/client";
 import { downloadPrescriptionPDF } from "@/lib/prescription-pdf";
+import { PageLoader } from "@/components/ui/page-loader";
 
 interface Medication {
   name: string;
@@ -51,11 +52,7 @@ export function PrescriptionWriter() {
   }, []);
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <p className="text-sm text-muted-foreground">Loading...</p>
-      </div>
-    );
+    return <PageLoader message="Loading..." />;
   }
 
   const patient = patients.find((p) => p.id === selectedPatient) ?? patients[0];

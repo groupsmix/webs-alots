@@ -21,6 +21,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { createBrowserClient } from "@supabase/ssr";
+import { PageLoader } from "@/components/ui/page-loader";
 
 interface ChatbotConfig {
   enabled: boolean;
@@ -238,11 +239,7 @@ export default function ChatbotSettingsPage() {
   }
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
-      </div>
-    );
+    return <PageLoader message="Loading..." />;
   }
 
   return (

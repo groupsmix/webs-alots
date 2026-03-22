@@ -5,6 +5,7 @@ import { Target } from "lucide-react";
 import { TherapyPlanView } from "@/components/para-medical/therapy-plan-view";
 import { getCurrentUser } from "@/lib/data/client";
 import type { TherapyPlan } from "@/lib/types/para-medical";
+import { PageLoader } from "@/components/ui/page-loader";
 
 export default function TherapyPlansPage() {
   const [plans, setPlans] = useState<TherapyPlan[]>([]);
@@ -21,11 +22,7 @@ export default function TherapyPlansPage() {
   }, []);
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <p className="text-sm text-muted-foreground">Loading therapy plans...</p>
-      </div>
-    );
+    return <PageLoader message="Loading therapy plans..." />;
   }
 
   return (

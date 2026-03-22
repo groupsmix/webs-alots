@@ -23,6 +23,7 @@ import {
   getOutOfStockProducts,
 } from "@/lib/data/client";
 import type {
+import { PageLoader } from "@/components/ui/page-loader";
   ProductView,
   PharmacyPrescriptionView,
   DailySaleView,
@@ -116,11 +117,7 @@ export default function PharmacistDashboardPage() {
   );
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[50vh]">
-        <div className="animate-pulse text-muted-foreground">Loading dashboard...</div>
-      </div>
-    );
+    return <PageLoader message="Loading dashboard..." />;
   }
 
   // ── Prescription fill rate ──

@@ -12,6 +12,7 @@ import {
 import { clinicConfig } from "@/config/clinic.config";
 import { fetchPrescriptionRequests } from "@/lib/data/client";
 import type { PharmacyPrescriptionView } from "@/lib/data/client";
+import { PageLoader } from "@/components/ui/page-loader";
 
 type PrescriptionStatus = "pending" | "reviewing" | "partially-ready" | "ready" | "picked-up" | "delivered" | "rejected";
 
@@ -40,11 +41,7 @@ export default function PrescriptionsPage() {
   }, []);
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[50vh]">
-        <div className="animate-pulse text-muted-foreground">Loading prescriptions...</div>
-      </div>
-    );
+    return <PageLoader message="Loading prescriptions..." />;
   }
 
   const filtered = allPrescriptions.filter((rx) => {

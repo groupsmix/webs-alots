@@ -11,6 +11,7 @@ import {
 import { clinicConfig } from "@/config/clinic.config";
 import { fetchDailySales } from "@/lib/data/client";
 import type { DailySaleView } from "@/lib/data/client";
+import { PageLoader } from "@/components/ui/page-loader";
 
 export default function SalesPage() {
   const [allSales, setAllSales] = useState<DailySaleView[]>([]);
@@ -41,11 +42,7 @@ export default function SalesPage() {
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[50vh]">
-        <div className="animate-pulse text-muted-foreground">Loading sales data...</div>
-      </div>
-    );
+    return <PageLoader message="Loading sales data..." />;
   }
 
   return (

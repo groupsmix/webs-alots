@@ -12,6 +12,7 @@ import {
 import { LabDashboardKPIsComponent } from "@/components/admin/lab-dashboard-kpis";
 import { ClinicCenterDashboardKPIsComponent } from "@/components/admin/clinic-center-dashboard-kpis";
 import { ErrorBoundary } from "@/components/ui/error-boundary";
+import { PageLoader } from "@/components/ui/page-loader";
 
 const activityVariant: Record<string, "default" | "success" | "warning" | "destructive"> = {
   booking: "default",
@@ -36,11 +37,7 @@ export default function AdminDashboardPage() {
   }, []);
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <p className="text-sm text-muted-foreground">Loading dashboard...</p>
-      </div>
-    );
+    return <PageLoader message="Loading dashboard..." />;
   }
 
   const totalPatients = stats?.totalPatients ?? 0;

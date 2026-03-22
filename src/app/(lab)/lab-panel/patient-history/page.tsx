@@ -8,6 +8,7 @@ import { Search, History, FlaskConical, TrendingUp, TrendingDown, Minus } from "
 import { clinicConfig } from "@/config/clinic.config";
 import { fetchPatients, fetchPatientLabOrders, fetchLabTestResults } from "@/lib/data/client";
 import type { PatientView, LabTestOrderView, LabTestResultView } from "@/lib/data/client";
+import { PageLoader } from "@/components/ui/page-loader";
 
 function FlagBadge({ flag }: { flag: string }) {
   const color =
@@ -66,11 +67,7 @@ export default function PatientHistoryPage() {
   }, [selectedOrderId]);
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[50vh]">
-        <div className="animate-pulse text-muted-foreground">Loading patients...</div>
-      </div>
-    );
+    return <PageLoader message="Loading patients..." />;
   }
 
   const filteredPatients = patients.filter((p) => {

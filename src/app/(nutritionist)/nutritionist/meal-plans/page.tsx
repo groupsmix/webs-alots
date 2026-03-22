@@ -5,6 +5,7 @@ import { Apple } from "lucide-react";
 import { MealPlanBuilder } from "@/components/para-medical/meal-plan-builder";
 import { getCurrentUser } from "@/lib/data/client";
 import type { MealPlan } from "@/lib/types/para-medical";
+import { PageLoader } from "@/components/ui/page-loader";
 
 export default function MealPlansPage() {
   const [plans, setPlans] = useState<MealPlan[]>([]);
@@ -21,11 +22,7 @@ export default function MealPlansPage() {
   }, []);
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <p className="text-sm text-muted-foreground">Loading meal plans...</p>
-      </div>
-    );
+    return <PageLoader message="Loading meal plans..." />;
   }
 
   return (

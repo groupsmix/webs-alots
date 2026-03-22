@@ -11,6 +11,7 @@ import Link from "next/link";
 import { clinicConfig } from "@/config/clinic.config";
 import { fetchLabTestOrders } from "@/lib/data/client";
 import type { LabTestOrderView } from "@/lib/data/client";
+import { PageLoader } from "@/components/ui/page-loader";
 
 export default function LabDashboardPage() {
   const [orders, setOrders] = useState<LabTestOrderView[]>([]);
@@ -23,11 +24,7 @@ export default function LabDashboardPage() {
   }, []);
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[50vh]">
-        <div className="animate-pulse text-muted-foreground">Loading dashboard...</div>
-      </div>
-    );
+    return <PageLoader message="Loading dashboard..." />;
   }
 
   const pending = orders.filter((o) => o.status === "pending");

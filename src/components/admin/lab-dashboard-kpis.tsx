@@ -14,6 +14,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { fetchLabDashboardKPIs, type LabDashboardKPIs } from "@/lib/data/client";
 import { clinicConfig } from "@/config/clinic.config";
+import { PageLoader } from "@/components/ui/page-loader";
 
 /**
  * LabDashboardKPIs
@@ -45,11 +46,7 @@ export function LabDashboardKPIsComponent() {
   }, []);
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-10">
-        <p className="text-sm text-muted-foreground">Loading lab KPIs...</p>
-      </div>
-    );
+    return <PageLoader message="Loading lab KPIs..." />;
   }
 
   const pending = data?.pendingTestOrders ?? 0;

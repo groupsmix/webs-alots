@@ -19,6 +19,7 @@ import {
   fetchNeuroExams, createNeuroExam,
   type EEGRecordView, type NeuroExamView,
 } from "@/lib/data/specialists";
+import { PageLoader } from "@/components/ui/page-loader";
 
 const NEURO_EXAM_SECTIONS = [
   { key: "mentalStatus", label: "Mental Status", fields: ["Orientation", "Attention", "Memory", "Language", "Calculation"] },
@@ -62,11 +63,7 @@ export default function NeurologyPage() {
   }, []);
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <p className="text-sm text-muted-foreground">Loading neurology records...</p>
-      </div>
-    );
+    return <PageLoader message="Loading neurology records..." />;
   }
 
   const handleAddEeg = async () => {

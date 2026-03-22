@@ -11,6 +11,7 @@ import Link from "next/link";
 import { clinicConfig } from "@/config/clinic.config";
 import { fetchRadiologyOrders } from "@/lib/data/client";
 import type { RadiologyOrderView } from "@/lib/data/client";
+import { PageLoader } from "@/components/ui/page-loader";
 
 export default function RadiologyDashboardPage() {
   const [orders, setOrders] = useState<RadiologyOrderView[]>([]);
@@ -23,11 +24,7 @@ export default function RadiologyDashboardPage() {
   }, []);
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[50vh]">
-        <div className="animate-pulse text-muted-foreground">Loading dashboard...</div>
-      </div>
-    );
+    return <PageLoader message="Loading dashboard..." />;
   }
 
   const pending = orders.filter((o) => o.status === "pending" || o.status === "scheduled");

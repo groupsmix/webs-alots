@@ -10,6 +10,7 @@ import {
   fetchPrescriptions,
   type PrescriptionView,
 } from "@/lib/data/client";
+import { PageLoader } from "@/components/ui/page-loader";
 
 export default function PatientPrescriptionsPage() {
   const [downloading, setDownloading] = useState<string | null>(null);
@@ -28,11 +29,7 @@ export default function PatientPrescriptionsPage() {
   }, []);
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <p className="text-sm text-muted-foreground">Loading prescriptions...</p>
-      </div>
-    );
+    return <PageLoader message="Loading prescriptions..." />;
   }
 
   const handleDownload = (rxId: string) => {
