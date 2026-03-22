@@ -33,7 +33,7 @@ const ALLOWED_TYPES = new Set([
   "application/pdf",
 ]);
 
-export const POST = withAuth(async (request) => {
+export const POST = withAuth(async (request, { profile }) => {
   if (!isR2Configured()) {
     return NextResponse.json(
       { error: "File storage is not configured" },
@@ -44,7 +44,9 @@ export const POST = withAuth(async (request) => {
   const formData = await request.formData();
   const file = formData.get("file");
   const category = (formData.get("category") as string) || "uploads";
-  const clinicId = (formData.get("clinicId") as string) || "shared";
+  // Derive clinicId from the authenticated user's profile to prevent
+  // cross-tenant file access. Fall back to "shared" only for super_admins.
+  const clinicId = profile.clinic_id ?? (profile.role === "super_admin" ? ((formData.get("clinicId") as string) || "shared") : "shared");
 
   if (!file || !(file instanceof File)) {
     return NextResponse.json(
@@ -81,7 +83,7 @@ export const POST = withAuth(async (request) => {
   return NextResponse.json({ url, key });
 }, null);
 
-export const GET = withAuth(async (request) => {
+export const GET = withAuth(async (request, { profile }) => {
   if (!isR2Configured()) {
     return NextResponse.json(
       { error: "File storage is not configured" },
@@ -93,7 +95,8 @@ export const GET = withAuth(async (request) => {
   const filename = searchParams.get("filename");
   const contentType = searchParams.get("contentType");
   const category = searchParams.get("category") || "uploads";
-  const clinicId = searchParams.get("clinicId") || "shared";
+  // Derive clinicId from session, not from untrusted query params
+  const clinicId = profile.clinic_id ?? (profile.role === "super_admin" ? (searchParams.get("clinicId") || "shared") : "shared");
 
   if (!filename || !contentType) {
     return NextResponse.json(

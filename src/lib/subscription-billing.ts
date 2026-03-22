@@ -170,11 +170,14 @@ export function calculateNextPeriod(
   } else {
     // Clamp to last day of target month to prevent overflow
     // (e.g. Jan 31 + 1 month → Feb 28, not Mar 3)
-    const targetMonth = end.getMonth() + 1;
-    end.setMonth(targetMonth);
-    if (end.getMonth() !== targetMonth % 12) {
-      end.setDate(0); // Roll back to last day of previous month
-    }
+    const dayOfMonth = end.getDate();
+    // Move to the 1st of the next month first, then attempt to restore
+    // the original day-of-month. If the target month has fewer days,
+    // clamp to its last day.
+    end.setDate(1);
+    end.setMonth(end.getMonth() + 1);
+    const lastDayOfTargetMonth = new Date(end.getFullYear(), end.getMonth() + 1, 0).getDate();
+    end.setDate(Math.min(dayOfMonth, lastDayOfTargetMonth));
   }
   return {
     start: start.toISOString().split("T")[0],
@@ -263,8 +266,25 @@ export async function processRenewal(
   const plan = getPlanConfig(subscription.plan);
   const amount = getPlanPrice(subscription.plan, subscription.billingInterval);
 
-  // If Stripe is configured, charge via Stripe
-  if (subscription.stripeCustomerId && process.env.STRIPE_SECRET_KEY) {
+  // Free plans renew without payment; paid plans require Stripe
+  if (amount > 0) {
+    if (!subscription.stripeCustomerId || !process.env.STRIPE_SECRET_KEY) {
+      // Paid plan but no payment method configured — cannot renew silently
+      await supabase
+        .from("clinic_subscriptions")
+        .update({ status: "past_due" })
+        .eq("clinic_id", clinicId);
+
+      await logBillingEvent(clinicId, {
+        type: "payment_failed",
+        amount,
+        currency: plan.currency,
+        description: `Renewal blocked for ${plan.name} plan: no payment method configured`,
+      });
+
+      return { success: false, error: "No payment method configured for paid plan renewal" };
+    }
+
     try {
       const stripeResult = await chargeViaStripe(
         subscription.stripeCustomerId,

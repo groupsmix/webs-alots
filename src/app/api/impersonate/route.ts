@@ -57,7 +57,7 @@ export const POST = withAuth(async (request, { supabase, user }) => {
     response.cookies.set("sa_impersonate_clinic_id", clinicId, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
+      sameSite: "strict",
       path: "/",
       maxAge: 60 * 60 * 4, // 4 hours
     });
@@ -65,7 +65,7 @@ export const POST = withAuth(async (request, { supabase, user }) => {
     response.cookies.set("sa_impersonate_clinic_name", encodeURIComponent(clinicName || clinic.name), {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
+      sameSite: "strict",
       path: "/",
       maxAge: 60 * 60 * 4,
     });

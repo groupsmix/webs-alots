@@ -149,17 +149,28 @@ export async function POST(request: NextRequest) {
         recipientId = appt?.doctor_id ?? patientId;
       }
 
+      // Resolve the actual clinic name for notification templates
+      let clinicName = "Clinic";
+      if (clinicId) {
+        const { data: clinicRow } = await supabase
+          .from("clinics")
+          .select("name")
+          .eq("id", clinicId)
+          .single();
+        if (clinicRow?.name) clinicName = clinicRow.name;
+      }
+
       if (upperText === "CONFIRM") {
         await dispatchNotification(
           "booking_confirmation",
-          { patient_name: patientName, clinic_name: "Clinic" } as TemplateVariables,
+          { patient_name: patientName, clinic_name: clinicName } as TemplateVariables,
           recipientId ?? "receptionist",
           ["in_app"],
         );
       } else if (upperText === "CANCEL") {
         await dispatchNotification(
           "cancellation",
-          { patient_name: patientName, clinic_name: "Clinic" } as TemplateVariables,
+          { patient_name: patientName, clinic_name: clinicName } as TemplateVariables,
           recipientId ?? "receptionist",
           ["in_app"],
         );
@@ -188,7 +199,8 @@ export async function GET(request: NextRequest) {
   const token = searchParams.get("hub.verify_token");
   const challenge = searchParams.get("hub.challenge");
 
-  if (mode === "subscribe" && token === process.env.WHATSAPP_VERIFY_TOKEN) {
+  const verifyToken = process.env.WHATSAPP_VERIFY_TOKEN;
+  if (mode === "subscribe" && verifyToken && token && timingSafeEqual(token, verifyToken)) {
     return new NextResponse(challenge, { status: 200 });
   }
 

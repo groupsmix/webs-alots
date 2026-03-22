@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase-server";
 import { dispatchNotification } from "@/lib/notifications";
 import { APPOINTMENT_STATUS } from "@/lib/types/database";
+import { timingSafeEqual } from "@/lib/crypto-utils";
 
 /**
  * GET /api/cron/reminders
@@ -21,7 +22,12 @@ export async function GET(request: NextRequest) {
   const authHeader = request.headers.get("authorization");
   const cronSecret = process.env.CRON_SECRET;
 
-  if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
+  if (!cronSecret) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const providedToken = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : "";
+  if (!timingSafeEqual(providedToken, cronSecret)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -140,12 +146,12 @@ export async function GET(request: NextRequest) {
       const dispatchResults = await dispatchNotification(
         trigger,
         {
-          patientName: patient.name,
-          doctorName: doctor?.name ?? "Doctor",
-          clinicName: "",
+          patient_name: patient.name,
+          doctor_name: doctor?.name ?? "Doctor",
+          clinic_name: "",
           date: displayDate,
           time: displayTime,
-          serviceName: service?.name ?? "Appointment",
+          service_name: service?.name ?? "Appointment",
         },
         patient.id,
         ["whatsapp", "sms", "in_app"],
