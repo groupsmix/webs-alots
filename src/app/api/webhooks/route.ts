@@ -87,8 +87,9 @@ export async function POST(request: NextRequest) {
       // Resolve the clinic context from the webhook entry's WhatsApp Business
       // Account ID (WABA). Each clinic has its own WABA linked via phone_number_id.
       const changes = entry.changes as Array<Record<string, unknown>> | undefined;
-      const wabaPhoneNumberId = (changes?.[0]?.value as Record<string, unknown> | undefined)?.metadata
-        ? ((changes[0].value as Record<string, unknown>).metadata as Record<string, unknown>)?.phone_number_id as string | undefined
+      const firstChangeValue = changes?.[0]?.value as Record<string, unknown> | undefined;
+      const wabaPhoneNumberId = firstChangeValue?.metadata
+        ? (firstChangeValue.metadata as Record<string, unknown>)?.phone_number_id as string | undefined
         : undefined;
 
       // Look up which clinic owns this WhatsApp phone number ID

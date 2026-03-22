@@ -121,13 +121,15 @@ export async function GET(request: NextRequest) {
       const displayTime = appt.start_time ?? apptDatetime.toISOString().split("T")[1]?.slice(0, 5) ?? "";
 
       // Idempotency: check if this reminder was already sent by looking
-      // for an existing reminder_log entry with a UNIQUE (appointment_id, trigger)
-      // constraint. This is more robust than the previous notes-field marker.
+      // for an existing notification_log entry for the same appointment + trigger.
+      // This is more robust than the previous notes-field marker approach.
       const { data: existingLog } = await supabase
-        .from("reminder_log")
+        .from("notification_log")
         .select("id")
         .eq("appointment_id", appt.id)
         .eq("trigger", trigger)
+        .eq("channel", "reminder")
+        .eq("status", "sent")
         .limit(1)
         .maybeSingle();
 
@@ -152,16 +154,20 @@ export async function GET(request: NextRequest) {
       const success = dispatchResults.some((r) => r.success);
       results.push({ appointmentId: appt.id, type: trigger, success });
 
-      // Record the sent reminder in the reminder_log table for idempotency.
-      // The UNIQUE constraint on (appointment_id, trigger) prevents duplicates
-      // even if two cron invocations race.
+      // Record the sent reminder in the notification_log table for idempotency.
+      // Subsequent cron runs will find this entry and skip the reminder.
       if (success) {
         await supabase
-          .from("reminder_log")
-          .upsert(
-            { appointment_id: appt.id, trigger, sent_at: new Date().toISOString() },
-            { onConflict: "appointment_id,trigger" },
-          );
+          .from("notification_log")
+          .insert({
+            appointment_id: appt.id,
+            trigger,
+            channel: "reminder",
+            status: "sent",
+            clinic_id: appt.clinic_id,
+            recipient_name: patient.name,
+            recipient_phone: patient.phone,
+          });
       }
     }
 

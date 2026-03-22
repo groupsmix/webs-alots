@@ -103,7 +103,7 @@ export const POST = withAuth(async (request, { supabase, profile }) => {
       action: "appointment.cancelled",
       type: "booking",
       actor: profile.id,
-      clinicId: profile.clinic_id,
+      clinicId: profile.clinic_id ?? clinicConfig.clinicId,
       description: `Appointment ${body.appointmentId} cancelled. Reason: ${body.reason ?? "Cancelled by patient"}`,
     });
 

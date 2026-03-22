@@ -128,7 +128,7 @@ export const POST = withAuth(async (request, { supabase, profile }) => {
       action: "appointment.rescheduled",
       type: "booking",
       actor: profile.id,
-      clinicId: profile.clinic_id,
+      clinicId: profile.clinic_id ?? clinicConfig.clinicId,
       description: `Appointment ${body.appointmentId} rescheduled to ${body.newDate} ${body.newTime}`,
     });
 
