@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase-server";
+import { hmacSha256Hex, timingSafeEqual } from "@/lib/crypto-utils";
 
 /**
  * POST /api/payments/webhook
@@ -145,32 +146,9 @@ async function verifyStripeSignature(
     if (Math.abs(now - parseInt(timestamp, 10)) > 300) return false;
 
     const signedPayload = `${timestamp}.${payload}`;
-    const encoder = new TextEncoder();
-    const key = await crypto.subtle.importKey(
-      "raw",
-      encoder.encode(secret),
-      { name: "HMAC", hash: "SHA-256" },
-      false,
-      ["sign"],
-    );
+    const expectedSignature = await hmacSha256Hex(secret, signedPayload);
 
-    const signatureBytes = await crypto.subtle.sign(
-      "HMAC",
-      key,
-      encoder.encode(signedPayload),
-    );
-
-    const expectedSignature = Array.from(new Uint8Array(signatureBytes))
-      .map((b) => b.toString(16).padStart(2, "0"))
-      .join("");
-
-    // Constant-time comparison to prevent timing attacks
-    if (expectedSignature.length !== signature.length) return false;
-    let mismatch = 0;
-    for (let i = 0; i < expectedSignature.length; i++) {
-      mismatch |= expectedSignature.charCodeAt(i) ^ signature.charCodeAt(i);
-    }
-    return mismatch === 0;
+    return timingSafeEqual(expectedSignature, signature);
   } catch {
     return false;
   }
