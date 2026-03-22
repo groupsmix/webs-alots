@@ -82,6 +82,27 @@ export async function POST(request: NextRequest) {
     : new Date(new Date(slotStart).getTime() + 30 * 60_000).toISOString(); // default 30 min
 
   const supabase = await createClient();
+
+  // Check for overlapping appointments for the same doctor to prevent double-booking.
+  // An overlap exists when an existing appointment's slot intersects with the new one:
+  //   existing.slot_start < new.slot_end AND existing.slot_end > new.slot_start
+  const { data: overlapping } = await supabase
+    .from("appointments")
+    .select("id")
+    .eq("clinic_id", auth.clinicId)
+    .eq("doctor_id", body.doctor_id)
+    .lt("slot_start", slotEnd)
+    .gt("slot_end", slotStart)
+    .not("status", "in", '("cancelled")')
+    .limit(1);
+
+  if (overlapping && overlapping.length > 0) {
+    return NextResponse.json(
+      { error: "Time slot conflicts with an existing appointment for this doctor" },
+      { status: 409 },
+    );
+  }
+
   const { data, error } = await supabase
     .from("appointments")
     .insert({

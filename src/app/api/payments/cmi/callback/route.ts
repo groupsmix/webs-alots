@@ -31,19 +31,20 @@ export async function POST(request: NextRequest) {
       // Find and update the payment by order ID (stored as gateway_session_id)
       const { data: payment } = await supabase
         .from("payments")
-        .select("id, appointment_id")
+        .select("id, appointment_id, status")
         .eq("gateway_session_id", callbackData.orderId)
         .single();
 
-      if (payment) {
-        // Mark payment as completed
+      if (payment && payment.status !== "completed") {
+        // Mark payment as completed (idempotency: skip if already completed)
         await supabase
           .from("payments")
           .update({
             status: "completed",
             reference: callbackData.transactionId || callbackData.orderId,
           })
-          .eq("id", payment.id);
+          .eq("id", payment.id)
+          .neq("status", "completed");
 
         // Confirm the appointment if applicable
         if (payment.appointment_id) {

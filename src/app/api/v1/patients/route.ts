@@ -36,7 +36,9 @@ export async function GET(request: NextRequest) {
 
   if (search) {
     // Sanitize search input to prevent SQL injection via .or() filter interpolation
-    const sanitized = search.replace(/[%_,()]/g, "");
+    // Strip SQL wildcards, PostgREST filter-injection chars (commas, parens),
+    // and dots (which PostgREST uses for column/nested access in filter syntax).
+    const sanitized = search.replace(/[%_,().]/g, "");
     if (sanitized.length > 0) {
       query = query.or(`full_name.ilike.%${sanitized}%,email.ilike.%${sanitized}%,phone.ilike.%${sanitized}%`);
     }

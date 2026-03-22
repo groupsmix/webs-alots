@@ -303,7 +303,9 @@ export async function getAppointmentsByPatient(clinicId: string, patientId: stri
 
 export async function getTodayAppointments(clinicId: string, doctorId?: string): Promise<AppointmentRow[]> {
   const supabase = await createClient();
-  const today = new Date().toISOString().split("T")[0];
+  // Use Africa/Casablanca timezone for Morocco-based clinics to ensure
+  // "today" is computed relative to the clinic's local date, not UTC.
+  const today = new Date().toLocaleDateString("en-CA", { timeZone: "Africa/Casablanca" });
   const todayStart = `${today}T00:00:00`;
   const todayEnd = `${today}T23:59:59`;
 

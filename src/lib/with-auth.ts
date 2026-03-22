@@ -58,12 +58,22 @@ export function withAuth(
         );
       }
 
-      // If no role checking needed, skip profile lookup
+      // If no role checking needed, still fetch the real profile so handlers
+      // get the correct profile.id (users table PK) and clinic_id.
+      // Falls back to auth user ID if no profile row exists yet (e.g. onboarding).
       if (allowedRoles === null) {
+        const { data: nullRoleProfile } = await supabase
+          .from("users")
+          .select("id, role, clinic_id")
+          .eq("auth_id", user.id)
+          .single();
+
         return handler(request, {
           supabase,
           user,
-          profile: { id: user.id, role: "patient" as UserRole, clinic_id: null },
+          profile: nullRoleProfile
+            ? { id: nullRoleProfile.id, role: nullRoleProfile.role as UserRole, clinic_id: nullRoleProfile.clinic_id ?? null }
+            : { id: user.id, role: "patient" as UserRole, clinic_id: null },
         });
       }
 

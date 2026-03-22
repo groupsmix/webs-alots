@@ -159,9 +159,9 @@ export async function middleware(request: NextRequest) {
       console.warn("[rate-limit] Could not determine client IP — applying strict limit");
     }
 
-    // Use a per-request unique key for unknown IPs so each gets its own
-    // very small bucket instead of sharing one "unknown" bucket.
-    const rateLimitKey = clientIp ?? `unknown-${crypto.randomUUID()}`;
+    // Use a fixed "unknown" bucket with strict limits when IP is missing,
+    // rather than a random UUID which would bypass rate limiting entirely.
+    const rateLimitKey = clientIp ?? "unknown";
 
     const rule = rateLimitRules.find((r) => pathname.startsWith(r.prefix));
     if (rule && !rule.limiter.check(rateLimitKey)) {

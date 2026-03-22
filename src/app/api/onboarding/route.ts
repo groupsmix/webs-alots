@@ -108,8 +108,10 @@ export const POST = withAuth(async (request, { supabase, user }) => {
       );
     }
 
-    // Create the clinic admin user
+    // Create the clinic admin user — link to the authenticated user via auth_id
+    // so getUserProfile() can resolve this user in future requests.
     const { error: userError } = await supabase.from("users").insert({
+      auth_id: user.id,
       clinic_id: clinic.id,
       role: "clinic_admin",
       name: body.owner_name,

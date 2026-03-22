@@ -143,6 +143,7 @@ export async function restoreBackup(
   success: boolean;
   restored: BackupTableInfo[];
   errors: string[];
+  preRestoreBackup?: BackupData;
 }> {
   const validation = validateBackup(json);
   if (!validation.valid) {
@@ -150,6 +151,34 @@ export async function restoreBackup(
   }
 
   const backup = JSON.parse(json) as BackupData;
+
+  // Safety: reject restores from a different clinic to prevent cross-tenant
+  // data contamination. The caller must explicitly acknowledge this by passing
+  // the backup's own clinic ID as the target.
+  if (backup.manifest.clinicId !== targetClinicId) {
+    return {
+      success: false,
+      restored: [],
+      errors: [
+        `Backup belongs to clinic ${backup.manifest.clinicId}, ` +
+        `but target is ${targetClinicId}. Cross-clinic restore is not allowed.`,
+      ],
+    };
+  }
+
+  // Safety: create a pre-restore backup so data can be recovered if needed.
+  let preRestoreBackup: BackupData | undefined;
+  try {
+    preRestoreBackup = await createBackup(targetClinicId, "pre-restore-snapshot");
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : "Unknown error";
+    return {
+      success: false,
+      restored: [],
+      errors: [`Failed to create pre-restore backup: ${msg}`],
+    };
+  }
+
   const supabase = await createClient();
   const restored: BackupTableInfo[] = [];
   const errors: string[] = [];
@@ -161,7 +190,7 @@ export async function restoreBackup(
       continue;
     }
 
-    // Override clinic_id to target clinic
+    // Ensure clinic_id matches the target clinic
     const mappedRows = rows.map((row) => ({
       ...row,
       clinic_id: targetClinicId,
@@ -182,5 +211,6 @@ export async function restoreBackup(
     success: errors.length === 0,
     restored,
     errors,
+    preRestoreBackup,
   };
 }
