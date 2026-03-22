@@ -14,6 +14,7 @@ export const POST = withAuth(async (request, { supabase }) => {
     const body = (await request.json()) as {
       patientId: string;
       patientName: string;
+      patientPhone?: string;
       doctorId: string;
       preferredDate: string;
       preferredTime?: string;
@@ -27,17 +28,19 @@ export const POST = withAuth(async (request, { supabase }) => {
       );
     }
 
-    // If patientId looks like a temp ID, try to find or create the patient
+    // If patientId looks like a temp ID, find or create the patient
+    // (use phone for lookup to avoid name collisions)
     let patientId = body.patientId;
     if (patientId.startsWith("patient-")) {
-      const { data: existing } = await supabase
+      const lookupQuery = supabase
         .from("users")
         .select("id")
         .eq("clinic_id", clinicConfig.clinicId)
-        .eq("name", body.patientName)
-        .eq("role", "patient")
-        .limit(1)
-        .single();
+        .eq("role", "patient");
+
+      const { data: existing } = body.patientPhone
+        ? await lookupQuery.eq("phone", body.patientPhone).single()
+        : await lookupQuery.eq("name", body.patientName).limit(1).single();
 
       if (existing) {
         patientId = existing.id;
@@ -47,6 +50,7 @@ export const POST = withAuth(async (request, { supabase }) => {
           .insert({
             clinic_id: clinicConfig.clinicId,
             name: body.patientName,
+            phone: body.patientPhone ?? null,
             role: "patient",
           })
           .select("id")

@@ -154,6 +154,31 @@ export async function restoreBackup(
   const restored: BackupTableInfo[] = [];
   const errors: string[] = [];
 
+  // Build an ID mapping: old UUID → new UUID for all records across all tables.
+  // This prevents cross-tenant data injection via crafted backup IDs and
+  // ensures foreign key references remain consistent within the restored data.
+  const idMap = new Map<string, string>();
+
+  // First pass: generate new IDs for all records
+  for (const table of BACKUP_TABLES) {
+    const rows = backup.data[table];
+    if (!rows || rows.length === 0) continue;
+    for (const row of rows) {
+      const oldId = row.id as string;
+      if (oldId && !idMap.has(oldId)) {
+        idMap.set(oldId, crypto.randomUUID());
+      }
+    }
+  }
+
+  // Helper to remap a foreign key value through the ID map
+  const remap = (value: unknown): unknown => {
+    if (typeof value === "string" && idMap.has(value)) {
+      return idMap.get(value);
+    }
+    return value;
+  };
+
   for (const table of BACKUP_TABLES) {
     const rows = backup.data[table];
     if (!rows || rows.length === 0) {
@@ -161,14 +186,24 @@ export async function restoreBackup(
       continue;
     }
 
-    // Override clinic_id to target clinic
-    const mappedRows = rows.map((row) => ({
-      ...row,
-      clinic_id: targetClinicId,
-    }));
+    // Remap IDs: assign new UUIDs and fix foreign key references
+    const mappedRows = rows.map((row) => {
+      const mapped: Record<string, unknown> = { ...row };
+      mapped.clinic_id = targetClinicId;
+      // Replace primary key with new UUID
+      if (mapped.id) mapped.id = remap(mapped.id);
+      // Remap common foreign key columns
+      for (const fk of [
+        "patient_id", "doctor_id", "user_id", "appointment_id",
+        "invoice_id", "treatment_plan_id", "prescription_id",
+      ]) {
+        if (mapped[fk]) mapped[fk] = remap(mapped[fk]);
+      }
+      return mapped;
+    });
 
     const { error } = await supabase.from(table)
-      .upsert(mappedRows as never[], { onConflict: "id" });
+      .insert(mappedRows as never[]);
 
     if (error) {
       errors.push(`${table}: ${error.message}`);
