@@ -32,7 +32,7 @@ const securityHeaders = [
     value: [
       "default-src 'self'",
       // Scripts: self + inline (Next.js hydration requires it)
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+      "script-src 'self' 'unsafe-inline'",
       // Styles: self + inline (Tailwind, shadcn)
       "style-src 'self' 'unsafe-inline'",
       // Images: self + R2 storage + Supabase storage + data URIs + blobs

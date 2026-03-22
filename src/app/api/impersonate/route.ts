@@ -104,7 +104,7 @@ export const DELETE = withAuth(async (_request, { supabase, user }) => {
     });
 
     response.cookies.set("sa_impersonate_clinic_name", "", {
-      httpOnly: false,
+      httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
       path: "/",

@@ -114,18 +114,23 @@ export async function middleware(request: NextRequest) {
     const origin = request.headers.get("origin");
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL;
 
-    // Build set of allowed origins from the request host and NEXT_PUBLIC_SITE_URL
+    // Build set of allowed origins from configured values only.
+    // IMPORTANT: Do NOT trust the Host header — it is attacker-controlled
+    // and would allow an attacker to set Host to match their Origin,
+    // bypassing the CSRF check entirely.
     const allowedOrigins = new Set<string>();
-    // Always trust the request's own host (handles localhost, subdomains, etc.)
-    const requestOrigin = `${request.nextUrl.protocol}//${hostname}`;
-    allowedOrigins.add(requestOrigin);
-    // Also allow configured site URL (production domain)
+    // Allow configured site URL (production domain)
     if (siteUrl) {
       allowedOrigins.add(siteUrl.replace(/\/$/, ""));
     }
-    // Allow root domain and wildcard subdomains if configured
+    // Allow root domain if configured
     if (rootDomain) {
-      allowedOrigins.add(`${request.nextUrl.protocol}//${rootDomain}`);
+      const protocol = request.nextUrl.protocol;
+      allowedOrigins.add(`${protocol}//${rootDomain}`);
+    }
+    // Allow localhost origins in development
+    if (process.env.NODE_ENV !== "production") {
+      allowedOrigins.add(`${request.nextUrl.protocol}//${hostname}`);
     }
 
     if (!origin) {
