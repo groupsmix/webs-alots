@@ -14,31 +14,7 @@
 
 import { type NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase-server";
-
-/**
- * Compute a hex-encoded SHA-256 hash of the given value.
- * Uses the Web Crypto API available in edge runtimes.
- */
-async function sha256(value: string): Promise<string> {
-  const encoder = new TextEncoder();
-  const data = encoder.encode(value);
-  const hashBuffer = await crypto.subtle.digest("SHA-256", data);
-  return Array.from(new Uint8Array(hashBuffer))
-    .map((b) => b.toString(16).padStart(2, "0"))
-    .join("");
-}
-
-/**
- * Constant-time string comparison to prevent timing attacks.
- */
-function timingSafeEqual(a: string, b: string): boolean {
-  if (a.length !== b.length) return false;
-  let mismatch = 0;
-  for (let i = 0; i < a.length; i++) {
-    mismatch |= a.charCodeAt(i) ^ b.charCodeAt(i);
-  }
-  return mismatch === 0;
-}
+import { sha256Hex, timingSafeEqual } from "@/lib/crypto-utils";
 
 export async function authenticateApiKey(
   request: NextRequest,
@@ -52,7 +28,7 @@ export async function authenticateApiKey(
   const supabase = await createClient();
 
   // Compute hash of the provided key for comparison
-  const keyHash = await sha256(apiKey);
+  const keyHash = await sha256Hex(apiKey);
   const keyPrefix = apiKey.slice(0, 8);
 
   // Try hash-based lookup first (new keys)

@@ -4,6 +4,7 @@ import {
   dispatchNotification,
   type TemplateVariables,
 } from "@/lib/notifications";
+import { hmacSha256Hex, timingSafeEqual } from "@/lib/crypto-utils";
 
 export const runtime = "edge";
 
@@ -22,31 +23,9 @@ async function verifyWebhookSignature(
   if (!signatureHeader.startsWith(expectedPrefix)) return false;
 
   const receivedSignature = signatureHeader.slice(expectedPrefix.length);
+  const computedSignature = await hmacSha256Hex(appSecret, rawBody);
 
-  const encoder = new TextEncoder();
-  const key = await crypto.subtle.importKey(
-    "raw",
-    encoder.encode(appSecret),
-    { name: "HMAC", hash: "SHA-256" },
-    false,
-    ["sign"],
-  );
-  const signatureBuffer = await crypto.subtle.sign(
-    "HMAC",
-    key,
-    encoder.encode(rawBody),
-  );
-  const computedSignature = Array.from(new Uint8Array(signatureBuffer))
-    .map((b) => b.toString(16).padStart(2, "0"))
-    .join("");
-
-  // Constant-time comparison to prevent timing attacks
-  if (computedSignature.length !== receivedSignature.length) return false;
-  let mismatch = 0;
-  for (let i = 0; i < computedSignature.length; i++) {
-    mismatch |= computedSignature.charCodeAt(i) ^ receivedSignature.charCodeAt(i);
-  }
-  return mismatch === 0;
+  return timingSafeEqual(computedSignature, receivedSignature);
 }
 
 /**

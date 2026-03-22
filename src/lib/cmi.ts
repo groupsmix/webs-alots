@@ -16,6 +16,8 @@
  *   CMI_GATEWAY_URL  — CMI gateway URL (defaults to production)
  */
 
+import { hmacSha256Hex, timingSafeEqual } from "@/lib/crypto-utils";
+
 // ---- Types ----
 
 export interface CmiPaymentRequest {
@@ -83,25 +85,7 @@ async function generateHash(
 ): Promise<string> {
   const sortedKeys = Object.keys(fields).sort();
   const hashInput = sortedKeys.map((k) => fields[k]).join("|");
-
-  const encoder = new TextEncoder();
-  const key = await crypto.subtle.importKey(
-    "raw",
-    encoder.encode(secretKey),
-    { name: "HMAC", hash: "SHA-256" },
-    false,
-    ["sign"],
-  );
-
-  const signature = await crypto.subtle.sign(
-    "HMAC",
-    key,
-    encoder.encode(hashInput),
-  );
-
-  return Array.from(new Uint8Array(signature))
-    .map((b) => b.toString(16).padStart(2, "0"))
-    .join("");
+  return hmacSha256Hex(secretKey, hashInput);
 }
 
 // ---- Payment Creation ----
@@ -192,14 +176,7 @@ export async function verifyCmiCallback(
   const received = receivedHash.toLowerCase();
 
   // Constant-time comparison to prevent timing attacks
-  if (expectedHash.length !== received.length) {
-    return null;
-  }
-  let mismatch = 0;
-  for (let i = 0; i < expectedHash.length; i++) {
-    mismatch |= expectedHash.charCodeAt(i) ^ received.charCodeAt(i);
-  }
-  if (mismatch !== 0) {
+  if (!timingSafeEqual(expectedHash, received)) {
     return null; // Invalid hash — potential tampering
   }
 
