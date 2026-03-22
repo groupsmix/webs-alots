@@ -45,7 +45,8 @@ export async function GET(request: NextRequest) {
   const { data, count, error } = await query;
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    console.error("[GET /api/v1/patients] Query error:", error.message);
+    return NextResponse.json({ error: "Failed to fetch patients" }, { status: 500 });
   }
 
   return NextResponse.json({
@@ -91,7 +92,8 @@ export async function POST(request: NextRequest) {
     .single();
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    console.error("[POST /api/v1/patients] Insert error:", error.message);
+    return NextResponse.json({ error: "Failed to create patient" }, { status: 500 });
   }
 
   return NextResponse.json({ data }, { status: 201 });

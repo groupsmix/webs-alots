@@ -1,5 +1,5 @@
-import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase-server";
+import { NextResponse } from "next/server";
+import { withAuth } from "@/lib/with-auth";
 
 export const runtime = "edge";
 
@@ -20,19 +20,8 @@ interface OnboardingRequestBody {
  * Inserts a clinic row with the clinic_type_key FK and creates the
  * clinic_admin user record.
  */
-export async function POST(request: NextRequest) {
+export const POST = withAuth(async (request, { supabase, user }) => {
   try {
-    const supabase = await createClient();
-
-    // Verify the caller is authenticated
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
-      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
-    }
-
     // Require email verification before allowing clinic creation
     if (!user.email_confirmed_at) {
       return NextResponse.json(
@@ -149,4 +138,4 @@ export async function POST(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+}, null);

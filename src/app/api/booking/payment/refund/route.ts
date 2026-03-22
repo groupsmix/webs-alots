@@ -1,7 +1,7 @@
-import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase-server";
+import { NextResponse } from "next/server";
 import { clinicConfig } from "@/config/clinic.config";
 import type { UserRole } from "@/lib/types/database";
+import { withAuth } from "@/lib/with-auth";
 
 export const runtime = "edge";
 
@@ -12,22 +12,8 @@ const ADMIN_ROLES: UserRole[] = ["super_admin", "clinic_admin"];
  *
  * Refund a completed payment (full or partial).
  */
-export async function POST(request: NextRequest) {
+export const POST = withAuth(async (request, { supabase }) => {
   try {
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
-    }
-    const { data: profile } = await supabase
-      .from("users")
-      .select("role")
-      .eq("auth_id", user.id)
-      .single();
-    if (!profile || !ADMIN_ROLES.includes(profile.role as UserRole)) {
-      return NextResponse.json({ error: "Forbidden \u2014 admin only" }, { status: 403 });
-    }
-
     const body = (await request.json()) as { paymentId: string; amount?: number };
 
     if (!body.paymentId) {
@@ -80,11 +66,12 @@ export async function POST(request: NextRequest) {
       .eq("id", body.paymentId);
 
     if (updateError) {
-      return NextResponse.json({ error: updateError.message }, { status: 500 });
+      console.error("[POST /api/booking/payment/refund] Update error:", updateError.message);
+      return NextResponse.json({ error: "Failed to refund payment" }, { status: 500 });
     }
 
     return NextResponse.json({ status: "refunded", message: "Payment refunded" });
   } catch {
     return NextResponse.json({ error: "Failed to refund payment" }, { status: 500 });
   }
-}
+}, ADMIN_ROLES);

@@ -32,7 +32,7 @@ export async function GET(request: NextRequest) {
 
   if (error) {
     return NextResponse.json(
-      { error: "Failed to fetch subscriptions", details: error.message },
+      { error: "Failed to fetch subscriptions" },
       { status: 500 },
     );
   }

@@ -140,34 +140,26 @@ export async function getPublicReviews(): Promise<PublicReview[]> {
   const clinicId = getClinicId();
   const supabase = await createClient();
 
-  // Fetch reviews with patient names via join
+  // Fetch reviews with patient names via Supabase join (single query)
   const { data: reviews, error } = await supabase
     .from("reviews")
-    .select("id, patient_id, stars, comment, response, created_at")
+    .select("id, stars, comment, response, created_at, patients:patient_id(name)")
     .eq("clinic_id", clinicId)
     .order("created_at", { ascending: false });
 
   if (error || !reviews || reviews.length === 0) return [];
 
-  // Get patient names
-  const patientIds = [...new Set(reviews.map((r) => r.patient_id))];
-  const { data: users } = await supabase
-    .from("users")
-    .select("id, name")
-    .in("id", patientIds);
-
-  const nameMap = new Map(
-    (users ?? []).map((u: { id: string; name: string }) => [u.id, u.name]),
-  );
-
-  return reviews.map((r) => ({
-    id: r.id,
-    patientName: nameMap.get(r.patient_id) ?? "Patient",
-    rating: r.stars,
-    comment: r.comment ?? "",
-    date: r.created_at?.split("T")[0] ?? "",
-    replied: !!r.response,
-  }));
+  return reviews.map((r) => {
+    const patient = r.patients as unknown as { name: string } | null;
+    return {
+      id: r.id,
+      patientName: patient?.name ?? "Patient",
+      rating: r.stars,
+      comment: r.comment ?? "",
+      date: r.created_at?.split("T")[0] ?? "",
+      replied: !!r.response,
+    };
+  });
 }
 
 export async function getPublicAverageRating(): Promise<number> {

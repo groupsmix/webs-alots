@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import {
   dispatchNotification,
   type NotificationTrigger,
@@ -6,7 +6,7 @@ import {
   type TemplateVariables,
 } from "@/lib/notifications";
 import type { NotificationChannel as DBNotificationChannel, UserRole } from "@/lib/types/database";
-import { createClient } from "@/lib/supabase-server";
+import { withAuth } from "@/lib/with-auth";
 
 export const runtime = "edge";
 
@@ -16,31 +16,10 @@ export const runtime = "edge";
  * Dispatches a notification across configured channels.
  * Body: { trigger, variables, recipientId, channels }
  */
-export async function POST(request: NextRequest) {
+const STAFF_ROLES: UserRole[] = ["super_admin", "clinic_admin", "receptionist", "doctor"];
+
+export const POST = withAuth(async (request) => {
   try {
-    const supabase = await createClient();
-
-    // Verify the caller is authenticated
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
-      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
-    }
-
-    // Only admins and staff roles can dispatch notifications
-    const { data: profile } = await supabase
-      .from("users")
-      .select("role")
-      .eq("auth_id", user.id)
-      .single();
-
-    const allowedRoles: UserRole[] = ["super_admin", "clinic_admin", "receptionist", "doctor"];
-    if (!profile || !allowedRoles.includes(profile.role as UserRole)) {
-      return NextResponse.json({ error: "Forbidden — insufficient permissions" }, { status: 403 });
-    }
-
     const body = await request.json();
 
     const {
@@ -76,7 +55,7 @@ export async function POST(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+}, STAFF_ROLES);
 
 /**
  * GET /api/notifications
@@ -84,35 +63,12 @@ export async function POST(request: NextRequest) {
  * Returns notification history for a user.
  * Query params: userId, channel, type, limit, offset
  */
-export async function GET(request: NextRequest) {
+export const GET = withAuth(async (request, { supabase, profile }) => {
   const searchParams = request.nextUrl.searchParams;
   const requestedUserId = searchParams.get("userId");
 
   try {
-    const supabase = await createClient();
-
-    // Verify the caller is authenticated
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
-      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
-    }
-
-    // Resolve the caller's profile
-    const { data: profile } = await supabase
-      .from("users")
-      .select("id, role")
-      .eq("auth_id", user.id)
-      .single();
-
-    if (!profile) {
-      return NextResponse.json({ error: "User profile not found" }, { status: 404 });
-    }
-
-    const staffRoles: UserRole[] = ["super_admin", "clinic_admin", "receptionist", "doctor"];
-    const isStaff = staffRoles.includes(profile.role as UserRole);
+    const isStaff = STAFF_ROLES.includes(profile.role);
 
     // Non-staff users can only read their own notifications
     const userId = isStaff && requestedUserId ? requestedUserId : profile.id;
@@ -159,4 +115,4 @@ export async function GET(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+}, STAFF_ROLES);

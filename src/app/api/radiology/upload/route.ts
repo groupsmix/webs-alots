@@ -11,11 +11,11 @@
  * Returns: { id, url, key }
  */
 
-import { NextResponse, type NextRequest } from "next/server";
+import { NextResponse } from "next/server";
 import { uploadToR2, isR2Configured, buildUploadKey } from "@/lib/r2";
 import { createRadiologyImage } from "@/lib/data/server";
-import { createClient } from "@/lib/supabase-server";
 import type { UserRole } from "@/lib/types/database";
+import { withAuth } from "@/lib/with-auth";
 
 const STAFF_ROLES: UserRole[] = ["super_admin", "clinic_admin", "receptionist", "doctor"];
 const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50 MB for medical images
@@ -31,21 +31,7 @@ const ALLOWED_TYPES = new Set([
   "application/octet-stream", // DICOM files often have this type
 ]);
 
-export async function POST(request: NextRequest) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) {
-    return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
-  }
-  const { data: profile } = await supabase
-    .from("users")
-    .select("role")
-    .eq("auth_id", user.id)
-    .single();
-  if (!profile || !STAFF_ROLES.includes(profile.role as UserRole)) {
-    return NextResponse.json({ error: "Forbidden \u2014 insufficient permissions" }, { status: 403 });
-  }
-
+export const POST = withAuth(async (request) => {
   if (!isR2Configured()) {
     return NextResponse.json(
       { error: "File storage is not configured" },
@@ -117,4 +103,4 @@ export async function POST(request: NextRequest) {
   }
 
   return NextResponse.json({ id: imageRecord.id, url, key });
-}
+}, STAFF_ROLES);

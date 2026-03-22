@@ -1,7 +1,7 @@
-import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase-server";
+import { NextResponse } from "next/server";
 import { clinicConfig } from "@/config/clinic.config";
 import type { UserRole } from "@/lib/types/database";
+import { withAuth } from "@/lib/with-auth";
 
 export const runtime = "edge";
 
@@ -12,22 +12,8 @@ const STAFF_ROLES: UserRole[] = ["super_admin", "clinic_admin", "receptionist", 
  *
  * Initiate a payment for an appointment.
  */
-export async function POST(request: NextRequest) {
+export const POST = withAuth(async (request, { supabase }) => {
   try {
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
-    }
-    const { data: profile } = await supabase
-      .from("users")
-      .select("role")
-      .eq("auth_id", user.id)
-      .single();
-    if (!profile || !STAFF_ROLES.includes(profile.role as UserRole)) {
-      return NextResponse.json({ error: "Forbidden \u2014 insufficient permissions" }, { status: 403 });
-    }
-
     const body = (await request.json()) as {
       appointmentId: string;
       patientId: string;
@@ -137,7 +123,8 @@ export async function POST(request: NextRequest) {
           { status: 409 },
         );
       }
-      return NextResponse.json({ error: insertError?.message ?? "Failed to initiate payment" }, { status: 500 });
+      console.error("[POST /api/booking/payment/initiate] Insert error:", insertError?.message);
+      return NextResponse.json({ error: "Failed to initiate payment" }, { status: 500 });
     }
 
     return NextResponse.json({
@@ -149,4 +136,4 @@ export async function POST(request: NextRequest) {
   } catch {
     return NextResponse.json({ error: "Failed to initiate payment" }, { status: 500 });
   }
-}
+}, STAFF_ROLES);

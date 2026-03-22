@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import {
   dispatchNotification,
   defaultNotificationTemplates,
@@ -6,7 +6,7 @@ import {
   type TemplateVariables,
 } from "@/lib/notifications";
 import type { UserRole } from "@/lib/types/database";
-import { createClient } from "@/lib/supabase-server";
+import { withAuth } from "@/lib/with-auth";
 
 export const runtime = "edge";
 
@@ -37,30 +37,8 @@ const STAFF_ROLES: UserRole[] = ["super_admin", "clinic_admin", "receptionist", 
  * - payment_received: When a payment is confirmed
  * - new_patient_registered: When a new patient registers
  */
-export async function POST(request: NextRequest) {
+export const POST = withAuth(async (request) => {
   try {
-    const supabase = await createClient();
-
-    // Verify the caller is authenticated
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
-      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
-    }
-
-    // Only staff roles can trigger notifications
-    const { data: profile } = await supabase
-      .from("users")
-      .select("role")
-      .eq("auth_id", user.id)
-      .single();
-
-    if (!profile || !STAFF_ROLES.includes(profile.role as UserRole)) {
-      return NextResponse.json({ error: "Forbidden \u2014 insufficient permissions" }, { status: 403 });
-    }
-
     const body = await request.json();
 
     const {
@@ -119,4 +97,4 @@ export async function POST(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+}, STAFF_ROLES);

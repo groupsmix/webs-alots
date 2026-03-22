@@ -75,7 +75,8 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (error || !entry) {
-      return NextResponse.json({ error: error?.message ?? "Failed to add to waiting list" }, { status: 400 });
+      console.error("[POST /api/booking/waiting-list] Error:", error?.message);
+      return NextResponse.json({ error: "Failed to add to waiting list" }, { status: 400 });
     }
 
     return NextResponse.json({
@@ -155,7 +156,8 @@ export async function DELETE(request: NextRequest) {
       .eq("id", body.entryId);
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
+      console.error("[DELETE /api/booking/waiting-list] Error:", error.message);
+      return NextResponse.json({ error: "Failed to remove from waiting list" }, { status: 400 });
     }
 
     return NextResponse.json({ status: "removed", message: "Removed from waiting list" });

@@ -1,5 +1,5 @@
-import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase-server";
+import { NextResponse } from "next/server";
+import { withAuth } from "@/lib/with-auth";
 
 /**
  * POST /api/impersonate
@@ -13,29 +13,8 @@ import { createClient } from "@/lib/supabase-server";
  *
  * Ends the impersonation session by clearing the cookie.
  */
-export async function POST(request: NextRequest) {
+export const POST = withAuth(async (request, { supabase, user }) => {
   try {
-    const supabase = await createClient();
-
-    // Verify the current user is a super_admin
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
-      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
-    }
-
-    const { data: profile } = await supabase
-      .from("users")
-      .select("role")
-      .eq("auth_id", user.id)
-      .single();
-
-    if (!profile || profile.role !== "super_admin") {
-      return NextResponse.json({ error: "Forbidden — super_admin only" }, { status: 403 });
-    }
-
     const body = await request.json();
     const { clinicId, clinicName } = body as { clinicId: string; clinicName: string };
 
@@ -93,19 +72,13 @@ export async function POST(request: NextRequest) {
 
     return response;
   } catch (err) {
-    const message = err instanceof Error ? err.message : "Unknown error";
-    return NextResponse.json({ error: message }, { status: 500 });
+    console.error("[POST /api/impersonate] Error:", err instanceof Error ? err.message : "Unknown error");
+    return NextResponse.json({ error: "Failed to start impersonation" }, { status: 500 });
   }
-}
+}, ["super_admin"]);
 
-export async function DELETE() {
+export const DELETE = withAuth(async (_request, { supabase, user }) => {
   try {
-    const supabase = await createClient();
-
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
     // Log the end of impersonation
     if (user) {
       try {
@@ -140,7 +113,7 @@ export async function DELETE() {
 
     return response;
   } catch (err) {
-    const message = err instanceof Error ? err.message : "Unknown error";
-    return NextResponse.json({ error: message }, { status: 500 });
+    console.error("[DELETE /api/impersonate] Error:", err instanceof Error ? err.message : "Unknown error");
+    return NextResponse.json({ error: "Failed to end impersonation" }, { status: 500 });
   }
-}
+}, ["super_admin"]);
