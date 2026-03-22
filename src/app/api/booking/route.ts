@@ -12,6 +12,21 @@ import { createClient } from "@/lib/supabase-server";
 
 export const runtime = "edge";
 
+// In-memory idempotency cache to prevent duplicate bookings.
+// Maps idempotency key → { appointmentId, expiresAt }.
+// Keys expire after 5 minutes to avoid unbounded growth.
+const idempotencyCache = new Map<string, { response: Record<string, unknown>; expiresAt: number }>();
+const IDEMPOTENCY_TTL_MS = 5 * 60 * 1000;
+
+function pruneIdempotencyCache() {
+  const now = Date.now();
+  for (const [key, entry] of idempotencyCache) {
+    if (entry.expiresAt <= now) {
+      idempotencyCache.delete(key);
+    }
+  }
+}
+
 interface BookingRequestBody {
   specialtyId: string;
   doctorId: string;
@@ -89,6 +104,16 @@ async function validateBookingRequest(body: BookingRequestBody): Promise<string 
  */
 export async function POST(request: NextRequest) {
   try {
+    // Check idempotency key to prevent duplicate bookings
+    const idempotencyKey = request.headers.get("X-Idempotency-Key");
+    if (idempotencyKey) {
+      pruneIdempotencyCache();
+      const cached = idempotencyCache.get(idempotencyKey);
+      if (cached) {
+        return NextResponse.json(cached.response);
+      }
+    }
+
     const body = (await request.json()) as BookingRequestBody;
 
     const validationError = await validateBookingRequest(body);
@@ -173,7 +198,7 @@ export async function POST(request: NextRequest) {
 
     console.log("Booking created:", appointment.id);
 
-    return NextResponse.json({
+    const responseBody = {
       status: "created",
       message: "Appointment booked successfully",
       appointment: {
@@ -188,7 +213,17 @@ export async function POST(request: NextRequest) {
         isFirstVisit: body.isFirstVisit,
         hasInsurance: body.hasInsurance,
       },
-    });
+    };
+
+    // Cache response for idempotency
+    if (idempotencyKey) {
+      idempotencyCache.set(idempotencyKey, {
+        response: responseBody,
+        expiresAt: Date.now() + IDEMPOTENCY_TTL_MS,
+      });
+    }
+
+    return NextResponse.json(responseBody);
   } catch {
     return NextResponse.json(
       { error: "Failed to create booking" },

@@ -222,6 +222,7 @@ export function BookingForm() {
   };
 
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [idempotencyKey] = useState(() => crypto.randomUUID());
 
   const handleConfirm = async () => {
     if (isSubmitting) return;
@@ -230,7 +231,10 @@ export function BookingForm() {
       if (isRecurring && clinicConfig.features.recurringBookings) {
         const res = await fetch("/api/booking/recurring", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            "X-Idempotency-Key": idempotencyKey,
+          },
           body: JSON.stringify({
             action: "create",
             patientId: `patient-${Date.now()}`,
@@ -252,7 +256,10 @@ export function BookingForm() {
       } else {
         const res = await fetch("/api/booking", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            "X-Idempotency-Key": idempotencyKey,
+          },
           body: JSON.stringify({
             specialtyId: selectedSpecialty,
             doctorId: selectedDoctor,
