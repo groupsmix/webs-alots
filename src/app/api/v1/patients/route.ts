@@ -9,32 +9,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase-server";
-
-async function authenticateApiKey(
-  request: NextRequest,
-): Promise<{ clinicId: string } | null> {
-  const authHeader = request.headers.get("authorization");
-  if (!authHeader?.startsWith("Bearer ")) return null;
-
-  const apiKey = authHeader.slice(7);
-  if (!apiKey) return null;
-
-  const supabase = await createClient();
-  const { data } = await supabase
-    .from("clinic_api_keys")
-    .select("clinic_id, active")
-    .eq("key", apiKey)
-    .single();
-
-  if (!data?.active) return null;
-
-  await supabase
-    .from("clinic_api_keys")
-    .update({ last_used_at: new Date().toISOString() })
-    .eq("key", apiKey);
-
-  return { clinicId: data.clinic_id };
-}
+import { authenticateApiKey } from "@/lib/api-auth";
 
 export async function GET(request: NextRequest) {
   const auth = await authenticateApiKey(request);
@@ -60,7 +35,11 @@ export async function GET(request: NextRequest) {
     .range(offset, offset + limit - 1);
 
   if (search) {
-    query = query.or(`full_name.ilike.%${search}%,email.ilike.%${search}%,phone.ilike.%${search}%`);
+    // Sanitize search input to prevent SQL injection via .or() filter interpolation
+    const sanitized = search.replace(/[%_,()]/g, "");
+    if (sanitized.length > 0) {
+      query = query.or(`full_name.ilike.%${sanitized}%,email.ilike.%${sanitized}%,phone.ilike.%${sanitized}%`);
+    }
   }
 
   const { data, count, error } = await query;

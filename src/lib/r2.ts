@@ -182,6 +182,9 @@ export function buildUploadKey(
   filename: string,
 ): string {
   const timestamp = Date.now();
-  const sanitized = filename.replace(/[^a-zA-Z0-9._-]/g, "_");
-  return `clinics/${clinicId}/${category}/${timestamp}-${sanitized}`;
+  // Sanitize all path segments to prevent path-traversal (../ etc.)
+  const safeClinicId = clinicId.replace(/[^a-zA-Z0-9_-]/g, "_");
+  const safeCategory = category.replace(/[^a-zA-Z0-9_-]/g, "_");
+  const safeFilename = filename.replace(/[^a-zA-Z0-9._-]/g, "_");
+  return `clinics/${safeClinicId}/${safeCategory}/${timestamp}-${safeFilename}`;
 }
