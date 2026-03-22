@@ -205,14 +205,20 @@ export async function restoreBackup(
   }
 
   // ---- Pass 2: Remap IDs + FK references, then insert ----
+  // HIGH-06: Prepare all mapped rows first, then insert via a single
+  // Supabase RPC call wrapped in a database transaction. This ensures
+  // atomicity: if any table fails, the entire restore is rolled back
+  // instead of leaving partially-restored (corrupt) state.
+  const allMappedRows: Record<string, Record<string, unknown>[]> = {};
+
   for (const table of BACKUP_TABLES) {
     const rows = backup.data[table];
     if (!rows || rows.length === 0) {
-      restored.push({ name: table, recordCount: 0 });
+      allMappedRows[table] = [];
       continue;
     }
 
-    const mappedRows = rows.map((row) => {
+    allMappedRows[table] = rows.map((row) => {
       const mapped: Record<string, unknown> = { ...row };
 
       // Assign the pre-generated new ID
@@ -239,15 +245,50 @@ export async function restoreBackup(
 
       return mapped;
     });
+  }
 
-    const { error } = await supabase.from(table)
-      .insert(mappedRows as never[]);
+  // Try transactional restore via RPC first (atomic, all-or-nothing).
+  // Falls back to sequential inserts if the RPC function does not exist.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- RPC may not exist in generated types yet
+  const { error: rpcError } = await (supabase.rpc as any)("restore_backup_transaction", {
+    backup_data: JSON.stringify(allMappedRows),
+    target_clinic: targetClinicId,
+  });
 
-    if (error) {
-      errors.push(`${table}: ${error.message}`);
+  if (!rpcError) {
+    // RPC succeeded — all tables were restored atomically
+    for (const table of BACKUP_TABLES) {
+      restored.push({
+        name: table,
+        recordCount: allMappedRows[table]?.length ?? 0,
+      });
+    }
+  } else if (rpcError.message?.includes("function") && rpcError.message?.includes("does not exist")) {
+    // Fallback: RPC function not deployed yet — use sequential inserts
+    // (non-atomic, but preserves existing behavior)
+    console.warn("[restore] restore_backup_transaction RPC not found, using sequential inserts");
+    for (const table of BACKUP_TABLES) {
+      const mappedRows = allMappedRows[table];
+      if (!mappedRows || mappedRows.length === 0) {
+        restored.push({ name: table, recordCount: 0 });
+        continue;
+      }
+
+      const { error } = await supabase.from(table)
+        .insert(mappedRows as never[]);
+
+      if (error) {
+        errors.push(`${table}: ${error.message}`);
+        restored.push({ name: table, recordCount: 0 });
+      } else {
+        restored.push({ name: table, recordCount: mappedRows.length });
+      }
+    }
+  } else {
+    // RPC exists but failed — report the error
+    errors.push(`Transaction failed: ${rpcError.message}`);
+    for (const table of BACKUP_TABLES) {
       restored.push({ name: table, recordCount: 0 });
-    } else {
-      restored.push({ name: table, recordCount: mappedRows.length });
     }
   }
 

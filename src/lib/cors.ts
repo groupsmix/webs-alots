@@ -28,14 +28,19 @@ import { NextRequest, NextResponse } from "next/server";
  * Returns `["*"]` when set to `*` (= allow any origin, dev only).
  * Otherwise returns an array of explicit origins.
  */
+// MED-01: Memoize the parsed result to avoid re-parsing the env var
+// on every request in high-traffic edge runtimes.
+let _parsedOrigins: string[] | null | undefined;
 function parseAllowedOrigins(): string[] | null {
+  if (_parsedOrigins !== undefined) return _parsedOrigins;
   const raw = process.env.ALLOWED_API_ORIGINS;
-  if (!raw) return null;
-  if (raw.trim() === "*") return ["*"];
-  return raw
+  if (!raw) { _parsedOrigins = null; return null; }
+  if (raw.trim() === "*") { _parsedOrigins = ["*"]; return _parsedOrigins; }
+  _parsedOrigins = raw
     .split(",")
     .map((o) => o.trim().toLowerCase())
     .filter(Boolean);
+  return _parsedOrigins;
 }
 
 /**

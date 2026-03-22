@@ -41,8 +41,9 @@ export async function GET(request: NextRequest) {
     .range(offset, offset + limit - 1);
 
   if (search) {
-    // Sanitize search input to prevent SQL injection via .or() filter interpolation
-    const sanitized = search.replace(/[%_,()]/g, "");
+    // MED-05: Sanitize search input to prevent PostgREST filter injection.
+    // Strip %, _, comma, parens AND dots (PostgREST uses . as filter separator).
+    const sanitized = search.replace(/[%_,.()]/g, "");
     if (sanitized.length > 0) {
       query = query.or(`full_name.ilike.%${sanitized}%,email.ilike.%${sanitized}%,phone.ilike.%${sanitized}%`);
     }

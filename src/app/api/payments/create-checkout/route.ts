@@ -3,6 +3,26 @@ import { withAuth } from "@/lib/with-auth";
 import { STAFF_ROLES } from "@/lib/auth-roles";
 
 /**
+ * HIGH-03: Validate that a redirect URL is same-origin to prevent open redirects.
+ * Falls back to a safe default if the URL is invalid or cross-origin.
+ */
+function validateRedirectUrl(
+  url: string | undefined,
+  origin: string,
+  type: "success" | "cancelled",
+): string {
+  const fallback = `${origin}/patient/dashboard?payment=${type}`;
+  if (!url) return fallback;
+  try {
+    const parsed = new URL(url);
+    if (parsed.origin !== origin) return fallback;
+    return url;
+  } catch {
+    return fallback;
+  }
+}
+
+/**
  * POST /api/payments/create-checkout
  *
  * Creates a Stripe Checkout Session for a clinic payment (appointment, subscription, etc.).
@@ -58,6 +78,11 @@ export const POST = withAuth(async (request, { user, profile }) => {
 
     const origin = request.nextUrl.origin;
 
+    // HIGH-03: Validate that success/cancel URLs are same-origin to prevent
+    // open redirect attacks (e.g. redirecting to a phishing site after payment).
+    const validatedSuccessUrl = validateRedirectUrl(successUrl, origin, "success");
+    const validatedCancelUrl = validateRedirectUrl(cancelUrl, origin, "cancelled");
+
     // Create Stripe Checkout Session via API
     const params = new URLSearchParams();
     params.append("mode", "payment");
@@ -66,8 +91,8 @@ export const POST = withAuth(async (request, { user, profile }) => {
     params.append("line_items[0][price_data][product_data][name]", description);
     params.append("line_items[0][price_data][unit_amount]", String(amount));
     params.append("line_items[0][quantity]", "1");
-    params.append("success_url", successUrl || `${origin}/patient/dashboard?payment=success`);
-    params.append("cancel_url", cancelUrl || `${origin}/patient/dashboard?payment=cancelled`);
+    params.append("success_url", validatedSuccessUrl);
+    params.append("cancel_url", validatedCancelUrl);
 
     // Attach metadata for webhook processing
     if (patientId) params.append("metadata[patient_id]", patientId);

@@ -16,6 +16,51 @@ import { computeEndTime } from "@/lib/timezone";
 
 export const runtime = "edge";
 
+/**
+ * Verify a booking token issued after OTP verification.
+ * Tokens are HMAC-SHA256 signatures of the phone number + expiry timestamp.
+ * Format: "phone:expiryTimestamp:signature"
+ */
+async function verifyBookingToken(token: string): Promise<boolean> {
+  const secret = process.env.BOOKING_TOKEN_SECRET;
+  if (!secret) {
+    // If no secret is configured, reject all tokens in production
+    if (process.env.NODE_ENV === "production") return false;
+    // In development, allow a bypass for testing
+    return token === "dev-bypass";
+  }
+
+  const parts = token.split(":");
+  if (parts.length !== 3) return false;
+
+  const [phone, expiryStr, signature] = parts;
+  const expiry = parseInt(expiryStr, 10);
+  if (isNaN(expiry) || Date.now() > expiry) return false;
+
+  // Verify HMAC signature
+  const encoder = new TextEncoder();
+  const key = await crypto.subtle.importKey(
+    "raw",
+    encoder.encode(secret),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"],
+  );
+  const data = encoder.encode(`${phone}:${expiryStr}`);
+  const sig = await crypto.subtle.sign("HMAC", key, data);
+  const expectedSig = Array.from(new Uint8Array(sig))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+
+  // Constant-time comparison
+  if (expectedSig.length !== signature.length) return false;
+  let mismatch = 0;
+  for (let i = 0; i < expectedSig.length; i++) {
+    mismatch |= expectedSig.charCodeAt(i) ^ signature.charCodeAt(i);
+  }
+  return mismatch === 0;
+}
+
 interface BookingRequestBody {
   specialtyId: string;
   doctorId: string;
@@ -119,6 +164,27 @@ async function validateBookingRequest(body: BookingRequestBody): Promise<Validat
  */
 export async function POST(request: NextRequest) {
   try {
+    // CRITICAL-02: Require a booking verification token.
+    // The token is issued after phone/email OTP verification via
+    // POST /api/booking/verify. Without it, bots can flood the
+    // system with fake patient records and appointments.
+    const bookingToken = request.headers.get("x-booking-token");
+    if (!bookingToken) {
+      return NextResponse.json(
+        { error: "Booking verification required. Call POST /api/booking/verify first." },
+        { status: 401 },
+      );
+    }
+
+    // Verify the booking token (HMAC-based, issued after OTP check)
+    const isValidToken = await verifyBookingToken(bookingToken);
+    if (!isValidToken) {
+      return NextResponse.json(
+        { error: "Invalid or expired booking token" },
+        { status: 403 },
+      );
+    }
+
     const body = (await request.json()) as BookingRequestBody;
 
     // Input length validation to prevent DoS via oversized payloads
