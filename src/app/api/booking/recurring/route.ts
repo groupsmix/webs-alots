@@ -12,16 +12,17 @@ export const runtime = "edge";
 function addInterval(date: Date, pattern: "weekly" | "biweekly" | "monthly"): Date {
   const next = new Date(date);
   if (pattern === "weekly") {
-    next.setDate(next.getDate() + 7);
+    next.setUTCDate(next.getUTCDate() + 7);
   } else if (pattern === "biweekly") {
-    next.setDate(next.getDate() + 14);
+    next.setUTCDate(next.getUTCDate() + 14);
   } else {
     // Clamp to last day of target month to prevent overflow
     // (e.g. Jan 31 + 1 month → Feb 28, not Mar 3)
-    const targetMonth = next.getMonth() + 1;
-    next.setMonth(targetMonth);
-    if (next.getMonth() !== targetMonth % 12) {
-      next.setDate(0); // Roll back to last day of previous month
+    // Use UTC methods to avoid local-timezone DST issues
+    const targetMonth = next.getUTCMonth() + 1;
+    next.setUTCMonth(targetMonth);
+    if (next.getUTCMonth() !== targetMonth % 12) {
+      next.setUTCDate(0); // Roll back to last day of previous month
     }
   }
   return next;

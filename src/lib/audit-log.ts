@@ -34,7 +34,7 @@ export async function logAuditEvent({
       action,
       type,
       actor: actor ?? null,
-      clinic_id: clinicId ?? null,
+      clinic_id: clinicId,
       clinic_name: clinicName ?? null,
       description: description ?? null,
       timestamp: new Date().toISOString(),

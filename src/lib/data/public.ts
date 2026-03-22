@@ -125,13 +125,13 @@ export async function getPublicBranding(): Promise<ClinicBranding> {
     bodyFont: data.body_font ?? "Geist",
     heroImageUrl: data.hero_image_url ?? null,
     clinicName: data.name ?? clinicConfig.name,
-    tagline: (data as Record<string, unknown>).tagline as string | null ?? null,
-    coverPhotoUrl: (data as Record<string, unknown>).cover_photo_url as string | null ?? null,
-    templateId: ((data as Record<string, unknown>).template_id as string) ?? "modern",
-    sectionVisibility: ((data as Record<string, unknown>).section_visibility as Record<string, boolean>) ?? {},
-    phone: (data as Record<string, unknown>).phone as string | null ?? clinicConfig.contact.phone ?? null,
-    address: (data as Record<string, unknown>).address as string | null ?? clinicConfig.contact.address ?? null,
-    email: (data as Record<string, unknown>).owner_email as string | null ?? clinicConfig.contact.email ?? null,
+    tagline: (data.tagline as string | null) ?? null,
+    coverPhotoUrl: (data.cover_photo_url as string | null) ?? null,
+    templateId: (data.template_id as string | null) ?? "modern",
+    sectionVisibility: (data.section_visibility as Record<string, boolean> | null) ?? {},
+    phone: (data.phone as string | null) ?? clinicConfig.contact.phone ?? null,
+    address: (data.address as string | null) ?? clinicConfig.contact.address ?? null,
+    email: (data.owner_email as string | null) ?? clinicConfig.contact.email ?? null,
   };
 }
 
@@ -167,16 +167,10 @@ export async function getPublicAverageRating(): Promise<number> {
   const clinicId = getClinicId();
   const supabase = await createClient();
 
-  // Use count + individual star counts to compute average without fetching all rows
-  const { count } = await supabase
-    .from("reviews")
-    .select("id", { count: "exact", head: true })
-    .eq("clinic_id", clinicId);
-
-  if (!count || count === 0) return 0;
-
-  // Fetch just the stars column (lightweight) since Supabase JS doesn't support
-  // aggregate functions like AVG() directly.
+  // Fetch just the stars column (lightweight) since Supabase JS doesn't
+  // support aggregate functions like AVG() directly.
+  // TODO: Replace with a Postgres function or materialized view for clinics
+  // with large review counts to avoid fetching all rows.
   const { data } = await supabase
     .from("reviews")
     .select("stars")
