@@ -6,10 +6,8 @@
  * narrow the lookup to a single row before doing the constant-time
  * hash comparison.
  *
- * Migration path (backward-compatible):
- *   1. If the row has a `key_hash` column populated, compare hashes.
- *   2. Otherwise fall back to the legacy plaintext `key` column so
- *      existing keys keep working until they are rotated.
+ * Legacy plaintext key support has been removed. All keys must use
+ * the hashed format.
  */
 
 import { type NextRequest } from "next/server";
@@ -38,47 +36,15 @@ export async function authenticateApiKey(
     .eq("key_prefix", keyPrefix)
     .single();
 
-  if (hashedRow?.key_hash && hashedRow.active) {
-    if (!timingSafeEqual(hashedRow.key_hash, keyHash)) return null;
+  if (!hashedRow?.key_hash || !hashedRow.active) return null;
+  if (!timingSafeEqual(hashedRow.key_hash, keyHash)) return null;
 
-    // Update last-used timestamp (fire-and-forget)
-    await supabase
-      .from("clinic_api_keys")
-      .update({ last_used_at: new Date().toISOString() })
-      .eq("key_prefix", keyPrefix)
-      .eq("key_hash", keyHash);
-
-    return { clinicId: hashedRow.clinic_id };
-  }
-
-  // Fallback: legacy plaintext lookup — DEPRECATED.
-  // Hard sunset: reject legacy keys after 2025-09-01 to force migration.
-  const LEGACY_KEY_SUNSET = new Date("2025-09-01T00:00:00Z");
-  if (new Date() >= LEGACY_KEY_SUNSET) {
-    console.warn(
-      "[api-auth] Legacy plaintext API key authentication has been sunset. " +
-      "All keys must be migrated to hashed format.",
-    );
-    return null;
-  }
-
-  const { data: legacyRow } = await supabase
-    .from("clinic_api_keys")
-    .select("clinic_id, active")
-    .eq("key", apiKey)
-    .single();
-
-  if (!legacyRow?.active) return null;
-
-  console.warn(
-    `[api-auth] Legacy plaintext API key used for clinic ${legacyRow.clinic_id}. ` +
-    `This key must be rotated to a hashed key before ${LEGACY_KEY_SUNSET.toISOString()}.`,
-  );
-
+  // Update last-used timestamp (fire-and-forget)
   await supabase
     .from("clinic_api_keys")
     .update({ last_used_at: new Date().toISOString() })
-    .eq("key", apiKey);
+    .eq("key_prefix", keyPrefix)
+    .eq("key_hash", keyHash);
 
-  return { clinicId: legacyRow.clinic_id };
+  return { clinicId: hashedRow.clinic_id };
 }

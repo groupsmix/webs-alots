@@ -7,9 +7,18 @@
 
 // ---------- Core CSV helpers ----------
 
+/** Characters that trigger formula execution in Excel/Google Sheets. */
+const FORMULA_PREFIXES = new Set(["=", "+", "-", "@", "\t", "\r"]);
+
 function escapeCSV(value: unknown): string {
   if (value === null || value === undefined) return "";
-  const str = String(value);
+  let str = String(value);
+  // Neutralise formula injection: if the cell starts with a character that
+  // spreadsheet applications interpret as a formula, prefix with a single
+  // quote so the value is treated as plain text.
+  if (str.length > 0 && FORMULA_PREFIXES.has(str[0])) {
+    str = `'${str}`;
+  }
   if (str.includes(",") || str.includes('"') || str.includes("\n")) {
     return `"${str.replace(/"/g, '""')}"`;
   }
