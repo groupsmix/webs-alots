@@ -37,9 +37,21 @@ export async function POST(request: NextRequest) {
       method?: "cash" | "card" | "online" | "insurance";
     };
 
-    if (!body.appointmentId || !body.patientId || !body.patientName || !body.amount || !body.paymentType) {
+    if (!body.appointmentId || !body.patientId || !body.patientName || !body.paymentType) {
       return NextResponse.json(
         { error: "appointmentId, patientId, patientName, amount, and paymentType are required" },
+        { status: 400 },
+      );
+    }
+
+    // Validate payment amount is a positive finite number
+    if (
+      typeof body.amount !== "number" ||
+      !Number.isFinite(body.amount) ||
+      body.amount <= 0
+    ) {
+      return NextResponse.json(
+        { error: "amount must be a positive number" },
         { status: 400 },
       );
     }
@@ -118,6 +130,13 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (insertError || !payment) {
+      // Handle unique constraint violation (duplicate active payment)
+      if (insertError?.code === "23505") {
+        return NextResponse.json(
+          { error: "A payment already exists for this appointment" },
+          { status: 409 },
+        );
+      }
       return NextResponse.json({ error: insertError?.message ?? "Failed to initiate payment" }, { status: 500 });
     }
 
