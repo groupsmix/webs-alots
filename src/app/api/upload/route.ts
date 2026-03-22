@@ -29,7 +29,7 @@ const ALLOWED_TYPES = new Set([
   "image/png",
   "image/webp",
   "image/gif",
-  "image/svg+xml",
+  // SVG removed: can contain embedded <script> tags leading to XSS
   "application/pdf",
 ]);
 

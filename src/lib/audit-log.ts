@@ -13,8 +13,9 @@ interface AuditLogParams {
   supabase: SupabaseClient<Database>;
   action: string;
   type: "booking" | "patient" | "payment" | "admin";
+  /** clinic_id is required for healthcare compliance — every audit entry must be scoped to a tenant */
+  clinicId: string;
   actor?: string | null;
-  clinicId?: string | null;
   clinicName?: string | null;
   description?: string | null;
 }

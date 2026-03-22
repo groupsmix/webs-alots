@@ -120,11 +120,20 @@ export async function GET(request: NextRequest) {
       const displayDate = appt.appointment_date ?? apptDatetime.toISOString().split("T")[0];
       const displayTime = appt.start_time ?? apptDatetime.toISOString().split("T")[1]?.slice(0, 5) ?? "";
 
-      // Check if this reminder was already sent (idempotency guard).
-      // We track sent reminders via markers in the notes field to avoid
-      // duplicate sends when the cron job fires twice within the same window.
-      const reminderMarker = `[${trigger}_sent]`;
-      if (appt.notes && (appt.notes as string).includes(reminderMarker)) {
+      // Idempotency: check if this reminder was already sent by looking
+      // for an existing notification_log entry for the same appointment + trigger.
+      // This is more robust than the previous notes-field marker approach.
+      const { data: existingLog } = await supabase
+        .from("notification_log")
+        .select("id")
+        .eq("appointment_id", appt.id)
+        .eq("trigger", trigger)
+        .eq("channel", "reminder")
+        .eq("status", "sent")
+        .limit(1)
+        .maybeSingle();
+
+      if (existingLog) {
         continue;
       }
 
@@ -145,13 +154,20 @@ export async function GET(request: NextRequest) {
       const success = dispatchResults.some((r) => r.success);
       results.push({ appointmentId: appt.id, type: trigger, success });
 
-      // Mark the appointment so subsequent cron runs skip this reminder
+      // Record the sent reminder in the notification_log table for idempotency.
+      // Subsequent cron runs will find this entry and skip the reminder.
       if (success) {
-        const existingNotes = (appt.notes as string) ?? "";
         await supabase
-          .from("appointments")
-          .update({ notes: `${existingNotes} ${reminderMarker}`.trim() })
-          .eq("id", appt.id);
+          .from("notification_log")
+          .insert({
+            appointment_id: appt.id,
+            trigger,
+            channel: "reminder",
+            status: "sent",
+            clinic_id: appt.clinic_id,
+            recipient_name: patient.name,
+            recipient_phone: patient.phone,
+          });
       }
     }
 

@@ -12,6 +12,7 @@ import { createClient } from "@/lib/supabase-server";
 import { APPOINTMENT_STATUS, BOOKING_SOURCE } from "@/lib/types/database";
 import { logAuditEvent } from "@/lib/audit-log";
 import { findOrCreatePatient } from "@/lib/find-or-create-patient";
+import { computeEndTime } from "@/lib/timezone";
 
 export const runtime = "edge";
 
@@ -41,11 +42,12 @@ interface ValidationResult {
 }
 
 async function validateBookingRequest(body: BookingRequestBody): Promise<ValidationResult> {
-  const [specialties, doctors, services] = await Promise.all([
-    getPublicSpecialties(),
+  const [doctors, services] = await Promise.all([
     getPublicDoctors(),
     getPublicServices(),
   ]);
+  // Pass pre-fetched doctors to avoid a redundant database query
+  const specialties = await getPublicSpecialties(doctors);
 
   const fail = (msg: string): ValidationResult => ({ error: msg, doctors, services });
 
@@ -136,6 +138,31 @@ export async function POST(request: NextRequest) {
 
     const supabase = await createClient();
 
+    // Verify doctorId belongs to this clinic (defense-in-depth against RLS bypass)
+    const { data: verifiedDoctor } = await supabase
+      .from("users")
+      .select("id")
+      .eq("id", body.doctorId)
+      .eq("clinic_id", clinicConfig.clinicId)
+      .eq("role", "doctor")
+      .single();
+
+    if (!verifiedDoctor) {
+      return NextResponse.json({ error: "Doctor not found in this clinic" }, { status: 400 });
+    }
+
+    // Verify serviceId belongs to this clinic
+    const { data: verifiedService } = await supabase
+      .from("services")
+      .select("id")
+      .eq("id", body.serviceId)
+      .eq("clinic_id", clinicConfig.clinicId)
+      .single();
+
+    if (!verifiedService) {
+      return NextResponse.json({ error: "Service not found in this clinic" }, { status: 400 });
+    }
+
     // Find or create a patient record using the shared utility
     // (prefers phone-based lookup to avoid name collisions)
     const patientId = await findOrCreatePatient(
@@ -146,11 +173,22 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Failed to create patient record" }, { status: 500 });
     }
 
-    // Calculate end time
+    // Calculate end time with midnight overflow guard
     const duration = service?.duration ?? clinicConfig.booking.slotDuration;
-    const [h, m] = body.time.split(":").map(Number);
-    const endMinutes = h * 60 + m + duration;
-    const endTime = `${Math.floor(endMinutes / 60).toString().padStart(2, "0")}:${(endMinutes % 60).toString().padStart(2, "0")}`;
+    const { endTime, overflows } = computeEndTime(body.time, duration);
+    if (overflows) {
+      return NextResponse.json(
+        { error: "Appointment would extend past midnight. Please choose an earlier time." },
+        { status: 400 },
+      );
+    }
+
+    // Determine initial status based on clinic payment requirements
+    const requiresDeposit = (clinicConfig.booking.depositAmount ?? 0) > 0
+      || (clinicConfig.booking.depositPercentage ?? 0) > 0;
+    const initialStatus = requiresDeposit
+      ? APPOINTMENT_STATUS.PENDING
+      : APPOINTMENT_STATUS.CONFIRMED;
 
     // Construct ISO slot boundaries for the required slot_start/slot_end columns
     const slotStart = `${body.date}T${body.time}:00`;
@@ -168,7 +206,7 @@ export async function POST(request: NextRequest) {
         end_time: endTime,
         slot_start: slotStart,
         slot_end: slotEnd,
-        status: APPOINTMENT_STATUS.CONFIRMED,
+        status: initialStatus,
         is_first_visit: body.isFirstVisit,
         insurance_flag: body.hasInsurance,
         booking_source: BOOKING_SOURCE.ONLINE,

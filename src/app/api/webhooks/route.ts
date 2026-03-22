@@ -84,12 +84,37 @@ export async function POST(request: NextRequest) {
 
       const upperText = msgInfo.text.trim().toUpperCase();
 
-      // Resolve patient and upcoming appointment from the sender's phone number
-      const { data: patient } = await supabase
+      // Resolve the clinic context from the webhook entry's WhatsApp Business
+      // Account ID (WABA). Each clinic has its own WABA linked via phone_number_id.
+      const changes = entry.changes as Array<Record<string, unknown>> | undefined;
+      const firstChangeValue = changes?.[0]?.value as Record<string, unknown> | undefined;
+      const wabaPhoneNumberId = firstChangeValue?.metadata
+        ? (firstChangeValue.metadata as Record<string, unknown>)?.phone_number_id as string | undefined
+        : undefined;
+
+      // Look up which clinic owns this WhatsApp phone number ID
+      let clinicId: string | undefined;
+      if (wabaPhoneNumberId) {
+        const { data: clinic } = await supabase
+          .from("clinics")
+          .select("id")
+          .eq("whatsapp_phone_number_id", wabaPhoneNumberId)
+          .single();
+        clinicId = clinic?.id;
+      }
+
+      // Resolve patient scoped to the clinic (if resolved) to avoid cross-tenant matches
+      const patientQuery = supabase
         .from("users")
         .select("id, name, clinic_id")
         .eq("phone", msgInfo.senderPhone)
-        .eq("role", "patient")
+        .eq("role", "patient");
+
+      if (clinicId) {
+        patientQuery.eq("clinic_id", clinicId);
+      }
+
+      const { data: patient } = await patientQuery
         .limit(1)
         .single();
 

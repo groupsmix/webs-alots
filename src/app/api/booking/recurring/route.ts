@@ -5,6 +5,7 @@ import { withAuth } from "@/lib/with-auth";
 import { findOrCreatePatient } from "@/lib/find-or-create-patient";
 import { APPOINTMENT_STATUS, BOOKING_SOURCE } from "@/lib/types/database";
 import type { TablesInsert } from "@/lib/types/database";
+import { computeEndTime } from "@/lib/timezone";
 
 export const runtime = "edge";
 
@@ -80,11 +81,16 @@ export const POST = withAuth(async (request, { supabase }) => {
 
       const groupId = crypto.randomUUID();
       const skippedDates: string[] = [];
-      let currentDate = new Date(body.date);
+      // Use noon-based parsing to avoid UTC day-of-week issues near midnight
+      let currentDate = new Date(body.date + "T12:00:00");
       const duration = service?.duration ?? clinicConfig.booking.slotDuration;
-      const [h, m] = body.time.split(":").map(Number);
-      const endMinutes = h * 60 + m + duration;
-      const endTime = `${Math.floor(endMinutes / 60).toString().padStart(2, "0")}:${(endMinutes % 60).toString().padStart(2, "0")}`;
+      const { endTime, overflows } = computeEndTime(body.time, duration);
+      if (overflows) {
+        return NextResponse.json(
+          { error: "Appointment would extend past midnight. Please choose an earlier time or shorter duration." },
+          { status: 400 },
+        );
+      }
 
       // Build all appointment records first, then batch insert in a single query
       // instead of N sequential round-trips.
@@ -92,6 +98,7 @@ export const POST = withAuth(async (request, { supabase }) => {
       let insertIndex = 0;
 
       for (let i = 0; i < body.occurrences; i++) {
+        // Use noon-based date to safely extract day-of-week regardless of timezone
         const dateStr = currentDate.toISOString().split("T")[0];
         const dayOfWeek = currentDate.getDay();
         const hours = clinicConfig.workingHours[dayOfWeek];
@@ -130,6 +137,47 @@ export const POST = withAuth(async (request, { supabase }) => {
 
       if (appointmentRows.length === 0) {
         return NextResponse.json({ error: "No appointments could be created", success: false }, { status: 400 });
+      }
+
+      // Check for conflicts with existing appointments before inserting
+      const datesToCheck = appointmentRows.map((r) => r.appointment_date as string);
+      const { data: existingAppts } = await supabase
+        .from("appointments")
+        .select("appointment_date, start_time, end_time")
+        .eq("clinic_id", clinicConfig.clinicId)
+        .eq("doctor_id", body.doctorId)
+        .in("appointment_date", datesToCheck)
+        .neq("status", APPOINTMENT_STATUS.CANCELLED);
+
+      if (existingAppts && existingAppts.length > 0) {
+        // Filter out rows that conflict with existing appointments
+        const conflictDates = new Set<string>();
+        for (const existing of existingAppts) {
+          for (const row of appointmentRows) {
+            if (
+              row.appointment_date === existing.appointment_date &&
+              row.start_time! < existing.end_time! &&
+              row.end_time! > existing.start_time!
+            ) {
+              conflictDates.add(row.appointment_date as string);
+            }
+          }
+        }
+        if (conflictDates.size > 0) {
+          // Remove conflicting rows and add to skippedDates
+          const filtered = appointmentRows.filter((r) => !conflictDates.has(r.appointment_date as string));
+          skippedDates.push(...conflictDates);
+          appointmentRows.length = 0;
+          appointmentRows.push(...filtered);
+        }
+      }
+
+      if (appointmentRows.length === 0) {
+        return NextResponse.json({
+          error: "All dates conflict with existing appointments",
+          success: false,
+          skippedDates,
+        }, { status: 409 });
       }
 
       // Single bulk insert instead of N sequential queries

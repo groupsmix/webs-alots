@@ -3,56 +3,7 @@ import { clinicConfig } from "@/config/clinic.config";
 import { withAuth } from "@/lib/with-auth";
 import { APPOINTMENT_STATUS, WAITING_LIST_STATUS } from "@/lib/types/database";
 import { logAuditEvent } from "@/lib/audit-log";
-
-/**
- * Build a timezone-aware Date for a date + time string using the clinic's timezone.
- *
- * Uses `Intl.DateTimeFormat.formatToParts` for reliable timezone offset
- * extraction, avoiding the locale-dependent `toLocaleString` parsing that
- * can break across runtimes and during DST transitions.
- */
-function clinicDateTime(dateStr: string, timeStr: string): Date {
-  const tz = clinicConfig.timezone ?? "Africa/Casablanca";
-  const [year, month, day] = dateStr.split("-").map(Number);
-  const [hour, minute] = timeStr.split(":").map(Number);
-
-  // Use formatToParts to extract what the wall-clock reads in the target TZ
-  // for a reference UTC instant, then compute the offset.
-  const formatter = new Intl.DateTimeFormat("en-US", {
-    timeZone: tz,
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-    hour12: false,
-  });
-
-  // Start with a naive UTC interpretation of the date/time
-  const naiveUtc = Date.UTC(year, month - 1, day, hour, minute, 0);
-
-  // Determine the UTC offset at that approximate instant by reading
-  // what the timezone's wall-clock shows for that UTC instant.
-  const parts = formatter.formatToParts(new Date(naiveUtc));
-  const get = (type: Intl.DateTimeFormatPartTypes) =>
-    Number(parts.find((p) => p.type === type)?.value ?? 0);
-
-  const tzWall = Date.UTC(
-    get("year"),
-    get("month") - 1,
-    get("day"),
-    get("hour"),
-    get("minute"),
-    get("second"),
-  );
-
-  // offsetMs = how far ahead the TZ wall-clock is from UTC
-  const offsetMs = tzWall - naiveUtc;
-
-  // The desired instant is the naive wall-clock minus the TZ offset
-  return new Date(naiveUtc - offsetMs);
-}
+import { clinicDateTime } from "@/lib/timezone";
 
 export const runtime = "edge";
 
@@ -152,7 +103,7 @@ export const POST = withAuth(async (request, { supabase, profile }) => {
       action: "appointment.cancelled",
       type: "booking",
       actor: profile.id,
-      clinicId: profile.clinic_id,
+      clinicId: profile.clinic_id ?? clinicConfig.clinicId,
       description: `Appointment ${body.appointmentId} cancelled. Reason: ${body.reason ?? "Cancelled by patient"}`,
     });
 

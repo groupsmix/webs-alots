@@ -7,13 +7,15 @@
 
 /**
  * Constant-time string comparison to prevent timing attacks.
- * Both strings must be hex-encoded and equal length.
+ * Pads the shorter string to avoid leaking length information via early return.
  */
 export function timingSafeEqual(a: string, b: string): boolean {
-  if (a.length !== b.length) return false;
-  let mismatch = 0;
-  for (let i = 0; i < a.length; i++) {
-    mismatch |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  const maxLen = Math.max(a.length, b.length);
+  const paddedA = a.padEnd(maxLen, "\0");
+  const paddedB = b.padEnd(maxLen, "\0");
+  let mismatch = a.length !== b.length ? 1 : 0;
+  for (let i = 0; i < maxLen; i++) {
+    mismatch |= paddedA.charCodeAt(i) ^ paddedB.charCodeAt(i);
   }
   return mismatch === 0;
 }
