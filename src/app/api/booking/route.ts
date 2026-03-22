@@ -80,10 +80,18 @@ async function validateBookingRequest(body: BookingRequestBody): Promise<Validat
     return fail("Cannot book an appointment in the past");
   }
 
-  // Parse day-of-week using noon to avoid DST edge cases.
-  // Date string "YYYY-MM-DD" parsed at noon is safe across all timezones.
+  // Determine day-of-week in the clinic's timezone so that midnight-
+  // boundary edge cases don't return the wrong day.  Intl.DateTimeFormat
+  // with the `weekday` option is timezone-aware, unlike Date.getDay().
+  const dayFormatter = new Intl.DateTimeFormat("en-US", {
+    weekday: "short",
+    timeZone: tz,
+  });
+  const dayMap: Record<string, number> = {
+    Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6,
+  };
   const parsedDate = new Date(body.date + "T12:00:00");
-  const dayOfWeek = parsedDate.getDay();
+  const dayOfWeek = dayMap[dayFormatter.format(parsedDate)] ?? parsedDate.getDay();
   const hours = clinicConfig.workingHours[dayOfWeek];
   if (!hours?.enabled) {
     return fail("Selected date is not a working day");

@@ -167,10 +167,23 @@ export async function restoreBackup(
   const restored: BackupTableInfo[] = [];
   const errors: string[] = [];
 
-  // Build an ID mapping so foreign key references between restored
-  // tables stay consistent even though every record gets a new UUID.
+  // ---- Pass 1: Generate all new IDs upfront ----
+  // This avoids forward-reference breakage when table A references an
+  // ID from table B that appears later in BACKUP_TABLES.
   const idMap = new Map<string, string>();
 
+  for (const table of BACKUP_TABLES) {
+    const rows = backup.data[table];
+    if (!rows) continue;
+    for (const row of rows) {
+      const oldId = row.id as string | undefined;
+      if (oldId) {
+        idMap.set(oldId, crypto.randomUUID());
+      }
+    }
+  }
+
+  // ---- Pass 2: Remap IDs + FK references, then insert ----
   for (const table of BACKUP_TABLES) {
     const rows = backup.data[table];
     if (!rows || rows.length === 0) {
@@ -178,20 +191,14 @@ export async function restoreBackup(
       continue;
     }
 
-    // Generate new UUIDs for all records to prevent cross-tenant
-    // data injection via known/colliding IDs.
     const mappedRows = rows.map((row) => {
-      const oldId = row.id as string | undefined;
-      const newId = crypto.randomUUID();
-      if (oldId) {
-        idMap.set(oldId, newId);
-      }
-
       const mapped: Record<string, unknown> = { ...row };
-      mapped.id = newId;
+
+      // Assign the pre-generated new ID
+      const oldId = row.id as string | undefined;
+      mapped.id = oldId ? idMap.get(oldId) : crypto.randomUUID();
       mapped.clinic_id = targetClinicId;
 
-      // Remap known foreign key fields that reference other restored records
       // Strip sensitive fields from user records to prevent privilege escalation
       if (table === "users") {
         delete mapped.auth_id;
@@ -199,24 +206,19 @@ export async function restoreBackup(
         mapped.role = "patient"; // Default restored users to patient role
       }
 
-      // Remap all known foreign key fields that reference other restored records
-      const fkFields = [
-        "patient_id",
-        "doctor_id",
-        "appointment_id",
-        "invoice_id",
-        "treatment_plan_id",
-        "service_id",
-        "bed_id",
-        "room_id",
-        "department_id",
-        "admitting_doctor_id",
-        "product_id",
-        "prescription_id",
-      ];
-      for (const fk of fkFields) {
-        if (typeof mapped[fk] === "string" && idMap.has(mapped[fk] as string)) {
-          mapped[fk] = idMap.get(mapped[fk] as string);
+      // Auto-detect foreign key columns by the `_id` suffix convention
+      // instead of maintaining a hardcoded list that can drift from
+      // the actual schema.
+      for (const [key, value] of Object.entries(mapped)) {
+        if (
+          key !== "id" &&
+          key !== "clinic_id" &&
+          key !== "auth_id" &&
+          key.endsWith("_id") &&
+          typeof value === "string" &&
+          idMap.has(value)
+        ) {
+          mapped[key] = idMap.get(value);
         }
       }
 

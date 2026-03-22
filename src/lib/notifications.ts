@@ -391,9 +391,26 @@ export async function dispatchNotification(
       switch (channel) {
         case "whatsapp": {
           const body = substituteVariables(template.whatsappBody, variables);
-          // Dynamically import to avoid pulling server-only code into client bundles
+          // recipientId is a user UUID — look up the actual phone number
+          const { createClient } = await import("@/lib/supabase-server");
+          const waSupabase = await createClient();
+          const { data: waRecipient } = await waSupabase
+            .from("users")
+            .select("phone")
+            .eq("id", recipientId)
+            .single();
+
+          if (!waRecipient?.phone) {
+            results.push({
+              channel: "whatsapp",
+              success: false,
+              error: "Recipient has no phone number on file",
+            });
+            break;
+          }
+
           const { sendTextMessage } = await import("./whatsapp");
-          const waResult = await sendTextMessage(recipientId, body);
+          const waResult = await sendTextMessage(waRecipient.phone, body);
           results.push({
             channel: "whatsapp",
             success: waResult.success,
@@ -460,8 +477,26 @@ export async function dispatchNotification(
         }
         case "sms": {
           const body = substituteVariables(template.whatsappBody, variables);
+          // recipientId is a user UUID — look up the actual phone number
+          const { createClient: createSmsClient } = await import("@/lib/supabase-server");
+          const smsSupabase = await createSmsClient();
+          const { data: smsRecipient } = await smsSupabase
+            .from("users")
+            .select("phone")
+            .eq("id", recipientId)
+            .single();
+
+          if (!smsRecipient?.phone) {
+            results.push({
+              channel: "sms",
+              success: false,
+              error: "Recipient has no phone number on file",
+            });
+            break;
+          }
+
           const { sendSms } = await import("./sms");
-          const smsResult = await sendSms(recipientId, body);
+          const smsResult = await sendSms(smsRecipient.phone, body);
           results.push({
             channel: "sms",
             success: smsResult.success,

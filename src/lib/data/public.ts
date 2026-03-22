@@ -167,21 +167,30 @@ export async function getPublicAverageRating(): Promise<number> {
   const clinicId = getClinicId();
   const supabase = await createClient();
 
-  // Fetch just the stars column (lightweight) since Supabase JS doesn't
-  // support aggregate functions like AVG() directly.
-  // Limit to the most recent 500 reviews to avoid fetching unbounded rows.
-  // For clinics with >500 reviews, consider a Postgres function or
-  // materialized view for exact averages.
-  const { data } = await supabase
+  // Use the exact row count (via Supabase HEAD request) combined with
+  // a bounded fetch to compute the average without pulling unbounded
+  // data into memory.  The `count: "exact"` option returns the total
+  // matching rows without transferring the data when used with
+  // `head: true`, but we still need the star values to sum.
+  //
+  // Ideal long-term fix: create a Postgres function
+  //   `SELECT AVG(stars) FROM reviews WHERE clinic_id = $1`
+  // and call it via `supabase.rpc("avg_clinic_rating", { cid })`.
+  //
+  // For now we fetch ALL stars (only the `stars` column — a single
+  // integer per row) to ensure the average is exact rather than
+  // silently capping at 500 rows which skews results for popular
+  // clinics.
+  const { data, count } = await supabase
     .from("reviews")
-    .select("stars")
-    .eq("clinic_id", clinicId)
-    .order("created_at", { ascending: false })
-    .limit(500);
+    .select("stars", { count: "exact" })
+    .eq("clinic_id", clinicId);
 
   if (!data || data.length === 0) return 0;
   const sum = data.reduce((s, r) => s + r.stars, 0);
-  return Math.round((sum / data.length) * 10) / 10;
+  // Use `count` (exact total) when available; fall back to data.length
+  const total = count ?? data.length;
+  return Math.round((sum / total) * 10) / 10;
 }
 
 // ── Services ──

@@ -72,8 +72,16 @@ export function withAuth(
         );
       }
 
-      // If specific roles are required, enforce them
-      if (allowedRoles !== null && !allowedRoles.includes(profile.role as UserRole)) {
+      // If specific roles are required, enforce them.
+      // Passing `null` skips role checking (any authenticated user is
+      // allowed).  This is discouraged — prefer an explicit role list
+      // to follow deny-by-default.
+      if (allowedRoles === null) {
+        console.warn(
+          `[withAuth] Route accessed without explicit role restriction (user ${user.id}, role ${profile.role}). ` +
+          "Consider specifying allowedRoles for defense-in-depth.",
+        );
+      } else if (!allowedRoles.includes(profile.role as UserRole)) {
         return NextResponse.json(
           { error: "Forbidden — insufficient permissions" },
           { status: 403 },

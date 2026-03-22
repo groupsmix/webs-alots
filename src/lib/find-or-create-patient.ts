@@ -58,19 +58,23 @@ export async function findOrCreatePatient(
     }
   }
 
-  // Fall back to name-based lookup when phone is not provided
-  const { data: existing } = await supabase
+  // Fall back to name-based lookup when phone is not provided.
+  // Only reuse an existing record when exactly ONE patient matches
+  // to avoid silently attributing data to the wrong person when
+  // multiple patients share the same name (common in many cultures).
+  const { data: byName } = await supabase
     .from("users")
     .select("id")
     .eq("clinic_id", clinicId)
     .eq("name", patientName)
     .eq("role", "patient")
-    .limit(1)
-    .single();
+    .limit(2); // fetch up to 2 to detect ambiguity
 
-  if (existing) {
-    return existing.id;
+  if (byName && byName.length === 1) {
+    return byName[0].id;
   }
+  // If 0 or 2+ matches, fall through to create a new patient record
+  // so we don't accidentally merge distinct individuals.
 
   const { data: newPatient } = await supabase
     .from("users")
