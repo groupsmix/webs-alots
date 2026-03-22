@@ -24,7 +24,7 @@ import type { User } from "@supabase/supabase-js";
 export interface AuthContext {
   supabase: SupabaseClient<Database>;
   user: User;
-  profile: { id: string; role: UserRole };
+  profile: { id: string; role: UserRole; clinic_id: string | null };
 }
 
 type AuthenticatedHandler = (
@@ -63,13 +63,13 @@ export function withAuth(
         return handler(request, {
           supabase,
           user,
-          profile: { id: user.id, role: "patient" as UserRole },
+          profile: { id: user.id, role: "patient" as UserRole, clinic_id: null },
         });
       }
 
       const { data: profile } = await supabase
         .from("users")
-        .select("id, role")
+        .select("id, role, clinic_id")
         .eq("auth_id", user.id)
         .single();
 
@@ -90,7 +90,7 @@ export function withAuth(
       return handler(request, {
         supabase,
         user,
-        profile: { id: profile.id, role: profile.role as UserRole },
+        profile: { id: profile.id, role: profile.role as UserRole, clinic_id: profile.clinic_id ?? null },
       });
     } catch {
       return NextResponse.json(

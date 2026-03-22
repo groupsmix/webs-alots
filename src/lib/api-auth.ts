@@ -75,7 +75,17 @@ export async function authenticateApiKey(
     return { clinicId: hashedRow.clinic_id };
   }
 
-  // Fallback: legacy plaintext lookup (to be removed after key rotation)
+  // Fallback: legacy plaintext lookup — DEPRECATED.
+  // Hard sunset: reject legacy keys after 2025-09-01 to force migration.
+  const LEGACY_KEY_SUNSET = new Date("2025-09-01T00:00:00Z");
+  if (new Date() >= LEGACY_KEY_SUNSET) {
+    console.warn(
+      "[api-auth] Legacy plaintext API key authentication has been sunset. " +
+      "All keys must be migrated to hashed format.",
+    );
+    return null;
+  }
+
   const { data: legacyRow } = await supabase
     .from("clinic_api_keys")
     .select("clinic_id, active")
@@ -83,6 +93,11 @@ export async function authenticateApiKey(
     .single();
 
   if (!legacyRow?.active) return null;
+
+  console.warn(
+    `[api-auth] Legacy plaintext API key used for clinic ${legacyRow.clinic_id}. ` +
+    `This key must be rotated to a hashed key before ${LEGACY_KEY_SUNSET.toISOString()}.`,
+  );
 
   await supabase
     .from("clinic_api_keys")

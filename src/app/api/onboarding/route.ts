@@ -30,17 +30,26 @@ export const POST = withAuth(async (request, { supabase, user }) => {
       );
     }
 
-    // Prevent duplicate clinic creation: check if user already owns a clinic
+    // Only users without an existing profile may onboard.
+    // This prevents any already-registered user (patient, doctor, etc.)
+    // from creating additional clinics or escalating privileges.
     const { data: existingProfile } = await supabase
       .from("users")
-      .select("clinic_id")
+      .select("clinic_id, role")
       .eq("auth_id", user.id)
       .single();
 
-    if (existingProfile?.clinic_id) {
+    if (existingProfile) {
+      if (existingProfile.clinic_id) {
+        return NextResponse.json(
+          { error: "You have already created a clinic" },
+          { status: 409 },
+        );
+      }
+      // User has a profile (e.g. patient) but no clinic — deny escalation
       return NextResponse.json(
-        { error: "You have already created a clinic" },
-        { status: 409 },
+        { error: "Existing users cannot create new clinics" },
+        { status: 403 },
       );
     }
 

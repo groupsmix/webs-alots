@@ -37,7 +37,7 @@ const STAFF_ROLES: UserRole[] = ["super_admin", "clinic_admin", "receptionist", 
  * - payment_received: When a payment is confirmed
  * - new_patient_registered: When a new patient registers
  */
-export const POST = withAuth(async (request) => {
+export const POST = withAuth(async (request, { supabase, profile }) => {
   try {
     const body = await request.json();
 
@@ -56,6 +56,30 @@ export const POST = withAuth(async (request) => {
         { error: "trigger and recipients are required" },
         { status: 400 },
       );
+    }
+
+    // Tenant isolation: verify all recipients belong to the same clinic
+    // as the authenticated user (super_admin bypasses this check).
+    if (profile.role !== "super_admin" && profile.clinic_id) {
+      const recipientIds = recipients.map((r) => r.id);
+      const { data: recipientRows } = await supabase
+        .from("users")
+        .select("id, clinic_id")
+        .in("id", recipientIds);
+
+      const invalidRecipients = (recipientRows ?? []).filter(
+        (r) => r.clinic_id !== profile.clinic_id,
+      );
+      const missingRecipients = recipientIds.filter(
+        (id) => !(recipientRows ?? []).some((r) => r.id === id),
+      );
+
+      if (invalidRecipients.length > 0 || missingRecipients.length > 0) {
+        return NextResponse.json(
+          { error: "One or more recipients not found in your clinic" },
+          { status: 403 },
+        );
+      }
     }
 
     // Find the template for this trigger

@@ -18,7 +18,7 @@ export const runtime = "edge";
  */
 const STAFF_ROLES: UserRole[] = ["super_admin", "clinic_admin", "receptionist", "doctor"];
 
-export const POST = withAuth(async (request) => {
+export const POST = withAuth(async (request, { supabase, profile }) => {
   try {
     const body = await request.json();
 
@@ -39,6 +39,23 @@ export const POST = withAuth(async (request) => {
         { error: "trigger, recipientId, and channels are required" },
         { status: 400 },
       );
+    }
+
+    // Tenant isolation: verify the recipient belongs to the same clinic
+    // as the authenticated user (super_admin bypasses this check).
+    if (profile.role !== "super_admin" && profile.clinic_id) {
+      const { data: recipient } = await supabase
+        .from("users")
+        .select("clinic_id")
+        .eq("id", recipientId)
+        .single();
+
+      if (!recipient || recipient.clinic_id !== profile.clinic_id) {
+        return NextResponse.json(
+          { error: "Recipient not found in your clinic" },
+          { status: 403 },
+        );
+      }
     }
 
     const results = await dispatchNotification(
