@@ -38,31 +38,36 @@ export async function GET(request: NextRequest) {
   }
 
   const results: { clinicId: string; success: boolean; error?: string }[] = [];
-  const BATCH_SIZE = 10;
   const subs = subscriptions ?? [];
 
-  for (let i = 0; i < subs.length; i += BATCH_SIZE) {
-    const batch = subs.slice(i, i + BATCH_SIZE);
-    const settled = await Promise.allSettled(
-      batch.map((sub) => processRenewal(sub.clinic_id)),
-    );
-    for (let j = 0; j < batch.length; j++) {
-      const outcome = settled[j];
-      if (outcome.status === "fulfilled") {
+  // Process all renewals concurrently with a concurrency limit to avoid
+  // overwhelming the database while still being faster than sequential batches.
+  const CONCURRENCY = 10;
+  const queue = [...subs];
+
+  async function worker() {
+    while (queue.length > 0) {
+      const sub = queue.shift();
+      if (!sub) break;
+      try {
+        const result = await processRenewal(sub.clinic_id);
         results.push({
-          clinicId: batch[j].clinic_id,
-          success: outcome.value.success,
-          error: outcome.value.error,
+          clinicId: sub.clinic_id,
+          success: result.success,
+          error: result.error,
         });
-      } else {
+      } catch (err) {
         results.push({
-          clinicId: batch[j].clinic_id,
+          clinicId: sub.clinic_id,
           success: false,
-          error: outcome.reason instanceof Error ? outcome.reason.message : "Unknown error",
+          error: err instanceof Error ? err.message : "Unknown error",
         });
       }
     }
   }
+
+  // Spawn workers up to the concurrency limit
+  await Promise.all(Array.from({ length: Math.min(CONCURRENCY, subs.length) }, () => worker()));
 
   const renewed = results.filter((r) => r.success).length;
   const failed = results.filter((r) => !r.success).length;

@@ -78,94 +78,98 @@ export async function POST(request: NextRequest) {
 
     const supabase = await createClient();
 
-    for (const entry of entries) {
-      const msgInfo = extractMessageInfo(entry);
-      if (!msgInfo) continue;
+    // Process entries concurrently to avoid sequential N+1 query chains
+    // when Meta batches multiple messages in a single webhook delivery.
+    const parsedEntries = entries
+      .map((entry) => {
+        const msgInfo = extractMessageInfo(entry);
+        if (!msgInfo) return null;
+        const changes = entry.changes as Array<Record<string, unknown>> | undefined;
+        const firstChangeValue = changes?.[0]?.value as Record<string, unknown> | undefined;
+        const wabaPhoneNumberId = firstChangeValue?.metadata
+          ? (firstChangeValue.metadata as Record<string, unknown>)?.phone_number_id as string | undefined
+          : undefined;
+        return { msgInfo, wabaPhoneNumberId };
+      })
+      .filter((e): e is NonNullable<typeof e> => e !== null);
 
-      const upperText = msgInfo.text.trim().toUpperCase();
+    await Promise.all(
+      parsedEntries.map(async ({ msgInfo, wabaPhoneNumberId }) => {
+        const upperText = msgInfo.text.trim().toUpperCase();
 
-      // Resolve the clinic context from the webhook entry's WhatsApp Business
-      // Account ID (WABA). Each clinic has its own WABA linked via phone_number_id.
-      const changes = entry.changes as Array<Record<string, unknown>> | undefined;
-      const firstChangeValue = changes?.[0]?.value as Record<string, unknown> | undefined;
-      const wabaPhoneNumberId = firstChangeValue?.metadata
-        ? (firstChangeValue.metadata as Record<string, unknown>)?.phone_number_id as string | undefined
-        : undefined;
+        // Resolve the clinic context from the WABA phone_number_id
+        let clinicId: string | undefined;
+        if (wabaPhoneNumberId) {
+          const { data: clinic } = await supabase
+            .from("clinics")
+            .select("id")
+            .eq("whatsapp_phone_number_id", wabaPhoneNumberId)
+            .single();
+          clinicId = clinic?.id;
+        }
 
-      // Look up which clinic owns this WhatsApp phone number ID
-      let clinicId: string | undefined;
-      if (wabaPhoneNumberId) {
-        const { data: clinic } = await supabase
-          .from("clinics")
-          .select("id")
-          .eq("whatsapp_phone_number_id", wabaPhoneNumberId)
-          .single();
-        clinicId = clinic?.id;
-      }
+        // Resolve patient scoped to the clinic to avoid cross-tenant matches
+        const patientQuery = supabase
+          .from("users")
+          .select("id, name, clinic_id")
+          .eq("phone", msgInfo.senderPhone)
+          .eq("role", "patient");
 
-      // Resolve patient scoped to the clinic (if resolved) to avoid cross-tenant matches
-      const patientQuery = supabase
-        .from("users")
-        .select("id, name, clinic_id")
-        .eq("phone", msgInfo.senderPhone)
-        .eq("role", "patient");
+        if (clinicId) {
+          patientQuery.eq("clinic_id", clinicId);
+        }
 
-      if (clinicId) {
-        patientQuery.eq("clinic_id", clinicId);
-      }
-
-      const { data: patient } = await patientQuery
-        .limit(1)
-        .single();
-
-      const patientName = patient?.name ?? "Patient";
-      const patientId = patient?.id ?? null;
-
-      // Find the next upcoming appointment for this patient
-      let recipientId = patientId;
-      if (patient) {
-        const { data: appt } = await supabase
-          .from("appointments")
-          .select("id, doctor_id, status")
-          .eq("patient_id", patient.id)
-          .in("status", ["confirmed", "pending", "scheduled"])
-          .order("appointment_date", { ascending: true })
+        const { data: patient } = await patientQuery
           .limit(1)
           .single();
 
-        if (upperText === "CONFIRM" && appt) {
-          await supabase
+        const patientName = patient?.name ?? "Patient";
+        const patientId = patient?.id ?? null;
+
+        // Find the next upcoming appointment for this patient
+        let recipientId = patientId;
+        if (patient) {
+          const { data: appt } = await supabase
             .from("appointments")
-            .update({ status: "confirmed" })
-            .eq("id", appt.id);
-        } else if (upperText === "CANCEL" && appt) {
-          await supabase
-            .from("appointments")
-            .update({ status: "cancelled", cancellation_reason: "Cancelled via WhatsApp" })
-            .eq("id", appt.id);
+            .select("id, doctor_id, status")
+            .eq("patient_id", patient.id)
+            .in("status", ["confirmed", "pending", "scheduled"])
+            .order("appointment_date", { ascending: true })
+            .limit(1)
+            .single();
+
+          if (upperText === "CONFIRM" && appt) {
+            await supabase
+              .from("appointments")
+              .update({ status: "confirmed" })
+              .eq("id", appt.id);
+          } else if (upperText === "CANCEL" && appt) {
+            await supabase
+              .from("appointments")
+              .update({ status: "cancelled", cancellation_reason: "Cancelled via WhatsApp" })
+              .eq("id", appt.id);
+          }
+
+          recipientId = appt?.doctor_id ?? patientId;
         }
 
-        // Notify the relevant staff member (doctor assigned to the appointment)
-        recipientId = appt?.doctor_id ?? patientId;
-      }
-
-      if (upperText === "CONFIRM") {
-        await dispatchNotification(
-          "booking_confirmation",
-          { patient_name: patientName, clinic_name: "Clinic" } as TemplateVariables,
-          recipientId ?? "receptionist",
-          ["in_app"],
-        );
-      } else if (upperText === "CANCEL") {
-        await dispatchNotification(
-          "cancellation",
-          { patient_name: patientName, clinic_name: "Clinic" } as TemplateVariables,
-          recipientId ?? "receptionist",
-          ["in_app"],
-        );
-      }
-      // Other messages are logged for receptionist review
-    }
+        if (upperText === "CONFIRM") {
+          await dispatchNotification(
+            "booking_confirmation",
+            { patient_name: patientName, clinic_name: "Clinic" } as TemplateVariables,
+            recipientId ?? "receptionist",
+            ["in_app"],
+          );
+        } else if (upperText === "CANCEL") {
+          await dispatchNotification(
+            "cancellation",
+            { patient_name: patientName, clinic_name: "Clinic" } as TemplateVariables,
+            recipientId ?? "receptionist",
+            ["in_app"],
+          );
+        }
+      }),
+    );
 
     return NextResponse.json({ status: "ok" });
   } catch (err) {

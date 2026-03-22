@@ -137,7 +137,7 @@ export const POST = withAuth(async (request, { supabase }) => {
       }
 
       if (appointmentRows.length === 0) {
-        return NextResponse.json({ error: "No appointments could be created", success: false }, { status: 400 });
+        return NextResponse.json({ error: "No appointments could be created" }, { status: 400 });
       }
 
       // Check for conflicts with existing appointments before inserting
@@ -176,7 +176,6 @@ export const POST = withAuth(async (request, { supabase }) => {
       if (appointmentRows.length === 0) {
         return NextResponse.json({
           error: "All dates conflict with existing appointments",
-          success: false,
           skippedDates,
         }, { status: 409 });
       }

@@ -65,6 +65,9 @@ export function clearUserCache() {
 
 // ── Generic fetch helper ──
 
+/** Default upper bound for unbounded queries to prevent fetching excessively large result sets. */
+const DEFAULT_FETCH_LIMIT = 1000;
+
 async function fetchRows<T>(
   table: TableName,
   opts?: {
@@ -90,7 +93,8 @@ async function fetchRows<T>(
   if (opts?.gte) q = q.gte(opts.gte[0] as string, opts.gte[1]);
   if (opts?.lte) q = q.lte(opts.lte[0] as string, opts.lte[1]);
   if (opts?.order) q = q.order(opts.order[0], opts.order[1]);
-  if (opts?.limit) q = q.limit(opts.limit);
+  // Apply explicit limit or fall back to a safe default upper bound
+  q = q.limit(opts?.limit ?? DEFAULT_FETCH_LIMIT);
   const { data, error } = await q;
   if (error) {
     console.error(`[data] ${table}:`, error.message);
@@ -2539,6 +2543,7 @@ export async function addToWaitingList(data: {
     console.error("[data] addToWaitingList:", error.message);
     return { success: false, error: error.message };
   }
+  clearLookupCache();
   return { success: true, entryId: entry?.id };
 }
 
@@ -2573,6 +2578,7 @@ export async function createAppointment(data: {
     console.error("[data] createAppointment:", error.message);
     return { success: false, error: error.message };
   }
+  clearLookupCache();
   return { success: true, id: appt?.id };
 }
 
