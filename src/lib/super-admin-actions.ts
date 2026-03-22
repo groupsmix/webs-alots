@@ -14,6 +14,7 @@ import { createClient } from "@/lib/supabase-server";
 import type {
   ClinicType,
   ClinicTier,
+  Json,
 } from "@/lib/types/database";
 
 /** Server-side Supabase client that uses the cookie-based auth session
@@ -112,7 +113,7 @@ export async function createClinic(input: CreateClinicInput): Promise<ClinicRow>
       name: input.name,
       type: input.type,
       tier: input.tier,
-      config: input.config ?? {},
+      config: (input.config ?? {}) as Json,
     })
     .select()
     .single();

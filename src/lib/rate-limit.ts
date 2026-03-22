@@ -35,7 +35,6 @@ export function extractClientIp(request: NextRequest): string {
     request.headers.get("cf-connecting-ip") ??
     request.headers.get("x-real-ip") ??
     request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
-    request.ip ??
     "unknown"
   );
 }
