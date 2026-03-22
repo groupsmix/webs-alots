@@ -58,12 +58,18 @@ export async function createBackup(
   const tables: BackupTableInfo[] = [];
   let totalRecords = 0;
 
-  for (const table of BACKUP_TABLES) {
-    const { data: rows, error } = await supabase.from(table)
-      .select("*")
-      .eq("clinic_id", clinicId)
-      .order("created_at", { ascending: false });
+  // Fetch all tables in parallel instead of sequentially
+  const results = await Promise.all(
+    BACKUP_TABLES.map((table) =>
+      supabase.from(table)
+        .select("*")
+        .eq("clinic_id", clinicId)
+        .order("created_at", { ascending: false })
+        .then(({ data: rows, error }) => ({ table, rows, error })),
+    ),
+  );
 
+  for (const { table, rows, error } of results) {
     if (error) {
       console.error(`[Backup] Failed to export ${table}:`, error.message);
       data[table] = [];

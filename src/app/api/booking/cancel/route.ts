@@ -51,7 +51,14 @@ export const POST = withAuth(async (request, { supabase }) => {
     }
 
     // Check cancellation window (timezone-aware)
-    const appointmentDateTime = clinicDateTime(appt.appointment_date!, appt.start_time!);
+    if (!appt.appointment_date || !appt.start_time) {
+      return NextResponse.json(
+        { error: "Appointment is missing date or time information" },
+        { status: 400 },
+      );
+    }
+
+    const appointmentDateTime = clinicDateTime(appt.appointment_date, appt.start_time);
     const hoursUntilAppt = (appointmentDateTime.getTime() - Date.now()) / (1000 * 60 * 60);
     const cancellationWindowHours = clinicConfig.booking.cancellationHours;
 
@@ -84,7 +91,7 @@ export const POST = withAuth(async (request, { supabase }) => {
       .select("id")
       .eq("clinic_id", clinicConfig.clinicId)
       .eq("doctor_id", appt.doctor_id)
-      .eq("preferred_date", appt.appointment_date!)
+      .eq("preferred_date", appt.appointment_date)
       .eq("status", "waiting")
       .order("created_at", { ascending: true })
       .limit(1)
@@ -133,7 +140,14 @@ export const GET = withAuth(async (request, { supabase }) => {
     });
   }
 
-  const appointmentDateTime = clinicDateTime(appt.appointment_date!, appt.start_time!);
+  if (!appt.appointment_date || !appt.start_time) {
+    return NextResponse.json({
+      canCancel: false,
+      reason: "Appointment is missing date or time information",
+    });
+  }
+
+  const appointmentDateTime = clinicDateTime(appt.appointment_date, appt.start_time);
   const hoursUntilAppt = (appointmentDateTime.getTime() - Date.now()) / (1000 * 60 * 60);
   const cancellationWindowHours = clinicConfig.booking.cancellationHours;
 

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { clinicConfig } from "@/config/clinic.config";
 import { getPublicServices } from "@/lib/data/public";
 import { withAuth } from "@/lib/with-auth";
+import { findOrCreatePatient } from "@/lib/find-or-create-patient";
 
 export const runtime = "edge";
 
@@ -61,31 +62,11 @@ export const POST = withAuth(async (request, { supabase }) => {
       const service = body.serviceId ? services.find((s) => s.id === body.serviceId) : undefined;
 
       // Find or create patient
-      let patientId = body.patientId;
-      if (patientId.startsWith("patient-")) {
-        const { data: existing } = await supabase
-          .from("users")
-          .select("id")
-          .eq("clinic_id", clinicConfig.clinicId)
-          .eq("name", body.patientName)
-          .eq("role", "patient")
-          .limit(1)
-          .single();
-
-        if (existing) {
-          patientId = existing.id;
-        } else {
-          const { data: newPatient } = await supabase
-            .from("users")
-            .insert({
-              clinic_id: clinicConfig.clinicId,
-              name: body.patientName,
-              role: "patient",
-            })
-            .select("id")
-            .single();
-          if (newPatient) patientId = newPatient.id;
-        }
+      const patientId = await findOrCreatePatient(
+        supabase, clinicConfig.clinicId, body.patientId, body.patientName,
+      );
+      if (!patientId) {
+        return NextResponse.json({ error: "Failed to resolve patient" }, { status: 500 });
       }
 
       const groupId = crypto.randomUUID();
