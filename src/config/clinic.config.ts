@@ -31,6 +31,9 @@ export interface ClinicConfig {
   /** Currency code */
   currency: string;
 
+  /** IANA timezone for date/time operations (e.g. "Africa/Casablanca") */
+  timezone: string;
+
   /** Contact information */
   contact: {
     phone?: string;
@@ -129,6 +132,7 @@ export const clinicConfig: ClinicConfig = {
   domain: undefined,
   locale: "fr",
   currency: "MAD",
+  timezone: "Africa/Casablanca",
 
   contact: {
     phone: undefined,

@@ -128,7 +128,14 @@ export async function middleware(request: NextRequest) {
       allowedOrigins.add(`${request.nextUrl.protocol}//${rootDomain}`);
     }
 
-    if (origin && !allowedOrigins.has(origin)) {
+    if (!origin) {
+      return NextResponse.json(
+        { error: "CSRF validation failed: missing origin header" },
+        { status: 403 },
+      );
+    }
+
+    if (!allowedOrigins.has(origin)) {
       return NextResponse.json(
         { error: "CSRF validation failed: origin not allowed" },
         { status: 403 },
@@ -141,10 +148,18 @@ export async function middleware(request: NextRequest) {
     const clientIp =
       request.headers.get("cf-connecting-ip") ??
       request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
-      "unknown";
+      null;
+
+    if (!clientIp) {
+      console.warn("[rate-limit] Could not determine client IP — applying strict limit");
+    }
+
+    // Use a per-request unique key for unknown IPs so each gets its own
+    // very small bucket instead of sharing one "unknown" bucket.
+    const rateLimitKey = clientIp ?? `unknown-${crypto.randomUUID()}`;
 
     const rule = rateLimitRules.find((r) => pathname.startsWith(r.prefix));
-    if (rule && !rule.limiter.check(clientIp)) {
+    if (rule && !rule.limiter.check(rateLimitKey)) {
       return NextResponse.json(
         { error: "Too many requests. Please try again later." },
         { status: 429 },

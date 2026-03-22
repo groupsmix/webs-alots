@@ -38,14 +38,30 @@ export async function GET(request: NextRequest) {
   }
 
   const results: { clinicId: string; success: boolean; error?: string }[] = [];
+  const BATCH_SIZE = 10;
+  const subs = subscriptions ?? [];
 
-  for (const sub of subscriptions ?? []) {
-    const result = await processRenewal(sub.clinic_id);
-    results.push({
-      clinicId: sub.clinic_id,
-      success: result.success,
-      error: result.error,
-    });
+  for (let i = 0; i < subs.length; i += BATCH_SIZE) {
+    const batch = subs.slice(i, i + BATCH_SIZE);
+    const settled = await Promise.allSettled(
+      batch.map((sub) => processRenewal(sub.clinic_id)),
+    );
+    for (let j = 0; j < batch.length; j++) {
+      const outcome = settled[j];
+      if (outcome.status === "fulfilled") {
+        results.push({
+          clinicId: batch[j].clinic_id,
+          success: outcome.value.success,
+          error: outcome.value.error,
+        });
+      } else {
+        results.push({
+          clinicId: batch[j].clinic_id,
+          success: false,
+          error: outcome.reason instanceof Error ? outcome.reason.message : "Unknown error",
+        });
+      }
+    }
   }
 
   const renewed = results.filter((r) => r.success).length;

@@ -52,6 +52,25 @@ export async function POST(request: NextRequest) {
 
     const refundAmount = body.amount ?? payment.amount;
 
+    // Validate refund amount
+    if (
+      typeof refundAmount !== "number" ||
+      !Number.isFinite(refundAmount) ||
+      refundAmount <= 0
+    ) {
+      return NextResponse.json(
+        { error: "Refund amount must be a positive number" },
+        { status: 400 },
+      );
+    }
+
+    if (refundAmount > payment.amount) {
+      return NextResponse.json(
+        { error: `Refund amount cannot exceed original payment amount (${payment.amount})` },
+        { status: 400 },
+      );
+    }
+
     const { error: updateError } = await supabase
       .from("payments")
       .update({

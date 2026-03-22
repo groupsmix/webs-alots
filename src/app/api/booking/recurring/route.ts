@@ -146,12 +146,12 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: "groupId is required" }, { status: 400 });
       }
 
-      // Find appointments in the group by searching notes
+      // Find appointments in the group by recurrence_group_id column
       const { data: groupAppts } = await supabase
         .from("appointments")
-        .select("id, status, notes")
+        .select("id, status")
         .eq("clinic_id", clinicConfig.clinicId)
-        .like("notes", `%group:${body.groupId}%`);
+        .eq("recurrence_group_id", body.groupId);
 
       if (!groupAppts || groupAppts.length === 0) {
         return NextResponse.json({ error: "No appointments found for this group" }, { status: 404 });

@@ -86,17 +86,36 @@ export async function POST(request: NextRequest) {
  */
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
-  const userId = searchParams.get("userId");
-
-  if (!userId) {
-    return NextResponse.json(
-      { error: "userId is required" },
-      { status: 400 },
-    );
-  }
+  const requestedUserId = searchParams.get("userId");
 
   try {
     const supabase = await createClient();
+
+    // Verify the caller is authenticated
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+    }
+
+    // Resolve the caller's profile
+    const { data: profile } = await supabase
+      .from("users")
+      .select("id, role")
+      .eq("auth_id", user.id)
+      .single();
+
+    if (!profile) {
+      return NextResponse.json({ error: "User profile not found" }, { status: 404 });
+    }
+
+    const staffRoles: UserRole[] = ["super_admin", "clinic_admin", "receptionist", "doctor"];
+    const isStaff = staffRoles.includes(profile.role as UserRole);
+
+    // Non-staff users can only read their own notifications
+    const userId = isStaff && requestedUserId ? requestedUserId : profile.id;
 
     const channel = searchParams.get("channel");
     const type = searchParams.get("type");

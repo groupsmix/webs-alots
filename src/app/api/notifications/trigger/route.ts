@@ -5,8 +5,12 @@ import {
   type NotificationTrigger,
   type TemplateVariables,
 } from "@/lib/notifications";
+import type { UserRole } from "@/lib/types/database";
+import { createClient } from "@/lib/supabase-server";
 
 export const runtime = "edge";
+
+const STAFF_ROLES: UserRole[] = ["super_admin", "clinic_admin", "receptionist", "doctor"];
 
 /**
  * POST /api/notifications/trigger
@@ -35,6 +39,28 @@ export const runtime = "edge";
  */
 export async function POST(request: NextRequest) {
   try {
+    const supabase = await createClient();
+
+    // Verify the caller is authenticated
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+    }
+
+    // Only staff roles can trigger notifications
+    const { data: profile } = await supabase
+      .from("users")
+      .select("role")
+      .eq("auth_id", user.id)
+      .single();
+
+    if (!profile || !STAFF_ROLES.includes(profile.role as UserRole)) {
+      return NextResponse.json({ error: "Forbidden \u2014 insufficient permissions" }, { status: 403 });
+    }
+
     const body = await request.json();
 
     const {

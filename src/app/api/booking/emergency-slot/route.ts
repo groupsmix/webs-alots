@@ -152,6 +152,13 @@ export async function POST(request: NextRequest) {
         .single();
 
       if (apptError || !appointment) {
+        // Handle unique constraint violation (double-booking race condition)
+        if (apptError?.code === "23505") {
+          return NextResponse.json(
+            { error: "This slot has already been booked. Please choose another time." },
+            { status: 409 },
+          );
+        }
         return NextResponse.json({ error: "Failed to create appointment" }, { status: 500 });
       }
 

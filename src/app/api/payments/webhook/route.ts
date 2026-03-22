@@ -27,13 +27,27 @@ export async function POST(request: NextRequest) {
     const rawBody = await request.text();
     const signature = request.headers.get("stripe-signature");
 
-    // Verify webhook signature if secret is configured
-    if (webhookSecret && signature) {
-      const isValid = await verifyStripeSignature(rawBody, signature, webhookSecret);
-      if (!isValid) {
-        console.error("[Stripe Webhook] Invalid signature");
-        return NextResponse.json({ error: "Invalid signature" }, { status: 400 });
-      }
+    // Verify webhook signature — webhook secret MUST be configured
+    if (!webhookSecret) {
+      console.error("[Stripe Webhook] STRIPE_WEBHOOK_SECRET is not configured");
+      return NextResponse.json(
+        { error: "Webhook signature verification not configured" },
+        { status: 503 },
+      );
+    }
+
+    if (!signature) {
+      console.error("[Stripe Webhook] Missing stripe-signature header");
+      return NextResponse.json(
+        { error: "Missing stripe-signature header" },
+        { status: 400 },
+      );
+    }
+
+    const isValid = await verifyStripeSignature(rawBody, signature, webhookSecret);
+    if (!isValid) {
+      console.error("[Stripe Webhook] Invalid signature");
+      return NextResponse.json({ error: "Invalid signature" }, { status: 400 });
     }
 
     const event = JSON.parse(rawBody) as {
@@ -150,7 +164,13 @@ async function verifyStripeSignature(
       .map((b) => b.toString(16).padStart(2, "0"))
       .join("");
 
-    return expectedSignature === signature;
+    // Constant-time comparison to prevent timing attacks
+    if (expectedSignature.length !== signature.length) return false;
+    let mismatch = 0;
+    for (let i = 0; i < expectedSignature.length; i++) {
+      mismatch |= expectedSignature.charCodeAt(i) ^ signature.charCodeAt(i);
+    }
+    return mismatch === 0;
   } catch {
     return false;
   }
