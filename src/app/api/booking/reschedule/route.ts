@@ -3,9 +3,12 @@ import { withAuth } from "@/lib/with-auth";
 import { clinicConfig } from "@/config/clinic.config";
 import { getPublicAvailableSlots } from "@/lib/data/public";
 import { APPOINTMENT_STATUS } from "@/lib/types/database";
+import type { UserRole } from "@/lib/types/database";
 import { logAuditEvent } from "@/lib/audit-log";
 
 export const runtime = "edge";
+
+const ALL_ROLES: UserRole[] = ["super_admin", "clinic_admin", "receptionist", "doctor", "patient"];
 
 /**
  * POST /api/booking/reschedule
@@ -141,4 +144,4 @@ export const POST = withAuth(async (request, { supabase, profile }) => {
     console.error("[reschedule] Error:", err instanceof Error ? err.message : "Unknown error");
     return NextResponse.json({ error: "Failed to reschedule appointment" }, { status: 500 });
   }
-}, null);
+}, ALL_ROLES);

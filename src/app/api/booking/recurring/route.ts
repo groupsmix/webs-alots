@@ -4,10 +4,12 @@ import { getPublicServices } from "@/lib/data/public";
 import { withAuth } from "@/lib/with-auth";
 import { findOrCreatePatient } from "@/lib/find-or-create-patient";
 import { APPOINTMENT_STATUS, BOOKING_SOURCE } from "@/lib/types/database";
-import type { TablesInsert } from "@/lib/types/database";
+import type { TablesInsert, UserRole } from "@/lib/types/database";
 import { computeEndTime } from "@/lib/timezone";
 
 export const runtime = "edge";
+
+const STAFF_ROLES: UserRole[] = ["super_admin", "clinic_admin", "receptionist", "doctor"];
 
 function addInterval(date: Date, pattern: "weekly" | "biweekly" | "monthly"): Date {
   const next = new Date(date);
@@ -245,4 +247,4 @@ export const POST = withAuth(async (request, { supabase }) => {
     console.error("[recurring] Error:", err instanceof Error ? err.message : "Unknown error");
     return NextResponse.json({ error: "Failed to process recurring booking" }, { status: 500 });
   }
-}, null);
+}, STAFF_ROLES);

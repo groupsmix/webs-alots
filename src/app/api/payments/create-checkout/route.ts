@@ -1,5 +1,8 @@
 import { NextResponse } from "next/server";
 import { withAuth } from "@/lib/with-auth";
+import type { UserRole } from "@/lib/types/database";
+
+const ALL_ROLES: UserRole[] = ["super_admin", "clinic_admin", "receptionist", "doctor", "patient"];
 
 /**
  * POST /api/payments/create-checkout
@@ -107,4 +110,4 @@ export const POST = withAuth(async (request, { user, profile }) => {
     console.error("[Payments] Error:", err instanceof Error ? err.message : "Unknown error");
     return NextResponse.json({ error: "Failed to process payment" }, { status: 500 });
   }
-}, null);
+}, ALL_ROLES);

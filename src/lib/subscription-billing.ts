@@ -203,17 +203,17 @@ export async function checkPlanLimits(
   const [doctorResult, patientResult, appointmentResult] = await Promise.all([
     supabase
       .from("users")
-      .select("*", { count: "exact", head: true })
+      .select("id", { count: "exact", head: true })
       .eq("clinic_id", clinicId)
       .eq("role", "doctor"),
     supabase
       .from("users")
-      .select("*", { count: "exact", head: true })
+      .select("id", { count: "exact", head: true })
       .eq("clinic_id", clinicId)
       .eq("role", "patient"),
     supabase
       .from("appointments")
-      .select("*", { count: "exact", head: true })
+      .select("id", { count: "exact", head: true })
       .eq("clinic_id", clinicId)
       .gte("appointment_date", monthStart),
   ]);

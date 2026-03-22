@@ -4,8 +4,11 @@ import { withAuth } from "@/lib/with-auth";
 import { findOrCreatePatient } from "@/lib/find-or-create-patient";
 import { logAuditEvent } from "@/lib/audit-log";
 import { WAITING_LIST_STATUS } from "@/lib/types/database";
+import type { UserRole } from "@/lib/types/database";
 
 export const runtime = "edge";
+
+const ALL_ROLES: UserRole[] = ["super_admin", "clinic_admin", "receptionist", "doctor", "patient"];
 
 /**
  * POST /api/booking/waiting-list
@@ -82,7 +85,7 @@ export const POST = withAuth(async (request, { supabase }) => {
     console.error("[POST /api/booking/waiting-list] Unexpected error:", err instanceof Error ? err.message : "Unknown error");
     return NextResponse.json({ error: "Failed to add to waiting list" }, { status: 500 });
   }
-}, null);
+}, ALL_ROLES);
 
 /**
  * GET /api/booking/waiting-list?patientId=...  OR  ?doctorId=...&date=...
@@ -128,7 +131,7 @@ export const GET = withAuth(async (request, { supabase }) => {
     { error: "patientId, or doctorId and date are required" },
     { status: 400 },
   );
-}, null);
+}, ALL_ROLES);
 
 /**
  * DELETE /api/booking/waiting-list
@@ -168,4 +171,4 @@ export const DELETE = withAuth(async (request, { supabase }) => {
     console.error("[DELETE /api/booking/waiting-list] Unexpected error:", err instanceof Error ? err.message : "Unknown error");
     return NextResponse.json({ error: "Failed to remove from waiting list" }, { status: 500 });
   }
-}, null);
+}, ALL_ROLES);

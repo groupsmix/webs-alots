@@ -94,21 +94,21 @@ export const POST = withAuth(async (request, { supabase, profile }) => {
       );
     }
 
-    // Dispatch to all recipients
-    const allResults = [];
-
-    for (const recipient of recipients) {
-      const results = await dispatchNotification(
-        trigger,
-        variables || {},
-        recipient.id,
-        recipient.channels,
-      );
-      allResults.push({
-        recipientId: recipient.id,
-        results,
-      });
-    }
+    // Dispatch to all recipients in parallel
+    const allResults = await Promise.all(
+      recipients.map(async (recipient) => {
+        const results = await dispatchNotification(
+          trigger,
+          variables || {},
+          recipient.id,
+          recipient.channels,
+        );
+        return {
+          recipientId: recipient.id,
+          results,
+        };
+      }),
+    );
 
     return NextResponse.json({
       trigger,

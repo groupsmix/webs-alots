@@ -2,10 +2,13 @@ import { NextResponse } from "next/server";
 import { clinicConfig } from "@/config/clinic.config";
 import { withAuth } from "@/lib/with-auth";
 import { APPOINTMENT_STATUS, WAITING_LIST_STATUS } from "@/lib/types/database";
+import type { UserRole } from "@/lib/types/database";
 import { logAuditEvent } from "@/lib/audit-log";
 import { clinicDateTime } from "@/lib/timezone";
 
 export const runtime = "edge";
+
+const ALL_ROLES: UserRole[] = ["super_admin", "clinic_admin", "receptionist", "doctor", "patient"];
 
 /**
  * POST /api/booking/cancel
@@ -112,7 +115,7 @@ export const POST = withAuth(async (request, { supabase, profile }) => {
     console.error("[cancel] Error:", err instanceof Error ? err.message : "Unknown error");
     return NextResponse.json({ error: "Failed to cancel appointment" }, { status: 500 });
   }
-}, null);
+}, ALL_ROLES);
 
 /**
  * GET /api/booking/cancel?appointmentId=...
@@ -164,4 +167,4 @@ export const GET = withAuth(async (request, { supabase }) => {
   }
 
   return NextResponse.json({ canCancel: true, hoursRemaining: hoursUntilAppt });
-}, null);
+}, ALL_ROLES);
