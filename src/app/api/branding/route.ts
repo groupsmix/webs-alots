@@ -5,7 +5,7 @@
  *                              and persist the URL to the clinics table
  */
 
-import { NextResponse, type NextRequest } from "next/server";
+import { NextResponse } from "next/server";
 import { clinicConfig } from "@/config/clinic.config";
 import { createClient } from "@/lib/supabase-server";
 import {
@@ -14,6 +14,7 @@ import {
   buildUploadKey,
 } from "@/lib/r2";
 import type { UserRole } from "@/lib/types/database";
+import { withAuth } from "@/lib/with-auth";
 
 const ADMIN_ROLES: UserRole[] = ["super_admin", "clinic_admin"];
 
@@ -76,21 +77,7 @@ export async function GET() {
 
 // ── PUT — update text branding fields (colors, fonts) ──
 
-export async function PUT(request: NextRequest) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) {
-    return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
-  }
-  const { data: profile } = await supabase
-    .from("users")
-    .select("role")
-    .eq("auth_id", user.id)
-    .single();
-  if (!profile || !ADMIN_ROLES.includes(profile.role as UserRole)) {
-    return NextResponse.json({ error: "Forbidden \u2014 admin only" }, { status: 403 });
-  }
-
+export const PUT = withAuth(async (request, { supabase }) => {
   const clinicId = clinicConfig.clinicId;
   const body = await request.json();
 
@@ -130,6 +117,7 @@ export async function PUT(request: NextRequest) {
     .eq("id", clinicId);
 
   if (error) {
+    console.error("[PUT /api/branding] Update error:", error.message);
     return NextResponse.json(
       { error: "Failed to update branding" },
       { status: 500 },
@@ -137,25 +125,11 @@ export async function PUT(request: NextRequest) {
   }
 
   return NextResponse.json({ ok: true });
-}
+}, ADMIN_ROLES);
 
 // ── POST — upload a branding image and save URL ──
 
-export async function POST(request: NextRequest) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) {
-    return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
-  }
-  const { data: profile } = await supabase
-    .from("users")
-    .select("role")
-    .eq("auth_id", user.id)
-    .single();
-  if (!profile || !ADMIN_ROLES.includes(profile.role as UserRole)) {
-    return NextResponse.json({ error: "Forbidden \u2014 admin only" }, { status: 403 });
-  }
-
+export const POST = withAuth(async (request, { supabase }) => {
   const clinicId = clinicConfig.clinicId;
 
   if (!isR2Configured()) {
@@ -216,6 +190,7 @@ export async function POST(request: NextRequest) {
     .eq("id", clinicId);
 
   if (error) {
+    console.error("[POST /api/branding] Save URL error:", error.message);
     return NextResponse.json(
       { error: "Upload succeeded but failed to save URL" },
       { status: 500 },
@@ -223,4 +198,4 @@ export async function POST(request: NextRequest) {
   }
 
   return NextResponse.json({ url, key });
-}
+}, ADMIN_ROLES);

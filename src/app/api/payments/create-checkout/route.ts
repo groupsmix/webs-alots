@@ -1,5 +1,5 @@
-import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase-server";
+import { NextResponse } from "next/server";
+import { withAuth } from "@/lib/with-auth";
 
 /**
  * POST /api/payments/create-checkout
@@ -19,7 +19,7 @@ import { createClient } from "@/lib/supabase-server";
  *
  * Requires: STRIPE_SECRET_KEY env var
  */
-export async function POST(request: NextRequest) {
+export const POST = withAuth(async (request, { user }) => {
   const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
 
   if (!stripeSecretKey) {
@@ -30,15 +30,6 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
-      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
-    }
-
     const body = await request.json();
     const {
       amount,
@@ -99,7 +90,7 @@ export async function POST(request: NextRequest) {
     if (!stripeResponse.ok) {
       console.error("[Stripe] Checkout session error:", session.error?.message);
       return NextResponse.json(
-        { error: session.error?.message || "Failed to create checkout session" },
+        { error: "Failed to create checkout session" },
         { status: 400 },
       );
     }
@@ -109,8 +100,7 @@ export async function POST(request: NextRequest) {
       url: session.url,
     });
   } catch (err) {
-    const message = err instanceof Error ? err.message : "Unknown error";
-    console.error("[Payments] Error:", message);
-    return NextResponse.json({ error: message }, { status: 500 });
+    console.error("[Payments] Error:", err instanceof Error ? err.message : "Unknown error");
+    return NextResponse.json({ error: "Failed to process payment" }, { status: 500 });
   }
-}
+}, null);

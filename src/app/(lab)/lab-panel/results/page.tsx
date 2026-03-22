@@ -113,7 +113,7 @@ export default function ResultsPage() {
     if (!order) return;
     setPdfGenerating(true);
     try {
-      const res = await fetch("/api/lab/report-pdf", {
+      const res = await fetch("/api/lab/report-html", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

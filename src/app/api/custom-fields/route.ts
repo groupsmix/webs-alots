@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase-server";
+import { withAuth } from "@/lib/with-auth";
 
 export const runtime = "edge";
 
@@ -36,7 +37,7 @@ export async function GET(request: NextRequest) {
 
   if (error) {
     return NextResponse.json(
-      { error: error.message },
+      { error: "Failed to fetch custom field definitions" },
       { status: 500 },
     );
   }
@@ -50,30 +51,8 @@ export async function GET(request: NextRequest) {
  * Create a new custom field definition.
  * Only super admins can create definitions.
  */
-export async function POST(request: NextRequest) {
+export const POST = withAuth(async (request, { supabase }) => {
   try {
-    const supabase = await createClient();
-
-    // Verify the caller is authenticated
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
-      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
-    }
-
-    // Only super_admin can create custom field definitions
-    const { data: profile } = await supabase
-      .from("users")
-      .select("role")
-      .eq("auth_id", user.id)
-      .single();
-
-    if (!profile || profile.role !== "super_admin") {
-      return NextResponse.json({ error: "Forbidden — super_admin only" }, { status: 403 });
-    }
-
     const body = await request.json();
 
     const {
@@ -121,8 +100,9 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (error) {
+      console.error("[POST /api/custom-fields] Insert error:", error.message);
       return NextResponse.json(
-        { error: error.message },
+        { error: "Failed to create custom field definition" },
         { status: 500 },
       );
     }
@@ -134,7 +114,7 @@ export async function POST(request: NextRequest) {
       { status: 400 },
     );
   }
-}
+}, ["super_admin"]);
 
 /**
  * PATCH /api/custom-fields
@@ -142,30 +122,8 @@ export async function POST(request: NextRequest) {
  * Update an existing custom field definition.
  * Body must include `id` and any fields to update.
  */
-export async function PATCH(request: NextRequest) {
+export const PATCH = withAuth(async (request, { supabase }) => {
   try {
-    const supabase = await createClient();
-
-    // Verify the caller is authenticated
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
-      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
-    }
-
-    // Only super_admin can update custom field definitions
-    const { data: profile } = await supabase
-      .from("users")
-      .select("role")
-      .eq("auth_id", user.id)
-      .single();
-
-    if (!profile || profile.role !== "super_admin") {
-      return NextResponse.json({ error: "Forbidden — super_admin only" }, { status: 403 });
-    }
-
     const body = await request.json();
     const { id, ...updates } = body;
 
@@ -198,8 +156,9 @@ export async function PATCH(request: NextRequest) {
       .single();
 
     if (error) {
+      console.error("[PATCH /api/custom-fields] Update error:", error.message);
       return NextResponse.json(
-        { error: error.message },
+        { error: "Failed to update custom field definition" },
         { status: 500 },
       );
     }
@@ -211,7 +170,7 @@ export async function PATCH(request: NextRequest) {
       { status: 400 },
     );
   }
-}
+}, ["super_admin"]);
 
 /**
  * DELETE /api/custom-fields?id=...
@@ -219,29 +178,7 @@ export async function PATCH(request: NextRequest) {
  * Soft-delete a custom field definition (sets is_active = false).
  * System fields cannot be deleted.
  */
-export async function DELETE(request: NextRequest) {
-  const supabase = await createClient();
-
-  // Verify the caller is authenticated
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
-  }
-
-  // Only super_admin can delete custom field definitions
-  const { data: profile } = await supabase
-    .from("users")
-    .select("role")
-    .eq("auth_id", user.id)
-    .single();
-
-  if (!profile || profile.role !== "super_admin") {
-    return NextResponse.json({ error: "Forbidden — super_admin only" }, { status: 403 });
-  }
-
+export const DELETE = withAuth(async (request, { supabase }) => {
   const id = request.nextUrl.searchParams.get("id");
 
   if (!id) {
@@ -271,11 +208,12 @@ export async function DELETE(request: NextRequest) {
     .eq("id", id);
 
   if (error) {
+    console.error("[DELETE /api/custom-fields] Update error:", error.message);
     return NextResponse.json(
-      { error: error.message },
+      { error: "Failed to delete custom field definition" },
       { status: 500 },
     );
   }
 
   return NextResponse.json({ success: true });
-}
+}, ["super_admin"]);

@@ -1,6 +1,6 @@
-import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase-server";
+import { NextResponse } from "next/server";
 import { createCmiPayment, isCmiConfigured } from "@/lib/cmi";
+import { withAuth } from "@/lib/with-auth";
 
 /**
  * POST /api/payments/cmi
@@ -18,7 +18,7 @@ import { createCmiPayment, isCmiConfigured } from "@/lib/cmi";
  *
  * Requires: CMI_MERCHANT_ID, CMI_SECRET_KEY env vars
  */
-export async function POST(request: NextRequest) {
+export const POST = withAuth(async (request, { user }) => {
   if (!isCmiConfigured()) {
     return NextResponse.json(
       { error: "CMI payment gateway is not configured. Set CMI_MERCHANT_ID and CMI_SECRET_KEY." },
@@ -27,15 +27,6 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
-      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
-    }
-
     const body = await request.json();
     const {
       amount,
@@ -88,8 +79,7 @@ export async function POST(request: NextRequest) {
       formFields: result.formFields,
     });
   } catch (err) {
-    const message = err instanceof Error ? err.message : "Unknown error";
-    console.error("[CMI] Error:", message);
-    return NextResponse.json({ error: message }, { status: 500 });
+    console.error("[CMI] Error:", err instanceof Error ? err.message : "Unknown error");
+    return NextResponse.json({ error: "Failed to create CMI payment" }, { status: 500 });
   }
-}
+}, null);

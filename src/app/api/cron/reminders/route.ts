@@ -57,11 +57,12 @@ export async function GET(request: NextRequest) {
       .in("status", ["confirmed", "pending"])
       .or(
         `appointment_date.in.(${todayStr},${tomorrowStr}),and(appointment_date.is.null,slot_start.gte.${now.toISOString()},slot_start.lte.${twentyFourHoursFromNow.toISOString()})`,
-      );
+      )
+      .limit(500);
 
     if (error) {
-      console.error("[Cron/Reminders] Query error:", error.message);
-      return NextResponse.json({ error: error.message }, { status: 500 });
+        console.error("[Cron/Reminders] Query error:", error.message);
+        return NextResponse.json({ error: "Failed to query appointments" }, { status: 500 });
     }
 
     if (!appointments || appointments.length === 0) {
@@ -141,8 +142,7 @@ export async function GET(request: NextRequest) {
       results,
     });
   } catch (err) {
-    const message = err instanceof Error ? err.message : "Unknown error";
-    console.error("[Cron/Reminders] Error:", message);
-    return NextResponse.json({ error: message }, { status: 500 });
+    console.error("[Cron/Reminders] Error:", err instanceof Error ? err.message : "Unknown error");
+    return NextResponse.json({ error: "Failed to process reminders" }, { status: 500 });
   }
 }

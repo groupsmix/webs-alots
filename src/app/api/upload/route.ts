@@ -13,14 +13,14 @@
  *   Returns: { uploadUrl: string, publicUrl: string, key: string }
  */
 
-import { NextResponse, type NextRequest } from "next/server";
+import { NextResponse } from "next/server";
 import {
   uploadToR2,
   isR2Configured,
   buildUploadKey,
   getPresignedUploadUrl,
 } from "@/lib/r2";
-import { createClient } from "@/lib/supabase-server";
+import { withAuth } from "@/lib/with-auth";
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
 
@@ -33,17 +33,7 @@ const ALLOWED_TYPES = new Set([
   "application/pdf",
 ]);
 
-export async function POST(request: NextRequest) {
-  // Verify authentication before accepting uploads
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
-  }
-
+export const POST = withAuth(async (request) => {
   if (!isR2Configured()) {
     return NextResponse.json(
       { error: "File storage is not configured" },
@@ -89,19 +79,9 @@ export async function POST(request: NextRequest) {
   }
 
   return NextResponse.json({ url, key });
-}
+}, null);
 
-export async function GET(request: NextRequest) {
-  // Verify authentication before generating presigned URLs
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
-  }
-
+export const GET = withAuth(async (request) => {
   if (!isR2Configured()) {
     return NextResponse.json(
       { error: "File storage is not configured" },
@@ -144,4 +124,4 @@ export async function GET(request: NextRequest) {
     : null;
 
   return NextResponse.json({ uploadUrl, publicUrl, key });
-}
+}, null);

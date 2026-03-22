@@ -7,11 +7,11 @@
  * Returns: { pdfUrl }
  */
 
-import { NextResponse, type NextRequest } from "next/server";
+import { NextResponse } from "next/server";
 import { uploadToR2, isR2Configured, buildUploadKey } from "@/lib/r2";
 import { updateRadiologyOrderPdfUrl } from "@/lib/data/server";
-import { createClient } from "@/lib/supabase-server";
 import type { UserRole } from "@/lib/types/database";
+import { withAuth } from "@/lib/with-auth";
 
 const STAFF_ROLES: UserRole[] = ["super_admin", "clinic_admin", "receptionist", "doctor"];
 
@@ -71,22 +71,8 @@ function generateReportHtml(data: {
 </html>`;
 }
 
-export async function POST(request: NextRequest) {
+export const POST = withAuth(async (request) => {
   try {
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
-    }
-    const { data: profile } = await supabase
-      .from("users")
-      .select("role")
-      .eq("auth_id", user.id)
-      .single();
-    if (!profile || !STAFF_ROLES.includes(profile.role as UserRole)) {
-      return NextResponse.json({ error: "Forbidden \u2014 insufficient permissions" }, { status: 403 });
-    }
-
     const body = await request.json();
     const {
       orderId,
@@ -155,7 +141,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ pdfUrl: url });
   } catch (err) {
-    const message = err instanceof Error ? err.message : "Unknown error";
-    return NextResponse.json({ error: message }, { status: 500 });
+    console.error("[POST /api/radiology/report-pdf] Error:", err instanceof Error ? err.message : "Unknown error");
+    return NextResponse.json({ error: "Failed to generate radiology report" }, { status: 500 });
   }
-}
+}, STAFF_ROLES);

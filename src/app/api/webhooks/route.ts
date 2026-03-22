@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { createClient } from "@/lib/supabase-server";
 import {
   dispatchNotification,
   type TemplateVariables,
@@ -49,9 +50,9 @@ async function verifyWebhookSignature(
 }
 
 /**
- * Extracts the message text from a WhatsApp webhook payload.
+ * Extracts the message text and sender phone from a WhatsApp webhook payload.
  */
-function extractMessageText(entry: Record<string, unknown>): string | null {
+function extractMessageInfo(entry: Record<string, unknown>): { text: string; senderPhone: string } | null {
   const changes = entry.changes as Array<Record<string, unknown>> | undefined;
   if (!changes) return null;
   for (const change of changes) {
@@ -61,7 +62,10 @@ function extractMessageText(entry: Record<string, unknown>): string | null {
     if (!messages) continue;
     for (const msg of messages) {
       const text = msg.text as Record<string, unknown> | undefined;
-      if (text && typeof text.body === "string") return text.body;
+      const from = msg.from as string | undefined;
+      if (text && typeof text.body === "string" && from) {
+        return { text: text.body, senderPhone: from };
+      }
     }
   }
   return null;
@@ -93,28 +97,66 @@ export async function POST(request: NextRequest) {
     const body = JSON.parse(rawBody) as Record<string, unknown>;
     const entries = (body.entry || []) as Array<Record<string, unknown>>;
 
-    for (const entry of entries) {
-      const messageText = extractMessageText(entry);
-      if (!messageText) continue;
+    const supabase = await createClient();
 
-      const upperText = messageText.trim().toUpperCase();
+    for (const entry of entries) {
+      const msgInfo = extractMessageInfo(entry);
+      if (!msgInfo) continue;
+
+      const upperText = msgInfo.text.trim().toUpperCase();
+
+      // Resolve patient and upcoming appointment from the sender's phone number
+      const { data: patient } = await supabase
+        .from("users")
+        .select("id, name, clinic_id")
+        .eq("phone", msgInfo.senderPhone)
+        .eq("role", "patient")
+        .limit(1)
+        .single();
+
+      const patientName = patient?.name ?? "Patient";
+      const patientId = patient?.id ?? null;
+
+      // Find the next upcoming appointment for this patient
+      let recipientId = patientId;
+      if (patient) {
+        const { data: appt } = await supabase
+          .from("appointments")
+          .select("id, doctor_id, status")
+          .eq("patient_id", patient.id)
+          .in("status", ["confirmed", "pending", "scheduled"])
+          .order("appointment_date", { ascending: true })
+          .limit(1)
+          .single();
+
+        if (upperText === "CONFIRM" && appt) {
+          await supabase
+            .from("appointments")
+            .update({ status: "confirmed" })
+            .eq("id", appt.id);
+        } else if (upperText === "CANCEL" && appt) {
+          await supabase
+            .from("appointments")
+            .update({ status: "cancelled", cancellation_reason: "Cancelled via WhatsApp" })
+            .eq("id", appt.id);
+        }
+
+        // Notify the relevant staff member (doctor assigned to the appointment)
+        recipientId = appt?.doctor_id ?? patientId;
+      }
 
       if (upperText === "CONFIRM") {
-        // Patient confirmed appointment via WhatsApp reply
-        // In production: update appointment status in Supabase
         await dispatchNotification(
           "booking_confirmation",
-          { patient_name: "Patient", clinic_name: "Clinic" } as TemplateVariables,
-          "receptionist",
+          { patient_name: patientName, clinic_name: "Clinic" } as TemplateVariables,
+          recipientId ?? "receptionist",
           ["in_app"],
         );
       } else if (upperText === "CANCEL") {
-        // Patient requested cancellation via WhatsApp reply
-        // In production: update appointment status and notify staff
         await dispatchNotification(
           "cancellation",
-          { patient_name: "Patient", clinic_name: "Clinic" } as TemplateVariables,
-          "receptionist",
+          { patient_name: patientName, clinic_name: "Clinic" } as TemplateVariables,
+          recipientId ?? "receptionist",
           ["in_app"],
         );
       }

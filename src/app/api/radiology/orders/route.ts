@@ -7,33 +7,19 @@
  * PATCH body (save report): { orderId, action: "report", findings, impression, reportText, templateId?, radiologistId? }
  */
 
-import { NextResponse, type NextRequest } from "next/server";
+import { NextResponse } from "next/server";
 import {
   createRadiologyOrder,
   updateRadiologyOrderStatus,
   saveRadiologyReport,
 } from "@/lib/data/server";
-import { createClient } from "@/lib/supabase-server";
 import type { UserRole } from "@/lib/types/database";
+import { withAuth } from "@/lib/with-auth";
 
 const STAFF_ROLES: UserRole[] = ["super_admin", "clinic_admin", "receptionist", "doctor"];
 
-export async function POST(request: NextRequest) {
+export const POST = withAuth(async (request) => {
   try {
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
-    }
-    const { data: profile } = await supabase
-      .from("users")
-      .select("role")
-      .eq("auth_id", user.id)
-      .single();
-    if (!profile || !STAFF_ROLES.includes(profile.role as UserRole)) {
-      return NextResponse.json({ error: "Forbidden — insufficient permissions" }, { status: 403 });
-    }
-
     const body = await request.json();
     const { clinicId, patientId, modality, bodyPart, clinicalIndication, priority, scheduledAt, orderingDoctorId } = body;
 
@@ -64,27 +50,13 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(result, { status: 201 });
   } catch (err) {
-    const message = err instanceof Error ? err.message : "Unknown error";
-    return NextResponse.json({ error: message }, { status: 500 });
+    console.error("[POST /api/radiology/orders] Error:", err instanceof Error ? err.message : "Unknown error");
+    return NextResponse.json({ error: "Failed to create radiology order" }, { status: 500 });
   }
-}
+}, STAFF_ROLES);
 
-export async function PATCH(request: NextRequest) {
+export const PATCH = withAuth(async (request) => {
   try {
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
-    }
-    const { data: profile } = await supabase
-      .from("users")
-      .select("role")
-      .eq("auth_id", user.id)
-      .single();
-    if (!profile || !STAFF_ROLES.includes(profile.role as UserRole)) {
-      return NextResponse.json({ error: "Forbidden — insufficient permissions" }, { status: 403 });
-    }
-
     const body = await request.json();
     const { orderId, action } = body;
 
@@ -142,7 +114,7 @@ export async function PATCH(request: NextRequest) {
       { status: 400 },
     );
   } catch (err) {
-    const message = err instanceof Error ? err.message : "Unknown error";
-    return NextResponse.json({ error: message }, { status: 500 });
+    console.error("[PATCH /api/radiology/orders] Error:", err instanceof Error ? err.message : "Unknown error");
+    return NextResponse.json({ error: "Failed to update radiology order" }, { status: 500 });
   }
-}
+}, STAFF_ROLES);
