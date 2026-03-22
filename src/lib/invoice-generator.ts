@@ -18,6 +18,22 @@ import {
   calculateResteACharge,
 } from "./morocco";
 
+// ---- HTML Escaping ----
+
+/**
+ * Escape HTML special characters to prevent XSS when interpolating
+ * user-controlled data into HTML template literals.
+ */
+function escapeHtml(str: string | undefined | null): string {
+  if (!str) return "";
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 // ---- Invoice Types ----
 
 export interface InvoiceLineItem {
@@ -238,38 +254,38 @@ export function generateInvoiceHTML(invoice: InvoiceData): string {
   <div class="invoice">
     <div class="header">
       <div class="clinic-info">
-        <h1>${invoice.clinic.name}</h1>
-        <p>${invoice.clinic.address}<br>${invoice.clinic.city}</p>
-        <p>Tél: ${invoice.clinic.phone}${invoice.clinic.email ? `<br>Email: ${invoice.clinic.email}` : ""}</p>
+        <h1>${escapeHtml(invoice.clinic.name)}</h1>
+        <p>${escapeHtml(invoice.clinic.address)}<br>${escapeHtml(invoice.clinic.city)}</p>
+        <p>Tél: ${escapeHtml(invoice.clinic.phone)}${invoice.clinic.email ? `<br>Email: ${escapeHtml(invoice.clinic.email)}` : ""}</p>
         <div class="legal-ids">
-          <span>ICE: ${invoice.clinic.ice}</span>
-          <span>IF: ${invoice.clinic.identifiantFiscal}</span>
-          <span>RC: ${invoice.clinic.rc}</span>
-          ${invoice.clinic.patente ? `<span>Patente: ${invoice.clinic.patente}</span>` : ""}
-          ${invoice.clinic.cnss ? `<span>CNSS: ${invoice.clinic.cnss}</span>` : ""}
+          <span>ICE: ${escapeHtml(invoice.clinic.ice)}</span>
+          <span>IF: ${escapeHtml(invoice.clinic.identifiantFiscal)}</span>
+          <span>RC: ${escapeHtml(invoice.clinic.rc)}</span>
+          ${invoice.clinic.patente ? `<span>Patente: ${escapeHtml(invoice.clinic.patente)}</span>` : ""}
+          ${invoice.clinic.cnss ? `<span>CNSS: ${escapeHtml(invoice.clinic.cnss)}</span>` : ""}
         </div>
       </div>
       <div class="invoice-meta">
         <h2>${title}</h2>
-        <p><strong>N°:</strong> ${invoice.invoiceNumber}</p>
-        <p><strong>Date:</strong> ${invoice.date}</p>
-        ${invoice.dueDate ? `<p><strong>Échéance:</strong> ${invoice.dueDate}</p>` : ""}
+        <p><strong>N°:</strong> ${escapeHtml(invoice.invoiceNumber)}</p>
+        <p><strong>Date:</strong> ${escapeHtml(invoice.date)}</p>
+        ${invoice.dueDate ? `<p><strong>Échéance:</strong> ${escapeHtml(invoice.dueDate)}</p>` : ""}
       </div>
     </div>
 
     <div class="parties">
       <div class="party party-emitter">
         <h3>Émetteur</h3>
-        <p><strong>${invoice.clinic.name}</strong></p>
-        <p>${invoice.clinic.address}, ${invoice.clinic.city}</p>
-        ${invoice.clinic.autorisationExercice ? `<p>Autorisation: ${invoice.clinic.autorisationExercice}</p>` : ""}
+        <p><strong>${escapeHtml(invoice.clinic.name)}</strong></p>
+        <p>${escapeHtml(invoice.clinic.address)}, ${escapeHtml(invoice.clinic.city)}</p>
+        ${invoice.clinic.autorisationExercice ? `<p>Autorisation: ${escapeHtml(invoice.clinic.autorisationExercice)}</p>` : ""}
       </div>
       <div class="party party-recipient">
         <h3>Patient / Client</h3>
-        <p><strong>${invoice.patient.name}</strong></p>
-        ${invoice.patient.address ? `<p>${invoice.patient.address}</p>` : ""}
-        ${invoice.patient.phone ? `<p>Tél: ${invoice.patient.phone}</p>` : ""}
-        ${invoice.patient.ice ? `<p>ICE: ${invoice.patient.ice}</p>` : ""}
+        <p><strong>${escapeHtml(invoice.patient.name)}</strong></p>
+        ${invoice.patient.address ? `<p>${escapeHtml(invoice.patient.address)}</p>` : ""}
+        ${invoice.patient.phone ? `<p>Tél: ${escapeHtml(invoice.patient.phone)}</p>` : ""}
+        ${invoice.patient.ice ? `<p>ICE: ${escapeHtml(invoice.patient.ice)}</p>` : ""}
       </div>
     </div>
 
@@ -291,7 +307,7 @@ export function generateInvoiceHTML(invoice: InvoiceData): string {
           const lineHT = lineTotal - discountAmount;
           const tva = calculateTVA(lineHT, item.tvaRate);
           return `<tr>
-            <td>${item.description}</td>
+            <td>${escapeHtml(item.description)}</td>
             <td>${item.quantity}</td>
             <td>${formatMAD(item.unitPrice, { showCurrency: false })}</td>
             <td>${item.discount ? `${item.discount}%` : "-"}</td>
@@ -333,16 +349,16 @@ export function generateInvoiceHTML(invoice: InvoiceData): string {
 
     ${invoice.patient.insurance ? `<div class="insurance-section">
       <h4>Informations Assurance</h4>
-      <p>N° Affiliation: ${invoice.patient.insurance.affiliationNumber}</p>
-      ${invoice.patient.insurance.mutuelle ? `<p>Mutuelle: ${invoice.patient.insurance.mutuelle.name} (N° ${invoice.patient.insurance.mutuelle.registrationNumber})</p>` : ""}
+      <p>N° Affiliation: ${escapeHtml(invoice.patient.insurance.affiliationNumber)}</p>
+      ${invoice.patient.insurance.mutuelle ? `<p>Mutuelle: ${escapeHtml(invoice.patient.insurance.mutuelle.name)} (N° ${escapeHtml(invoice.patient.insurance.mutuelle.registrationNumber)})</p>` : ""}
     </div>` : ""}
 
     ${invoice.paymentMethod ? `<div class="payment-info">
-      <h4>Mode de paiement: ${invoice.paymentMethod}</h4>
-      ${invoice.paymentReference ? `<p>Référence: ${invoice.paymentReference}</p>` : ""}
+      <h4>Mode de paiement: ${escapeHtml(invoice.paymentMethod)}</h4>
+      ${invoice.paymentReference ? `<p>Référence: ${escapeHtml(invoice.paymentReference)}</p>` : ""}
     </div>` : ""}
 
-    ${invoice.notes ? `<div class="notes"><strong>Notes:</strong> ${invoice.notes}</div>` : ""}
+    ${invoice.notes ? `<div class="notes"><strong>Notes:</strong> ${escapeHtml(invoice.notes)}</div>` : ""}
 
     <div class="stamp-area">
       <div>
@@ -354,8 +370,8 @@ export function generateInvoiceHTML(invoice: InvoiceData): string {
     </div>
 
     <div class="footer">
-      <p>${invoice.clinic.name} — ${invoice.clinic.address}, ${invoice.clinic.city}</p>
-      <p>ICE: ${invoice.clinic.ice} | IF: ${invoice.clinic.identifiantFiscal} | RC: ${invoice.clinic.rc}</p>
+      <p>${escapeHtml(invoice.clinic.name)} — ${escapeHtml(invoice.clinic.address)}, ${escapeHtml(invoice.clinic.city)}</p>
+      <p>ICE: ${escapeHtml(invoice.clinic.ice)} | IF: ${escapeHtml(invoice.clinic.identifiantFiscal)} | RC: ${escapeHtml(invoice.clinic.rc)}</p>
       <p>Document généré automatiquement — Conforme aux exigences de la DGI</p>
     </div>
   </div>

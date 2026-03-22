@@ -88,9 +88,38 @@ function createSupabaseRateLimiter(options: RateLimiterOptions): RateLimiter {
       const windowStart = now - windowMs;
 
       try {
-        // Upsert: increment the counter if the window is still valid,
-        // otherwise reset it.  Uses the Supabase RPC to perform an
-        // atomic check-and-increment.
+        // FIX (HIGH-03): Use a single atomic upsert with raw SQL via RPC
+        // to eliminate the SELECT → UPDATE race condition.
+        // The RPC function `rate_limit_increment` atomically:
+        //   1. Resets the counter if the window has expired
+        //   2. Increments the counter
+        //   3. Returns the new count
+        // If the RPC doesn't exist, fall back to the non-atomic approach
+        // with a single upsert that's still better than separate SELECT+UPDATE.
+        const resetAt = now + windowMs;
+        const { data: rpcResult, error: rpcError } = await supabase
+          .rpc("rate_limit_increment", {
+            p_key: key,
+            p_window_start: windowStart,
+            p_reset_at: resetAt,
+            p_now: new Date(now).toISOString(),
+          });
+
+        if (!rpcError && rpcResult != null) {
+          // RPC succeeded — rpcResult is the new count
+          return (rpcResult as number) <= max;
+        }
+
+        // RPC not available — fall back to upsert-based approach.
+        // This is still susceptible to a narrow race window but is
+        // better than the original SELECT → UPDATE pattern.
+        if (rpcError) {
+          console.warn(
+            `[rate-limit] RPC rate_limit_increment unavailable: ${rpcError.message}. ` +
+            "Falling back to upsert. Consider creating the RPC function for atomic rate limiting.",
+          );
+        }
+
         const { data, error } = await supabase
           .from("rate_limit_entries")
           .select("count, reset_at")
@@ -98,15 +127,12 @@ function createSupabaseRateLimiter(options: RateLimiterOptions): RateLimiter {
           .maybeSingle();
 
         if (error) {
-          // If the table doesn't exist yet, fall through to allow the request
-          // and log a warning so operators know to run the migration.
           console.warn(`[rate-limit] Supabase lookup failed: ${error.message}. Allowing request.`);
           return true;
         }
 
         if (!data || data.reset_at <= windowStart) {
           // Window expired or first request — create/reset entry
-          const resetAt = now + windowMs;
           const { error: upsertError } = await supabase
             .from("rate_limit_entries")
             .upsert(
@@ -120,12 +146,33 @@ function createSupabaseRateLimiter(options: RateLimiterOptions): RateLimiter {
           return true;
         }
 
-        // Window still active — increment
-        const newCount = (data.count ?? 0) + 1;
-        await supabase
+        // Window still active — increment atomically using a conditional update.
+        // The WHERE count = data.count acts as an optimistic lock.
+        const expectedCount = data.count ?? 0;
+        const newCount = expectedCount + 1;
+        const { data: updated, error: updateError } = await supabase
           .from("rate_limit_entries")
           .update({ count: newCount, updated_at: new Date(now).toISOString() })
-          .eq("key", key);
+          .eq("key", key)
+          .eq("count", expectedCount)
+          .select("count")
+          .maybeSingle();
+
+        if (updateError) {
+          console.warn(`[rate-limit] Supabase update failed: ${updateError.message}. Allowing request.`);
+          return true;
+        }
+
+        // If no row was updated, another request incremented concurrently.
+        // Re-read the current count to get the accurate value.
+        if (!updated) {
+          const { data: reread } = await supabase
+            .from("rate_limit_entries")
+            .select("count")
+            .eq("key", key)
+            .maybeSingle();
+          return (reread?.count ?? 0) <= max;
+        }
 
         return newCount <= max;
       } catch (err) {

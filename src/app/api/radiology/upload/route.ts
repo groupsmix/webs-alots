@@ -14,10 +14,8 @@
 import { NextResponse } from "next/server";
 import { uploadToR2, isR2Configured, buildUploadKey } from "@/lib/r2";
 import { createRadiologyImage } from "@/lib/data/server";
-import type { UserRole } from "@/lib/types/database";
 import { withAuth } from "@/lib/with-auth";
-
-const STAFF_ROLES: UserRole[] = ["super_admin", "clinic_admin", "receptionist", "doctor"];
+import { STAFF_ROLES } from "@/lib/auth-roles";
 const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50 MB for medical images
 
 const ALLOWED_TYPES = new Set([
@@ -31,7 +29,7 @@ const ALLOWED_TYPES = new Set([
   "application/octet-stream", // DICOM files often have this type
 ]);
 
-export const POST = withAuth(async (request) => {
+export const POST = withAuth(async (request, { profile }) => {
   if (!isR2Configured()) {
     return NextResponse.json(
       { error: "File storage is not configured" },
@@ -42,7 +40,9 @@ export const POST = withAuth(async (request) => {
   const formData = await request.formData();
   const file = formData.get("file");
   const orderId = formData.get("orderId") as string;
-  const clinicId = formData.get("clinicId") as string;
+  // FIX (MED-03): Derive clinicId from the authenticated user's profile
+  // instead of trusting untrusted form data, which could allow cross-tenant access.
+  const clinicId = profile.clinic_id;
   const modality = (formData.get("modality") as string) || undefined;
   const description = (formData.get("description") as string) || undefined;
 
@@ -52,7 +52,7 @@ export const POST = withAuth(async (request) => {
 
   if (!orderId || !clinicId) {
     return NextResponse.json(
-      { error: "orderId and clinicId are required" },
+      { error: "orderId is required and user must belong to a clinic" },
       { status: 400 },
     );
   }

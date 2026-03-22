@@ -2,12 +2,10 @@ import { NextResponse } from "next/server";
 import { logAuditEvent } from "@/lib/audit-log";
 import { clinicConfig } from "@/config/clinic.config";
 import { APPOINTMENT_STATUS } from "@/lib/types/database";
-import type { UserRole } from "@/lib/types/database";
 import { withAuth } from "@/lib/with-auth";
+import { STAFF_ROLES } from "@/lib/auth-roles";
 
 export const runtime = "edge";
-
-const STAFF_ROLES: UserRole[] = ["super_admin", "clinic_admin", "receptionist", "doctor"];
 
 /**
  * POST /api/booking/payment/confirm

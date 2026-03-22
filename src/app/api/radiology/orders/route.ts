@@ -13,10 +13,8 @@ import {
   updateRadiologyOrderStatus,
   saveRadiologyReport,
 } from "@/lib/data/server";
-import type { UserRole } from "@/lib/types/database";
 import { withAuth } from "@/lib/with-auth";
-
-const STAFF_ROLES: UserRole[] = ["super_admin", "clinic_admin", "receptionist", "doctor"];
+import { STAFF_ROLES } from "@/lib/auth-roles";
 
 export const POST = withAuth(async (request) => {
   try {

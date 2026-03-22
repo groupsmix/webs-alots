@@ -38,9 +38,16 @@ function getR2Config() {
 }
 
 let _client: S3Client | null = null;
+let _clientCreatedAt = 0;
+
+/** FIX (MED-07): TTL for the S3Client singleton (60 seconds).
+ * After credential rotation the stale client will be replaced
+ * within this window instead of living forever. */
+const CLIENT_TTL_MS = 60_000;
 
 function getClient(): S3Client | null {
-  if (_client) return _client;
+  const now = Date.now();
+  if (_client && now - _clientCreatedAt < CLIENT_TTL_MS) return _client;
 
   const config = getR2Config();
   if (!config) return null;
@@ -53,6 +60,7 @@ function getClient(): S3Client | null {
       secretAccessKey: config.secretAccessKey,
     },
   });
+  _clientCreatedAt = now;
 
   return _client;
 }

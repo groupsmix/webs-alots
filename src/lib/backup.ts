@@ -44,6 +44,25 @@ const BACKUP_TABLES = [
   "treatment_plans",
 ] as const;
 
+/** Maximum rows per table to prevent OOM on large clinics (HIGH-04). */
+const MAX_ROWS_PER_TABLE = 10_000;
+
+/**
+ * Explicit foreign key mapping per table (HIGH-02).
+ * Only these columns will be remapped during restore — no naming-convention guessing.
+ */
+const FK_COLUMNS: Record<string, string[]> = {
+  users: [],
+  appointments: ["patient_id", "doctor_id", "service_id"],
+  medical_records: ["patient_id", "doctor_id", "appointment_id"],
+  prescriptions: ["patient_id", "doctor_id", "appointment_id"],
+  invoices: ["patient_id", "appointment_id"],
+  invoice_items: ["invoice_id", "product_id"],
+  products: [],
+  notifications: ["user_id"],
+  treatment_plans: ["patient_id", "doctor_id"],
+};
+
 // ---- Export (Backup) ----
 
 /**
@@ -58,13 +77,14 @@ export async function createBackup(
   const tables: BackupTableInfo[] = [];
   let totalRecords = 0;
 
-  // Fetch all tables in parallel instead of sequentially
+  // FIX (HIGH-04): Limit rows per table to prevent OOM on large clinics.
   const results = await Promise.all(
     BACKUP_TABLES.map((table) =>
       supabase.from(table)
         .select("*")
         .eq("clinic_id", clinicId)
         .order("created_at", { ascending: false })
+        .limit(MAX_ROWS_PER_TABLE)
         .then(({ data: rows, error }) => ({ table, rows, error })),
     ),
   );
@@ -103,7 +123,8 @@ export async function generateBackupJson(
   clinicName: string,
 ): Promise<string> {
   const backup = await createBackup(clinicId, clinicName);
-  return JSON.stringify(backup, null, 2);
+  // FIX (HIGH-04): Omit pretty-printing to reduce memory footprint.
+  return JSON.stringify(backup);
 }
 
 // ---- Import (Restore) ----
@@ -206,19 +227,13 @@ export async function restoreBackup(
         mapped.role = "patient"; // Default restored users to patient role
       }
 
-      // Auto-detect foreign key columns by the `_id` suffix convention
-      // instead of maintaining a hardcoded list that can drift from
-      // the actual schema.
-      for (const [key, value] of Object.entries(mapped)) {
-        if (
-          key !== "id" &&
-          key !== "clinic_id" &&
-          key !== "auth_id" &&
-          key.endsWith("_id") &&
-          typeof value === "string" &&
-          idMap.has(value)
-        ) {
-          mapped[key] = idMap.get(value);
+      // FIX (HIGH-02): Use explicit FK mapping instead of fragile _id suffix
+      // convention that causes false positives (e.g. external_system_id).
+      const fkCols = FK_COLUMNS[table] ?? [];
+      for (const col of fkCols) {
+        const value = mapped[col];
+        if (typeof value === "string" && idMap.has(value)) {
+          mapped[col] = idMap.get(value);
         }
       }
 

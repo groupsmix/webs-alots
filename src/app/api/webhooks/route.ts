@@ -94,27 +94,35 @@ export async function POST(request: NextRequest) {
 
       // Look up which clinic owns this WhatsApp phone number ID
       let clinicId: string | undefined;
+      let clinicName = "Clinic";
       if (wabaPhoneNumberId) {
         const { data: clinic } = await supabase
           .from("clinics")
-          .select("id")
+          .select("id, name")
           .eq("whatsapp_phone_number_id", wabaPhoneNumberId)
           .single();
         clinicId = clinic?.id;
+        if (clinic?.name) clinicName = clinic.name;
       }
 
-      // Resolve patient scoped to the clinic (if resolved) to avoid cross-tenant matches
-      const patientQuery = supabase
+      // FIX (CRITICAL-01): If we cannot resolve the clinic, we must NOT
+      // query patients across all tenants. Acknowledge the webhook but
+      // skip processing to maintain tenant isolation.
+      if (!clinicId) {
+        console.warn(
+          `[Webhook] Cannot resolve clinic for WABA phone_number_id=${wabaPhoneNumberId}. ` +
+          `Skipping message from ${msgInfo.senderPhone} to prevent cross-tenant access.`
+        );
+        continue;
+      }
+
+      // Patient lookup is now always scoped to the resolved clinic
+      const { data: patient } = await supabase
         .from("users")
         .select("id, name, clinic_id")
         .eq("phone", msgInfo.senderPhone)
-        .eq("role", "patient");
-
-      if (clinicId) {
-        patientQuery.eq("clinic_id", clinicId);
-      }
-
-      const { data: patient } = await patientQuery
+        .eq("role", "patient")
+        .eq("clinic_id", clinicId)
         .limit(1)
         .single();
 
@@ -128,6 +136,7 @@ export async function POST(request: NextRequest) {
           .from("appointments")
           .select("id, doctor_id, status")
           .eq("patient_id", patient.id)
+          .eq("clinic_id", clinicId)
           .in("status", ["confirmed", "pending", "scheduled"])
           .order("appointment_date", { ascending: true })
           .limit(1)
@@ -149,30 +158,28 @@ export async function POST(request: NextRequest) {
         recipientId = appt?.doctor_id ?? patientId;
       }
 
-      // Resolve the actual clinic name for notification templates
-      let clinicName = "Clinic";
-      if (clinicId) {
-        const { data: clinicRow } = await supabase
-          .from("clinics")
-          .select("name")
-          .eq("id", clinicId)
-          .single();
-        if (clinicRow?.name) clinicName = clinicRow.name;
-      }
-
-      if (upperText === "CONFIRM") {
-        await dispatchNotification(
-          "booking_confirmation",
-          { patient_name: patientName, clinic_name: clinicName } as TemplateVariables,
-          recipientId ?? "receptionist",
-          ["in_app"],
-        );
-      } else if (upperText === "CANCEL") {
-        await dispatchNotification(
-          "cancellation",
-          { patient_name: patientName, clinic_name: clinicName } as TemplateVariables,
-          recipientId ?? "receptionist",
-          ["in_app"],
+      // FIX (CRITICAL-03): Only dispatch if we have a valid UUID recipient.
+      // "receptionist" is not a valid user ID and would cause silent failures.
+      if (recipientId) {
+        if (upperText === "CONFIRM") {
+          await dispatchNotification(
+            "booking_confirmation",
+            { patient_name: patientName, clinic_name: clinicName } as TemplateVariables,
+            recipientId,
+            ["in_app"],
+          );
+        } else if (upperText === "CANCEL") {
+          await dispatchNotification(
+            "cancellation",
+            { patient_name: patientName, clinic_name: clinicName } as TemplateVariables,
+            recipientId,
+            ["in_app"],
+          );
+        }
+      } else {
+        console.warn(
+          `[Webhook] No valid recipient for ${upperText} from ${msgInfo.senderPhone} ` +
+          `(clinic=${clinicId}). Notification skipped.`
         );
       }
       // Other messages are logged for receptionist review

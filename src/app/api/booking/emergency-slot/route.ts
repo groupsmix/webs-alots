@@ -5,6 +5,7 @@ import { findOrCreatePatient } from "@/lib/find-or-create-patient";
 import { APPOINTMENT_STATUS, BOOKING_SOURCE } from "@/lib/types/database";
 import { logAuditEvent } from "@/lib/audit-log";
 import { computeEndTime } from "@/lib/timezone";
+import { STAFF_ROLES } from "@/lib/auth-roles";
 
 export const runtime = "edge";
 
@@ -192,7 +193,7 @@ export const POST = withAuth(async (request, { supabase }) => {
     console.error("[emergency-slot] Error:", err instanceof Error ? err.message : "Unknown error");
     return NextResponse.json({ error: "Failed to process emergency slot request" }, { status: 500 });
   }
-}, null);
+}, STAFF_ROLES);
 
 /**
  * GET /api/booking/emergency-slot?doctorId=...&date=...
@@ -233,4 +234,4 @@ export const GET = withAuth(async (request, { supabase }) => {
       createdAt: s.created_at,
     })),
   });
-}, null);
+}, STAFF_ROLES);

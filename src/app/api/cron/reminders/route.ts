@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase-server";
 import { dispatchNotification } from "@/lib/notifications";
 import { APPOINTMENT_STATUS } from "@/lib/types/database";
-import { timingSafeEqual } from "@/lib/crypto-utils";
+import { verifyCronSecret } from "@/lib/cron-auth";
 
 /**
  * GET /api/cron/reminders
@@ -18,18 +18,9 @@ import { timingSafeEqual } from "@/lib/crypto-utils";
  * Protected by CRON_SECRET via Authorization: Bearer header.
  */
 export async function GET(request: NextRequest) {
-  // Verify cron secret (Authorization: Bearer <CRON_SECRET>)
-  const authHeader = request.headers.get("authorization");
-  const cronSecret = process.env.CRON_SECRET;
-
-  if (!cronSecret) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  const providedToken = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : "";
-  if (!timingSafeEqual(providedToken, cronSecret)) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  // DRY: Use shared cron secret verification helper
+  const authError = verifyCronSecret(request);
+  if (authError) return authError;
 
   try {
     const supabase = await createClient();
@@ -39,8 +30,12 @@ export async function GET(request: NextRequest) {
     const twoHoursFromNow = new Date(now.getTime() + 2 * 60 * 60 * 1000);
     const twentyFourHoursFromNow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
 
-    const todayStr = now.toISOString().split("T")[0];
-    const tomorrowStr = twentyFourHoursFromNow.toISOString().split("T")[0];
+    // FIX (MED-05): Use ISO timestamp range filtering instead of date-string
+    // filtering. Date-string filtering (e.g. appointment_date.in.(today,tomorrow))
+    // misses appointments near timezone boundaries because the server's UTC date
+    // may differ from the clinic's local date.
+    const nowISO = now.toISOString();
+    const twentyFourHoursISO = twentyFourHoursFromNow.toISOString();
 
     // Fetch upcoming appointments that need reminders.
     // Select both appointment_date/start_time and slot_start/slot_end
@@ -64,7 +59,7 @@ export async function GET(request: NextRequest) {
       `)
       .in("status", [APPOINTMENT_STATUS.CONFIRMED, APPOINTMENT_STATUS.PENDING])
       .or(
-        `appointment_date.in.(${todayStr},${tomorrowStr}),and(appointment_date.is.null,slot_start.gte.${now.toISOString()},slot_start.lte.${twentyFourHoursFromNow.toISOString()})`,
+        `slot_start.gte.${nowISO},slot_start.lte.${twentyFourHoursISO}`,
       )
       .limit(500);
 

@@ -1,10 +1,8 @@
 import { NextResponse } from "next/server";
-import type { UserRole } from "@/lib/types/database";
 import { withAuth } from "@/lib/with-auth";
+import { STAFF_ROLES } from "@/lib/auth-roles";
 
 export const runtime = "edge";
-
-const STAFF_ROLES: UserRole[] = ["super_admin", "clinic_admin", "receptionist", "doctor"];
 
 /**
  * GET /api/custom-fields/values?clinic_id=...&entity_type=...&entity_id=...
