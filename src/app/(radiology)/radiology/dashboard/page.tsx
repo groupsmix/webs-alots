@@ -126,7 +126,8 @@ export default function RadiologyDashboardPage() {
               {Object.entries(modalityCounts).sort((a, b) => b[1] - a[1]).map(([modality, count]) => (
                 <div key={modality} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
                   <div className="flex items-center gap-3">
-                    <Image alt="" aria-hidden="true" className="h-4 w-4 text-indigo-600" />
+                    {/* eslint-disable-next-line jsx-a11y/alt-text */}
+                    <Image aria-hidden="true" className="h-4 w-4 text-indigo-600" />
                     <span className="font-medium text-sm uppercase">{modality}</span>
                   </div>
                   <Badge variant="outline">{count}</Badge>

@@ -124,7 +124,6 @@ export async function PUT(request: NextRequest) {
     );
   }
 
-  const supabase = await createClient();
   const { error } = await supabase
     .from("clinics")
     .update(updates)
@@ -211,7 +210,6 @@ export async function POST(request: NextRequest) {
 
   // Persist the URL to the clinics table
   const column = FIELD_MAP[field];
-  const supabase = await createClient();
   const { error } = await supabase
     .from("clinics")
     .update({ [column]: url })

@@ -136,7 +136,8 @@ export default function UltrasoundsPage() {
       {ultrasounds.length === 0 ? (
         <Card>
           <CardContent className="py-10 text-center">
-            <Image alt="" aria-hidden="true" className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
+            {/* eslint-disable-next-line jsx-a11y/alt-text */}
+            <Image aria-hidden="true" className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
             <p className="text-muted-foreground">No ultrasound records yet.</p>
             {activePregnancies.length === 0 && (
               <p className="text-xs text-muted-foreground mt-1">Create an active pregnancy first to add ultrasound records.</p>
@@ -190,7 +191,8 @@ export default function UltrasoundsPage() {
                     <div className="flex gap-2 flex-wrap">
                       {u.imageUrls.map((url, i) => (
                         <a key={i} href={url} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline text-xs flex items-center gap-1">
-                          <Image alt="" aria-hidden="true" className="h-3 w-3" /> Image {i + 1}
+                          {/* eslint-disable-next-line jsx-a11y/alt-text */}
+                          <Image aria-hidden="true" className="h-3 w-3" /> Image {i + 1}
                         </a>
                       ))}
                     </div>
