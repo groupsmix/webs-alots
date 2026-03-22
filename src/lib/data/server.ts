@@ -473,23 +473,12 @@ export interface PrescriptionRow {
 }
 
 export async function getPrescriptions(clinicId: string, doctorId?: string): Promise<PrescriptionRow[]> {
-  const supabase = await createClient();
-  let q = supabase
-    .from("prescriptions")
-    .select("*")
-    .order("created_at", { ascending: false });
-
-  // Prescriptions table may not have clinic_id directly; filter via doctor/patient clinic
-  if (doctorId) {
-    q = q.eq("doctor_id", doctorId);
-  }
-
-  const { data, error } = await q;
-  if (error) {
-    console.error("[data] Error fetching prescriptions:", error.message);
-    return [];
-  }
-  return (data ?? []) as unknown as PrescriptionRow[];
+  const eq: [string, unknown][] = [['clinic_id', clinicId]];
+  if (doctorId) eq.push(['doctor_id', doctorId]);
+  return query<PrescriptionRow>('prescriptions', {
+    eq,
+    order: ['created_at', { ascending: false }],
+  });
 }
 
 export async function getPatientPrescriptions(patientId: string): Promise<PrescriptionRow[]> {
@@ -603,10 +592,10 @@ export interface TreatmentPlanRow {
 }
 
 export async function getTreatmentPlans(clinicId: string, doctorId?: string): Promise<TreatmentPlanRow[]> {
-  const eq: [string, unknown][] = [];
+  const eq: [string, unknown][] = [["clinic_id", clinicId]];
   if (doctorId) eq.push(["doctor_id", doctorId]);
   return query<TreatmentPlanRow>("treatment_plans", {
-    eq: eq.length > 0 ? eq : undefined,
+    eq,
     order: ["created_at", { ascending: false }],
   });
 }

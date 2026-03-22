@@ -44,7 +44,7 @@ export const POST = withAuth(async (request, { user }) => {
       failUrl?: string;
     };
 
-    if (!amount || amount <= 0) {
+    if (!amount || amount <= 0 || !Number.isFinite(amount)) {
       return NextResponse.json({ error: "Invalid amount" }, { status: 400 });
     }
 

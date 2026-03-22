@@ -124,14 +124,20 @@ export async function POST(request: NextRequest) {
       // Find the next upcoming appointment for this patient
       let recipientId = patientId;
       if (patient) {
-        const { data: appt } = await supabase
+        let apptQuery = supabase
           .from("appointments")
           .select("id, doctor_id, status")
           .eq("patient_id", patient.id)
           .in("status", ["confirmed", "pending", "scheduled"])
           .order("appointment_date", { ascending: true })
-          .limit(1)
-          .single();
+          .limit(1);
+
+        // Scope to the resolved clinic to prevent cross-tenant modifications
+        if (clinicId) {
+          apptQuery = apptQuery.eq("clinic_id", clinicId);
+        }
+
+        const { data: appt } = await apptQuery.single();
 
         if (upperText === "CONFIRM" && appt) {
           await supabase

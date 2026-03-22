@@ -24,7 +24,7 @@ const ALLOWED_IMAGE_TYPES = new Set([
   "image/jpeg",
   "image/png",
   "image/webp",
-  "image/svg+xml",
+  // SVG removed: can contain embedded <script> tags leading to stored XSS
   "image/x-icon",
   "image/vnd.microsoft.icon",
 ]);
@@ -92,10 +92,18 @@ export const PUT = withAuth(async (request, { supabase }) => {
     "address",
     "template_id",
   ];
+  const MAX_FIELD_LENGTH = 500;
   const updates: Record<string, unknown> = {};
   for (const key of allowed) {
     if (typeof body[key] === "string") {
-      updates[key] = body[key].trim();
+      const trimmed = body[key].trim();
+      if (trimmed.length > MAX_FIELD_LENGTH) {
+        return NextResponse.json(
+          { error: `Field "${key}" exceeds maximum length of ${MAX_FIELD_LENGTH} characters` },
+          { status: 400 },
+        );
+      }
+      updates[key] = trimmed;
     }
   }
 
@@ -145,7 +153,7 @@ export const POST = withAuth(async (request, { supabase }) => {
 
   if (!FIELD_MAP[field]) {
     return NextResponse.json(
-      { error: "field must be one of: logo, favicon, hero" },
+      { error: "field must be one of: logo, favicon, hero, cover" },
       { status: 400 },
     );
   }
