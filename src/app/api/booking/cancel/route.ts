@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { clinicConfig } from "@/config/clinic.config";
 import { withAuth } from "@/lib/with-auth";
+import type { AppointmentStatus } from "@/lib/types/database";
 
 /**
  * Build a timezone-aware Date for a date + time string using the clinic's timezone.
@@ -84,7 +85,8 @@ export const POST = withAuth(async (request, { supabase }) => {
       return NextResponse.json({ error: "Appointment not found" }, { status: 404 });
     }
 
-    if (appt.status === "cancelled" || appt.status === "completed" || appt.status === "rescheduled") {
+    const terminalStatuses: AppointmentStatus[] = ["cancelled", "completed", "rescheduled"];
+    if (terminalStatuses.includes(appt.status as AppointmentStatus)) {
       return NextResponse.json(
         { error: "Appointment cannot be cancelled in its current state" },
         { status: 400 },
@@ -116,7 +118,7 @@ export const POST = withAuth(async (request, { supabase }) => {
     const { error: updateError } = await supabase
       .from("appointments")
       .update({
-        status: "cancelled",
+        status: "cancelled" as AppointmentStatus,
         cancelled_at: new Date().toISOString(),
         cancellation_reason: body.reason ?? "Cancelled by patient",
       })
@@ -175,7 +177,8 @@ export const GET = withAuth(async (request, { supabase }) => {
     return NextResponse.json({ canCancel: false, reason: "Appointment not found" });
   }
 
-  if (appt.status === "cancelled" || appt.status === "completed" || appt.status === "rescheduled") {
+  const terminalStatuses: AppointmentStatus[] = ["cancelled", "completed", "rescheduled"];
+  if (terminalStatuses.includes(appt.status as AppointmentStatus)) {
     return NextResponse.json({
       canCancel: false,
       reason: "Appointment cannot be cancelled in its current state",

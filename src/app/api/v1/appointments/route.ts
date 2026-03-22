@@ -10,6 +10,20 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase-server";
 import { authenticateApiKey } from "@/lib/api-auth";
+import type { AppointmentStatus } from "@/lib/types/database";
+
+/** CORS headers for the public REST API (/api/v1/*). */
+const CORS_HEADERS = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type, Authorization",
+  "Access-Control-Max-Age": "86400",
+} as const;
+
+/** Preflight handler for CORS. */
+export function OPTIONS() {
+  return new NextResponse(null, { status: 204, headers: CORS_HEADERS });
+}
 
 export async function GET(request: NextRequest) {
   const auth = await authenticateApiKey(request);
@@ -48,10 +62,10 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Failed to fetch appointments" }, { status: 500 });
   }
 
-  return NextResponse.json({
-    data,
-    pagination: { total: count, limit, offset },
-  });
+  return NextResponse.json(
+    { data, pagination: { total: count, limit, offset } },
+    { headers: CORS_HEADERS },
+  );
 }
 
 export async function POST(request: NextRequest) {
@@ -64,6 +78,11 @@ export async function POST(request: NextRequest) {
   }
 
   const body = await request.json();
+
+  // Input length validation to prevent DoS via oversized payloads
+  if (body.notes && typeof body.notes === "string" && body.notes.length > 5000) {
+    return NextResponse.json({ error: "Notes field exceeds maximum allowed length" }, { status: 400 });
+  }
 
   const required = ["patient_id", "doctor_id", "appointment_date", "start_time"];
   const missing = required.filter((f) => !body[f]);
@@ -93,7 +112,7 @@ export async function POST(request: NextRequest) {
       end_time: body.end_time || null,
       slot_start: slotStart,
       slot_end: slotEnd,
-      status: body.status || "scheduled",
+      status: (body.status || "scheduled") as AppointmentStatus,
       notes: body.notes || null,
     })
     .select()
@@ -104,5 +123,5 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Failed to create appointment" }, { status: 500 });
   }
 
-  return NextResponse.json({ data }, { status: 201 });
+  return NextResponse.json({ data }, { status: 201, headers: CORS_HEADERS });
 }

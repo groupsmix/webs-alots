@@ -3,7 +3,7 @@ import { clinicConfig } from "@/config/clinic.config";
 import { getPublicServices } from "@/lib/data/public";
 import { withAuth } from "@/lib/with-auth";
 import { findOrCreatePatient } from "@/lib/find-or-create-patient";
-import type { TablesInsert } from "@/lib/types/database";
+import type { AppointmentStatus, TablesInsert } from "@/lib/types/database";
 
 export const runtime = "edge";
 
@@ -114,7 +114,7 @@ export const POST = withAuth(async (request, { supabase }) => {
           end_time: endTime,
           slot_start: slotStart,
           slot_end: slotEnd,
-          status: "scheduled",
+          status: "scheduled" as AppointmentStatus,
           is_first_visit: insertIndex === 0 ? (body.isFirstVisit ?? false) : false,
           insurance_flag: body.hasInsurance ?? false,
           booking_source: "online",
@@ -173,13 +173,13 @@ export const POST = withAuth(async (request, { supabase }) => {
       }
 
       const cancelIds = toCancel
-        .filter((a) => a.status !== "cancelled" && a.status !== "completed")
+        .filter((a) => a.status !== ("cancelled" as AppointmentStatus) && a.status !== ("completed" as AppointmentStatus))
         .map((a) => a.id);
 
       if (cancelIds.length > 0) {
         await supabase
           .from("appointments")
-          .update({ status: "cancelled" })
+          .update({ status: "cancelled" as AppointmentStatus })
           .in("id", cancelIds);
       }
 

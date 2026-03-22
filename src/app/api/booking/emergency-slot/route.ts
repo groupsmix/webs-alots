@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase-server";
 import { clinicConfig } from "@/config/clinic.config";
 import { withAuth } from "@/lib/with-auth";
 import { findOrCreatePatient } from "@/lib/find-or-create-patient";
+import type { AppointmentStatus } from "@/lib/types/database";
 
 export const runtime = "edge";
 
@@ -146,7 +147,7 @@ export const POST = withAuth(async (request, { supabase }) => {
           end_time: claimedSlot.end_time,
           slot_start: slotStart,
           slot_end: slotEnd,
-          status: "confirmed",
+          status: "confirmed" as AppointmentStatus,
           is_first_visit: false,
           insurance_flag: false,
           booking_source: "online",

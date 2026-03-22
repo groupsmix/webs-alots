@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { withAuth } from "@/lib/with-auth";
 import { clinicConfig } from "@/config/clinic.config";
 import { getPublicAvailableSlots } from "@/lib/data/public";
+import type { AppointmentStatus } from "@/lib/types/database";
 
 export const runtime = "edge";
 
@@ -69,7 +70,8 @@ export const POST = withAuth(async (request, { supabase }) => {
     }
 
     // Only allow rescheduling appointments in a valid state
-    if (existing.status === "cancelled" || existing.status === "completed" || existing.status === "rescheduled") {
+    const terminalStatuses: AppointmentStatus[] = ["cancelled", "completed", "rescheduled"];
+    if (terminalStatuses.includes(existing.status as AppointmentStatus)) {
       return NextResponse.json(
         { error: "Appointment cannot be rescheduled in its current state" },
         { status: 400 },
@@ -113,7 +115,7 @@ export const POST = withAuth(async (request, { supabase }) => {
         end_time: endTime,
         slot_start: slotStart,
         slot_end: slotEnd,
-        status: "rescheduled",
+        status: "rescheduled" as AppointmentStatus,
       })
       .eq("id", body.appointmentId);
 

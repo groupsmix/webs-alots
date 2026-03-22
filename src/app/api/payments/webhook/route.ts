@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase-server";
 import { hmacSha256Hex, timingSafeEqual } from "@/lib/crypto-utils";
+import type { AppointmentStatus, PaymentStatus } from "@/lib/types/database";
 
 /**
  * POST /api/payments/webhook
@@ -83,7 +84,7 @@ export async function POST(request: NextRequest) {
               appointment_id: appointmentId || null,
               amount: (session.amount_total || 0) / 100, // Convert from centimes
               method: "online",
-              status: "completed",
+              status: "completed" as PaymentStatus,
               reference: session.id,
               payment_type: "full",
             },
@@ -95,9 +96,9 @@ export async function POST(request: NextRequest) {
         if (appointmentId) {
           await supabase
             .from("appointments")
-            .update({ status: "confirmed" })
+            .update({ status: "confirmed" as AppointmentStatus })
             .eq("id", appointmentId)
-            .eq("status", "pending");
+            .in("status", ["pending", "scheduled"] satisfies AppointmentStatus[]);
         }
 
         console.log(`[Stripe Webhook] Payment completed: ${session.id}`);

@@ -9,6 +9,7 @@ import {
   getPublicSpecialties,
 } from "@/lib/data/public";
 import { createClient } from "@/lib/supabase-server";
+import type { AppointmentStatus } from "@/lib/types/database";
 
 export const runtime = "edge";
 
@@ -108,6 +109,17 @@ export async function POST(request: NextRequest) {
   try {
     const body = (await request.json()) as BookingRequestBody;
 
+    // Input length validation to prevent DoS via oversized payloads
+    if (body.patient?.name && body.patient.name.length > 200) {
+      return NextResponse.json({ error: "Patient name exceeds maximum allowed length" }, { status: 400 });
+    }
+    if (body.patient?.phone && body.patient.phone.length > 30) {
+      return NextResponse.json({ error: "Phone number exceeds maximum allowed length" }, { status: 400 });
+    }
+    if (body.patient?.reason && body.patient.reason.length > 2000) {
+      return NextResponse.json({ error: "Reason exceeds maximum allowed length" }, { status: 400 });
+    }
+
     const validation = await validateBookingRequest(body);
     if (validation.error) {
       return NextResponse.json(
@@ -175,7 +187,7 @@ export async function POST(request: NextRequest) {
         end_time: endTime,
         slot_start: slotStart,
         slot_end: slotEnd,
-        status: "confirmed",
+        status: "confirmed" as AppointmentStatus,
         is_first_visit: body.isFirstVisit,
         insurance_flag: body.hasInsurance,
         booking_source: "online",

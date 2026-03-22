@@ -5,6 +5,7 @@ import {
   type TemplateVariables,
 } from "@/lib/notifications";
 import { hmacSha256Hex, timingSafeEqual } from "@/lib/crypto-utils";
+import type { AppointmentStatus } from "@/lib/types/database";
 
 export const runtime = "edge";
 
@@ -103,7 +104,7 @@ export async function POST(request: NextRequest) {
           .from("appointments")
           .select("id, doctor_id, status")
           .eq("patient_id", patient.id)
-          .in("status", ["confirmed", "pending", "scheduled"])
+          .in("status", ["confirmed", "pending", "scheduled"] satisfies AppointmentStatus[])
           .order("appointment_date", { ascending: true })
           .limit(1)
           .single();
@@ -111,12 +112,12 @@ export async function POST(request: NextRequest) {
         if (upperText === "CONFIRM" && appt) {
           await supabase
             .from("appointments")
-            .update({ status: "confirmed" })
+            .update({ status: "confirmed" as AppointmentStatus })
             .eq("id", appt.id);
         } else if (upperText === "CANCEL" && appt) {
           await supabase
             .from("appointments")
-            .update({ status: "cancelled", cancellation_reason: "Cancelled via WhatsApp" })
+            .update({ status: "cancelled" as AppointmentStatus, cancellation_reason: "Cancelled via WhatsApp" })
             .eq("id", appt.id);
         }
 
