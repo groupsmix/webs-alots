@@ -197,4 +197,4 @@ export const POST = withAuth(async (request, { supabase, user }) => {
       { status: 500 },
     );
   }
-}, null);
+}, null); // null is intentional: new users don't have a profile/role yet during onboarding; the handler performs its own authorization checks (email verification, no existing profile)

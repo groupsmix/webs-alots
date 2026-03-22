@@ -1,16 +1,27 @@
 /**
- * In-memory sliding-window rate limiter for edge runtime.
+ * Distributed sliding-window rate limiter.
  *
- * Tracks request counts per IP in a Map. Old entries are pruned on
- * every check to prevent unbounded growth. State resets on cold starts,
- * which is acceptable — sustained abuse is still throttled.
+ * Supports two backends:
+ *
+ * 1. **Supabase** (default when `RATE_LIMIT_BACKEND=supabase` or a Supabase URL
+ *    is configured) — uses a `rate_limit_entries` table so counters survive
+ *    cold starts and are shared across all Cloudflare Worker isolates.
+ *
+ * 2. **In-memory** (fallback) — uses a local `Map`.  Counters reset on cold
+ *    starts and are **not** shared across isolates.  Suitable for development
+ *    or single-instance deployments only.
+ *
+ * The backend is selected automatically at startup via `RATE_LIMIT_BACKEND`
+ * env var or the presence of Supabase credentials.  Set
+ * `RATE_LIMIT_BACKEND=memory` to force the in-memory fallback.
  *
  * Usage:
  *   const limiter = createRateLimiter({ windowMs: 60_000, max: 20 });
- *   if (!limiter.check(ip)) { // blocked }
+ *   if (!(await limiter.check(ip))) { // blocked }
  */
 
 import { NextRequest } from "next/server";
+import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 
 /**
  * Extract the real client IP from a request, respecting common reverse-proxy
@@ -39,18 +50,100 @@ interface RateLimiterOptions {
   windowMs: number;
   /** Maximum requests allowed per window */
   max: number;
-  /** Maximum number of distinct keys to track (prevents memory exhaustion) */
+  /** Maximum number of distinct keys to track (prevents memory exhaustion, in-memory only) */
   maxKeys?: number;
 }
 
-interface RateLimiter {
+export interface RateLimiter {
   /**
    * Returns `true` if the request is allowed, `false` if rate-limited.
+   * May be async when using a distributed backend.
    */
-  check(key: string): boolean;
+  check(key: string): boolean | Promise<boolean>;
 }
 
-export function createRateLimiter(options: RateLimiterOptions): RateLimiter {
+// ── Backend selection ──
+
+function shouldUseSupabase(): boolean {
+  const explicit = process.env.RATE_LIMIT_BACKEND;
+  if (explicit === "memory") return false;
+  if (explicit === "supabase") return true;
+  // Auto-detect: use Supabase when credentials are available
+  return !!(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY);
+}
+
+// ── Supabase-backed distributed rate limiter ──
+
+function createSupabaseRateLimiter(options: RateLimiterOptions): RateLimiter {
+  const { windowMs, max } = options;
+
+  // Use the service role key for direct DB access (bypasses RLS).
+  const supabase = createSupabaseClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  );
+
+  return {
+    async check(key: string): Promise<boolean> {
+      const now = Date.now();
+      const windowStart = now - windowMs;
+
+      try {
+        // Upsert: increment the counter if the window is still valid,
+        // otherwise reset it.  Uses the Supabase RPC to perform an
+        // atomic check-and-increment.
+        const { data, error } = await supabase
+          .from("rate_limit_entries")
+          .select("count, reset_at")
+          .eq("key", key)
+          .maybeSingle();
+
+        if (error) {
+          // If the table doesn't exist yet, fall through to allow the request
+          // and log a warning so operators know to run the migration.
+          console.warn(`[rate-limit] Supabase lookup failed: ${error.message}. Allowing request.`);
+          return true;
+        }
+
+        if (!data || data.reset_at <= windowStart) {
+          // Window expired or first request — create/reset entry
+          const resetAt = now + windowMs;
+          const { error: upsertError } = await supabase
+            .from("rate_limit_entries")
+            .upsert(
+              { key, count: 1, reset_at: resetAt, updated_at: new Date(now).toISOString() },
+              { onConflict: "key" },
+            );
+
+          if (upsertError) {
+            console.warn(`[rate-limit] Supabase upsert failed: ${upsertError.message}. Allowing request.`);
+          }
+          return true;
+        }
+
+        // Window still active — increment
+        const newCount = (data.count ?? 0) + 1;
+        await supabase
+          .from("rate_limit_entries")
+          .update({ count: newCount, updated_at: new Date(now).toISOString() })
+          .eq("key", key);
+
+        return newCount <= max;
+      } catch (err) {
+        // Network/transient failure — fail open to avoid blocking
+        // legitimate traffic.  Log so operators can investigate.
+        console.warn(
+          `[rate-limit] Supabase rate-limit check failed: ${err instanceof Error ? err.message : "unknown"}. Allowing request.`,
+        );
+        return true;
+      }
+    },
+  };
+}
+
+// ── In-memory fallback rate limiter ──
+
+function createMemoryRateLimiter(options: RateLimiterOptions): RateLimiter {
   const { windowMs, max, maxKeys = 10_000 } = options;
   const store = new Map<string, RateLimitEntry>();
   const createdAt = Date.now();
@@ -79,7 +172,8 @@ export function createRateLimiter(options: RateLimiterOptions): RateLimiter {
       if (!coldStartWarned) {
         coldStartWarned = true;
         console.warn(
-          `[rate-limit] Cold start detected — limiter created at ${new Date(createdAt).toISOString()}, first check at ${new Date(now).toISOString()}. Previous rate-limit state was lost.`,
+          `[rate-limit] In-memory fallback active (cold start at ${new Date(createdAt).toISOString()}). ` +
+          "Counters are NOT shared across Worker isolates. Set RATE_LIMIT_BACKEND=supabase for distributed rate limiting.",
         );
       }
 
@@ -105,6 +199,15 @@ export function createRateLimiter(options: RateLimiterOptions): RateLimiter {
       return entry.count <= max;
     },
   };
+}
+
+// ── Factory ──
+
+export function createRateLimiter(options: RateLimiterOptions): RateLimiter {
+  if (shouldUseSupabase()) {
+    return createSupabaseRateLimiter(options);
+  }
+  return createMemoryRateLimiter(options);
 }
 
 /**

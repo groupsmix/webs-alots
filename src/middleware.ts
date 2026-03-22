@@ -154,11 +154,14 @@ export async function middleware(request: NextRequest) {
     const rateLimitKey = extractClientIp(request);
 
     const rule = rateLimitRules.find((r) => pathname.startsWith(r.prefix));
-    if (rule && !rule.limiter.check(rateLimitKey)) {
-      return NextResponse.json(
-        { error: "Too many requests. Please try again later." },
-        { status: 429 },
-      );
+    if (rule) {
+      const allowed = await rule.limiter.check(rateLimitKey);
+      if (!allowed) {
+        return NextResponse.json(
+          { error: "Too many requests. Please try again later." },
+          { status: 429 },
+        );
+      }
     }
   }
 

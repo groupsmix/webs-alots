@@ -239,6 +239,38 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Failed to create booking" }, { status: 500 });
     }
 
+    // ── DI-HIGH-02: Post-insert maxPerSlot enforcement ──────────────
+    // The pre-insert availability check (validateBookingRequest) is
+    // subject to a TOCTOU race when maxPerSlot > 1.  After inserting we
+    // count how many active bookings now exist for this slot.  If the
+    // count exceeds maxPerSlot the just-inserted row lost the race and
+    // must be rolled back.  This guarantees the cap is never exceeded.
+    const maxPerSlot = clinicConfig.booking.maxPerSlot;
+    const { count: slotCount } = await supabase
+      .from("appointments")
+      .select("id", { count: "exact", head: true })
+      .eq("clinic_id", clinicConfig.clinicId)
+      .eq("doctor_id", body.doctorId)
+      .eq("appointment_date", body.date)
+      .eq("start_time", body.time)
+      .in("status", [
+        APPOINTMENT_STATUS.CONFIRMED,
+        APPOINTMENT_STATUS.PENDING,
+      ]);
+
+    if (slotCount !== null && slotCount > maxPerSlot) {
+      // Roll back the appointment that lost the race
+      await supabase
+        .from("appointments")
+        .delete()
+        .eq("id", appointment.id);
+
+      return NextResponse.json(
+        { error: "This slot has just been fully booked. Please choose another time." },
+        { status: 409 },
+      );
+    }
+
     // Audit log for healthcare compliance
     await logAuditEvent({
       supabase,
