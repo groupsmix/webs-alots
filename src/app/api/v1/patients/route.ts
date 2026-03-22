@@ -11,6 +11,19 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase-server";
 import { authenticateApiKey } from "@/lib/api-auth";
 
+/** Standard CORS headers for the public API. */
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type, Authorization",
+  "Access-Control-Max-Age": "86400",
+};
+
+/** Handle CORS preflight requests. */
+export function OPTIONS() {
+  return new NextResponse(null, { status: 204, headers: corsHeaders });
+}
+
 export async function GET(request: NextRequest) {
   const auth = await authenticateApiKey(request);
   if (!auth) {
@@ -52,7 +65,7 @@ export async function GET(request: NextRequest) {
   return NextResponse.json({
     data,
     pagination: { total: count, limit, offset },
-  });
+  }, { headers: corsHeaders });
 }
 
 export async function POST(request: NextRequest) {
@@ -96,5 +109,5 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Failed to create patient" }, { status: 500 });
   }
 
-  return NextResponse.json({ data }, { status: 201 });
+  return NextResponse.json({ data }, { status: 201, headers: corsHeaders });
 }

@@ -108,6 +108,17 @@ export async function POST(request: NextRequest) {
   try {
     const body = (await request.json()) as BookingRequestBody;
 
+    // Input length validation to prevent DoS via oversized payloads
+    if (body.patient?.name && body.patient.name.length > 200) {
+      return NextResponse.json({ error: "Patient name exceeds maximum allowed length" }, { status: 400 });
+    }
+    if (body.patient?.phone && body.patient.phone.length > 30) {
+      return NextResponse.json({ error: "Phone number exceeds maximum allowed length" }, { status: 400 });
+    }
+    if (body.patient?.reason && body.patient.reason.length > 1000) {
+      return NextResponse.json({ error: "Reason exceeds maximum allowed length" }, { status: 400 });
+    }
+
     const validation = await validateBookingRequest(body);
     if (validation.error) {
       return NextResponse.json(
