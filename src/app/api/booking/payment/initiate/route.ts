@@ -1,8 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase-server";
 import { clinicConfig } from "@/config/clinic.config";
+import type { UserRole } from "@/lib/types/database";
 
 export const runtime = "edge";
+
+const STAFF_ROLES: UserRole[] = ["super_admin", "clinic_admin", "receptionist", "doctor"];
 
 /**
  * POST /api/booking/payment/initiate
@@ -11,6 +14,20 @@ export const runtime = "edge";
  */
 export async function POST(request: NextRequest) {
   try {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+    }
+    const { data: profile } = await supabase
+      .from("users")
+      .select("role")
+      .eq("auth_id", user.id)
+      .single();
+    if (!profile || !STAFF_ROLES.includes(profile.role as UserRole)) {
+      return NextResponse.json({ error: "Forbidden \u2014 insufficient permissions" }, { status: 403 });
+    }
+
     const body = (await request.json()) as {
       appointmentId: string;
       patientId: string;
@@ -26,8 +43,6 @@ export async function POST(request: NextRequest) {
         { status: 400 },
       );
     }
-
-    const supabase = await createClient();
 
     // Verify the appointment exists
     const { data: appt, error: apptError } = await supabase
