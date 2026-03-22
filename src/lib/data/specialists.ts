@@ -26,7 +26,7 @@ async function fetchRows<T>(
   let q = supabase.from(table).select(opts?.select ?? "*");
   if (opts?.eq) {
     for (const [col, val] of opts.eq) {
-      q = q.eq(col, val);
+      q = q.eq(col, val as string);
     }
   }
   if (opts?.order) q = q.order(opts.order[0], opts.order[1]);
@@ -130,7 +130,7 @@ export async function createSkinCondition(data: {
   notes?: string; treatments?: unknown[];
 }): Promise<string | null> {
   const supabase = createClient();
-  const { data: result, error } = await supabase.from("skin_conditions").insert(data).select("id").single();
+  const { data: result, error } = await supabase.from("skin_conditions").insert(data as never).select("id").single();
   if (error) { console.error("[specialists] create skin condition:", error.message); return null; }
   return result?.id ?? null;
 }
@@ -141,7 +141,7 @@ export async function updateSkinCondition(
 ): Promise<boolean> {
   const supabase = createClient();
   const { error } = await supabase.from("skin_conditions")
-    .update({ ...data, updated_at: new Date().toISOString() }).eq("id", id);
+    .update({ ...data, updated_at: new Date().toISOString() } as never).eq("id", id);
   if (error) { console.error("[specialists] update skin condition:", error.message); return false; }
   return true;
 }
@@ -422,7 +422,7 @@ export async function createXRayRecord(data: {
 }): Promise<string | null> {
   const supabase = createClient();
   const { data: result, error } = await supabase
-    .from("xray_records").insert(data).select("id").single();
+    .from("xray_records").insert(data as never).select("id").single();
   if (error) { console.error("[specialists] create X-ray record:", error.message); return null; }
   return result?.id ?? null;
 }
@@ -533,7 +533,7 @@ export async function createRehabPlan(data: {
 }): Promise<string | null> {
   const supabase = createClient();
   const { data: result, error } = await supabase
-    .from("rehab_plans").insert(data).select("id").single();
+    .from("rehab_plans").insert(data as never).select("id").single();
   if (error) { console.error("[specialists] create rehab plan:", error.message); return null; }
   return result?.id ?? null;
 }
@@ -544,7 +544,7 @@ export async function updateRehabPlan(
 ): Promise<boolean> {
   const supabase = createClient();
   const { error } = await supabase.from("rehab_plans")
-    .update({ ...data, updated_at: new Date().toISOString() }).eq("id", id);
+    .update({ ...data, updated_at: new Date().toISOString() } as never).eq("id", id);
   if (error) { console.error("[specialists] update rehab plan:", error.message); return false; }
   return true;
 }
@@ -665,7 +665,7 @@ export async function updatePsychMedication(
 ): Promise<boolean> {
   const supabase = createClient();
   const { error } = await supabase.from("psych_medications")
-    .update({ ...data, updated_at: new Date().toISOString() }).eq("id", id);
+    .update({ ...data, updated_at: new Date().toISOString() } as never).eq("id", id);
   if (error) { console.error("[specialists] update psych medication:", error.message); return false; }
   return true;
 }
@@ -917,7 +917,7 @@ export async function createRespiratoryTest(data: {
 }): Promise<string | null> {
   const supabase = createClient();
   const { data: result, error } = await supabase
-    .from("respiratory_tests").insert(data).select("id").single();
+    .from("respiratory_tests").insert(data as never).select("id").single();
   if (error) { console.error("[specialists] create respiratory test:", error.message); return null; }
   return result?.id ?? null;
 }
@@ -1060,7 +1060,7 @@ export async function createDiabetesManagement(data: {
 }): Promise<string | null> {
   const supabase = createClient();
   const { data: result, error } = await supabase
-    .from("diabetes_management").insert(data).select("id").single();
+    .from("diabetes_management").insert(data as never).select("id").single();
   if (error) { console.error("[specialists] create diabetes mgmt:", error.message); return null; }
   return result?.id ?? null;
 }
@@ -1072,7 +1072,7 @@ export async function updateDiabetesManagement(
 ): Promise<boolean> {
   const supabase = createClient();
   const { error } = await supabase.from("diabetes_management")
-    .update({ ...data, updated_at: new Date().toISOString() }).eq("id", id);
+    .update({ ...data, updated_at: new Date().toISOString() } as never).eq("id", id);
   if (error) { console.error("[specialists] update diabetes mgmt:", error.message); return false; }
   return true;
 }
@@ -1129,7 +1129,7 @@ export async function createJointAssessment(data: {
   functional_status?: string; notes?: string;
 }): Promise<string | null> {
   const supabase = createClient();
-  const { data: result, error } = await supabase.from("joint_assessments").insert(data).select("id").single();
+  const { data: result, error } = await supabase.from("joint_assessments").insert(data as never).select("id").single();
   if (error) { console.error("[specialists] create joint assessment:", error.message); return null; }
   return result?.id ?? null;
 }

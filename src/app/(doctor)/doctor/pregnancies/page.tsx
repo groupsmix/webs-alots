@@ -60,8 +60,7 @@ export default function PregnanciesPage() {
   });
   const [showBirthPlan, setShowBirthPlan] = useState(false);
 
-  useEffect(() => {
-    async function load() {
+  const load = async () => {
     const user = await getCurrentUser();
     if (!user?.clinic_id) { setLoading(false); return; }
     const [preg, p] = await Promise.all([
@@ -71,7 +70,9 @@ export default function PregnanciesPage() {
     setPregnancies(preg);
     setPatients(p);
     setLoading(false);
-  }
+  };
+
+  useEffect(() => {
     load();
   }, [selectedPatient]);
 

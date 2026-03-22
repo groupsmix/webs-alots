@@ -61,8 +61,7 @@ export default function IopTrackingPage() {
     notes: "",
   });
 
-  useEffect(() => {
-    async function load() {
+  const load = async () => {
     const user = await getCurrentUser();
     if (!user?.clinic_id) { setLoading(false); return; }
     const [m, p] = await Promise.all([
@@ -72,7 +71,9 @@ export default function IopTrackingPage() {
     setMeasurements(m);
     setPatients(p);
     setLoading(false);
-  }
+  };
+
+  useEffect(() => {
     load();
   }, [selectedPatient]);
 

@@ -162,7 +162,7 @@ export async function POST(request: NextRequest) {
         booking_source: "online",
         notes: body.patient.reason ?? null,
         is_emergency: false,
-      })
+      } as never)
       .select("id")
       .single();
 

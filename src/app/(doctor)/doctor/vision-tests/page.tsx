@@ -63,8 +63,7 @@ export default function VisionTestsPage() {
     notes: "",
   });
 
-  useEffect(() => {
-    async function load() {
+  const load = async () => {
     const user = await getCurrentUser();
     if (!user?.clinic_id) { setLoading(false); return; }
     const [t, p] = await Promise.all([
@@ -74,7 +73,9 @@ export default function VisionTestsPage() {
     setTests(t);
     setPatients(p);
     setLoading(false);
-  }
+  };
+
+  useEffect(() => {
     load();
   }, [selectedPatient]);
 

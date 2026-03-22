@@ -147,7 +147,7 @@ export async function POST(request: NextRequest) {
           insurance_flag: false,
           booking_source: "online",
           is_emergency: true,
-        })
+        } as never)
         .select("id")
         .single();
 
