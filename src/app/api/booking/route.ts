@@ -31,40 +31,48 @@ interface BookingRequestBody {
   bufferTime: number;
 }
 
-async function validateBookingRequest(body: BookingRequestBody): Promise<string | null> {
+interface ValidationResult {
+  error: string | null;
+  doctors: Awaited<ReturnType<typeof getPublicDoctors>>;
+  services: Awaited<ReturnType<typeof getPublicServices>>;
+}
+
+async function validateBookingRequest(body: BookingRequestBody): Promise<ValidationResult> {
   const [specialties, doctors, services] = await Promise.all([
     getPublicSpecialties(),
     getPublicDoctors(),
     getPublicServices(),
   ]);
 
+  const fail = (msg: string): ValidationResult => ({ error: msg, doctors, services });
+
   if (!body.specialtyId || !specialties.find((s) => s.id === body.specialtyId)) {
-    return "Invalid specialty selected";
+    return fail("Invalid specialty selected");
   }
   if (!body.doctorId || !doctors.find((d) => d.id === body.doctorId)) {
-    return "Invalid doctor selected";
+    return fail("Invalid doctor selected");
   }
   if (!body.serviceId || !services.find((s) => s.id === body.serviceId)) {
-    return "Invalid service selected";
+    return fail("Invalid service selected");
   }
   if (!body.date || !/^\d{4}-\d{2}-\d{2}$/.test(body.date)) {
-    return "Invalid date format (expected YYYY-MM-DD)";
+    return fail("Invalid date format (expected YYYY-MM-DD)");
   }
   if (!body.time || !/^\d{2}:\d{2}$/.test(body.time)) {
-    return "Invalid time format (expected HH:MM)";
+    return fail("Invalid time format (expected HH:MM)");
   }
   if (!body.patient?.name || body.patient.name.trim().length < 2) {
-    return "Patient name is required (minimum 2 characters)";
+    return fail("Patient name is required (minimum 2 characters)");
   }
   if (!body.patient?.phone || body.patient.phone.trim().length < 6) {
-    return "Valid phone number is required";
+    return fail("Valid phone number is required");
   }
 
   // Reject past dates (compared in the clinic's configured timezone)
   const tz = clinicConfig.timezone ?? "Africa/Casablanca";
   const todayInTz = new Date().toLocaleDateString("en-CA", { timeZone: tz }); // "YYYY-MM-DD"
   if (body.date < todayInTz) {
-    return "Cannot book an appointment in the past";
+    return fail("Cannot book an appointment in the past");
   }
 
   // Parse day-of-week using noon to avoid DST edge cases.
@@ -73,20 +81,20 @@ async function validateBookingRequest(body: BookingRequestBody): Promise<string 
   const dayOfWeek = parsedDate.getDay();
   const hours = clinicConfig.workingHours[dayOfWeek];
   if (!hours?.enabled) {
-    return "Selected date is not a working day";
+    return fail("Selected date is not a working day");
   }
 
   const generatedSlots = await getPublicGeneratedSlots(body.date, body.doctorId);
   if (!generatedSlots.includes(body.time)) {
-    return "Selected time is not a valid slot";
+    return fail("Selected time is not a valid slot");
   }
 
   const availableSlots = await getPublicAvailableSlots(body.date, body.doctorId);
   if (!availableSlots.includes(body.time)) {
-    return "Selected time slot is already fully booked";
+    return fail("Selected time slot is already fully booked");
   }
 
-  return null;
+  return { error: null, doctors, services };
 }
 
 /**
@@ -100,21 +108,17 @@ export async function POST(request: NextRequest) {
   try {
     const body = (await request.json()) as BookingRequestBody;
 
-    const validationError = await validateBookingRequest(body);
-    if (validationError) {
+    const validation = await validateBookingRequest(body);
+    if (validation.error) {
       return NextResponse.json(
-        { error: validationError },
+        { error: validation.error },
         { status: 400 },
       );
     }
 
-    const [doctors, services] = await Promise.all([
-      getPublicDoctors(),
-      getPublicServices(),
-    ]);
-
-    const doctor = doctors.find((d) => d.id === body.doctorId);
-    const service = services.find((s) => s.id === body.serviceId);
+    // Reuse data already fetched during validation (avoids duplicate queries)
+    const doctor = validation.doctors.find((d) => d.id === body.doctorId);
+    const service = validation.services.find((s) => s.id === body.serviceId);
 
     const supabase = await createClient();
 
@@ -155,6 +159,10 @@ export async function POST(request: NextRequest) {
     const endMinutes = h * 60 + m + duration;
     const endTime = `${Math.floor(endMinutes / 60).toString().padStart(2, "0")}:${(endMinutes % 60).toString().padStart(2, "0")}`;
 
+    // Construct ISO slot boundaries for the required slot_start/slot_end columns
+    const slotStart = `${body.date}T${body.time}:00`;
+    const slotEnd = `${body.date}T${endTime}:00`;
+
     const { data: appointment, error: apptError } = await supabase
       .from("appointments")
       .insert({
@@ -165,13 +173,15 @@ export async function POST(request: NextRequest) {
         appointment_date: body.date,
         start_time: body.time,
         end_time: endTime,
+        slot_start: slotStart,
+        slot_end: slotEnd,
         status: "confirmed",
         is_first_visit: body.isFirstVisit,
         insurance_flag: body.hasInsurance,
         booking_source: "online",
         notes: body.patient.reason ?? null,
         is_emergency: false,
-      } as never)
+      })
       .select("id")
       .single();
 
@@ -205,7 +215,8 @@ export async function POST(request: NextRequest) {
         hasInsurance: body.hasInsurance,
       },
     });
-  } catch {
+  } catch (err) {
+    console.error("[booking] Error:", err instanceof Error ? err.message : "Unknown error");
     return NextResponse.json(
       { error: "Failed to create booking" },
       { status: 500 },

@@ -2,14 +2,26 @@ import { NextResponse } from "next/server";
 import { clinicConfig } from "@/config/clinic.config";
 import { getPublicServices } from "@/lib/data/public";
 import { withAuth } from "@/lib/with-auth";
+import { findOrCreatePatient } from "@/lib/find-or-create-patient";
+import type { TablesInsert } from "@/lib/types/database";
 
 export const runtime = "edge";
 
 function addInterval(date: Date, pattern: "weekly" | "biweekly" | "monthly"): Date {
   const next = new Date(date);
-  if (pattern === "weekly") next.setDate(next.getDate() + 7);
-  else if (pattern === "biweekly") next.setDate(next.getDate() + 14);
-  else next.setMonth(next.getMonth() + 1);
+  if (pattern === "weekly") {
+    next.setDate(next.getDate() + 7);
+  } else if (pattern === "biweekly") {
+    next.setDate(next.getDate() + 14);
+  } else {
+    // Clamp to last day of target month to prevent overflow
+    // (e.g. Jan 31 + 1 month → Feb 28, not Mar 3)
+    const targetMonth = next.getMonth() + 1;
+    next.setMonth(targetMonth);
+    if (next.getMonth() !== targetMonth % 12) {
+      next.setDate(0); // Roll back to last day of previous month
+    }
+  }
   return next;
 }
 
@@ -51,41 +63,25 @@ export const POST = withAuth(async (request, { supabase }) => {
       const service = body.serviceId ? services.find((s) => s.id === body.serviceId) : undefined;
 
       // Find or create patient
-      let patientId = body.patientId;
-      if (patientId.startsWith("patient-")) {
-        const { data: existing } = await supabase
-          .from("users")
-          .select("id")
-          .eq("clinic_id", clinicConfig.clinicId)
-          .eq("name", body.patientName)
-          .eq("role", "patient")
-          .limit(1)
-          .single();
-
-        if (existing) {
-          patientId = existing.id;
-        } else {
-          const { data: newPatient } = await supabase
-            .from("users")
-            .insert({
-              clinic_id: clinicConfig.clinicId,
-              name: body.patientName,
-              role: "patient",
-            })
-            .select("id")
-            .single();
-          if (newPatient) patientId = newPatient.id;
-        }
+      const patientId = await findOrCreatePatient(
+        supabase, clinicConfig.clinicId, body.patientId, body.patientName,
+      );
+      if (!patientId) {
+        return NextResponse.json({ error: "Failed to resolve patient" }, { status: 500 });
       }
 
       const groupId = crypto.randomUUID();
-      const appointmentIds: string[] = [];
       const skippedDates: string[] = [];
       let currentDate = new Date(body.date);
       const duration = service?.duration ?? clinicConfig.booking.slotDuration;
       const [h, m] = body.time.split(":").map(Number);
       const endMinutes = h * 60 + m + duration;
       const endTime = `${Math.floor(endMinutes / 60).toString().padStart(2, "0")}:${(endMinutes % 60).toString().padStart(2, "0")}`;
+
+      // Build all appointment records first, then batch insert in a single query
+      // instead of N sequential round-trips.
+      const appointmentRows: TablesInsert<"appointments">[] = [];
+      let insertIndex = 0;
 
       for (let i = 0; i < body.occurrences; i++) {
         const dateStr = currentDate.toISOString().split("T")[0];
@@ -98,39 +94,47 @@ export const POST = withAuth(async (request, { supabase }) => {
           continue;
         }
 
-        const { data: appt, error: apptError } = await supabase
-          .from("appointments")
-          .insert({
-            clinic_id: clinicConfig.clinicId,
-            patient_id: patientId,
-            doctor_id: body.doctorId,
-            service_id: body.serviceId ?? null,
-            appointment_date: dateStr,
-            start_time: body.time,
-            end_time: endTime,
-            status: "scheduled",
-            is_first_visit: i === 0 ? (body.isFirstVisit ?? false) : false,
-            insurance_flag: body.hasInsurance ?? false,
-            booking_source: "online",
-            recurrence_group_id: groupId,
-            notes: `Recurring: ${body.pattern} (${i + 1}/${body.occurrences})`,
-            is_emergency: false,
-          } as never)
-          .select("id")
-          .single();
+        const slotStart = `${dateStr}T${body.time}:00`;
+        const slotEnd = `${dateStr}T${endTime}:00`;
 
-        if (!apptError && appt) {
-          appointmentIds.push(appt.id);
-        } else {
-          skippedDates.push(dateStr);
-        }
+        appointmentRows.push({
+          clinic_id: clinicConfig.clinicId,
+          patient_id: patientId,
+          doctor_id: body.doctorId,
+          service_id: body.serviceId ?? null,
+          appointment_date: dateStr,
+          start_time: body.time,
+          end_time: endTime,
+          slot_start: slotStart,
+          slot_end: slotEnd,
+          status: "scheduled",
+          is_first_visit: insertIndex === 0 ? (body.isFirstVisit ?? false) : false,
+          insurance_flag: body.hasInsurance ?? false,
+          booking_source: "online",
+          recurrence_group_id: groupId,
+          notes: `Recurring: ${body.pattern} (${insertIndex + 1}/${body.occurrences})`,
+          is_emergency: false,
+        });
+        insertIndex++;
 
         currentDate = addInterval(currentDate, body.pattern);
       }
 
-      if (appointmentIds.length === 0) {
+      if (appointmentRows.length === 0) {
         return NextResponse.json({ error: "No appointments could be created", success: false }, { status: 400 });
       }
+
+      // Single bulk insert instead of N sequential queries
+      const { data: appointments, error: batchError } = await supabase
+        .from("appointments")
+        .insert(appointmentRows)
+        .select("id");
+
+      if (batchError || !appointments || appointments.length === 0) {
+        return NextResponse.json({ error: "Failed to create recurring appointments" }, { status: 500 });
+      }
+
+      const appointmentIds = appointments.map((a) => a.id);
 
       return NextResponse.json({
         status: "created",
@@ -180,7 +184,8 @@ export const POST = withAuth(async (request, { supabase }) => {
     }
 
     return NextResponse.json({ error: "action must be 'create' or 'cancel'" }, { status: 400 });
-  } catch {
+  } catch (err) {
+    console.error("[recurring] Error:", err instanceof Error ? err.message : "Unknown error");
     return NextResponse.json({ error: "Failed to process recurring booking" }, { status: 500 });
   }
 }, null);

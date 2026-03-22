@@ -187,38 +187,39 @@ export async function checkPlanLimits(
   const exceeded: string[] = [];
   const supabase = await createClient();
 
-  // Check doctor count
-  const { count: doctorCount } = await supabase
-    .from("users")
-    .select("*", { count: "exact", head: true })
-    .eq("clinic_id", clinicId)
-    .eq("role", "doctor");
-
-  if ((doctorCount ?? 0) > config.maxDoctors) {
-    exceeded.push(`Doctors: ${doctorCount}/${config.maxDoctors}`);
-  }
-
-  // Check patient count
-  const { count: patientCount } = await supabase
-    .from("users")
-    .select("*", { count: "exact", head: true })
-    .eq("clinic_id", clinicId)
-    .eq("role", "patient");
-
-  if ((patientCount ?? 0) > config.maxPatients) {
-    exceeded.push(`Patients: ${patientCount}/${config.maxPatients}`);
-  }
-
-  // Check monthly appointments
+  // Run all three independent count queries in parallel
   const now = new Date();
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split("T")[0];
-  const { count: appointmentCount } = await supabase
-    .from("appointments")
-    .select("*", { count: "exact", head: true })
-    .eq("clinic_id", clinicId)
-    .gte("appointment_date", monthStart);
 
-  if ((appointmentCount ?? 0) > config.maxAppointmentsPerMonth) {
+  const [doctorResult, patientResult, appointmentResult] = await Promise.all([
+    supabase
+      .from("users")
+      .select("*", { count: "exact", head: true })
+      .eq("clinic_id", clinicId)
+      .eq("role", "doctor"),
+    supabase
+      .from("users")
+      .select("*", { count: "exact", head: true })
+      .eq("clinic_id", clinicId)
+      .eq("role", "patient"),
+    supabase
+      .from("appointments")
+      .select("*", { count: "exact", head: true })
+      .eq("clinic_id", clinicId)
+      .gte("appointment_date", monthStart),
+  ]);
+
+  const doctorCount = doctorResult.count ?? 0;
+  const patientCount = patientResult.count ?? 0;
+  const appointmentCount = appointmentResult.count ?? 0;
+
+  if (doctorCount > config.maxDoctors) {
+    exceeded.push(`Doctors: ${doctorCount}/${config.maxDoctors}`);
+  }
+  if (patientCount > config.maxPatients) {
+    exceeded.push(`Patients: ${patientCount}/${config.maxPatients}`);
+  }
+  if (appointmentCount > config.maxAppointmentsPerMonth) {
     exceeded.push(`Appointments this month: ${appointmentCount}/${config.maxAppointmentsPerMonth}`);
   }
 

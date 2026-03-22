@@ -2,18 +2,54 @@ import { NextResponse } from "next/server";
 import { clinicConfig } from "@/config/clinic.config";
 import { withAuth } from "@/lib/with-auth";
 
-/** Build a timezone-aware Date for a date + time string using the clinic's timezone. */
+/**
+ * Build a timezone-aware Date for a date + time string using the clinic's timezone.
+ *
+ * Uses `Intl.DateTimeFormat.formatToParts` for reliable timezone offset
+ * extraction, avoiding the locale-dependent `toLocaleString` parsing that
+ * can break across runtimes and during DST transitions.
+ */
 function clinicDateTime(dateStr: string, timeStr: string): Date {
   const tz = clinicConfig.timezone ?? "Africa/Casablanca";
-  // Build an ISO-ish string and use the formatter to get the UTC offset
-  // so the resulting Date object represents the correct instant.
-  const naive = new Date(`${dateStr}T${timeStr}:00`);
-  // Compute offset: format the same instant in the target TZ and compare
-  const inTz = new Date(
-    naive.toLocaleString("en-US", { timeZone: tz }),
+  const [year, month, day] = dateStr.split("-").map(Number);
+  const [hour, minute] = timeStr.split(":").map(Number);
+
+  // Use formatToParts to extract what the wall-clock reads in the target TZ
+  // for a reference UTC instant, then compute the offset.
+  const formatter = new Intl.DateTimeFormat("en-US", {
+    timeZone: tz,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
+  });
+
+  // Start with a naive UTC interpretation of the date/time
+  const naiveUtc = Date.UTC(year, month - 1, day, hour, minute, 0);
+
+  // Determine the UTC offset at that approximate instant by reading
+  // what the timezone's wall-clock shows for that UTC instant.
+  const parts = formatter.formatToParts(new Date(naiveUtc));
+  const get = (type: Intl.DateTimeFormatPartTypes) =>
+    Number(parts.find((p) => p.type === type)?.value ?? 0);
+
+  const tzWall = Date.UTC(
+    get("year"),
+    get("month") - 1,
+    get("day"),
+    get("hour"),
+    get("minute"),
+    get("second"),
   );
-  const offsetMs = inTz.getTime() - naive.getTime();
-  return new Date(naive.getTime() - offsetMs);
+
+  // offsetMs = how far ahead the TZ wall-clock is from UTC
+  const offsetMs = tzWall - naiveUtc;
+
+  // The desired instant is the naive wall-clock minus the TZ offset
+  return new Date(naiveUtc - offsetMs);
 }
 
 export const runtime = "edge";
@@ -51,7 +87,14 @@ export const POST = withAuth(async (request, { supabase }) => {
     }
 
     // Check cancellation window (timezone-aware)
-    const appointmentDateTime = clinicDateTime(appt.appointment_date!, appt.start_time!);
+    if (!appt.appointment_date || !appt.start_time) {
+      return NextResponse.json(
+        { error: "Appointment is missing date or time information" },
+        { status: 400 },
+      );
+    }
+
+    const appointmentDateTime = clinicDateTime(appt.appointment_date, appt.start_time);
     const hoursUntilAppt = (appointmentDateTime.getTime() - Date.now()) / (1000 * 60 * 60);
     const cancellationWindowHours = clinicConfig.booking.cancellationHours;
 
@@ -84,7 +127,7 @@ export const POST = withAuth(async (request, { supabase }) => {
       .select("id")
       .eq("clinic_id", clinicConfig.clinicId)
       .eq("doctor_id", appt.doctor_id)
-      .eq("preferred_date", appt.appointment_date!)
+      .eq("preferred_date", appt.appointment_date)
       .eq("status", "waiting")
       .order("created_at", { ascending: true })
       .limit(1)
@@ -98,7 +141,8 @@ export const POST = withAuth(async (request, { supabase }) => {
     }
 
     return NextResponse.json({ status: "cancelled", message: "Appointment cancelled successfully" });
-  } catch {
+  } catch (err) {
+    console.error("[cancel] Error:", err instanceof Error ? err.message : "Unknown error");
     return NextResponse.json({ error: "Failed to cancel appointment" }, { status: 500 });
   }
 }, null);
@@ -133,7 +177,14 @@ export const GET = withAuth(async (request, { supabase }) => {
     });
   }
 
-  const appointmentDateTime = clinicDateTime(appt.appointment_date!, appt.start_time!);
+  if (!appt.appointment_date || !appt.start_time) {
+    return NextResponse.json({
+      canCancel: false,
+      reason: "Appointment is missing date or time information",
+    });
+  }
+
+  const appointmentDateTime = clinicDateTime(appt.appointment_date, appt.start_time);
   const hoursUntilAppt = (appointmentDateTime.getTime() - Date.now()) / (1000 * 60 * 60);
   const cancellationWindowHours = clinicConfig.booking.cancellationHours;
 

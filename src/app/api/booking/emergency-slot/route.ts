@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase-server";
 import { clinicConfig } from "@/config/clinic.config";
 import { withAuth } from "@/lib/with-auth";
+import { findOrCreatePatient } from "@/lib/find-or-create-patient";
 
 export const runtime = "edge";
 
@@ -105,34 +106,22 @@ export const POST = withAuth(async (request, { supabase }) => {
       }
 
       // Find or create patient
-      let patientId = body.patientId;
-      if (patientId.startsWith("patient-")) {
-        const { data: existing } = await supabase
-          .from("users")
-          .select("id")
-          .eq("clinic_id", clinicConfig.clinicId)
-          .eq("name", body.patientName)
-          .eq("role", "patient")
-          .limit(1)
-          .single();
-
-        if (existing) {
-          patientId = existing.id;
-        } else {
-          const { data: newPatient } = await supabase
-            .from("users")
-            .insert({
-              clinic_id: clinicConfig.clinicId,
-              name: body.patientName,
-              role: "patient",
-            })
-            .select("id")
-            .single();
-          if (newPatient) patientId = newPatient.id;
-        }
+      const patientId = await findOrCreatePatient(
+        supabase, clinicConfig.clinicId, body.patientId, body.patientName,
+      );
+      if (!patientId) {
+        // Rollback: release the slot claim if patient resolution fails
+        await supabase
+          .from("emergency_slots")
+          .update({ is_booked: false })
+          .eq("id", body.slotId);
+        return NextResponse.json({ error: "Failed to resolve patient" }, { status: 500 });
       }
 
       // Slot is now atomically claimed. Create the appointment.
+      const slotStart = `${claimedSlot.slot_date}T${claimedSlot.start_time}:00`;
+      const slotEnd = `${claimedSlot.slot_date}T${claimedSlot.end_time}:00`;
+
       const { data: appointment, error: apptError } = await supabase
         .from("appointments")
         .insert({
@@ -143,12 +132,14 @@ export const POST = withAuth(async (request, { supabase }) => {
           appointment_date: claimedSlot.slot_date,
           start_time: claimedSlot.start_time,
           end_time: claimedSlot.end_time,
+          slot_start: slotStart,
+          slot_end: slotEnd,
           status: "confirmed",
           is_first_visit: false,
           insurance_flag: false,
           booking_source: "online",
           is_emergency: true,
-        } as never)
+        })
         .select("id")
         .single();
 
@@ -170,7 +161,8 @@ export const POST = withAuth(async (request, { supabase }) => {
     }
 
     return NextResponse.json({ error: "action must be 'create' or 'book'" }, { status: 400 });
-  } catch {
+  } catch (err) {
+    console.error("[emergency-slot] Error:", err instanceof Error ? err.message : "Unknown error");
     return NextResponse.json({ error: "Failed to process emergency slot request" }, { status: 500 });
   }
 }, null);

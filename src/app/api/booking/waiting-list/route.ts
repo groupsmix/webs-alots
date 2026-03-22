@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { clinicConfig } from "@/config/clinic.config";
 import { withAuth } from "@/lib/with-auth";
+import { findOrCreatePatient } from "@/lib/find-or-create-patient";
 
 export const runtime = "edge";
 
@@ -27,35 +28,12 @@ export const POST = withAuth(async (request, { supabase }) => {
       );
     }
 
-    // If patientId looks like a temp ID, try to find or create the patient
-    let patientId = body.patientId;
-    if (patientId.startsWith("patient-")) {
-      const { data: existing } = await supabase
-        .from("users")
-        .select("id")
-        .eq("clinic_id", clinicConfig.clinicId)
-        .eq("name", body.patientName)
-        .eq("role", "patient")
-        .limit(1)
-        .single();
-
-      if (existing) {
-        patientId = existing.id;
-      } else {
-        const { data: newPatient, error: createError } = await supabase
-          .from("users")
-          .insert({
-            clinic_id: clinicConfig.clinicId,
-            name: body.patientName,
-            role: "patient",
-          })
-          .select("id")
-          .single();
-        if (createError || !newPatient) {
-          return NextResponse.json({ error: "Failed to create patient" }, { status: 500 });
-        }
-        patientId = newPatient.id;
-      }
+    // Find or create patient
+    const patientId = await findOrCreatePatient(
+      supabase, clinicConfig.clinicId, body.patientId, body.patientName,
+    );
+    if (!patientId) {
+      return NextResponse.json({ error: "Failed to resolve patient" }, { status: 500 });
     }
 
     const { data: entry, error } = await supabase
