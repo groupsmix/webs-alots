@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import { Camera, Calendar, ChevronLeft, ChevronRight } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -72,12 +73,13 @@ export function ProgressPhotoGallery({ photos }: ProgressPhotoGalleryProps) {
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
                 {datePhotos.map((photo) => (
                   <Card key={photo.id} className="overflow-hidden">
-                    <div className="aspect-square bg-muted flex items-center justify-center">
+                    <div className="relative aspect-square bg-muted flex items-center justify-center">
                       {photo.photo_url ? (
-                        <img
+                        <Image
                           src={photo.photo_url}
                           alt={photo.notes || "Progress photo"}
-                          className="w-full h-full object-cover"
+                          fill
+                          className="object-cover"
                         />
                       ) : (
                         <Camera className="h-8 w-8 text-muted-foreground" />
@@ -112,9 +114,9 @@ export function ProgressPhotoGallery({ photos }: ProgressPhotoGalleryProps) {
             <div className="grid grid-cols-2 gap-4">
               <div className="text-center">
                 <p className="text-xs text-muted-foreground mb-2">Earliest: {sortedPhotos[sortedPhotos.length - 1].photo_date}</p>
-                <div className="aspect-square bg-muted rounded-lg flex items-center justify-center overflow-hidden">
+                <div className="relative aspect-square bg-muted rounded-lg flex items-center justify-center overflow-hidden">
                   {sortedPhotos[sortedPhotos.length - 1].photo_url ? (
-                    <img src={sortedPhotos[sortedPhotos.length - 1].photo_url} alt="Before" className="w-full h-full object-cover" />
+                    <Image src={sortedPhotos[sortedPhotos.length - 1].photo_url} alt="Before" fill className="object-cover" />
                   ) : (
                     <Camera className="h-8 w-8 text-muted-foreground" />
                   )}
@@ -122,9 +124,9 @@ export function ProgressPhotoGallery({ photos }: ProgressPhotoGalleryProps) {
               </div>
               <div className="text-center">
                 <p className="text-xs text-muted-foreground mb-2">Latest: {sortedPhotos[0].photo_date}</p>
-                <div className="aspect-square bg-muted rounded-lg flex items-center justify-center overflow-hidden">
+                <div className="relative aspect-square bg-muted rounded-lg flex items-center justify-center overflow-hidden">
                   {sortedPhotos[0].photo_url ? (
-                    <img src={sortedPhotos[0].photo_url} alt="After" className="w-full h-full object-cover" />
+                    <Image src={sortedPhotos[0].photo_url} alt="After" fill className="object-cover" />
                   ) : (
                     <Camera className="h-8 w-8 text-muted-foreground" />
                   )}

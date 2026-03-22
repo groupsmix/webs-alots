@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Image from "next/image";
 import {
   Camera, Plus, MapPin, Calendar, Tag, Eye,
   AlertTriangle, CheckCircle, Search, Save,
@@ -177,9 +178,9 @@ export default function DermatologyPage() {
               {filteredPhotos.map((photo) => (
                 <Card key={photo.id}>
                   <CardContent className="p-4">
-                    <div className="aspect-square rounded-lg bg-muted flex items-center justify-center mb-3">
+                    <div className="relative aspect-square rounded-lg bg-muted flex items-center justify-center mb-3">
                       {photo.imageUrl ? (
-                        <img src={photo.imageUrl} alt={photo.description} className="rounded-lg object-cover w-full h-full" />
+                        <Image src={photo.imageUrl} alt={photo.description} fill className="rounded-lg object-cover" />
                       ) : (
                         <div className="text-center">
                           <Camera className="h-8 w-8 mx-auto text-muted-foreground" />

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Plus, Image, FileText } from "lucide-react";
+import { Plus, Image as ImageIcon, FileText } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -134,7 +134,7 @@ export default function UltrasoundsPage() {
       {ultrasounds.length === 0 ? (
         <Card>
           <CardContent className="py-10 text-center">
-            <Image className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
+            <ImageIcon className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
             <p className="text-muted-foreground">No ultrasound records yet.</p>
             {activePregnancies.length === 0 && (
               <p className="text-xs text-muted-foreground mt-1">Create an active pregnancy first to add ultrasound records.</p>
@@ -188,7 +188,7 @@ export default function UltrasoundsPage() {
                     <div className="flex gap-2 flex-wrap">
                       {u.imageUrls.map((url, i) => (
                         <a key={i} href={url} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline text-xs flex items-center gap-1">
-                          <Image className="h-3 w-3" /> Image {i + 1}
+                          <ImageIcon className="h-3 w-3" /> Image {i + 1}
                         </a>
                       ))}
                     </div>

@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
-  ClipboardList, Clock, Image,
+  ClipboardList, Clock, Image as ImageIcon,
   ArrowRight, CheckCircle, Hourglass, AlertTriangle,
 } from "lucide-react";
 import Link from "next/link";
@@ -126,7 +126,7 @@ export default function RadiologyDashboardPage() {
               {Object.entries(modalityCounts).sort((a, b) => b[1] - a[1]).map(([modality, count]) => (
                 <div key={modality} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
                   <div className="flex items-center gap-3">
-                    <Image className="h-4 w-4 text-indigo-600" />
+                    <ImageIcon className="h-4 w-4 text-indigo-600" />
                     <span className="font-medium text-sm uppercase">{modality}</span>
                   </div>
                   <Badge variant="outline">{count}</Badge>

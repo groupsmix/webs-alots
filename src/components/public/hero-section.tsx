@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { buttonVariants } from "@/components/ui/button";
 import { clinicConfig } from "@/config/clinic.config";
 import { defaultWebsiteConfig } from "@/lib/website-config";
@@ -34,9 +35,11 @@ export function HeroSection() {
 
           <div className="hidden lg:flex justify-center">
             {cfg.imageUrl ? (
-              <img
+              <Image
                 src={cfg.imageUrl}
                 alt={clinicConfig.name}
+                width={500}
+                height={384}
                 className="rounded-2xl shadow-xl max-h-96 object-cover"
               />
             ) : (

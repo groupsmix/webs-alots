@@ -91,7 +91,10 @@ export default function PharmacistDashboardPage() {
   // ── Sales KPIs (daily / weekly / monthly) ──
   const todaySales = sales.filter((s) => s.date === todayStr);
   const weekSales = sales.filter((s) => s.date >= weekStart && s.date <= todayStr);
-  const monthSales = sales.filter((s) => s.date >= monthStart && s.date <= todayStr);
+  const monthSales = useMemo(
+    () => sales.filter((s) => s.date >= monthStart && s.date <= todayStr),
+    [sales, monthStart, todayStr],
+  );
 
   const todayRevenue = todaySales.reduce((sum, s) => sum + s.total, 0);
   const weekRevenue = weekSales.reduce((sum, s) => sum + s.total, 0);

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import { Award, Languages, GraduationCap, Briefcase } from "lucide-react";
 import { defaultWebsiteConfig } from "@/lib/website-config";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -29,9 +30,11 @@ export default function AboutPage() {
       <div className="max-w-3xl mx-auto">
         <div className="text-center mb-12">
           {cfg.photoUrl ? (
-            <img
+            <Image
               src={cfg.photoUrl}
               alt={cfg.doctorName}
+              width={128}
+              height={128}
               className="h-32 w-32 rounded-full mx-auto mb-4 object-cover shadow-lg"
             />
           ) : (
