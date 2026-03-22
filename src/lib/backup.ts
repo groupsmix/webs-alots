@@ -154,6 +154,10 @@ export async function restoreBackup(
   const restored: BackupTableInfo[] = [];
   const errors: string[] = [];
 
+  // Build an ID mapping so foreign key references between restored
+  // tables stay consistent even though every record gets a new UUID.
+  const idMap = new Map<string, string>();
+
   for (const table of BACKUP_TABLES) {
     const rows = backup.data[table];
     if (!rows || rows.length === 0) {
@@ -161,14 +165,38 @@ export async function restoreBackup(
       continue;
     }
 
-    // Override clinic_id to target clinic
-    const mappedRows = rows.map((row) => ({
-      ...row,
-      clinic_id: targetClinicId,
-    }));
+    // Generate new UUIDs for all records to prevent cross-tenant
+    // data injection via known/colliding IDs.
+    const mappedRows = rows.map((row) => {
+      const oldId = row.id as string | undefined;
+      const newId = crypto.randomUUID();
+      if (oldId) {
+        idMap.set(oldId, newId);
+      }
+
+      const mapped: Record<string, unknown> = { ...row };
+      mapped.id = newId;
+      mapped.clinic_id = targetClinicId;
+
+      // Remap known foreign key fields that reference other restored records
+      const fkFields = [
+        "patient_id",
+        "doctor_id",
+        "appointment_id",
+        "invoice_id",
+        "treatment_plan_id",
+      ];
+      for (const fk of fkFields) {
+        if (typeof mapped[fk] === "string" && idMap.has(mapped[fk] as string)) {
+          mapped[fk] = idMap.get(mapped[fk] as string);
+        }
+      }
+
+      return mapped;
+    });
 
     const { error } = await supabase.from(table)
-      .upsert(mappedRows as never[], { onConflict: "id" });
+      .insert(mappedRows as never[]);
 
     if (error) {
       errors.push(`${table}: ${error.message}`);

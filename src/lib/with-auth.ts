@@ -58,15 +58,7 @@ export function withAuth(
         );
       }
 
-      // If no role checking needed, skip profile lookup
-      if (allowedRoles === null) {
-        return handler(request, {
-          supabase,
-          user,
-          profile: { id: user.id, role: "patient" as UserRole, clinic_id: null },
-        });
-      }
-
+      // Always fetch the real profile from the database
       const { data: profile } = await supabase
         .from("users")
         .select("id, role, clinic_id")
@@ -80,7 +72,8 @@ export function withAuth(
         );
       }
 
-      if (!allowedRoles.includes(profile.role as UserRole)) {
+      // If specific roles are required, enforce them
+      if (allowedRoles !== null && !allowedRoles.includes(profile.role as UserRole)) {
         return NextResponse.json(
           { error: "Forbidden — insufficient permissions" },
           { status: 403 },
