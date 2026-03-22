@@ -78,9 +78,13 @@ export async function POST(request: NextRequest) {
 
     const supabase = await createClient();
 
-    for (const entry of entries) {
+    // MED-04: Process webhook entries in parallel using Promise.allSettled.
+    // Each entry is independent (different sender/message), so there is no
+    // ordering dependency. This reduces total latency from O(n) to O(1) for
+    // batched webhooks with multiple entries.
+    await Promise.allSettled(entries.map(async (entry) => {
       const msgInfo = extractMessageInfo(entry);
-      if (!msgInfo) continue;
+      if (!msgInfo) return;
 
       const upperText = msgInfo.text.trim().toUpperCase();
 
@@ -113,7 +117,7 @@ export async function POST(request: NextRequest) {
           `[Webhook] Cannot resolve clinic for WABA phone_number_id=${wabaPhoneNumberId}. ` +
           `Skipping message from ${msgInfo.senderPhone} to prevent cross-tenant access.`
         );
-        continue;
+        return;
       }
 
       // Patient lookup is now always scoped to the resolved clinic
@@ -183,7 +187,7 @@ export async function POST(request: NextRequest) {
         );
       }
       // Other messages are logged for receptionist review
-    }
+    }));
 
     return NextResponse.json({ status: "ok" });
   } catch (err) {

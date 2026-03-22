@@ -200,8 +200,10 @@ export async function checkPlanLimits(
   const supabase = await createClient();
 
   // Run all three independent count queries in parallel
+  // MED-03: Use UTC methods to determine the month start so the billing
+  // boundary is consistent regardless of the server's local timezone.
   const now = new Date();
-  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split("T")[0];
+  const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)).toISOString().split("T")[0];
 
   const [doctorResult, patientResult, appointmentResult] = await Promise.all([
     supabase

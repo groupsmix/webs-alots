@@ -223,6 +223,10 @@ export async function POST(request: NextRequest) {
       });
     }
 
+    // MED-10: Set a timeout for the upstream SSE stream to prevent
+    // holding the worker/connection indefinitely if the AI provider hangs.
+    const STREAM_TIMEOUT_MS = 30_000;
+
     // Stream the response back to the client
     const stream = new ReadableStream({
       async start(controller) {
@@ -235,10 +239,23 @@ export async function POST(request: NextRequest) {
         const decoder = new TextDecoder();
         const encoder = new TextEncoder();
 
+        // MED-10: Abort the stream if no data arrives within the timeout
+        let timeoutId: ReturnType<typeof setTimeout> | null = setTimeout(() => {
+          console.warn("[chat] SSE stream timed out after", STREAM_TIMEOUT_MS, "ms");
+          reader.cancel().catch(() => {});
+        }, STREAM_TIMEOUT_MS);
+
         try {
           while (true) {
             const { done, value } = await reader.read();
             if (done) break;
+
+            // Reset timeout on each chunk received
+            if (timeoutId) { clearTimeout(timeoutId); }
+            timeoutId = setTimeout(() => {
+              console.warn("[chat] SSE stream timed out after", STREAM_TIMEOUT_MS, "ms");
+              reader.cancel().catch(() => {});
+            }, STREAM_TIMEOUT_MS);
 
             const chunk = decoder.decode(value, { stream: true });
             const lines = chunk.split("\n").filter((line) => line.trim() !== "");
@@ -264,6 +281,7 @@ export async function POST(request: NextRequest) {
             }
           }
         } finally {
+          if (timeoutId) { clearTimeout(timeoutId); }
           reader.releaseLock();
           controller.close();
         }

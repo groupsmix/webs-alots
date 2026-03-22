@@ -4,6 +4,12 @@ import { extractSubdomain } from "@/lib/subdomain";
 import { TENANT_HEADERS } from "@/lib/tenant";
 import { rateLimitRules, extractClientIp } from "@/lib/rate-limit";
 
+// HIGH-01: In-memory cache for subdomain → clinic mapping.
+// Avoids a database query on every single request for the same subdomain.
+// TTL is 5 minutes; stale entries are lazily evicted on next lookup.
+const CLINIC_CACHE_TTL_MS = 5 * 60 * 1000;
+const clinicCache = new Map<string, { clinic: { id: string; name: string; subdomain: string; type: string; tier: string }; expiresAt: number }>();
+
 // Role to allowed route prefix mapping
 const ROLE_ROUTE_MAP: Record<string, string> = {
   super_admin: "/super-admin",
@@ -209,12 +215,25 @@ export async function middleware(request: NextRequest) {
   );
 
   // --- Resolve clinic from subdomain ---
+  // HIGH-01: Use in-memory cache to avoid a DB query on every request.
   if (subdomain) {
-    const { data: clinic } = await supabase
-      .from("clinics")
-      .select("id, name, type, tier, subdomain")
-      .eq("subdomain", subdomain)
-      .single();
+    let clinic: { id: string; name: string; subdomain: string; type: string; tier: string } | null = null;
+    const cached = clinicCache.get(subdomain);
+    if (cached && cached.expiresAt > Date.now()) {
+      clinic = cached.clinic;
+    } else {
+      // Cache miss or expired — query DB and refresh cache
+      clinicCache.delete(subdomain);
+      const { data } = await supabase
+        .from("clinics")
+        .select("id, name, type, tier, subdomain")
+        .eq("subdomain", subdomain)
+        .single();
+      clinic = data;
+      if (clinic) {
+        clinicCache.set(subdomain, { clinic, expiresAt: Date.now() + CLINIC_CACHE_TTL_MS });
+      }
+    }
 
     if (!clinic) {
       // Unknown subdomain → redirect to root domain

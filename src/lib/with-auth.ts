@@ -21,6 +21,12 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/types/database";
 import type { User } from "@supabase/supabase-js";
 
+// MED-09: Rate-limit the warning log for null allowedRoles to avoid
+// flooding production logs under high traffic. Only emit the warning
+// once per 60 seconds regardless of request volume.
+let _lastNullRoleWarnAt = 0;
+const NULL_ROLE_WARN_INTERVAL_MS = 60_000;
+
 export interface AuthContext {
   supabase: SupabaseClient<Database>;
   user: User;
@@ -77,10 +83,15 @@ export function withAuth(
       // allowed).  This is discouraged — prefer an explicit role list
       // to follow deny-by-default.
       if (allowedRoles === null) {
-        console.warn(
-          `[withAuth] Route accessed without explicit role restriction (user ${user.id}, role ${profile.role}). ` +
-          "Consider specifying allowedRoles for defense-in-depth.",
-        );
+        // MED-09: Rate-limit this warning to once per 60 seconds
+        const now = Date.now();
+        if (now - _lastNullRoleWarnAt > NULL_ROLE_WARN_INTERVAL_MS) {
+          _lastNullRoleWarnAt = now;
+          console.warn(
+            `[withAuth] Route accessed without explicit role restriction (user ${user.id}, role ${profile.role}). ` +
+            "Consider specifying allowedRoles for defense-in-depth.",
+          );
+        }
       } else if (!allowedRoles.includes(profile.role as UserRole)) {
         return NextResponse.json(
           { error: "Forbidden — insufficient permissions" },

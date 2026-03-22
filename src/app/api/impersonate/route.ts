@@ -62,7 +62,11 @@ export const POST = withAuth(async (request, { supabase, user }) => {
       maxAge: 60 * 60 * 4, // 4 hours
     });
 
-    response.cookies.set("sa_impersonate_clinic_name", encodeURIComponent(clinicName || clinic.name), {
+    // MED-08: Store clinic ID reference instead of the clinic name in the cookie.
+    // The name was previously stored URL-encoded, but it is visible in browser
+    // dev tools and proxy logs. Using the ID avoids leaking domain-specific info;
+    // the name can be looked up server-side from the ID when needed.
+    response.cookies.set("sa_impersonate_clinic_name_hash", clinic.id, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "strict",
@@ -103,6 +107,15 @@ export const DELETE = withAuth(async (_request, { supabase, user }) => {
       maxAge: 0,
     });
 
+    // MED-08: Clear the renamed cookie (was sa_impersonate_clinic_name)
+    response.cookies.set("sa_impersonate_clinic_name_hash", "", {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      path: "/",
+      maxAge: 0,
+    });
+    // Also clear the old cookie name for clients that still have it
     response.cookies.set("sa_impersonate_clinic_name", "", {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",

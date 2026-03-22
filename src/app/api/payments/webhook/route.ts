@@ -167,9 +167,15 @@ async function verifyStripeSignature(
 
     if (!timestamp || !signature) return false;
 
+    // MED-07: Explicitly validate that the timestamp is a valid integer.
+    // parseInt on garbage returns NaN, and Math.abs(now - NaN) is NaN
+    // which happens to be > 300 (correct rejection), but this is fragile.
+    const ts = parseInt(timestamp, 10);
+    if (isNaN(ts)) return false;
+
     // Check timestamp tolerance (5 minutes)
     const now = Math.floor(Date.now() / 1000);
-    if (Math.abs(now - parseInt(timestamp, 10)) > 300) return false;
+    if (Math.abs(now - ts) > 300) return false;
 
     const signedPayload = `${timestamp}.${payload}`;
     const expectedSignature = await hmacSha256Hex(secret, signedPayload);
