@@ -36,8 +36,15 @@ const MAX_MESSAGE_LENGTH = 2000;
  * bar against common injection patterns.
  */
 function sanitizeUserInput(text: string): string {
+  // Normalize Unicode homoglyphs that are commonly used to bypass
+  // keyword-based filters (e.g. U+A731 "ꜱ" → "s").
+  let normalized = text.normalize("NFKC");
+
+  // Strip zero-width characters used to break up keywords
+  normalized = normalized.replace(/[\u200B-\u200F\u2028-\u202F\uFEFF]/g, "");
+
   return (
-    text
+    normalized
       // Strip attempts to impersonate system/assistant roles
       // (covers whitespace/zero-width tricks between characters)
       .replace(/^\s*(s\s*y\s*s\s*t\s*e\s*m|a\s*s\s*s\s*i\s*s\s*t\s*a\s*n\s*t)\s*:/gi, "")
@@ -47,8 +54,35 @@ function sanitizeUserInput(text: string): string {
       .replace(/<\|im_(start|end)\|>\s*(system|assistant)?/gi, "")
       // Strip XML-style role tags
       .replace(/<\/?(system|assistant|instruction)[^>]*>/gi, "")
+      // Strip common prompt injection phrases
+      .replace(/ignore\s+(all\s+)?(previous|above|prior)\s+(instructions?|prompts?|rules?)/gi, "[filtered]")
+      .replace(/you\s+are\s+now\s+(a|an|in)\b/gi, "[filtered]")
+      .replace(/new\s+instructions?\s*:/gi, "[filtered]")
+      .replace(/override\s+(system|instructions?|rules?)/gi, "[filtered]")
       // Collapse excessive whitespace
       .replace(/\n{3,}/g, "\n\n")
+      .trim()
+  );
+}
+
+/**
+ * Sanitize LLM output before returning to the client.
+ *
+ * Prevents the model from leaking system prompt content, internal
+ * configuration details, or generating harmful output.
+ */
+function sanitizeLlmOutput(text: string): string {
+  return (
+    text
+      // Strip any system prompt fragments the model might echo back
+      .replace(/===\s*(INFORMATIONS|HORAIRES|SERVICES|MÉDECINS|FAQ|RÈGLES)\s*===/gi, "")
+      // Remove internal markers that should not appear in output
+      .replace(/<\|im_(start|end)\|>[^\n]*/gi, "")
+      .replace(/<\/?(system|instruction)[^>]*>/gi, "")
+      // Strip markdown code blocks that contain "system" or "prompt"
+      .replace(/```(?:system|prompt)[\s\S]*?```/gi, "")
+      // Prevent output of raw API keys, tokens, or secret patterns
+      .replace(/\b(sk-[a-zA-Z0-9]{20,}|Bearer\s+[a-zA-Z0-9._-]{20,})\b/g, "[redacted]")
       .trim()
   );
 }
@@ -153,7 +187,7 @@ export async function POST(request: NextRequest) {
         const content = cfData.result?.response;
         if (content) {
           return NextResponse.json({
-            message: { role: "assistant" as const, content },
+            message: { role: "assistant" as const, content: sanitizeLlmOutput(content) },
           });
         }
       }
@@ -246,9 +280,12 @@ export async function POST(request: NextRequest) {
                   const json = JSON.parse(line.slice(6));
                   const content = json.choices?.[0]?.delta?.content;
                   if (content) {
-                    controller.enqueue(
-                      encoder.encode(`data: ${JSON.stringify({ content })}\n\n`),
-                    );
+                    const cleaned = sanitizeLlmOutput(content);
+                    if (cleaned) {
+                      controller.enqueue(
+                        encoder.encode(`data: ${JSON.stringify({ content: cleaned })}\n\n`),
+                      );
+                    }
                   }
                 } catch {
                   // Skip malformed JSON chunks
