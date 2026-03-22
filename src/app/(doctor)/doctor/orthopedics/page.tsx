@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Image from "next/image";
+import NextImage from "next/image";
 import {
   Bone, Plus, Save, Calendar, Image as ImageIcon,
   Target, CheckCircle, Clock, AlertTriangle,
@@ -171,7 +171,7 @@ export default function OrthopedicsPage() {
                   <CardContent className="p-4">
                     <div className="relative aspect-video rounded-lg bg-muted flex items-center justify-center mb-3">
                       {xray.imageUrl ? (
-                        <Image src={xray.imageUrl} alt={xray.bodyPart} fill className="rounded-lg object-cover" />
+                        <NextImage src={xray.imageUrl} alt={xray.bodyPart} fill className="rounded-lg object-cover" />
                       ) : (
                         <ImageIcon className="h-8 w-8 text-muted-foreground" />
                       )}

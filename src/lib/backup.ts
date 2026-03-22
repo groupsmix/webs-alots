@@ -168,7 +168,7 @@ export async function restoreBackup(
     }));
 
     const { error } = await supabase.from(table)
-      .upsert(mappedRows, { onConflict: "id" });
+      .upsert(mappedRows as never[], { onConflict: "id" });
 
     if (error) {
       errors.push(`${table}: ${error.message}`);

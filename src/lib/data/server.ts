@@ -34,7 +34,7 @@ async function query<T>(
 
   if (opts?.eq) {
     for (const [col, val] of opts.eq) {
-      q = q.eq(col, val);
+      q = q.eq(col, val as string);
     }
   }
   if (opts?.inFilter) {
@@ -66,7 +66,7 @@ async function queryOne<T>(
   let q = supabase.from(table).select(opts?.select ?? "*");
   if (opts?.eq) {
     for (const [col, val] of opts.eq) {
-      q = q.eq(col, val);
+      q = q.eq(col, val as string);
     }
   }
   const { data, error } = await q.single();
@@ -489,7 +489,7 @@ export async function getPrescriptions(clinicId: string, doctorId?: string): Pro
     console.error("[data] Error fetching prescriptions:", error.message);
     return [];
   }
-  return (data ?? []) as PrescriptionRow[];
+  return (data ?? []) as unknown as PrescriptionRow[];
 }
 
 export async function getPatientPrescriptions(patientId: string): Promise<PrescriptionRow[]> {
@@ -1131,7 +1131,7 @@ export async function createRadiologyImage(data: {
       ...data,
       is_dicom: data.is_dicom ?? false,
       dicom_metadata: data.dicom_metadata ?? {},
-    })
+    } as never)
     .select("id")
     .single();
   if (error) {

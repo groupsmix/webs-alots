@@ -107,7 +107,7 @@ export async function POST(request: NextRequest) {
       gender: body.gender || null,
       insurance_type: body.insurance_type || null,
       address: body.address || null,
-    })
+    } as never)
     .select()
     .single();
 

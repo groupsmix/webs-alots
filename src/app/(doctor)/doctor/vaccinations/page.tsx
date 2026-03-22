@@ -60,8 +60,7 @@ export default function VaccinationsPage() {
     notes: "",
   });
 
-  useEffect(() => {
-    async function load() {
+  const load = async () => {
     const user = await getCurrentUser();
     if (!user?.clinic_id) { setLoading(false); return; }
     const [v, p] = await Promise.all([
@@ -79,8 +78,11 @@ export default function VaccinationsPage() {
     setVaccinations(updated);
     setPatients(p);
     setLoading(false);
-  }
+  };
+
+  useEffect(() => {
     load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedPatient]);
 
   const handleSave = async () => {

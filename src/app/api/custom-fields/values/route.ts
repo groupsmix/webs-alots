@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase-server";
+import type { UserRole } from "@/lib/types/database";
 
 export const runtime = "edge";
+
+const STAFF_ROLES: UserRole[] = ["super_admin", "clinic_admin", "receptionist", "doctor"];
 
 /**
  * GET /api/custom-fields/values?clinic_id=...&entity_type=...&entity_id=...
@@ -9,6 +12,20 @@ export const runtime = "edge";
  * Returns custom field values for a specific entity instance.
  */
 export async function GET(request: NextRequest) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+  }
+  const { data: profile } = await supabase
+    .from("users")
+    .select("role")
+    .eq("auth_id", user.id)
+    .single();
+  if (!profile || !STAFF_ROLES.includes(profile.role as UserRole)) {
+    return NextResponse.json({ error: "Forbidden \u2014 insufficient permissions" }, { status: 403 });
+  }
+
   const clinicId = request.nextUrl.searchParams.get("clinic_id");
   const entityType = request.nextUrl.searchParams.get("entity_type");
   const entityId = request.nextUrl.searchParams.get("entity_id");
@@ -19,8 +36,6 @@ export async function GET(request: NextRequest) {
       { status: 400 },
     );
   }
-
-  const supabase = await createClient();
 
   const { data, error } = await supabase
     .from("custom_field_values")
@@ -50,6 +65,20 @@ export async function GET(request: NextRequest) {
  */
 export async function POST(request: NextRequest) {
   try {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+    }
+    const { data: profile } = await supabase
+      .from("users")
+      .select("role")
+      .eq("auth_id", user.id)
+      .single();
+    if (!profile || !STAFF_ROLES.includes(profile.role as UserRole)) {
+      return NextResponse.json({ error: "Forbidden \u2014 insufficient permissions" }, { status: 403 });
+    }
+
     const body = await request.json();
     const { clinic_id, entity_type, entity_id, field_values } = body;
 
@@ -59,8 +88,6 @@ export async function POST(request: NextRequest) {
         { status: 400 },
       );
     }
-
-    const supabase = await createClient();
 
     // Upsert: insert or update on conflict
     const { data, error } = await supabase
@@ -103,6 +130,20 @@ export async function POST(request: NextRequest) {
  */
 export async function PATCH(request: NextRequest) {
   try {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+    }
+    const { data: profile } = await supabase
+      .from("users")
+      .select("role")
+      .eq("auth_id", user.id)
+      .single();
+    if (!profile || !STAFF_ROLES.includes(profile.role as UserRole)) {
+      return NextResponse.json({ error: "Forbidden \u2014 insufficient permissions" }, { status: 403 });
+    }
+
     const body = await request.json();
     const { clinic_id, entity_type, entity_id, field_values } = body;
 
@@ -112,8 +153,6 @@ export async function PATCH(request: NextRequest) {
         { status: 400 },
       );
     }
-
-    const supabase = await createClient();
 
     // Get existing values
     const { data: existing } = await supabase
