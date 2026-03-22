@@ -137,16 +137,20 @@ export async function deleteFromR2(key: string): Promise<void> {
 export async function getPresignedUploadUrl(
   key: string,
   contentType: string,
-  expiresIn = 3600,
+  expiresIn = 600,
+  maxSizeBytes: number = 10 * 1024 * 1024, // HIGH-07: Default 10 MB limit
 ): Promise<string | null> {
   const client = getClient();
   const config = getR2Config();
   if (!client || !config) return null;
 
+  // HIGH-07: Include ContentLength in the presigned URL to enforce size limits.
+  // The presigned URL will only accept uploads up to maxSizeBytes.
   const command = new PutObjectCommand({
     Bucket: config.bucketName,
     Key: key,
     ContentType: contentType,
+    ContentLength: maxSizeBytes,
   });
 
   return getSignedUrl(client, command, { expiresIn });
@@ -190,9 +194,12 @@ export function buildUploadKey(
   filename: string,
 ): string {
   const timestamp = Date.now();
+  // MED-06: Add a random suffix to prevent key collisions when two files
+  // are uploaded in the same millisecond with the same filename.
+  const rand = crypto.randomUUID().slice(0, 8);
   // Sanitize all path segments to prevent path-traversal (../ etc.)
   const safeClinicId = clinicId.replace(/[^a-zA-Z0-9_-]/g, "_");
   const safeCategory = category.replace(/[^a-zA-Z0-9_-]/g, "_");
   const safeFilename = filename.replace(/[^a-zA-Z0-9._-]/g, "_");
-  return `clinics/${safeClinicId}/${safeCategory}/${timestamp}-${safeFilename}`;
+  return `clinics/${safeClinicId}/${safeCategory}/${timestamp}-${rand}-${safeFilename}`;
 }

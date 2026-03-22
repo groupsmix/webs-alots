@@ -29,22 +29,34 @@ export async function authenticateApiKey(
   const keyHash = await sha256Hex(apiKey);
   const keyPrefix = apiKey.slice(0, 8);
 
-  // Try hash-based lookup first (new keys)
-  const { data: hashedRow } = await supabase
+  // HIGH-04: Use .limit() instead of .single() to handle prefix collisions.
+  // With .single(), if two keys share a prefix, both clinics get a 500 error.
+  // By iterating over candidates, we gracefully handle collisions.
+  const { data: candidates } = await supabase
     .from("clinic_api_keys")
     .select("clinic_id, active, key_hash")
     .eq("key_prefix", keyPrefix)
-    .single();
+    .eq("active", true)
+    .limit(10);
 
-  if (!hashedRow?.key_hash || !hashedRow.active) return null;
-  if (!timingSafeEqual(hashedRow.key_hash, keyHash)) return null;
+  if (!candidates || candidates.length === 0) return null;
 
-  // Update last-used timestamp (fire-and-forget)
-  await supabase
-    .from("clinic_api_keys")
-    .update({ last_used_at: new Date().toISOString() })
-    .eq("key_prefix", keyPrefix)
-    .eq("key_hash", keyHash);
+  // Check each candidate with timing-safe comparison
+  for (const candidate of candidates) {
+    if (!candidate.key_hash) continue;
+    if (timingSafeEqual(candidate.key_hash, keyHash)) {
+      // Fire-and-forget: update last_used_at
+      supabase
+        .from("clinic_api_keys")
+        .update({ last_used_at: new Date().toISOString() })
+        .eq("key_hash", keyHash)
+        .then(({ error }) => {
+          if (error) console.error("[api-auth] Failed to update last_used_at:", error.message);
+        });
 
-  return { clinicId: hashedRow.clinic_id };
+      return { clinicId: candidate.clinic_id };
+    }
+  }
+
+  return null;
 }

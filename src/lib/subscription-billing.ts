@@ -102,11 +102,11 @@ export const SUBSCRIPTION_PLANS: PlanConfig[] = [
     priceYearly: 5990,
     currency: "MAD",
     features: ["Unlimited doctors", "Unlimited patients", "Unlimited appointments", "SMS & WhatsApp (500/mo)", "Custom domain", "Video consultations", "Full analytics"],
-    // FIX (MED-02): Use Number.MAX_SAFE_INTEGER instead of Infinity.
-    // JSON.stringify({ max: Infinity }) produces null, breaking serialization.
-    maxDoctors: Number.MAX_SAFE_INTEGER,
-    maxPatients: Number.MAX_SAFE_INTEGER,
-    maxAppointmentsPerMonth: Number.MAX_SAFE_INTEGER,
+    // MED-02: Use -1 sentinel for "unlimited" instead of Number.MAX_SAFE_INTEGER
+    // which displays as 9007199254740991 in UIs and JSON responses.
+    maxDoctors: -1,
+    maxPatients: -1,
+    maxAppointmentsPerMonth: -1,
     smsCredits: 500,
     whatsappCredits: 500,
     customDomain: true,
@@ -120,11 +120,11 @@ export const SUBSCRIPTION_PLANS: PlanConfig[] = [
     priceYearly: 9990,
     currency: "MAD",
     features: ["Everything in Professional", "API access", "Priority support", "Unlimited SMS & WhatsApp", "White-label branding", "Multi-location"],
-    maxDoctors: Number.MAX_SAFE_INTEGER,
-    maxPatients: Number.MAX_SAFE_INTEGER,
-    maxAppointmentsPerMonth: Number.MAX_SAFE_INTEGER,
-    smsCredits: Number.MAX_SAFE_INTEGER,
-    whatsappCredits: Number.MAX_SAFE_INTEGER,
+    maxDoctors: -1,
+    maxPatients: -1,
+    maxAppointmentsPerMonth: -1,
+    smsCredits: -1,
+    whatsappCredits: -1,
     customDomain: true,
     videoConsultation: true,
     apiAccess: true,
@@ -225,13 +225,14 @@ export async function checkPlanLimits(
   const patientCount = patientResult.count ?? 0;
   const appointmentCount = appointmentResult.count ?? 0;
 
-  if (doctorCount > config.maxDoctors) {
+  // MED-02: -1 means "unlimited" — skip the check for unlimited limits
+  if (config.maxDoctors !== -1 && doctorCount > config.maxDoctors) {
     exceeded.push(`Doctors: ${doctorCount}/${config.maxDoctors}`);
   }
-  if (patientCount > config.maxPatients) {
+  if (config.maxPatients !== -1 && patientCount > config.maxPatients) {
     exceeded.push(`Patients: ${patientCount}/${config.maxPatients}`);
   }
-  if (appointmentCount > config.maxAppointmentsPerMonth) {
+  if (config.maxAppointmentsPerMonth !== -1 && appointmentCount > config.maxAppointmentsPerMonth) {
     exceeded.push(`Appointments this month: ${appointmentCount}/${config.maxAppointmentsPerMonth}`);
   }
 
@@ -359,11 +360,17 @@ async function chargeViaStripe(
     return { success: false, error: "Stripe not configured" };
   }
 
+  // HIGH-02: Add idempotency key to prevent duplicate charges on retry.
+  // The key is scoped to the customer + current date to ensure that a
+  // failed cron retry on the same day does not create a second charge.
+  const idempotencyKey = `renewal-${customerId}-${new Date().toISOString().split("T")[0]}`;
+
   const response = await fetch("https://api.stripe.com/v1/payment_intents", {
     method: "POST",
     headers: {
       Authorization: `Bearer ${stripeKey}`,
       "Content-Type": "application/x-www-form-urlencoded",
+      "Idempotency-Key": idempotencyKey,
     },
     body: new URLSearchParams({
       amount: String(Math.round(amount * 100)), // Stripe uses cents
