@@ -121,12 +121,21 @@ export async function POST(request: NextRequest) {
 
     if (userError) {
       console.error("[onboarding] create user:", userError.message);
-      // Clinic was created but user failed — still return success with warning
-      return NextResponse.json({
-        status: "partial",
-        message: "Clinic created but admin user could not be added",
-        clinic_id: clinic.id,
-      });
+
+      // Roll back the orphaned clinic so the user can retry onboarding
+      const { error: deleteError } = await supabase
+        .from("clinics")
+        .delete()
+        .eq("id", clinic.id);
+
+      if (deleteError) {
+        console.error("[onboarding] failed to clean up orphaned clinic:", deleteError.message);
+      }
+
+      return NextResponse.json(
+        { error: "Failed to create admin user. Please try again." },
+        { status: 500 },
+      );
     }
 
     return NextResponse.json({

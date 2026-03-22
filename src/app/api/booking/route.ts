@@ -60,8 +60,17 @@ async function validateBookingRequest(body: BookingRequestBody): Promise<string 
     return "Valid phone number is required";
   }
 
-  const d = new Date(body.date);
-  const dayOfWeek = d.getDay();
+  // Reject past dates (compared in the clinic's configured timezone)
+  const tz = clinicConfig.timezone ?? "Africa/Casablanca";
+  const todayInTz = new Date().toLocaleDateString("en-CA", { timeZone: tz }); // "YYYY-MM-DD"
+  if (body.date < todayInTz) {
+    return "Cannot book an appointment in the past";
+  }
+
+  // Parse day-of-week using noon to avoid DST edge cases.
+  // Date string "YYYY-MM-DD" parsed at noon is safe across all timezones.
+  const parsedDate = new Date(body.date + "T12:00:00");
+  const dayOfWeek = parsedDate.getDay();
   const hours = clinicConfig.workingHours[dayOfWeek];
   if (!hours?.enabled) {
     return "Selected date is not a working day";

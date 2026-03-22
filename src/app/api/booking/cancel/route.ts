@@ -2,6 +2,20 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase-server";
 import { clinicConfig } from "@/config/clinic.config";
 
+/** Build a timezone-aware Date for a date + time string using the clinic's timezone. */
+function clinicDateTime(dateStr: string, timeStr: string): Date {
+  const tz = clinicConfig.timezone ?? "Africa/Casablanca";
+  // Build an ISO-ish string and use the formatter to get the UTC offset
+  // so the resulting Date object represents the correct instant.
+  const naive = new Date(`${dateStr}T${timeStr}:00`);
+  // Compute offset: format the same instant in the target TZ and compare
+  const inTz = new Date(
+    naive.toLocaleString("en-US", { timeZone: tz }),
+  );
+  const offsetMs = inTz.getTime() - naive.getTime();
+  return new Date(naive.getTime() - offsetMs);
+}
+
 export const runtime = "edge";
 
 /**
@@ -38,8 +52,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check cancellation window
-    const appointmentDateTime = new Date(`${appt.appointment_date}T${appt.start_time}`);
+    // Check cancellation window (timezone-aware)
+    const appointmentDateTime = clinicDateTime(appt.appointment_date!, appt.start_time!);
     const hoursUntilAppt = (appointmentDateTime.getTime() - Date.now()) / (1000 * 60 * 60);
     const cancellationWindowHours = clinicConfig.booking.cancellationHours;
 
@@ -123,7 +137,7 @@ export async function GET(request: NextRequest) {
     });
   }
 
-  const appointmentDateTime = new Date(`${appt.appointment_date}T${appt.start_time}`);
+  const appointmentDateTime = clinicDateTime(appt.appointment_date!, appt.start_time!);
   const hoursUntilAppt = (appointmentDateTime.getTime() - Date.now()) / (1000 * 60 * 60);
   const cancellationWindowHours = clinicConfig.booking.cancellationHours;
 
