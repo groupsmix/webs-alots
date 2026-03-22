@@ -120,11 +120,18 @@ export async function GET(request: NextRequest) {
       const displayDate = appt.appointment_date ?? apptDatetime.toISOString().split("T")[0];
       const displayTime = appt.start_time ?? apptDatetime.toISOString().split("T")[1]?.slice(0, 5) ?? "";
 
-      // Check if this reminder was already sent (idempotency guard).
-      // We track sent reminders via markers in the notes field to avoid
-      // duplicate sends when the cron job fires twice within the same window.
-      const reminderMarker = `[${trigger}_sent]`;
-      if (appt.notes && (appt.notes as string).includes(reminderMarker)) {
+      // Idempotency: check if this reminder was already sent by looking
+      // for an existing reminder_log entry with a UNIQUE (appointment_id, trigger)
+      // constraint. This is more robust than the previous notes-field marker.
+      const { data: existingLog } = await supabase
+        .from("reminder_log")
+        .select("id")
+        .eq("appointment_id", appt.id)
+        .eq("trigger", trigger)
+        .limit(1)
+        .maybeSingle();
+
+      if (existingLog) {
         continue;
       }
 
@@ -145,13 +152,16 @@ export async function GET(request: NextRequest) {
       const success = dispatchResults.some((r) => r.success);
       results.push({ appointmentId: appt.id, type: trigger, success });
 
-      // Mark the appointment so subsequent cron runs skip this reminder
+      // Record the sent reminder in the reminder_log table for idempotency.
+      // The UNIQUE constraint on (appointment_id, trigger) prevents duplicates
+      // even if two cron invocations race.
       if (success) {
-        const existingNotes = (appt.notes as string) ?? "";
         await supabase
-          .from("appointments")
-          .update({ notes: `${existingNotes} ${reminderMarker}`.trim() })
-          .eq("id", appt.id);
+          .from("reminder_log")
+          .upsert(
+            { appointment_id: appt.id, trigger, sent_at: new Date().toISOString() },
+            { onConflict: "appointment_id,trigger" },
+          );
       }
     }
 

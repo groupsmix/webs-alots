@@ -110,11 +110,12 @@ export const POST = withAuth(async (request, { supabase, user }) => {
 
     // Create the clinic admin user
     const { error: userError } = await supabase.from("users").insert({
+      auth_id: user.id,
       clinic_id: clinic.id,
       role: "clinic_admin",
       name: body.owner_name,
       phone: body.phone,
-      email: body.email ?? null,
+      email: body.email ?? user.email ?? null,
     });
 
     if (userError) {

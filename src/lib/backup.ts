@@ -113,7 +113,7 @@ export async function generateBackupJson(
  */
 export function validateBackup(
   json: string,
-): { valid: boolean; manifest?: BackupManifest; error?: string } {
+): { valid: boolean; manifest?: BackupManifest; parsed?: BackupData; error?: string } {
   try {
     const parsed = JSON.parse(json) as BackupData;
 
@@ -129,7 +129,7 @@ export function validateBackup(
       return { valid: false, error: "Invalid backup: missing data section" };
     }
 
-    return { valid: true, manifest: parsed.manifest };
+    return { valid: true, manifest: parsed.manifest, parsed };
   } catch {
     return { valid: false, error: "Invalid JSON format" };
   }
@@ -145,17 +145,24 @@ export function validateBackup(
 export async function restoreBackup(
   json: string,
   targetClinicId: string,
+  callerRole?: string,
 ): Promise<{
   success: boolean;
   restored: BackupTableInfo[];
   errors: string[];
 }> {
+  // Authorization: only clinic_admin or super_admin may restore backups
+  if (callerRole !== "clinic_admin" && callerRole !== "super_admin") {
+    return { success: false, restored: [], errors: ["Unauthorized: only clinic admins can restore backups"] };
+  }
+
   const validation = validateBackup(json);
   if (!validation.valid) {
     return { success: false, restored: [], errors: [validation.error!] };
   }
 
-  const backup = JSON.parse(json) as BackupData;
+  // Reuse the already-parsed object from validation to avoid double JSON.parse
+  const backup = validation.parsed!;
   const supabase = await createClient();
   const restored: BackupTableInfo[] = [];
   const errors: string[] = [];
@@ -185,12 +192,27 @@ export async function restoreBackup(
       mapped.clinic_id = targetClinicId;
 
       // Remap known foreign key fields that reference other restored records
+      // Strip sensitive fields from user records to prevent privilege escalation
+      if (table === "users") {
+        delete mapped.auth_id;
+        delete mapped.role;
+        mapped.role = "patient"; // Default restored users to patient role
+      }
+
+      // Remap all known foreign key fields that reference other restored records
       const fkFields = [
         "patient_id",
         "doctor_id",
         "appointment_id",
         "invoice_id",
         "treatment_plan_id",
+        "service_id",
+        "bed_id",
+        "room_id",
+        "department_id",
+        "admitting_doctor_id",
+        "product_id",
+        "prescription_id",
       ];
       for (const fk of fkFields) {
         if (typeof mapped[fk] === "string" && idMap.has(mapped[fk] as string)) {

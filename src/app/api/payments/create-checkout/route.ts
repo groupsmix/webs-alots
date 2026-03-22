@@ -19,7 +19,7 @@ import { withAuth } from "@/lib/with-auth";
  *
  * Requires: STRIPE_SECRET_KEY env var
  */
-export const POST = withAuth(async (request, { user }) => {
+export const POST = withAuth(async (request, { user, profile }) => {
   const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
 
   if (!stripeSecretKey) {
@@ -72,6 +72,10 @@ export const POST = withAuth(async (request, { user }) => {
     if (patientId) params.append("metadata[patient_id]", patientId);
     if (appointmentId) params.append("metadata[appointment_id]", appointmentId);
     params.append("metadata[user_id]", user.id);
+    // Always include clinic_id so the webhook handler can record the payment
+    if (profile.clinic_id) {
+      params.append("metadata[clinic_id]", profile.clinic_id);
+    }
     for (const [key, value] of Object.entries(metadata)) {
       params.append(`metadata[${key}]`, value);
     }

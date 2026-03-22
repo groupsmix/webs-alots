@@ -917,6 +917,7 @@ export async function updateAppointmentStatus(
     console.error("[data] update appointment:", error.message);
     return false;
   }
+  clearLookupCache();
   return true;
 }
 
@@ -939,6 +940,7 @@ export async function createPayment(data: {
     console.error("[data] create payment:", error.message);
     return false;
   }
+  clearLookupCache();
   return true;
 }
 

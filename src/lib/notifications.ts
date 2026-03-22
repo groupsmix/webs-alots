@@ -424,9 +424,28 @@ export async function dispatchNotification(
         case "email": {
           const subject = substituteVariables(template.subject, variables);
           const body = substituteVariables(template.body, variables);
+
+          // Look up the recipient's actual email address (recipientId is a UUID)
+          const { createClient } = await import("@/lib/supabase-server");
+          const supabase = await createClient();
+          const { data: recipient } = await supabase
+            .from("users")
+            .select("email")
+            .eq("id", recipientId)
+            .single();
+
+          if (!recipient?.email) {
+            results.push({
+              channel: "email",
+              success: false,
+              error: "Recipient has no email address on file",
+            });
+            break;
+          }
+
           const { sendNotificationEmail } = await import("./email");
           const emailResult = await sendNotificationEmail(
-            recipientId,
+            recipient.email,
             subject,
             body,
             variables.clinic_name,

@@ -31,7 +31,8 @@ const CSRF_EXEMPT_PREFIXES = [
   "/api/webhooks",
   "/api/payments/webhook",
   "/api/payments/cmi/callback",
-  "/api/cron/",
+  "/api/cron/reminders",
+  "/api/cron/billing",
 ];
 
 function isCsrfExempt(pathname: string): boolean {
@@ -159,9 +160,10 @@ export async function middleware(request: NextRequest) {
       console.warn("[rate-limit] Could not determine client IP — applying strict limit");
     }
 
-    // Use a per-request unique key for unknown IPs so each gets its own
-    // very small bucket instead of sharing one "unknown" bucket.
-    const rateLimitKey = clientIp ?? `unknown-${crypto.randomUUID()}`;
+    // Use a shared "unknown" key for requests without a client IP so they
+    // share a single rate-limit bucket instead of each getting its own
+    // (which effectively bypasses rate limiting).
+    const rateLimitKey = clientIp ?? "unknown-ip";
 
     const rule = rateLimitRules.find((r) => pathname.startsWith(r.prefix));
     if (rule && !rule.limiter.check(rateLimitKey)) {

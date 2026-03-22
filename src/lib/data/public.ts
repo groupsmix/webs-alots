@@ -167,6 +167,16 @@ export async function getPublicAverageRating(): Promise<number> {
   const clinicId = getClinicId();
   const supabase = await createClient();
 
+  // Use count + individual star counts to compute average without fetching all rows
+  const { count } = await supabase
+    .from("reviews")
+    .select("id", { count: "exact", head: true })
+    .eq("clinic_id", clinicId);
+
+  if (!count || count === 0) return 0;
+
+  // Fetch just the stars column (lightweight) since Supabase JS doesn't support
+  // aggregate functions like AVG() directly.
   const { data } = await supabase
     .from("reviews")
     .select("stars")
@@ -236,8 +246,10 @@ export async function getPublicDoctors(): Promise<PublicDoctor[]> {
 
 // ── Specialties (derived from doctors) ──
 
-export async function getPublicSpecialties(): Promise<PublicSpecialty[]> {
-  const doctors = await getPublicDoctors();
+export async function getPublicSpecialties(
+  preFetchedDoctors?: PublicDoctor[],
+): Promise<PublicSpecialty[]> {
+  const doctors = preFetchedDoctors ?? await getPublicDoctors();
   const seen = new Map<string, PublicSpecialty>();
 
   for (const d of doctors) {
@@ -306,7 +318,8 @@ export async function getPublicGeneratedSlots(
   date: string,
   doctorId: string,
 ): Promise<string[]> {
-  const dayOfWeek = new Date(date).getDay();
+  // Use noon-based parsing to avoid UTC day-of-week issues near midnight
+  const dayOfWeek = new Date(date + "T12:00:00").getDay();
   const slotConfigs = await getPublicTimeSlots(doctorId);
   const daySlots = slotConfigs.filter((s) => s.dayOfWeek === dayOfWeek);
 
