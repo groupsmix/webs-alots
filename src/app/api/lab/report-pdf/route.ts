@@ -10,6 +10,10 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { uploadToR2, isR2Configured, buildUploadKey } from "@/lib/r2";
 import { updateLabOrderPdfUrl } from "@/lib/data/server";
+import { createClient } from "@/lib/supabase-server";
+import type { UserRole } from "@/lib/types/database";
+
+const STAFF_ROLES: UserRole[] = ["super_admin", "clinic_admin", "receptionist", "doctor"];
 
 interface LabResultItem {
   testName: string;
@@ -120,6 +124,20 @@ function generateLabReportHtml(data: {
 
 export async function POST(request: NextRequest) {
   try {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+    }
+    const { data: profile } = await supabase
+      .from("users")
+      .select("role")
+      .eq("auth_id", user.id)
+      .single();
+    if (!profile || !STAFF_ROLES.includes(profile.role as UserRole)) {
+      return NextResponse.json({ error: "Forbidden \u2014 insufficient permissions" }, { status: 403 });
+    }
+
     const body = await request.json();
     const { orderId, clinicId, patientName, orderNumber, results } = body;
 

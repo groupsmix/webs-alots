@@ -82,6 +82,7 @@ export default function VaccinationsPage() {
 
   useEffect(() => {
     load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedPatient]);
 
   const handleSave = async () => {

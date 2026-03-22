@@ -13,6 +13,9 @@ import {
   isR2Configured,
   buildUploadKey,
 } from "@/lib/r2";
+import type { UserRole } from "@/lib/types/database";
+
+const ADMIN_ROLES: UserRole[] = ["super_admin", "clinic_admin"];
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
 
@@ -74,6 +77,20 @@ export async function GET() {
 // ── PUT — update text branding fields (colors, fonts) ──
 
 export async function PUT(request: NextRequest) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+  }
+  const { data: profile } = await supabase
+    .from("users")
+    .select("role")
+    .eq("auth_id", user.id)
+    .single();
+  if (!profile || !ADMIN_ROLES.includes(profile.role as UserRole)) {
+    return NextResponse.json({ error: "Forbidden \u2014 admin only" }, { status: 403 });
+  }
+
   const clinicId = clinicConfig.clinicId;
   const body = await request.json();
 
@@ -126,6 +143,20 @@ export async function PUT(request: NextRequest) {
 // ── POST — upload a branding image and save URL ──
 
 export async function POST(request: NextRequest) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+  }
+  const { data: profile } = await supabase
+    .from("users")
+    .select("role")
+    .eq("auth_id", user.id)
+    .single();
+  if (!profile || !ADMIN_ROLES.includes(profile.role as UserRole)) {
+    return NextResponse.json({ error: "Forbidden \u2014 admin only" }, { status: 403 });
+  }
+
   const clinicId = clinicConfig.clinicId;
 
   if (!isR2Configured()) {
