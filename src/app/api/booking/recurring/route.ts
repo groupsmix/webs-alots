@@ -37,6 +37,7 @@ export const POST = withAuth(async (request, { supabase }) => {
       // Create fields
       patientId?: string;
       patientName?: string;
+      patientPhone?: string;
       doctorId?: string;
       serviceId?: string;
       date?: string;
@@ -59,12 +60,18 @@ export const POST = withAuth(async (request, { supabase }) => {
         );
       }
 
+      // Input length validation to prevent DoS via oversized payloads
+      if (body.patientName.length > 200 || (body.patientPhone && body.patientPhone.length > 30)) {
+        return NextResponse.json({ error: "Input exceeds maximum allowed length" }, { status: 400 });
+      }
+
       const services = await getPublicServices();
       const service = body.serviceId ? services.find((s) => s.id === body.serviceId) : undefined;
 
-      // Find or create patient
+      // Find or create patient (prefer phone-based lookup to avoid name collisions)
       const patientId = await findOrCreatePatient(
         supabase, clinicConfig.clinicId, body.patientId, body.patientName,
+        { phone: body.patientPhone },
       );
       if (!patientId) {
         return NextResponse.json({ error: "Failed to resolve patient" }, { status: 500 });

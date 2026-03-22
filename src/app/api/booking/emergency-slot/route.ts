@@ -25,6 +25,7 @@ export const POST = withAuth(async (request, { supabase }) => {
       slotId?: string;
       patientId?: string;
       patientName?: string;
+      patientPhone?: string;
       serviceId?: string;
     };
 
@@ -34,6 +35,11 @@ export const POST = withAuth(async (request, { supabase }) => {
           { error: "doctorId, date, startTime, and durationMin are required" },
           { status: 400 },
         );
+      }
+
+      // Input length validation to prevent DoS via oversized payloads
+      if (body.reason && body.reason.length > 1000) {
+        return NextResponse.json({ error: "Reason exceeds maximum allowed length" }, { status: 400 });
       }
 
       // Verify doctor exists
@@ -87,6 +93,11 @@ export const POST = withAuth(async (request, { supabase }) => {
         );
       }
 
+      // Input length validation to prevent DoS via oversized payloads
+      if (body.patientName.length > 200 || (body.patientPhone && body.patientPhone.length > 30)) {
+        return NextResponse.json({ error: "Input exceeds maximum allowed length" }, { status: 400 });
+      }
+
       // ATOMIC: Claim the slot only if it is currently unbooked.
       // This eliminates the TOCTOU race condition by combining check + update.
       const { data: claimedSlot, error: claimError } = await supabase
@@ -105,9 +116,10 @@ export const POST = withAuth(async (request, { supabase }) => {
         );
       }
 
-      // Find or create patient
+      // Find or create patient (prefer phone-based lookup to avoid name collisions)
       const patientId = await findOrCreatePatient(
         supabase, clinicConfig.clinicId, body.patientId, body.patientName,
+        { phone: body.patientPhone },
       );
       if (!patientId) {
         // Rollback: release the slot claim if patient resolution fails

@@ -15,6 +15,7 @@ export const POST = withAuth(async (request, { supabase }) => {
     const body = (await request.json()) as {
       patientId: string;
       patientName: string;
+      patientPhone?: string;
       doctorId: string;
       preferredDate: string;
       preferredTime?: string;
@@ -28,9 +29,15 @@ export const POST = withAuth(async (request, { supabase }) => {
       );
     }
 
-    // Find or create patient
+    // Input length validation to prevent DoS via oversized payloads
+    if (body.patientName.length > 200 || (body.patientPhone && body.patientPhone.length > 30)) {
+      return NextResponse.json({ error: "Input exceeds maximum allowed length" }, { status: 400 });
+    }
+
+    // Find or create patient (prefer phone-based lookup to avoid name collisions)
     const patientId = await findOrCreatePatient(
       supabase, clinicConfig.clinicId, body.patientId, body.patientName,
+      { phone: body.patientPhone },
     );
     if (!patientId) {
       return NextResponse.json({ error: "Failed to resolve patient" }, { status: 500 });
@@ -60,7 +67,8 @@ export const POST = withAuth(async (request, { supabase }) => {
       message: "Added to waiting list",
       entryId: entry.id,
     });
-  } catch {
+  } catch (err) {
+    console.error("[POST /api/booking/waiting-list] Unexpected error:", err instanceof Error ? err.message : "Unknown error");
     return NextResponse.json({ error: "Failed to add to waiting list" }, { status: 500 });
   }
 }, null);
@@ -127,7 +135,8 @@ export const DELETE = withAuth(async (request, { supabase }) => {
     const { error } = await supabase
       .from("waiting_list")
       .delete()
-      .eq("id", body.entryId);
+      .eq("id", body.entryId)
+      .eq("clinic_id", clinicConfig.clinicId);
 
     if (error) {
       console.error("[DELETE /api/booking/waiting-list] Error:", error.message);
@@ -135,7 +144,8 @@ export const DELETE = withAuth(async (request, { supabase }) => {
     }
 
     return NextResponse.json({ status: "removed", message: "Removed from waiting list" });
-  } catch {
+  } catch (err) {
+    console.error("[DELETE /api/booking/waiting-list] Unexpected error:", err instanceof Error ? err.message : "Unknown error");
     return NextResponse.json({ error: "Failed to remove from waiting list" }, { status: 500 });
   }
 }, null);

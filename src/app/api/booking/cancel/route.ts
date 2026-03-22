@@ -67,6 +67,11 @@ export const POST = withAuth(async (request, { supabase }) => {
       return NextResponse.json({ error: "appointmentId is required" }, { status: 400 });
     }
 
+    // Input length validation to prevent DoS via oversized payloads
+    if (body.reason && body.reason.length > 1000) {
+      return NextResponse.json({ error: "Reason exceeds maximum allowed length" }, { status: 400 });
+    }
+
     // Fetch the appointment
     const { data: appt, error: fetchError } = await supabase
       .from("appointments")
