@@ -128,7 +128,14 @@ export async function middleware(request: NextRequest) {
       allowedOrigins.add(`${request.nextUrl.protocol}//${rootDomain}`);
     }
 
-    if (origin && !allowedOrigins.has(origin)) {
+    if (!origin) {
+      return NextResponse.json(
+        { error: "CSRF validation failed: missing origin header" },
+        { status: 403 },
+      );
+    }
+
+    if (!allowedOrigins.has(origin)) {
       return NextResponse.json(
         { error: "CSRF validation failed: origin not allowed" },
         { status: 403 },
