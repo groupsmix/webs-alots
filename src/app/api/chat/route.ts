@@ -248,7 +248,8 @@ export async function POST(request: NextRequest) {
         Connection: "keep-alive",
       },
     });
-  } catch {
+  } catch (err) {
+    console.error("[POST /api/chat] Error:", err instanceof Error ? err.message : "Unknown error");
     return NextResponse.json(
       { error: "Failed to process chat message" },
       { status: 500 },

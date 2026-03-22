@@ -66,7 +66,8 @@ export const POST = withAuth(async (request, { supabase, profile }) => {
     );
 
     return NextResponse.json({ results });
-  } catch {
+  } catch (err) {
+    console.error("[POST /api/notifications] Error:", err instanceof Error ? err.message : "Unknown error");
     return NextResponse.json(
       { error: "Failed to dispatch notification" },
       { status: 500 },
@@ -126,7 +127,8 @@ export const GET = withAuth(async (request, { supabase, profile }) => {
       notifications: notifications ?? [],
       total: count ?? 0,
     });
-  } catch {
+  } catch (err) {
+    console.error("[GET /api/notifications] Error:", err instanceof Error ? err.message : "Unknown error");
     return NextResponse.json(
       { error: "Failed to fetch notifications" },
       { status: 500 },

@@ -152,7 +152,8 @@ async function verifyStripeSignature(
     const expectedSignature = await hmacSha256Hex(secret, signedPayload);
 
     return timingSafeEqual(expectedSignature, signature);
-  } catch {
+  } catch (err) {
+    console.error("[Stripe Webhook] Signature verification error:", err instanceof Error ? err.message : "Unknown error");
     return false;
   }
 }

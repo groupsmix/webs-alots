@@ -57,7 +57,8 @@ export const POST = withAuth(async (request, { supabase }) => {
     }
 
     return NextResponse.json({ status: "confirmed", message: "Payment confirmed" });
-  } catch {
+  } catch (err) {
+    console.error("[POST /api/booking/payment/confirm] Error:", err instanceof Error ? err.message : "Unknown error");
     return NextResponse.json({ error: "Failed to confirm payment" }, { status: 500 });
   }
 }, STAFF_ROLES);

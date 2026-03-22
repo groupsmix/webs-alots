@@ -141,7 +141,8 @@ export const POST = withAuth(async (request, { supabase, user }) => {
       message: "Clinic registered successfully",
       clinic_id: clinic.id,
     });
-  } catch {
+  } catch (err) {
+    console.error("[POST /api/onboarding] Error:", err instanceof Error ? err.message : "Unknown error");
     return NextResponse.json(
       { error: "Failed to process onboarding" },
       { status: 500 },

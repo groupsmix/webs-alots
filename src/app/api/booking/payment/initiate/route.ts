@@ -133,7 +133,8 @@ export const POST = withAuth(async (request, { supabase }) => {
       paymentId: payment.id,
       gatewaySessionId,
     });
-  } catch {
+  } catch (err) {
+    console.error("[POST /api/booking/payment/initiate] Error:", err instanceof Error ? err.message : "Unknown error");
     return NextResponse.json({ error: "Failed to initiate payment" }, { status: 500 });
   }
 }, STAFF_ROLES);
