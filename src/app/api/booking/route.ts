@@ -146,28 +146,31 @@ export async function POST(request: NextRequest) {
 
     const supabase = await createClient();
 
-    // Verify doctorId belongs to this clinic (defense-in-depth against RLS bypass)
-    const { data: verifiedDoctor } = await supabase
-      .from("users")
-      .select("id")
-      .eq("id", body.doctorId)
-      .eq("clinic_id", clinicConfig.clinicId)
-      .eq("role", "doctor")
-      .single();
+    // Verify doctorId and serviceId belong to this clinic in a single
+    // parallel query instead of two sequential ones.  This also avoids
+    // re-fetching data that validateBookingRequest already retrieved
+    // from the public data layer.
+    const [doctorCheck, serviceCheck] = await Promise.all([
+      supabase
+        .from("users")
+        .select("id")
+        .eq("id", body.doctorId)
+        .eq("clinic_id", clinicConfig.clinicId)
+        .eq("role", "doctor")
+        .single(),
+      supabase
+        .from("services")
+        .select("id")
+        .eq("id", body.serviceId)
+        .eq("clinic_id", clinicConfig.clinicId)
+        .single(),
+    ]);
 
-    if (!verifiedDoctor) {
+    if (!doctorCheck.data) {
       return NextResponse.json({ error: "Doctor not found in this clinic" }, { status: 400 });
     }
 
-    // Verify serviceId belongs to this clinic
-    const { data: verifiedService } = await supabase
-      .from("services")
-      .select("id")
-      .eq("id", body.serviceId)
-      .eq("clinic_id", clinicConfig.clinicId)
-      .single();
-
-    if (!verifiedService) {
+    if (!serviceCheck.data) {
       return NextResponse.json({ error: "Service not found in this clinic" }, { status: 400 });
     }
 

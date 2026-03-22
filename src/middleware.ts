@@ -2,7 +2,7 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { extractSubdomain } from "@/lib/subdomain";
 import { TENANT_HEADERS } from "@/lib/tenant";
-import { rateLimitRules } from "@/lib/rate-limit";
+import { rateLimitRules, extractClientIp } from "@/lib/rate-limit";
 
 // Role to allowed route prefix mapping
 const ROLE_ROUTE_MAP: Record<string, string> = {
@@ -151,19 +151,7 @@ export async function middleware(request: NextRequest) {
 
   // --- Rate limiting for API mutations ---
   if (pathname.startsWith("/api/") && MUTATION_METHODS.has(request.method)) {
-    const clientIp =
-      request.headers.get("cf-connecting-ip") ??
-      request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
-      null;
-
-    if (!clientIp) {
-      console.warn("[rate-limit] Could not determine client IP — applying strict limit");
-    }
-
-    // Use a shared "unknown" key for requests without a client IP so they
-    // share a single rate-limit bucket instead of each getting its own
-    // (which effectively bypasses rate limiting).
-    const rateLimitKey = clientIp ?? "unknown-ip";
+    const rateLimitKey = extractClientIp(request);
 
     const rule = rateLimitRules.find((r) => pathname.startsWith(r.prefix));
     if (rule && !rule.limiter.check(rateLimitKey)) {

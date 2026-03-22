@@ -83,35 +83,73 @@ export const POST = withAuth(async (request, { supabase, user }) => {
       legacyTypeMap[body.category] ??
       "doctor";
 
-    // Create the clinic
-    const { data: clinic, error: clinicError } = await supabase.from("clinics")
-      .insert({
-        name: body.clinic_name,
-        type: legacyType,
-        clinic_type_key: body.clinic_type_key,
-        tier: "pro",
-        status: "active",
-        config: {
-          city: body.city ?? null,
-          phone: body.phone,
-          email: body.email ?? null,
-        },
-      })
+    // --- Idempotency guard ---
+    // If a previous request created the clinic but failed on the user
+    // insert (or the response was lost), re-check for an orphaned clinic
+    // owned by this auth user before creating a new one.  This narrows
+    // the race window where a retry would leave a duplicate clinic.
+    const { data: orphanedClinic } = await supabase
+      .from("clinics")
       .select("id")
-      .single();
+      .eq("name", body.clinic_name)
+      .eq("clinic_type_key", body.clinic_type_key)
+      .limit(1)
+      .maybeSingle();
 
-    if (clinicError || !clinic) {
-      console.error("[onboarding] create clinic:", clinicError?.message);
-      return NextResponse.json(
-        { error: "Failed to create clinic" },
-        { status: 500 },
-      );
+    let clinicId: string;
+
+    if (orphanedClinic) {
+      // Verify no admin user exists for this clinic yet (true orphan)
+      const { data: existingAdmin } = await supabase
+        .from("users")
+        .select("id")
+        .eq("clinic_id", orphanedClinic.id)
+        .eq("role", "clinic_admin")
+        .limit(1)
+        .maybeSingle();
+
+      if (existingAdmin) {
+        // Clinic already has an admin — this is a genuine duplicate
+        return NextResponse.json(
+          { error: "A clinic with this name already exists" },
+          { status: 409 },
+        );
+      }
+
+      // Reuse the orphaned clinic instead of creating another
+      clinicId = orphanedClinic.id;
+    } else {
+      // Create the clinic
+      const { data: clinic, error: clinicError } = await supabase.from("clinics")
+        .insert({
+          name: body.clinic_name,
+          type: legacyType,
+          clinic_type_key: body.clinic_type_key,
+          tier: "pro",
+          status: "active",
+          config: {
+            city: body.city ?? null,
+            phone: body.phone,
+            email: body.email ?? null,
+          },
+        })
+        .select("id")
+        .single();
+
+      if (clinicError || !clinic) {
+        console.error("[onboarding] create clinic:", clinicError?.message);
+        return NextResponse.json(
+          { error: "Failed to create clinic" },
+          { status: 500 },
+        );
+      }
+      clinicId = clinic.id;
     }
 
     // Create the clinic admin user
     const { error: userError } = await supabase.from("users").insert({
       auth_id: user.id,
-      clinic_id: clinic.id,
+      clinic_id: clinicId,
       role: "clinic_admin",
       name: body.owner_name,
       phone: body.phone,
@@ -121,11 +159,21 @@ export const POST = withAuth(async (request, { supabase, user }) => {
     if (userError) {
       console.error("[onboarding] create user:", userError.message);
 
+      // If this is a unique constraint violation on auth_id, the user
+      // was already created (concurrent retry) — treat as success.
+      if (userError.code === "23505") {
+        return NextResponse.json({
+          status: "created",
+          message: "Clinic registered successfully (deduplicated)",
+          clinic_id: clinicId,
+        });
+      }
+
       // Roll back the orphaned clinic so the user can retry onboarding
       const { error: deleteError } = await supabase
         .from("clinics")
         .delete()
-        .eq("id", clinic.id);
+        .eq("id", clinicId);
 
       if (deleteError) {
         console.error("[onboarding] failed to clean up orphaned clinic:", deleteError.message);
@@ -140,7 +188,7 @@ export const POST = withAuth(async (request, { supabase, user }) => {
     return NextResponse.json({
       status: "created",
       message: "Clinic registered successfully",
-      clinic_id: clinic.id,
+      clinic_id: clinicId,
     });
   } catch (err) {
     console.error("[POST /api/onboarding] Error:", err instanceof Error ? err.message : "Unknown error");
