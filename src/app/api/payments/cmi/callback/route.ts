@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase-server";
 import { verifyCmiCallback } from "@/lib/cmi";
+import { APPOINTMENT_STATUS } from "@/lib/types/database";
 
 /**
  * POST /api/payments/cmi/callback
@@ -50,9 +51,9 @@ export async function POST(request: NextRequest) {
         if (payment.appointment_id) {
           await supabase
             .from("appointments")
-            .update({ status: "confirmed" })
+            .update({ status: APPOINTMENT_STATUS.CONFIRMED })
             .eq("id", payment.appointment_id)
-            .in("status", ["pending", "scheduled"]);
+            .in("status", [APPOINTMENT_STATUS.PENDING, APPOINTMENT_STATUS.SCHEDULED]);
         }
       }
 

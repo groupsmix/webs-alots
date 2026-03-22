@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
+import { logAuditEvent } from "@/lib/audit-log";
 import { clinicConfig } from "@/config/clinic.config";
+import { findOrCreatePatient } from "@/lib/find-or-create-patient";
 import type { UserRole } from "@/lib/types/database";
 import { withAuth } from "@/lib/with-auth";
 
@@ -28,6 +30,11 @@ export const POST = withAuth(async (request, { supabase }) => {
         { error: "appointmentId, patientId, patientName, amount, and paymentType are required" },
         { status: 400 },
       );
+    }
+
+    // Input length validation to prevent DoS via oversized payloads
+    if (body.patientName.length > 200) {
+      return NextResponse.json({ error: "Patient name exceeds maximum allowed length" }, { status: 400 });
     }
 
     // Validate payment amount is a positive finite number
@@ -68,32 +75,13 @@ export const POST = withAuth(async (request, { supabase }) => {
       return NextResponse.json({ error: "A payment already exists for this appointment" }, { status: 400 });
     }
 
-    // Find or create patient
-    let patientId = body.patientId;
-    if (patientId.startsWith("patient-")) {
-      const { data: existing } = await supabase
-        .from("users")
-        .select("id")
-        .eq("clinic_id", clinicConfig.clinicId)
-        .eq("name", body.patientName)
-        .eq("role", "patient")
-        .limit(1)
-        .single();
-
-      if (existing) {
-        patientId = existing.id;
-      } else {
-        const { data: newPatient } = await supabase
-          .from("users")
-          .insert({
-            clinic_id: clinicConfig.clinicId,
-            name: body.patientName,
-            role: "patient",
-          })
-          .select("id")
-          .single();
-        if (newPatient) patientId = newPatient.id;
-      }
+    // Find or create patient using shared utility (prefers phone-based lookup
+    // over name-based to avoid assigning payments to the wrong patient).
+    const patientId = await findOrCreatePatient(
+      supabase, clinicConfig.clinicId, body.patientId, body.patientName,
+    );
+    if (!patientId) {
+      return NextResponse.json({ error: "Failed to resolve patient" }, { status: 500 });
     }
 
     const method = body.method ?? "online";
@@ -126,6 +114,14 @@ export const POST = withAuth(async (request, { supabase }) => {
       console.error("[POST /api/booking/payment/initiate] Insert error:", insertError?.message);
       return NextResponse.json({ error: "Failed to initiate payment" }, { status: 500 });
     }
+
+    await logAuditEvent({
+      supabase,
+      action: "payment_initiated",
+      type: "payment",
+      clinicId: clinicConfig.clinicId,
+      description: `Payment initiated: ${body.paymentType} ${body.amount} via ${method} for appointment ${body.appointmentId}`,
+    });
 
     return NextResponse.json({
       status: "initiated",

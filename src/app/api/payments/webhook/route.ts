@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase-server";
 import { hmacSha256Hex, timingSafeEqual } from "@/lib/crypto-utils";
+import { APPOINTMENT_STATUS } from "@/lib/types/database";
 
 /**
  * POST /api/payments/webhook
@@ -95,9 +96,9 @@ export async function POST(request: NextRequest) {
         if (appointmentId) {
           await supabase
             .from("appointments")
-            .update({ status: "confirmed" })
+            .update({ status: APPOINTMENT_STATUS.CONFIRMED })
             .eq("id", appointmentId)
-            .eq("status", "pending");
+            .eq("status", APPOINTMENT_STATUS.PENDING);
         }
 
         console.log(`[Stripe Webhook] Payment completed: ${session.id}`);

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { logAuditEvent } from "@/lib/audit-log";
 import { clinicConfig } from "@/config/clinic.config";
 import { APPOINTMENT_STATUS } from "@/lib/types/database";
 import type { UserRole } from "@/lib/types/database";
@@ -56,6 +57,14 @@ export const POST = withAuth(async (request, { supabase }) => {
         .eq("id", payment.appointment_id)
         .in("status", [APPOINTMENT_STATUS.PENDING, APPOINTMENT_STATUS.SCHEDULED]);
     }
+
+    await logAuditEvent({
+      supabase,
+      action: "payment_confirmed",
+      type: "payment",
+      clinicId: clinicConfig.clinicId,
+      description: `Payment ${body.paymentId} confirmed`,
+    });
 
     return NextResponse.json({ status: "confirmed", message: "Payment confirmed" });
   } catch (err) {
