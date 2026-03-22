@@ -77,6 +77,21 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ message: "No upcoming appointments", sent: 0 });
     }
 
+    // --- Batch idempotency check (avoids N+1 queries) ---
+    // Fetch ALL already-sent reminder logs for the candidate appointments
+    // in a single query, then use a Set for O(1) lookups in the loop.
+    const appointmentIds = appointments.map((a) => a.id);
+    const { data: sentLogs } = await supabase
+      .from("notification_log")
+      .select("appointment_id, trigger")
+      .in("appointment_id", appointmentIds)
+      .eq("channel", "reminder")
+      .eq("status", "sent");
+
+    const alreadySent = new Set(
+      (sentLogs ?? []).map((l) => `${l.appointment_id}:${l.trigger}`),
+    );
+
     const results: { appointmentId: string; type: string; success: boolean }[] = [];
 
     for (const appt of appointments) {
@@ -126,20 +141,9 @@ export async function GET(request: NextRequest) {
       const displayDate = appt.appointment_date ?? apptDatetime.toISOString().split("T")[0];
       const displayTime = appt.start_time ?? apptDatetime.toISOString().split("T")[1]?.slice(0, 5) ?? "";
 
-      // Idempotency: check if this reminder was already sent by looking
-      // for an existing notification_log entry for the same appointment + trigger.
-      // This is more robust than the previous notes-field marker approach.
-      const { data: existingLog } = await supabase
-        .from("notification_log")
-        .select("id")
-        .eq("appointment_id", appt.id)
-        .eq("trigger", trigger)
-        .eq("channel", "reminder")
-        .eq("status", "sent")
-        .limit(1)
-        .maybeSingle();
-
-      if (existingLog) {
+      // Idempotency: skip if this reminder was already sent (checked
+      // via the batch query above instead of one query per appointment).
+      if (alreadySent.has(`${appt.id}:${trigger}`)) {
         continue;
       }
 

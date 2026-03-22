@@ -276,30 +276,33 @@ interface DashboardStats {
 export async function fetchDashboardStats(): Promise<DashboardStats> {
   const supabase = rawClient();
 
-  const [clinicsRes, usersRes, appointmentsRes, paymentsRes] =
+  // Fetch clinics (needed for the listing) alongside lightweight COUNT
+  // queries for patients, appointments, and revenue.  This avoids
+  // pulling every row into memory just to call `.length`.
+  const [clinicsRes, patientCountRes, appointmentCountRes, revenueRes] =
     await Promise.all([
       supabase.from("clinics").select("id, name, type, tier, status, config, created_at"),
       supabase
         .from("users")
-        .select("id, clinic_id, role")
+        .select("id", { count: "exact", head: true })
         .in("role", ["patient"]),
       supabase
         .from("appointments")
-        .select("id, clinic_id, status"),
+        .select("id", { count: "exact", head: true }),
+      // Revenue still needs the `amount` column, but we filter server-side
+      // to only completed payments so the transferred data is smaller.
       supabase
         .from("payments")
-        .select("id, clinic_id, amount, status"),
+        .select("amount")
+        .eq("status", "completed"),
     ]);
 
   const clinics = (clinicsRes.data ?? []) as ClinicRow[];
-  const patients = (usersRes.data ?? []) as { id: string; clinic_id: string; role: string }[];
-  const appointments = (appointmentsRes.data ?? []) as { id: string; clinic_id: string; status: string }[];
-  const payments = (paymentsRes.data ?? []) as { id: string; clinic_id: string; amount: number; status: string }[];
+  const completedPayments = (revenueRes.data ?? []) as { amount: number }[];
 
   const totalClinics = clinics.length;
   const activeClinics = clinics.filter((c) => c.status === "active").length;
-  const totalPatients = patients.length;
-  const completedPayments = payments.filter((p) => p.status === "completed");
+  const totalPatients = patientCountRes.count ?? 0;
   const totalRevenue = completedPayments.reduce(
     (sum, p) => sum + (p.amount ?? 0),
     0,
@@ -310,7 +313,7 @@ export async function fetchDashboardStats(): Promise<DashboardStats> {
     totalClinics,
     activeClinics,
     totalPatients,
-    totalAppointments: appointments.length,
+    totalAppointments: appointmentCountRes.count ?? 0,
     totalRevenue,
   };
 }

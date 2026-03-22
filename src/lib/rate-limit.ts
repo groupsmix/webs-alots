@@ -10,6 +10,25 @@
  *   if (!limiter.check(ip)) { // blocked }
  */
 
+import { NextRequest } from "next/server";
+
+/**
+ * Extract the real client IP from a request, respecting common reverse-proxy
+ * headers.  Cloudflare sets `CF-Connecting-IP`; other proxies use
+ * `X-Forwarded-For` (first entry) or `X-Real-IP`.  Falls back to "unknown"
+ * which effectively rate-limits all header-less requests together — safe for
+ * a server behind a trusted proxy.
+ */
+export function extractClientIp(request: NextRequest): string {
+  return (
+    request.headers.get("cf-connecting-ip") ??
+    request.headers.get("x-real-ip") ??
+    request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
+    request.ip ??
+    "unknown"
+  );
+}
+
 interface RateLimitEntry {
   count: number;
   resetAt: number;
@@ -20,6 +39,8 @@ interface RateLimiterOptions {
   windowMs: number;
   /** Maximum requests allowed per window */
   max: number;
+  /** Maximum number of distinct keys to track (prevents memory exhaustion) */
+  maxKeys?: number;
 }
 
 interface RateLimiter {
@@ -30,7 +51,7 @@ interface RateLimiter {
 }
 
 export function createRateLimiter(options: RateLimiterOptions): RateLimiter {
-  const { windowMs, max } = options;
+  const { windowMs, max, maxKeys = 10_000 } = options;
   const store = new Map<string, RateLimitEntry>();
   const createdAt = Date.now();
   let coldStartWarned = false;
@@ -63,6 +84,15 @@ export function createRateLimiter(options: RateLimiterOptions): RateLimiter {
       }
 
       prune(now);
+
+      // Cap the number of tracked keys to prevent memory exhaustion
+      // from a distributed attack using many distinct IPs.
+      if (store.size >= maxKeys && !store.has(key)) {
+        console.warn(
+          `[rate-limit] Store full (${store.size} keys). Rejecting new key to prevent memory exhaustion.`,
+        );
+        return false;
+      }
 
       const entry = store.get(key);
 
