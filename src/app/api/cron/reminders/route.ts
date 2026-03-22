@@ -92,7 +92,41 @@ export async function GET(request: NextRequest) {
       (sentLogs ?? []).map((l) => `${l.appointment_id}:${l.trigger}`),
     );
 
+    // --- Batch clinic name lookup ---
+    // Resolve clinic names upfront in a single query so notification
+    // templates can include the real clinic name instead of an empty string.
+    const uniqueClinicIds = [...new Set(appointments.map((a) => a.clinic_id).filter(Boolean))] as string[];
+    const clinicNameMap = new Map<string, string>();
+    if (uniqueClinicIds.length > 0) {
+      const { data: clinicRows } = await supabase
+        .from("clinics")
+        .select("id, name")
+        .in("id", uniqueClinicIds);
+      for (const c of clinicRows ?? []) {
+        clinicNameMap.set(c.id, c.name);
+      }
+    }
+
     const results: { appointmentId: string; type: string; success: boolean }[] = [];
+    const pendingLogInserts: {
+      appointment_id: string;
+      trigger: string;
+      channel: string;
+      status: string;
+      clinic_id: string;
+      recipient_name: string;
+      recipient_phone: string;
+    }[] = [];
+
+    // Collect dispatch promises to run in parallel batches
+    const DISPATCH_BATCH_SIZE = 10;
+    const dispatchQueue: {
+      apptId: string;
+      trigger: string;
+      fn: () => Promise<Awaited<ReturnType<typeof dispatchNotification>>>;
+      patient: { id: string; name: string; phone: string };
+      clinicId: string;
+    }[] = [];
 
     for (const appt of appointments) {
       // Parse appointment datetime, falling back to slot_start when
@@ -147,38 +181,61 @@ export async function GET(request: NextRequest) {
         continue;
       }
 
-      const dispatchResults = await dispatchNotification(
+      const clinicName = clinicNameMap.get(appt.clinic_id as string) ?? "Clinic";
+
+      dispatchQueue.push({
+        apptId: appt.id,
         trigger,
-        {
-          patient_name: patient.name,
-          doctor_name: doctor?.name ?? "Doctor",
-          clinic_name: "",
-          date: displayDate,
-          time: displayTime,
-          service_name: service?.name ?? "Appointment",
-        },
-        patient.id,
-        ["whatsapp", "sms", "in_app"],
-      );
-
-      const success = dispatchResults.some((r) => r.success);
-      results.push({ appointmentId: appt.id, type: trigger, success });
-
-      // Record the sent reminder in the notification_log table for idempotency.
-      // Subsequent cron runs will find this entry and skip the reminder.
-      if (success) {
-        await supabase
-          .from("notification_log")
-          .insert({
-            appointment_id: appt.id,
+        fn: () =>
+          dispatchNotification(
             trigger,
+            {
+              patient_name: patient.name,
+              doctor_name: doctor?.name ?? "Doctor",
+              clinic_name: clinicName,
+              date: displayDate,
+              time: displayTime,
+              service_name: service?.name ?? "Appointment",
+            },
+            patient.id,
+            ["whatsapp", "sms", "in_app"],
+          ),
+        patient,
+        clinicId: (appt.clinic_id as string) ?? "",
+      });
+    }
+
+    // Execute dispatches in parallel batches to reduce total latency
+    for (let i = 0; i < dispatchQueue.length; i += DISPATCH_BATCH_SIZE) {
+      const batch = dispatchQueue.slice(i, i + DISPATCH_BATCH_SIZE);
+      const settled = await Promise.allSettled(batch.map((d) => d.fn()));
+
+      for (let j = 0; j < batch.length; j++) {
+        const item = batch[j];
+        const outcome = settled[j];
+        const success =
+          outcome.status === "fulfilled" &&
+          outcome.value.some((r) => r.success);
+
+        results.push({ appointmentId: item.apptId, type: item.trigger, success });
+
+        if (success) {
+          pendingLogInserts.push({
+            appointment_id: item.apptId,
+            trigger: item.trigger,
             channel: "reminder",
             status: "sent",
-            clinic_id: appt.clinic_id,
-            recipient_name: patient.name,
-            recipient_phone: patient.phone,
+            clinic_id: item.clinicId,
+            recipient_name: item.patient.name,
+            recipient_phone: item.patient.phone,
           });
+        }
       }
+    }
+
+    // Batch-insert all notification log entries in a single DB call
+    if (pendingLogInserts.length > 0) {
+      await supabase.from("notification_log").insert(pendingLogInserts);
     }
 
     return NextResponse.json({
