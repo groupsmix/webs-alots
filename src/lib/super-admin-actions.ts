@@ -1,23 +1,26 @@
-"use client";
+"use server";
 
 /**
  * Super Admin Supabase actions — CRUD operations for onboarding clinics.
+ *
+ * Runs server-side as Next.js Server Actions.  The authenticated user's
+ * session is verified via the cookie-based Supabase client, ensuring the
+ * anon key is never exposed and RLS policies are enforced server-side.
+ *
  * All operations require the authenticated user to have role = "super_admin".
  */
 
-import { createBrowserClient } from "@supabase/ssr";
+import { createClient } from "@/lib/supabase-server";
 import type {
   ClinicType,
   ClinicTier,
+  Json,
 } from "@/lib/types/database";
 
-/** Untyped Supabase client so we can work with raw column names from the SQL schema
- *  without conflicting with the typed Database interface. */
-function rawClient() {
-  return createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-  );
+/** Server-side Supabase client that uses the cookie-based auth session
+ *  instead of the public anon key exposed to the browser. */
+async function rawClient() {
+  return createClient();
 }
 
 // Row shapes returned by raw queries (match SQL schema, not the TS Database type)
@@ -103,14 +106,14 @@ export interface CreateTimeSlotInput {
 // ---------- Clinic CRUD ----------
 
 export async function createClinic(input: CreateClinicInput): Promise<ClinicRow> {
-  const supabase = rawClient();
+  const supabase = await rawClient();
   const { data, error } = await supabase
     .from("clinics")
     .insert({
       name: input.name,
       type: input.type,
       tier: input.tier,
-      config: input.config ?? {},
+      config: (input.config ?? {}) as Json,
     })
     .select()
     .single();
@@ -120,7 +123,7 @@ export async function createClinic(input: CreateClinicInput): Promise<ClinicRow>
 }
 
 export async function fetchClinics(): Promise<ClinicRow[]> {
-  const supabase = rawClient();
+  const supabase = await rawClient();
   const { data, error } = await supabase
     .from("clinics")
     .select("*")
@@ -134,7 +137,7 @@ export async function updateClinicStatus(
   clinicId: string,
   status: "active" | "inactive" | "suspended",
 ): Promise<void> {
-  const supabase = rawClient();
+  const supabase = await rawClient();
   const { error } = await supabase
     .from("clinics")
     .update({ status })
@@ -147,7 +150,7 @@ export async function updateClinicStatus(
 // ---------- User CRUD ----------
 
 export async function createUser(input: CreateUserInput): Promise<UserRow> {
-  const supabase = rawClient();
+  const supabase = await rawClient();
   const { data, error } = await supabase
     .from("users")
     .insert({
@@ -165,7 +168,7 @@ export async function createUser(input: CreateUserInput): Promise<UserRow> {
 }
 
 export async function fetchClinicUsers(clinicId: string): Promise<UserRow[]> {
-  const supabase = rawClient();
+  const supabase = await rawClient();
   const { data, error } = await supabase
     .from("users")
     .select("*")
@@ -179,7 +182,7 @@ export async function fetchClinicUsers(clinicId: string): Promise<UserRow[]> {
 // ---------- Service CRUD ----------
 
 export async function createService(input: CreateServiceInput): Promise<ServiceRow> {
-  const supabase = rawClient();
+  const supabase = await rawClient();
   const { data, error } = await supabase
     .from("services")
     .insert({
@@ -197,7 +200,7 @@ export async function createService(input: CreateServiceInput): Promise<ServiceR
 }
 
 export async function fetchClinicServices(clinicId: string): Promise<ServiceRow[]> {
-  const supabase = rawClient();
+  const supabase = await rawClient();
   const { data, error } = await supabase
     .from("services")
     .select("*")
@@ -210,7 +213,7 @@ export async function fetchClinicServices(clinicId: string): Promise<ServiceRow[
 // ---------- Time Slot CRUD ----------
 
 export async function createTimeSlot(input: CreateTimeSlotInput): Promise<TimeSlotRow> {
-  const supabase = rawClient();
+  const supabase = await rawClient();
   const { data, error } = await supabase
     .from("time_slots")
     .insert({
@@ -241,7 +244,7 @@ export async function createTimeSlotsForDoctor(
     buffer_minutes?: number;
   }[],
 ): Promise<TimeSlotRow[]> {
-  const supabase = rawClient();
+  const supabase = await rawClient();
   const rows = slots.map((s) => ({
     doctor_id: doctorId,
     clinic_id: clinicId,
@@ -274,7 +277,7 @@ interface DashboardStats {
 }
 
 export async function fetchDashboardStats(): Promise<DashboardStats> {
-  const supabase = rawClient();
+  const supabase = await rawClient();
 
   // Fetch clinics (needed for the listing) alongside lightweight COUNT
   // queries for patients, appointments, and revenue.  This avoids
@@ -336,7 +339,7 @@ export interface BillingRecord {
 }
 
 export async function fetchBillingRecords(): Promise<BillingRecord[]> {
-  const supabase = rawClient();
+  const supabase = await rawClient();
 
   const [paymentsRes, clinicsRes] = await Promise.all([
     supabase
@@ -394,7 +397,7 @@ export interface Announcement {
 }
 
 export async function fetchAnnouncements(): Promise<Announcement[]> {
-  const supabase = rawClient();
+  const supabase = await rawClient();
   const { data, error } = await supabase
     .from("announcements")
     .select("*")
@@ -430,7 +433,7 @@ export interface ActivityLog {
 }
 
 export async function fetchActivityLogs(): Promise<ActivityLog[]> {
-  const supabase = rawClient();
+  const supabase = await rawClient();
   const { data, error } = await supabase
     .from("activity_logs")
     .select("*")
@@ -464,7 +467,7 @@ export interface FeatureDefinition {
 }
 
 export async function fetchFeatureDefinitions(): Promise<FeatureDefinition[]> {
-  const supabase = rawClient();
+  const supabase = await rawClient();
   const { data, error } = await supabase
     .from("feature_definitions")
     .select("*")
@@ -505,7 +508,7 @@ export interface PricingTierRow {
 }
 
 export async function fetchPricingTiers(): Promise<PricingTierRow[]> {
-  const supabase = rawClient();
+  const supabase = await rawClient();
   const { data, error } = await supabase
     .from("pricing_tiers")
     .select("*")
@@ -542,7 +545,7 @@ export interface FeatureToggleRow {
 }
 
 export async function fetchFeatureToggles(): Promise<FeatureToggleRow[]> {
-  const supabase = rawClient();
+  const supabase = await rawClient();
   const { data, error } = await supabase
     .from("feature_toggles")
     .select("*")
@@ -604,7 +607,7 @@ const TIER_NAMES: Record<string, string> = {
 };
 
 export async function fetchClientSubscriptions(): Promise<ClientSubscription[]> {
-  const supabase = rawClient();
+  const supabase = await rawClient();
 
   const [clinicsRes, paymentsRes] = await Promise.all([
     supabase.from("clinics").select("id, name, type, tier, status, config, created_at"),

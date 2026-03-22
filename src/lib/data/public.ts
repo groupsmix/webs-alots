@@ -167,20 +167,26 @@ export async function getPublicAverageRating(): Promise<number> {
   const clinicId = getClinicId();
   const supabase = await createClient();
 
-  // Use the exact row count (via Supabase HEAD request) combined with
-  // a bounded fetch to compute the average without pulling unbounded
-  // data into memory.  The `count: "exact"` option returns the total
-  // matching rows without transferring the data when used with
-  // `head: true`, but we still need the star values to sum.
-  //
-  // Ideal long-term fix: create a Postgres function
-  //   `SELECT AVG(stars) FROM reviews WHERE clinic_id = $1`
-  // and call it via `supabase.rpc("avg_clinic_rating", { cid })`.
-  //
-  // For now we fetch ALL stars (only the `stars` column — a single
-  // integer per row) to ensure the average is exact rather than
-  // silently capping at 500 rows which skews results for popular
-  // clinics.
+  // Try DB-level AVG via Supabase RPC first (single row returned,
+  // no data transferred).  Falls back to application-level computation
+  // if the RPC function doesn't exist yet.
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: rpcResult, error: rpcError } = await (supabase as any)
+      .rpc("avg_clinic_rating", { cid: clinicId });
+
+    if (!rpcError && rpcResult !== null && rpcResult !== undefined) {
+      const avg = typeof rpcResult === "number" ? rpcResult : Number(rpcResult);
+      if (!isNaN(avg)) {
+        return Math.round(avg * 10) / 10;
+      }
+    }
+  } catch {
+    // RPC function may not exist yet — fall through to in-app computation
+  }
+
+  // Fallback: fetch only the `stars` column (a single integer per row)
+  // and compute the average in the application.
   const { data, count } = await supabase
     .from("reviews")
     .select("stars", { count: "exact" })
