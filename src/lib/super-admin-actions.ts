@@ -276,41 +276,40 @@ interface DashboardStats {
 export async function fetchDashboardStats(): Promise<DashboardStats> {
   const supabase = rawClient();
 
-  const [clinicsRes, usersRes, appointmentsRes, paymentsRes] =
+  // Use count-only queries instead of fetching all rows into memory.
+  // This reduces data transfer from O(n) rows to O(1) counts.
+  const [clinicsRes, patientsCountRes, appointmentsCountRes, revenueRes] =
     await Promise.all([
       supabase.from("clinics").select("id, name, type, tier, status, config, created_at"),
       supabase
         .from("users")
-        .select("id, clinic_id, role")
+        .select("*", { count: "exact", head: true })
         .in("role", ["patient"]),
       supabase
         .from("appointments")
-        .select("id, clinic_id, status"),
+        .select("*", { count: "exact", head: true }),
       supabase
         .from("payments")
-        .select("id, clinic_id, amount, status"),
+        .select("amount")
+        .eq("status", "completed"),
     ]);
 
   const clinics = (clinicsRes.data ?? []) as ClinicRow[];
-  const patients = (usersRes.data ?? []) as { id: string; clinic_id: string; role: string }[];
-  const appointments = (appointmentsRes.data ?? []) as { id: string; clinic_id: string; status: string }[];
-  const payments = (paymentsRes.data ?? []) as { id: string; clinic_id: string; amount: number; status: string }[];
-
-  const totalClinics = clinics.length;
-  const activeClinics = clinics.filter((c) => c.status === "active").length;
-  const totalPatients = patients.length;
-  const completedPayments = payments.filter((p) => p.status === "completed");
+  const completedPayments = (revenueRes.data ?? []) as { amount: number }[];
   const totalRevenue = completedPayments.reduce(
     (sum, p) => sum + (p.amount ?? 0),
     0,
   );
 
+  const totalClinics = clinics.length;
+  const activeClinics = clinics.filter((c) => c.status === "active").length;
+
   return {
     clinics,
     totalClinics,
     activeClinics,
-    totalPatients,
-    totalAppointments: appointments.length,
+    totalPatients: patientsCountRes.count ?? 0,
+    totalAppointments: appointmentsCountRes.count ?? 0,
     totalRevenue,
   };
 }

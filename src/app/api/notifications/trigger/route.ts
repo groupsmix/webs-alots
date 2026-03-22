@@ -94,21 +94,25 @@ export const POST = withAuth(async (request, { supabase, profile }) => {
       );
     }
 
-    // Dispatch to all recipients
-    const allResults = [];
+    // Dispatch to all recipients in parallel instead of sequentially.
+    // Promise.allSettled ensures one failure doesn't block others.
+    const settled = await Promise.allSettled(
+      recipients.map(async (recipient) => {
+        const results = await dispatchNotification(
+          trigger,
+          variables || {},
+          recipient.id,
+          recipient.channels,
+        );
+        return { recipientId: recipient.id, results };
+      }),
+    );
 
-    for (const recipient of recipients) {
-      const results = await dispatchNotification(
-        trigger,
-        variables || {},
-        recipient.id,
-        recipient.channels,
-      );
-      allResults.push({
-        recipientId: recipient.id,
-        results,
-      });
-    }
+    const allResults = settled.map((s) =>
+      s.status === "fulfilled"
+        ? s.value
+        : { recipientId: "unknown", results: [{ channel: "error" as const, success: false, error: String((s as PromiseRejectedResult).reason) }] },
+    );
 
     return NextResponse.json({
       trigger,

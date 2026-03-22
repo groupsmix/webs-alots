@@ -38,12 +38,16 @@ function getR2Config() {
 }
 
 let _client: S3Client | null = null;
+let _clientConfigHash: string | null = null;
 
 function getClient(): S3Client | null {
-  if (_client) return _client;
-
   const config = getR2Config();
   if (!config) return null;
+
+  // Detect credential rotation: rebuild the client if env vars changed
+  // since the singleton was created (important in long-lived edge isolates).
+  const configHash = `${config.accountId}:${config.accessKeyId}:${config.secretAccessKey}:${config.bucketName}`;
+  if (_client && _clientConfigHash === configHash) return _client;
 
   _client = new S3Client({
     region: "auto",
@@ -53,6 +57,7 @@ function getClient(): S3Client | null {
       secretAccessKey: config.secretAccessKey,
     },
   });
+  _clientConfigHash = configHash;
 
   return _client;
 }

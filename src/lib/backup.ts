@@ -59,22 +59,45 @@ export async function createBackup(
   let totalRecords = 0;
 
   for (const table of BACKUP_TABLES) {
-    const { data: rows, error } = await supabase.from(table)
-      .select("*")
-      .eq("clinic_id", clinicId)
-      .order("created_at", { ascending: false });
+    // Paginate to avoid Supabase's default 1000-row limit which would
+    // silently return incomplete data for large clinics.
+    const PAGE_SIZE = 1000;
+    let allRows: Record<string, unknown>[] = [];
+    let offset = 0;
+    let hasMore = true;
+    let tableError = false;
 
-    if (error) {
-      console.error(`[Backup] Failed to export ${table}:`, error.message);
+    while (hasMore) {
+      const { data: rows, error } = await supabase.from(table)
+        .select("*")
+        .eq("clinic_id", clinicId)
+        .order("created_at", { ascending: false })
+        .range(offset, offset + PAGE_SIZE - 1);
+
+      if (error) {
+        console.error(`[Backup] Failed to export ${table}:`, error.message);
+        tableError = true;
+        break;
+      }
+
+      const page = (rows ?? []) as Record<string, unknown>[];
+      allRows = allRows.concat(page);
+      if (page.length < PAGE_SIZE) {
+        hasMore = false;
+      } else {
+        offset += PAGE_SIZE;
+      }
+    }
+
+    if (tableError) {
       data[table] = [];
       tables.push({ name: table, recordCount: 0 });
       continue;
     }
 
-    data[table] = (rows ?? []) as Record<string, unknown>[];
-    const count = data[table].length;
-    tables.push({ name: table, recordCount: count });
-    totalRecords += count;
+    data[table] = allRows;
+    tables.push({ name: table, recordCount: allRows.length });
+    totalRecords += allRows.length;
   }
 
   const manifest: BackupManifest = {
