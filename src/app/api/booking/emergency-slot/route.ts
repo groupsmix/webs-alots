@@ -119,6 +119,9 @@ export const POST = withAuth(async (request, { supabase }) => {
       }
 
       // Slot is now atomically claimed. Create the appointment.
+      const slotStart = `${claimedSlot.slot_date}T${claimedSlot.start_time}:00`;
+      const slotEnd = `${claimedSlot.slot_date}T${claimedSlot.end_time}:00`;
+
       const { data: appointment, error: apptError } = await supabase
         .from("appointments")
         .insert({
@@ -129,12 +132,14 @@ export const POST = withAuth(async (request, { supabase }) => {
           appointment_date: claimedSlot.slot_date,
           start_time: claimedSlot.start_time,
           end_time: claimedSlot.end_time,
+          slot_start: slotStart,
+          slot_end: slotEnd,
           status: "confirmed",
           is_first_visit: false,
           insurance_flag: false,
           booking_source: "online",
           is_emergency: true,
-        } as never)
+        })
         .select("id")
         .single();
 
@@ -156,7 +161,8 @@ export const POST = withAuth(async (request, { supabase }) => {
     }
 
     return NextResponse.json({ error: "action must be 'create' or 'book'" }, { status: 400 });
-  } catch {
+  } catch (err) {
+    console.error("[emergency-slot] Error:", err instanceof Error ? err.message : "Unknown error");
     return NextResponse.json({ error: "Failed to process emergency slot request" }, { status: 500 });
   }
 }, null);

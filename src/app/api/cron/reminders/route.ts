@@ -50,6 +50,7 @@ export async function GET(request: NextRequest) {
         slot_start,
         slot_end,
         status,
+        notes,
         patients:patient_id (id, name, phone),
         doctors:doctor_id (id, name),
         services:service_id (name)
@@ -118,6 +119,14 @@ export async function GET(request: NextRequest) {
       const displayDate = appt.appointment_date ?? apptDatetime.toISOString().split("T")[0];
       const displayTime = appt.start_time ?? apptDatetime.toISOString().split("T")[1]?.slice(0, 5) ?? "";
 
+      // Check if this reminder was already sent (idempotency guard).
+      // We track sent reminders via markers in the notes field to avoid
+      // duplicate sends when the cron job fires twice within the same window.
+      const reminderMarker = `[${trigger}_sent]`;
+      if (appt.notes && (appt.notes as string).includes(reminderMarker)) {
+        continue;
+      }
+
       const dispatchResults = await dispatchNotification(
         trigger,
         {
@@ -134,6 +143,15 @@ export async function GET(request: NextRequest) {
 
       const success = dispatchResults.some((r) => r.success);
       results.push({ appointmentId: appt.id, type: trigger, success });
+
+      // Mark the appointment so subsequent cron runs skip this reminder
+      if (success) {
+        const existingNotes = (appt.notes as string) ?? "";
+        await supabase
+          .from("appointments")
+          .update({ notes: `${existingNotes} ${reminderMarker}`.trim() })
+          .eq("id", appt.id);
+      }
     }
 
     return NextResponse.json({

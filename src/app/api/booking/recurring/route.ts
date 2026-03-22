@@ -93,6 +93,9 @@ export const POST = withAuth(async (request, { supabase }) => {
           continue;
         }
 
+        const slotStart = `${dateStr}T${body.time}:00`;
+        const slotEnd = `${dateStr}T${endTime}:00`;
+
         appointmentRows.push({
           clinic_id: clinicConfig.clinicId,
           patient_id: patientId,
@@ -101,6 +104,8 @@ export const POST = withAuth(async (request, { supabase }) => {
           appointment_date: dateStr,
           start_time: body.time,
           end_time: endTime,
+          slot_start: slotStart,
+          slot_end: slotEnd,
           status: "scheduled",
           is_first_visit: insertIndex === 0 ? (body.isFirstVisit ?? false) : false,
           insurance_flag: body.hasInsurance ?? false,
@@ -121,7 +126,7 @@ export const POST = withAuth(async (request, { supabase }) => {
       // Single bulk insert instead of N sequential queries
       const { data: appointments, error: batchError } = await supabase
         .from("appointments")
-        .insert(appointmentRows as never[])
+        .insert(appointmentRows)
         .select("id");
 
       if (batchError || !appointments || appointments.length === 0) {
@@ -178,7 +183,8 @@ export const POST = withAuth(async (request, { supabase }) => {
     }
 
     return NextResponse.json({ error: "action must be 'create' or 'cancel'" }, { status: 400 });
-  } catch {
+  } catch (err) {
+    console.error("[recurring] Error:", err instanceof Error ? err.message : "Unknown error");
     return NextResponse.json({ error: "Failed to process recurring booking" }, { status: 500 });
   }
 }, null);

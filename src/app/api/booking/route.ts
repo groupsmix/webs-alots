@@ -159,6 +159,10 @@ export async function POST(request: NextRequest) {
     const endMinutes = h * 60 + m + duration;
     const endTime = `${Math.floor(endMinutes / 60).toString().padStart(2, "0")}:${(endMinutes % 60).toString().padStart(2, "0")}`;
 
+    // Construct ISO slot boundaries for the required slot_start/slot_end columns
+    const slotStart = `${body.date}T${body.time}:00`;
+    const slotEnd = `${body.date}T${endTime}:00`;
+
     const { data: appointment, error: apptError } = await supabase
       .from("appointments")
       .insert({
@@ -169,13 +173,15 @@ export async function POST(request: NextRequest) {
         appointment_date: body.date,
         start_time: body.time,
         end_time: endTime,
+        slot_start: slotStart,
+        slot_end: slotEnd,
         status: "confirmed",
         is_first_visit: body.isFirstVisit,
         insurance_flag: body.hasInsurance,
         booking_source: "online",
         notes: body.patient.reason ?? null,
         is_emergency: false,
-      } as never)
+      })
       .select("id")
       .single();
 
@@ -209,7 +215,8 @@ export async function POST(request: NextRequest) {
         hasInsurance: body.hasInsurance,
       },
     });
-  } catch {
+  } catch (err) {
+    console.error("[booking] Error:", err instanceof Error ? err.message : "Unknown error");
     return NextResponse.json(
       { error: "Failed to create booking" },
       { status: 500 },
