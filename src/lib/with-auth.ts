@@ -85,7 +85,8 @@ export function withAuth(
         user,
         profile: { id: profile.id, role: profile.role as UserRole, clinic_id: profile.clinic_id ?? null },
       });
-    } catch {
+    } catch (err) {
+      console.error("[withAuth] Authentication error:", err instanceof Error ? err.message : "Unknown error");
       return NextResponse.json(
         { error: "Authentication failed" },
         { status: 500 },

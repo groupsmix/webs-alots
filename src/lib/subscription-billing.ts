@@ -168,7 +168,13 @@ export function calculateNextPeriod(
   if (interval === "yearly") {
     end.setFullYear(end.getFullYear() + 1);
   } else {
-    end.setMonth(end.getMonth() + 1);
+    // Clamp to last day of target month to prevent overflow
+    // (e.g. Jan 31 + 1 month → Feb 28, not Mar 3)
+    const targetMonth = end.getMonth() + 1;
+    end.setMonth(targetMonth);
+    if (end.getMonth() !== targetMonth % 12) {
+      end.setDate(0); // Roll back to last day of previous month
+    }
   }
   return {
     start: start.toISOString().split("T")[0],
