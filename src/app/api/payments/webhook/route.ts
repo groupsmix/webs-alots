@@ -74,18 +74,21 @@ export async function POST(request: NextRequest) {
         const patientId = session.metadata?.patient_id;
         const clinicId = session.metadata?.clinic_id;
 
-        // Record payment in Supabase
+        // Record payment in Supabase (idempotent via upsert on reference)
         if (clinicId && patientId) {
-          await supabase.from("payments").insert({
-            clinic_id: clinicId,
-            patient_id: patientId,
-            appointment_id: appointmentId || null,
-            amount: (session.amount_total || 0) / 100, // Convert from centimes
-            method: "online",
-            status: "completed",
-            reference: session.id,
-            payment_type: "full",
-          });
+          await supabase.from("payments").upsert(
+            {
+              clinic_id: clinicId,
+              patient_id: patientId,
+              appointment_id: appointmentId || null,
+              amount: (session.amount_total || 0) / 100, // Convert from centimes
+              method: "online",
+              status: "completed",
+              reference: session.id,
+              payment_type: "full",
+            },
+            { onConflict: "reference" },
+          );
         }
 
         // Update appointment payment status if applicable

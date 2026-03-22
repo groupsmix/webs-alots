@@ -28,14 +28,15 @@ export async function POST(request: NextRequest) {
     const supabase = await createClient();
 
     if (callbackData.status === "approved") {
-      // Find and update the payment by order ID (stored as gateway_session_id)
+      // Find the payment by order ID (stored as gateway_session_id)
+      // Only process if not already completed (idempotency check)
       const { data: payment } = await supabase
         .from("payments")
-        .select("id, appointment_id")
+        .select("id, appointment_id, status")
         .eq("gateway_session_id", callbackData.orderId)
         .single();
 
-      if (payment) {
+      if (payment && payment.status !== "completed") {
         // Mark payment as completed
         await supabase
           .from("payments")
