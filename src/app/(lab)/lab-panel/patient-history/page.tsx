@@ -8,6 +8,7 @@ import { Search, History, FlaskConical, TrendingUp, TrendingDown, Minus } from "
 import { clinicConfig } from "@/config/clinic.config";
 import { fetchPatients, fetchPatientLabOrders, fetchLabTestResults } from "@/lib/data/client";
 import type { PatientView, LabTestOrderView, LabTestResultView } from "@/lib/data/client";
+import { PageLoader } from "@/components/ui/page-loader";
 
 function FlagBadge({ flag }: { flag: string }) {
   const color =
@@ -42,29 +43,31 @@ export default function PatientHistoryPage() {
   }, []);
 
   useEffect(() => {
-    if (!selectedPatientId) { setPatientOrders([]); return; }
-    setOrdersLoading(true);
-    setSelectedOrderId(null);
-    setSelectedOrderResults([]);
-    fetchPatientLabOrders(clinicConfig.clinicId, selectedPatientId)
-      .then(setPatientOrders)
-      .finally(() => setOrdersLoading(false));
+    function loadOrders() {
+      if (!selectedPatientId) { setPatientOrders([]); return; }
+      setOrdersLoading(true);
+      setSelectedOrderId(null);
+      setSelectedOrderResults([]);
+      fetchPatientLabOrders(clinicConfig.clinicId, selectedPatientId)
+        .then(setPatientOrders)
+        .finally(() => setOrdersLoading(false));
+    }
+    loadOrders();
   }, [selectedPatientId]);
 
   useEffect(() => {
-    if (!selectedOrderId) { setSelectedOrderResults([]); return; }
-    setResultsLoading(true);
-    fetchLabTestResults(selectedOrderId)
-      .then(setSelectedOrderResults)
-      .finally(() => setResultsLoading(false));
+    function loadResults() {
+      if (!selectedOrderId) { setSelectedOrderResults([]); return; }
+      setResultsLoading(true);
+      fetchLabTestResults(selectedOrderId)
+        .then(setSelectedOrderResults)
+        .finally(() => setResultsLoading(false));
+    }
+    loadResults();
   }, [selectedOrderId]);
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[50vh]">
-        <div className="animate-pulse text-muted-foreground">Loading patients...</div>
-      </div>
-    );
+    return <PageLoader message="Loading patients..." />;
   }
 
   const filteredPatients = patients.filter((p) => {

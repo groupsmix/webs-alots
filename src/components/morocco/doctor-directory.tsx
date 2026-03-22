@@ -17,7 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { MOROCCAN_CITIES, formatMoroccanPhone, phoneToWhatsApp } from "@/lib/morocco";
+import { phoneToWhatsApp } from "@/lib/morocco";
 
 // ---- Types ----
 

@@ -22,6 +22,7 @@ import {
   fetchRehabPlans, createRehabPlan,
   type XRayRecordView, type FractureRecordView, type RehabPlanView,
 } from "@/lib/data/specialists";
+import { PageLoader } from "@/components/ui/page-loader";
 
 const FRACTURE_STATUSES: Record<string, { label: string; variant: "default" | "warning" | "success" | "destructive" }> = {
   diagnosed: { label: "Diagnosed", variant: "destructive" },
@@ -48,7 +49,8 @@ export default function OrthopedicsPage() {
     milestones: [{ title: "", targetDate: "", completed: false }],
   });
 
-  const load = useCallback(async () => {
+  useEffect(() => {
+    async function load() {
     const user = await getCurrentUser();
     if (!user?.clinic_id) { setLoading(false); return; }
     const [x, f, r] = await Promise.all([
@@ -60,16 +62,12 @@ export default function OrthopedicsPage() {
     setFractures(f);
     setRehabPlans(r);
     setLoading(false);
+  }
+    load();
   }, []);
 
-  useEffect(() => { load(); }, [load]);
-
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <p className="text-sm text-muted-foreground">Loading orthopedics records...</p>
-      </div>
-    );
+    return <PageLoader message="Loading orthopedics records..." />;
   }
 
   const handleAddXray = async () => {

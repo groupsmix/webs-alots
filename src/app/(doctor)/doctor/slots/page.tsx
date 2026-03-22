@@ -10,6 +10,7 @@ import {
   fetchTimeSlots,
   type TimeSlotView,
 } from "@/lib/data/client";
+import { PageLoader } from "@/components/ui/page-loader";
 
 const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
@@ -37,22 +38,19 @@ export default function NextAvailableSlotsPage() {
   const [timeSlots, setTimeSlots] = useState<TimeSlotView[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const load = useCallback(async () => {
+  useEffect(() => {
+    async function load() {
     const user = await getCurrentUser();
     if (!user?.clinic_id) { setLoading(false); return; }
     const ts = await fetchTimeSlots(user.clinic_id);
     setTimeSlots(ts);
     setLoading(false);
+  }
+    load();
   }, []);
 
-  useEffect(() => { load(); }, [load]);
-
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <p className="text-sm text-muted-foreground">Loading slots...</p>
-      </div>
-    );
+    return <PageLoader message="Loading slots..." />;
   }
 
   const availableSlots = computeAvailableSlots(timeSlots, daysAhead);

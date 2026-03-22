@@ -18,9 +18,10 @@ import { getCurrentUser } from "@/lib/data/client";
 import {
   fetchBloodSugarReadings, createBloodSugarReading,
   fetchHormoneLevels, createHormoneLevel,
-  fetchDiabetesManagement, createDiabetesManagement, updateDiabetesManagement,
+  fetchDiabetesManagement, createDiabetesManagement,
   type BloodSugarReadingView, type HormoneLevelView, type DiabetesManagementView,
 } from "@/lib/data/specialists";
+import { PageLoader } from "@/components/ui/page-loader";
 
 function glucoseCategory(level: number, type: string): { label: string; color: string } {
   if (type === "fasting") {
@@ -55,7 +56,8 @@ export default function EndocrinologyPage() {
     dietPlan: "", exercisePlan: "", monitoringFrequency: "daily", notes: "",
   });
 
-  const load = useCallback(async () => {
+  useEffect(() => {
+    async function load() {
     const user = await getCurrentUser();
     if (!user?.clinic_id) { setLoading(false); return; }
     const [s, h, d] = await Promise.all([
@@ -67,16 +69,12 @@ export default function EndocrinologyPage() {
     setHormones(h);
     setDiabetes(d);
     setLoading(false);
+  }
+    load();
   }, []);
 
-  useEffect(() => { load(); }, [load]);
-
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <p className="text-sm text-muted-foreground">Loading endocrinology records...</p>
-      </div>
-    );
+    return <PageLoader message="Loading endocrinology records..." />;
   }
 
   const handleAddSugar = async () => {

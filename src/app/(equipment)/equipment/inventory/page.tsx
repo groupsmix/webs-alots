@@ -21,6 +21,7 @@ import {
 import type { EquipmentItemView } from "@/lib/data/client";
 import { useEquipmentLocale } from "../../layout";
 import { useEquipmentI18n } from "@/lib/hooks/use-equipment-i18n";
+import { PageLoader } from "@/components/ui/page-loader";
 
 const conditionColors: Record<string, string> = {
   new: "bg-emerald-100 text-emerald-700 border-0",
@@ -82,14 +83,22 @@ export default function EquipmentInventoryPage() {
     return map[c] ?? c;
   }, [t]);
 
-  const reload = useCallback(() => {
+  function reload() {
     setLoading(true);
     fetchEquipmentInventory(clinicConfig.clinicId)
       .then(setItems)
       .finally(() => setLoading(false));
-  }, []);
+  }
 
-  useEffect(() => { reload(); }, [reload]);
+  useEffect(() => {
+    function init() {
+      setLoading(true);
+      fetchEquipmentInventory(clinicConfig.clinicId)
+        .then(setItems)
+        .finally(() => setLoading(false));
+    }
+    init();
+  }, []);
 
   const openAddDialog = () => {
     setEditingItem(null);
@@ -176,11 +185,7 @@ export default function EquipmentInventoryPage() {
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[50vh]">
-        <div className="animate-pulse text-muted-foreground">{t("loading")}</div>
-      </div>
-    );
+    return <PageLoader message="Loading..." />;
   }
 
   const filtered = items.filter((item) => {

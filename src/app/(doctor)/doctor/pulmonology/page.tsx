@@ -19,6 +19,7 @@ import {
   fetchRespiratoryTests, createRespiratoryTest,
   type SpirometryRecordView, type RespiratoryTestView,
 } from "@/lib/data/specialists";
+import { PageLoader } from "@/components/ui/page-loader";
 
 function spirometryInterpretation(fev1FvcRatio: number | null): string {
   if (fev1FvcRatio === null) return "Insufficient data";
@@ -43,7 +44,8 @@ export default function PulmonologyPage() {
     interpretation: "", notes: "",
   });
 
-  const load = useCallback(async () => {
+  useEffect(() => {
+    async function load() {
     const user = await getCurrentUser();
     if (!user?.clinic_id) { setLoading(false); return; }
     const [s, r] = await Promise.all([
@@ -53,16 +55,12 @@ export default function PulmonologyPage() {
     setSpirometry(s);
     setRespTests(r);
     setLoading(false);
+  }
+    load();
   }, []);
 
-  useEffect(() => { load(); }, [load]);
-
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <p className="text-sm text-muted-foreground">Loading pulmonology records...</p>
-      </div>
-    );
+    return <PageLoader message="Loading pulmonology records..." />;
   }
 
   const handleAddSpiro = async () => {

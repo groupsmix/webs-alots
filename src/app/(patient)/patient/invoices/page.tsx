@@ -10,6 +10,7 @@ import {
   fetchInvoices,
   type InvoiceView,
 } from "@/lib/data/client";
+import { PageLoader } from "@/components/ui/page-loader";
 
 const statusVariant: Record<string, "success" | "warning" | "destructive"> = {
   paid: "success",
@@ -22,22 +23,19 @@ export default function PatientInvoicesPage() {
   const [invoices, setInvoices] = useState<InvoiceView[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const load = useCallback(async () => {
+  useEffect(() => {
+    async function load() {
     const user = await getCurrentUser();
     if (!user?.clinic_id) { setLoading(false); return; }
     const invs = await fetchInvoices(user.clinic_id);
     setInvoices(invs);
     setLoading(false);
+  }
+    load();
   }, []);
 
-  useEffect(() => { load(); }, [load]);
-
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <p className="text-sm text-muted-foreground">Loading invoices...</p>
-      </div>
-    );
+    return <PageLoader message="Loading invoices..." />;
   }
 
   const totalPaid = invoices.filter((i) => i.status === "paid").reduce((sum, i) => sum + i.amount, 0);

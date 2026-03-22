@@ -17,7 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { formatMAD, formatMADFormal, calculateTVA } from "@/lib/morocco";
+import { formatMAD, formatMADFormal } from "@/lib/morocco";
 
 // ---- Types ----
 

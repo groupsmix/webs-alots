@@ -14,6 +14,7 @@ import {
   type PrescriptionView,
   type AppointmentView,
 } from "@/lib/data/client";
+import { PageLoader } from "@/components/ui/page-loader";
 
 type TabKey = "overview" | "history" | "prescriptions" | "notes";
 
@@ -29,7 +30,8 @@ export function PatientCard({ patientId }: { patientId?: string }) {
   const [patientAppts, setPatientAppts] = useState<AppointmentView[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const load = useCallback(async () => {
+  useEffect(() => {
+    async function load() {
     const user = await getCurrentUser();
     if (!user?.clinic_id) { setLoading(false); return; }
     const [pts, rxs, appts] = await Promise.all([
@@ -44,16 +46,12 @@ export function PatientCard({ patientId }: { patientId?: string }) {
       setPatientAppts(appts.filter((a) => a.patientId === found.id));
     }
     setLoading(false);
+  }
+    load();
   }, [patientId]);
 
-  useEffect(() => { load(); }, [load]);
-
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <p className="text-sm text-muted-foreground">Loading patient...</p>
-      </div>
-    );
+    return <PageLoader message="Loading patient..." />;
   }
 
   if (!patient) {

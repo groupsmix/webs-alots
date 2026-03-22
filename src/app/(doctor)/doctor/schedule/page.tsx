@@ -9,6 +9,7 @@ import {
   fetchDoctorAppointments,
   type AppointmentView,
 } from "@/lib/data/client";
+import { PageLoader } from "@/components/ui/page-loader";
 
 const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
@@ -25,22 +26,19 @@ export default function DoctorSchedulePage() {
   const [doctorAppointments, setDoctorAppointments] = useState<AppointmentView[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const load = useCallback(async () => {
+  useEffect(() => {
+    async function load() {
     const user = await getCurrentUser();
     if (!user?.clinic_id) { setLoading(false); return; }
     const appts = await fetchDoctorAppointments(user.clinic_id, user.id);
     setDoctorAppointments(appts);
     setLoading(false);
+  }
+    load();
   }, []);
 
-  useEffect(() => { load(); }, [load]);
-
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <p className="text-sm text-muted-foreground">Loading schedule...</p>
-      </div>
-    );
+    return <PageLoader message="Loading schedule..." />;
   }
 
   return (

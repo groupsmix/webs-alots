@@ -17,6 +17,7 @@ import {
   type ClinicCenterDashboardKPIs,
 } from "@/lib/data/client";
 import { clinicConfig } from "@/config/clinic.config";
+import { PageLoader } from "@/components/ui/page-loader";
 
 /**
  * ClinicCenterDashboardKPIs
@@ -48,11 +49,7 @@ export function ClinicCenterDashboardKPIsComponent() {
   }, []);
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-10">
-        <p className="text-sm text-muted-foreground">Loading clinic/center KPIs...</p>
-      </div>
-    );
+    return <PageLoader message="Loading clinic/center KPIs..." />;
   }
 
   const totalBeds = data?.totalBeds ?? 0;

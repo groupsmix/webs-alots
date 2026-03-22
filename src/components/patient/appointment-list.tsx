@@ -11,6 +11,7 @@ import {
   type AppointmentView,
 } from "@/lib/data/client";
 import { RescheduleDialog } from "./reschedule-dialog";
+import { PageLoader } from "@/components/ui/page-loader";
 
 const CANCELLATION_WINDOW_HOURS = 24;
 
@@ -55,16 +56,17 @@ export function AppointmentList({ patientId }: { patientId?: string }) {
   const [cancellingId, setCancellingId] = useState<string | null>(null);
   const [cancelError, setCancelError] = useState<string | null>(null);
 
-  const load = useCallback(async () => {
+  useEffect(() => {
+    async function load() {
     const user = await getCurrentUser();
     if (!user?.clinic_id) { setLoading(false); return; }
     const pid = patientId ?? user.id;
     const appts = await fetchPatientAppointments(user.clinic_id, pid);
     setAllAppts(appts);
     setLoading(false);
+  }
+    load();
   }, [patientId, refreshKey]);
-
-  useEffect(() => { load(); }, [load]);
 
   const upcoming = allAppts.filter(
     (a) => a.status === "scheduled" || a.status === "confirmed" || a.status === "in-progress",
@@ -109,11 +111,7 @@ export function AppointmentList({ patientId }: { patientId?: string }) {
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <p className="text-sm text-muted-foreground">Loading appointments...</p>
-      </div>
-    );
+    return <PageLoader message="Loading appointments..." />;
   }
 
   const apptToReschedule = rescheduleAppt

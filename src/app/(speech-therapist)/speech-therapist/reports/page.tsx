@@ -5,26 +5,24 @@ import { FileText } from "lucide-react";
 import { SpeechProgressReports } from "@/components/para-medical/speech-progress-reports";
 import { getCurrentUser } from "@/lib/data/client";
 import type { SpeechProgressReport } from "@/lib/types/para-medical";
+import { PageLoader } from "@/components/ui/page-loader";
 
 export default function SpeechReportsPage() {
   const [reports, setReports] = useState<SpeechProgressReport[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const load = useCallback(async () => {
+  useEffect(() => {
+    async function load() {
     const user = await getCurrentUser();
     if (!user?.clinic_id) { setLoading(false); return; }
     setReports([]);
     setLoading(false);
+  }
+    load();
   }, []);
 
-  useEffect(() => { load(); }, [load]);
-
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <p className="text-sm text-muted-foreground">Loading reports...</p>
-      </div>
-    );
+    return <PageLoader message="Loading reports..." />;
   }
 
   return (

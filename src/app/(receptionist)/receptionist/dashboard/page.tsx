@@ -17,6 +17,7 @@ import {
 import { ManualBookingDialog } from "@/components/receptionist/manual-booking-dialog";
 import { WalkInDialog } from "@/components/receptionist/walk-in-dialog";
 import { PaymentDialog } from "@/components/receptionist/payment-dialog";
+import { PageLoader } from "@/components/ui/page-loader";
 
 const statusVariant: Record<string, "default" | "success" | "warning" | "destructive" | "secondary" | "outline"> = {
   scheduled: "outline",
@@ -77,11 +78,7 @@ export default function ReceptionistDashboardPage() {
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <p className="text-muted-foreground">Loading dashboard...</p>
-      </div>
-    );
+    return <PageLoader message="Loading dashboard..." />;
   }
 
   return (

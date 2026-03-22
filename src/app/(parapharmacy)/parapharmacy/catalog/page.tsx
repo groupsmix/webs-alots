@@ -20,6 +20,7 @@ import {
   createParapharmacyProduct, updateParapharmacyProduct, deleteParapharmacyProduct,
 } from "@/lib/data/client";
 import type { ProductView, ParapharmacyCategoryView } from "@/lib/data/client";
+import { PageLoader } from "@/components/ui/page-loader";
 
 const defaultForm = {
   name: "",
@@ -133,11 +134,7 @@ export default function ParapharmacyCatalogPage() {
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[50vh]">
-        <div className="animate-pulse text-muted-foreground">Loading catalog...</div>
-      </div>
-    );
+    return <PageLoader message="Loading catalog..." />;
   }
 
   const filtered = products.filter((p) => {

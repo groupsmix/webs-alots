@@ -19,6 +19,7 @@ import {
   fetchMobilityTests, createMobilityTest,
   type JointAssessmentView, type MobilityTestView,
 } from "@/lib/data/specialists";
+import { PageLoader } from "@/components/ui/page-loader";
 
 const JOINTS = [
   "Left Shoulder", "Right Shoulder", "Left Elbow", "Right Elbow",
@@ -57,7 +58,8 @@ export default function RheumatologyPage() {
     strengthScore: "", painDuringTest: "", notes: "",
   });
 
-  const load = useCallback(async () => {
+  useEffect(() => {
+    async function load() {
     const user = await getCurrentUser();
     if (!user?.clinic_id) { setLoading(false); return; }
     const [a, m] = await Promise.all([
@@ -67,16 +69,12 @@ export default function RheumatologyPage() {
     setAssessments(a);
     setMobilityTests(m);
     setLoading(false);
+  }
+    load();
   }, []);
 
-  useEffect(() => { load(); }, [load]);
-
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <p className="text-sm text-muted-foreground">Loading rheumatology records...</p>
-      </div>
-    );
+    return <PageLoader message="Loading rheumatology records..." />;
   }
 
   const handleAddAssessment = async () => {

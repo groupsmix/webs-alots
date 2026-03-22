@@ -21,6 +21,7 @@ import {
   fetchHeartMonitoringNotes, createHeartMonitoringNote,
   type ECGRecordView, type BloodPressureView, type HeartMonitoringNoteView,
 } from "@/lib/data/specialists";
+import { PageLoader } from "@/components/ui/page-loader";
 
 function bpCategory(systolic: number, diastolic: number): { label: string; color: string } {
   if (systolic < 120 && diastolic < 80) return { label: "Normal", color: "text-green-600" };
@@ -49,7 +50,8 @@ export default function CardiologyPage() {
     title: "", content: "", category: "general", severity: "normal", isAlert: false,
   });
 
-  const load = useCallback(async () => {
+  useEffect(() => {
+    async function load() {
     const user = await getCurrentUser();
     if (!user?.clinic_id) { setLoading(false); return; }
     const [e, b, n] = await Promise.all([
@@ -61,16 +63,12 @@ export default function CardiologyPage() {
     setBpReadings(b);
     setHeartNotes(n);
     setLoading(false);
+  }
+    load();
   }, []);
 
-  useEffect(() => { load(); }, [load]);
-
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <p className="text-sm text-muted-foreground">Loading cardiology records...</p>
-      </div>
-    );
+    return <PageLoader message="Loading cardiology records..." />;
   }
 
   const handleAddEcg = async () => {

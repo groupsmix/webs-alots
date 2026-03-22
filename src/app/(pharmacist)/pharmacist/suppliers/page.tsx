@@ -11,6 +11,7 @@ import {
 import { clinicConfig } from "@/config/clinic.config";
 import { fetchSuppliers, fetchPurchaseOrders } from "@/lib/data/client";
 import type { SupplierView, PurchaseOrderView } from "@/lib/data/client";
+import { PageLoader } from "@/components/ui/page-loader";
 
 export default function SuppliersPage() {
   const [allSuppliers, setAllSuppliers] = useState<SupplierView[]>([]);
@@ -25,11 +26,7 @@ export default function SuppliersPage() {
   }, []);
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[50vh]">
-        <div className="animate-pulse text-muted-foreground">Loading suppliers...</div>
-      </div>
-    );
+    return <PageLoader message="Loading suppliers..." />;
   }
 
   return (

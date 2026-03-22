@@ -14,6 +14,7 @@ import {
   fetchPatients,
 } from "@/lib/data/client";
 import { WalkInDialog } from "./walk-in-dialog";
+import { PageLoader } from "@/components/ui/page-loader";
 
 interface WaitingPatient {
   id: string;
@@ -153,11 +154,7 @@ export function WaitingRoomManager() {
     : 0;
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <p className="text-muted-foreground">Loading waiting room...</p>
-      </div>
-    );
+    return <PageLoader message="Loading waiting room..." />;
   }
 
   return (

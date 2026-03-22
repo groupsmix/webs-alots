@@ -11,6 +11,7 @@ import {
 import { clinicConfig } from "@/config/clinic.config";
 import { fetchPurchaseOrders, fetchSuppliers } from "@/lib/data/client";
 import type { PurchaseOrderView, SupplierView } from "@/lib/data/client";
+import { PageLoader } from "@/components/ui/page-loader";
 
 type OrderStatus = "draft" | "sent" | "confirmed" | "shipped" | "delivered" | "cancelled";
 
@@ -37,11 +38,7 @@ export default function OrdersPage() {
   }, []);
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[50vh]">
-        <div className="animate-pulse text-muted-foreground">Loading orders...</div>
-      </div>
-    );
+    return <PageLoader message="Loading orders..." />;
   }
 
   const filtered = filterStatus === "all"

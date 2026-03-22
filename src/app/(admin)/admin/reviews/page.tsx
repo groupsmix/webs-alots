@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { getCurrentUser, fetchReviews, type ReviewView } from "@/lib/data/client";
+import { PageLoader } from "@/components/ui/page-loader";
 
 function StarRating({ rating }: { rating: number }) {
   return (
@@ -25,22 +26,19 @@ export default function ReviewManagementPage() {
   const [reviews, setReviews] = useState<ReviewView[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const load = useCallback(async () => {
+  useEffect(() => {
+    async function load() {
     const user = await getCurrentUser();
     if (!user?.clinic_id) { setLoading(false); return; }
     const r = await fetchReviews(user.clinic_id);
     setReviews(r);
     setLoading(false);
+  }
+    load();
   }, []);
 
-  useEffect(() => { load(); }, [load]);
-
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <p className="text-sm text-muted-foreground">Loading reviews...</p>
-      </div>
-    );
+    return <PageLoader message="Loading reviews..." />;
   }
 
   const avgRating = reviews.length > 0 ? reviews.reduce((s, r) => s + r.rating, 0) / reviews.length : 0;

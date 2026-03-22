@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { clinicConfig } from "@/config/clinic.config";
 import { fetchRadiologyTemplates } from "@/lib/data/client";
 import type { RadiologyTemplateView } from "@/lib/data/client";
+import { PageLoader } from "@/components/ui/page-loader";
 
 export default function RadiologyTemplatesPage() {
   const [templates, setTemplates] = useState<RadiologyTemplateView[]>([]);
@@ -23,11 +24,7 @@ export default function RadiologyTemplatesPage() {
   }, []);
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[50vh]">
-        <div className="animate-pulse text-muted-foreground">Loading templates...</div>
-      </div>
-    );
+    return <PageLoader message="Loading templates..." />;
   }
 
   const filtered = templates.filter((t) => {

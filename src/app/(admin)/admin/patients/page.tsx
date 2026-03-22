@@ -24,6 +24,7 @@ import {
   type PrescriptionView,
 } from "@/lib/data/client";
 import { exportPatients } from "@/lib/export-data";
+import { PageLoader } from "@/components/ui/page-loader";
 
 type Patient = PatientView;
 
@@ -35,7 +36,8 @@ export default function AdminPatientDatabasePage() {
   const [prescriptionsList, setPrescriptionsList] = useState<PrescriptionView[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const load = useCallback(async () => {
+  useEffect(() => {
+    async function load() {
     const user = await getCurrentUser();
     if (!user?.clinic_id) { setLoading(false); return; }
     const [p, a, rx] = await Promise.all([
@@ -47,9 +49,9 @@ export default function AdminPatientDatabasePage() {
     setAppointmentsList(a);
     setPrescriptionsList(rx);
     setLoading(false);
+  }
+    load();
   }, []);
-
-  useEffect(() => { load(); }, [load]);
 
   const patients = patientsList;
   const appointments = appointmentsList;
@@ -63,11 +65,7 @@ export default function AdminPatientDatabasePage() {
   );
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <p className="text-sm text-muted-foreground">Loading patients...</p>
-      </div>
-    );
+    return <PageLoader message="Loading patients..." />;
   }
 
   const getPatientAppts = (patientId: string) =>

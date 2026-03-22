@@ -13,6 +13,7 @@ import { fetchEquipmentInventory, fetchEquipmentRentals, fetchEquipmentMaintenan
 import type { EquipmentItemView, EquipmentRentalView, EquipmentMaintenanceView } from "@/lib/data/client";
 import { useEquipmentLocale } from "../../layout";
 import { useEquipmentI18n } from "@/lib/hooks/use-equipment-i18n";
+import { PageLoader } from "@/components/ui/page-loader";
 
 export default function EquipmentDashboardPage() {
   const { locale } = useEquipmentLocale();
@@ -38,11 +39,7 @@ export default function EquipmentDashboardPage() {
   }, []);
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[50vh]">
-        <div className="animate-pulse text-muted-foreground">{t("loading")}</div>
-      </div>
-    );
+    return <PageLoader message="Loading..." />;
   }
 
   const available = inventory.filter((i) => i.isAvailable);

@@ -30,6 +30,7 @@ import {
   type VaccinationView,
   type PatientView,
 } from "@/lib/data/client";
+import { PageLoader } from "@/components/ui/page-loader";
 
 const COMMON_VACCINES = [
   "BCG", "Hepatitis B", "DTP (Diphtheria-Tetanus-Pertussis)",
@@ -59,7 +60,8 @@ export default function VaccinationsPage() {
     notes: "",
   });
 
-  const load = useCallback(async () => {
+  useEffect(() => {
+    async function load() {
     const user = await getCurrentUser();
     if (!user?.clinic_id) { setLoading(false); return; }
     const [v, p] = await Promise.all([
@@ -77,9 +79,9 @@ export default function VaccinationsPage() {
     setVaccinations(updated);
     setPatients(p);
     setLoading(false);
+  }
+    load();
   }, [selectedPatient]);
-
-  useEffect(() => { load(); }, [load]);
 
   const handleSave = async () => {
     const user = await getCurrentUser();
@@ -112,11 +114,7 @@ export default function VaccinationsPage() {
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <p className="text-sm text-muted-foreground">Loading vaccination records...</p>
-      </div>
-    );
+    return <PageLoader message="Loading vaccination records..." />;
   }
 
   const overdue = vaccinations.filter((v) => v.status === "overdue");

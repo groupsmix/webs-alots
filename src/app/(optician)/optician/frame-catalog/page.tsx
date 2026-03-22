@@ -5,26 +5,24 @@ import { Glasses } from "lucide-react";
 import { FrameCatalog } from "@/components/para-medical/frame-catalog";
 import { getCurrentUser } from "@/lib/data/client";
 import type { FrameCatalogItem } from "@/lib/types/para-medical";
+import { PageLoader } from "@/components/ui/page-loader";
 
 export default function FrameCatalogPage() {
   const [frames, setFrames] = useState<FrameCatalogItem[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const load = useCallback(async () => {
+  useEffect(() => {
+    async function load() {
     const user = await getCurrentUser();
     if (!user?.clinic_id) { setLoading(false); return; }
     setFrames([]);
     setLoading(false);
+  }
+    load();
   }, []);
 
-  useEffect(() => { load(); }, [load]);
-
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <p className="text-sm text-muted-foreground">Loading frame catalog...</p>
-      </div>
-    );
+    return <PageLoader message="Loading frame catalog..." />;
   }
 
   return (

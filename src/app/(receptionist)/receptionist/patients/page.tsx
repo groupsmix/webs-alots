@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { getCurrentUser, fetchPatients, type PatientView } from "@/lib/data/client";
 import { PatientRegistrationDialog } from "@/components/receptionist/patient-registration-dialog";
+import { PageLoader } from "@/components/ui/page-loader";
 
 export default function ReceptionistPatientsPage() {
   const [patients, setPatients] = useState<PatientView[]>([]);
@@ -49,11 +50,7 @@ export default function ReceptionistPatientsPage() {
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <p className="text-muted-foreground">Loading patients...</p>
-      </div>
-    );
+    return <PageLoader message="Loading patients..." />;
   }
 
   return (

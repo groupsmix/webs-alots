@@ -31,6 +31,7 @@ import {
   type MilestoneView,
   type PatientView,
 } from "@/lib/data/client";
+import { PageLoader } from "@/components/ui/page-loader";
 
 const MILESTONE_TEMPLATES: Record<string, { milestone: string; expectedAgeMonths: number }[]> = {
   motor: [
@@ -86,7 +87,8 @@ export default function ChildInfoPage() {
     notes: "",
   });
 
-  const load = useCallback(async () => {
+  useEffect(() => {
+    async function load() {
     const user = await getCurrentUser();
     if (!user?.clinic_id) { setLoading(false); return; }
     const [m, p] = await Promise.all([
@@ -96,9 +98,9 @@ export default function ChildInfoPage() {
     setMilestones(m);
     setPatients(p);
     setLoading(false);
+  }
+    load();
   }, [selectedPatient]);
-
-  useEffect(() => { load(); }, [load]);
 
   const handleSave = async () => {
     const user = await getCurrentUser();
@@ -153,11 +155,7 @@ export default function ChildInfoPage() {
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <p className="text-sm text-muted-foreground">Loading child development data...</p>
-      </div>
-    );
+    return <PageLoader message="Loading child development data..." />;
   }
 
   const categories: MilestoneView["category"][] = ["motor", "language", "social", "cognitive"];

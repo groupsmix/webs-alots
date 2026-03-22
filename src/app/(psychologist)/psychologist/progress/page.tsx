@@ -9,26 +9,24 @@ import {
 } from "recharts";
 import { getCurrentUser } from "@/lib/data/client";
 import type { TherapySessionNote } from "@/lib/types/para-medical";
+import { PageLoader } from "@/components/ui/page-loader";
 
 export default function ProgressTrackingPage() {
   const [sessions, setSessions] = useState<TherapySessionNote[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const load = useCallback(async () => {
+  useEffect(() => {
+    async function load() {
     const user = await getCurrentUser();
     if (!user?.clinic_id) { setLoading(false); return; }
     setSessions([]);
     setLoading(false);
+  }
+    load();
   }, []);
 
-  useEffect(() => { load(); }, [load]);
-
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <p className="text-sm text-muted-foreground">Loading progress data...</p>
-      </div>
-    );
+    return <PageLoader message="Loading progress data..." />;
   }
 
   const moodData = sessions

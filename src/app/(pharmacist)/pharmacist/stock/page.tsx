@@ -17,6 +17,7 @@ import {
   getExpiryStatus,
 } from "@/lib/data/client";
 import type { ProductView } from "@/lib/data/client";
+import { PageLoader } from "@/components/ui/page-loader";
 
 const categories = [
   { value: "all", label: "All" },
@@ -73,11 +74,7 @@ export default function StockPage() {
   const totalValue = filtered.reduce((sum, p) => sum + p.price * p.stockQuantity, 0);
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[50vh]">
-        <div className="animate-pulse text-muted-foreground">Loading stock data...</div>
-      </div>
-    );
+    return <PageLoader message="Loading stock data..." />;
   }
 
   return (

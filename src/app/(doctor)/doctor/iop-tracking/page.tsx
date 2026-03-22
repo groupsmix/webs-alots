@@ -29,6 +29,7 @@ import {
   type IopMeasurementView,
   type PatientView,
 } from "@/lib/data/client";
+import { PageLoader } from "@/components/ui/page-loader";
 
 const METHODS = [
   { value: "goldmann", label: "Goldmann Applanation" },
@@ -60,7 +61,8 @@ export default function IopTrackingPage() {
     notes: "",
   });
 
-  const load = useCallback(async () => {
+  useEffect(() => {
+    async function load() {
     const user = await getCurrentUser();
     if (!user?.clinic_id) { setLoading(false); return; }
     const [m, p] = await Promise.all([
@@ -70,9 +72,9 @@ export default function IopTrackingPage() {
     setMeasurements(m);
     setPatients(p);
     setLoading(false);
+  }
+    load();
   }, [selectedPatient]);
-
-  useEffect(() => { load(); }, [load]);
 
   const handleSave = async () => {
     const user = await getCurrentUser();
@@ -93,11 +95,7 @@ export default function IopTrackingPage() {
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <p className="text-sm text-muted-foreground">Loading IOP measurements...</p>
-      </div>
-    );
+    return <PageLoader message="Loading IOP measurements..." />;
   }
 
   // Group by patient for history chart
@@ -198,7 +196,7 @@ export default function IopTrackingPage() {
 
                         {/* Data points */}
                         <div className="flex items-end gap-1 h-32 pt-4 pb-2">
-                          {data.map((m, i) => {
+                          {data.map((m) => {
                             const maxP = 35;
                             const odH = Math.min((m.odPressure / maxP) * 100, 100);
                             const osH = Math.min((m.osPressure / maxP) * 100, 100);

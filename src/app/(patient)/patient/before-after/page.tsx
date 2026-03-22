@@ -7,27 +7,25 @@ import {
   fetchBeforeAfterPhotos,
   type BeforeAfterPhotoView,
 } from "@/lib/data/client";
+import { PageLoader } from "@/components/ui/page-loader";
 
 export default function PatientBeforeAfterPage() {
   const [myPhotos, setMyPhotos] = useState<BeforeAfterPhotoView[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const load = useCallback(async () => {
+  useEffect(() => {
+    async function load() {
     const user = await getCurrentUser();
     if (!user?.clinic_id) { setLoading(false); return; }
     const photos = await fetchBeforeAfterPhotos(user.clinic_id, user.id);
     setMyPhotos(photos);
     setLoading(false);
+  }
+    load();
   }, []);
 
-  useEffect(() => { load(); }, [load]);
-
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <p className="text-sm text-muted-foreground">Loading photos...</p>
-      </div>
-    );
+    return <PageLoader message="Loading photos..." />;
   }
 
   return (

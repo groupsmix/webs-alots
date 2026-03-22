@@ -20,6 +20,7 @@ import {
   type AnalyticsData,
 } from "@/lib/data/client";
 import { exportToCSV } from "@/lib/export-data";
+import { PageLoader } from "@/components/ui/page-loader";
 
 const COLORS = [
   "#2563eb", "#7c3aed", "#db2777", "#ea580c",
@@ -31,22 +32,19 @@ export function AnalyticsDashboard({ role = "admin" }: { role?: "admin" | "docto
   const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const load = useCallback(async () => {
+  useEffect(() => {
+    async function load() {
     const user = await getCurrentUser();
     if (!user?.clinic_id) { setLoading(false); return; }
     const data = await fetchAnalytics(user.clinic_id);
     setAnalytics(data);
     setLoading(false);
+  }
+    load();
   }, []);
 
-  useEffect(() => { load(); }, [load]);
-
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <p className="text-sm text-muted-foreground">Loading analytics...</p>
-      </div>
-    );
+    return <PageLoader message="Loading analytics..." />;
   }
 
   if (!analytics) {

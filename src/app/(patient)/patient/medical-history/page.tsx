@@ -4,12 +4,12 @@ import { useState, useEffect, useCallback } from "react";
 import { Activity, Pill, FileText, Stethoscope, AlertTriangle, TrendingUp } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { PageLoader } from "@/components/ui/page-loader";
 import {
   getCurrentUser,
   fetchPatientAppointments,
   fetchPrescriptions,
   fetchConsultationNotes,
-  type PatientView,
   type AppointmentView,
   type PrescriptionView,
   type ConsultationNoteView,
@@ -36,7 +36,8 @@ export default function MedicalHistoryPage() {
   const [patient, setPatient] = useState<{ dateOfBirth: string; gender: string; insurance: string; allergies: string[] } | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const load = useCallback(async () => {
+  useEffect(() => {
+    async function load() {
     const user = await getCurrentUser();
     if (!user?.clinic_id) { setLoading(false); return; }
     const [appts, rxs, notes] = await Promise.all([
@@ -49,16 +50,12 @@ export default function MedicalHistoryPage() {
     setConsultNotes(notes);
     setPatient({ dateOfBirth: "", gender: "", insurance: "", allergies: [] });
     setLoading(false);
+  }
+    load();
   }, []);
 
-  useEffect(() => { load(); }, [load]);
-
   if (loading || !patient) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <p className="text-sm text-muted-foreground">Loading medical history...</p>
-      </div>
-    );
+    return <PageLoader message="Loading medical history..." />;
   }
 
   const diagnoses = consultNotes.map(n => ({

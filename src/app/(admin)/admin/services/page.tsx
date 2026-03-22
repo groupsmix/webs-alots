@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Plus, Edit, Trash2, Clock, CreditCard } from "lucide-react";
+import { Plus, Edit, Trash2, Clock, CreditCard, Loader2 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -25,15 +25,16 @@ export default function ManageServicesPage() {
   const [servicesList, setServicesList] = useState<Service[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const load = useCallback(async () => {
+  useEffect(() => {
+    async function load() {
     const user = await getCurrentUser();
     if (!user?.clinic_id) { setLoading(false); return; }
     const svcs = await fetchServices(user.clinic_id);
     setServicesList(svcs);
     setLoading(false);
+  }
+    load();
   }, []);
-
-  useEffect(() => { load(); }, [load]);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingService, setEditingService] = useState<Service | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
@@ -95,6 +96,14 @@ export default function ManageServicesPage() {
   const toggleActive = (id: string) => {
     setServicesList(servicesList.map((s) => (s.id === id ? { ...s, active: !s.active } : s)));
   };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
 
   return (
     <div>

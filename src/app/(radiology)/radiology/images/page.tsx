@@ -28,6 +28,7 @@ import Link from "next/link";
 import { clinicConfig } from "@/config/clinic.config";
 import { fetchRadiologyOrders } from "@/lib/data/client";
 import type { RadiologyOrderView } from "@/lib/data/client";
+import { PageLoader } from "@/components/ui/page-loader";
 
 export default function RadiologyImagesPage() {
   const [orders, setOrders] = useState<RadiologyOrderView[]>([]);
@@ -100,11 +101,7 @@ export default function RadiologyImagesPage() {
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[50vh]">
-        <div className="animate-pulse text-muted-foreground">Loading images...</div>
-      </div>
-    );
+    return <PageLoader message="Loading images..." />;
   }
 
   const filtered = orders.filter((o) => {

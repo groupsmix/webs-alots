@@ -17,6 +17,8 @@ import {
   type InvoiceView,
   type NotificationView,
 } from "@/lib/data/client";
+import { ErrorBoundary } from "@/components/ui/error-boundary";
+import { PageLoader } from "@/components/ui/page-loader";
 
 const quickLinks = [
   { icon: Calendar, label: "My Appointments", description: "View & manage bookings", href: "/patient/appointments" },
@@ -37,7 +39,8 @@ export default function PatientDashboardPage() {
   const [userName, setUserName] = useState("");
   const [loading, setLoading] = useState(true);
 
-  const load = useCallback(async () => {
+  useEffect(() => {
+    async function load() {
     const user = await getCurrentUser();
     if (!user?.clinic_id) { setLoading(false); return; }
     setUserName(user.name);
@@ -52,16 +55,12 @@ export default function PatientDashboardPage() {
     setInvoicesList(invs);
     setNotificationsList(notifs);
     setLoading(false);
+  }
+    load();
   }, []);
 
-  useEffect(() => { load(); }, [load]);
-
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <p className="text-sm text-muted-foreground">Loading dashboard...</p>
-      </div>
-    );
+    return <PageLoader message="Loading dashboard..." />;
   }
 
   const upcoming = appointmentsList.filter((a) => a.status === "scheduled" || a.status === "confirmed");
@@ -103,6 +102,7 @@ export default function PatientDashboardPage() {
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2 mb-8">
+        <ErrorBoundary section="Upcoming Appointments" compact>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-base">Upcoming Appointments</CardTitle>
@@ -144,7 +144,9 @@ export default function PatientDashboardPage() {
             )}
           </CardContent>
         </Card>
+        </ErrorBoundary>
 
+        <ErrorBoundary section="Prescriptions" compact>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-base">Recent Prescriptions</CardTitle>
@@ -181,6 +183,7 @@ export default function PatientDashboardPage() {
             )}
           </CardContent>
         </Card>
+        </ErrorBoundary>
       </div>
 
       {pendingInvoices.length > 0 && (

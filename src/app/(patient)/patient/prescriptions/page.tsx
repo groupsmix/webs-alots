@@ -10,28 +10,26 @@ import {
   fetchPrescriptions,
   type PrescriptionView,
 } from "@/lib/data/client";
+import { PageLoader } from "@/components/ui/page-loader";
 
 export default function PatientPrescriptionsPage() {
   const [downloading, setDownloading] = useState<string | null>(null);
   const [patientPrescriptions, setPatientPrescriptions] = useState<PrescriptionView[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const load = useCallback(async () => {
+  useEffect(() => {
+    async function load() {
     const user = await getCurrentUser();
     if (!user?.clinic_id) { setLoading(false); return; }
     const rxs = await fetchPrescriptions(user.clinic_id);
     setPatientPrescriptions(rxs.filter(rx => rx.patientId === user.id));
     setLoading(false);
+  }
+    load();
   }, []);
 
-  useEffect(() => { load(); }, [load]);
-
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <p className="text-sm text-muted-foreground">Loading prescriptions...</p>
-      </div>
-    );
+    return <PageLoader message="Loading prescriptions..." />;
   }
 
   const handleDownload = (rxId: string) => {

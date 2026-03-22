@@ -29,6 +29,7 @@ import {
   type GrowthMeasurementView,
   type PatientView,
 } from "@/lib/data/client";
+import { PageLoader } from "@/components/ui/page-loader";
 
 // WHO Weight-for-age reference data (boys, simplified percentiles: 3rd, 50th, 97th)
 const WHO_WEIGHT_BOYS: Record<number, [number, number, number]> = {
@@ -73,7 +74,8 @@ export default function GrowthChartsPage() {
     notes: "",
   });
 
-  const load = useCallback(async () => {
+  useEffect(() => {
+    async function load() {
     const user = await getCurrentUser();
     if (!user?.clinic_id) { setLoading(false); return; }
     const [m, p] = await Promise.all([
@@ -83,9 +85,9 @@ export default function GrowthChartsPage() {
     setMeasurements(m);
     setPatients(p);
     setLoading(false);
+  }
+    load();
   }, [selectedPatient]);
-
-  useEffect(() => { load(); }, [load]);
 
   const handleSave = async () => {
     const user = await getCurrentUser();
@@ -111,11 +113,7 @@ export default function GrowthChartsPage() {
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <p className="text-sm text-muted-foreground">Loading growth data...</p>
-      </div>
-    );
+    return <PageLoader message="Loading growth data..." />;
   }
 
   // Group by patient

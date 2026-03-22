@@ -20,6 +20,7 @@ import {
   fetchPsychMedications, createPsychMedication, updatePsychMedication,
   type PsychSessionNoteView, type PsychMedicationView,
 } from "@/lib/data/specialists";
+import { PageLoader } from "@/components/ui/page-loader";
 
 const MOOD_LABELS = ["", "Very Low", "Low", "Below Average", "Slightly Low", "Neutral", "Slightly Good", "Good", "Very Good", "Excellent", "Outstanding"];
 
@@ -39,7 +40,8 @@ export default function PsychiatryPage() {
     medicationName: "", dosage: "", frequency: "daily", reason: "", notes: "",
   });
 
-  const load = useCallback(async () => {
+  useEffect(() => {
+    async function load() {
     const user = await getCurrentUser();
     if (!user?.clinic_id) { setLoading(false); return; }
     const [s, m] = await Promise.all([
@@ -49,16 +51,12 @@ export default function PsychiatryPage() {
     setSessions(s);
     setMedications(m);
     setLoading(false);
+  }
+    load();
   }, []);
 
-  useEffect(() => { load(); }, [load]);
-
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <p className="text-sm text-muted-foreground">Loading psychiatry records...</p>
-      </div>
-    );
+    return <PageLoader message="Loading psychiatry records..." />;
   }
 
   const toggleReveal = (id: string) => {

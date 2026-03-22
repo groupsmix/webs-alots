@@ -4,27 +4,25 @@ import { useState, useEffect, useCallback } from "react";
 import { SterilizationLogPanel } from "@/components/dental/sterilization-log-panel";
 import { getCurrentUser, fetchSterilizationLog, createSterilizationEntry } from "@/lib/data/client";
 import type { SterilizationEntry } from "@/lib/types/dental";
+import { PageLoader } from "@/components/ui/page-loader";
 
 export default function DoctorSterilizationPage() {
   const [log, setLog] = useState<SterilizationEntry[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const load = useCallback(async () => {
+  useEffect(() => {
+    async function load() {
     const user = await getCurrentUser();
     if (!user?.clinic_id) { setLoading(false); return; }
     const data = await fetchSterilizationLog(user.clinic_id);
     setLog(data as unknown as SterilizationEntry[]);
     setLoading(false);
+  }
+    load();
   }, []);
 
-  useEffect(() => { load(); }, [load]);
-
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <p className="text-sm text-muted-foreground">Loading sterilization log...</p>
-      </div>
-    );
+    return <PageLoader message="Loading sterilization log..." />;
   }
 
   const handleAddEntry = async (entry: Omit<SterilizationEntry, "id" | "sterilizedAt">) => {

@@ -30,6 +30,7 @@ import {
 import { clinicConfig } from "@/config/clinic.config";
 import { fetchRadiologyOrders, fetchRadiologyTemplates } from "@/lib/data/client";
 import type { RadiologyOrderView, RadiologyTemplateView } from "@/lib/data/client";
+import { PageLoader } from "@/components/ui/page-loader";
 
 const statusOptions = ["all", "pending", "scheduled", "in_progress", "images_ready", "reported", "validated", "cancelled"] as const;
 const modalityOptions = ["xray", "ct", "mri", "ultrasound", "mammography", "pet", "fluoroscopy", "other"] as const;
@@ -191,11 +192,7 @@ export default function RadiologyOrdersPage() {
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[50vh]">
-        <div className="animate-pulse text-muted-foreground">Loading orders...</div>
-      </div>
-    );
+    return <PageLoader message="Loading orders..." />;
   }
 
   const filtered = orders.filter((o) => {

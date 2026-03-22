@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Search, User, Phone, Calendar, FileText, Pill, ClipboardList, AlertCircle } from "lucide-react";
+import { Search, User, Phone, Calendar, FileText, Pill, AlertCircle } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -19,6 +19,7 @@ import {
   type PrescriptionView,
   type ConsultationNoteView,
 } from "@/lib/data/client";
+import { PageLoader } from "@/components/ui/page-loader";
 
 type Patient = PatientView;
 
@@ -32,7 +33,8 @@ export default function DoctorPatientsPage() {
   const [consultationNotes, setConsultationNotes] = useState<ConsultationNoteView[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const load = useCallback(async () => {
+  useEffect(() => {
+    async function load() {
     const user = await getCurrentUser();
     if (!user?.clinic_id) { setLoading(false); return; }
     const [pts, appts, rxs, notes] = await Promise.all([
@@ -46,16 +48,12 @@ export default function DoctorPatientsPage() {
     setPrescriptions(rxs);
     setConsultationNotes(notes);
     setLoading(false);
+  }
+    load();
   }, []);
 
-  useEffect(() => { load(); }, [load]);
-
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <p className="text-sm text-muted-foreground">Loading patients...</p>
-      </div>
-    );
+    return <PageLoader message="Loading patients..." />;
   }
 
   const filteredPatients = patients.filter(

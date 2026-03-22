@@ -21,6 +21,7 @@ import {
   fetchSkinConditions, createSkinCondition, updateSkinCondition,
   type SkinPhotoView, type SkinConditionView,
 } from "@/lib/data/specialists";
+import { PageLoader } from "@/components/ui/page-loader";
 
 const BODY_REGIONS = [
   "Face", "Scalp", "Neck", "Chest", "Back", "Abdomen",
@@ -56,7 +57,8 @@ export default function DermatologyPage() {
     notes: "", treatmentName: "", treatmentNotes: "",
   });
 
-  const load = useCallback(async () => {
+  useEffect(() => {
+    async function load() {
     const user = await getCurrentUser();
     if (!user?.clinic_id) { setLoading(false); return; }
     const [p, c] = await Promise.all([
@@ -66,16 +68,12 @@ export default function DermatologyPage() {
     setPhotos(p);
     setConditions(c);
     setLoading(false);
+  }
+    load();
   }, []);
 
-  useEffect(() => { load(); }, [load]);
-
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <p className="text-sm text-muted-foreground">Loading dermatology records...</p>
-      </div>
-    );
+    return <PageLoader message="Loading dermatology records..." />;
   }
 
   const handleAddPhoto = async () => {

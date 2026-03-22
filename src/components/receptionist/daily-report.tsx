@@ -17,6 +17,7 @@ import {
   type InvoiceView,
 } from "@/lib/data/client";
 import { exportAppointments, exportInvoices } from "@/lib/export-data";
+import { PageLoader } from "@/components/ui/page-loader";
 
 const statusVariant: Record<string, "default" | "success" | "warning" | "destructive" | "secondary" | "outline"> = {
   scheduled: "outline",
@@ -112,11 +113,7 @@ export function DailyReport() {
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <p className="text-muted-foreground">Loading report...</p>
-      </div>
-    );
+    return <PageLoader message="Loading report..." />;
   }
 
   return (

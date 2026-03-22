@@ -11,6 +11,8 @@ import {
 } from "@/lib/data/client";
 import { LabDashboardKPIsComponent } from "@/components/admin/lab-dashboard-kpis";
 import { ClinicCenterDashboardKPIsComponent } from "@/components/admin/clinic-center-dashboard-kpis";
+import { ErrorBoundary } from "@/components/ui/error-boundary";
+import { PageLoader } from "@/components/ui/page-loader";
 
 const activityVariant: Record<string, "default" | "success" | "warning" | "destructive"> = {
   booking: "default",
@@ -23,22 +25,19 @@ export default function AdminDashboardPage() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const load = useCallback(async () => {
+  useEffect(() => {
+    async function load() {
     const user = await getCurrentUser();
     if (!user?.clinic_id) { setLoading(false); return; }
     const s = await fetchDashboardStats(user.clinic_id);
     setStats(s);
     setLoading(false);
+  }
+    load();
   }, []);
 
-  useEffect(() => { load(); }, [load]);
-
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <p className="text-sm text-muted-foreground">Loading dashboard...</p>
-      </div>
-    );
+    return <PageLoader message="Loading dashboard..." />;
   }
 
   const totalPatients = stats?.totalPatients ?? 0;
@@ -136,12 +135,16 @@ export default function AdminDashboardPage() {
       </div>
       {/* Lab Dashboard KPIs (Task 36) */}
       <div className="mt-8">
-        <LabDashboardKPIsComponent />
+        <ErrorBoundary section="Lab KPIs" compact>
+          <LabDashboardKPIsComponent />
+        </ErrorBoundary>
       </div>
 
       {/* Clinic/Center Dashboard KPIs (Task 37) */}
       <div className="mt-8">
-        <ClinicCenterDashboardKPIsComponent />
+        <ErrorBoundary section="Clinic KPIs" compact>
+          <ClinicCenterDashboardKPIsComponent />
+        </ErrorBoundary>
       </div>
     </div>
   );

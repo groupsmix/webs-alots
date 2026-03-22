@@ -13,6 +13,7 @@ import {
   type PatientView,
 } from "@/lib/data/client";
 import { downloadPrescriptionPDF } from "@/lib/prescription-pdf";
+import { PageLoader } from "@/components/ui/page-loader";
 
 interface Medication {
   name: string;
@@ -38,23 +39,20 @@ export function PrescriptionWriter() {
   const [diagnosis, setDiagnosis] = useState("");
   const [loading, setLoading] = useState(true);
 
-  const load = useCallback(async () => {
+  useEffect(() => {
+    async function load() {
     const user = await getCurrentUser();
     if (!user?.clinic_id) { setLoading(false); return; }
     const pts = await fetchPatients(user.clinic_id);
     setPatients(pts);
     if (pts.length > 0) setSelectedPatient(pts[0].id);
     setLoading(false);
+  }
+    load();
   }, []);
 
-  useEffect(() => { load(); }, [load]);
-
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <p className="text-sm text-muted-foreground">Loading...</p>
-      </div>
-    );
+    return <PageLoader message="Loading..." />;
   }
 
   const patient = patients.find((p) => p.id === selectedPatient) ?? patients[0];

@@ -2,6 +2,7 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { extractSubdomain } from "@/lib/subdomain";
 import { TENANT_HEADERS } from "@/lib/tenant";
+import { rateLimitRules } from "@/lib/rate-limit";
 
 // Role to allowed route prefix mapping
 const ROLE_ROUTE_MAP: Record<string, string> = {
@@ -20,6 +21,22 @@ const ROLE_DASHBOARD_MAP: Record<string, string> = {
   doctor: "/doctor/dashboard",
   patient: "/patient/dashboard",
 };
+
+// HTTP methods that mutate state and need CSRF protection
+const MUTATION_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
+
+// API routes that receive legitimate external requests (webhooks, callbacks)
+// and must be exempt from Origin checks.
+const CSRF_EXEMPT_PREFIXES = [
+  "/api/webhooks",
+  "/api/payments/webhook",
+  "/api/payments/cmi/callback",
+  "/api/cron/",
+];
+
+function isCsrfExempt(pathname: string): boolean {
+  return CSRF_EXEMPT_PREFIXES.some((prefix) => pathname.startsWith(prefix));
+}
 
 // Routes that don't require authentication
 const PUBLIC_ROUTES = [
@@ -85,6 +102,55 @@ export async function middleware(request: NextRequest) {
 
   // --- Subdomain resolution ---
   const subdomain = extractSubdomain(hostname, rootDomain);
+
+  // --- CSRF protection for mutation requests to API routes ---
+  // Verify that the Origin header matches our known host to prevent
+  // cross-site request forgery on cookie-authenticated endpoints.
+  if (
+    pathname.startsWith("/api/") &&
+    MUTATION_METHODS.has(request.method) &&
+    !isCsrfExempt(pathname)
+  ) {
+    const origin = request.headers.get("origin");
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL;
+
+    // Build set of allowed origins from the request host and NEXT_PUBLIC_SITE_URL
+    const allowedOrigins = new Set<string>();
+    // Always trust the request's own host (handles localhost, subdomains, etc.)
+    const requestOrigin = `${request.nextUrl.protocol}//${hostname}`;
+    allowedOrigins.add(requestOrigin);
+    // Also allow configured site URL (production domain)
+    if (siteUrl) {
+      allowedOrigins.add(siteUrl.replace(/\/$/, ""));
+    }
+    // Allow root domain and wildcard subdomains if configured
+    if (rootDomain) {
+      allowedOrigins.add(`${request.nextUrl.protocol}//${rootDomain}`);
+    }
+
+    if (origin && !allowedOrigins.has(origin)) {
+      return NextResponse.json(
+        { error: "CSRF validation failed: origin not allowed" },
+        { status: 403 },
+      );
+    }
+  }
+
+  // --- Rate limiting for API mutations ---
+  if (pathname.startsWith("/api/") && MUTATION_METHODS.has(request.method)) {
+    const clientIp =
+      request.headers.get("cf-connecting-ip") ??
+      request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
+      "unknown";
+
+    const rule = rateLimitRules.find((r) => pathname.startsWith(r.prefix));
+    if (rule && !rule.limiter.check(clientIp)) {
+      return NextResponse.json(
+        { error: "Too many requests. Please try again later." },
+        { status: 429 },
+      );
+    }
+  }
 
   // If Supabase is not configured, allow all requests through
   // so the site renders with demo data instead of crashing

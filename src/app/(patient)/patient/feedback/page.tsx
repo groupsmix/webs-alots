@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { Star, Send, MessageSquare, CheckCircle2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -25,19 +25,20 @@ export default function PatientFeedbackPage() {
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
 
-  const loadData = useCallback(async () => {
-    const user = await getCurrentUser();
-    if (!user?.clinic_id) { setPageLoading(false); return; }
-    const [docs, reviews] = await Promise.all([
-      fetchDoctors(user.clinic_id),
-      fetchReviews(user.clinic_id),
-    ]);
-    setDoctors(docs);
-    setPastFeedback(reviews.filter(r => r.patientId === user.id));
-    setPageLoading(false);
+  useEffect(() => {
+    async function loadData() {
+      const user = await getCurrentUser();
+      if (!user?.clinic_id) { setPageLoading(false); return; }
+      const [docs, reviews] = await Promise.all([
+        fetchDoctors(user.clinic_id),
+        fetchReviews(user.clinic_id),
+      ]);
+      setDoctors(docs);
+      setPastFeedback(reviews.filter(r => r.patientId === user.id));
+      setPageLoading(false);
+    }
+    loadData();
   }, []);
-
-  useEffect(() => { loadData(); }, [loadData]);
 
   if (pageLoading) {
     return (

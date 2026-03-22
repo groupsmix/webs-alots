@@ -7,8 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "postinstall": "node scripts/patch-opennext.js",
-    "build:cf": "opennextjs-cloudflare build && node scripts/post-build-patch.js",
+    "postinstall": "node scripts/patch-opennext.mjs",
+    "build:cf": "opennextjs-cloudflare build && node scripts/post-build-patch.mjs",
     "deploy": "npm run build:cf && wrangler deploy"
   },
   "dependencies": {

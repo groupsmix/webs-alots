@@ -24,6 +24,7 @@ import {
   type WaitingRoomEntry,
   type InvoiceView,
 } from "@/lib/data/client";
+import { PageLoader } from "@/components/ui/page-loader";
 
 // ── Date helpers ──
 
@@ -61,7 +62,8 @@ export default function DoctorDashboardPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
 
-  const load = useCallback(async () => {
+  useEffect(() => {
+    async function load() {
     const user = await getCurrentUser();
     if (!user?.clinic_id) { setLoading(false); return; }
     const [appts, pts, wr, inv] = await Promise.all([
@@ -75,9 +77,9 @@ export default function DoctorDashboardPage() {
     setWaitingRoomEntries(wr);
     setInvoices(inv);
     setLoading(false);
+  }
+    load();
   }, []);
-
-  useEffect(() => { load(); }, [load]);
 
   // ── Derived KPIs ──
 
@@ -150,11 +152,7 @@ export default function DoctorDashboardPage() {
   ];
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <p className="text-sm text-muted-foreground">Loading dashboard...</p>
-      </div>
-    );
+    return <PageLoader message="Loading dashboard..." />;
   }
 
   const handleMarkDone = async (appointmentId: string) => {

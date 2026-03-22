@@ -13,6 +13,9 @@
 
 import { createClient } from "@/lib/supabase-client";
 import { clinicConfig } from "@/config/clinic.config";
+import type { Database } from "@/lib/types/database";
+
+type TableName = keyof Database["public"]["Tables"];
 
 // ── re-export the browser client for direct use ──
 export { createClient };
@@ -57,7 +60,7 @@ export function clearUserCache() {
 // ── Generic fetch helper ──
 
 async function fetchRows<T>(
-  table: string,
+  table: TableName,
   opts?: {
     select?: string;
     eq?: [string, unknown][];
@@ -69,9 +72,7 @@ async function fetchRows<T>(
   },
 ): Promise<T[]> {
   const supabase = createClient();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let q = (supabase.from as any)(table).select(opts?.select ?? "*");
+  let q = supabase.from(table).select(opts?.select ?? "*");
   if (opts?.eq) {
     for (const [col, val] of opts.eq) {
       q = q.eq(col, val);
@@ -154,8 +155,8 @@ async function ensureLookups(clinicId: string) {
   if (_userMap && _serviceMap) return;
   const supabase = createClient();
   const [usersRes, servicesRes] = await Promise.all([
-    supabase.from("users").select("id, name, phone, email").eq("clinic_id", clinicId),
-    supabase.from("services").select("id, name, price").eq("clinic_id", clinicId),
+  supabase.from("users").select("id, name, phone, email").eq("clinic_id", clinicId),
+  supabase.from("services").select("id, name, price").eq("clinic_id", clinicId),
   ]);
   _userMap = new Map(
     ((usersRes.data ?? []) as { id: string; name: string; phone: string; email: string }[]).map((u) => [
@@ -860,11 +861,11 @@ export interface DashboardStats {
 export async function fetchDashboardStats(clinicId: string): Promise<DashboardStats> {
   const supabase = createClient();
   const [patientsRes, appointmentsRes, paymentsRes, reviewsRes, doctorsRes] = await Promise.all([
-    supabase.from("users").select("id, metadata").eq("clinic_id", clinicId).eq("role", "patient"),
-    supabase.from("appointments").select("id, status").eq("clinic_id", clinicId),
-    supabase.from("payments").select("id, amount").eq("clinic_id", clinicId).eq("status", "completed"),
-    supabase.from("reviews").select("id, stars").eq("clinic_id", clinicId),
-    supabase.from("users").select("id").eq("clinic_id", clinicId).eq("role", "doctor"),
+  supabase.from("users").select("id, metadata").eq("clinic_id", clinicId).eq("role", "patient"),
+  supabase.from("appointments").select("id, status").eq("clinic_id", clinicId),
+  supabase.from("payments").select("id, amount").eq("clinic_id", clinicId).eq("status", "completed"),
+  supabase.from("reviews").select("id, stars").eq("clinic_id", clinicId),
+  supabase.from("users").select("id").eq("clinic_id", clinicId).eq("role", "doctor"),
   ]);
   const patients = (patientsRes.data ?? []) as { id: string; metadata: Record<string, unknown> | null }[];
   const appts = (appointmentsRes.data ?? []) as { id: string; status: string }[];
@@ -919,8 +920,7 @@ export async function createPayment(data: {
   status?: string;
 }): Promise<boolean> {
   const supabase = createClient();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { error } = await (supabase.from as any)("payments").insert({
+  const { error } = await supabase.from("payments").insert({
     ...data,
     status: data.status ?? "completed",
     payment_type: "full",
@@ -1058,8 +1058,7 @@ export async function upsertOdontogramEntry(data: {
   dentition?: "adult" | "child";
 }): Promise<boolean> {
   const supabase = createClient();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { error } = await (supabase.from as any)("odontogram").upsert(data, {
+  const { error } = await supabase.from("odontogram").upsert(data, {
     onConflict: "clinic_id,patient_id,tooth_number",
   });
   if (error) {
@@ -1102,8 +1101,7 @@ export async function createTreatmentPlan(data: {
   status?: string;
 }): Promise<string | null> {
   const supabase = createClient();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: result, error } = await (supabase.from as any)("treatment_plans")
+  const { data: result, error } = await supabase.from("treatment_plans")
     .insert({ ...data, status: data.status ?? "planned" })
     .select("id")
     .single();
@@ -1150,8 +1148,7 @@ export async function createSterilizationEntry(data: {
   cycle_number?: number;
 }): Promise<string | null> {
   const supabase = createClient();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: result, error } = await (supabase.from as any)("sterilization_log")
+  const { data: result, error } = await supabase.from("sterilization_log")
     .insert({ ...data, sterilized_at: new Date().toISOString() })
     .select("id")
     .single();
@@ -2033,6 +2030,7 @@ export interface BlogPostView {
 
 // Blog posts aren't in the DB schema — they may be stored in clinic config
 // For now we return empty; pages will fall back to demo data if empty
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export async function fetchBlogPosts(_clinicId: string): Promise<BlogPostView[]> {
   return [];
 }
@@ -2262,10 +2260,10 @@ export async function fetchAnalytics(clinicId: string): Promise<AnalyticsData> {
   const supabase = createClient();
 
   const [apptsRes, paymentsRes, reviewsRes, patientsRes] = await Promise.all([
-    supabase.from("appointments").select("*").eq("clinic_id", clinicId),
-    supabase.from("payments").select("*").eq("clinic_id", clinicId).eq("status", "completed"),
-    supabase.from("reviews").select("*").eq("clinic_id", clinicId),
-    supabase.from("users").select("id, created_at").eq("clinic_id", clinicId).eq("role", "patient"),
+  supabase.from("appointments").select("*").eq("clinic_id", clinicId),
+  supabase.from("payments").select("*").eq("clinic_id", clinicId).eq("status", "completed"),
+  supabase.from("reviews").select("*").eq("clinic_id", clinicId),
+  supabase.from("users").select("id, created_at").eq("clinic_id", clinicId).eq("role", "patient"),
   ]);
 
   type ApptRow = { id: string; appointment_date: string; start_time: string; status: string; patient_id: string; service_id: string | null; booking_source: string | null };
@@ -2552,8 +2550,7 @@ export async function createAppointment(data: {
   is_emergency?: boolean;
 }): Promise<{ success: boolean; id?: string; error?: string }> {
   const supabase = createClient();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: appt, error } = await (supabase.from as any)("appointments")
+  const { data: appt, error } = await supabase.from("appointments")
     .insert({
       ...data,
       status: "confirmed",
@@ -3113,8 +3110,7 @@ export async function createLabTestOrder(data: {
 }): Promise<string | null> {
   const supabase = createClient();
   const orderNumber = `LAB-${Date.now().toString(36).toUpperCase()}`;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: result, error } = await (supabase.from as any)("lab_test_orders")
+  const { data: result, error } = await supabase.from("lab_test_orders")
     .insert({
       clinic_id: data.clinic_id,
       patient_id: data.patient_id,
@@ -3143,8 +3139,7 @@ export async function createLabTestOrder(data: {
       test_name: catalogMap.get(testId) ?? "Test",
       status: "pending",
     }));
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await (supabase.from as any)("lab_test_items").insert(items);
+    await supabase.from("lab_test_items").insert(items);
   }
   return orderId;
 }
@@ -3205,8 +3200,7 @@ export async function saveLabTestResult(data: {
   entered_by?: string;
 }): Promise<string | null> {
   const supabase = createClient();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: result, error } = await (supabase.from as any)("lab_test_results")
+  const { data: result, error } = await supabase.from("lab_test_results")
     .insert({
       order_id: data.order_id,
       test_item_id: data.test_item_id,
@@ -3285,8 +3279,7 @@ export async function createParapharmacyProduct(data: {
   is_active?: boolean;
 }): Promise<string | null> {
   const supabase = createClient();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: result, error } = await (supabase.from as any)("products")
+  const { data: result, error } = await supabase.from("products")
     .insert({
       clinic_id: data.clinic_id,
       name: data.name,
@@ -3355,8 +3348,7 @@ export async function createParapharmacySale(data: {
   const supabase = createClient();
   const total = data.items.reduce((sum, item) => sum + item.quantity * item.unit_price, 0);
   const now = new Date();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: result, error } = await (supabase.from as any)("sales")
+  const { data: result, error } = await supabase.from("sales")
     .insert({
       clinic_id: data.clinic_id,
       patient_name: data.patient_name,
@@ -3413,8 +3405,7 @@ export async function adjustParapharmacyStock(
     .eq("product_id", productId);
   if (error) {
     // Try insert if no stock row exists
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error: insertError } = await (supabase.from as any)("stock")
+    const { error: insertError } = await supabase.from("stock")
       .insert({ product_id: productId, quantity: newQuantity });
     if (insertError) {
       console.error("[data] adjust stock:", insertError.message);
@@ -3874,8 +3865,7 @@ export async function createEquipmentItem(data: {
   notes?: string;
 }): Promise<string | null> {
   const supabase = createClient();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: result, error } = await (supabase.from as any)("equipment_inventory")
+  const { data: result, error } = await supabase.from("equipment_inventory")
     .insert({
       ...data,
       currency: data.currency ?? "MAD",
@@ -4315,8 +4305,7 @@ export async function createVaccination(data: {
   notes?: string;
 }): Promise<string | null> {
   const supabase = createClient();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: row, error } = await (supabase.from as any)("vaccinations")
+  const { data: row, error } = await supabase.from("vaccinations")
     .insert(data)
     .select("id")
     .single();
@@ -4393,8 +4382,7 @@ export async function createMilestone(data: {
   notes?: string;
 }): Promise<string | null> {
   const supabase = createClient();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: row, error } = await (supabase.from as any)("developmental_milestones")
+  const { data: row, error } = await supabase.from("developmental_milestones")
     .insert(data)
     .select("id")
     .single();
@@ -4613,8 +4601,7 @@ export async function createUltrasound(data: {
   notes?: string;
 }): Promise<string | null> {
   const supabase = createClient();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: row, error } = await (supabase.from as any)("ultrasound_records")
+  const { data: row, error } = await supabase.from("ultrasound_records")
     .insert(data)
     .select("id")
     .single();
@@ -4957,10 +4944,10 @@ export async function fetchClinicCenterDashboardKPIs(clinicId: string): Promise<
   const supabase = createClient();
 
   const [deptRes, bedRes, admissionRes, paymentsRes] = await Promise.all([
-    supabase.from("departments").select("id, clinic_id, name, code, is_active").eq("clinic_id", clinicId).eq("is_active", true),
-    supabase.from("beds").select("id, clinic_id, department_id, bed_number, status, patient_id").eq("clinic_id", clinicId),
-    supabase.from("admissions").select("id, clinic_id, patient_id, doctor_id, department_id, bed_id, admission_date, discharge_date, status").eq("clinic_id", clinicId),
-    supabase.from("payments").select("id, amount, created_at, appointment_id").eq("clinic_id", clinicId).eq("status", "completed"),
+  supabase.from("departments").select("id, clinic_id, name, code, is_active").eq("clinic_id", clinicId).eq("is_active", true),
+  supabase.from("beds").select("id, clinic_id, department_id, bed_number, status, patient_id").eq("clinic_id", clinicId),
+  supabase.from("admissions").select("id, clinic_id, patient_id, doctor_id, department_id, bed_id, admission_date, discharge_date, status").eq("clinic_id", clinicId),
+  supabase.from("payments").select("id, amount, created_at, appointment_id").eq("clinic_id", clinicId).eq("status", "completed"),
   ]);
 
   const departments = (deptRes.data ?? []) as DepartmentRaw[];
@@ -4980,8 +4967,6 @@ export async function fetchClinicCenterDashboardKPIs(clinicId: string): Promise<
   const dischargesToday = admissions.filter(
     (a) => a.status === "discharged" && a.discharge_date && a.discharge_date.startsWith(todayStr),
   ).length;
-
-  const deptMap = new Map(departments.map((d) => [d.id, d.name]));
 
   const departmentPatientLoad: DepartmentPatientLoad[] = departments.map((dept) => {
     const deptBeds = beds.filter((b) => b.department_id === dept.id);
