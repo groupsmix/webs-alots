@@ -8493,6 +8493,14 @@ export type PaymentMethod = "cash" | "card" | "transfer" | "online" | "insurance
 
 export type PaymentStatus = "pending" | "completed" | "refunded" | "failed";
 
+/** Runtime constants for PaymentStatus to eliminate magic strings. */
+export const PAYMENT_STATUS = {
+  PENDING: "pending",
+  COMPLETED: "completed",
+  REFUNDED: "refunded",
+  FAILED: "failed",
+} as const satisfies Record<string, PaymentStatus>;
+
 export type NotificationChannel = "whatsapp" | "email" | "sms" | "in_app";
 
 export type DocumentType =

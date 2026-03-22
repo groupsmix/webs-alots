@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase-server";
 import { verifyCmiCallback } from "@/lib/cmi";
-import { APPOINTMENT_STATUS } from "@/lib/types/database";
+import { APPOINTMENT_STATUS, PAYMENT_STATUS } from "@/lib/types/database";
 
 /**
  * POST /api/payments/cmi/callback
@@ -37,12 +37,12 @@ export async function POST(request: NextRequest) {
         .eq("gateway_session_id", callbackData.orderId)
         .single();
 
-      if (payment && payment.status !== "completed") {
+      if (payment && payment.status !== PAYMENT_STATUS.COMPLETED) {
         // Mark payment as completed
         await supabase
           .from("payments")
           .update({
-            status: "completed",
+            status: PAYMENT_STATUS.COMPLETED,
             reference: callbackData.transactionId || callbackData.orderId,
           })
           .eq("id", payment.id);
@@ -62,7 +62,7 @@ export async function POST(request: NextRequest) {
       // Mark payment as failed
       await supabase
         .from("payments")
-        .update({ status: "failed" })
+        .update({ status: PAYMENT_STATUS.FAILED })
         .eq("gateway_session_id", callbackData.orderId);
 
       console.log(`[CMI Callback] Payment ${callbackData.status}: ${callbackData.orderId} (code: ${callbackData.responseCode})`);
