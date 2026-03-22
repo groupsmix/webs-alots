@@ -72,7 +72,7 @@ async function validateBookingRequest(body: BookingRequestBody): Promise<Validat
   const tz = clinicConfig.timezone ?? "Africa/Casablanca";
   const todayInTz = new Date().toLocaleDateString("en-CA", { timeZone: tz }); // "YYYY-MM-DD"
   if (body.date < todayInTz) {
-    return "Cannot book an appointment in the past";
+    return fail("Cannot book an appointment in the past");
   }
 
   // Parse day-of-week using noon to avoid DST edge cases.

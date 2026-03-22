@@ -3,6 +3,7 @@ import { clinicConfig } from "@/config/clinic.config";
 import { getPublicServices } from "@/lib/data/public";
 import { withAuth } from "@/lib/with-auth";
 import { findOrCreatePatient } from "@/lib/find-or-create-patient";
+import type { TablesInsert } from "@/lib/types/database";
 
 export const runtime = "edge";
 
@@ -79,7 +80,7 @@ export const POST = withAuth(async (request, { supabase }) => {
 
       // Build all appointment records first, then batch insert in a single query
       // instead of N sequential round-trips.
-      const appointmentRows: Record<string, unknown>[] = [];
+      const appointmentRows: TablesInsert<"appointments">[] = [];
       let insertIndex = 0;
 
       for (let i = 0; i < body.occurrences; i++) {
