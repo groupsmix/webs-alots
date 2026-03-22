@@ -24,6 +24,7 @@ import {
   type PrescriptionView,
 } from "@/lib/data/client";
 import { exportPatients } from "@/lib/export-data";
+import { PageLoader } from "@/components/ui/page-loader";
 
 type Patient = PatientView;
 
@@ -64,11 +65,7 @@ export default function AdminPatientDatabasePage() {
   );
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <p className="text-sm text-muted-foreground">Loading patients...</p>
-      </div>
-    );
+    return <PageLoader message="Loading patients..." />;
   }
 
   const getPatientAppts = (patientId: string) =>

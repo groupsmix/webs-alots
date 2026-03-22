@@ -5,6 +5,7 @@ import { Scale } from "lucide-react";
 import { BodyMeasurementTracker } from "@/components/para-medical/body-measurement-tracker";
 import { getCurrentUser } from "@/lib/data/client";
 import type { BodyMeasurement } from "@/lib/types/para-medical";
+import { PageLoader } from "@/components/ui/page-loader";
 
 export default function MeasurementsPage() {
   const [measurements, setMeasurements] = useState<BodyMeasurement[]>([]);
@@ -21,11 +22,7 @@ export default function MeasurementsPage() {
   }, []);
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <p className="text-sm text-muted-foreground">Loading measurements...</p>
-      </div>
-    );
+    return <PageLoader message="Loading measurements..." />;
   }
 
   return (

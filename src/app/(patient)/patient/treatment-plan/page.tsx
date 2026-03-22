@@ -7,6 +7,7 @@ import {
   fetchTreatmentPlans,
   type TreatmentPlanView,
 } from "@/lib/data/client";
+import { PageLoader } from "@/components/ui/page-loader";
 
 export default function PatientTreatmentPlanPage() {
   const [myPlans, setMyPlans] = useState<TreatmentPlanView[]>([]);
@@ -24,11 +25,7 @@ export default function PatientTreatmentPlanPage() {
   }, []);
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <p className="text-sm text-muted-foreground">Loading treatment plans...</p>
-      </div>
-    );
+    return <PageLoader message="Loading treatment plans..." />;
   }
 
   return (

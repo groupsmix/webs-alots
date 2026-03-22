@@ -21,6 +21,7 @@ import {
   fetchRehabPlans, createRehabPlan,
   type XRayRecordView, type FractureRecordView, type RehabPlanView,
 } from "@/lib/data/specialists";
+import { PageLoader } from "@/components/ui/page-loader";
 
 const FRACTURE_STATUSES: Record<string, { label: string; variant: "default" | "warning" | "success" | "destructive" }> = {
   diagnosed: { label: "Diagnosed", variant: "destructive" },
@@ -65,11 +66,7 @@ export default function OrthopedicsPage() {
   }, []);
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <p className="text-sm text-muted-foreground">Loading orthopedics records...</p>
-      </div>
-    );
+    return <PageLoader message="Loading orthopedics records..." />;
   }
 
   const handleAddXray = async () => {

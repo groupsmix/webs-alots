@@ -5,6 +5,7 @@ import { ClipboardList } from "lucide-react";
 import { PhysioSessionTracker } from "@/components/para-medical/physio-session-tracker";
 import { getCurrentUser } from "@/lib/data/client";
 import type { PhysioSession } from "@/lib/types/para-medical";
+import { PageLoader } from "@/components/ui/page-loader";
 
 export default function PhysioSessionsPage() {
   const [sessions, setSessions] = useState<PhysioSession[]>([]);
@@ -21,11 +22,7 @@ export default function PhysioSessionsPage() {
   }, []);
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <p className="text-sm text-muted-foreground">Loading sessions...</p>
-      </div>
-    );
+    return <PageLoader message="Loading sessions..." />;
   }
 
   return (

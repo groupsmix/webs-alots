@@ -14,6 +14,7 @@ import {
   type PrescriptionView,
   type AppointmentView,
 } from "@/lib/data/client";
+import { PageLoader } from "@/components/ui/page-loader";
 
 type TabKey = "overview" | "history" | "prescriptions" | "notes";
 
@@ -50,11 +51,7 @@ export function PatientCard({ patientId }: { patientId?: string }) {
   }, [patientId]);
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <p className="text-sm text-muted-foreground">Loading patient...</p>
-      </div>
-    );
+    return <PageLoader message="Loading patient..." />;
   }
 
   if (!patient) {

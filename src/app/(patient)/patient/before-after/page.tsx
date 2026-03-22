@@ -7,6 +7,7 @@ import {
   fetchBeforeAfterPhotos,
   type BeforeAfterPhotoView,
 } from "@/lib/data/client";
+import { PageLoader } from "@/components/ui/page-loader";
 
 export default function PatientBeforeAfterPage() {
   const [myPhotos, setMyPhotos] = useState<BeforeAfterPhotoView[]>([]);
@@ -24,11 +25,7 @@ export default function PatientBeforeAfterPage() {
   }, []);
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <p className="text-sm text-muted-foreground">Loading photos...</p>
-      </div>
-    );
+    return <PageLoader message="Loading photos..." />;
   }
 
   return (

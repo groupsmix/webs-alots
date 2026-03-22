@@ -5,6 +5,7 @@ import { Package } from "lucide-react";
 import { LensInventoryManager } from "@/components/para-medical/lens-inventory-manager";
 import { getCurrentUser } from "@/lib/data/client";
 import type { LensInventoryItem } from "@/lib/types/para-medical";
+import { PageLoader } from "@/components/ui/page-loader";
 
 export default function LensInventoryPage() {
   const [items, setItems] = useState<LensInventoryItem[]>([]);
@@ -21,11 +22,7 @@ export default function LensInventoryPage() {
   }, []);
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <p className="text-sm text-muted-foreground">Loading lens inventory...</p>
-      </div>
-    );
+    return <PageLoader message="Loading lens inventory..." />;
   }
 
   return (

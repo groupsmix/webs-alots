@@ -24,6 +24,7 @@ import {
   type WaitingRoomEntry,
   type InvoiceView,
 } from "@/lib/data/client";
+import { PageLoader } from "@/components/ui/page-loader";
 
 // ── Date helpers ──
 
@@ -151,11 +152,7 @@ export default function DoctorDashboardPage() {
   ];
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <p className="text-sm text-muted-foreground">Loading dashboard...</p>
-      </div>
-    );
+    return <PageLoader message="Loading dashboard..." />;
   }
 
   const handleMarkDone = async (appointmentId: string) => {

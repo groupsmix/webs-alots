@@ -29,6 +29,7 @@ import {
   type UltrasoundView,
   type PregnancyView,
 } from "@/lib/data/client";
+import { PageLoader } from "@/components/ui/page-loader";
 
 export default function UltrasoundsPage() {
   const [ultrasounds, setUltrasounds] = useState<UltrasoundView[]>([]);
@@ -101,11 +102,7 @@ export default function UltrasoundsPage() {
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <p className="text-sm text-muted-foreground">Loading ultrasound records...</p>
-      </div>
-    );
+    return <PageLoader message="Loading ultrasound records..." />;
   }
 
   const activePregnancies = pregnancies.filter((p) => p.status === "active");

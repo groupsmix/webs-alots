@@ -13,6 +13,7 @@ import {
 import { clinicConfig } from "@/config/clinic.config";
 import { fetchLoyaltyMembers, fetchLoyaltyTransactions, getPointsValue } from "@/lib/data/client";
 import type { LoyaltyMemberView, LoyaltyTransactionView } from "@/lib/data/client";
+import { PageLoader } from "@/components/ui/page-loader";
 
 type LoyaltyTier = "bronze" | "silver" | "gold" | "platinum";
 type TransactionType = "earned" | "redeemed" | "birthday_bonus" | "referral_bonus" | "expired";
@@ -48,11 +49,7 @@ export default function LoyaltyPage() {
   }, []);
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[50vh]">
-        <div className="animate-pulse text-muted-foreground">Loading loyalty data...</div>
-      </div>
-    );
+    return <PageLoader message="Loading loyalty data..." />;
   }
 
   const filteredMembers = allMembers.filter(

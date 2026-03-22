@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import type { WaitingListView } from "@/lib/data/client";
+import { PageLoader } from "@/components/ui/page-loader";
 
 interface WaitingListStatusProps {
   patientId: string;
@@ -58,13 +59,7 @@ export function WaitingListStatus({ patientId }: WaitingListStatusProps) {
   };
 
   if (loading) {
-    return (
-      <Card>
-        <CardContent className="py-4">
-          <p className="text-sm text-muted-foreground">Loading waiting list...</p>
-        </CardContent>
-      </Card>
-    );
+    return <PageLoader message="Loading waiting list..." />;
   }
 
   if (entries.length === 0) {

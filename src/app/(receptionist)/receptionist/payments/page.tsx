@@ -14,6 +14,7 @@ import {
   type InvoiceView,
 } from "@/lib/data/client";
 import { PaymentDialog } from "@/components/receptionist/payment-dialog";
+import { PageLoader } from "@/components/ui/page-loader";
 
 interface PaymentEntry {
   id: string;
@@ -81,11 +82,7 @@ export default function PaymentsPage() {
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <p className="text-muted-foreground">Loading payments...</p>
-      </div>
-    );
+    return <PageLoader message="Loading payments..." />;
   }
 
   return (

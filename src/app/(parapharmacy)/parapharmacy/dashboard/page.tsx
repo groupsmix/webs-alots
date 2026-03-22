@@ -16,6 +16,7 @@ import {
   getOutOfStockProducts,
 } from "@/lib/data/client";
 import type { ProductView, ParapharmacyCategoryView } from "@/lib/data/client";
+import { PageLoader } from "@/components/ui/page-loader";
 
 export default function ParapharmacyDashboardPage() {
   const [products, setProducts] = useState<ProductView[]>([]);
@@ -36,11 +37,7 @@ export default function ParapharmacyDashboardPage() {
   }, []);
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[50vh]">
-        <div className="animate-pulse text-muted-foreground">Loading dashboard...</div>
-      </div>
-    );
+    return <PageLoader message="Loading dashboard..." />;
   }
 
   const activeProducts = products.filter((p) => p.active);

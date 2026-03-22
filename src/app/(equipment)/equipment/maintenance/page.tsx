@@ -18,6 +18,7 @@ import {
 import type { EquipmentMaintenanceView, EquipmentItemView } from "@/lib/data/client";
 import { useEquipmentLocale } from "../../layout";
 import { useEquipmentI18n } from "@/lib/hooks/use-equipment-i18n";
+import { PageLoader } from "@/components/ui/page-loader";
 
 const STATUS_OPTIONS = ["all", "scheduled", "in_progress", "completed", "cancelled"] as const;
 const TYPE_OPTIONS = ["routine", "repair", "calibration", "inspection", "cleaning"] as const;
@@ -176,11 +177,7 @@ export default function EquipmentMaintenancePage() {
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[50vh]">
-        <div className="animate-pulse text-muted-foreground">{t("loading")}</div>
-      </div>
-    );
+    return <PageLoader message="Loading..." />;
   }
 
   const filtered = records.filter((r) => {

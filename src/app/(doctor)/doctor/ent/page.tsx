@@ -19,6 +19,7 @@ import {
   fetchENTExams, createENTExam,
   type HearingTestView, type ENTExamView,
 } from "@/lib/data/specialists";
+import { PageLoader } from "@/components/ui/page-loader";
 
 const AUDIOGRAM_FREQUENCIES = ["250", "500", "1000", "2000", "4000", "8000"];
 
@@ -81,11 +82,7 @@ export default function ENTPage() {
   }, []);
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <p className="text-sm text-muted-foreground">Loading ENT records...</p>
-      </div>
-    );
+    return <PageLoader message="Loading ENT records..." />;
   }
 
   const handleAddTest = async () => {

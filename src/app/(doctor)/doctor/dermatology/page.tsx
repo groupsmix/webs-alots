@@ -20,6 +20,7 @@ import {
   fetchSkinConditions, createSkinCondition, updateSkinCondition,
   type SkinPhotoView, type SkinConditionView,
 } from "@/lib/data/specialists";
+import { PageLoader } from "@/components/ui/page-loader";
 
 const BODY_REGIONS = [
   "Face", "Scalp", "Neck", "Chest", "Back", "Abdomen",
@@ -71,11 +72,7 @@ export default function DermatologyPage() {
   }, []);
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <p className="text-sm text-muted-foreground">Loading dermatology records...</p>
-      </div>
-    );
+    return <PageLoader message="Loading dermatology records..." />;
   }
 
   const handleAddPhoto = async () => {

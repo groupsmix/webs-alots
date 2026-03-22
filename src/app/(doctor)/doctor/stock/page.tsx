@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { MaterialStockAlert } from "@/components/dental/material-stock-alert";
 import { getCurrentUser, fetchProducts, type ProductView } from "@/lib/data/client";
+import { PageLoader } from "@/components/ui/page-loader";
 
 export default function DoctorStockPage() {
   const [stock, setStock] = useState<ProductView[]>([]);
@@ -20,11 +21,7 @@ export default function DoctorStockPage() {
   }, []);
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <p className="text-sm text-muted-foreground">Loading stock...</p>
-      </div>
-    );
+    return <PageLoader message="Loading stock..." />;
   }
 
   return (

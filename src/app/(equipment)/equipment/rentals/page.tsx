@@ -18,6 +18,7 @@ import {
 import type { EquipmentRentalView, EquipmentItemView } from "@/lib/data/client";
 import { useEquipmentLocale } from "../../layout";
 import { useEquipmentI18n } from "@/lib/hooks/use-equipment-i18n";
+import { PageLoader } from "@/components/ui/page-loader";
 
 const STATUS_OPTIONS = ["all", "reserved", "active", "returned", "overdue", "cancelled"] as const;
 const PAYMENT_OPTIONS = ["pending", "partial", "paid", "refunded"] as const;
@@ -198,11 +199,7 @@ export default function EquipmentRentalsPage() {
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[50vh]">
-        <div className="animate-pulse text-muted-foreground">{t("loading")}</div>
-      </div>
-    );
+    return <PageLoader message="Loading..." />;
   }
 
   const filtered = rentals.filter((r) => {

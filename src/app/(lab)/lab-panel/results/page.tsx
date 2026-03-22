@@ -17,6 +17,7 @@ import { Search, FlaskConical, ArrowUpDown, TrendingUp, TrendingDown, Minus, Plu
 import { clinicConfig } from "@/config/clinic.config";
 import { fetchLabTestOrders, fetchLabTestResults, saveLabTestResult } from "@/lib/data/client";
 import type { LabTestOrderView, LabTestResultView } from "@/lib/data/client";
+import { PageLoader } from "@/components/ui/page-loader";
 
 function FlagIcon({ flag }: { flag: string }) {
   if (flag === "high" || flag === "critical_high") return <TrendingUp className="h-3 w-3" />;
@@ -142,11 +143,7 @@ export default function ResultsPage() {
   const selectedOrder = orders.find((o) => o.id === selectedOrderId);
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[50vh]">
-        <div className="animate-pulse text-muted-foreground">Loading...</div>
-      </div>
-    );
+    return <PageLoader message="Loading..." />;
   }
 
   const filtered = orders.filter((o) => {

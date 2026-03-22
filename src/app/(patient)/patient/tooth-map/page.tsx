@@ -7,6 +7,7 @@ import {
   fetchOdontogram,
   type OdontogramView,
 } from "@/lib/data/client";
+import { PageLoader } from "@/components/ui/page-loader";
 
 export default function PatientToothMapPage() {
   const [entries, setEntries] = useState<OdontogramView[]>([]);
@@ -24,11 +25,7 @@ export default function PatientToothMapPage() {
   }, []);
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <p className="text-sm text-muted-foreground">Loading tooth map...</p>
-      </div>
-    );
+    return <PageLoader message="Loading tooth map..." />;
   }
 
   return (

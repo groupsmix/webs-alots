@@ -5,6 +5,7 @@ import { FileText } from "lucide-react";
 import { OpticalPrescriptionTracker } from "@/components/para-medical/optical-prescription-tracker";
 import { getCurrentUser } from "@/lib/data/client";
 import type { OpticalPrescription } from "@/lib/types/para-medical";
+import { PageLoader } from "@/components/ui/page-loader";
 
 export default function OpticalPrescriptionsPage() {
   const [prescriptions, setPrescriptions] = useState<OpticalPrescription[]>([]);
@@ -21,11 +22,7 @@ export default function OpticalPrescriptionsPage() {
   }, []);
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <p className="text-sm text-muted-foreground">Loading prescriptions...</p>
-      </div>
-    );
+    return <PageLoader message="Loading prescriptions..." />;
   }
 
   return (

@@ -21,6 +21,7 @@ import {
   fetchHeartMonitoringNotes, createHeartMonitoringNote,
   type ECGRecordView, type BloodPressureView, type HeartMonitoringNoteView,
 } from "@/lib/data/specialists";
+import { PageLoader } from "@/components/ui/page-loader";
 
 function bpCategory(systolic: number, diastolic: number): { label: string; color: string } {
   if (systolic < 120 && diastolic < 80) return { label: "Normal", color: "text-green-600" };
@@ -67,11 +68,7 @@ export default function CardiologyPage() {
   }, []);
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <p className="text-sm text-muted-foreground">Loading cardiology records...</p>
-      </div>
-    );
+    return <PageLoader message="Loading cardiology records..." />;
   }
 
   const handleAddEcg = async () => {

@@ -10,6 +10,7 @@ import {
   fetchTimeSlots,
   type TimeSlotView,
 } from "@/lib/data/client";
+import { PageLoader } from "@/components/ui/page-loader";
 
 const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
@@ -49,11 +50,7 @@ export default function NextAvailableSlotsPage() {
   }, []);
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <p className="text-sm text-muted-foreground">Loading slots...</p>
-      </div>
-    );
+    return <PageLoader message="Loading slots..." />;
   }
 
   const availableSlots = computeAvailableSlots(timeSlots, daysAhead);

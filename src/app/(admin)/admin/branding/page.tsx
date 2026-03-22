@@ -24,6 +24,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
+import { PageLoader } from "@/components/ui/page-loader";
 
 interface BrandingState {
   name: string;
@@ -171,12 +172,7 @@ export default function BrandingPage() {
     };
 
   if (loading) {
-    return (
-      <div>
-        <h1 className="text-2xl font-bold mb-6">Branding</h1>
-        <p className="text-muted-foreground">Loading branding settings...</p>
-      </div>
-    );
+    return <PageLoader message="Loading branding settings..." />;
   }
 
   return (

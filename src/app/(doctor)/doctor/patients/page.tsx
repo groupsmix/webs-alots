@@ -19,6 +19,7 @@ import {
   type PrescriptionView,
   type ConsultationNoteView,
 } from "@/lib/data/client";
+import { PageLoader } from "@/components/ui/page-loader";
 
 type Patient = PatientView;
 
@@ -52,11 +53,7 @@ export default function DoctorPatientsPage() {
   }, []);
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <p className="text-sm text-muted-foreground">Loading patients...</p>
-      </div>
-    );
+    return <PageLoader message="Loading patients..." />;
   }
 
   const filteredPatients = patients.filter(

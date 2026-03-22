@@ -9,6 +9,7 @@ import { Search, FileText, Download } from "lucide-react";
 import { clinicConfig } from "@/config/clinic.config";
 import { fetchLabTestOrders } from "@/lib/data/client";
 import type { LabTestOrderView } from "@/lib/data/client";
+import { PageLoader } from "@/components/ui/page-loader";
 
 export default function LabReportsPage() {
   const [orders, setOrders] = useState<LabTestOrderView[]>([]);
@@ -24,11 +25,7 @@ export default function LabReportsPage() {
   }, []);
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[50vh]">
-        <div className="animate-pulse text-muted-foreground">Loading reports...</div>
-      </div>
-    );
+    return <PageLoader message="Loading reports..." />;
   }
 
   const filtered = orders.filter((o) => {

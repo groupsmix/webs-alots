@@ -10,6 +10,7 @@ import {
   type MedicalCertificateView,
   type PatientView,
 } from "@/lib/data/client";
+import { PageLoader } from "@/components/ui/page-loader";
 
 export default function DoctorCertificatesPage() {
   const [certificates, setCertificates] = useState<MedicalCertificateView[]>([]);
@@ -32,11 +33,7 @@ export default function DoctorCertificatesPage() {
   }, []);
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <p className="text-sm text-muted-foreground">Loading certificates...</p>
-      </div>
-    );
+    return <PageLoader message="Loading certificates..." />;
   }
 
   const handleCreateCertificate = async (data: {

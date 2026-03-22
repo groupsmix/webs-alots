@@ -5,6 +5,7 @@ import { Dumbbell } from "lucide-react";
 import { ExerciseProgramBuilder } from "@/components/para-medical/exercise-program-builder";
 import { getCurrentUser } from "@/lib/data/client";
 import type { ExerciseProgram } from "@/lib/types/para-medical";
+import { PageLoader } from "@/components/ui/page-loader";
 
 export default function ExerciseProgramsPage() {
   const [programs, setPrograms] = useState<ExerciseProgram[]>([]);
@@ -22,11 +23,7 @@ export default function ExerciseProgramsPage() {
   }, []);
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <p className="text-sm text-muted-foreground">Loading exercise programs...</p>
-      </div>
-    );
+    return <PageLoader message="Loading exercise programs..." />;
   }
 
   return (

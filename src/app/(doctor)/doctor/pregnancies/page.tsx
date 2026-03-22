@@ -30,6 +30,7 @@ import {
   type PregnancyView,
   type PatientView,
 } from "@/lib/data/client";
+import { PageLoader } from "@/components/ui/page-loader";
 
 function addDays(date: string, days: number): string {
   const d = new Date(date);
@@ -119,11 +120,7 @@ export default function PregnanciesPage() {
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <p className="text-sm text-muted-foreground">Loading pregnancy records...</p>
-      </div>
-    );
+    return <PageLoader message="Loading pregnancy records..." />;
   }
 
   const active = pregnancies.filter((p) => p.status === "active");

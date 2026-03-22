@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { LabOrdersPanel } from "@/components/dental/lab-orders-panel";
 import { getCurrentUser, fetchLabOrders } from "@/lib/data/client";
 import type { LabOrder } from "@/lib/types/dental";
+import { PageLoader } from "@/components/ui/page-loader";
 
 export default function DoctorLabOrdersPage() {
   const [orders, setOrders] = useState<LabOrder[]>([]);
@@ -21,11 +22,7 @@ export default function DoctorLabOrdersPage() {
   }, []);
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <p className="text-sm text-muted-foreground">Loading lab orders...</p>
-      </div>
-    );
+    return <PageLoader message="Loading lab orders..." />;
   }
 
   const handleUpdateStatus = (orderId: string, status: LabOrder["status"]) => {

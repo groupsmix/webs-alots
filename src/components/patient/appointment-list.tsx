@@ -11,6 +11,7 @@ import {
   type AppointmentView,
 } from "@/lib/data/client";
 import { RescheduleDialog } from "./reschedule-dialog";
+import { PageLoader } from "@/components/ui/page-loader";
 
 const CANCELLATION_WINDOW_HOURS = 24;
 
@@ -110,11 +111,7 @@ export function AppointmentList({ patientId }: { patientId?: string }) {
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <p className="text-sm text-muted-foreground">Loading appointments...</p>
-      </div>
-    );
+    return <PageLoader message="Loading appointments..." />;
   }
 
   const apptToReschedule = rescheduleAppt

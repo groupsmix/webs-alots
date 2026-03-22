@@ -5,6 +5,7 @@ import { ClipboardList } from "lucide-react";
 import { SpeechSessionTracker } from "@/components/para-medical/speech-session-tracker";
 import { getCurrentUser } from "@/lib/data/client";
 import type { SpeechSession } from "@/lib/types/para-medical";
+import { PageLoader } from "@/components/ui/page-loader";
 
 export default function SpeechSessionsPage() {
   const [sessions, setSessions] = useState<SpeechSession[]>([]);
@@ -21,11 +22,7 @@ export default function SpeechSessionsPage() {
   }, []);
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <p className="text-sm text-muted-foreground">Loading sessions...</p>
-      </div>
-    );
+    return <PageLoader message="Loading sessions..." />;
   }
 
   return (

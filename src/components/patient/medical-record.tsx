@@ -13,6 +13,7 @@ import {
   type AppointmentView,
   type PrescriptionView,
 } from "@/lib/data/client";
+import { PageLoader } from "@/components/ui/page-loader";
 
 /**
  * MedicalRecord
@@ -51,11 +52,7 @@ export function MedicalRecord({ patientId }: { patientId?: string }) {
   }, [patientId]);
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <p className="text-sm text-muted-foreground">Loading medical record...</p>
-      </div>
-    );
+    return <PageLoader message="Loading medical record..." />;
   }
 
   if (!patient) {

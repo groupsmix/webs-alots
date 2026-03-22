@@ -13,6 +13,7 @@ import {
   type AppointmentView,
 } from "@/lib/data/client";
 import { RescheduleDialog } from "@/components/patient/reschedule-dialog";
+import { PageLoader } from "@/components/ui/page-loader";
 
 const statusColors: Record<string, string> = {
   scheduled: "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300",
@@ -46,11 +47,7 @@ export default function PatientAppointmentsPage() {
   }, [refreshKey]);
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <p className="text-sm text-muted-foreground">Loading appointments...</p>
-      </div>
-    );
+    return <PageLoader message="Loading appointments..." />;
   }
   const upcoming = patientAppointments.filter(
     (a) => a.status === "scheduled" || a.status === "confirmed" || a.status === "in-progress"

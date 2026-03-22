@@ -12,6 +12,7 @@ import {
 } from "@/lib/data/client";
 import { clinicConfig } from "@/config/clinic.config";
 import { EmergencySlotCreator } from "./emergency-slot-creator";
+import { PageLoader } from "@/components/ui/page-loader";
 
 type ViewMode = "timeline" | "list";
 
@@ -48,11 +49,7 @@ export function ScheduleView() {
   }, []);
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <p className="text-sm text-muted-foreground">Loading schedule...</p>
-      </div>
-    );
+    return <PageLoader message="Loading schedule..." />;
   }
 
   const timeSlots = [

@@ -19,6 +19,7 @@ import {
   fetchRespiratoryTests, createRespiratoryTest,
   type SpirometryRecordView, type RespiratoryTestView,
 } from "@/lib/data/specialists";
+import { PageLoader } from "@/components/ui/page-loader";
 
 function spirometryInterpretation(fev1FvcRatio: number | null): string {
   if (fev1FvcRatio === null) return "Insufficient data";
@@ -59,11 +60,7 @@ export default function PulmonologyPage() {
   }, []);
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <p className="text-sm text-muted-foreground">Loading pulmonology records...</p>
-      </div>
-    );
+    return <PageLoader message="Loading pulmonology records..." />;
   }
 
   const handleAddSpiro = async () => {

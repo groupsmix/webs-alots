@@ -29,6 +29,7 @@ import type {
   PurchaseOrderView,
   LoyaltyMemberView,
 } from "@/lib/data/client";
+import { PageLoader } from "@/components/ui/page-loader";
 
 // ── Date helpers ──
 
@@ -116,11 +117,7 @@ export default function PharmacistDashboardPage() {
   );
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[50vh]">
-        <div className="animate-pulse text-muted-foreground">Loading dashboard...</div>
-      </div>
-    );
+    return <PageLoader message="Loading dashboard..." />;
   }
 
   // ── Prescription fill rate ──

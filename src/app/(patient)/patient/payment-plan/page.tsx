@@ -7,6 +7,7 @@ import {
   fetchInstallmentPlans,
   type InstallmentPlanView,
 } from "@/lib/data/client";
+import { PageLoader } from "@/components/ui/page-loader";
 
 export default function PatientPaymentPlanPage() {
   const [myPlans, setMyPlans] = useState<InstallmentPlanView[]>([]);
@@ -24,11 +25,7 @@ export default function PatientPaymentPlanPage() {
   }, []);
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <p className="text-sm text-muted-foreground">Loading payment plans...</p>
-      </div>
-    );
+    return <PageLoader message="Loading payment plans..." />;
   }
 
   const handleGenerateReceipt = (planId: string, installmentId: string) => {

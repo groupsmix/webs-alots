@@ -7,6 +7,7 @@ import { AlertTriangle, Check, Clock, X } from "lucide-react";
 import { clinicConfig } from "@/config/clinic.config";
 import { fetchProducts, getExpiryStatus } from "@/lib/data/client";
 import type { ProductView } from "@/lib/data/client";
+import { PageLoader } from "@/components/ui/page-loader";
 
 export default function ExpiryTrackerPage() {
   const [allProducts, setAllProducts] = useState<ProductView[]>([]);
@@ -32,11 +33,7 @@ export default function ExpiryTrackerPage() {
   }, [allProducts]);
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[50vh]">
-        <div className="animate-pulse text-muted-foreground">Loading expiry data...</div>
-      </div>
-    );
+    return <PageLoader message="Loading expiry data..." />;
   }
 
   const expired = products.filter((p) => p.expiryStatus === "red");
