@@ -23,13 +23,13 @@ import {
   getOutOfStockProducts,
 } from "@/lib/data/client";
 import type {
-import { PageLoader } from "@/components/ui/page-loader";
   ProductView,
   PharmacyPrescriptionView,
   DailySaleView,
   PurchaseOrderView,
   LoyaltyMemberView,
 } from "@/lib/data/client";
+import { PageLoader } from "@/components/ui/page-loader";
 
 // ── Date helpers ──
 
