@@ -116,7 +116,7 @@ export async function POST(request: NextRequest) {
             booking_source: "online",
             notes: `Recurring: ${body.pattern} (${i + 1}/${body.occurrences}) group:${groupId}`,
             is_emergency: false,
-          })
+          } as never)
           .select("id")
           .single();
 

@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
       .single();
 
     const allowedRoles: UserRole[] = ["super_admin", "clinic_admin", "receptionist", "doctor"];
-    if (!profile || !allowedRoles.includes(profile.role)) {
+    if (!profile || !allowedRoles.includes(profile.role as UserRole)) {
       return NextResponse.json({ error: "Forbidden — insufficient permissions" }, { status: 403 });
     }
 

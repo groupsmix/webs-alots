@@ -72,7 +72,7 @@ export async function POST(request: NextRequest) {
       .select("id")
       .eq("clinic_id", clinicConfig.clinicId)
       .eq("doctor_id", appt.doctor_id)
-      .eq("preferred_date", appt.appointment_date)
+      .eq("preferred_date", appt.appointment_date!)
       .eq("status", "waiting")
       .order("created_at", { ascending: true })
       .limit(1)

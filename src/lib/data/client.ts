@@ -75,7 +75,7 @@ async function fetchRows<T>(
   let q = supabase.from(table).select(opts?.select ?? "*");
   if (opts?.eq) {
     for (const [col, val] of opts.eq) {
-      q = q.eq(col, val);
+      q = q.eq(col, val as string);
     }
   }
   if (opts?.inFilter) {
@@ -1004,7 +1004,7 @@ export async function createConsultationNote(data: {
   const supabase = createClient();
   const { data: result, error } = await supabase
     .from("consultation_notes")
-    .insert(data)
+    .insert(data as never)
     .select("id")
     .single();
   if (error) {
@@ -1026,7 +1026,7 @@ export async function updateConsultationNote(
   const supabase = createClient();
   const { error } = await supabase
     .from("consultation_notes")
-    .update({ ...data, updated_at: new Date().toISOString() })
+    .update({ ...data, updated_at: new Date().toISOString() } as never)
     .eq("id", id);
   if (error) {
     console.error("[data] update consultation note:", error.message);
@@ -1306,7 +1306,7 @@ export async function createMedicalCertificate(data: {
   const supabase = createClient();
   const { data: result, error } = await supabase
     .from("medical_certificates")
-    .insert(data)
+    .insert(data as never)
     .select("id")
     .single();
   if (error) {
@@ -1326,7 +1326,7 @@ export async function updateMedicalCertificate(
   },
 ): Promise<boolean> {
   const supabase = createClient();
-  const { error } = await supabase.from("medical_certificates").update(data).eq("id", id);
+  const { error } = await supabase.from("medical_certificates").update(data as never).eq("id", id);
   if (error) {
     console.error("[data] update medical certificate:", error.message);
     return false;
@@ -2136,7 +2136,7 @@ interface InstallmentItemRaw {
 export async function fetchInstallmentPlans(clinicId: string): Promise<InstallmentPlanView[]> {
   await ensureLookups(clinicId);
 
-  const plans = await fetchRows<InstallmentPlanRaw>("installment_plans", {
+  const plans = await fetchRows<InstallmentPlanRaw>("installment_plans" as TableName, {
     eq: [["clinic_id", clinicId]],
     order: ["created_at", { ascending: false }],
   });
@@ -2554,7 +2554,7 @@ export async function createAppointment(data: {
     .insert({
       ...data,
       status: "confirmed",
-    })
+    } as never)
     .select("id")
     .single();
 
@@ -2631,7 +2631,7 @@ interface PharmacySaleRaw {
 
 export async function fetchDailySales(clinicId: string): Promise<DailySaleView[]> {
   await ensureLookups(clinicId);
-  const rows = await fetchRows<PharmacySaleRaw>("pharmacy_sales", {
+  const rows = await fetchRows<PharmacySaleRaw>("pharmacy_sales" as TableName, {
     eq: [["clinic_id", clinicId]],
     order: ["created_at", { ascending: false }],
   });
@@ -3406,7 +3406,7 @@ export async function adjustParapharmacyStock(
   if (error) {
     // Try insert if no stock row exists
     const { error: insertError } = await supabase.from("stock")
-      .insert({ product_id: productId, quantity: newQuantity });
+      .insert({ product_id: productId, quantity: newQuantity } as never);
     if (insertError) {
       console.error("[data] adjust stock:", insertError.message);
       return false;
@@ -4602,7 +4602,7 @@ export async function createUltrasound(data: {
 }): Promise<string | null> {
   const supabase = createClient();
   const { data: row, error } = await supabase.from("ultrasound_records")
-    .insert(data)
+    .insert(data as never)
     .select("id")
     .single();
   if (error) { console.error("[data] ultrasound_records insert:", error.message); return null; }
