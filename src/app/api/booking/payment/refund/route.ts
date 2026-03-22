@@ -71,7 +71,8 @@ export const POST = withAuth(async (request, { supabase }) => {
     }
 
     return NextResponse.json({ status: "refunded", message: "Payment refunded" });
-  } catch {
+  } catch (err) {
+    console.error("[POST /api/booking/payment/refund] Error:", err instanceof Error ? err.message : "Unknown error");
     return NextResponse.json({ error: "Failed to refund payment" }, { status: 500 });
   }
 }, ADMIN_ROLES);

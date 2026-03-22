@@ -135,7 +135,8 @@ export const POST = withAuth(async (request, { supabase }) => {
     }
 
     return NextResponse.json({ values: data });
-  } catch {
+  } catch (err) {
+    console.error("[POST /api/custom-fields/values] Error:", err instanceof Error ? err.message : "Unknown error");
     return NextResponse.json(
       { error: "Invalid request body" },
       { status: 400 },
@@ -245,7 +246,8 @@ export const PATCH = withAuth(async (request, { supabase }) => {
     }
 
     return NextResponse.json({ values: data });
-  } catch {
+  } catch (err) {
+    console.error("[PATCH /api/custom-fields/values] Error:", err instanceof Error ? err.message : "Unknown error");
     return NextResponse.json(
       { error: "Invalid request body" },
       { status: 400 },
