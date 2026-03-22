@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { Target } from "lucide-react";
 import { TherapyPlanView } from "@/components/para-medical/therapy-plan-view";
 import { getCurrentUser } from "@/lib/data/client";

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import {
   Brain, Plus, Shield, Lock, Pill, Save,
   AlertTriangle, Eye, EyeOff,

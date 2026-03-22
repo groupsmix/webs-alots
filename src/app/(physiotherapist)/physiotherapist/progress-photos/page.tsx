@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { Camera } from "lucide-react";
 import { ProgressPhotoGallery } from "@/components/para-medical/progress-photo-gallery";
 import { getCurrentUser } from "@/lib/data/client";

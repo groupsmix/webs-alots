@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { InstallmentTracker } from "@/components/installments/installment-tracker";
 import { InstallmentForm } from "@/components/installments/installment-form";

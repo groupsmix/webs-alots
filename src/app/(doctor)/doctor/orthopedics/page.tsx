@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
+import NextImage from "next/image";
 import {
   Bone, Plus, Save, Calendar, Image as ImageIcon,
   Target, CheckCircle, Clock, AlertTriangle,
 } from "lucide-react";
-import NextImage from "next/image";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";

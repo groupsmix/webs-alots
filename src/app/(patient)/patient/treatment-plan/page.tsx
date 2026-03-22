@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { TreatmentPlanBuilder } from "@/components/dental/treatment-plan-builder";
 import {
   getCurrentUser,

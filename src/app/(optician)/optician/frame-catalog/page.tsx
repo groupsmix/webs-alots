@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { Glasses } from "lucide-react";
 import { FrameCatalog } from "@/components/para-medical/frame-catalog";
 import { getCurrentUser } from "@/lib/data/client";

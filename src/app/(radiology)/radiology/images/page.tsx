@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
+import NextImage from "next/image";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -23,7 +24,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Search, Image as ImageIcon, ExternalLink, Eye, FileImage, Upload, Loader2, X } from "lucide-react";
-import NextImage from "next/image";
 import Link from "next/link";
 import { clinicConfig } from "@/config/clinic.config";
 import { fetchRadiologyOrders } from "@/lib/data/client";

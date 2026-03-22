@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { LabOrdersPanel } from "@/components/dental/lab-orders-panel";
 import { getCurrentUser, fetchLabOrders } from "@/lib/data/client";
 import type { LabOrder } from "@/lib/types/dental";

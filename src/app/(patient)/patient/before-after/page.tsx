@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { BeforeAfterGallery } from "@/components/dental/before-after-gallery";
 import {
   getCurrentUser,
