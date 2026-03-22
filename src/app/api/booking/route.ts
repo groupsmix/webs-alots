@@ -67,8 +67,8 @@ async function validateBookingRequest(body: BookingRequestBody): Promise<string 
     return "Selected date is not a working day";
   }
 
-  const allSlots = await getPublicGeneratedSlots(body.date, body.doctorId);
-  if (!allSlots.includes(body.time)) {
+  const generatedSlots = await getPublicGeneratedSlots(body.date, body.doctorId);
+  if (!generatedSlots.includes(body.time)) {
     return "Selected time is not a valid slot";
   }
 
@@ -167,6 +167,13 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (apptError || !appointment) {
+      // Handle unique constraint violation (double-booking race condition)
+      if (apptError?.code === "23505") {
+        return NextResponse.json(
+          { error: "This slot has already been booked. Please choose another time." },
+          { status: 409 },
+        );
+      }
       console.error("[booking] create appointment:", apptError?.message);
       return NextResponse.json({ error: "Failed to create booking" }, { status: 500 });
     }
