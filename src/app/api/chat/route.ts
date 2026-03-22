@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { fetchChatbotContext, buildSystemPrompt, getBasicResponse } from "@/lib/chatbot-data";
 import { TENANT_HEADERS } from "@/lib/tenant";
+import { createClient } from "@/lib/supabase-server";
 
 export const runtime = "edge";
 
@@ -154,6 +155,17 @@ export async function POST(request: NextRequest) {
     }
 
     // --- ADVANCED: OpenAI-compatible API (paid) ---
+    // The advanced tier consumes paid API credits. Require authentication
+    // to prevent unauthenticated abuse.
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      return NextResponse.json(
+        { error: "Authentication required for advanced AI chat" },
+        { status: 401 },
+      );
+    }
+
     const apiKey = process.env.OPENAI_API_KEY;
     const baseUrl = process.env.OPENAI_BASE_URL || "https://api.openai.com/v1";
     const model = process.env.OPENAI_MODEL || "gpt-4o-mini";

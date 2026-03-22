@@ -90,7 +90,9 @@ async function fetchRows<T>(
   if (opts?.gte) q = q.gte(opts.gte[0] as string, opts.gte[1]);
   if (opts?.lte) q = q.lte(opts.lte[0] as string, opts.lte[1]);
   if (opts?.order) q = q.order(opts.order[0], opts.order[1]);
-  if (opts?.limit) q = q.limit(opts.limit);
+  // Apply an upper-bound limit to prevent unbounded result sets.
+  // Callers can override with a smaller value via opts.limit.
+  q = q.limit(opts?.limit ?? 1000);
   const { data, error } = await q;
   if (error) {
     console.error(`[data] ${table}:`, error.message);
@@ -956,12 +958,14 @@ export async function upsertReview(data: {
     console.error("[data] create review:", error.message);
     return false;
   }
+  clearLookupCache();
   return true;
 }
 
 export async function updateReviewResponse(reviewId: string, response: string): Promise<boolean> {
   const supabase = createClient();
   const { error } = await supabase.from("reviews").update({ response }).eq("id", reviewId);
+  if (!error) clearLookupCache();
   return !error;
 }
 
@@ -2539,6 +2543,7 @@ export async function addToWaitingList(data: {
     console.error("[data] addToWaitingList:", error.message);
     return { success: false, error: error.message };
   }
+  clearLookupCache();
   return { success: true, entryId: entry?.id };
 }
 
@@ -2573,6 +2578,7 @@ export async function createAppointment(data: {
     console.error("[data] createAppointment:", error.message);
     return { success: false, error: error.message };
   }
+  clearLookupCache();
   return { success: true, id: appt?.id };
 }
 
