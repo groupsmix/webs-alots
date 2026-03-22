@@ -3,6 +3,7 @@ import { clinicConfig } from "@/config/clinic.config";
 import { getPublicServices } from "@/lib/data/public";
 import { withAuth } from "@/lib/with-auth";
 import { findOrCreatePatient } from "@/lib/find-or-create-patient";
+import { APPOINTMENT_STATUS } from "@/lib/types/database";
 import type { TablesInsert } from "@/lib/types/database";
 
 export const runtime = "edge";
@@ -114,7 +115,7 @@ export const POST = withAuth(async (request, { supabase }) => {
           end_time: endTime,
           slot_start: slotStart,
           slot_end: slotEnd,
-          status: "scheduled",
+          status: APPOINTMENT_STATUS.SCHEDULED,
           is_first_visit: insertIndex === 0 ? (body.isFirstVisit ?? false) : false,
           insurance_flag: body.hasInsurance ?? false,
           booking_source: "online",
@@ -173,18 +174,18 @@ export const POST = withAuth(async (request, { supabase }) => {
       }
 
       const cancelIds = toCancel
-        .filter((a) => a.status !== "cancelled" && a.status !== "completed")
+        .filter((a) => a.status !== APPOINTMENT_STATUS.CANCELLED && a.status !== APPOINTMENT_STATUS.COMPLETED)
         .map((a) => a.id);
 
       if (cancelIds.length > 0) {
         await supabase
           .from("appointments")
-          .update({ status: "cancelled" })
+          .update({ status: APPOINTMENT_STATUS.CANCELLED })
           .in("id", cancelIds);
       }
 
       return NextResponse.json({
-        status: "cancelled",
+        status: APPOINTMENT_STATUS.CANCELLED,
         message: `${cancelIds.length} appointment(s) cancelled`,
         cancelledCount: cancelIds.length,
       });

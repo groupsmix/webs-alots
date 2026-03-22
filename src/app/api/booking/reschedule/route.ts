@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { withAuth } from "@/lib/with-auth";
 import { clinicConfig } from "@/config/clinic.config";
 import { getPublicAvailableSlots } from "@/lib/data/public";
+import { APPOINTMENT_STATUS } from "@/lib/types/database";
+import { logAuditEvent } from "@/lib/audit-log";
 
 export const runtime = "edge";
 
@@ -12,7 +14,7 @@ export const runtime = "edge";
  * Validates working hours, slot availability, and prevents
  * rescheduling to past dates or double-booking conflicts.
  */
-export const POST = withAuth(async (request, { supabase }) => {
+export const POST = withAuth(async (request, { supabase, profile }) => {
   try {
     const body = (await request.json()) as {
       appointmentId: string;
@@ -69,7 +71,7 @@ export const POST = withAuth(async (request, { supabase }) => {
     }
 
     // Only allow rescheduling appointments in a valid state
-    if (existing.status === "cancelled" || existing.status === "completed" || existing.status === "rescheduled") {
+    if (existing.status === APPOINTMENT_STATUS.CANCELLED || existing.status === APPOINTMENT_STATUS.COMPLETED || existing.status === APPOINTMENT_STATUS.RESCHEDULED) {
       return NextResponse.json(
         { error: "Appointment cannot be rescheduled in its current state" },
         { status: 400 },
@@ -113,7 +115,7 @@ export const POST = withAuth(async (request, { supabase }) => {
         end_time: endTime,
         slot_start: slotStart,
         slot_end: slotEnd,
-        status: "rescheduled",
+        status: APPOINTMENT_STATUS.RESCHEDULED,
       })
       .eq("id", body.appointmentId);
 
@@ -121,8 +123,17 @@ export const POST = withAuth(async (request, { supabase }) => {
       return NextResponse.json({ error: updateError.message }, { status: 400 });
     }
 
+    await logAuditEvent({
+      supabase,
+      action: "appointment.rescheduled",
+      type: "booking",
+      actor: profile.id,
+      clinicId: profile.clinic_id,
+      description: `Appointment ${body.appointmentId} rescheduled to ${body.newDate} ${body.newTime}`,
+    });
+
     return NextResponse.json({
-      status: "rescheduled",
+      status: APPOINTMENT_STATUS.RESCHEDULED,
       message: "Appointment rescheduled successfully",
       newAppointmentId: body.appointmentId,
     });

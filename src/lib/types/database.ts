@@ -8474,6 +8474,19 @@ export type AppointmentStatus =
   | "cancelled"
   | "rescheduled";
 
+/** Runtime constants for AppointmentStatus to eliminate magic strings. */
+export const APPOINTMENT_STATUS = {
+  PENDING: "pending",
+  SCHEDULED: "scheduled",
+  CONFIRMED: "confirmed",
+  CHECKED_IN: "checked_in",
+  IN_PROGRESS: "in_progress",
+  COMPLETED: "completed",
+  NO_SHOW: "no_show",
+  CANCELLED: "cancelled",
+  RESCHEDULED: "rescheduled",
+} as const satisfies Record<string, AppointmentStatus>;
+
 export type BookingSource = "online" | "phone" | "walk_in" | "whatsapp";
 
 export type PaymentMethod = "cash" | "card" | "transfer" | "online" | "insurance";

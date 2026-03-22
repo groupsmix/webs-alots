@@ -1,8 +1,8 @@
-import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase-server";
+import { NextResponse } from "next/server";
 import { clinicConfig } from "@/config/clinic.config";
 import { withAuth } from "@/lib/with-auth";
 import { findOrCreatePatient } from "@/lib/find-or-create-patient";
+import { APPOINTMENT_STATUS } from "@/lib/types/database";
 
 export const runtime = "edge";
 
@@ -146,7 +146,7 @@ export const POST = withAuth(async (request, { supabase }) => {
           end_time: claimedSlot.end_time,
           slot_start: slotStart,
           slot_end: slotEnd,
-          status: "confirmed",
+          status: APPOINTMENT_STATUS.CONFIRMED,
           is_first_visit: false,
           insurance_flag: false,
           booking_source: "online",
@@ -182,13 +182,11 @@ export const POST = withAuth(async (request, { supabase }) => {
 /**
  * GET /api/booking/emergency-slot?doctorId=...&date=...
  *
- * Get available emergency slots.
+ * Get available emergency slots. Requires authentication.
  */
-export async function GET(request: NextRequest) {
+export const GET = withAuth(async (request, { supabase }) => {
   const doctorId = request.nextUrl.searchParams.get("doctorId") ?? undefined;
   const date = request.nextUrl.searchParams.get("date") ?? undefined;
-
-  const supabase = await createClient();
 
   let q = supabase
     .from("emergency_slots")
@@ -220,4 +218,4 @@ export async function GET(request: NextRequest) {
       createdAt: s.created_at,
     })),
   });
-}
+}, null);

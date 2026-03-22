@@ -88,6 +88,24 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  // Input length validation to prevent oversized payloads
+  const lengthLimits: Record<string, number> = {
+    full_name: 200,
+    email: 254,
+    phone: 30,
+    address: 500,
+    gender: 20,
+    insurance_type: 100,
+  };
+  for (const [field, maxLen] of Object.entries(lengthLimits)) {
+    if (typeof body[field] === "string" && body[field].length > maxLen) {
+      return NextResponse.json(
+        { error: `Field '${field}' exceeds maximum length of ${maxLen} characters` },
+        { status: 400 },
+      );
+    }
+  }
+
   const supabase = await createClient();
   const { data, error } = await supabase.from("users")
     .insert({
