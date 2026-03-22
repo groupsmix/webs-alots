@@ -1,6 +1,6 @@
-import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase-server";
+import { NextResponse } from "next/server";
 import { clinicConfig } from "@/config/clinic.config";
+import { withAuth } from "@/lib/with-auth";
 
 /** Build a timezone-aware Date for a date + time string using the clinic's timezone. */
 function clinicDateTime(dateStr: string, timeStr: string): Date {
@@ -23,15 +23,13 @@ export const runtime = "edge";
  *
  * Cancel an appointment if within the cancellation window.
  */
-export async function POST(request: NextRequest) {
+export const POST = withAuth(async (request, { supabase }) => {
   try {
     const body = (await request.json()) as { appointmentId: string; reason?: string };
 
     if (!body.appointmentId) {
       return NextResponse.json({ error: "appointmentId is required" }, { status: 400 });
     }
-
-    const supabase = await createClient();
 
     // Fetch the appointment
     const { data: appt, error: fetchError } = await supabase
@@ -103,21 +101,19 @@ export async function POST(request: NextRequest) {
   } catch {
     return NextResponse.json({ error: "Failed to cancel appointment" }, { status: 500 });
   }
-}
+}, null);
 
 /**
  * GET /api/booking/cancel?appointmentId=...
  *
  * Check if an appointment can be cancelled.
  */
-export async function GET(request: NextRequest) {
+export const GET = withAuth(async (request, { supabase }) => {
   const appointmentId = request.nextUrl.searchParams.get("appointmentId");
 
   if (!appointmentId) {
     return NextResponse.json({ error: "appointmentId is required" }, { status: 400 });
   }
-
-  const supabase = await createClient();
 
   const { data: appt, error } = await supabase
     .from("appointments")
@@ -150,4 +146,4 @@ export async function GET(request: NextRequest) {
   }
 
   return NextResponse.json({ canCancel: true, hoursRemaining: hoursUntilAppt });
-}
+}, null);

@@ -1,5 +1,6 @@
-import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase-server";
+import { NextResponse } from "next/server";
+import { withAuth } from "@/lib/with-auth";
+import { clinicConfig } from "@/config/clinic.config";
 
 export const runtime = "edge";
 
@@ -8,7 +9,7 @@ export const runtime = "edge";
  *
  * Reschedule an existing appointment to a new date/time.
  */
-export async function POST(request: NextRequest) {
+export const POST = withAuth(async (request, { supabase }) => {
   try {
     const body = (await request.json()) as {
       appointmentId: string;
@@ -31,17 +32,24 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Invalid time format (expected HH:MM)" }, { status: 400 });
     }
 
-    const supabase = await createClient();
-
     // Get the existing appointment
     const { data: existing, error: fetchError } = await supabase
       .from("appointments")
-      .select("*")
+      .select("id, status, clinic_id")
       .eq("id", body.appointmentId)
+      .eq("clinic_id", clinicConfig.clinicId)
       .single();
 
     if (fetchError || !existing) {
       return NextResponse.json({ error: "Appointment not found" }, { status: 404 });
+    }
+
+    // Only allow rescheduling appointments in a valid state
+    if (existing.status === "cancelled" || existing.status === "completed" || existing.status === "rescheduled") {
+      return NextResponse.json(
+        { error: "Appointment cannot be rescheduled in its current state" },
+        { status: 400 },
+      );
     }
 
     // Update the existing appointment with new date/time
@@ -50,7 +58,7 @@ export async function POST(request: NextRequest) {
       .update({
         appointment_date: body.newDate,
         start_time: body.newTime,
-        status: "confirmed",
+        status: "rescheduled",
       })
       .eq("id", body.appointmentId);
 
@@ -66,4 +74,4 @@ export async function POST(request: NextRequest) {
   } catch {
     return NextResponse.json({ error: "Failed to reschedule appointment" }, { status: 500 });
   }
-}
+}, null);

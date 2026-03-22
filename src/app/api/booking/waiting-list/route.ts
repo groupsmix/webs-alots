@@ -1,6 +1,6 @@
-import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase-server";
+import { NextResponse } from "next/server";
 import { clinicConfig } from "@/config/clinic.config";
+import { withAuth } from "@/lib/with-auth";
 
 export const runtime = "edge";
 
@@ -9,7 +9,7 @@ export const runtime = "edge";
  *
  * Add a patient to the waiting list.
  */
-export async function POST(request: NextRequest) {
+export const POST = withAuth(async (request, { supabase }) => {
   try {
     const body = (await request.json()) as {
       patientId: string;
@@ -26,8 +26,6 @@ export async function POST(request: NextRequest) {
         { status: 400 },
       );
     }
-
-    const supabase = await createClient();
 
     // If patientId looks like a temp ID, try to find or create the patient
     let patientId = body.patientId;
@@ -87,20 +85,19 @@ export async function POST(request: NextRequest) {
   } catch {
     return NextResponse.json({ error: "Failed to add to waiting list" }, { status: 500 });
   }
-}
+}, null);
 
 /**
  * GET /api/booking/waiting-list?patientId=...  OR  ?doctorId=...&date=...
  *
  * Get waiting list entries.
  */
-export async function GET(request: NextRequest) {
+export const GET = withAuth(async (request, { supabase }) => {
   const patientId = request.nextUrl.searchParams.get("patientId");
   const doctorId = request.nextUrl.searchParams.get("doctorId");
   const date = request.nextUrl.searchParams.get("date");
   const time = request.nextUrl.searchParams.get("time");
 
-  const supabase = await createClient();
   const clinicId = clinicConfig.clinicId;
 
   if (patientId) {
@@ -134,14 +131,14 @@ export async function GET(request: NextRequest) {
     { error: "patientId, or doctorId and date are required" },
     { status: 400 },
   );
-}
+}, null);
 
 /**
  * DELETE /api/booking/waiting-list
  *
  * Remove a patient from the waiting list.
  */
-export async function DELETE(request: NextRequest) {
+export const DELETE = withAuth(async (request, { supabase }) => {
   try {
     const body = (await request.json()) as { entryId: string };
 
@@ -149,7 +146,6 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: "entryId is required" }, { status: 400 });
     }
 
-    const supabase = await createClient();
     const { error } = await supabase
       .from("waiting_list")
       .delete()
@@ -164,4 +160,4 @@ export async function DELETE(request: NextRequest) {
   } catch {
     return NextResponse.json({ error: "Failed to remove from waiting list" }, { status: 500 });
   }
-}
+}, null);

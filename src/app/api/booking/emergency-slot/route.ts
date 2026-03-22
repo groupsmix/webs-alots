@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase-server";
 import { clinicConfig } from "@/config/clinic.config";
+import { withAuth } from "@/lib/with-auth";
 
 export const runtime = "edge";
 
@@ -9,7 +10,7 @@ export const runtime = "edge";
  *
  * Create an emergency slot (doctor only) or book an existing one.
  */
-export async function POST(request: NextRequest) {
+export const POST = withAuth(async (request, { supabase }) => {
   try {
     const body = (await request.json()) as {
       action: "create" | "book";
@@ -25,8 +26,6 @@ export async function POST(request: NextRequest) {
       patientName?: string;
       serviceId?: string;
     };
-
-    const supabase = await createClient();
 
     if (body.action === "create") {
       if (!body.doctorId || !body.date || !body.startTime || !body.durationMin) {
@@ -87,20 +86,22 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      // Fetch the emergency slot
-      const { data: slot, error: slotError } = await supabase
+      // ATOMIC: Claim the slot only if it is currently unbooked.
+      // This eliminates the TOCTOU race condition by combining check + update.
+      const { data: claimedSlot, error: claimError } = await supabase
         .from("emergency_slots")
-        .select("id, doctor_id, slot_date, start_time, end_time, is_booked")
+        .update({ is_booked: true })
         .eq("id", body.slotId)
         .eq("clinic_id", clinicConfig.clinicId)
+        .eq("is_booked", false)
+        .select("id, doctor_id, slot_date, start_time, end_time")
         .single();
 
-      if (slotError || !slot) {
-        return NextResponse.json({ error: "Emergency slot not found" }, { status: 404 });
-      }
-
-      if (slot.is_booked) {
-        return NextResponse.json({ error: "Emergency slot is already booked" }, { status: 400 });
+      if (claimError || !claimedSlot) {
+        return NextResponse.json(
+          { error: "Emergency slot is unavailable or already booked" },
+          { status: 409 },
+        );
       }
 
       // Find or create patient
@@ -131,17 +132,17 @@ export async function POST(request: NextRequest) {
         }
       }
 
-      // Create appointment from emergency slot
+      // Slot is now atomically claimed. Create the appointment.
       const { data: appointment, error: apptError } = await supabase
         .from("appointments")
         .insert({
           clinic_id: clinicConfig.clinicId,
           patient_id: patientId,
-          doctor_id: slot.doctor_id,
+          doctor_id: claimedSlot.doctor_id,
           service_id: body.serviceId ?? null,
-          appointment_date: slot.slot_date,
-          start_time: slot.start_time,
-          end_time: slot.end_time,
+          appointment_date: claimedSlot.slot_date,
+          start_time: claimedSlot.start_time,
+          end_time: claimedSlot.end_time,
           status: "confirmed",
           is_first_visit: false,
           insurance_flag: false,
@@ -152,21 +153,14 @@ export async function POST(request: NextRequest) {
         .single();
 
       if (apptError || !appointment) {
-        // Handle unique constraint violation (double-booking race condition)
-        if (apptError?.code === "23505") {
-          return NextResponse.json(
-            { error: "This slot has already been booked. Please choose another time." },
-            { status: 409 },
-          );
-        }
+        // Rollback: release the slot claim if appointment creation fails
+        await supabase
+          .from("emergency_slots")
+          .update({ is_booked: false })
+          .eq("id", body.slotId);
+
         return NextResponse.json({ error: "Failed to create appointment" }, { status: 500 });
       }
-
-      // Mark slot as booked
-      await supabase
-        .from("emergency_slots")
-        .update({ is_booked: true })
-        .eq("id", body.slotId);
 
       return NextResponse.json({
         status: "booked",
@@ -179,7 +173,7 @@ export async function POST(request: NextRequest) {
   } catch {
     return NextResponse.json({ error: "Failed to process emergency slot request" }, { status: 500 });
   }
-}
+}, null);
 
 /**
  * GET /api/booking/emergency-slot?doctorId=...&date=...

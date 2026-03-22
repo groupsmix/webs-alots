@@ -15,6 +15,16 @@
 
 const RESEND_API_URL = "https://api.resend.com/emails";
 
+/** Escape HTML special characters to prevent injection in email templates. */
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 export interface EmailSendResult {
   success: boolean;
   messageId?: string;
@@ -156,7 +166,9 @@ export async function sendNotificationEmail(
   body: string,
   clinicName?: string,
 ): Promise<EmailSendResult> {
-  const brandName = clinicName || "Health SaaS Platform";
+  const safeBrandName = escapeHtml(clinicName || "Health SaaS Platform");
+  const safeSubject = escapeHtml(subject);
+  const safeBody = escapeHtml(body);
 
   const html = `
 <!DOCTYPE html>
@@ -166,21 +178,21 @@ export async function sendNotificationEmail(
   <table width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;margin:0 auto;background:#ffffff;">
     <tr>
       <td style="padding:24px 32px;background:#0f172a;color:#ffffff;">
-        <h1 style="margin:0;font-size:20px;font-weight:600;">${brandName}</h1>
+        <h1 style="margin:0;font-size:20px;font-weight:600;">${safeBrandName}</h1>
       </td>
     </tr>
     <tr>
       <td style="padding:32px;">
-        <h2 style="margin:0 0 16px;font-size:18px;color:#1e293b;">${subject}</h2>
+        <h2 style="margin:0 0 16px;font-size:18px;color:#1e293b;">${safeSubject}</h2>
         <div style="font-size:14px;line-height:1.6;color:#475569;">
-          ${body}
+          ${safeBody}
         </div>
       </td>
     </tr>
     <tr>
       <td style="padding:16px 32px;background:#f8fafc;border-top:1px solid #e2e8f0;text-align:center;">
         <p style="margin:0;font-size:12px;color:#94a3b8;">
-          ${brandName} &mdash; Plateforme de gestion m&eacute;dicale
+          ${safeBrandName} &mdash; Plateforme de gestion m&eacute;dicale
         </p>
       </td>
     </tr>

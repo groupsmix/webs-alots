@@ -1,7 +1,7 @@
-import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase-server";
+import { NextResponse } from "next/server";
 import { clinicConfig } from "@/config/clinic.config";
 import { getPublicServices } from "@/lib/data/public";
+import { withAuth } from "@/lib/with-auth";
 
 export const runtime = "edge";
 
@@ -18,7 +18,7 @@ function addInterval(date: Date, pattern: "weekly" | "biweekly" | "monthly"): Da
  *
  * Create a recurring booking series or cancel one.
  */
-export async function POST(request: NextRequest) {
+export const POST = withAuth(async (request, { supabase }) => {
   try {
     const body = (await request.json()) as {
       action: "create" | "cancel";
@@ -38,8 +38,6 @@ export async function POST(request: NextRequest) {
       cancelAll?: boolean;
       appointmentId?: string;
     };
-
-    const supabase = await createClient();
 
     if (body.action === "create") {
       if (!body.patientId || !body.patientName || !body.doctorId || !body.date || !body.time || !body.pattern || !body.occurrences) {
@@ -114,7 +112,8 @@ export async function POST(request: NextRequest) {
             is_first_visit: i === 0 ? (body.isFirstVisit ?? false) : false,
             insurance_flag: body.hasInsurance ?? false,
             booking_source: "online",
-            notes: `Recurring: ${body.pattern} (${i + 1}/${body.occurrences}) group:${groupId}`,
+            recurrence_group_id: groupId,
+            notes: `Recurring: ${body.pattern} (${i + 1}/${body.occurrences})`,
             is_emergency: false,
           } as never)
           .select("id")
@@ -184,4 +183,4 @@ export async function POST(request: NextRequest) {
   } catch {
     return NextResponse.json({ error: "Failed to process recurring booking" }, { status: 500 });
   }
-}
+}, null);
