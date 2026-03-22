@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import {
   Camera, Plus, MapPin, Calendar, Tag, Eye,
   AlertTriangle, CheckCircle, Search, Save,

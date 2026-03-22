@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { SterilizationLogPanel } from "@/components/dental/sterilization-log-panel";
 import { getCurrentUser, fetchSterilizationLog, createSterilizationEntry } from "@/lib/data/client";
 import type { SterilizationEntry } from "@/lib/types/dental";

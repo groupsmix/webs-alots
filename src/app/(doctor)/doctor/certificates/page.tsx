@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { CertificateGenerator } from "@/components/medical/certificate-generator";
 import {
   getCurrentUser,

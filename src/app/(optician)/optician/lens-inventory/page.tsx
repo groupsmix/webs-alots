@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { Package } from "lucide-react";
 import { LensInventoryManager } from "@/components/para-medical/lens-inventory-manager";
 import { getCurrentUser } from "@/lib/data/client";

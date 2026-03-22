@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { FileText } from "lucide-react";
 import { SpeechProgressReports } from "@/components/para-medical/speech-progress-reports";
 import { getCurrentUser } from "@/lib/data/client";

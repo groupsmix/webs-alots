@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { Brain } from "lucide-react";
 import { TherapySessionNotes } from "@/components/para-medical/therapy-session-notes";
 import { getCurrentUser } from "@/lib/data/client";

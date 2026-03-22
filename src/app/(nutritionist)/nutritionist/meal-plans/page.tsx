@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { Apple } from "lucide-react";
 import { MealPlanBuilder } from "@/components/para-medical/meal-plan-builder";
 import { getCurrentUser } from "@/lib/data/client";

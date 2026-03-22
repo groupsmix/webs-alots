@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { FileText } from "lucide-react";
 import { OpticalPrescriptionTracker } from "@/components/para-medical/optical-prescription-tracker";
 import { getCurrentUser } from "@/lib/data/client";

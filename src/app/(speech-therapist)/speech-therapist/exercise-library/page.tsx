@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { BookOpen } from "lucide-react";
 import { SpeechExerciseLibrary } from "@/components/para-medical/speech-exercise-library";
 import { getCurrentUser } from "@/lib/data/client";
