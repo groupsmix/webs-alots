@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
 import { fetchClinics, updateClinicStatus, fetchClinicUsers } from "@/lib/super-admin-actions";
+import { logger } from "@/lib/logger";
 
 interface ClinicDetail {
   id: string;
@@ -93,7 +94,7 @@ export default function AllClinicsPage() {
       );
       setList(enriched);
     } catch (err) {
-      void err;
+      logger.warn("Operation failed", { context: "page", error: err });
     } finally {
       setLoadingData(false);
     }
@@ -120,7 +121,7 @@ export default function AllClinicsPage() {
         ),
       );
     } catch (err) {
-      void err;
+      logger.warn("Operation failed", { context: "page", error: err });
     } finally {
       setActionLoading(false);
     }
@@ -316,7 +317,7 @@ export default function AllClinicsPage() {
                     void data.error;
                   }
                 } catch (err) {
-                  void err;
+                  logger.warn("Operation failed", { context: "page", error: err });
                 } finally {
                   setActionLoading(false);
                 }

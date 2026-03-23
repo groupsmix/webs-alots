@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { fetchDashboardStats, fetchTodayAppointments, type DashboardStats } from "@/lib/data/client";
 import { clinicConfig } from "@/config/clinic.config";
+import { logger } from "@/lib/logger";
 
 /**
  * ClinicStats
@@ -29,7 +30,7 @@ export function ClinicStats() {
       setDashData(dashStats);
       setTodayCount(todayAppts.length);
     }).catch((err) => {
-      void err;
+      logger.warn("Operation failed", { context: "clinic-stats", error: err });
     });
     return () => { cancelled = true; };
   }, []);

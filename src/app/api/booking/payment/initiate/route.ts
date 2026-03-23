@@ -4,6 +4,7 @@ import { clinicConfig } from "@/config/clinic.config";
 import { findOrCreatePatient } from "@/lib/find-or-create-patient";
 import { withAuth } from "@/lib/with-auth";
 import { STAFF_ROLES } from "@/lib/auth-roles";
+import { logger } from "@/lib/logger";
 
 export const runtime = "edge";
 
@@ -128,7 +129,7 @@ export const POST = withAuth(async (request, { supabase }) => {
       gatewaySessionId,
     });
   } catch (err) {
-    void err;
+    logger.warn("Operation failed", { context: "route", error: err });
     return NextResponse.json({ error: "Failed to initiate payment" }, { status: 500 });
   }
 }, STAFF_ROLES);

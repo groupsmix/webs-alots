@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase-server";
 import { hmacSha256Hex, timingSafeEqual } from "@/lib/crypto-utils";
 import { APPOINTMENT_STATUS, PAYMENT_STATUS } from "@/lib/types/database";
+import { logger } from "@/lib/logger";
 
 /**
  * POST /api/payments/webhook
@@ -137,7 +138,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ received: true });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error";
-    void message;
+    logger.warn("Operation failed", { context: "route" });
     return NextResponse.json({ error: "Failed to process webhook" }, { status: 500 });
   }
 }
@@ -173,7 +174,7 @@ async function verifyStripeSignature(
 
     return timingSafeEqual(expectedSignature, signature);
   } catch (err) {
-    void err;
+    logger.warn("Operation failed", { context: "route", error: err });
     return false;
   }
 }

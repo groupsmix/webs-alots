@@ -3,6 +3,7 @@ import { logAuditEvent } from "@/lib/audit-log";
 import { clinicConfig } from "@/config/clinic.config";
 import type { UserRole } from "@/lib/types/database";
 import { withAuth } from "@/lib/with-auth";
+import { logger } from "@/lib/logger";
 
 export const runtime = "edge";
 
@@ -87,7 +88,7 @@ export const POST = withAuth(async (request, { supabase }) => {
 
     return NextResponse.json({ status: "refunded", message: "Payment refunded" });
   } catch (err) {
-    void err;
+    logger.warn("Operation failed", { context: "route", error: err });
     return NextResponse.json({ error: "Failed to refund payment" }, { status: 500 });
   }
 }, ADMIN_ROLES);

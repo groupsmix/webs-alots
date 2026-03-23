@@ -7,6 +7,7 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { fetchDentalTreatmentTypes, type DentalTreatmentTypeView } from "@/lib/data/client";
 import { clinicConfig } from "@/config/clinic.config";
+import { logger } from "@/lib/logger";
 
 interface DentalBookingExtrasProps {
   selectedTreatment: string;
@@ -27,7 +28,7 @@ export function DentalBookingExtras({
     const clinicId = clinicConfig.clinicId;
     if (!clinicId) return;
     fetchDentalTreatmentTypes(clinicId).then(setDentalTreatmentTypes).catch((err) => {
-      void err;
+      logger.warn("Operation failed", { context: "dental-booking-extras", error: err });
     });
   }, []);
 

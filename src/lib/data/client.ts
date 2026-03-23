@@ -12,6 +12,7 @@
  */
 
 import { createClient } from "@/lib/supabase-client";
+import { logger } from "@/lib/logger";
 import { clinicConfig } from "@/config/clinic.config";
 import type { Database } from "@/lib/types/database";
 
@@ -95,7 +96,7 @@ async function fetchRows<T>(
   q = q.limit(opts?.limit ?? 1000);
   const { data, error } = await q;
   if (error) {
-    void error;
+    logger.warn("Query failed", { context: "data/client", error });
     return [];
   }
   return (data ?? []) as T[];
@@ -933,7 +934,7 @@ export async function updateAppointmentStatus(
   }
   const { error } = await supabase.from("appointments").update(updateData).eq("id", appointmentId);
   if (error) {
-    void error;
+    logger.warn("Query failed", { context: "data/client", error });
     return { success: false, error: { code: error.code, message: error.message } };
   }
   clearLookupCache();
@@ -956,7 +957,7 @@ export async function createPayment(data: {
     refunded_amount: 0,
   });
   if (error) {
-    void error;
+    logger.warn("Query failed", { context: "data/client", error });
     return { success: false, error: { code: error.code, message: error.message } };
   }
   clearLookupCache();
@@ -972,7 +973,7 @@ export async function upsertReview(data: {
   const supabase = createClient();
   const { error } = await supabase.from("reviews").insert(data);
   if (error) {
-    void error;
+    logger.warn("Query failed", { context: "data/client", error });
     return { success: false, error: { code: error.code, message: error.message } };
   }
   clearLookupCache();
@@ -997,7 +998,7 @@ export async function createPrescription(data: {
   const supabase = createClient();
   const { error } = await supabase.from("prescriptions").insert(data);
   if (error) {
-    void error;
+    logger.warn("Query failed", { context: "data/client", error });
     return false;
   }
   return true;
@@ -1013,7 +1014,7 @@ export async function updatePrescription(
   const supabase = createClient();
   const { error } = await supabase.from("prescriptions").update(data).eq("id", id);
   if (error) {
-    void error;
+    logger.warn("Query failed", { context: "data/client", error });
     return false;
   }
   return true;
@@ -1040,7 +1041,7 @@ export async function createConsultationNote(data: {
     .select("id")
     .single();
   if (error) {
-    void error;
+    logger.warn("Query failed", { context: "data/client", error });
     return null;
   }
   return result?.id ?? null;
@@ -1061,7 +1062,7 @@ export async function updateConsultationNote(
     .update({ ...data, updated_at: new Date().toISOString() } as Database["public"]["Tables"]["consultation_notes"]["Update"])
     .eq("id", id);
   if (error) {
-    void error;
+    logger.warn("Query failed", { context: "data/client", error });
     return false;
   }
   return true;
@@ -1071,7 +1072,7 @@ export async function deleteConsultationNote(id: string): Promise<boolean> {
   const supabase = createClient();
   const { error } = await supabase.from("consultation_notes").delete().eq("id", id);
   if (error) {
-    void error;
+    logger.warn("Query failed", { context: "data/client", error });
     return false;
   }
   return true;
@@ -1094,7 +1095,7 @@ export async function upsertOdontogramEntry(data: {
     onConflict: "clinic_id,patient_id,tooth_number",
   });
   if (error) {
-    void error;
+    logger.warn("Query failed", { context: "data/client", error });
     return false;
   }
   return true;
@@ -1113,7 +1114,7 @@ export async function deleteOdontogramEntry(
     .eq("patient_id", patientId)
     .eq("tooth_number", toothNumber);
   if (error) {
-    void error;
+    logger.warn("Query failed", { context: "data/client", error });
     return false;
   }
   return true;
@@ -1138,7 +1139,7 @@ export async function createTreatmentPlan(data: {
     .select("id")
     .single();
   if (error) {
-    void error;
+    logger.warn("Query failed", { context: "data/client", error });
     return null;
   }
   return result?.id ?? null;
@@ -1159,7 +1160,7 @@ export async function updateTreatmentPlan(
     .update({ ...data, updated_at: new Date().toISOString() } as Record<string, unknown>)
     .eq("id", id);
   if (error) {
-    void error;
+    logger.warn("Query failed", { context: "data/client", error });
     return false;
   }
   return true;
@@ -1185,7 +1186,7 @@ export async function createSterilizationEntry(data: {
     .select("id")
     .single();
   if (error) {
-    void error;
+    logger.warn("Query failed", { context: "data/client", error });
     return null;
   }
   return result?.id ?? null;
@@ -1205,7 +1206,7 @@ export async function updateSterilizationEntry(
   const supabase = createClient();
   const { error } = await supabase.from("sterilization_log").update(data as Record<string, unknown>).eq("id", id);
   if (error) {
-    void error;
+    logger.warn("Query failed", { context: "data/client", error });
     return false;
   }
   return true;
@@ -1233,7 +1234,7 @@ export async function createBeforeAfterPhoto(data: {
     .select("id")
     .single();
   if (error) {
-    void error;
+    logger.warn("Query failed", { context: "data/client", error });
     return null;
   }
   return result?.id ?? null;
@@ -1255,7 +1256,7 @@ export async function updateBeforeAfterPhoto(
     .update({ ...data, updated_at: new Date().toISOString() })
     .eq("id", id);
   if (error) {
-    void error;
+    logger.warn("Query failed", { context: "data/client", error });
     return false;
   }
   return true;
@@ -1265,7 +1266,7 @@ export async function deleteBeforeAfterPhoto(id: string): Promise<boolean> {
   const supabase = createClient();
   const { error } = await supabase.from("before_after_photos").delete().eq("id", id);
   if (error) {
-    void error;
+    logger.warn("Query failed", { context: "data/client", error });
     return false;
   }
   return true;
@@ -1342,7 +1343,7 @@ export async function createMedicalCertificate(data: {
     .select("id")
     .single();
   if (error) {
-    void error;
+    logger.warn("Query failed", { context: "data/client", error });
     return null;
   }
   return result?.id ?? null;
@@ -1360,7 +1361,7 @@ export async function updateMedicalCertificate(
   const supabase = createClient();
   const { error } = await supabase.from("medical_certificates").update(data as Database["public"]["Tables"]["medical_certificates"]["Update"]).eq("id", id);
   if (error) {
-    void error;
+    logger.warn("Query failed", { context: "data/client", error });
     return false;
   }
   return true;
@@ -2557,7 +2558,7 @@ export async function addToWaitingList(data: {
     .single();
 
   if (error) {
-    void error;
+    logger.warn("Query failed", { context: "data/client", error });
     return { success: false, error: error.message };
   }
   clearLookupCache();
@@ -2592,7 +2593,7 @@ export async function createAppointment(data: {
     .single();
 
   if (error) {
-    void error;
+    logger.warn("Query failed", { context: "data/client", error });
     return { success: false, error: error.message };
   }
   clearLookupCache();
@@ -3159,7 +3160,7 @@ export async function createLabTestOrder(data: {
     .select("id")
     .single();
   if (error) {
-    void error;
+    logger.warn("Query failed", { context: "data/client", error });
     return null;
   }
   const orderId = result?.id as string;
@@ -3196,7 +3197,7 @@ export async function updateLabOrderStatus(
     .update(updateData)
     .eq("id", orderId);
   if (error) {
-    void error;
+    logger.warn("Query failed", { context: "data/client", error });
     return false;
   }
   return true;
@@ -3215,7 +3216,7 @@ export async function assignLabTechnician(
     })
     .eq("id", orderId);
   if (error) {
-    void error;
+    logger.warn("Query failed", { context: "data/client", error });
     return false;
   }
   return true;
@@ -3251,7 +3252,7 @@ export async function saveLabTestResult(data: {
     .select("id")
     .single();
   if (error) {
-    void error;
+    logger.warn("Query failed", { context: "data/client", error });
     return null;
   }
   return result?.id ?? null;
@@ -3274,7 +3275,7 @@ export async function updateLabTestResult(
     .update(data as Database["public"]["Tables"]["lab_test_results"]["Update"])
     .eq("id", resultId);
   if (error) {
-    void error;
+    logger.warn("Query failed", { context: "data/client", error });
     return false;
   }
   return true;
@@ -3290,7 +3291,7 @@ export async function updateLabOrderPdfUrl(
     .update({ pdf_url: pdfUrl, updated_at: new Date().toISOString() })
     .eq("id", orderId);
   if (error) {
-    void error;
+    logger.warn("Query failed", { context: "data/client", error });
     return false;
   }
   return true;
@@ -3331,7 +3332,7 @@ export async function createParapharmacyProduct(data: {
     .select("id")
     .single();
   if (error) {
-    void error;
+    logger.warn("Query failed", { context: "data/client", error });
     return null;
   }
   return result?.id ?? null;
@@ -3357,7 +3358,7 @@ export async function updateParapharmacyProduct(
     .update({ ...data, updated_at: new Date().toISOString() } as Database["public"]["Tables"]["products"]["Update"])
     .eq("id", id);
   if (error) {
-    void error;
+    logger.warn("Query failed", { context: "data/client", error });
     return false;
   }
   return true;
@@ -3367,7 +3368,7 @@ export async function deleteParapharmacyProduct(id: string): Promise<boolean> {
   const supabase = createClient();
   const { error } = await supabase.from("products").delete().eq("id", id);
   if (error) {
-    void error;
+    logger.warn("Query failed", { context: "data/client", error });
     return false;
   }
   return true;
@@ -3396,7 +3397,7 @@ export async function createParapharmacySale(data: {
     .select("id")
     .single();
   if (error) {
-    void error;
+    logger.warn("Query failed", { context: "data/client", error });
     return null;
   }
   // Update stock quantities
@@ -3913,7 +3914,7 @@ export async function createEquipmentItem(data: {
     .select("id")
     .single();
   if (error) {
-    void error;
+    logger.warn("Query failed", { context: "data/client", error });
     return null;
   }
   return result?.id ?? null;
@@ -3947,7 +3948,7 @@ export async function updateEquipmentItem(
     .update({ ...data, updated_at: new Date().toISOString() } as Database["public"]["Tables"]["equipment_inventory"]["Update"])
     .eq("id", id);
   if (error) {
-    void error;
+    logger.warn("Query failed", { context: "data/client", error });
     return false;
   }
   return true;
@@ -3957,7 +3958,7 @@ export async function deleteEquipmentItem(id: string): Promise<boolean> {
   const supabase = createClient();
   const { error } = await supabase.from("equipment_inventory").delete().eq("id", id);
   if (error) {
-    void error;
+    logger.warn("Query failed", { context: "data/client", error });
     return false;
   }
   return true;
@@ -3995,7 +3996,7 @@ export async function createEquipmentRental(data: {
     .select("id")
     .single();
   if (error) {
-    void error;
+    logger.warn("Query failed", { context: "data/client", error });
     return null;
   }
   return result?.id ?? null;
@@ -4026,7 +4027,7 @@ export async function updateEquipmentRental(
     .update(data as Database["public"]["Tables"]["equipment_rentals"]["Update"])
     .eq("id", id);
   if (error) {
-    void error;
+    logger.warn("Query failed", { context: "data/client", error });
     return false;
   }
   return true;
@@ -4036,7 +4037,7 @@ export async function deleteEquipmentRental(id: string): Promise<boolean> {
   const supabase = createClient();
   const { error } = await supabase.from("equipment_rentals").delete().eq("id", id);
   if (error) {
-    void error;
+    logger.warn("Query failed", { context: "data/client", error });
     return false;
   }
   return true;
@@ -4070,7 +4071,7 @@ export async function createEquipmentMaintenance(data: {
     .select("id")
     .single();
   if (error) {
-    void error;
+    logger.warn("Query failed", { context: "data/client", error });
     return null;
   }
   return result?.id ?? null;
@@ -4097,7 +4098,7 @@ export async function updateEquipmentMaintenance(
     .update(data as Database["public"]["Tables"]["equipment_maintenance"]["Update"])
     .eq("id", id);
   if (error) {
-    void error;
+    logger.warn("Query failed", { context: "data/client", error });
     return false;
   }
   return true;
@@ -4107,7 +4108,7 @@ export async function deleteEquipmentMaintenance(id: string): Promise<boolean> {
   const supabase = createClient();
   const { error } = await supabase.from("equipment_maintenance").delete().eq("id", id);
   if (error) {
-    void error;
+    logger.warn("Query failed", { context: "data/client", error });
     return false;
   }
   return true;
@@ -4266,7 +4267,7 @@ export async function createGrowthMeasurement(data: {
     .insert(data)
     .select("id")
     .single();
-  if (error) { void error; return null; }
+  if (error) { logger.warn("Query failed", { context: "data/client", error }); return null; }
   return row?.id ?? null;
 }
 
@@ -4346,14 +4347,14 @@ export async function createVaccination(data: {
     .insert(data)
     .select("id")
     .single();
-  if (error) { void error; return null; }
+  if (error) { logger.warn("Query failed", { context: "data/client", error }); return null; }
   return row?.id ?? null;
 }
 
 export async function updateVaccination(id: string, updates: Record<string, unknown>): Promise<boolean> {
   const supabase = createClient();
   const { error } = await supabase.from("vaccinations").update(updates).eq("id", id);
-  if (error) { void error; return false; }
+  if (error) { logger.warn("Mutation failed", { context: "data/client", error }); return false; }
   return true;
 }
 
@@ -4423,14 +4424,14 @@ export async function createMilestone(data: {
     .insert(data)
     .select("id")
     .single();
-  if (error) { void error; return null; }
+  if (error) { logger.warn("Query failed", { context: "data/client", error }); return null; }
   return row?.id ?? null;
 }
 
 export async function updateMilestone(id: string, updates: Record<string, unknown>): Promise<boolean> {
   const supabase = createClient();
   const { error } = await supabase.from("developmental_milestones").update(updates).eq("id", id);
-  if (error) { void error; return false; }
+  if (error) { logger.warn("Mutation failed", { context: "data/client", error }); return false; }
   return true;
 }
 
@@ -4551,14 +4552,14 @@ export async function createPregnancy(data: {
     .insert(data)
     .select("id")
     .single();
-  if (error) { void error; return null; }
+  if (error) { logger.warn("Query failed", { context: "data/client", error }); return null; }
   return row?.id ?? null;
 }
 
 export async function updatePregnancy(id: string, updates: Record<string, unknown>): Promise<boolean> {
   const supabase = createClient();
   const { error } = await supabase.from("pregnancies").update(updates).eq("id", id);
-  if (error) { void error; return false; }
+  if (error) { logger.warn("Mutation failed", { context: "data/client", error }); return false; }
   return true;
 }
 
@@ -4642,7 +4643,7 @@ export async function createUltrasound(data: {
     .insert(data as Database["public"]["Tables"]["ultrasound_records"]["Insert"])
     .select("id")
     .single();
-  if (error) { void error; return null; }
+  if (error) { logger.warn("Query failed", { context: "data/client", error }); return null; }
   return row?.id ?? null;
 }
 
@@ -4743,7 +4744,7 @@ export async function createVisionTest(data: {
     .insert(data)
     .select("id")
     .single();
-  if (error) { void error; return null; }
+  if (error) { logger.warn("Query failed", { context: "data/client", error }); return null; }
   return row?.id ?? null;
 }
 
@@ -4812,7 +4813,7 @@ export async function createIopMeasurement(data: {
     .insert(data)
     .select("id")
     .single();
-  if (error) { void error; return null; }
+  if (error) { logger.warn("Query failed", { context: "data/client", error }); return null; }
   return row?.id ?? null;
 }
 

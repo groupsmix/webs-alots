@@ -8,6 +8,7 @@
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/types/database";
+import { logger } from "@/lib/logger";
 
 interface AuditLogParams {
   supabase: SupabaseClient<Database>;
@@ -40,6 +41,6 @@ export async function logAuditEvent({
       timestamp: new Date().toISOString(),
     });
   } catch (err) {
-    void err;
+    logger.error("Failed to write audit log", { context: "audit-log", error: err });
   }
 }

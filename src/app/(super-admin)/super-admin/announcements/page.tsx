@@ -14,6 +14,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from "@/components/ui/dialog";
 import { Loader2 } from "lucide-react";
+import { logger } from "@/lib/logger";
 import {
   fetchAnnouncements,
   type Announcement,
@@ -30,7 +31,7 @@ export default function AnnouncementsPage() {
       const data = await fetchAnnouncements();
       setList(data);
     } catch (err) {
-      void err;
+      logger.warn("Operation failed", { context: "page", error: err });
     } finally {
       setLoading(false);
     }

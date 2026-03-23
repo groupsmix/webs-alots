@@ -6,6 +6,8 @@
  * but sends via the standard SMS channel (no "whatsapp:" prefix).
  */
 
+import { logger } from "@/lib/logger";
+
 const TWILIO_API_URL = "https://api.twilio.com/2010-04-01";
 
 interface TwilioSmsConfig {
@@ -73,7 +75,7 @@ export async function sendSms(to: string, body: string): Promise<SmsSendResult> 
     };
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error";
-    void message;
+    logger.error("SMS send failed", { context: "sms", error: err });
     return { success: false, error: message };
   }
 }

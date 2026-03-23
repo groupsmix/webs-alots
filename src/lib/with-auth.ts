@@ -20,6 +20,7 @@ import type { UserRole } from "@/lib/types/database";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/types/database";
 import type { User } from "@supabase/supabase-js";
+import { logger } from "@/lib/logger";
 
 export interface AuthContext {
   supabase: SupabaseClient<Database>;
@@ -91,7 +92,7 @@ export function withAuth(
         profile: { id: profile.id, role: profile.role as UserRole, clinic_id: profile.clinic_id ?? null },
       });
     } catch (err) {
-      void err;
+      logger.error("Authentication failed", { context: "with-auth", error: err });
       return NextResponse.json(
         { error: "Authentication failed" },
         { status: 500 },

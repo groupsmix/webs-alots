@@ -11,6 +11,7 @@
 
 import { createClient } from "@/lib/supabase-server";
 import type { Database } from "@/lib/types/database";
+import { logger } from "@/lib/logger";
 
 type TableName = keyof Database["public"]["Tables"];
 
@@ -49,7 +50,7 @@ async function query<T>(
 
   const { data, error } = await q;
   if (error) {
-    void error;
+    logger.warn("Query failed", { context: "data/server", error });
     return [];
   }
   return (data ?? []) as T[];
@@ -175,7 +176,7 @@ export async function updateClinicBranding(
     .eq("id", clinicId);
 
   if (error) {
-    void error;
+    logger.warn("Mutation failed", { context: "data/server", error });
     return false;
   }
   return true;
@@ -321,7 +322,7 @@ export async function getTodayAppointments(clinicId: string, doctorId?: string):
 
   const { data, error } = await q;
   if (error) {
-    void error;
+    logger.warn("Query failed", { context: "data/server", error });
     return [];
   }
   return (data ?? []) as AppointmentRow[];
@@ -486,7 +487,7 @@ export async function getPrescriptions(clinicId: string, doctorId?: string): Pro
 
   const { data, error } = await q;
   if (error) {
-    void error;
+    logger.warn("Query failed", { context: "data/server", error });
     return [];
   }
   return (data ?? []) as unknown as PrescriptionRow[];
@@ -941,7 +942,7 @@ export async function updateAppointmentStatus(
   }
   const { error } = await supabase.from("appointments").update(updateData).eq("id", appointmentId);
   if (error) {
-    void error;
+    logger.warn("Mutation failed", { context: "data/server", error });
     return false;
   }
   return true;
@@ -975,7 +976,7 @@ export async function createAppointment(data: {
     .select()
     .single();
   if (error) {
-    void error;
+    logger.warn("Mutation failed", { context: "data/server", error });
     return null;
   }
   return row as AppointmentRow;
@@ -990,7 +991,7 @@ export async function createReview(data: {
   const supabase = await createClient();
   const { error } = await supabase.from("reviews").insert(data);
   if (error) {
-    void error;
+    logger.warn("Mutation failed", { context: "data/server", error });
     return false;
   }
   return true;
@@ -1000,7 +1001,7 @@ export async function updateReviewResponse(reviewId: string, response: string): 
   const supabase = await createClient();
   const { error } = await supabase.from("reviews").update({ response }).eq("id", reviewId);
   if (error) {
-    void error;
+    logger.warn("Mutation failed", { context: "data/server", error });
     return false;
   }
   return true;
@@ -1016,7 +1017,7 @@ export async function addToWaitingList(data: {
   const supabase = await createClient();
   const { error } = await supabase.from("waiting_list").insert({ ...data, status: "waiting" });
   if (error) {
-    void error;
+    logger.warn("Mutation failed", { context: "data/server", error });
     return false;
   }
   return true;
@@ -1058,7 +1059,7 @@ export async function createRadiologyOrder(data: {
     .select("id, order_number")
     .single();
   if (error) {
-    void error;
+    logger.warn("Mutation failed", { context: "data/server", error });
     return null;
   }
   return row as { id: string; order_number: string };
@@ -1078,7 +1079,7 @@ export async function updateRadiologyOrderStatus(
     .update(updateData)
     .eq("id", orderId);
   if (error) {
-    void error;
+    logger.warn("Mutation failed", { context: "data/server", error });
     return false;
   }
   return true;
@@ -1109,7 +1110,7 @@ export async function saveRadiologyReport(
     })
     .eq("id", orderId);
   if (error) {
-    void error;
+    logger.warn("Mutation failed", { context: "data/server", error });
     return false;
   }
   return true;
@@ -1140,7 +1141,7 @@ export async function createRadiologyImage(data: {
     .select("id")
     .single();
   if (error) {
-    void error;
+    logger.warn("Mutation failed", { context: "data/server", error });
     return null;
   }
   return row as { id: string };
@@ -1156,7 +1157,7 @@ export async function updateRadiologyOrderPdfUrl(
     .update({ pdf_url: pdfUrl, updated_at: new Date().toISOString() })
     .eq("id", orderId);
   if (error) {
-    void error;
+    logger.warn("Mutation failed", { context: "data/server", error });
     return false;
   }
   return true;
@@ -1176,7 +1177,7 @@ export async function updateLabOrderPdfUrl(
     .update({ pdf_url: pdfUrl, updated_at: new Date().toISOString() })
     .eq("id", orderId);
   if (error) {
-    void error;
+    logger.warn("Mutation failed", { context: "data/server", error });
     return false;
   }
   return true;

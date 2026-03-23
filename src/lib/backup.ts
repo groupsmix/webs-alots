@@ -10,6 +10,7 @@
 
 import { createClient } from "@/lib/supabase-server";
 import type { Database } from "@/lib/types/database";
+import { logger } from "@/lib/logger";
 
 // ---- Types ----
 
@@ -90,7 +91,7 @@ export async function createBackup(
       .limit(MAX_ROWS_PER_TABLE);
 
     if (error) {
-      void error;
+      logger.warn("Backup: failed to fetch table", { context: "backup", table, error });
       data[table] = [];
       tables.push({ name: table, recordCount: 0 });
       continue;

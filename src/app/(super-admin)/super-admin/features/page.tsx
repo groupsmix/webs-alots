@@ -14,6 +14,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from "@/components/ui/dialog";
 import { Loader2 } from "lucide-react";
+import { logger } from "@/lib/logger";
 import {
   fetchFeatureDefinitions,
   fetchClinics,
@@ -38,7 +39,7 @@ export default function FeatureTogglesPage() {
       setFeatures(feats);
       setTotalClinicsCount(clinics.length);
     } catch (err) {
-      void err;
+      logger.warn("Operation failed", { context: "page", error: err });
     } finally {
       setLoading(false);
     }

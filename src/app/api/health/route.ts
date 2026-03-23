@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase-server";
+import { logger } from "@/lib/logger";
 
 export const runtime = "edge";
 
@@ -23,7 +24,7 @@ export async function GET() {
       ? { status: "degraded", latencyMs: dbLatency, error: "Database query failed" }
       : { status: "ok", latencyMs: dbLatency };
   } catch (err) {
-    void err;
+    logger.warn("Operation failed", { context: "route", error: err });
     checks.database = {
       status: "down",
       error: "Database unreachable",

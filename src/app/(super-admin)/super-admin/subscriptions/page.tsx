@@ -20,6 +20,7 @@ import {
   tierColors,
   statusColors,
 } from "@/lib/config/pricing";
+import { logger } from "@/lib/logger";
 import {
   fetchClientSubscriptions,
   type ClientSubscription,
@@ -51,7 +52,7 @@ export default function SubscriptionsPage() {
       const data = await fetchClientSubscriptions();
       setSubscriptions(data);
     } catch (err) {
-      void err;
+      logger.warn("Operation failed", { context: "page", error: err });
     } finally {
       setLoading(false);
     }

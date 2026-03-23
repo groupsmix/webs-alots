@@ -13,6 +13,8 @@
  *   EMAIL_FROM         — Default sender address
  */
 
+import { logger } from "@/lib/logger";
+
 const RESEND_API_URL = "https://api.resend.com/emails";
 
 /** Escape HTML special characters to prevent injection in email templates. */
@@ -86,7 +88,7 @@ async function sendViaResend(payload: EmailPayload): Promise<EmailSendResult> {
     };
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error";
-    void message;
+    logger.error("Resend email send failed", { context: "email", error: err });
     return { success: false, error: message };
   }
 }
@@ -132,7 +134,7 @@ async function sendViaHttpRelay(payload: EmailPayload): Promise<EmailSendResult>
     return { success: false, error: errorText || "SMTP relay error" };
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error";
-    void message;
+    logger.error("HTTP relay email send failed", { context: "email", error: err });
     return { success: false, error: message };
   }
 }

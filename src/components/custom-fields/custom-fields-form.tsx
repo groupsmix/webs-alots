@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { CustomFieldRenderer } from "./custom-field-renderer";
 import type { CustomFieldDefinition } from "@/lib/types/custom-fields";
+import { logger } from "@/lib/logger";
 
 interface CustomFieldsFormProps {
   clinicTypeKey: string;
@@ -55,7 +56,7 @@ export function CustomFieldsForm({
           setValues(valsData.values ?? {});
         }
       } catch (err) {
-        void err;
+        logger.warn("Operation failed", { context: "custom-fields-form", error: err });
       } finally {
         setLoading(false);
       }

@@ -4,6 +4,7 @@ import { withAuth } from "@/lib/with-auth";
 import { APPOINTMENT_STATUS, WAITING_LIST_STATUS } from "@/lib/types/database";
 import { logAuditEvent } from "@/lib/audit-log";
 import { clinicDateTime } from "@/lib/timezone";
+import { logger } from "@/lib/logger";
 
 export const runtime = "edge";
 
@@ -109,7 +110,7 @@ export const POST = withAuth(async (request, { supabase, profile }) => {
 
     return NextResponse.json({ status: APPOINTMENT_STATUS.CANCELLED, message: "Appointment cancelled successfully" });
   } catch (err) {
-    void err;
+    logger.warn("Operation failed", { context: "route", error: err });
     return NextResponse.json({ error: "Failed to cancel appointment" }, { status: 500 });
   }
 }, null);

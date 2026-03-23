@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase-server";
 import { verifyCmiCallback } from "@/lib/cmi";
 import { APPOINTMENT_STATUS, PAYMENT_STATUS } from "@/lib/types/database";
+import { logger } from "@/lib/logger";
 
 /**
  * POST /api/payments/cmi/callback
@@ -75,7 +76,7 @@ export async function POST(request: NextRequest) {
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error";
-    void message;
+    logger.warn("Operation failed", { context: "route" });
     return NextResponse.json({ error: "Failed to process payment callback" }, { status: 500 });
   }
 }

@@ -13,6 +13,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
+import { logger } from "@/lib/logger";
 import {
   fetchBillingRecords,
   type BillingRecord,
@@ -34,7 +35,7 @@ export default function BillingPage() {
       const data = await fetchBillingRecords();
       setRecords(data);
     } catch (err) {
-      void err;
+      logger.warn("Operation failed", { context: "page", error: err });
     } finally {
       setLoading(false);
     }

@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase-server";
 import { dispatchNotification } from "@/lib/notifications";
 import { APPOINTMENT_STATUS } from "@/lib/types/database";
 import { verifyCronSecret } from "@/lib/cron-auth";
+import { logger } from "@/lib/logger";
 
 /**
  * GET /api/cron/reminders
@@ -65,7 +66,7 @@ export async function GET(request: NextRequest) {
       .limit(500);
 
     if (error) {
-        void error;
+        logger.warn("Operation failed", { context: "route", error });
         return NextResponse.json({ error: "Failed to query appointments" }, { status: 500 });
     }
 
@@ -229,7 +230,7 @@ export async function GET(request: NextRequest) {
       results,
     });
   } catch (err) {
-    void err;
+    logger.warn("Operation failed", { context: "route", error: err });
     return NextResponse.json({ error: "Failed to process reminders" }, { status: 500 });
   }
 }

@@ -20,6 +20,7 @@ import {
   fetchClinicSubscription,
   type ClinicSubscriptionView,
 } from "@/lib/data/client";
+import { logger } from "@/lib/logger";
 import {
   fetchPricingTiers,
   type PricingTierRow,
@@ -41,7 +42,7 @@ export default function ClientBillingPage() {
       setCurrentSub(sub);
       setAllTiers(tiers);
     } catch (err) {
-      void err;
+      logger.warn("Operation failed", { context: "page", error: err });
     } finally {
       setLoading(false);
     }

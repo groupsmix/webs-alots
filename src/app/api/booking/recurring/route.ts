@@ -7,6 +7,7 @@ import { APPOINTMENT_STATUS, BOOKING_SOURCE } from "@/lib/types/database";
 import type { TablesInsert } from "@/lib/types/database";
 import { computeEndTime } from "@/lib/timezone";
 import { STAFF_ROLES } from "@/lib/auth-roles";
+import { logger } from "@/lib/logger";
 
 export const runtime = "edge";
 
@@ -253,7 +254,7 @@ export const POST = withAuth(async (request, { supabase }) => {
 
     return NextResponse.json({ error: "action must be 'create' or 'cancel'" }, { status: 400 });
   } catch (err) {
-    void err;
+    logger.warn("Operation failed", { context: "route", error: err });
     return NextResponse.json({ error: "Failed to process recurring booking" }, { status: 500 });
   }
 }, STAFF_ROLES);

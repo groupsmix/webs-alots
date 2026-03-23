@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createCmiPayment, isCmiConfigured } from "@/lib/cmi";
 import { withAuth } from "@/lib/with-auth";
 import { STAFF_ROLES } from "@/lib/auth-roles";
+import { logger } from "@/lib/logger";
 
 /**
  * Validate that a redirect URL is same-origin to prevent open redirects.
@@ -108,7 +109,7 @@ export const POST = withAuth(async (request, { user }) => {
       formFields: result.formFields,
     });
   } catch (err) {
-    void err;
+    logger.warn("Operation failed", { context: "route", error: err });
     return NextResponse.json({ error: "Failed to create CMI payment" }, { status: 500 });
   }
 }, STAFF_ROLES);

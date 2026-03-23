@@ -8,6 +8,7 @@ import {
 import type { NotificationChannel as DBNotificationChannel } from "@/lib/types/database";
 import { withAuth } from "@/lib/with-auth";
 import { STAFF_ROLES } from "@/lib/auth-roles";
+import { logger } from "@/lib/logger";
 
 export const runtime = "edge";
 
@@ -67,7 +68,7 @@ export const POST = withAuth(async (request, { supabase, profile }) => {
 
     return NextResponse.json({ results });
   } catch (err) {
-    void err;
+    logger.warn("Operation failed", { context: "route", error: err });
     return NextResponse.json(
       { error: "Failed to dispatch notification" },
       { status: 500 },
@@ -116,7 +117,7 @@ export const GET = withAuth(async (request, { supabase, profile }) => {
     const { data: notifications, error, count } = await query;
 
     if (error) {
-      void error;
+      logger.warn("Operation failed", { context: "route", error });
       return NextResponse.json(
         { error: "Failed to fetch notifications" },
         { status: 500 },
@@ -128,7 +129,7 @@ export const GET = withAuth(async (request, { supabase, profile }) => {
       total: count ?? 0,
     });
   } catch (err) {
-    void err;
+    logger.warn("Operation failed", { context: "route", error: err });
     return NextResponse.json(
       { error: "Failed to fetch notifications" },
       { status: 500 },

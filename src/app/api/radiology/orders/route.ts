@@ -15,6 +15,7 @@ import {
 } from "@/lib/data/server";
 import { withAuth } from "@/lib/with-auth";
 import { STAFF_ROLES } from "@/lib/auth-roles";
+import { logger } from "@/lib/logger";
 
 export const POST = withAuth(async (request) => {
   try {
@@ -48,7 +49,7 @@ export const POST = withAuth(async (request) => {
 
     return NextResponse.json(result, { status: 201 });
   } catch (err) {
-    void err;
+    logger.warn("Operation failed", { context: "route", error: err });
     return NextResponse.json({ error: "Failed to create radiology order" }, { status: 500 });
   }
 }, STAFF_ROLES);
@@ -112,7 +113,7 @@ export const PATCH = withAuth(async (request) => {
       { status: 400 },
     );
   } catch (err) {
-    void err;
+    logger.warn("Operation failed", { context: "route", error: err });
     return NextResponse.json({ error: "Failed to update radiology order" }, { status: 500 });
   }
 }, STAFF_ROLES);
