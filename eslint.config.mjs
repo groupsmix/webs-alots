@@ -19,6 +19,11 @@ const eslintConfig = defineConfig([
       "react-hooks/rules-of-hooks": "warn",
       "react-hooks/preserve-manual-memoization": "warn",
       "@typescript-eslint/no-require-imports": "warn",
+      "@typescript-eslint/no-unused-vars": ["warn", {
+        argsIgnorePattern: "^_",
+        varsIgnorePattern: "^_",
+        caughtErrorsIgnorePattern: "^_",
+      }],
     },
   },
 ]);

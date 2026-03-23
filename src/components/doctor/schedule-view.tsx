@@ -34,7 +34,7 @@ export function ScheduleView() {
   const [viewMode, setViewMode] = useState<ViewMode>("timeline");
   const [todayAppointments, setTodayAppointments] = useState<AppointmentView[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
+  const [_error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
     const controller = new AbortController();

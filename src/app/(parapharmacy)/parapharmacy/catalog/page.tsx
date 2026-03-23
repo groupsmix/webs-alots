@@ -37,7 +37,7 @@ export default function ParapharmacyCatalogPage() {
   const [products, setProducts] = useState<ProductView[]>([]);
   const [categories, setCategories] = useState<ParapharmacyCategoryView[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
+  const [_error, setError] = useState<Error | null>(null);
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
 

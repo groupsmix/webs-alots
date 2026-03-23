@@ -35,7 +35,7 @@ export default function NeurologyPage() {
   const [eegs, setEegs] = useState<EEGRecordView[]>([]);
   const [exams, setExams] = useState<NeuroExamView[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
+  const [_error, setError] = useState<Error | null>(null);
   const [showEegForm, setShowEegForm] = useState(false);
   const [showExamForm, setShowExamForm] = useState(false);
   const [activeSection, setActiveSection] = useState(0);

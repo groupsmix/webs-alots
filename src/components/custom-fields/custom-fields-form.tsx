@@ -32,7 +32,7 @@ export function CustomFieldsForm({
   const [definitions, setDefinitions] = useState<CustomFieldDefinition[]>([]);
   const [values, setValues] = useState<Record<string, unknown>>({});
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
+  const [_error, _setError] = useState<Error | null>(null);
 
   useEffect(() => {
     const controller = new AbortController();

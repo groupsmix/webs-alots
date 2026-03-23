@@ -39,7 +39,7 @@ const stockFilters = [
 export default function StockPage() {
   const [allProducts, setAllProducts] = useState<ProductView[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
+  const [_error, setError] = useState<Error | null>(null);
   const [query, setQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [stockFilter, setStockFilter] = useState("all");

@@ -37,7 +37,7 @@ export default function LoyaltyPage() {
   const [allMembers, setAllMembers] = useState<LoyaltyMemberView[]>([]);
   const [allTransactions, setAllTransactions] = useState<LoyaltyTransactionView[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
+  const [_error, setError] = useState<Error | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedMember, setSelectedMember] = useState<string | null>(null);
   const [view, setView] = useState<"members" | "transactions">("members");

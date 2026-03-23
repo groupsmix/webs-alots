@@ -34,7 +34,7 @@ export default function RadiologyImagesPage() {
   const [orders, setOrders] = useState<RadiologyOrderView[]>([]);
   const [allOrders, setAllOrders] = useState<RadiologyOrderView[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
+  const [_error, setError] = useState<Error | null>(null);
   const [search, setSearch] = useState("");
 
   // Upload dialog state

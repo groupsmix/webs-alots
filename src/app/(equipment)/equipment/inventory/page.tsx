@@ -63,7 +63,7 @@ export default function EquipmentInventoryPage() {
   const { t } = useEquipmentI18n(locale);
   const [items, setItems] = useState<EquipmentItemView[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
+  const [_error, setError] = useState<Error | null>(null);
   const [search, setSearch] = useState("");
   const [conditionFilter, setConditionFilter] = useState("all");
   const [expandedId, setExpandedId] = useState<string | null>(null);

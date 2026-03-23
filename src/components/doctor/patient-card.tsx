@@ -29,7 +29,7 @@ export function PatientCard({ patientId }: { patientId?: string }) {
   const [patientRx, setPatientRx] = useState<PrescriptionView[]>([]);
   const [patientAppts, setPatientAppts] = useState<AppointmentView[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
+  const [_error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
     const controller = new AbortController();

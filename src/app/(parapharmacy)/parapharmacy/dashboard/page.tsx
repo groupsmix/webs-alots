@@ -22,7 +22,7 @@ export default function ParapharmacyDashboardPage() {
   const [products, setProducts] = useState<ProductView[]>([]);
   const [categories, setCategories] = useState<ParapharmacyCategoryView[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
+  const [_error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
     const controller = new AbortController();

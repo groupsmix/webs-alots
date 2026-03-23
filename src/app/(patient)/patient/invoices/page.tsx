@@ -22,7 +22,7 @@ export default function PatientInvoicesPage() {
   const [downloading, setDownloading] = useState<string | null>(null);
   const [invoices, setInvoices] = useState<InvoiceView[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
+  const [_error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
     const controller = new AbortController();

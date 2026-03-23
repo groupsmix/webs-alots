@@ -61,7 +61,7 @@ export default function DoctorDashboardPage() {
   const [invoices, setInvoices] = useState<InvoiceView[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
+  const [_error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
     const controller = new AbortController();

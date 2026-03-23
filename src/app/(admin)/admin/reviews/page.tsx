@@ -25,7 +25,7 @@ function StarRating({ rating }: { rating: number }) {
 export default function ReviewManagementPage() {
   const [reviews, setReviews] = useState<ReviewView[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
+  const [_error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
     const controller = new AbortController();

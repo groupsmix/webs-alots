@@ -16,7 +16,7 @@ import { PageLoader } from "@/components/ui/page-loader";
 export default function LabDashboardPage() {
   const [orders, setOrders] = useState<LabTestOrderView[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
+  const [_error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
     const controller = new AbortController();

@@ -59,7 +59,7 @@ export default function ConsultationNotesPage() {
   const [notes, setNotes] = useState<ConsultationNote[]>([]);
   const [apptList, setApptList] = useState<AppointmentView[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
+  const [_error, setError] = useState<Error | null>(null);
   const [editingApptId, setEditingApptId] = useState<string | null>(null);
   const [showPrivate, setShowPrivate] = useState<Record<string, boolean>>({});
   const [formData, setFormData] = useState({

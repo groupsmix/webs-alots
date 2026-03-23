@@ -28,7 +28,7 @@ function FlagBadge({ flag }: { flag: string }) {
 export default function PatientHistoryPage() {
   const [patients, setPatients] = useState<PatientView[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
+  const [_error, setError] = useState<Error | null>(null);
   const [search, setSearch] = useState("");
   const [selectedPatientId, setSelectedPatientId] = useState<string | null>(null);
   const [patientOrders, setPatientOrders] = useState<LabTestOrderView[]>([]);

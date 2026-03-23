@@ -10,7 +10,7 @@ import { z } from "zod";
 // ── Reusable primitives ─────────────────────────────────────────────────
 
 /** UUID-like string (basic format check, not cryptographic) */
-const uuid = z.string().min(1).max(100);
+const _uuid = z.string().min(1).max(100);
 
 /** ISO date string YYYY-MM-DD */
 const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Expected YYYY-MM-DD");

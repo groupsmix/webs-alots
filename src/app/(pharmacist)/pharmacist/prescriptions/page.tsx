@@ -31,7 +31,7 @@ const statusFilters: PrescriptionStatus[] = ["pending", "reviewing", "partially-
 export default function PrescriptionsPage() {
   const [allPrescriptions, setAllPrescriptions] = useState<PharmacyPrescriptionView[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
+  const [_error, setError] = useState<Error | null>(null);
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
 

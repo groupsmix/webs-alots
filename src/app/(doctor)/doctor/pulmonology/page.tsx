@@ -33,7 +33,7 @@ export default function PulmonologyPage() {
   const [spirometry, setSpirometry] = useState<SpirometryRecordView[]>([]);
   const [respTests, setRespTests] = useState<RespiratoryTestView[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
+  const [_error, setError] = useState<Error | null>(null);
   const [showSpiroForm, setShowSpiroForm] = useState(false);
   const [showTestForm, setShowTestForm] = useState(false);
 

@@ -14,7 +14,7 @@ import { PageLoader } from "@/components/ui/page-loader";
 export default function ReceptionistPatientsPage() {
   const [patients, setPatients] = useState<PatientView[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
+  const [_error, setError] = useState<Error | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [checkedInIds, setCheckedInIds] = useState<Set<string>>(new Set());
 

@@ -41,7 +41,7 @@ export default function EndocrinologyPage() {
   const [hormones, setHormones] = useState<HormoneLevelView[]>([]);
   const [diabetes, setDiabetes] = useState<DiabetesManagementView[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
+  const [_error, setError] = useState<Error | null>(null);
   const [showSugarForm, setShowSugarForm] = useState(false);
   const [showHormoneForm, setShowHormoneForm] = useState(false);
   const [showDiabetesForm, setShowDiabetesForm] = useState(false);
