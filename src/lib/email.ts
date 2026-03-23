@@ -88,22 +88,22 @@ async function sendViaResend(payload: EmailPayload): Promise<EmailSendResult> {
   }
 }
 
-// ---- Generic SMTP via fetch (Mailgun-compatible REST endpoint) ----
+// ---- Generic HTTP email relay (Mailgun / Postmark-compatible REST endpoint) ----
 
-async function sendViaSmtp(payload: EmailPayload): Promise<EmailSendResult> {
+async function sendViaHttpRelay(payload: EmailPayload): Promise<EmailSendResult> {
   const host = process.env.SMTP_HOST!;
   const port = process.env.SMTP_PORT || "587";
   const user = process.env.SMTP_USER!;
   const pass = process.env.SMTP_PASS!;
   const from = payload.from || process.env.EMAIL_FROM || "noreply@example.com";
 
-  // For SMTP, we use a simple HTTP relay if available (e.g., Mailgun, Postmark)
-  // Otherwise log a warning and return success to not block the flow
-  const smtpEndpoint = `https://${host}:${port}`;
+  // Despite the SMTP_* env var naming, this is actually an HTTP REST relay
+  // (e.g., Mailgun, Postmark) — not a raw SMTP connection.
+  const relayEndpoint = `https://${host}:${port}`;
 
   try {
     const auth = btoa(`${user}:${pass}`);
-    const response = await fetch(`${smtpEndpoint}/messages`, {
+    const response = await fetch(`${relayEndpoint}/messages`, {
       method: "POST",
       headers: {
         Authorization: `Basic ${auth}`,
@@ -119,11 +119,11 @@ async function sendViaSmtp(payload: EmailPayload): Promise<EmailSendResult> {
 
     if (response.ok) {
       const data = await response.json();
-      return { success: true, messageId: data.id || `smtp_${Date.now()}` };
+      return { success: true, messageId: data.id || `http_relay_${Date.now()}` };
     }
 
     const errorText = await response.text();
-    return { success: false, error: errorText || "SMTP relay error" };
+    return { success: false, error: errorText || "HTTP relay error" };
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error";
     void message;
@@ -145,7 +145,7 @@ export async function sendEmail(payload: EmailPayload): Promise<EmailSendResult>
     case "resend":
       return sendViaResend(payload);
     case "smtp":
-      return sendViaSmtp(payload);
+      return sendViaHttpRelay(payload);
     case "none":
       // No email provider configured
       return {

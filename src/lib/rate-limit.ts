@@ -188,7 +188,6 @@ function createSupabaseRateLimiter(options: RateLimiterOptions): RateLimiter {
 function createMemoryRateLimiter(options: RateLimiterOptions): RateLimiter {
   const { windowMs, max, maxKeys = 10_000 } = options;
   const store = new Map<string, RateLimitEntry>();
-  const createdAt = Date.now();
   let coldStartWarned = false;
 
   // Prune expired entries periodically to prevent memory leaks

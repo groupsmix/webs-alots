@@ -7,6 +7,9 @@
  */
 
 import { createClient } from "@/lib/supabase-server";
+import type { Database } from "@/lib/types/database";
+
+type ClinicSubscriptionRow = Database["public"]["Tables"]["clinic_subscriptions"]["Row"];
 
 // ---- Types ----
 
@@ -47,6 +50,26 @@ export interface ClinicSubscription {
   lastPaymentAmount?: number;
   nextPaymentDate?: string;
   nextPaymentAmount?: number;
+}
+
+/**
+ * Map a snake_case DB row to the camelCase ClinicSubscription interface.
+ * This prevents silent property mismatches from an `as unknown as` cast.
+ */
+function mapRowToSubscription(row: ClinicSubscriptionRow): ClinicSubscription {
+  return {
+    id: row.id,
+    clinicId: row.clinic_id,
+    plan: row.plan as SubscriptionPlan,
+    status: row.status as SubscriptionStatus,
+    billingInterval: (row.billing_interval ?? "monthly") as BillingInterval,
+    currentPeriodStart: row.current_period_start ?? "",
+    currentPeriodEnd: row.current_period_end ?? "",
+    cancelAtPeriodEnd: row.cancel_at_period_end ?? false,
+    stripeCustomerId: row.stripe_customer_id ?? undefined,
+    stripeSubscriptionId: row.stripe_subscription_id ?? undefined,
+    trialEnd: row.trial_end ?? undefined,
+  };
 }
 
 export interface BillingEvent {
@@ -261,7 +284,7 @@ export async function processRenewal(
     return { success: false, error: "Subscription not found" };
   }
 
-  const subscription = sub as unknown as ClinicSubscription;
+  const subscription = mapRowToSubscription(sub);
 
   if (!needsRenewal(subscription)) {
     return { success: true }; // No renewal needed
