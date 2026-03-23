@@ -98,16 +98,22 @@ export default function ChildInfoPage() {
   }, [selectedPatient]);
 
   useEffect(() => {
-    let cancelled = false;
-    fetchData().then((result) => {
-      if (cancelled) return;
-      if (result) {
-        setMilestones(result.milestones);
-        setPatients(result.patients);
-      }
-      setLoading(false);
-    });
-    return () => { cancelled = true; };
+    const controller = new AbortController();
+    fetchData()
+      .then((result) => {
+        if (controller.signal.aborted) return;
+        if (result) {
+          setMilestones(result.milestones);
+          setPatients(result.patients);
+        }
+      })
+      .catch(() => {
+        // ignored — component unmounted or fetch failed
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setLoading(false);
+      });
+    return () => { controller.abort(); };
   }, [fetchData]);
 
   const reload = async () => {
