@@ -96,10 +96,23 @@ function setTenantHeaders(
   response.headers.set(TENANT_HEADERS.clinicTier, clinic.tier);
 }
 
+/** Global body size cap (25 MB). Requests advertising a larger payload are
+ *  rejected before any route handler runs, preventing memory exhaustion. */
+const MAX_BODY_BYTES = 25 * 1024 * 1024;
+
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const hostname = request.headers.get("host") ?? "";
   const rootDomain = process.env.ROOT_DOMAIN;
+
+  // --- Global body size limit ---
+  const contentLength = request.headers.get("content-length");
+  if (contentLength && Number(contentLength) > MAX_BODY_BYTES) {
+    return NextResponse.json(
+      { error: "Payload too large" },
+      { status: 413 },
+    );
+  }
 
   // --- Subdomain resolution ---
   const subdomain = extractSubdomain(hostname, rootDomain);

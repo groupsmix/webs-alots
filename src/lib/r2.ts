@@ -135,19 +135,18 @@ export async function getPresignedUploadUrl(
   key: string,
   contentType: string,
   expiresIn = 600,
-  maxSizeBytes: number = 10 * 1024 * 1024, // HIGH-07: Default 10 MB limit
 ): Promise<string | null> {
   const client = getClient();
   const config = getR2Config();
   if (!client || !config) return null;
 
-  // HIGH-07: Include ContentLength in the presigned URL to enforce size limits.
-  // The presigned URL will only accept uploads up to maxSizeBytes.
+  // HIGH-07: Do NOT set ContentLength here — it enforces an exact byte count,
+  // not a maximum.  Files smaller than maxSizeBytes would be rejected by S3.
+  // Size enforcement is handled server-side via the upload API route validation.
   const command = new PutObjectCommand({
     Bucket: config.bucketName,
     Key: key,
     ContentType: contentType,
-    ContentLength: maxSizeBytes,
   });
 
   return getSignedUrl(client, command, { expiresIn });

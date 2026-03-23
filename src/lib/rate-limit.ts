@@ -77,10 +77,14 @@ function createSupabaseRateLimiter(options: RateLimiterOptions): RateLimiter {
   const { windowMs, max } = options;
 
   // Use the service role key for direct DB access (bypasses RLS).
-  const supabase = createSupabaseClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  );
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!supabaseUrl || !serviceRoleKey) {
+    throw new Error(
+      "Missing required environment variables for Supabase rate limiter: NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY",
+    );
+  }
+  const supabase = createSupabaseClient(supabaseUrl, serviceRoleKey);
 
   return {
     async check(key: string): Promise<boolean> {
