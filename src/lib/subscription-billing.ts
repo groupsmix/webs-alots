@@ -7,6 +7,7 @@
  */
 
 import { createClient } from "@/lib/supabase-server";
+import { logger } from "@/lib/logger";
 
 // ---- Types ----
 
@@ -331,6 +332,11 @@ export async function processRenewal(
       }
     } catch (err) {
       const message = err instanceof Error ? err.message : "Stripe charge failed";
+      logger.error("Stripe charge failed during subscription renewal", {
+        context: "subscription-billing",
+        error: err,
+        clinicId,
+      });
       return { success: false, error: message };
     }
   }
