@@ -40,9 +40,6 @@ export async function logAuditEvent({
       timestamp: new Date().toISOString(),
     });
   } catch (err) {
-    console.error(
-      "[audit-log] Failed to write audit log:",
-      err instanceof Error ? err.message : "Unknown error",
-    );
+    void err;
   }
 }

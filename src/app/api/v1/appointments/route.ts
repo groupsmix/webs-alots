@@ -51,7 +51,7 @@ export async function GET(request: NextRequest) {
   const { data, count, error } = await query;
 
   if (error) {
-    console.error("[GET /api/v1/appointments] Query error:", error.message);
+    void error;
     return NextResponse.json({ error: "Failed to fetch appointments" }, { status: 500, headers: getCorsHeaders(request) });
   }
 
@@ -126,7 +126,7 @@ export async function POST(request: NextRequest) {
     .single();
 
   if (error) {
-    console.error("[POST /api/v1/appointments] Insert error:", error.message);
+    void error;
     return NextResponse.json({ error: "Failed to create appointment" }, { status: 500, headers: getCorsHeaders(request) });
   }
 

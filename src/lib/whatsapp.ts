@@ -209,7 +209,7 @@ export async function sendWhatsAppMessage(
   const config = getWhatsAppConfig();
 
   if (!isConfigured(config)) {
-    console.warn("WhatsApp API credentials not configured");
+    // WhatsApp API credentials not configured
     return { success: false, error: "Not configured", provider: config.provider };
   }
 
@@ -231,7 +231,7 @@ export async function sendTextMessage(
   const config = getWhatsAppConfig();
 
   if (!isConfigured(config)) {
-    console.warn("WhatsApp API credentials not configured");
+    // WhatsApp API credentials not configured
     return { success: false, error: "Not configured", provider: config.provider };
   }
 

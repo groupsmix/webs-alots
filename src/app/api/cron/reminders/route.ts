@@ -65,7 +65,7 @@ export async function GET(request: NextRequest) {
       .limit(500);
 
     if (error) {
-        console.error("[Cron/Reminders] Query error:", error.message);
+        void error;
         return NextResponse.json({ error: "Failed to query appointments" }, { status: 500 });
     }
 
@@ -229,7 +229,7 @@ export async function GET(request: NextRequest) {
       results,
     });
   } catch (err) {
-    console.error("[Cron/Reminders] Error:", err instanceof Error ? err.message : "Unknown error");
+    void err;
     return NextResponse.json({ error: "Failed to process reminders" }, { status: 500 });
   }
 }

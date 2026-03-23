@@ -29,7 +29,7 @@ export function ClinicStats() {
       setDashData(dashStats);
       setTodayCount(todayAppts.length);
     }).catch((err) => {
-      console.error("[clinic-stats] failed to load data:", err);
+      void err;
     });
     return () => { cancelled = true; };
   }, []);

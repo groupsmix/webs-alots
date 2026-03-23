@@ -60,7 +60,7 @@ export const POST = withAuth(async (request, { supabase }) => {
       .single();
 
     if (error || !entry) {
-      console.error("[POST /api/booking/waiting-list] Error:", error?.message);
+      void error;
       return NextResponse.json({ error: "Failed to add to waiting list" }, { status: 400 });
     }
 
@@ -79,7 +79,7 @@ export const POST = withAuth(async (request, { supabase }) => {
       entryId: entry.id,
     });
   } catch (err) {
-    console.error("[POST /api/booking/waiting-list] Unexpected error:", err instanceof Error ? err.message : "Unknown error");
+    void err;
     return NextResponse.json({ error: "Failed to add to waiting list" }, { status: 500 });
   }
 }, null);
@@ -150,7 +150,7 @@ export const DELETE = withAuth(async (request, { supabase }) => {
       .eq("clinic_id", clinicConfig.clinicId);
 
     if (error) {
-      console.error("[DELETE /api/booking/waiting-list] Error:", error.message);
+      void error;
       return NextResponse.json({ error: "Failed to remove from waiting list" }, { status: 400 });
     }
 
@@ -165,7 +165,7 @@ export const DELETE = withAuth(async (request, { supabase }) => {
 
     return NextResponse.json({ status: "removed", message: "Removed from waiting list" });
   } catch (err) {
-    console.error("[DELETE /api/booking/waiting-list] Unexpected error:", err instanceof Error ? err.message : "Unknown error");
+    void err;
     return NextResponse.json({ error: "Failed to remove from waiting list" }, { status: 500 });
   }
 }, null);

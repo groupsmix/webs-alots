@@ -96,7 +96,7 @@ export function VideoConsultation({
       }
       return stream;
     } catch (err) {
-      console.error("[Video] Failed to access media devices:", err);
+      void err;
       setConnectionStatus("disconnected");
       return null;
     }
@@ -251,7 +251,7 @@ export function VideoConsultation({
         // Offer created, waiting for peer
         setConnectionStatus("waiting");
       } catch (err) {
-        console.error("[Video] Error creating offer:", err);
+        void err;
         setConnectionStatus("disconnected");
       }
     };

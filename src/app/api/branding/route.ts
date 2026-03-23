@@ -117,7 +117,7 @@ export const PUT = withAuth(async (request, { supabase }) => {
     .eq("id", clinicId);
 
   if (error) {
-    console.error("[PUT /api/branding] Update error:", error.message);
+    void error;
     return NextResponse.json(
       { error: "Failed to update branding" },
       { status: 500 },
@@ -190,7 +190,7 @@ export const POST = withAuth(async (request, { supabase }) => {
     .eq("id", clinicId);
 
   if (error) {
-    console.error("[POST /api/branding] Save URL error:", error.message);
+    void error;
     return NextResponse.json(
       { error: "Upload succeeded but failed to save URL" },
       { status: 500 },

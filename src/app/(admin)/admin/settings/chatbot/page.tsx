@@ -161,7 +161,7 @@ export default function ChatbotSettingsPage() {
       );
 
     if (configError) {
-      console.error("Failed to save config:", configError);
+      void configError;
       setSaving(false);
       return;
     }

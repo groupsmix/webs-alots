@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
     const callbackData = await verifyCmiCallback(params);
 
     if (!callbackData) {
-      console.error("[CMI Callback] Invalid hash or missing data");
+      // Invalid hash or missing callback data
       return NextResponse.json({ error: "Invalid callback" }, { status: 400 });
     }
 
@@ -57,7 +57,7 @@ export async function POST(request: NextRequest) {
         }
       }
 
-      console.info(`[CMI Callback] Payment approved: ${callbackData.orderId}`);
+      // Payment approved — status updated in DB above
     } else {
       // Mark payment as failed
       await supabase
@@ -65,7 +65,7 @@ export async function POST(request: NextRequest) {
         .update({ status: PAYMENT_STATUS.FAILED })
         .eq("gateway_session_id", callbackData.orderId);
 
-      console.info(`[CMI Callback] Payment ${callbackData.status}: ${callbackData.orderId} (code: ${callbackData.responseCode})`);
+      // Payment not approved — marked as failed in DB above
     }
 
     // CMI expects "ACTION=POSTAUTH" response for successful processing
@@ -75,7 +75,7 @@ export async function POST(request: NextRequest) {
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error";
-    console.error("[CMI Callback] Error:", message);
+    void message;
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }

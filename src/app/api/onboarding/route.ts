@@ -137,7 +137,7 @@ export const POST = withAuth(async (request, { supabase, user }) => {
         .single();
 
       if (clinicError || !clinic) {
-        console.error("[onboarding] create clinic:", clinicError?.message);
+        void clinicError;
         return NextResponse.json(
           { error: "Failed to create clinic" },
           { status: 500 },
@@ -157,7 +157,7 @@ export const POST = withAuth(async (request, { supabase, user }) => {
     });
 
     if (userError) {
-      console.error("[onboarding] create user:", userError.message);
+      void userError;
 
       // If this is a unique constraint violation on auth_id, the user
       // was already created (concurrent retry) — treat as success.
@@ -176,7 +176,7 @@ export const POST = withAuth(async (request, { supabase, user }) => {
         .eq("id", clinicId);
 
       if (deleteError) {
-        console.error("[onboarding] failed to clean up orphaned clinic:", deleteError.message);
+        void deleteError;
       }
 
       return NextResponse.json(
@@ -191,7 +191,7 @@ export const POST = withAuth(async (request, { supabase, user }) => {
       clinic_id: clinicId,
     });
   } catch (err) {
-    console.error("[POST /api/onboarding] Error:", err instanceof Error ? err.message : "Unknown error");
+    void err;
     return NextResponse.json(
       { error: "Failed to process onboarding" },
       { status: 500 },

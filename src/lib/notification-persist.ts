@@ -59,14 +59,14 @@ export async function insertInAppNotification(
       .single();
 
     if (error) {
-      console.error("[In-App Notification] Insert failed:", error.message);
+      void error;
       return { success: false, error: error.message };
     }
 
     return { success: true, id: data?.id };
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error";
-    console.error("[In-App Notification] Error:", message);
+    void message;
     return { success: false, error: message };
   }
 }

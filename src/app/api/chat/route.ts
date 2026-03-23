@@ -216,7 +216,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (!apiResponse.ok) {
-      console.error("AI API error:", apiResponse.status, apiResponse.statusText);
+      void apiResponse;
       const reply = getBasicResponse(lastMessage.content, ctx);
       return NextResponse.json({
         message: { role: "assistant" as const, content: reply },
@@ -278,7 +278,7 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (err) {
-    console.error("[POST /api/chat] Error:", err instanceof Error ? err.message : "Unknown error");
+    void err;
     return NextResponse.json(
       { error: "Failed to process chat message" },
       { status: 500 },

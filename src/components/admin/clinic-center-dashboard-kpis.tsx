@@ -43,7 +43,7 @@ export function ClinicCenterDashboardKPIsComponent() {
       .then((result) => {
         if (!cancelled) setData(result);
       })
-      .catch((err) => console.error("[clinic-center-kpis] load error:", err))
+      .catch((err: unknown) => { void err; })
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
   }, []);

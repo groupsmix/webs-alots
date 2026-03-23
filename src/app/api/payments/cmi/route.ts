@@ -80,7 +80,7 @@ export const POST = withAuth(async (request, { user }) => {
       formFields: result.formFields,
     });
   } catch (err) {
-    console.error("[CMI] Error:", err instanceof Error ? err.message : "Unknown error");
+    void err;
     return NextResponse.json({ error: "Failed to create CMI payment" }, { status: 500 });
   }
 }, STAFF_ROLES);

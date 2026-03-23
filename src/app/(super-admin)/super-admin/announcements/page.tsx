@@ -30,7 +30,7 @@ export default function AnnouncementsPage() {
       const data = await fetchAnnouncements();
       setList(data);
     } catch (err) {
-      console.error("[sa-announcements] failed to load:", err);
+      void err;
     } finally {
       setLoading(false);
     }

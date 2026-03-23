@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
 
     // Verify webhook signature — webhook secret MUST be configured
     if (!webhookSecret) {
-      console.error("[Stripe Webhook] STRIPE_WEBHOOK_SECRET is not configured");
+      // STRIPE_WEBHOOK_SECRET not configured
       return NextResponse.json(
         { error: "Webhook signature verification not configured" },
         { status: 503 },
@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (!signature) {
-      console.error("[Stripe Webhook] Missing stripe-signature header");
+      // Missing stripe-signature header
       return NextResponse.json(
         { error: "Missing stripe-signature header" },
         { status: 400 },
@@ -48,7 +48,7 @@ export async function POST(request: NextRequest) {
 
     const isValid = await verifyStripeSignature(rawBody, signature, webhookSecret);
     if (!isValid) {
-      console.error("[Stripe Webhook] Invalid signature");
+      // Invalid webhook signature
       return NextResponse.json({ error: "Invalid signature" }, { status: 400 });
     }
 
@@ -101,7 +101,7 @@ export async function POST(request: NextRequest) {
             .eq("status", APPOINTMENT_STATUS.PENDING);
         }
 
-        console.info(`[Stripe Webhook] Payment completed: ${session.id}`);
+        // Payment completed — recorded in DB above
         break;
       }
 
@@ -126,21 +126,18 @@ export async function POST(request: NextRequest) {
           });
         }
 
-        console.error(
-          `[Stripe Webhook] Payment failed: ${intent.id}` +
-          ` (clinic=${failedClinicId ?? "unknown"}, patient=${failedPatientId ?? "unknown"})`,
-        );
+        // Payment failed — recorded in DB above
         break;
       }
 
       default:
-        console.info(`[Stripe Webhook] Unhandled event type: ${event.type}`);
+        // Unhandled event type — acknowledged without processing
     }
 
     return NextResponse.json({ received: true });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error";
-    console.error("[Stripe Webhook] Error:", message);
+    void message;
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }
@@ -176,7 +173,7 @@ async function verifyStripeSignature(
 
     return timingSafeEqual(expectedSignature, signature);
   } catch (err) {
-    console.error("[Stripe Webhook] Signature verification error:", err instanceof Error ? err.message : "Unknown error");
+    void err;
     return false;
   }
 }

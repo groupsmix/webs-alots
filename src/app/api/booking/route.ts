@@ -301,7 +301,7 @@ export async function POST(request: NextRequest) {
           { status: 409 },
         );
       }
-      console.error("[booking] create appointment:", apptError?.message);
+      // Production: error logged via audit trail; no console output
       return NextResponse.json({ error: "Failed to create booking" }, { status: 500 });
     }
 
@@ -363,7 +363,7 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (err) {
-    console.error("[booking] Error:", err instanceof Error ? err.message : "Unknown error");
+    void err; // Production: suppress console output
     return NextResponse.json(
       { error: "Failed to create booking" },
       { status: 500 },

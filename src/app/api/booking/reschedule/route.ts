@@ -138,7 +138,7 @@ export const POST = withAuth(async (request, { supabase, profile }) => {
       newAppointmentId: body.appointmentId,
     });
   } catch (err) {
-    console.error("[reschedule] Error:", err instanceof Error ? err.message : "Unknown error");
+    void err;
     return NextResponse.json({ error: "Failed to reschedule appointment" }, { status: 500 });
   }
 }, null);

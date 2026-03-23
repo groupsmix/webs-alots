@@ -83,7 +83,7 @@ async function sendViaResend(payload: EmailPayload): Promise<EmailSendResult> {
     };
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error";
-    console.error("[Email/Resend] Send error:", message);
+    void message;
     return { success: false, error: message };
   }
 }
@@ -126,7 +126,7 @@ async function sendViaSmtp(payload: EmailPayload): Promise<EmailSendResult> {
     return { success: false, error: errorText || "SMTP relay error" };
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error";
-    console.error("[Email/SMTP] Send error:", message);
+    void message;
     return { success: false, error: message };
   }
 }
@@ -147,9 +147,7 @@ export async function sendEmail(payload: EmailPayload): Promise<EmailSendResult>
     case "smtp":
       return sendViaSmtp(payload);
     case "none":
-      console.warn(
-        `[Email] No email provider configured. Would send to: ${payload.to}, Subject: ${payload.subject}`,
-      );
+      // No email provider configured
       return {
         success: false,
         error: "No email provider configured. Set RESEND_API_KEY or SMTP_HOST/SMTP_USER/SMTP_PASS.",

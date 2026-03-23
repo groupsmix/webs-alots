@@ -36,11 +36,8 @@ export class ErrorBoundary extends Component<
   }
 
   componentDidCatch(error: Error, info: ErrorInfo) {
-    console.error(
-      `[ErrorBoundary${this.props.section ? `:${this.props.section}` : ""}]`,
-      error,
-      info.componentStack,
-    );
+    void error;
+    void info;
   }
 
   handleReset = () => {

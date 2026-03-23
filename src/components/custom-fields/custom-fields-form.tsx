@@ -55,7 +55,7 @@ export function CustomFieldsForm({
           setValues(valsData.values ?? {});
         }
       } catch (err) {
-        console.error("Failed to load custom fields:", err);
+        void err;
       } finally {
         setLoading(false);
       }

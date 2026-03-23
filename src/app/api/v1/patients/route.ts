@@ -52,7 +52,7 @@ export async function GET(request: NextRequest) {
   const { data, count, error } = await query;
 
   if (error) {
-    console.error("[GET /api/v1/patients] Query error:", error.message);
+    void error;
     return NextResponse.json({ error: "Failed to fetch patients" }, { status: 500, headers: getCorsHeaders(request) });
   }
 
@@ -117,7 +117,7 @@ export async function POST(request: NextRequest) {
     .single();
 
   if (error) {
-    console.error("[POST /api/v1/patients] Insert error:", error.message);
+    void error;
     return NextResponse.json({ error: "Failed to create patient" }, { status: 500, headers: getCorsHeaders(request) });
   }
 
