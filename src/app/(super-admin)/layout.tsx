@@ -112,7 +112,7 @@ export default function SuperAdminLayout({
         if (data) {
           setNotifications(
             data.map((n) => {
-              const sentAt = new Date(n.sent_at);
+              const sentAt = new Date(n.sent_at ?? Date.now());
               const diffMs = Date.now() - sentAt.getTime();
               const diffMin = Math.floor(diffMs / 60000);
               const diffHr = Math.floor(diffMin / 60);
