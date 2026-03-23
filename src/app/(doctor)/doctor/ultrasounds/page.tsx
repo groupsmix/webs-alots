@@ -54,21 +54,37 @@ export default function UltrasoundsPage() {
     efw: "", // Estimated fetal weight
   });
 
-  const load = useCallback(async () => {
+  const fetchData = useCallback(async () => {
     const user = await getCurrentUser();
-    if (!user?.clinic_id) { setLoading(false); return; }
+    if (!user?.clinic_id) return null;
     const [u, p] = await Promise.all([
       fetchUltrasounds(user.clinic_id, selectedPregnancy || undefined),
       fetchPregnancies(user.clinic_id),
     ]);
-    setUltrasounds(u);
-    setPregnancies(p);
-    setLoading(false);
+    return { ultrasounds: u, pregnancies: p };
   }, [selectedPregnancy]);
 
   useEffect(() => {
-    load();
-  }, [load]);
+    let cancelled = false;
+    fetchData().then((result) => {
+      if (cancelled) return;
+      if (result) {
+        setUltrasounds(result.ultrasounds);
+        setPregnancies(result.pregnancies);
+      }
+      setLoading(false);
+    });
+    return () => { cancelled = true; };
+  }, [fetchData]);
+
+  const reload = async () => {
+    const result = await fetchData();
+    if (result) {
+      setUltrasounds(result.ultrasounds);
+      setPregnancies(result.pregnancies);
+    }
+    setLoading(false);
+  };
 
   const handleSave = async () => {
     const user = await getCurrentUser();
@@ -99,7 +115,7 @@ export default function UltrasoundsPage() {
     });
     setShowAdd(false);
     setForm({ pregnancyId: "", scanDate: new Date().toISOString().split("T")[0], trimester: "1", gestationalWeeks: "", gestationalDays: "", findings: "", notes: "", crl: "", bpd: "", hc: "", ac: "", fl: "", efw: "" });
-    load();
+    reload();
   };
 
   if (loading) {

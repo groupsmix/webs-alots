@@ -87,21 +87,37 @@ export default function ChildInfoPage() {
     notes: "",
   });
 
-  const load = useCallback(async () => {
+  const fetchData = useCallback(async () => {
     const user = await getCurrentUser();
-    if (!user?.clinic_id) { setLoading(false); return; }
+    if (!user?.clinic_id) return null;
     const [m, p] = await Promise.all([
       fetchMilestones(user.clinic_id, selectedPatient || undefined),
       fetchPatients(user.clinic_id),
     ]);
-    setMilestones(m);
-    setPatients(p);
-    setLoading(false);
+    return { milestones: m, patients: p };
   }, [selectedPatient]);
 
   useEffect(() => {
-    load();
-  }, [load]);
+    let cancelled = false;
+    fetchData().then((result) => {
+      if (cancelled) return;
+      if (result) {
+        setMilestones(result.milestones);
+        setPatients(result.patients);
+      }
+      setLoading(false);
+    });
+    return () => { cancelled = true; };
+  }, [fetchData]);
+
+  const reload = async () => {
+    const result = await fetchData();
+    if (result) {
+      setMilestones(result.milestones);
+      setPatients(result.patients);
+    }
+    setLoading(false);
+  };
 
   const handleSave = async () => {
     const user = await getCurrentUser();
@@ -117,7 +133,7 @@ export default function ChildInfoPage() {
     });
     setShowAdd(false);
     setForm({ patientId: "", category: "motor", milestone: "", expectedAgeMonths: "", notes: "" });
-    load();
+    reload();
   };
 
   const handlePopulateDefaults = async () => {
@@ -143,7 +159,7 @@ export default function ChildInfoPage() {
         }
       }
     }
-    load();
+    reload();
   };
 
   const handleStatusUpdate = async (id: string, status: MilestoneView["status"]) => {
@@ -152,7 +168,7 @@ export default function ChildInfoPage() {
       updates.achieved_date = new Date().toISOString().split("T")[0];
     }
     await updateMilestone(id, updates);
-    load();
+    reload();
   };
 
   if (loading) {

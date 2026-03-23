@@ -63,21 +63,37 @@ export default function VisionTestsPage() {
     notes: "",
   });
 
-  const load = useCallback(async () => {
+  const fetchData = useCallback(async () => {
     const user = await getCurrentUser();
-    if (!user?.clinic_id) { setLoading(false); return; }
+    if (!user?.clinic_id) return null;
     const [t, p] = await Promise.all([
       fetchVisionTests(user.clinic_id, selectedPatient || undefined),
       fetchPatients(user.clinic_id),
     ]);
-    setTests(t);
-    setPatients(p);
-    setLoading(false);
+    return { tests: t, patients: p };
   }, [selectedPatient]);
 
   useEffect(() => {
-    load();
-  }, [load]);
+    let cancelled = false;
+    fetchData().then((result) => {
+      if (cancelled) return;
+      if (result) {
+        setTests(result.tests);
+        setPatients(result.patients);
+      }
+      setLoading(false);
+    });
+    return () => { cancelled = true; };
+  }, [fetchData]);
+
+  const reload = async () => {
+    const result = await fetchData();
+    if (result) {
+      setTests(result.tests);
+      setPatients(result.patients);
+    }
+    setLoading(false);
+  };
 
   const handleSave = async () => {
     const user = await getCurrentUser();
@@ -102,7 +118,7 @@ export default function VisionTestsPage() {
     });
     setShowAdd(false);
     setForm({ patientId: "", testDate: new Date().toISOString().split("T")[0], odAcuity: "", osAcuity: "", odSphere: "", odCylinder: "", odAxis: "", osSphere: "", osCylinder: "", osAxis: "", odAdd: "", osAdd: "", pdMm: "", notes: "" });
-    load();
+    reload();
   };
 
   if (loading) {
