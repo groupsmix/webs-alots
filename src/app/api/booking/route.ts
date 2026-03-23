@@ -13,6 +13,7 @@ import { APPOINTMENT_STATUS, BOOKING_SOURCE } from "@/lib/types/database";
 import { logAuditEvent } from "@/lib/audit-log";
 import { findOrCreatePatient } from "@/lib/find-or-create-patient";
 import { computeEndTime } from "@/lib/timezone";
+import { logger } from "@/lib/logger";
 
 export const runtime = "edge";
 
@@ -364,7 +365,7 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (err) {
-    void err; // Production: suppress console output
+    logger.warn("Operation failed", { context: "route", error: err }); // Production: suppress console output
     return NextResponse.json(
       { error: "Failed to create booking" },
       { status: 500 },
@@ -405,7 +406,7 @@ export async function GET(request: NextRequest) {
       bufferTime: clinicConfig.booking.bufferTime,
     });
   } catch (err) {
-    void err;
+    logger.warn("Operation failed", { context: "route", error: err });
     return NextResponse.json(
       { error: "Failed to fetch available slots" },
       { status: 500 },

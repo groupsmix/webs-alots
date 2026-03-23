@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { withAuth } from "@/lib/with-auth";
+import { logger } from "@/lib/logger";
 
 /**
  * POST /api/impersonate
@@ -72,7 +73,7 @@ export const POST = withAuth(async (request, { supabase, user }) => {
 
     return response;
   } catch (err) {
-    void err;
+    logger.warn("Operation failed", { context: "route", error: err });
     return NextResponse.json({ error: "Failed to start impersonation" }, { status: 500 });
   }
 }, ["super_admin"]);
@@ -113,7 +114,7 @@ export const DELETE = withAuth(async (_request, { supabase, user }) => {
 
     return response;
   } catch (err) {
-    void err;
+    logger.warn("Operation failed", { context: "route", error: err });
     return NextResponse.json({ error: "Failed to end impersonation" }, { status: 500 });
   }
 }, ["super_admin"]);

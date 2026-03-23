@@ -4,6 +4,7 @@ import { clinicConfig } from "@/config/clinic.config";
 import { getPublicAvailableSlots } from "@/lib/data/public";
 import { APPOINTMENT_STATUS } from "@/lib/types/database";
 import { logAuditEvent } from "@/lib/audit-log";
+import { logger } from "@/lib/logger";
 
 export const runtime = "edge";
 
@@ -138,7 +139,7 @@ export const POST = withAuth(async (request, { supabase, profile }) => {
       newAppointmentId: body.appointmentId,
     });
   } catch (err) {
-    void err;
+    logger.warn("Operation failed", { context: "route", error: err });
     return NextResponse.json({ error: "Failed to reschedule appointment" }, { status: 500 });
   }
 }, null);

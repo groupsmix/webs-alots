@@ -22,6 +22,7 @@
 
 import { NextRequest } from "next/server";
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
+import { logger } from "@/lib/logger";
 
 /**
  * Extract the real client IP from a request, respecting common reverse-proxy
@@ -118,8 +119,7 @@ function createSupabaseRateLimiter(options: RateLimiterOptions): RateLimiter {
         // This is still susceptible to a narrow race window but is
         // better than the original SELECT → UPDATE pattern.
         if (rpcError) {
-          // RPC unavailable — falling back to upsert approach
-          void rpcError;
+          logger.warn("Rate limiter RPC unavailable, falling back to upsert", { context: "rate-limit", error: rpcError });
         }
 
         const { data, error } = await supabase
@@ -129,7 +129,7 @@ function createSupabaseRateLimiter(options: RateLimiterOptions): RateLimiter {
           .maybeSingle();
 
         if (error) {
-          void error;
+          logger.error("Rate limiter query failed", { context: "rate-limit", error });
           return true;
         }
 
@@ -143,7 +143,7 @@ function createSupabaseRateLimiter(options: RateLimiterOptions): RateLimiter {
             );
 
           if (upsertError) {
-            void upsertError;
+            logger.error("Rate limiter upsert failed", { context: "rate-limit", error: upsertError });
           }
           return true;
         }
@@ -161,7 +161,7 @@ function createSupabaseRateLimiter(options: RateLimiterOptions): RateLimiter {
           .maybeSingle();
 
         if (updateError) {
-          void updateError;
+          logger.error("Rate limiter update failed", { context: "rate-limit", error: updateError });
           return true;
         }
 
@@ -180,7 +180,7 @@ function createSupabaseRateLimiter(options: RateLimiterOptions): RateLimiter {
       } catch (err) {
         // Network/transient failure — fail open to avoid blocking
         // legitimate traffic.  Log so operators can investigate.
-        void err;
+        logger.error("Rate limiter network failure — failing open", { context: "rate-limit", error: err });
         return true;
       }
     },

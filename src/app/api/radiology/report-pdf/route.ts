@@ -12,6 +12,7 @@ import { uploadToR2, isR2Configured, buildUploadKey } from "@/lib/r2";
 import { updateRadiologyOrderPdfUrl } from "@/lib/data/server";
 import { withAuth } from "@/lib/with-auth";
 import { STAFF_ROLES } from "@/lib/auth-roles";
+import { logger } from "@/lib/logger";
 
 function escapeHtml(str: string): string {
   return str
@@ -139,7 +140,7 @@ export const POST = withAuth(async (request) => {
 
     return NextResponse.json({ pdfUrl: url });
   } catch (err) {
-    void err;
+    logger.warn("Operation failed", { context: "route", error: err });
     return NextResponse.json({ error: "Failed to generate radiology report" }, { status: 500 });
   }
 }, STAFF_ROLES);

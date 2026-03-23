@@ -4,6 +4,7 @@ import { withAuth } from "@/lib/with-auth";
 import { findOrCreatePatient } from "@/lib/find-or-create-patient";
 import { logAuditEvent } from "@/lib/audit-log";
 import { WAITING_LIST_STATUS } from "@/lib/types/database";
+import { logger } from "@/lib/logger";
 
 export const runtime = "edge";
 
@@ -60,7 +61,7 @@ export const POST = withAuth(async (request, { supabase }) => {
       .single();
 
     if (error || !entry) {
-      void error;
+      logger.warn("Operation failed", { context: "route", error });
       return NextResponse.json({ error: "Failed to add to waiting list" }, { status: 400 });
     }
 
@@ -79,7 +80,7 @@ export const POST = withAuth(async (request, { supabase }) => {
       entryId: entry.id,
     });
   } catch (err) {
-    void err;
+    logger.warn("Operation failed", { context: "route", error: err });
     return NextResponse.json({ error: "Failed to add to waiting list" }, { status: 500 });
   }
 }, null);
@@ -150,7 +151,7 @@ export const DELETE = withAuth(async (request, { supabase }) => {
       .eq("clinic_id", clinicConfig.clinicId);
 
     if (error) {
-      void error;
+      logger.warn("Operation failed", { context: "route", error });
       return NextResponse.json({ error: "Failed to remove from waiting list" }, { status: 400 });
     }
 
@@ -165,7 +166,7 @@ export const DELETE = withAuth(async (request, { supabase }) => {
 
     return NextResponse.json({ status: "removed", message: "Removed from waiting list" });
   } catch (err) {
-    void err;
+    logger.warn("Operation failed", { context: "route", error: err });
     return NextResponse.json({ error: "Failed to remove from waiting list" }, { status: 500 });
   }
 }, null);

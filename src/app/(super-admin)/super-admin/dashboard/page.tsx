@@ -18,6 +18,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
+import { logger } from "@/lib/logger";
   fetchDashboardStats,
   fetchAnnouncements,
   fetchActivityLogs,
@@ -89,7 +90,7 @@ export default function SuperAdminDashboardPage() {
       setAnnouncementList(announcements);
       setActivityLogList(logs);
     } catch (err) {
-      void err;
+      logger.warn("Operation failed", { context: "page", error: err });
     } finally {
       setLoading(false);
     }

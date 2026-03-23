@@ -13,6 +13,7 @@
 import { type NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase-server";
 import { sha256Hex, timingSafeEqual } from "@/lib/crypto-utils";
+import { logger } from "@/lib/logger";
 
 export async function authenticateApiKey(
   request: NextRequest,
@@ -51,7 +52,7 @@ export async function authenticateApiKey(
         .update({ last_used_at: new Date().toISOString() })
         .eq("key_hash", keyHash)
         .then(({ error }) => {
-          void error;
+          if (error) logger.warn("Failed to update API key last_used_at", { context: "api-auth", error });
         });
 
       return { clinicId: candidate.clinic_id };

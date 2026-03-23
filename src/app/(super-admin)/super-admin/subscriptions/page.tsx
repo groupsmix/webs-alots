@@ -21,6 +21,7 @@ import {
   statusColors,
 } from "@/lib/config/pricing";
 import {
+import { logger } from "@/lib/logger";
   fetchClientSubscriptions,
   type ClientSubscription,
   type SystemType,
@@ -51,7 +52,7 @@ export default function SubscriptionsPage() {
       const data = await fetchClientSubscriptions();
       setSubscriptions(data);
     } catch (err) {
-      void err;
+      logger.warn("Operation failed", { context: "page", error: err });
     } finally {
       setLoading(false);
     }

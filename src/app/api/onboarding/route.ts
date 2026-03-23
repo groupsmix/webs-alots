@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { withAuth } from "@/lib/with-auth";
+import { logger } from "@/lib/logger";
 
 export const runtime = "edge";
 
@@ -191,7 +192,7 @@ export const POST = withAuth(async (request, { supabase, user }) => {
       clinic_id: clinicId,
     });
   } catch (err) {
-    void err;
+    logger.warn("Operation failed", { context: "route", error: err });
     return NextResponse.json(
       { error: "Failed to process onboarding" },
       { status: 500 },

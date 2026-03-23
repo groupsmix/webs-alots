@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { AlertTriangle, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { logger } from "@/lib/logger";
 
 export default function Error({
   error,
@@ -13,7 +14,7 @@ export default function Error({
   reset: () => void;
 }) {
   useEffect(() => {
-    void error;
+    logger.warn("Operation failed", { context: "error", error });
   }, [error]);
 
   return (

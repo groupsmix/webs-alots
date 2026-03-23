@@ -20,6 +20,7 @@ import {
   type TierSlug,
 } from "@/lib/config/pricing";
 import {
+import { logger } from "@/lib/logger";
   fetchClientSubscriptions,
   fetchPricingTiers,
   fetchFeatureToggles,
@@ -62,7 +63,7 @@ export default function PricingPage() {
       setTiers(tiersData);
       setToggles(togglesData);
     } catch (err) {
-      void err;
+      logger.warn("Operation failed", { context: "page", error: err });
     } finally {
       setLoading(false);
     }

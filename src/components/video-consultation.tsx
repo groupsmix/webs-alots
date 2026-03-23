@@ -17,6 +17,7 @@
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import {
+import { logger } from "@/lib/logger";
   Video,
   VideoOff,
   Mic,
@@ -96,7 +97,7 @@ export function VideoConsultation({
       }
       return stream;
     } catch (err) {
-      void err;
+      logger.warn("Operation failed", { context: "video-consultation", error: err });
       setConnectionStatus("disconnected");
       return null;
     }
@@ -251,7 +252,7 @@ export function VideoConsultation({
         // Offer created, waiting for peer
         setConnectionStatus("waiting");
       } catch (err) {
-        void err;
+        logger.warn("Operation failed", { context: "video-consultation", error: err });
         setConnectionStatus("disconnected");
       }
     };

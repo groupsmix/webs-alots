@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { BookingCalendar } from "./calendar";
 import { TimeSlotPicker } from "./time-slots";
 import { PaymentStep } from "./payment-step";
+import { logger } from "@/lib/logger";
 
 function getSteps() {
   const s = ["Specialty", "Doctor", "Service", "Date & Time", "Your Info"];
@@ -139,7 +140,7 @@ export function BookingForm() {
       setSpecialties(deriveSpecialties(mappedDoctors));
       setServices(dbServices.map(mapService));
     }).catch((err) => {
-      void err;
+      logger.warn("Operation failed", { context: "booking-form", error: err });
     });
     return () => { cancelled = true; };
   }, []);

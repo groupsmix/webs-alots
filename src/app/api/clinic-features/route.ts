@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase-server";
+import { logger } from "@/lib/logger";
 
 export const runtime = "edge";
 
@@ -40,7 +41,7 @@ export async function GET(request: NextRequest) {
       features_config: data.features_config,
     });
   } catch (err) {
-    void err;
+    logger.warn("Operation failed", { context: "route", error: err });
     return NextResponse.json(
       { error: "Failed to fetch clinic features" },
       { status: 500 },

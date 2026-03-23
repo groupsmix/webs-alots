@@ -21,6 +21,7 @@ import {
   type ClinicSubscriptionView,
 } from "@/lib/data/client";
 import {
+import { logger } from "@/lib/logger";
   fetchPricingTiers,
   type PricingTierRow,
 } from "@/lib/super-admin-actions";
@@ -41,7 +42,7 @@ export default function ClientBillingPage() {
       setCurrentSub(sub);
       setAllTiers(tiers);
     } catch (err) {
-      void err;
+      logger.warn("Operation failed", { context: "page", error: err });
     } finally {
       setLoading(false);
     }

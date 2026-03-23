@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/dialog";
 import { Loader2 } from "lucide-react";
 import {
+import { logger } from "@/lib/logger";
   fetchAnnouncements,
   type Announcement,
 } from "@/lib/super-admin-actions";
@@ -30,7 +31,7 @@ export default function AnnouncementsPage() {
       const data = await fetchAnnouncements();
       setList(data);
     } catch (err) {
-      void err;
+      logger.warn("Operation failed", { context: "page", error: err });
     } finally {
       setLoading(false);
     }

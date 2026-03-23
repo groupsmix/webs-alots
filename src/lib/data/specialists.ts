@@ -7,6 +7,7 @@
  */
 
 import { createClient } from "@/lib/supabase-client";
+import { logger } from "@/lib/logger";
 import type { Database } from "@/lib/types/database";
 
 type TableName = keyof Database["public"]["Tables"];
@@ -33,7 +34,7 @@ async function fetchRows<T>(
   if (opts?.limit) q = q.limit(opts.limit);
   const { data, error } = await q;
   if (error) {
-    void error;
+    logger.warn("Query failed", { context: "data/specialists", error });
     return [];
   }
   return (data ?? []) as T[];
@@ -84,7 +85,7 @@ export async function createSkinPhoto(data: {
   const supabase = createClient();
   const { data: result, error } = await supabase
     .from("skin_photos").insert(data).select("id").single();
-  if (error) { void error; return null; }
+  if (error) { logger.warn("Query failed", { context: "data/specialists", error }); return null; }
   return result?.id ?? null;
 }
 
@@ -131,7 +132,7 @@ export async function createSkinCondition(data: {
 }): Promise<string | null> {
   const supabase = createClient();
   const { data: result, error } = await supabase.from("skin_conditions").insert(data as Database["public"]["Tables"]["skin_conditions"]["Insert"]).select("id").single();
-  if (error) { void error; return null; }
+  if (error) { logger.warn("Query failed", { context: "data/specialists", error }); return null; }
   return result?.id ?? null;
 }
 
@@ -142,7 +143,7 @@ export async function updateSkinCondition(
   const supabase = createClient();
   const { error } = await supabase.from("skin_conditions")
     .update({ ...data, updated_at: new Date().toISOString() } as Database["public"]["Tables"]["skin_conditions"]["Update"]).eq("id", id);
-  if (error) { void error; return false; }
+  if (error) { logger.warn("Mutation failed", { context: "data/specialists", error }); return false; }
   return true;
 }
 
@@ -193,7 +194,7 @@ export async function createECGRecord(data: {
   const supabase = createClient();
   const { data: result, error } = await supabase
     .from("ecg_records").insert(data).select("id").single();
-  if (error) { void error; return null; }
+  if (error) { logger.warn("Query failed", { context: "data/specialists", error }); return null; }
   return result?.id ?? null;
 }
 
@@ -238,7 +239,7 @@ export async function createBloodPressureReading(data: {
   const supabase = createClient();
   const { data: result, error } = await supabase
     .from("blood_pressure_readings").insert(data).select("id").single();
-  if (error) { void error; return null; }
+  if (error) { logger.warn("Query failed", { context: "data/specialists", error }); return null; }
   return result?.id ?? null;
 }
 
@@ -279,7 +280,7 @@ export async function createHeartMonitoringNote(data: {
 }): Promise<string | null> {
   const supabase = createClient();
   const { data: result, error } = await supabase.from("heart_monitoring_notes").insert(data).select("id").single();
-  if (error) { void error; return null; }
+  if (error) { logger.warn("Query failed", { context: "data/specialists", error }); return null; }
   return result?.id ?? null;
 }
 
@@ -333,7 +334,7 @@ export async function createHearingTest(data: {
 }): Promise<string | null> {
   const supabase = createClient();
   const { data: result, error } = await supabase.from("hearing_tests").insert(data).select("id").single();
-  if (error) { void error; return null; }
+  if (error) { logger.warn("Query failed", { context: "data/specialists", error }); return null; }
   return result?.id ?? null;
 }
 
@@ -374,7 +375,7 @@ export async function createENTExam(data: {
 }): Promise<string | null> {
   const supabase = createClient();
   const { data: result, error } = await supabase.from("ent_exam_records").insert(data).select("id").single();
-  if (error) { void error; return null; }
+  if (error) { logger.warn("Query failed", { context: "data/specialists", error }); return null; }
   return result?.id ?? null;
 }
 
@@ -423,7 +424,7 @@ export async function createXRayRecord(data: {
   const supabase = createClient();
   const { data: result, error } = await supabase
     .from("xray_records").insert(data as Database["public"]["Tables"]["xray_records"]["Insert"]).select("id").single();
-  if (error) { void error; return null; }
+  if (error) { logger.warn("Query failed", { context: "data/specialists", error }); return null; }
   return result?.id ?? null;
 }
 
@@ -475,7 +476,7 @@ export async function createFractureRecord(data: {
 }): Promise<string | null> {
   const supabase = createClient();
   const { data: result, error } = await supabase.from("fracture_records").insert(data).select("id").single();
-  if (error) { void error; return null; }
+  if (error) { logger.warn("Query failed", { context: "data/specialists", error }); return null; }
   return result?.id ?? null;
 }
 
@@ -486,7 +487,7 @@ export async function updateFractureRecord(
   const supabase = createClient();
   const { error } = await supabase.from("fracture_records")
     .update({ ...data, updated_at: new Date().toISOString() }).eq("id", id);
-  if (error) { void error; return false; }
+  if (error) { logger.warn("Mutation failed", { context: "data/specialists", error }); return false; }
   return true;
 }
 
@@ -534,7 +535,7 @@ export async function createRehabPlan(data: {
   const supabase = createClient();
   const { data: result, error } = await supabase
     .from("rehab_plans").insert(data as Database["public"]["Tables"]["rehab_plans"]["Insert"]).select("id").single();
-  if (error) { void error; return null; }
+  if (error) { logger.warn("Query failed", { context: "data/specialists", error }); return null; }
   return result?.id ?? null;
 }
 
@@ -545,7 +546,7 @@ export async function updateRehabPlan(
   const supabase = createClient();
   const { error } = await supabase.from("rehab_plans")
     .update({ ...data, updated_at: new Date().toISOString() } as Database["public"]["Tables"]["rehab_plans"]["Update"]).eq("id", id);
-  if (error) { void error; return false; }
+  if (error) { logger.warn("Mutation failed", { context: "data/specialists", error }); return false; }
   return true;
 }
 
@@ -601,7 +602,7 @@ export async function createPsychSessionNote(data: {
 }): Promise<string | null> {
   const supabase = createClient();
   const { data: result, error } = await supabase.from("psych_session_notes").insert(data).select("id").single();
-  if (error) { void error; return null; }
+  if (error) { logger.warn("Query failed", { context: "data/specialists", error }); return null; }
   return result?.id ?? null;
 }
 
@@ -655,7 +656,7 @@ export async function createPsychMedication(data: {
 }): Promise<string | null> {
   const supabase = createClient();
   const { data: result, error } = await supabase.from("psych_medications").insert(data).select("id").single();
-  if (error) { void error; return null; }
+  if (error) { logger.warn("Query failed", { context: "data/specialists", error }); return null; }
   return result?.id ?? null;
 }
 
@@ -666,7 +667,7 @@ export async function updatePsychMedication(
   const supabase = createClient();
   const { error } = await supabase.from("psych_medications")
     .update({ ...data, updated_at: new Date().toISOString() } as Database["public"]["Tables"]["psych_medications"]["Update"]).eq("id", id);
-  if (error) { void error; return false; }
+  if (error) { logger.warn("Mutation failed", { context: "data/specialists", error }); return false; }
   return true;
 }
 
@@ -717,7 +718,7 @@ export async function createEEGRecord(data: {
   const supabase = createClient();
   const { data: result, error } = await supabase
     .from("eeg_records").insert(data).select("id").single();
-  if (error) { void error; return null; }
+  if (error) { logger.warn("Query failed", { context: "data/specialists", error }); return null; }
   return result?.id ?? null;
 }
 
@@ -776,7 +777,7 @@ export async function createNeuroExam(data: {
 }): Promise<string | null> {
   const supabase = createClient();
   const { data: result, error } = await supabase.from("neuro_exam_records").insert(data).select("id").single();
-  if (error) { void error; return null; }
+  if (error) { logger.warn("Query failed", { context: "data/specialists", error }); return null; }
   return result?.id ?? null;
 }
 
@@ -826,7 +827,7 @@ export async function createUrologyExam(data: {
 }): Promise<string | null> {
   const supabase = createClient();
   const { data: result, error } = await supabase.from("urology_exams").insert(data).select("id").single();
-  if (error) { void error; return null; }
+  if (error) { logger.warn("Query failed", { context: "data/specialists", error }); return null; }
   return result?.id ?? null;
 }
 
@@ -878,7 +879,7 @@ export async function createSpirometryRecord(data: {
   const supabase = createClient();
   const { data: result, error } = await supabase
     .from("spirometry_records").insert(data).select("id").single();
-  if (error) { void error; return null; }
+  if (error) { logger.warn("Query failed", { context: "data/specialists", error }); return null; }
   return result?.id ?? null;
 }
 
@@ -918,7 +919,7 @@ export async function createRespiratoryTest(data: {
   const supabase = createClient();
   const { data: result, error } = await supabase
     .from("respiratory_tests").insert(data as Database["public"]["Tables"]["respiratory_tests"]["Insert"]).select("id").single();
-  if (error) { void error; return null; }
+  if (error) { logger.warn("Query failed", { context: "data/specialists", error }); return null; }
   return result?.id ?? null;
 }
 
@@ -959,7 +960,7 @@ export async function createBloodSugarReading(data: {
   const supabase = createClient();
   const { data: result, error } = await supabase
     .from("blood_sugar_readings").insert(data).select("id").single();
-  if (error) { void error; return null; }
+  if (error) { logger.warn("Query failed", { context: "data/specialists", error }); return null; }
   return result?.id ?? null;
 }
 
@@ -1004,7 +1005,7 @@ export async function createHormoneLevel(data: {
   const supabase = createClient();
   const { data: result, error } = await supabase
     .from("hormone_levels").insert(data).select("id").single();
-  if (error) { void error; return null; }
+  if (error) { logger.warn("Query failed", { context: "data/specialists", error }); return null; }
   return result?.id ?? null;
 }
 
@@ -1061,7 +1062,7 @@ export async function createDiabetesManagement(data: {
   const supabase = createClient();
   const { data: result, error } = await supabase
     .from("diabetes_management").insert(data as Database["public"]["Tables"]["diabetes_management"]["Insert"]).select("id").single();
-  if (error) { void error; return null; }
+  if (error) { logger.warn("Query failed", { context: "data/specialists", error }); return null; }
   return result?.id ?? null;
 }
 
@@ -1073,7 +1074,7 @@ export async function updateDiabetesManagement(
   const supabase = createClient();
   const { error } = await supabase.from("diabetes_management")
     .update({ ...data, updated_at: new Date().toISOString() } as Database["public"]["Tables"]["diabetes_management"]["Update"]).eq("id", id);
-  if (error) { void error; return false; }
+  if (error) { logger.warn("Mutation failed", { context: "data/specialists", error }); return false; }
   return true;
 }
 
@@ -1130,7 +1131,7 @@ export async function createJointAssessment(data: {
 }): Promise<string | null> {
   const supabase = createClient();
   const { data: result, error } = await supabase.from("joint_assessments").insert(data as Database["public"]["Tables"]["joint_assessments"]["Insert"]).select("id").single();
-  if (error) { void error; return null; }
+  if (error) { logger.warn("Query failed", { context: "data/specialists", error }); return null; }
   return result?.id ?? null;
 }
 
@@ -1174,6 +1175,6 @@ export async function createMobilityTest(data: {
 }): Promise<string | null> {
   const supabase = createClient();
   const { data: result, error } = await supabase.from("mobility_tests").insert(data).select("id").single();
-  if (error) { void error; return null; }
+  if (error) { logger.warn("Query failed", { context: "data/specialists", error }); return null; }
   return result?.id ?? null;
 }

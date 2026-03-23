@@ -1,6 +1,7 @@
 "use client";
 
 import {
+import { logger } from "@/lib/logger";
   createContext,
   useContext,
   useState,
@@ -139,7 +140,7 @@ export function ChatbotProvider({
         setMessages((prev) => [...prev, assistantMsg]);
       }
     } catch (error) {
-      void error;
+      logger.warn("Operation failed", { context: "chatbot-provider", error });
       const errorMsg: ChatMessage = {
         id: `msg-${Date.now()}-error`,
         role: "assistant",

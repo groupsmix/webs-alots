@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
 import {
+import { logger } from "@/lib/logger";
   fetchBillingRecords,
   type BillingRecord,
 } from "@/lib/super-admin-actions";
@@ -34,7 +35,7 @@ export default function BillingPage() {
       const data = await fetchBillingRecords();
       setRecords(data);
     } catch (err) {
-      void err;
+      logger.warn("Operation failed", { context: "page", error: err });
     } finally {
       setLoading(false);
     }

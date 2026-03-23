@@ -15,6 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { fetchLabDashboardKPIs, type LabDashboardKPIs } from "@/lib/data/client";
 import { clinicConfig } from "@/config/clinic.config";
 import { PageLoader } from "@/components/ui/page-loader";
+import { logger } from "@/lib/logger";
 
 /**
  * LabDashboardKPIs
@@ -40,7 +41,7 @@ export function LabDashboardKPIsComponent() {
       .then((result) => {
         if (!cancelled) setData(result);
       })
-      .catch((err: unknown) => { void err; })
+      .catch((err: unknown) => { logger.warn("Operation failed", { context: "lab-dashboard-kpis", error: err }); })
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
   }, []);

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { fetchChatbotContext, buildSystemPrompt, getBasicResponse } from "@/lib/chatbot-data";
 import { TENANT_HEADERS } from "@/lib/tenant";
 import { createClient } from "@/lib/supabase-server";
+import { logger } from "@/lib/logger";
 
 export const runtime = "edge";
 
@@ -278,7 +279,7 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (err) {
-    void err;
+    logger.warn("Operation failed", { context: "route", error: err });
     return NextResponse.json(
       { error: "Failed to process chat message" },
       { status: 500 },

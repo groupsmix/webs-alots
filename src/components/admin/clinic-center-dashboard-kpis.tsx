@@ -18,6 +18,7 @@ import {
 } from "@/lib/data/client";
 import { clinicConfig } from "@/config/clinic.config";
 import { PageLoader } from "@/components/ui/page-loader";
+import { logger } from "@/lib/logger";
 
 /**
  * ClinicCenterDashboardKPIs
@@ -43,7 +44,7 @@ export function ClinicCenterDashboardKPIsComponent() {
       .then((result) => {
         if (!cancelled) setData(result);
       })
-      .catch((err: unknown) => { void err; })
+      .catch((err: unknown) => { logger.warn("Operation failed", { context: "clinic-center-dashboard-kpis", error: err }); })
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
   }, []);

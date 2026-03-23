@@ -4,6 +4,7 @@ import { clinicConfig } from "@/config/clinic.config";
 import { APPOINTMENT_STATUS } from "@/lib/types/database";
 import { withAuth } from "@/lib/with-auth";
 import { STAFF_ROLES } from "@/lib/auth-roles";
+import { logger } from "@/lib/logger";
 
 export const runtime = "edge";
 
@@ -66,7 +67,7 @@ export const POST = withAuth(async (request, { supabase }) => {
 
     return NextResponse.json({ status: "confirmed", message: "Payment confirmed" });
   } catch (err) {
-    void err;
+    logger.warn("Operation failed", { context: "route", error: err });
     return NextResponse.json({ error: "Failed to confirm payment" }, { status: 500 });
   }
 }, STAFF_ROLES);

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { withAuth } from "@/lib/with-auth";
 import { STAFF_ROLES } from "@/lib/auth-roles";
+import { logger } from "@/lib/logger";
 
 /**
  * HIGH-03: Validate that a redirect URL is same-origin to prevent open redirects.
@@ -134,7 +135,7 @@ export const POST = withAuth(async (request, { user, profile }) => {
       url: session.url,
     });
   } catch (err) {
-    void err;
+    logger.warn("Operation failed", { context: "route", error: err });
     return NextResponse.json({ error: "Failed to process payment" }, { status: 500 });
   }
 }, STAFF_ROLES);
