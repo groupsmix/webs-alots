@@ -19,6 +19,16 @@ interface QrCodeGeneratorProps {
   className?: string;
 }
 
+function escapeHtml(str: string | undefined | null): string {
+  if (!str) return "";
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 // ---- Minimal QR Code Generator (based on QR Code Model 2) ----
 // For production use, consider importing a library like 'qrcode'.
 // This implementation handles alphanumeric content up to ~100 chars.
@@ -168,10 +178,10 @@ export function QrCodeGenerator({
         </style>
       </head>
       <body>
-        <div class="title">${title}</div>
-        ${subtitle ? `<div class="subtitle">${subtitle}</div>` : ""}
+        <div class="title">${escapeHtml(title)}</div>
+        ${subtitle ? `<div class="subtitle">${escapeHtml(subtitle)}</div>` : ""}
         ${svgContent}
-        <div class="url">${url}</div>
+        <div class="url">${escapeHtml(url)}</div>
       </body>
       </html>
     `);
