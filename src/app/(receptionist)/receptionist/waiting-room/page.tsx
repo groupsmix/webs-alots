@@ -1,4 +1,3 @@
-"use client";
 
 import { WaitingRoomManager } from "@/components/receptionist/waiting-room-manager";
 

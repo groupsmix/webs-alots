@@ -1,4 +1,3 @@
-"use client";
 
 import { ReceptionistBookingCalendar } from "@/components/receptionist/booking-calendar";
 

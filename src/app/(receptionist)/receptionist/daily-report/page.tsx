@@ -1,4 +1,3 @@
-"use client";
 
 import { DailyReport } from "@/components/receptionist/daily-report";
 

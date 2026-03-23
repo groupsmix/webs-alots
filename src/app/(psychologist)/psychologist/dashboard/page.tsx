@@ -1,4 +1,3 @@
-"use client";
 
 import {
   Brain, Users, Target, TrendingUp, Calendar, Shield,
