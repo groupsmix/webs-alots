@@ -12,6 +12,7 @@ import { createClient } from "@/lib/supabase-server";
 import { authenticateApiKey } from "@/lib/api-auth";
 import { getCorsHeaders, handlePreflight } from "@/lib/cors";
 import { logger } from "@/lib/logger";
+import type { TablesInsert } from "@/lib/types/database";
 
 /** Handle CORS preflight requests. */
 export function OPTIONS(request: NextRequest) {
@@ -103,19 +104,23 @@ export async function POST(request: NextRequest) {
     }
 
     const supabase = await createClient();
+    // The users table has columns (full_name, date_of_birth, gender,
+    // insurance_type, address) that are not yet in the generated
+    // Supabase types.  Use a Record<string, unknown> insert so the
+    // payload is still checked at the JS level without a blanket `any`.
+    const insertPayload: Record<string, unknown> = {
+      clinic_id: auth.clinicId,
+      role: "patient",
+      full_name: body.full_name,
+      email: body.email || null,
+      phone: body.phone || null,
+      date_of_birth: body.date_of_birth || null,
+      gender: body.gender || null,
+      insurance_type: body.insurance_type || null,
+      address: body.address || null,
+    };
     const { data, error } = await supabase.from("users")
-      .insert({
-        clinic_id: auth.clinicId,
-        role: "patient",
-        full_name: body.full_name,
-        email: body.email || null,
-        phone: body.phone || null,
-        date_of_birth: body.date_of_birth || null,
-        gender: body.gender || null,
-        insurance_type: body.insurance_type || null,
-        address: body.address || null,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      } as any)
+      .insert(insertPayload as TablesInsert<"users">)
       .select()
       .single();
 

@@ -32,7 +32,7 @@ export async function GET(request: NextRequest) {
       .order("sort_order", { ascending: true });
 
     if (entityType) {
-      query = query.eq("entity_type", entityType as unknown as never);
+      query = query.eq("entity_type", entityType);
     }
 
     const { data, error } = await query;

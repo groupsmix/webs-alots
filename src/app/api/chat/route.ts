@@ -128,6 +128,18 @@ export async function POST(request: NextRequest) {
     // Determine intelligence level
     const intelligence = ctx.chatbotConfig?.intelligence ?? "basic";
 
+    // SEC-01: Require authentication for all intelligence tiers.
+    // Basic and smart tiers were previously unauthenticated, enabling
+    // bot-driven abuse of the chatbot and Cloudflare Workers AI quota.
+    const supabaseForAuth = await createClient();
+    const { data: { user: chatUser } } = await supabaseForAuth.auth.getUser();
+    if (!chatUser) {
+      return NextResponse.json(
+        { error: "Authentication required to use the chatbot" },
+        { status: 401 },
+      );
+    }
+
     // --- BASIC: keyword matching, no AI ---
     if (intelligence === "basic") {
       const reply = getBasicResponse(lastMessage.content, ctx);
@@ -186,17 +198,7 @@ export async function POST(request: NextRequest) {
     }
 
     // --- ADVANCED: OpenAI-compatible API (paid) ---
-    // The advanced tier consumes paid API credits. Require authentication
-    // to prevent unauthenticated abuse.
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      return NextResponse.json(
-        { error: "Authentication required for advanced AI chat" },
-        { status: 401 },
-      );
-    }
-
+    // Authentication is already enforced above (SEC-01) for all tiers.
     const apiKey = process.env.OPENAI_API_KEY;
     const baseUrl = process.env.OPENAI_BASE_URL || "https://api.openai.com/v1";
     const model = process.env.OPENAI_MODEL || "gpt-4o-mini";
