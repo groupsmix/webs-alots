@@ -97,11 +97,19 @@ const statusConfig: Record<PharmacyPrescription["status"], { label: string; colo
 export default function PrescriptionHistoryPage() {
   const [prescriptions, setPrescriptions] = useState<PharmacyPrescription[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
+    const controller = new AbortController();
     fetchPrescriptionsClient()
-      .then(setPrescriptions)
-      .finally(() => setLoading(false));
+      .then((d) => { if (!controller.signal.aborted) setPrescriptions(d); })
+      .catch((err) => {
+      if (!controller.signal.aborted) {
+        setError(err instanceof Error ? err : new Error(String(err)));
+      }
+    })
+    .finally(() => { if (!controller.signal.aborted) setLoading(false); });
+    return () => { controller.abort(); };
   }, []);
 
   if (loading) {

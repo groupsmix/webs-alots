@@ -101,7 +101,9 @@ export default function AllClinicsPage() {
   }, []);
 
   useEffect(() => {
+    const controller = new AbortController();
     loadClinics();
+    return () => { controller.abort(); };
   }, [loadClinics]);
 
   const filtered = list.filter((c) => {

@@ -13,13 +13,21 @@ import { PageLoader } from "@/components/ui/page-loader";
 export default function ParapharmacyInventoryPage() {
   const [products, setProducts] = useState<ProductView[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
   const [search, setSearch] = useState("");
   const [stockFilter, setStockFilter] = useState<string>("all");
 
   useEffect(() => {
+    const controller = new AbortController();
     fetchParapharmacyProducts(clinicConfig.clinicId)
-      .then(setProducts)
-      .finally(() => setLoading(false));
+      .then((d) => { if (!controller.signal.aborted) setProducts(d); })
+      .catch((err) => {
+      if (!controller.signal.aborted) {
+        setError(err instanceof Error ? err : new Error(String(err)));
+      }
+    })
+    .finally(() => { if (!controller.signal.aborted) setLoading(false); });
+    return () => { controller.abort(); };
   }, []);
 
   if (loading) {

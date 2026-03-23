@@ -57,6 +57,7 @@ export default function PharmacistDashboardPage() {
   const [allOrders, setAllOrders] = useState<PurchaseOrderView[]>([]);
   const [members, setMembers] = useState<LoyaltyMemberView[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
 
   // ── Date boundaries ──
   const now = useMemo(() => new Date(), []);
@@ -65,6 +66,7 @@ export default function PharmacistDashboardPage() {
   const monthStart = toDateStr(startOfMonth(now));
 
   useEffect(() => {
+    const controller = new AbortController();
     const cId = clinicConfig.clinicId;
     Promise.all([
       fetchProducts(cId),
@@ -74,13 +76,20 @@ export default function PharmacistDashboardPage() {
       fetchLoyaltyMembers(cId),
     ])
       .then(([p, rx, s, o, l]) => {
+      if (controller.signal.aborted) return;
         setProducts(p);
         setPrescriptions(rx);
         setSales(s);
         setAllOrders(o);
         setMembers(l);
       })
-      .finally(() => setLoading(false));
+      .catch((err) => {
+      if (!controller.signal.aborted) {
+        setError(err instanceof Error ? err : new Error(String(err)));
+      }
+    })
+    .finally(() => { if (!controller.signal.aborted) setLoading(false); });
+    return () => { controller.abort(); };
   }, []);
 
   const pendingRx = prescriptions.filter((p) => p.status === "pending" || p.status === "reviewing");

@@ -17,12 +17,20 @@ export default function SuppliersPage() {
   const [allSuppliers, setAllSuppliers] = useState<SupplierView[]>([]);
   const [allOrders, setAllOrders] = useState<PurchaseOrderView[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
+    const controller = new AbortController();
     const cId = clinicConfig.clinicId;
     Promise.all([fetchSuppliers(cId), fetchPurchaseOrders(cId)])
       .then(([s, o]) => { setAllSuppliers(s); setAllOrders(o); })
-      .finally(() => setLoading(false));
+      .catch((err) => {
+      if (!controller.signal.aborted) {
+        setError(err instanceof Error ? err : new Error(String(err)));
+      }
+    })
+    .finally(() => { if (!controller.signal.aborted) setLoading(false); });
+    return () => { controller.abort(); };
   }, []);
 
   if (loading) {

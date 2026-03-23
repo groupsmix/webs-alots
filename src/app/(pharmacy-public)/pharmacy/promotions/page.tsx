@@ -69,13 +69,21 @@ const promoCategories = [
 export default function PromotionsPage() {
   const [products, setProducts] = useState<PromotionProduct[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
   const [query, setQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
 
   useEffect(() => {
+    const controller = new AbortController();
     fetchFeaturedProducts()
-      .then(setProducts)
-      .finally(() => setLoading(false));
+      .then((d) => { if (!controller.signal.aborted) setProducts(d); })
+      .catch((err) => {
+      if (!controller.signal.aborted) {
+        setError(err instanceof Error ? err : new Error(String(err)));
+      }
+    })
+    .finally(() => { if (!controller.signal.aborted) setLoading(false); });
+    return () => { controller.abort(); };
   }, []);
 
   const featured = useMemo(() => {

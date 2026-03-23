@@ -31,13 +31,21 @@ const statusFilters: PrescriptionStatus[] = ["pending", "reviewing", "partially-
 export default function PrescriptionsPage() {
   const [allPrescriptions, setAllPrescriptions] = useState<PharmacyPrescriptionView[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
+    const controller = new AbortController();
     fetchPrescriptionRequests(clinicConfig.clinicId)
-      .then(setAllPrescriptions)
-      .finally(() => setLoading(false));
+      .then((d) => { if (!controller.signal.aborted) setAllPrescriptions(d); })
+      .catch((err) => {
+      if (!controller.signal.aborted) {
+        setError(err instanceof Error ? err : new Error(String(err)));
+      }
+    })
+    .finally(() => { if (!controller.signal.aborted) setLoading(false); });
+    return () => { controller.abort(); };
   }, []);
 
   if (loading) {

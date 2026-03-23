@@ -37,15 +37,23 @@ export default function LoyaltyPage() {
   const [allMembers, setAllMembers] = useState<LoyaltyMemberView[]>([]);
   const [allTransactions, setAllTransactions] = useState<LoyaltyTransactionView[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedMember, setSelectedMember] = useState<string | null>(null);
   const [view, setView] = useState<"members" | "transactions">("members");
 
   useEffect(() => {
+    const controller = new AbortController();
     const cId = clinicConfig.clinicId;
     Promise.all([fetchLoyaltyMembers(cId), fetchLoyaltyTransactions(cId)])
       .then(([m, t]) => { setAllMembers(m); setAllTransactions(t); })
-      .finally(() => setLoading(false));
+      .catch((err) => {
+      if (!controller.signal.aborted) {
+        setError(err instanceof Error ? err : new Error(String(err)));
+      }
+    })
+    .finally(() => { if (!controller.signal.aborted) setLoading(false); });
+    return () => { controller.abort(); };
   }, []);
 
   if (loading) {

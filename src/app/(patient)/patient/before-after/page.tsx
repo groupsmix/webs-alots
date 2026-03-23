@@ -12,16 +12,26 @@ import { PageLoader } from "@/components/ui/page-loader";
 export default function PatientBeforeAfterPage() {
   const [myPhotos, setMyPhotos] = useState<BeforeAfterPhotoView[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
+    const controller = new AbortController();
     async function load() {
     const user = await getCurrentUser();
+      if (controller.signal.aborted) return;
     if (!user?.clinic_id) { setLoading(false); return; }
     const photos = await fetchBeforeAfterPhotos(user.clinic_id, user.id);
+      if (controller.signal.aborted) return;
     setMyPhotos(photos);
     setLoading(false);
   }
-    load();
+    load().catch((err) => {
+      if (!controller.signal.aborted) {
+        setError(err instanceof Error ? err : new Error(String(err)));
+        setLoading(false);
+      }
+    });
+    return () => { controller.abort(); };
   }, []);
 
   if (loading) {

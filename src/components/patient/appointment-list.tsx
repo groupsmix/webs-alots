@@ -56,21 +56,31 @@ function canCancelAppointment(
 export function AppointmentList({ patientId }: { patientId?: string }) {
   const [allAppts, setAllAppts] = useState<AppointmentView[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
   const [rescheduleAppt, setRescheduleAppt] = useState<string | null>(null);
   const [cancellingId, setCancellingId] = useState<string | null>(null);
   const [cancelError, setCancelError] = useState<string | null>(null);
 
   useEffect(() => {
+    const controller = new AbortController();
     async function load() {
     const user = await getCurrentUser();
+      if (controller.signal.aborted) return;
     if (!user?.clinic_id) { setLoading(false); return; }
     const pid = patientId ?? user.id;
     const appts = await fetchPatientAppointments(user.clinic_id, pid);
+      if (controller.signal.aborted) return;
     setAllAppts(appts);
     setLoading(false);
   }
-    load();
+    load().catch((err) => {
+      if (!controller.signal.aborted) {
+        setError(err instanceof Error ? err : new Error(String(err)));
+        setLoading(false);
+      }
+    });
+    return () => { controller.abort(); };
   }, [patientId, refreshKey]);
 
   const upcoming = allAppts.filter(

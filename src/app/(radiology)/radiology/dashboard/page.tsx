@@ -16,11 +16,19 @@ import { PageLoader } from "@/components/ui/page-loader";
 export default function RadiologyDashboardPage() {
   const [orders, setOrders] = useState<RadiologyOrderView[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
+    const controller = new AbortController();
     fetchRadiologyOrders(clinicConfig.clinicId)
-      .then(setOrders)
-      .finally(() => setLoading(false));
+      .then((d) => { if (!controller.signal.aborted) setOrders(d); })
+      .catch((err) => {
+      if (!controller.signal.aborted) {
+        setError(err instanceof Error ? err : new Error(String(err)));
+      }
+    })
+    .finally(() => { if (!controller.signal.aborted) setLoading(false); });
+    return () => { controller.abort(); };
   }, []);
 
   if (loading) {

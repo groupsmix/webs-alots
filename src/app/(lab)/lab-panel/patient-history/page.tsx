@@ -28,6 +28,7 @@ function FlagBadge({ flag }: { flag: string }) {
 export default function PatientHistoryPage() {
   const [patients, setPatients] = useState<PatientView[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
   const [search, setSearch] = useState("");
   const [selectedPatientId, setSelectedPatientId] = useState<string | null>(null);
   const [patientOrders, setPatientOrders] = useState<LabTestOrderView[]>([]);
@@ -37,9 +38,16 @@ export default function PatientHistoryPage() {
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
 
   useEffect(() => {
+    const controller = new AbortController();
     fetchPatients(clinicConfig.clinicId)
-      .then(setPatients)
-      .finally(() => setLoading(false));
+      .then((d) => { if (!controller.signal.aborted) setPatients(d); })
+      .catch((err) => {
+      if (!controller.signal.aborted) {
+        setError(err instanceof Error ? err : new Error(String(err)));
+      }
+    })
+    .finally(() => { if (!controller.signal.aborted) setLoading(false); });
+    return () => { controller.abort(); };
   }, []);
 
   useEffect(() => {

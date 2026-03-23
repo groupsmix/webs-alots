@@ -14,18 +14,27 @@ import { PageLoader } from "@/components/ui/page-loader";
 export default function ReceptionistPatientsPage() {
   const [patients, setPatients] = useState<PatientView[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [checkedInIds, setCheckedInIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
+    const controller = new AbortController();
     async function load() {
       const user = await getCurrentUser();
+      if (controller.signal.aborted) return;
       if (!user?.clinic_id) { setLoading(false); return; }
       const data = await fetchPatients(user.clinic_id);
       setPatients(data);
       setLoading(false);
     }
-    load();
+    load().catch((err) => {
+      if (!controller.signal.aborted) {
+        setError(err instanceof Error ? err : new Error(String(err)));
+        setLoading(false);
+      }
+    });
+    return () => { controller.abort(); };
   }, []);
 
   const filteredPatients = patients.filter((p) => {

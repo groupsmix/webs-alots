@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Loader2, Save, ToggleLeft, ToggleRight } from "lucide-react";
+import { useState } from "react";
+import { AlertCircle, Loader2, Save, ToggleLeft, ToggleRight } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -18,26 +18,32 @@ import {
   type SectionVisibility,
   type SectionKey,
 } from "@/lib/section-visibility";
+import { useAsyncData } from "@/lib/hooks/use-async-data";
 
 export default function SectionsPage() {
+  const { data: initialData, loading, error } = useAsyncData(
+    (signal) =>
+      fetch("/api/branding", { signal })
+        .then((r) => {
+          if (!r.ok) throw new Error(`Failed to load sections (${r.status})`);
+          return r.json();
+        })
+        .then((data) => mergeSectionVisibility(data.section_visibility)),
+    defaultSectionVisibility,
+  );
   const [visibility, setVisibility] =
     useState<SectionVisibility>(defaultSectionVisibility);
   const [savedState, setSavedState] =
     useState<SectionVisibility>(defaultSectionVisibility);
-  const [loading, setLoading] = useState(true);
+  const [initialized, setInitialized] = useState(false);
   const [saving, setSaving] = useState(false);
 
-  useEffect(() => {
-    fetch("/api/branding")
-      .then((r) => r.json())
-      .then((data) => {
-        const merged = mergeSectionVisibility(data.section_visibility);
-        setVisibility(merged);
-        setSavedState(merged);
-      })
-      .catch(() => {})
-      .finally(() => setLoading(false));
-  }, []);
+  // Sync initial data once loaded
+  if (!initialized && !loading && !error) {
+    setVisibility(initialData);
+    setSavedState(initialData);
+    setInitialized(true);
+  }
 
   const toggle = (key: SectionKey) => {
     const def = sectionDefinitions.find((s) => s.key === key);
@@ -72,6 +78,21 @@ export default function SectionsPage() {
           <Loader2 className="h-4 w-4 animate-spin" />
           Loading section settings...
         </p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div>
+        <h1 className="text-2xl font-bold mb-6">Section Control</h1>
+        <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-4 flex items-start gap-3">
+          <AlertCircle className="h-5 w-5 text-destructive mt-0.5" />
+          <div>
+            <p className="font-medium text-destructive">Failed to load section settings</p>
+            <p className="text-sm text-muted-foreground mt-1">{error.message}</p>
+          </div>
+        </div>
       </div>
     );
   }

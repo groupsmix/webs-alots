@@ -33,6 +33,7 @@ export default function PulmonologyPage() {
   const [spirometry, setSpirometry] = useState<SpirometryRecordView[]>([]);
   const [respTests, setRespTests] = useState<RespiratoryTestView[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
   const [showSpiroForm, setShowSpiroForm] = useState(false);
   const [showTestForm, setShowTestForm] = useState(false);
 
@@ -45,18 +46,27 @@ export default function PulmonologyPage() {
   });
 
   useEffect(() => {
+    const controller = new AbortController();
     async function load() {
     const user = await getCurrentUser();
+      if (controller.signal.aborted) return;
     if (!user?.clinic_id) { setLoading(false); return; }
     const [s, r] = await Promise.all([
       fetchSpirometryRecords(user.clinic_id),
       fetchRespiratoryTests(user.clinic_id),
     ]);
+      if (controller.signal.aborted) return;
     setSpirometry(s);
     setRespTests(r);
     setLoading(false);
   }
-    load();
+    load().catch((err) => {
+      if (!controller.signal.aborted) {
+        setError(err instanceof Error ? err : new Error(String(err)));
+        setLoading(false);
+      }
+    });
+    return () => { controller.abort(); };
   }, []);
 
   if (loading) {

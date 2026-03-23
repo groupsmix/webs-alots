@@ -36,6 +36,7 @@ export default function CardiologyPage() {
   const [bpReadings, setBpReadings] = useState<BloodPressureView[]>([]);
   const [heartNotes, setHeartNotes] = useState<HeartMonitoringNoteView[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
   const [showEcgForm, setShowEcgForm] = useState(false);
   const [showBpForm, setShowBpForm] = useState(false);
   const [showNoteForm, setShowNoteForm] = useState(false);
@@ -51,20 +52,29 @@ export default function CardiologyPage() {
   });
 
   useEffect(() => {
+    const controller = new AbortController();
     async function load() {
     const user = await getCurrentUser();
+      if (controller.signal.aborted) return;
     if (!user?.clinic_id) { setLoading(false); return; }
     const [e, b, n] = await Promise.all([
       fetchECGRecords(user.clinic_id),
       fetchBloodPressureReadings(user.clinic_id),
       fetchHeartMonitoringNotes(user.clinic_id),
     ]);
+      if (controller.signal.aborted) return;
     setEcgs(e);
     setBpReadings(b);
     setHeartNotes(n);
     setLoading(false);
   }
-    load();
+    load().catch((err) => {
+      if (!controller.signal.aborted) {
+        setError(err instanceof Error ? err : new Error(String(err)));
+        setLoading(false);
+      }
+    });
+    return () => { controller.abort(); };
   }, []);
 
   if (loading) {

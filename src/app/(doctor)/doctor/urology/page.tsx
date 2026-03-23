@@ -40,6 +40,7 @@ const TEMPLATE_FIELDS: Record<string, string[]> = {
 export default function UrologyPage() {
   const [exams, setExams] = useState<UrologyExamView[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
   const [showForm, setShowForm] = useState(false);
 
   const [form, setForm] = useState({
@@ -50,14 +51,23 @@ export default function UrologyPage() {
   });
 
   useEffect(() => {
+    const controller = new AbortController();
     async function load() {
     const user = await getCurrentUser();
+      if (controller.signal.aborted) return;
     if (!user?.clinic_id) { setLoading(false); return; }
     const e = await fetchUrologyExams(user.clinic_id);
+      if (controller.signal.aborted) return;
     setExams(e);
     setLoading(false);
   }
-    load();
+    load().catch((err) => {
+      if (!controller.signal.aborted) {
+        setError(err instanceof Error ? err : new Error(String(err)));
+        setLoading(false);
+      }
+    });
+    return () => { controller.abort(); };
   }, []);
 
   if (loading) {

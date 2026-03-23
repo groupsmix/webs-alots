@@ -35,6 +35,7 @@ export default function NeurologyPage() {
   const [eegs, setEegs] = useState<EEGRecordView[]>([]);
   const [exams, setExams] = useState<NeuroExamView[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
   const [showEegForm, setShowEegForm] = useState(false);
   const [showExamForm, setShowExamForm] = useState(false);
   const [activeSection, setActiveSection] = useState(0);
@@ -48,18 +49,27 @@ export default function NeurologyPage() {
   });
 
   useEffect(() => {
+    const controller = new AbortController();
     async function load() {
     const user = await getCurrentUser();
+      if (controller.signal.aborted) return;
     if (!user?.clinic_id) { setLoading(false); return; }
     const [e, x] = await Promise.all([
       fetchEEGRecords(user.clinic_id),
       fetchNeuroExams(user.clinic_id),
     ]);
+      if (controller.signal.aborted) return;
     setEegs(e);
     setExams(x);
     setLoading(false);
   }
-    load();
+    load().catch((err) => {
+      if (!controller.signal.aborted) {
+        setError(err instanceof Error ? err : new Error(String(err)));
+        setLoading(false);
+      }
+    });
+    return () => { controller.abort(); };
   }, []);
 
   if (loading) {

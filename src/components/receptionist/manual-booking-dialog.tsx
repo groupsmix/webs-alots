@@ -53,19 +53,25 @@ export function ManualBookingDialog({ trigger, onBook }: ManualBookingDialogProp
   const [serviceId, setServiceId] = useState("");
 
   useEffect(() => {
+    const controller = new AbortController();
     async function load() {
       const user = await getCurrentUser();
+      if (controller.signal.aborted) return;
       if (!user?.clinic_id) return;
       const [docs, svcs, pts] = await Promise.all([
         fetchDoctors(user.clinic_id),
         fetchServices(user.clinic_id),
         fetchPatients(user.clinic_id),
       ]);
+      if (controller.signal.aborted) return;
       setDoctors(docs);
       setServices(svcs);
       setPatients(pts);
     }
-    load();
+    load().catch(() => {
+      // Data loading errors are non-fatal for dialog pre-population
+    });
+    return () => { controller.abort(); };
   }, []);
 
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);

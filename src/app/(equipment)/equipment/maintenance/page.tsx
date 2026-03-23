@@ -62,6 +62,7 @@ export default function EquipmentMaintenancePage() {
   const [records, setRecords] = useState<EquipmentMaintenanceView[]>([]);
   const [equipment, setEquipment] = useState<EquipmentItemView[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -100,12 +101,19 @@ export default function EquipmentMaintenancePage() {
   }
 
   useEffect(() => {
+    const controller = new AbortController();
     function init() {
       setLoading(true);
       const cId = clinicConfig.clinicId;
       Promise.all([fetchEquipmentMaintenance(cId), fetchEquipmentInventory(cId)])
         .then(([r, e]) => { setRecords(r); setEquipment(e); })
-        .finally(() => setLoading(false));
+        .catch((err) => {
+      if (!controller.signal.aborted) {
+        setError(err instanceof Error ? err : new Error(String(err)));
+      }
+    })
+    .finally(() => { if (!controller.signal.aborted) setLoading(false); });
+    return () => { controller.abort(); };
     }
     init();
   }, []);

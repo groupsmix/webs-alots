@@ -42,7 +42,9 @@ export default function BillingPage() {
   }, []);
 
   useEffect(() => {
+    const controller = new AbortController();
     loadRecords();
+    return () => { controller.abort(); };
   }, [loadRecords]);
 
   const paidRecords = records.filter((r) => r.status === "paid");

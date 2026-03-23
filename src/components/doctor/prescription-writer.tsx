@@ -38,17 +38,27 @@ export function PrescriptionWriter() {
   const [notes, setNotes] = useState("");
   const [diagnosis, setDiagnosis] = useState("");
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
+    const controller = new AbortController();
     async function load() {
     const user = await getCurrentUser();
+      if (controller.signal.aborted) return;
     if (!user?.clinic_id) { setLoading(false); return; }
     const pts = await fetchPatients(user.clinic_id);
+      if (controller.signal.aborted) return;
     setPatients(pts);
     if (pts.length > 0) setSelectedPatient(pts[0].id);
     setLoading(false);
   }
-    load();
+    load().catch((err) => {
+      if (!controller.signal.aborted) {
+        setError(err instanceof Error ? err : new Error(String(err)));
+        setLoading(false);
+      }
+    });
+    return () => { controller.abort(); };
   }, []);
 
   if (loading) {

@@ -103,11 +103,19 @@ export default function CatalogPage() {
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [allProducts, setAllProducts] = useState<PublicPharmacyProduct[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
+    const controller = new AbortController();
     fetchProductsClient()
-      .then(setAllProducts)
-      .finally(() => setLoading(false));
+      .then((d) => { if (!controller.signal.aborted) setAllProducts(d); })
+      .catch((err) => {
+      if (!controller.signal.aborted) {
+        setError(err instanceof Error ? err : new Error(String(err)));
+      }
+    })
+    .finally(() => { if (!controller.signal.aborted) setLoading(false); });
+    return () => { controller.abort(); };
   }, []);
 
   const filtered = useMemo(() => {

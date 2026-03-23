@@ -46,7 +46,9 @@ export default function FeatureTogglesPage() {
   }, []);
 
   useEffect(() => {
+    const controller = new AbortController();
     loadFeatures();
+    return () => { controller.abort(); };
   }, [loadFeatures]);
   const [search, setSearch] = useState("");
   const [catFilter, setCatFilter] = useState<CategoryFilter>("all");

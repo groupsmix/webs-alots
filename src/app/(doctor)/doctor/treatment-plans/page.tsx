@@ -9,19 +9,29 @@ import { PageLoader } from "@/components/ui/page-loader";
 export default function DoctorTreatmentPlansPage() {
   const [plans, setPlans] = useState<TreatmentPlan[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
+    const controller = new AbortController();
     async function load() {
     const user = await getCurrentUser();
+      if (controller.signal.aborted) return;
     if (!user?.clinic_id) { setLoading(false); return; }
     const data = await fetchTreatmentPlans(user.clinic_id, user.id);
+      if (controller.signal.aborted) return;
     setPlans(data.map(p => ({
       ...p,
       steps: p.steps.map((s, i) => ({ ...s, step: i + 1 })),
     })) as TreatmentPlan[]);
     setLoading(false);
   }
-    load();
+    load().catch((err) => {
+      if (!controller.signal.aborted) {
+        setError(err instanceof Error ? err : new Error(String(err)));
+        setLoading(false);
+      }
+    });
+    return () => { controller.abort(); };
   }, []);
 
   if (loading) {

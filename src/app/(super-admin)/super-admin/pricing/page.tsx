@@ -70,7 +70,9 @@ export default function PricingPage() {
   }, []);
 
   useEffect(() => {
+    const controller = new AbortController();
     loadData();
+    return () => { controller.abort(); };
   }, [loadData]);
 
   const stats = {

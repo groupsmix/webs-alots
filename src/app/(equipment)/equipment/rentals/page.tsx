@@ -58,6 +58,7 @@ export default function EquipmentRentalsPage() {
   const [rentals, setRentals] = useState<EquipmentRentalView[]>([]);
   const [equipment, setEquipment] = useState<EquipmentItemView[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -106,12 +107,19 @@ export default function EquipmentRentalsPage() {
   }
 
   useEffect(() => {
+    const controller = new AbortController();
     function init() {
       setLoading(true);
       const cId = clinicConfig.clinicId;
       Promise.all([fetchEquipmentRentals(cId), fetchEquipmentInventory(cId)])
         .then(([r, e]) => { setRentals(r); setEquipment(e); })
-        .finally(() => setLoading(false));
+        .catch((err) => {
+      if (!controller.signal.aborted) {
+        setError(err instanceof Error ? err : new Error(String(err)));
+      }
+    })
+    .finally(() => { if (!controller.signal.aborted) setLoading(false); });
+    return () => { controller.abort(); };
     }
     init();
   }, []);
