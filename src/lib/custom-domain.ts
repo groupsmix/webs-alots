@@ -184,24 +184,37 @@ export async function removeDnsRecord(
 
 /**
  * List all DNS records for the zone to check existing subdomains.
+ * Paginates through all pages to handle zones with >100 records.
  */
 export async function listDnsRecords(): Promise<CloudflareDnsRecord[]> {
   const zoneId = getZoneId();
+  const allRecords: CloudflareDnsRecord[] = [];
+  let page = 1;
 
-  const response = await fetch(
-    `${CF_API_BASE}/zones/${zoneId}/dns_records?per_page=100`,
-    {
-      headers: getHeaders(),
-    },
-  );
+  while (true) {
+    const response = await fetch(
+      `${CF_API_BASE}/zones/${zoneId}/dns_records?per_page=100&page=${page}`,
+      {
+        headers: getHeaders(),
+      },
+    );
 
-  const data = await response.json();
+    const data = await response.json();
 
-  if (!data.success) {
-    throw new Error(data.errors?.[0]?.message || "Failed to list DNS records");
+    if (!data.success) {
+      throw new Error(data.errors?.[0]?.message || "Failed to list DNS records");
+    }
+
+    const records = data.result as CloudflareDnsRecord[];
+    allRecords.push(...records);
+
+    // Stop when we've fetched all pages
+    const totalPages = data.result_info?.total_pages ?? 1;
+    if (page >= totalPages) break;
+    page++;
   }
 
-  return data.result;
+  return allRecords;
 }
 
 /**

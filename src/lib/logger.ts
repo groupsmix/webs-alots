@@ -19,6 +19,16 @@
 
 type LogLevel = "debug" | "info" | "warn" | "error";
 
+/**
+ * External transport hook signature.
+ * Implementations receive the fully-formed log payload and can forward
+ * it to services like Sentry, Datadog, LogTail, etc.
+ */
+export type LogTransport = (payload: Record<string, unknown>) => void;
+
+/** Registered external transports. Add via `logger.addTransport()`. */
+const transports: LogTransport[] = [];
+
 interface LogMeta {
   context?: string;
   error?: unknown;
@@ -52,6 +62,15 @@ function emit(level: LogLevel, message: string, meta?: LogMeta): void {
   // NOTE: We intentionally use console here (unlike application code)
   // because this IS the logging infrastructure.
   console.error(JSON.stringify(payload));
+
+  // Forward to any registered external transports
+  for (const transport of transports) {
+    try {
+      transport(payload);
+    } catch {
+      // Silently ignore transport errors to prevent logging loops
+    }
+  }
 }
 
 export const logger = {
@@ -67,5 +86,21 @@ export const logger = {
   },
   error(message: string, meta?: LogMeta): void {
     emit("error", message, meta);
+  },
+  /**
+   * Register an external log transport.
+   * Transports receive every log entry and can forward to external
+   * services (Sentry, Datadog, LogTail, etc.).
+   *
+   * @example
+   *   logger.addTransport((payload) => {
+   *     fetch("https://logs.example.com", {
+   *       method: "POST",
+   *       body: JSON.stringify(payload),
+   *     }).catch(() => {});
+   *   });
+   */
+  addTransport(transport: LogTransport): void {
+    transports.push(transport);
   },
 };
