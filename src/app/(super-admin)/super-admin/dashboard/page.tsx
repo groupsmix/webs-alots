@@ -17,8 +17,8 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
 import { logger } from "@/lib/logger";
+import {
   fetchDashboardStats,
   fetchAnnouncements,
   fetchActivityLogs,
