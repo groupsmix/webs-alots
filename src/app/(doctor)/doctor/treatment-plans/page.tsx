@@ -18,7 +18,7 @@ export default function DoctorTreatmentPlansPage() {
     setPlans(data.map(p => ({
       ...p,
       steps: p.steps.map((s, i) => ({ ...s, step: i + 1 })),
-    })) as unknown as TreatmentPlan[]);
+    })) as TreatmentPlan[]);
     setLoading(false);
   }
     load();

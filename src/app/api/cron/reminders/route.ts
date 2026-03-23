@@ -150,9 +150,12 @@ export async function GET(request: NextRequest) {
       if (apptDatetime.getTime() < twoHoursFromNow.getTime() && trigger === "reminder_2h") continue;
 
       // Type-safe access to joined data
-      const patient = appt.patients as unknown as { id: string; name: string; phone: string } | null;
-      const doctor = appt.doctors as unknown as { id: string; name: string } | null;
-      const service = appt.services as unknown as { name: string } | null;
+      const patientRaw = appt.patients;
+      const patient = Array.isArray(patientRaw) ? patientRaw[0] : patientRaw;
+      const doctorRaw = appt.doctors;
+      const doctor = Array.isArray(doctorRaw) ? doctorRaw[0] : doctorRaw;
+      const serviceRaw = appt.services;
+      const service = Array.isArray(serviceRaw) ? serviceRaw[0] : serviceRaw;
 
       if (!patient) continue;
 
@@ -166,7 +169,8 @@ export async function GET(request: NextRequest) {
         continue;
       }
 
-      const clinic = appt.clinics as unknown as { name: string } | null;
+      const clinicRaw = appt.clinics;
+      const clinic = Array.isArray(clinicRaw) ? clinicRaw[0] : clinicRaw;
       const clinicName = clinic?.name ?? "Clinic";
 
       dispatchQueue.push({

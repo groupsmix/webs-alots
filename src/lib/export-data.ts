@@ -25,7 +25,7 @@ function escapeCSV(value: unknown): string {
   return str;
 }
 
-function arrayToCSV<T extends Record<string, unknown>>(
+function arrayToCSV<T extends object>(
   rows: T[],
   columns: { key: keyof T; label: string }[],
 ): string {
@@ -50,7 +50,7 @@ function downloadFile(content: string, filename: string, mimeType: string) {
 
 // ---------- Generic export ----------
 
-export function exportToCSV<T extends Record<string, unknown>>(
+export function exportToCSV<T extends object>(
   rows: T[],
   columns: { key: keyof T; label: string }[],
   filename: string,
@@ -88,7 +88,7 @@ const appointmentColumns: { key: keyof ExportableAppointment; label: string }[] 
 
 export function exportAppointments(appointments: ExportableAppointment[], filenamePrefix = "appointments") {
   const date = new Date().toISOString().split("T")[0];
-  exportToCSV(appointments as unknown as Record<string, unknown>[], appointmentColumns as { key: string; label: string }[], `${filenamePrefix}-${date}.csv`);
+  exportToCSV(appointments, appointmentColumns, `${filenamePrefix}-${date}.csv`);
 }
 
 // ---------- Patient export ----------
@@ -118,7 +118,7 @@ const patientColumns: { key: keyof ExportablePatient; label: string }[] = [
 
 export function exportPatients(patients: ExportablePatient[], filenamePrefix = "patients") {
   const date = new Date().toISOString().split("T")[0];
-  exportToCSV(patients as unknown as Record<string, unknown>[], patientColumns as { key: string; label: string }[], `${filenamePrefix}-${date}.csv`);
+  exportToCSV(patients, patientColumns, `${filenamePrefix}-${date}.csv`);
 }
 
 // ---------- Invoice export ----------
@@ -144,5 +144,5 @@ const invoiceColumns: { key: keyof ExportableInvoice; label: string }[] = [
 
 export function exportInvoices(invoices: ExportableInvoice[], filenamePrefix = "invoices") {
   const date = new Date().toISOString().split("T")[0];
-  exportToCSV(invoices as unknown as Record<string, unknown>[], invoiceColumns as { key: string; label: string }[], `${filenamePrefix}-${date}.csv`);
+  exportToCSV(invoices, invoiceColumns, `${filenamePrefix}-${date}.csv`);
 }

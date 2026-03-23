@@ -1453,12 +1453,17 @@ export async function fetchTreatmentPlans(clinicId: string, doctorId?: string): 
 
 export interface LabOrderView {
   id: string;
+  patientId: string;
   patientName: string;
+  doctorId: string;
+  doctorName: string;
   labName: string;
   description: string;
   status: string;
-  dueDate: string;
+  dueDate: string | null;
+  notes: string;
   createdAt: string;
+  updatedAt: string;
 }
 
 interface LabOrderRaw {
@@ -1481,12 +1486,17 @@ export async function fetchLabOrders(clinicId: string): Promise<LabOrderView[]> 
   });
   return rows.map((r) => ({
     id: r.id,
+    patientId: r.patient_id,
     patientName: _userMap?.get(r.patient_id)?.name ?? "Patient",
+    doctorId: r.doctor_id,
+    doctorName: _userMap?.get(r.doctor_id)?.name ?? "Doctor",
     labName: r.lab_name ?? "",
     description: r.description,
     status: r.status,
-    dueDate: r.due_date ?? "",
+    dueDate: r.due_date ?? null,
+    notes: "",
     createdAt: r.created_at?.split("T")[0] ?? "",
+    updatedAt: r.created_at?.split("T")[0] ?? "",
   }));
 }
 
@@ -1519,18 +1529,26 @@ export async function createLabOrder(data: {
 export interface SterilizationView {
   id: string;
   toolName: string;
+  sterilizedBy: string;
   sterilizedAt: string;
-  nextDue: string;
-  notes?: string;
+  nextDue: string | null;
+  method: "autoclave" | "chemical" | "dry_heat";
+  notes: string;
+  batchNumber?: string;
+  cycleNumber?: number;
 }
 
 export async function fetchSterilizationLog(clinicId: string): Promise<SterilizationView[]> {
   const rows = await fetchRows<{
     id: string;
     tool_name: string;
+    sterilized_by: string | null;
     sterilized_at: string;
     next_due: string | null;
+    method: string | null;
     notes: string | null;
+    batch_number: string | null;
+    cycle_number: number | null;
   }>("sterilization_log", {
     eq: [["clinic_id", clinicId]],
     order: ["sterilized_at", { ascending: false }],
@@ -1538,9 +1556,13 @@ export async function fetchSterilizationLog(clinicId: string): Promise<Steriliza
   return rows.map((r) => ({
     id: r.id,
     toolName: r.tool_name,
+    sterilizedBy: r.sterilized_by ?? "",
     sterilizedAt: r.sterilized_at,
-    nextDue: r.next_due ?? "",
-    notes: r.notes ?? undefined,
+    nextDue: r.next_due ?? null,
+    method: (r.method ?? "autoclave") as SterilizationView["method"],
+    notes: r.notes ?? "",
+    batchNumber: r.batch_number ?? undefined,
+    cycleNumber: r.cycle_number ?? undefined,
   }));
 }
 

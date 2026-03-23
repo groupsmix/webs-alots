@@ -15,7 +15,7 @@ export default function DoctorSterilizationPage() {
     const user = await getCurrentUser();
     if (!user?.clinic_id) { setLoading(false); return; }
     const data = await fetchSterilizationLog(user.clinic_id);
-    setLog(data as unknown as SterilizationEntry[]);
+    setLog(data as SterilizationEntry[]);
     setLoading(false);
   }
     load();

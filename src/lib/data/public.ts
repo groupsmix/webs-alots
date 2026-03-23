@@ -151,7 +151,8 @@ export async function getPublicReviews(): Promise<PublicReview[]> {
   if (error || !reviews || reviews.length === 0) return [];
 
   return reviews.map((r) => {
-    const patient = r.patients as unknown as { name: string } | null;
+    const patientRaw = r.patients;
+    const patient = Array.isArray(patientRaw) ? patientRaw[0] : patientRaw;
     return {
       id: r.id,
       patientName: patient?.name ?? "Patient",
