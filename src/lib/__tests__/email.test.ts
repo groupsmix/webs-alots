@@ -134,7 +134,7 @@ describe("sendEmail", () => {
     });
     vi.stubGlobal("fetch", mockFetch);
 
-    const result = await sendEmail({
+    await sendEmail({
       to: "test@example.com",
       subject: "Test",
       html: "<p>Hello</p>",

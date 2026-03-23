@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { UserPlus, ShieldCheck, ArrowLeft, Heart } from "lucide-react";
 import {
   Card,
@@ -25,7 +24,6 @@ import {
 } from "@/components/ui/select";
 
 export default function RegisterPage() {
-  const router = useRouter();
   const [step, setStep] = useState<"info" | "otp">("info");
   const [phone, setPhone] = useState("");
   const [firstName, setFirstName] = useState("");
