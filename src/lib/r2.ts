@@ -143,10 +143,15 @@ export async function getPresignedUploadUrl(
   // HIGH-07: Do NOT set ContentLength here — it enforces an exact byte count,
   // not a maximum.  Files smaller than maxSizeBytes would be rejected by S3.
   // Size enforcement is handled server-side via the upload API route validation.
+  //
+  // S13-FIX: Set Content-Disposition to "attachment" so browsers will never
+  // render uploaded files inline (prevents stored XSS via HTML/JS uploads
+  // that bypass the server-side magic-byte validation).
   const command = new PutObjectCommand({
     Bucket: config.bucketName,
     Key: key,
     ContentType: contentType,
+    ContentDisposition: "attachment",
   });
 
   return getSignedUrl(client, command, { expiresIn });

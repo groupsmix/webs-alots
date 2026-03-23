@@ -83,10 +83,18 @@ export function DailyReport() {
     const content = reportRef.current;
     if (!content) return;
 
-    // Sanitize innerHTML: clone the DOM subtree and strip any <script> tags
-    // to prevent XSS if upstream components ever inject unescaped HTML.
+    // Sanitize innerHTML: clone the DOM subtree and strip <script> tags plus
+    // dangerous event-handler attributes (onclick, onerror, onload, etc.) to
+    // prevent XSS if upstream components ever inject unescaped HTML.
     const clone = content.cloneNode(true) as HTMLElement;
     clone.querySelectorAll("script").forEach((s) => s.remove());
+    clone.querySelectorAll("*").forEach((el) => {
+      for (const attr of Array.from(el.attributes)) {
+        if (attr.name.startsWith("on")) {
+          el.removeAttribute(attr.name);
+        }
+      }
+    });
     const sanitizedHtml = clone.innerHTML;
 
     const printWindow = window.open("", "_blank");

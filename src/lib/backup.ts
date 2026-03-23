@@ -171,15 +171,16 @@ export async function restoreBackup(
   success: boolean;
   restored: BackupTableInfo[];
   errors: string[];
+  warnings: string[];
 }> {
   // Authorization: only clinic_admin or super_admin may restore backups
   if (callerRole !== "clinic_admin" && callerRole !== "super_admin") {
-    return { success: false, restored: [], errors: ["Unauthorized: only clinic admins can restore backups"] };
+    return { success: false, restored: [], errors: ["Unauthorized: only clinic admins can restore backups"], warnings: [] };
   }
 
   const validation = validateBackup(json);
   if (!validation.valid) {
-    return { success: false, restored: [], errors: [validation.error!] };
+    return { success: false, restored: [], errors: [validation.error!], warnings: [] };
   }
 
   // Reuse the already-parsed object from validation to avoid double JSON.parse
@@ -187,6 +188,7 @@ export async function restoreBackup(
   const supabase = await createClient();
   const restored: BackupTableInfo[] = [];
   const errors: string[] = [];
+  const warnings: string[] = [];
 
   // ---- Pass 1: Generate all new IDs upfront ----
   // This avoids forward-reference breakage when table A references an
@@ -226,11 +228,20 @@ export async function restoreBackup(
       mapped.id = oldId ? idMap.get(oldId) : crypto.randomUUID();
       mapped.clinic_id = targetClinicId;
 
-      // Strip sensitive fields from user records to prevent privilege escalation
+      // Strip sensitive fields from user records to prevent privilege escalation.
+      // WARNING: All restored users are reset to "patient" role regardless of
+      // their original role. Doctors, admins, and other staff will need their
+      // roles re-assigned manually after restore.
       if (table === "users") {
+        const originalRole = mapped.role as string | undefined;
         delete mapped.auth_id;
         delete mapped.role;
-        mapped.role = "patient"; // Default restored users to patient role
+        mapped.role = "patient";
+        if (originalRole && originalRole !== "patient") {
+          warnings.push(
+            `User "${mapped.name ?? mapped.id}" had role "${originalRole}" — reset to "patient" for security. Re-assign manually.`,
+          );
+        }
       }
 
       // FIX (HIGH-02): Use explicit FK mapping instead of fragile _id suffix
@@ -303,5 +314,6 @@ export async function restoreBackup(
     success: errors.length === 0,
     restored,
     errors,
+    warnings,
   };
 }
