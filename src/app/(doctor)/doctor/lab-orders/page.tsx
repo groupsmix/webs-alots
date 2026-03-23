@@ -15,7 +15,7 @@ export default function DoctorLabOrdersPage() {
     const user = await getCurrentUser();
     if (!user?.clinic_id) { setLoading(false); return; }
     const data = await fetchLabOrders(user.clinic_id);
-    setOrders(data as unknown as LabOrder[]);
+    setOrders(data as LabOrder[]);
     setLoading(false);
   }
     load();

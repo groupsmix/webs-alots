@@ -162,7 +162,15 @@ export async function getClinicBranding(clinicId: string): Promise<ClinicBrandin
     .single();
 
   if (error) return null;
-  return data as unknown as ClinicBrandingRow;
+  return {
+    logo_url: data.logo_url ?? null,
+    favicon_url: data.favicon_url ?? null,
+    primary_color: data.primary_color ?? null,
+    secondary_color: data.secondary_color ?? null,
+    heading_font: data.heading_font ?? null,
+    body_font: data.body_font ?? null,
+    hero_image_url: data.hero_image_url ?? null,
+  };
 }
 
 export async function updateClinicBranding(
@@ -490,7 +498,17 @@ export async function getPrescriptions(clinicId: string, doctorId?: string): Pro
     logger.warn("Query failed", { context: "data/server", error });
     return [];
   }
-  return (data ?? []) as unknown as PrescriptionRow[];
+  return (data ?? []).map((r) => ({
+    id: r.id,
+    clinic_id: r.clinic_id ?? "",
+    appointment_id: r.appointment_id,
+    doctor_id: r.doctor_id,
+    patient_id: r.patient_id,
+    items: Array.isArray(r.items) ? (r.items as PrescriptionRow["items"]) : [],
+    notes: r.notes,
+    pdf_url: r.pdf_url,
+    created_at: r.created_at ?? "",
+  }));
 }
 
 export async function getPatientPrescriptions(patientId: string): Promise<PrescriptionRow[]> {
