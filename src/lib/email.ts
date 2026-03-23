@@ -52,7 +52,10 @@ function detectProvider(): EmailProvider {
 // ---- Resend API ----
 
 async function sendViaResend(payload: EmailPayload): Promise<EmailSendResult> {
-  const apiKey = process.env.RESEND_API_KEY!;
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) {
+    return { success: false, error: "RESEND_API_KEY is not configured" };
+  }
   const from = payload.from || process.env.EMAIL_FROM || "noreply@example.com";
 
   try {
@@ -90,11 +93,14 @@ async function sendViaResend(payload: EmailPayload): Promise<EmailSendResult> {
 
 // ---- Generic SMTP via fetch (Mailgun-compatible REST endpoint) ----
 
-async function sendViaSmtp(payload: EmailPayload): Promise<EmailSendResult> {
-  const host = process.env.SMTP_HOST!;
+async function sendViaHttpRelay(payload: EmailPayload): Promise<EmailSendResult> {
+  const host = process.env.SMTP_HOST;
   const port = process.env.SMTP_PORT || "587";
-  const user = process.env.SMTP_USER!;
-  const pass = process.env.SMTP_PASS!;
+  const user = process.env.SMTP_USER;
+  const pass = process.env.SMTP_PASS;
+  if (!host || !user || !pass) {
+    return { success: false, error: "SMTP_HOST, SMTP_USER, and SMTP_PASS must all be configured" };
+  }
   const from = payload.from || process.env.EMAIL_FROM || "noreply@example.com";
 
   // For SMTP, we use a simple HTTP relay if available (e.g., Mailgun, Postmark)
@@ -145,7 +151,7 @@ export async function sendEmail(payload: EmailPayload): Promise<EmailSendResult>
     case "resend":
       return sendViaResend(payload);
     case "smtp":
-      return sendViaSmtp(payload);
+      return sendViaHttpRelay(payload);
     case "none":
       // No email provider configured
       return {
