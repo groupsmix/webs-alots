@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { Phone, ShieldCheck, ArrowLeft, Heart } from "lucide-react";
 import {
   Card,
@@ -18,7 +17,6 @@ import { Button } from "@/components/ui/button";
 import { signInWithOTP, verifyOTP } from "@/lib/auth";
 
 export default function LoginPage() {
-  const router = useRouter();
   const [step, setStep] = useState<"phone" | "otp">("phone");
   const [phone, setPhone] = useState("");
   const [otp, setOtp] = useState("");

@@ -9,7 +9,7 @@ function createMockSupabase(
   return {
     from: vi.fn().mockReturnValue({
       select: vi.fn().mockReturnValue({
-        eq: vi.fn().mockImplementation((_col: string, val: string) => {
+        eq: vi.fn().mockImplementation((_col: string, _val: string) => {
           const chain = {
             eq: vi.fn().mockImplementation((_col2: string, _val2: string) => {
               const innerChain = {
