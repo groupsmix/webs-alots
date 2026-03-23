@@ -34,6 +34,26 @@ export function WaitingRoomManager() {
   const [queue, setQueue] = useState<WaitingPatient[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const statusConfig: Record<string, { color: string; label: string; icon: typeof Clock }> = {
+    waiting: { color: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200", label: "Waiting", icon: Clock },
+    "in-consultation": { color: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200", label: "In Consultation", icon: Stethoscope },
+    called: { color: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200", label: "Called", icon: Bell },
+  };
+
+  const recalculateWaitTimes = useCallback((q: WaitingPatient[]): WaitingPatient[] => {
+    let waitAccumulator = 0;
+    return q.map((p) => {
+      if (p.status === "in-consultation") {
+        return { ...p, estimatedWait: 0 };
+      }
+      if (p.status === "called") {
+        return { ...p, estimatedWait: 5 };
+      }
+      waitAccumulator += 15;
+      return { ...p, estimatedWait: waitAccumulator };
+    });
+  }, []);
+
   useEffect(() => {
     async function load() {
       const user = await getCurrentUser();
@@ -75,28 +95,7 @@ export function WaitingRoomManager() {
       setLoading(false);
     }
     load();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const statusConfig: Record<string, { color: string; label: string; icon: typeof Clock }> = {
-    waiting: { color: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200", label: "Waiting", icon: Clock },
-    "in-consultation": { color: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200", label: "In Consultation", icon: Stethoscope },
-    called: { color: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200", label: "Called", icon: Bell },
-  };
-
-  const recalculateWaitTimes = useCallback((q: WaitingPatient[]): WaitingPatient[] => {
-    let waitAccumulator = 0;
-    return q.map((p) => {
-      if (p.status === "in-consultation") {
-        return { ...p, estimatedWait: 0 };
-      }
-      if (p.status === "called") {
-        return { ...p, estimatedWait: 5 };
-      }
-      waitAccumulator += 15;
-      return { ...p, estimatedWait: waitAccumulator };
-    });
-  }, []);
+  }, [recalculateWaitTimes]);
 
   const moveUp = (id: string) => {
     const idx = queue.findIndex((p) => p.id === id);

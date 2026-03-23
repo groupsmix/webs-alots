@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Plus, Image as ImageIcon, FileText } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -54,7 +54,7 @@ export default function UltrasoundsPage() {
     efw: "", // Estimated fetal weight
   });
 
-  const load = async () => {
+  const load = useCallback(async () => {
     const user = await getCurrentUser();
     if (!user?.clinic_id) { setLoading(false); return; }
     const [u, p] = await Promise.all([
@@ -64,12 +64,11 @@ export default function UltrasoundsPage() {
     setUltrasounds(u);
     setPregnancies(p);
     setLoading(false);
-  };
+  }, [selectedPregnancy]);
 
   useEffect(() => {
     load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedPregnancy]);
+  }, [load]);
 
   const handleSave = async () => {
     const user = await getCurrentUser();

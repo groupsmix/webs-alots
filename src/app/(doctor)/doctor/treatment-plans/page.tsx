@@ -29,6 +29,8 @@ export default function DoctorTreatmentPlansPage() {
   }
 
   const handleUpdateStep = async (planId: string, stepIndex: number, status: TreatmentStep["status"]) => {
+    let updatedSteps: TreatmentStep[] | null = null;
+
     setPlans((prev) =>
       prev.map((p) => {
         if (p.id !== planId) return p;
@@ -40,22 +42,14 @@ export default function DoctorTreatmentPlansPage() {
             ? new Date().toISOString().split("T")[0]
             : steps[stepIndex].date,
         };
+        updatedSteps = steps;
         return { ...p, steps, updatedAt: new Date().toISOString().split("T")[0] };
       })
     );
 
-    const plan = plans.find((p) => p.id === planId);
-    if (plan) {
-      const updatedSteps = [...plan.steps];
-      updatedSteps[stepIndex] = {
-        ...updatedSteps[stepIndex],
-        status,
-        date: status === "completed" || status === "in_progress"
-          ? new Date().toISOString().split("T")[0]
-          : updatedSteps[stepIndex].date,
-      };
+    if (updatedSteps) {
       await updateTreatmentPlan(planId, {
-        steps: updatedSteps.map((s) => ({
+        steps: (updatedSteps as TreatmentStep[]).map((s) => ({
           step: s.step,
           description: s.description,
           status: s.status,
