@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -33,6 +33,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { SignOutButton } from "@/components/sign-out-button";
+import { createClient } from "@/lib/supabase-client";
 
 const navItems = [
   { href: "/super-admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -46,11 +47,13 @@ const navItems = [
   { href: "/super-admin/templates", label: "Template Manager", icon: FileText },
 ];
 
-const notifications = [
-  { id: "n1", title: "Overdue Payment", message: "Clinique Dentaire Tanger has an overdue invoice", time: "2h ago", unread: true },
-  { id: "n2", title: "New Registration", message: "Cabinet Dr. Youssef signed up for a trial", time: "5h ago", unread: true },
-  { id: "n3", title: "Account Suspended", message: "Pharmacie Ibn Sina suspended for non-payment", time: "1d ago", unread: false },
-];
+interface Notification {
+  id: string;
+  title: string;
+  message: string;
+  time: string;
+  unread: boolean;
+}
 
 function SidebarNav({ pathname }: { pathname: string }) {
   return (
@@ -83,6 +86,59 @@ export default function SuperAdminLayout({
 }) {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+
+  useEffect(() => {
+    async function loadNotifications() {
+      try {
+        const supabase = createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+
+        const { data: profile } = await supabase
+          .from("users")
+          .select("id")
+          .eq("auth_id", user.id)
+          .single();
+        if (!profile) return;
+
+        const { data } = await supabase
+          .from("notifications")
+          .select("id, title, body, sent_at, is_read")
+          .eq("user_id", profile.id)
+          .order("sent_at", { ascending: false })
+          .limit(10);
+
+        if (data) {
+          setNotifications(
+            data.map((n) => {
+              const sentAt = new Date(n.sent_at);
+              const diffMs = Date.now() - sentAt.getTime();
+              const diffMin = Math.floor(diffMs / 60000);
+              const diffHr = Math.floor(diffMin / 60);
+              const diffDay = Math.floor(diffHr / 24);
+              let time = "just now";
+              if (diffDay > 0) time = `${diffDay}d ago`;
+              else if (diffHr > 0) time = `${diffHr}h ago`;
+              else if (diffMin > 0) time = `${diffMin}m ago`;
+
+              return {
+                id: n.id,
+                title: n.title ?? "Notification",
+                message: n.body ?? "",
+                time,
+                unread: !n.is_read,
+              };
+            }),
+          );
+        }
+      } catch {
+        // Notifications are non-critical; fail silently
+      }
+    }
+    loadNotifications();
+  }, []);
+
   const unreadCount = notifications.filter((n) => n.unread).length;
 
   return (
