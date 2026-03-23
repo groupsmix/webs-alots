@@ -28,7 +28,7 @@ export default function OrdersPage() {
   const [allOrders, setAllOrders] = useState<PurchaseOrderView[]>([]);
   const [allSuppliers, setAllSuppliers] = useState<SupplierView[]>([]);
   const [loading, setLoading] = useState(true);
-  const [_error, setError] = useState<Error | null>(null);
+  const [error, setError] = useState<Error | null>(null);
   const [filterStatus, setFilterStatus] = useState<string>("all");
 
   useEffect(() => {
@@ -47,6 +47,14 @@ export default function OrdersPage() {
 
   if (loading) {
     return <PageLoader message="Loading orders..." />;
+  }
+
+  if (error) {
+    return (
+      <div className="p-8 text-center">
+        <p className="text-red-600">Failed to load data. Please try refreshing the page.</p>
+      </div>
+    );
   }
 
   const filtered = filterStatus === "all"

@@ -37,7 +37,7 @@ export default function LoyaltyPage() {
   const [allMembers, setAllMembers] = useState<LoyaltyMemberView[]>([]);
   const [allTransactions, setAllTransactions] = useState<LoyaltyTransactionView[]>([]);
   const [loading, setLoading] = useState(true);
-  const [_error, setError] = useState<Error | null>(null);
+  const [error, setError] = useState<Error | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedMember, setSelectedMember] = useState<string | null>(null);
   const [view, setView] = useState<"members" | "transactions">("members");
@@ -58,6 +58,14 @@ export default function LoyaltyPage() {
 
   if (loading) {
     return <PageLoader message="Loading loyalty data..." />;
+  }
+
+  if (error) {
+    return (
+      <div className="p-8 text-center">
+        <p className="text-red-600">Failed to load data. Please try refreshing the page.</p>
+      </div>
+    );
   }
 
   const filteredMembers = allMembers.filter(

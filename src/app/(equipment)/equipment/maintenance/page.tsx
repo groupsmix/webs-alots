@@ -62,7 +62,7 @@ export default function EquipmentMaintenancePage() {
   const [records, setRecords] = useState<EquipmentMaintenanceView[]>([]);
   const [equipment, setEquipment] = useState<EquipmentItemView[]>([]);
   const [loading, setLoading] = useState(true);
-  const [_error, setError] = useState<Error | null>(null);
+  const [error, setError] = useState<Error | null>(null);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -186,6 +186,14 @@ export default function EquipmentMaintenancePage() {
 
   if (loading) {
     return <PageLoader message="Loading..." />;
+  }
+
+  if (error) {
+    return (
+      <div className="p-8 text-center">
+        <p className="text-red-600">Failed to load data. Please try refreshing the page.</p>
+      </div>
+    );
   }
 
   const filtered = records.filter((r) => {

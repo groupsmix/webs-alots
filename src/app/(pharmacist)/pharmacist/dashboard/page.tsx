@@ -57,7 +57,7 @@ export default function PharmacistDashboardPage() {
   const [allOrders, setAllOrders] = useState<PurchaseOrderView[]>([]);
   const [members, setMembers] = useState<LoyaltyMemberView[]>([]);
   const [loading, setLoading] = useState(true);
-  const [_error, setError] = useState<Error | null>(null);
+  const [error, setError] = useState<Error | null>(null);
 
   // ── Date boundaries ──
   const now = useMemo(() => new Date(), []);
@@ -130,6 +130,14 @@ export default function PharmacistDashboardPage() {
 
   if (loading) {
     return <PageLoader message="Loading dashboard..." />;
+  }
+
+  if (error) {
+    return (
+      <div className="p-8 text-center">
+        <p className="text-red-600">Failed to load data. Please try refreshing the page.</p>
+      </div>
+    );
   }
 
   // ── Prescription fill rate ──

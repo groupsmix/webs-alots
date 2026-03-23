@@ -14,7 +14,7 @@ import { PageLoader } from "@/components/ui/page-loader";
 export default function LabReportsPage() {
   const [orders, setOrders] = useState<LabTestOrderView[]>([]);
   const [loading, setLoading] = useState(true);
-  const [_error, setError] = useState<Error | null>(null);
+  const [error, setError] = useState<Error | null>(null);
   const [search, setSearch] = useState("");
 
   useEffect(() => {
@@ -35,6 +35,14 @@ export default function LabReportsPage() {
 
   if (loading) {
     return <PageLoader message="Loading reports..." />;
+  }
+
+  if (error) {
+    return (
+      <div className="p-8 text-center">
+        <p className="text-red-600">Failed to load data. Please try refreshing the page.</p>
+      </div>
+    );
   }
 
   const filtered = orders.filter((o) => {

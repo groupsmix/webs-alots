@@ -35,7 +35,7 @@ export default function MedicalHistoryPage() {
   const [consultNotes, setConsultNotes] = useState<ConsultationNoteView[]>([]);
   const [patient, setPatient] = useState<{ dateOfBirth: string; gender: string; insurance: string; allergies: string[] } | null>(null);
   const [loading, setLoading] = useState(true);
-  const [_error, setError] = useState<Error | null>(null);
+  const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -67,6 +67,15 @@ export default function MedicalHistoryPage() {
   if (loading || !patient) {
     return <PageLoader message="Loading medical history..." />;
   }
+
+  if (error) {
+    return (
+      <div className="p-8 text-center">
+        <p className="text-red-600">Failed to load data. Please try refreshing the page.</p>
+      </div>
+    );
+  }
+
 
   const diagnoses = consultNotes.map(n => ({
     date: n.date,

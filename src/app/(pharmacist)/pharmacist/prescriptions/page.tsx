@@ -31,7 +31,7 @@ const statusFilters: PrescriptionStatus[] = ["pending", "reviewing", "partially-
 export default function PrescriptionsPage() {
   const [allPrescriptions, setAllPrescriptions] = useState<PharmacyPrescriptionView[]>([]);
   const [loading, setLoading] = useState(true);
-  const [_error, setError] = useState<Error | null>(null);
+  const [error, setError] = useState<Error | null>(null);
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -50,6 +50,14 @@ export default function PrescriptionsPage() {
 
   if (loading) {
     return <PageLoader message="Loading prescriptions..." />;
+  }
+
+  if (error) {
+    return (
+      <div className="p-8 text-center">
+        <p className="text-red-600">Failed to load data. Please try refreshing the page.</p>
+      </div>
+    );
   }
 
   const filtered = allPrescriptions.filter((rx) => {

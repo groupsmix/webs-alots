@@ -59,7 +59,7 @@ export default function ConsultationNotesPage() {
   const [notes, setNotes] = useState<ConsultationNote[]>([]);
   const [apptList, setApptList] = useState<AppointmentView[]>([]);
   const [loading, setLoading] = useState(true);
-  const [_error, setError] = useState<Error | null>(null);
+  const [error, setError] = useState<Error | null>(null);
   const [editingApptId, setEditingApptId] = useState<string | null>(null);
   const [showPrivate, setShowPrivate] = useState<Record<string, boolean>>({});
   const [formData, setFormData] = useState({
@@ -96,6 +96,14 @@ export default function ConsultationNotesPage() {
 
   if (loading) {
     return <PageLoader message="Loading consultation notes..." />;
+  }
+
+  if (error) {
+    return (
+      <div className="p-8 text-center">
+        <p className="text-red-600">Failed to load data. Please try refreshing the page.</p>
+      </div>
+    );
   }
 
   const recentAppts = apptList

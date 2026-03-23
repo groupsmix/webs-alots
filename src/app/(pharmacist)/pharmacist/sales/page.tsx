@@ -16,7 +16,7 @@ import { PageLoader } from "@/components/ui/page-loader";
 export default function SalesPage() {
   const [allSales, setAllSales] = useState<DailySaleView[]>([]);
   const [loading, setLoading] = useState(true);
-  const [_error, setError] = useState<Error | null>(null);
+  const [error, setError] = useState<Error | null>(null);
   const today = new Date().toISOString().split("T")[0] ?? "";
   const yesterday = (() => { const d = new Date(); d.setDate(d.getDate() - 1); return d.toISOString().split("T")[0] ?? ""; })();
   const [dateFilter, setDateFilter] = useState(today);
@@ -51,6 +51,14 @@ export default function SalesPage() {
 
   if (loading) {
     return <PageLoader message="Loading sales data..." />;
+  }
+
+  if (error) {
+    return (
+      <div className="p-8 text-center">
+        <p className="text-red-600">Failed to load data. Please try refreshing the page.</p>
+      </div>
+    );
   }
 
   return (

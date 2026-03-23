@@ -47,7 +47,7 @@ export default function ENTPage() {
   const [hearingTests, setHearingTests] = useState<HearingTestView[]>([]);
   const [exams, setExams] = useState<ENTExamView[]>([]);
   const [loading, setLoading] = useState(true);
-  const [_error, setError] = useState<Error | null>(null);
+  const [error, setError] = useState<Error | null>(null);
   const [showTestForm, setShowTestForm] = useState(false);
   const [showExamForm, setShowExamForm] = useState(false);
 
@@ -93,6 +93,14 @@ export default function ENTPage() {
 
   if (loading) {
     return <PageLoader message="Loading ENT records..." />;
+  }
+
+  if (error) {
+    return (
+      <div className="p-8 text-center">
+        <p className="text-red-600">Failed to load data. Please try refreshing the page.</p>
+      </div>
+    );
   }
 
   const handleAddTest = async () => {

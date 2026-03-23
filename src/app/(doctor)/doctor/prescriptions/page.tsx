@@ -100,7 +100,7 @@ export default function DoctorPrescriptionsPage() {
   const [showWriter, setShowWriter] = useState(false);
   const [selectedPatient, setSelectedPatient] = useState("");
   const [loading, setLoading] = useState(true);
-  const [_error, setError] = useState<Error | null>(null);
+  const [error, setError] = useState<Error | null>(null);
   const [diagnosis, setDiagnosis] = useState("");
   const [notes, setNotes] = useState("");
   const [medications, setMedications] = useState<MedicationEntry[]>([
@@ -134,6 +134,14 @@ export default function DoctorPrescriptionsPage() {
 
   if (loading) {
     return <PageLoader message="Loading prescriptions..." />;
+  }
+
+  if (error) {
+    return (
+      <div className="p-8 text-center">
+        <p className="text-red-600">Failed to load data. Please try refreshing the page.</p>
+      </div>
+    );
   }
 
   const addMedication = () => {

@@ -33,7 +33,7 @@ export default function PulmonologyPage() {
   const [spirometry, setSpirometry] = useState<SpirometryRecordView[]>([]);
   const [respTests, setRespTests] = useState<RespiratoryTestView[]>([]);
   const [loading, setLoading] = useState(true);
-  const [_error, setError] = useState<Error | null>(null);
+  const [error, setError] = useState<Error | null>(null);
   const [showSpiroForm, setShowSpiroForm] = useState(false);
   const [showTestForm, setShowTestForm] = useState(false);
 
@@ -71,6 +71,14 @@ export default function PulmonologyPage() {
 
   if (loading) {
     return <PageLoader message="Loading pulmonology records..." />;
+  }
+
+  if (error) {
+    return (
+      <div className="p-8 text-center">
+        <p className="text-red-600">Failed to load data. Please try refreshing the page.</p>
+      </div>
+    );
   }
 
   const handleAddSpiro = async () => {

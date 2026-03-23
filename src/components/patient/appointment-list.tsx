@@ -56,7 +56,7 @@ function canCancelAppointment(
 export function AppointmentList({ patientId }: { patientId?: string }) {
   const [allAppts, setAllAppts] = useState<AppointmentView[]>([]);
   const [loading, setLoading] = useState(true);
-  const [_error, setError] = useState<Error | null>(null);
+  const [error, setError] = useState<Error | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
   const [rescheduleAppt, setRescheduleAppt] = useState<string | null>(null);
   const [cancellingId, setCancellingId] = useState<string | null>(null);
@@ -127,6 +127,14 @@ export function AppointmentList({ patientId }: { patientId?: string }) {
 
   if (loading) {
     return <PageLoader message="Loading appointments..." />;
+  }
+
+  if (error) {
+    return (
+      <div className="p-8 text-center">
+        <p className="text-red-600">Failed to load data. Please try refreshing the page.</p>
+      </div>
+    );
   }
 
   const apptToReschedule = rescheduleAppt

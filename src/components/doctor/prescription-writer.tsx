@@ -38,7 +38,7 @@ export function PrescriptionWriter() {
   const [notes, setNotes] = useState("");
   const [diagnosis, setDiagnosis] = useState("");
   const [loading, setLoading] = useState(true);
-  const [_error, setError] = useState<Error | null>(null);
+  const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -63,6 +63,14 @@ export function PrescriptionWriter() {
 
   if (loading) {
     return <PageLoader message="Loading..." />;
+  }
+
+  if (error) {
+    return (
+      <div className="p-8 text-center">
+        <p className="text-red-600">Failed to load data. Please try refreshing the page.</p>
+      </div>
+    );
   }
 
   const patient = patients.find((p) => p.id === selectedPatient) ?? patients[0];
