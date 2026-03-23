@@ -107,7 +107,7 @@ export const POST = withAuth(async (request, { supabase, profile }) => {
 
     return NextResponse.json({ status: APPOINTMENT_STATUS.CANCELLED, message: "Appointment cancelled successfully" });
   } catch (err) {
-    logger.warn("Operation failed", { context: "route", error: err });
+    logger.warn("Operation failed", { context: "booking/cancel", error: err });
     return NextResponse.json({ error: "Failed to cancel appointment" }, { status: 500 });
   }
 }, null);

@@ -33,7 +33,7 @@ export const GET = withAuth(async (request, { supabase }) => {
     .single();
 
   if (error && error.code !== "PGRST116") {
-    logger.warn("Operation failed", { context: "route", error });
+    logger.warn("Operation failed", { context: "custom-fields/values", error });
     return NextResponse.json(
       { error: "Failed to fetch custom field values" },
       { status: 500 },
@@ -117,7 +117,7 @@ export const POST = withAuth(async (request, { supabase }) => {
       .single();
 
     if (error) {
-      logger.warn("Operation failed", { context: "route", error });
+      logger.warn("Operation failed", { context: "custom-fields/values", error });
       return NextResponse.json(
         { error: "Failed to save custom field values" },
         { status: 500 },
@@ -126,7 +126,7 @@ export const POST = withAuth(async (request, { supabase }) => {
 
     return NextResponse.json({ values: data });
   } catch (err) {
-    logger.warn("Operation failed", { context: "route", error: err });
+    logger.warn("Operation failed", { context: "custom-fields/values", error: err });
     return NextResponse.json(
       { error: "Invalid request body" },
       { status: 400 },
@@ -217,7 +217,7 @@ export const PATCH = withAuth(async (request, { supabase }) => {
       .single();
 
     if (error) {
-      logger.warn("Operation failed", { context: "route", error });
+      logger.warn("Operation failed", { context: "custom-fields/values", error });
       return NextResponse.json(
         { error: "Failed to update custom field values" },
         { status: 500 },
@@ -226,7 +226,7 @@ export const PATCH = withAuth(async (request, { supabase }) => {
 
     return NextResponse.json({ values: data });
   } catch (err) {
-    logger.warn("Operation failed", { context: "route", error: err });
+    logger.warn("Operation failed", { context: "custom-fields/values", error: err });
     return NextResponse.json(
       { error: "Invalid request body" },
       { status: 400 },

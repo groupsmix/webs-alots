@@ -74,7 +74,7 @@ export const POST = withAuth(async (request, { supabase, user }) => {
 
     return response;
   } catch (err) {
-    logger.warn("Operation failed", { context: "route", error: err });
+    logger.warn("Operation failed", { context: "impersonate/route", error: err });
     return NextResponse.json({ error: "Failed to start impersonation" }, { status: 500 });
   }
 }, ["super_admin"]);
@@ -115,7 +115,7 @@ export const DELETE = withAuth(async (_request, { supabase, user }) => {
 
     return response;
   } catch (err) {
-    logger.warn("Operation failed", { context: "route", error: err });
+    logger.warn("Operation failed", { context: "impersonate/route", error: err });
     return NextResponse.json({ error: "Failed to end impersonation" }, { status: 500 });
   }
 }, ["super_admin"]);

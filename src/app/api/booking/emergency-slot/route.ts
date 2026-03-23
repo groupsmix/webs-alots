@@ -177,7 +177,7 @@ export const POST = withAuth(async (request, { supabase }) => {
 
     return NextResponse.json({ error: "action must be 'create' or 'book'" }, { status: 400 });
   } catch (err) {
-    logger.warn("Operation failed", { context: "route", error: err });
+    logger.warn("Operation failed", { context: "booking/emergency-slot", error: err });
     return NextResponse.json({ error: "Failed to process emergency slot request" }, { status: 500 });
   }
 }, STAFF_ROLES);

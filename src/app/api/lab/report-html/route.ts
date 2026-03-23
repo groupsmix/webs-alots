@@ -158,7 +158,7 @@ export const POST = withAuth(async (request) => {
 
     return NextResponse.json({ pdfUrl: url });
   } catch (err) {
-    logger.warn("Operation failed", { context: "route", error: err });
+    logger.warn("Operation failed", { context: "lab/report-html", error: err });
     return NextResponse.json({ error: "Failed to generate lab report" }, { status: 500 });
   }
 }, STAFF_ROLES);

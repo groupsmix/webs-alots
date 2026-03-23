@@ -104,16 +104,20 @@ const MAX_BODY_BYTES = 25 * 1024 * 1024;
  * Build the Content-Security-Policy header value with a per-request nonce
  * for script-src (replaces 'unsafe-inline').
  *
- * style-src retains 'unsafe-inline' because Tailwind CSS and shadcn/ui
- * inject inline styles that cannot be nonce-gated without significant
- * architectural changes.
+ * ACCEPTED RISK: style-src retains 'unsafe-inline' because Tailwind CSS
+ * and shadcn/ui inject inline styles that cannot be nonce-gated without
+ * significant architectural changes (CSS-in-JS or build-time extraction).
+ *
+ * ACCEPTED RISK: img-src allows 'data:' and 'blob:' for avatar placeholders,
+ * dynamic chart rendering (recharts), and QR code generation. User-uploaded
+ * images are served from R2/Supabase with Content-Disposition: attachment.
  */
 function buildCsp(nonce: string): string {
   const isDev = process.env.NODE_ENV === "development";
   return [
     "default-src 'self'",
     `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'${isDev ? " 'unsafe-eval'" : ""}`,
-    // Styles: self + inline (Tailwind, shadcn)
+    // Styles: self + inline (Tailwind, shadcn) — see ACCEPTED RISK above
     "style-src 'self' 'unsafe-inline'",
     // Images: self + R2 storage + Supabase storage + data URIs + blobs
     "img-src 'self' data: blob: *.supabase.co *.r2.cloudflarestorage.com *.r2.dev",
@@ -127,6 +131,8 @@ function buildCsp(nonce: string): string {
     "form-action 'self'",
     // Base URI: self only
     "base-uri 'self'",
+    // Upgrade HTTP to HTTPS automatically
+    ...(isDev ? [] : ["upgrade-insecure-requests"]),
   ].join("; ");
 }
 

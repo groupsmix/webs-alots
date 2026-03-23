@@ -24,7 +24,7 @@ export async function GET() {
       ? { status: "degraded", latencyMs: dbLatency, error: "Database query failed" }
       : { status: "ok", latencyMs: dbLatency };
   } catch (err) {
-    logger.warn("Operation failed", { context: "route", error: err });
+    logger.warn("Operation failed", { context: "health", error: err });
     checks.database = {
       status: "down",
       error: "Database unreachable",

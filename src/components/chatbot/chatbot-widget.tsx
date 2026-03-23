@@ -125,7 +125,7 @@ export function ChatbotWidget() {
               </div>
             )}
 
-            <div className="space-y-3">
+            <div className="space-y-3" aria-live="polite" aria-relevant="additions">
               {messages.map((msg) => (
                 <div
                   key={msg.id}

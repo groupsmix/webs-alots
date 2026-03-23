@@ -26,6 +26,11 @@ const securityHeaders = [
     key: "Strict-Transport-Security",
     value: "max-age=63072000; includeSubDomains; preload",
   },
+  {
+    // Control DNS prefetching for performance
+    key: "X-DNS-Prefetch-Control",
+    value: "on",
+  },
   // Content Security Policy is set dynamically in middleware.ts
   // with a per-request nonce for script-src (instead of 'unsafe-inline').
 ];

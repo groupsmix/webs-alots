@@ -75,7 +75,7 @@ export async function POST(request: NextRequest) {
       headers: { "Content-Type": "text/plain" },
     });
   } catch (err) {
-    logger.warn("Operation failed", { context: "route", error: err });
+    logger.warn("Operation failed", { context: "payments/cmi/callback", error: err });
     return NextResponse.json({ error: "Failed to process payment callback" }, { status: 500 });
   }
 }

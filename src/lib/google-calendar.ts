@@ -252,8 +252,9 @@ export function appointmentToCalendarEvent(appointment: {
   notes?: string;
   clinicName?: string;
   clinicAddress?: string;
+  timeZone?: string;
 }): CalendarEvent {
-  const timeZone = "Africa/Casablanca";
+  const timeZone = appointment.timeZone ?? "Africa/Casablanca";
 
   return {
     summary: `${appointment.type} - ${appointment.patientName}`,

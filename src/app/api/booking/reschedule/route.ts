@@ -126,7 +126,7 @@ export const POST = withAuth(async (request, { supabase, profile }) => {
       newAppointmentId: body.appointmentId,
     });
   } catch (err) {
-    logger.warn("Operation failed", { context: "route", error: err });
+    logger.warn("Operation failed", { context: "booking/reschedule", error: err });
     return NextResponse.json({ error: "Failed to reschedule appointment" }, { status: 500 });
   }
 }, null);

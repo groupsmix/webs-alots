@@ -123,7 +123,7 @@ export const POST = withAuth(async (request, { user, profile }) => {
       url: session.url,
     });
   } catch (err) {
-    logger.warn("Operation failed", { context: "route", error: err });
+    logger.warn("Operation failed", { context: "payments/create-checkout", error: err });
     return NextResponse.json({ error: "Failed to process payment" }, { status: 500 });
   }
 }, STAFF_ROLES);

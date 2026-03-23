@@ -60,7 +60,7 @@ export const POST = withAuth(async (request, { supabase, profile }) => {
 
     return NextResponse.json({ results });
   } catch (err) {
-    logger.warn("Operation failed", { context: "route", error: err });
+    logger.warn("Operation failed", { context: "notifications", error: err });
     return NextResponse.json(
       { error: "Failed to dispatch notification" },
       { status: 500 },
@@ -109,7 +109,7 @@ export const GET = withAuth(async (request, { supabase, profile }) => {
     const { data: notifications, error, count } = await query;
 
     if (error) {
-      logger.warn("Operation failed", { context: "route", error });
+      logger.warn("Operation failed", { context: "notifications", error });
       return NextResponse.json(
         { error: "Failed to fetch notifications" },
         { status: 500 },
@@ -121,7 +121,7 @@ export const GET = withAuth(async (request, { supabase, profile }) => {
       total: count ?? 0,
     });
   } catch (err) {
-    logger.warn("Operation failed", { context: "route", error: err });
+    logger.warn("Operation failed", { context: "notifications", error: err });
     return NextResponse.json(
       { error: "Failed to fetch notifications" },
       { status: 500 },

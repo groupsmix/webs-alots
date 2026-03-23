@@ -47,7 +47,7 @@ export const POST = withAuth(async (request) => {
 
     return NextResponse.json(result, { status: 201 });
   } catch (err) {
-    logger.warn("Operation failed", { context: "route", error: err });
+    logger.warn("Operation failed", { context: "radiology/orders", error: err });
     return NextResponse.json({ error: "Failed to create radiology order" }, { status: 500 });
   }
 }, STAFF_ROLES);
@@ -103,7 +103,7 @@ export const PATCH = withAuth(async (request) => {
       { status: 400 },
     );
   } catch (err) {
-    logger.warn("Operation failed", { context: "route", error: err });
+    logger.warn("Operation failed", { context: "radiology/orders", error: err });
     return NextResponse.json({ error: "Failed to update radiology order" }, { status: 500 });
   }
 }, STAFF_ROLES);

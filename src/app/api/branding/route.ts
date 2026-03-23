@@ -92,9 +92,13 @@ export async function GET() {
       );
     }
 
-    return NextResponse.json(data);
+    return NextResponse.json(data, {
+      headers: {
+        "Cache-Control": "public, s-maxage=60, stale-while-revalidate=300",
+      },
+    });
   } catch (err) {
-    logger.warn("Operation failed", { context: "route", error: err });
+    logger.warn("Operation failed", { context: "branding", error: err });
     return NextResponse.json(
       { error: "Failed to fetch branding" },
       { status: 500 },
@@ -150,7 +154,7 @@ export const PUT = withAuth(async (request, { supabase }) => {
     .eq("id", clinicId);
 
   if (error) {
-    logger.warn("Operation failed", { context: "route", error });
+    logger.warn("Operation failed", { context: "branding", error });
     return NextResponse.json(
       { error: "Failed to update branding" },
       { status: 500 },
@@ -232,7 +236,7 @@ export const POST = withAuth(async (request, { supabase }) => {
     .eq("id", clinicId);
 
   if (error) {
-    logger.warn("Operation failed", { context: "route", error });
+    logger.warn("Operation failed", { context: "branding", error });
     return NextResponse.json(
       { error: "Upload succeeded but failed to save URL" },
       { status: 500 },

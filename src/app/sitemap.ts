@@ -22,7 +22,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
 
   return staticPages.map((page) => ({
     url: `${baseUrl}${page.path}`,
-    lastModified: new Date(),
+    lastModified: new Date("2026-03-23"),
     changeFrequency: page.changeFrequency,
     priority: page.priority,
   }));

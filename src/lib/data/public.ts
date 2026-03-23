@@ -376,7 +376,10 @@ export async function getPublicSlotBookingCounts(
   const supabase = await createClient();
 
   const dayStart = `${date}T00:00:00`;
-  const dayEnd = `${date}T23:59:59`;
+  // Use next-day boundary to avoid missing the last second of the day
+  const nextDay = new Date(`${date}T00:00:00Z`);
+  nextDay.setUTCDate(nextDay.getUTCDate() + 1);
+  const dayEnd = nextDay.toISOString().split("T")[0] + "T00:00:00";
 
   const { data, error } = await supabase
     .from("appointments")
@@ -384,7 +387,7 @@ export async function getPublicSlotBookingCounts(
     .eq("clinic_id", clinicId)
     .eq("doctor_id", doctorId)
     .gte("slot_start", dayStart)
-    .lte("slot_start", dayEnd)
+    .lt("slot_start", dayEnd)
     .not("status", "in", `("${APPOINTMENT_STATUS.CANCELLED}","${APPOINTMENT_STATUS.NO_SHOW}")`);
 
   if (error || !data) return {};

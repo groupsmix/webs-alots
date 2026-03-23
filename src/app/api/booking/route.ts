@@ -84,24 +84,8 @@ async function verifyBookingToken(token: string): Promise<boolean> {
   return mismatch === 0;
 }
 
-interface BookingRequestBody {
-  specialtyId: string;
-  doctorId: string;
-  doctorIds?: string[];
-  serviceId: string;
-  date: string;
-  time: string;
-  isFirstVisit: boolean;
-  hasInsurance: boolean;
-  patient: {
-    name: string;
-    phone: string;
-    email?: string;
-    reason?: string;
-  };
-  slotDuration: number;
-  bufferTime: number;
-}
+/** Inferred from the Zod schema — single source of truth. */
+type BookingRequestBody = z.infer<typeof bookingRequestSchema>;
 
 interface ValidationResult {
   error: string | null;
@@ -380,7 +364,7 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (err) {
-    logger.warn("Operation failed", { context: "route", error: err }); // Production: suppress console output
+    logger.warn("Operation failed", { context: "booking/route", error: err });
     return NextResponse.json(
       { error: "Failed to create booking" },
       { status: 500 },
@@ -421,7 +405,7 @@ export async function GET(request: NextRequest) {
       bufferTime: clinicConfig.booking.bufferTime,
     });
   } catch (err) {
-    logger.warn("Operation failed", { context: "route", error: err });
+    logger.warn("Operation failed", { context: "booking/route", error: err });
     return NextResponse.json(
       { error: "Failed to fetch available slots" },
       { status: 500 },

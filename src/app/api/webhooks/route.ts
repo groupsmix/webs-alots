@@ -182,7 +182,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ status: "ok" });
   } catch (err) {
-    logger.warn("Operation failed", { context: "route", error: err });
+    logger.warn("Operation failed", { context: "webhooks", error: err });
     return NextResponse.json(
       { error: "Failed to process webhook" },
       { status: 500 },

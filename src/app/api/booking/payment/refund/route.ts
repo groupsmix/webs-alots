@@ -90,7 +90,7 @@ export const POST = withAuth(async (request, { supabase }) => {
 
     return NextResponse.json({ status: "refunded", message: "Payment refunded" });
   } catch (err) {
-    logger.warn("Operation failed", { context: "route", error: err });
+    logger.warn("Operation failed", { context: "booking/payment/refund", error: err });
     return NextResponse.json({ error: "Failed to refund payment" }, { status: 500 });
   }
 }, ADMIN_ROLES);
