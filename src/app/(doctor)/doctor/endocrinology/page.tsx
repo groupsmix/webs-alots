@@ -41,7 +41,7 @@ export default function EndocrinologyPage() {
   const [hormones, setHormones] = useState<HormoneLevelView[]>([]);
   const [diabetes, setDiabetes] = useState<DiabetesManagementView[]>([]);
   const [loading, setLoading] = useState(true);
-  const [_error, setError] = useState<Error | null>(null);
+  const [error, setError] = useState<Error | null>(null);
   const [showSugarForm, setShowSugarForm] = useState(false);
   const [showHormoneForm, setShowHormoneForm] = useState(false);
   const [showDiabetesForm, setShowDiabetesForm] = useState(false);
@@ -85,6 +85,14 @@ export default function EndocrinologyPage() {
 
   if (loading) {
     return <PageLoader message="Loading endocrinology records..." />;
+  }
+
+  if (error) {
+    return (
+      <div className="p-8 text-center">
+        <p className="text-red-600">Failed to load data. Please try refreshing the page.</p>
+      </div>
+    );
   }
 
   const handleAddSugar = async () => {

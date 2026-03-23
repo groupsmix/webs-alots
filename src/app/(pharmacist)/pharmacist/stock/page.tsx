@@ -39,7 +39,7 @@ const stockFilters = [
 export default function StockPage() {
   const [allProducts, setAllProducts] = useState<ProductView[]>([]);
   const [loading, setLoading] = useState(true);
-  const [_error, setError] = useState<Error | null>(null);
+  const [error, setError] = useState<Error | null>(null);
   const [query, setQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [stockFilter, setStockFilter] = useState("all");
@@ -83,6 +83,14 @@ export default function StockPage() {
 
   if (loading) {
     return <PageLoader message="Loading stock data..." />;
+  }
+
+  if (error) {
+    return (
+      <div className="p-8 text-center">
+        <p className="text-red-600">Failed to load data. Please try refreshing the page.</p>
+      </div>
+    );
   }
 
   return (

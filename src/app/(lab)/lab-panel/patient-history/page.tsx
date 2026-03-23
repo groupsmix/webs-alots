@@ -28,7 +28,7 @@ function FlagBadge({ flag }: { flag: string }) {
 export default function PatientHistoryPage() {
   const [patients, setPatients] = useState<PatientView[]>([]);
   const [loading, setLoading] = useState(true);
-  const [_error, setError] = useState<Error | null>(null);
+  const [error, setError] = useState<Error | null>(null);
   const [search, setSearch] = useState("");
   const [selectedPatientId, setSelectedPatientId] = useState<string | null>(null);
   const [patientOrders, setPatientOrders] = useState<LabTestOrderView[]>([]);
@@ -76,6 +76,14 @@ export default function PatientHistoryPage() {
 
   if (loading) {
     return <PageLoader message="Loading patients..." />;
+  }
+
+  if (error) {
+    return (
+      <div className="p-8 text-center">
+        <p className="text-red-600">Failed to load data. Please try refreshing the page.</p>
+      </div>
+    );
   }
 
   const filteredPatients = patients.filter((p) => {

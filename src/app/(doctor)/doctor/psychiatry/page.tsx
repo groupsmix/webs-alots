@@ -28,7 +28,7 @@ export default function PsychiatryPage() {
   const [sessions, setSessions] = useState<PsychSessionNoteView[]>([]);
   const [medications, setMedications] = useState<PsychMedicationView[]>([]);
   const [loading, setLoading] = useState(true);
-  const [_error, setError] = useState<Error | null>(null);
+  const [error, setError] = useState<Error | null>(null);
   const [showSessionForm, setShowSessionForm] = useState(false);
   const [showMedForm, setShowMedForm] = useState(false);
   const [revealedNotes, setRevealedNotes] = useState<Set<string>>(new Set());
@@ -67,6 +67,14 @@ export default function PsychiatryPage() {
 
   if (loading) {
     return <PageLoader message="Loading psychiatry records..." />;
+  }
+
+  if (error) {
+    return (
+      <div className="p-8 text-center">
+        <p className="text-red-600">Failed to load data. Please try refreshing the page.</p>
+      </div>
+    );
   }
 
   const toggleReveal = (id: string) => {

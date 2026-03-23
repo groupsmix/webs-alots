@@ -33,7 +33,7 @@ interface WaitingPatient {
 export function WaitingRoomManager() {
   const [queue, setQueue] = useState<WaitingPatient[]>([]);
   const [loading, setLoading] = useState(true);
-  const [_error, setError] = useState<Error | null>(null);
+  const [error, setError] = useState<Error | null>(null);
 
   const statusConfig: Record<string, { color: string; label: string; icon: typeof Clock }> = {
     waiting: { color: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200", label: "Waiting", icon: Clock },
@@ -164,6 +164,14 @@ export function WaitingRoomManager() {
 
   if (loading) {
     return <PageLoader message="Loading waiting room..." />;
+  }
+
+  if (error) {
+    return (
+      <div className="p-8 text-center">
+        <p className="text-red-600">Failed to load data. Please try refreshing the page.</p>
+      </div>
+    );
   }
 
   return (

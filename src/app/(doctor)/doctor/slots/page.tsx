@@ -37,7 +37,7 @@ export default function NextAvailableSlotsPage() {
   const [daysAhead, setDaysAhead] = useState(14);
   const [timeSlots, setTimeSlots] = useState<TimeSlotView[]>([]);
   const [loading, setLoading] = useState(true);
-  const [_error, setError] = useState<Error | null>(null);
+  const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -61,6 +61,14 @@ export default function NextAvailableSlotsPage() {
 
   if (loading) {
     return <PageLoader message="Loading slots..." />;
+  }
+
+  if (error) {
+    return (
+      <div className="p-8 text-center">
+        <p className="text-red-600">Failed to load data. Please try refreshing the page.</p>
+      </div>
+    );
   }
 
   const availableSlots = computeAvailableSlots(timeSlots, daysAhead);

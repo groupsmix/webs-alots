@@ -61,7 +61,7 @@ export default function DoctorDashboardPage() {
   const [invoices, setInvoices] = useState<InvoiceView[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
-  const [_error, setError] = useState<Error | null>(null);
+  const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -163,6 +163,14 @@ export default function DoctorDashboardPage() {
 
   if (loading) {
     return <PageLoader message="Loading dashboard..." />;
+  }
+
+  if (error) {
+    return (
+      <div className="p-8 text-center">
+        <p className="text-red-600">Failed to load data. Please try refreshing the page.</p>
+      </div>
+    );
   }
 
   const handleMarkDone = async (appointmentId: string) => {

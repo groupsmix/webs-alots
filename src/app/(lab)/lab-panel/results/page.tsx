@@ -37,7 +37,7 @@ export default function ResultsPage() {
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
   const [results, setResults] = useState<LabTestResultView[]>([]);
   const [loading, setLoading] = useState(true);
-  const [_error, setError] = useState<Error | null>(null);
+  const [error, setError] = useState<Error | null>(null);
   const [resultsLoading, setResultsLoading] = useState(false);
   const [search, setSearch] = useState("");
 
@@ -153,6 +153,14 @@ export default function ResultsPage() {
 
   if (loading) {
     return <PageLoader message="Loading..." />;
+  }
+
+  if (error) {
+    return (
+      <div className="p-8 text-center">
+        <p className="text-red-600">Failed to load data. Please try refreshing the page.</p>
+      </div>
+    );
   }
 
   const filtered = orders.filter((o) => {

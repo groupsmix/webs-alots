@@ -35,7 +35,7 @@ export default function NeurologyPage() {
   const [eegs, setEegs] = useState<EEGRecordView[]>([]);
   const [exams, setExams] = useState<NeuroExamView[]>([]);
   const [loading, setLoading] = useState(true);
-  const [_error, setError] = useState<Error | null>(null);
+  const [error, setError] = useState<Error | null>(null);
   const [showEegForm, setShowEegForm] = useState(false);
   const [showExamForm, setShowExamForm] = useState(false);
   const [activeSection, setActiveSection] = useState(0);
@@ -74,6 +74,14 @@ export default function NeurologyPage() {
 
   if (loading) {
     return <PageLoader message="Loading neurology records..." />;
+  }
+
+  if (error) {
+    return (
+      <div className="p-8 text-center">
+        <p className="text-red-600">Failed to load data. Please try refreshing the page.</p>
+      </div>
+    );
   }
 
   const handleAddEeg = async () => {

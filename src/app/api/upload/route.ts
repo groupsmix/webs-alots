@@ -8,9 +8,13 @@
  *
  * Returns: { url: string, key: string }
  *
- * GET /api/upload/presign — Get a pre-signed URL for direct browser upload
+ * GET /api/upload — Get a pre-signed URL for direct browser upload
  *   Query params: filename, contentType, category, clinicId
  *   Returns: { uploadUrl: string, publicUrl: string, key: string }
+ *
+ * PUT /api/upload — Confirm a pre-signed upload (S13 magic-byte validation)
+ *   Body: { key: string, contentType: string }
+ *   Returns: { valid: true } or deletes the object and returns 400
  */
 
 import { NextResponse } from "next/server";
@@ -19,8 +23,11 @@ import {
   isR2Configured,
   buildUploadKey,
   getPresignedUploadUrl,
+  readR2ObjectHead,
+  deleteFromR2,
 } from "@/lib/r2";
 import { withAuth } from "@/lib/with-auth";
+import { logger } from "@/lib/logger";
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
 
@@ -111,6 +118,70 @@ export const POST = withAuth(async (request, { profile }) => {
   }
 
   return NextResponse.json({ url, key });
+}, ["super_admin", "clinic_admin", "receptionist", "doctor"]);
+
+/**
+ * PUT /api/upload — Confirm a pre-signed upload by validating magic bytes.
+ *
+ * After the browser uploads a file directly to R2 via the pre-signed URL,
+ * the client MUST call this endpoint to confirm the upload. The server
+ * reads the first bytes of the uploaded object and validates them against
+ * the declared content type. If validation fails the object is deleted.
+ *
+ * Body: { key: string, contentType: string }
+ * Returns: { valid: true } or { error: string } (with 400 status + deletion)
+ */
+export const PUT = withAuth(async (request) => {
+  if (!isR2Configured()) {
+    return NextResponse.json(
+      { error: "File storage is not configured" },
+      { status: 503 },
+    );
+  }
+
+  const body = await request.json() as { key?: string; contentType?: string };
+  const { key, contentType } = body;
+
+  if (!key || !contentType) {
+    return NextResponse.json(
+      { error: "key and contentType are required" },
+      { status: 400 },
+    );
+  }
+
+  if (!ALLOWED_TYPES.has(contentType)) {
+    // Delete the object — the content type was not in the allowlist
+    await deleteFromR2(key);
+    return NextResponse.json(
+      { error: `File type not allowed: ${contentType}` },
+      { status: 400 },
+    );
+  }
+
+  // Read the first bytes of the uploaded object to validate magic bytes
+  const headBuffer = await readR2ObjectHead(key);
+  if (!headBuffer) {
+    return NextResponse.json(
+      { error: "Uploaded file not found or unreadable" },
+      { status: 404 },
+    );
+  }
+
+  if (!validateFileContent(headBuffer, contentType)) {
+    // Magic bytes do not match — delete the malicious upload
+    logger.warn("Pre-signed upload failed magic-byte validation, deleting", {
+      context: "upload",
+      key,
+      declaredType: contentType,
+    });
+    await deleteFromR2(key);
+    return NextResponse.json(
+      { error: "File content does not match declared type" },
+      { status: 400 },
+    );
+  }
+
+  return NextResponse.json({ valid: true });
 }, ["super_admin", "clinic_admin", "receptionist", "doctor"]);
 
 export const GET = withAuth(async (request, { profile }) => {

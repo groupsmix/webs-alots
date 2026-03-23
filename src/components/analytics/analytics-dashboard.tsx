@@ -31,7 +31,7 @@ export function AnalyticsDashboard({ role = "admin" }: { role?: "admin" | "docto
   const [revenuePeriod, setRevenuePeriod] = useState<"daily" | "weekly" | "monthly">("daily");
   const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [_error, setError] = useState<Error | null>(null);
+  const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -55,6 +55,14 @@ export function AnalyticsDashboard({ role = "admin" }: { role?: "admin" | "docto
 
   if (loading) {
     return <PageLoader message="Loading analytics..." />;
+  }
+
+  if (error) {
+    return (
+      <div className="p-8 text-center">
+        <p className="text-red-600">Failed to load data. Please try refreshing the page.</p>
+      </div>
+    );
   }
 
   if (!analytics) {

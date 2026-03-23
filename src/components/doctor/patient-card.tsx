@@ -29,7 +29,7 @@ export function PatientCard({ patientId }: { patientId?: string }) {
   const [patientRx, setPatientRx] = useState<PrescriptionView[]>([]);
   const [patientAppts, setPatientAppts] = useState<AppointmentView[]>([]);
   const [loading, setLoading] = useState(true);
-  const [_error, setError] = useState<Error | null>(null);
+  const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -62,6 +62,14 @@ export function PatientCard({ patientId }: { patientId?: string }) {
 
   if (loading) {
     return <PageLoader message="Loading patient..." />;
+  }
+
+  if (error) {
+    return (
+      <div className="p-8 text-center">
+        <p className="text-red-600">Failed to load data. Please try refreshing the page.</p>
+      </div>
+    );
   }
 
   if (!patient) {

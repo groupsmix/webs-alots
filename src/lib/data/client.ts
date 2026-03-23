@@ -380,8 +380,9 @@ interface ServiceRaw {
   name: string;
   description: string | null;
   duration_minutes: number;
-  duration_min: number;
+  duration_min: number | null;
   price: number | null;
+  currency: string | null;
   category: string | null;
   is_active: boolean;
   created_at: string;
@@ -392,9 +393,9 @@ function mapService(raw: ServiceRaw): ServiceView {
     id: raw.id,
     name: raw.name,
     description: raw.description ?? "",
-    duration: raw.duration_min ?? 30,
+    duration: raw.duration_minutes ?? raw.duration_min ?? 30,
     price: raw.price ?? 0,
-    currency: "MAD",
+    currency: raw.currency ?? clinicConfig.currency,
     active: raw.is_active ?? true,
     category: raw.category ?? undefined,
   };

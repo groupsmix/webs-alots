@@ -6,11 +6,14 @@
  *
  * Environment variables:
  *   RESEND_API_KEY     — Resend API key (preferred)
- *   SMTP_HOST          — SMTP relay host (fallback)
- *   SMTP_PORT          — SMTP relay port
- *   SMTP_USER          — SMTP username
- *   SMTP_PASS          — SMTP password
+ *   EMAIL_RELAY_HOST   — HTTP relay host (e.g., "api.mailgun.net/v3/mg.example.com")
+ *   EMAIL_RELAY_PORT   — HTTP relay port (default: 443)
+ *   EMAIL_RELAY_USER   — HTTP relay username / API key name
+ *   EMAIL_RELAY_PASS   — HTTP relay password / API key
  *   EMAIL_FROM         — Default sender address
+ *
+ * Legacy env vars SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS are still
+ * supported as fallbacks for backward compatibility.
  */
 
 import { logger } from "@/lib/logger";
@@ -38,7 +41,11 @@ type EmailProvider = "resend" | "smtp" | "none";
 
 function detectProvider(): EmailProvider {
   if (process.env.RESEND_API_KEY) return "resend";
-  if (process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS) return "smtp";
+  if (
+    (process.env.EMAIL_RELAY_HOST || process.env.SMTP_HOST) &&
+    (process.env.EMAIL_RELAY_USER || process.env.SMTP_USER) &&
+    (process.env.EMAIL_RELAY_PASS || process.env.SMTP_PASS)
+  ) return "smtp";
   return "none";
 }
 
@@ -86,29 +93,37 @@ async function sendViaResend(payload: EmailPayload): Promise<EmailSendResult> {
 
 // ---- Generic HTTP relay (Mailgun / Postmark / compatible REST API) ----
 //
-// IMPORTANT: This is NOT a raw SMTP transport. It constructs an HTTPS URL
-// from SMTP_HOST and SMTP_PORT and speaks JSON over HTTP — designed for
-// HTTP-based transactional email APIs such as Mailgun or Postmark.
+// This transport speaks JSON over HTTPS to HTTP-based transactional email
+// APIs such as Mailgun or Postmark. It is NOT a raw SMTP transport.
+//
+// Environment variables:
+//   EMAIL_RELAY_HOST  — HTTP relay host (e.g., "api.mailgun.net/v3/mg.example.com")
+//   EMAIL_RELAY_PORT  — HTTPS port (default: 443). Port 587 is SMTP and will NOT work.
+//   EMAIL_RELAY_USER  — HTTP relay username / API key name
+//   EMAIL_RELAY_PASS  — HTTP relay password / API key
+//
+// Legacy env vars SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS are still
+// supported as fallbacks but their names are misleading — this is HTTP, not SMTP.
 // If you need raw SMTP (port 25/465/587), integrate a Node.js SMTP
 // library like `nodemailer` instead.
 
 async function sendViaHttpRelay(payload: EmailPayload): Promise<EmailSendResult> {
-  const host = process.env.SMTP_HOST;
-  const port = process.env.SMTP_PORT || "587";
-  const user = process.env.SMTP_USER;
-  const pass = process.env.SMTP_PASS;
+  const host = process.env.EMAIL_RELAY_HOST || process.env.SMTP_HOST;
+  const port = process.env.EMAIL_RELAY_PORT || process.env.SMTP_PORT || "443";
+  const user = process.env.EMAIL_RELAY_USER || process.env.SMTP_USER;
+  const pass = process.env.EMAIL_RELAY_PASS || process.env.SMTP_PASS;
   if (!host || !user || !pass) {
-    return { success: false, error: "SMTP_HOST, SMTP_USER, and SMTP_PASS must all be configured" };
+    return { success: false, error: "EMAIL_RELAY_HOST, EMAIL_RELAY_USER, and EMAIL_RELAY_PASS must all be configured" };
   }
   const from = payload.from || process.env.EMAIL_FROM || "noreply@example.com";
 
-  // Construct the HTTP relay endpoint (e.g., Mailgun, Postmark).
-  // This does NOT speak raw SMTP — see comment above.
-  const smtpEndpoint = `https://${host}:${port}`;
+  // Build the HTTPS endpoint. For standard HTTPS (port 443), omit the port
+  // to avoid issues with TLS certificate validation on non-standard ports.
+  const baseUrl = port === "443" ? `https://${host}` : `https://${host}:${port}`;
 
   try {
     const auth = btoa(`${user}:${pass}`);
-    const response = await fetch(`${smtpEndpoint}/messages`, {
+    const response = await fetch(`${baseUrl}/messages`, {
       method: "POST",
       headers: {
         Authorization: `Basic ${auth}`,
@@ -128,7 +143,7 @@ async function sendViaHttpRelay(payload: EmailPayload): Promise<EmailSendResult>
     }
 
     const errorText = await response.text();
-    return { success: false, error: errorText || "SMTP relay error" };
+    return { success: false, error: errorText || "HTTP relay error" };
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error";
     logger.error("HTTP relay email send failed", { context: "email", error: err });
@@ -155,7 +170,7 @@ export async function sendEmail(payload: EmailPayload): Promise<EmailSendResult>
       // No email provider configured
       return {
         success: false,
-        error: "No email provider configured. Set RESEND_API_KEY or SMTP_HOST/SMTP_USER/SMTP_PASS.",
+        error: "No email provider configured. Set RESEND_API_KEY or EMAIL_RELAY_HOST/EMAIL_RELAY_USER/EMAIL_RELAY_PASS.",
       };
   }
 }
