@@ -61,21 +61,37 @@ export default function IopTrackingPage() {
     notes: "",
   });
 
-  const load = useCallback(async () => {
+  const fetchData = useCallback(async () => {
     const user = await getCurrentUser();
-    if (!user?.clinic_id) { setLoading(false); return; }
+    if (!user?.clinic_id) return null;
     const [m, p] = await Promise.all([
       fetchIopMeasurements(user.clinic_id, selectedPatient || undefined),
       fetchPatients(user.clinic_id),
     ]);
-    setMeasurements(m);
-    setPatients(p);
-    setLoading(false);
+    return { measurements: m, patients: p };
   }, [selectedPatient]);
 
   useEffect(() => {
-    load();
-  }, [load]);
+    let cancelled = false;
+    fetchData().then((result) => {
+      if (cancelled) return;
+      if (result) {
+        setMeasurements(result.measurements);
+        setPatients(result.patients);
+      }
+      setLoading(false);
+    });
+    return () => { cancelled = true; };
+  }, [fetchData]);
+
+  const reload = async () => {
+    const result = await fetchData();
+    if (result) {
+      setMeasurements(result.measurements);
+      setPatients(result.patients);
+    }
+    setLoading(false);
+  };
 
   const handleSave = async () => {
     const user = await getCurrentUser();
@@ -92,7 +108,7 @@ export default function IopTrackingPage() {
     });
     setShowAdd(false);
     setForm({ patientId: "", measuredAt: new Date().toISOString().split("T")[0], odPressure: "", osPressure: "", method: "goldmann", notes: "" });
-    load();
+    reload();
   };
 
   if (loading) {

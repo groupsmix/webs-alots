@@ -60,21 +60,37 @@ export default function PregnanciesPage() {
   });
   const [showBirthPlan, setShowBirthPlan] = useState(false);
 
-  const load = useCallback(async () => {
+  const fetchData = useCallback(async () => {
     const user = await getCurrentUser();
-    if (!user?.clinic_id) { setLoading(false); return; }
+    if (!user?.clinic_id) return null;
     const [preg, p] = await Promise.all([
       fetchPregnancies(user.clinic_id, selectedPatient || undefined),
       fetchPatients(user.clinic_id),
     ]);
-    setPregnancies(preg);
-    setPatients(p);
-    setLoading(false);
+    return { pregnancies: preg, patients: p };
   }, [selectedPatient]);
 
   useEffect(() => {
-    load();
-  }, [load]);
+    let cancelled = false;
+    fetchData().then((result) => {
+      if (cancelled) return;
+      if (result) {
+        setPregnancies(result.pregnancies);
+        setPatients(result.patients);
+      }
+      setLoading(false);
+    });
+    return () => { cancelled = true; };
+  }, [fetchData]);
+
+  const reload = async () => {
+    const result = await fetchData();
+    if (result) {
+      setPregnancies(result.pregnancies);
+      setPatients(result.patients);
+    }
+    setLoading(false);
+  };
 
   const handleSave = async () => {
     const user = await getCurrentUser();
@@ -94,12 +110,12 @@ export default function PregnanciesPage() {
     });
     setShowAdd(false);
     setForm({ patientId: "", lmpDate: "", gravida: "", para: "", bloodType: "", rhFactor: "", notes: "" });
-    load();
+    reload();
   };
 
   const handleStatusUpdate = async (id: string, status: string) => {
     await updatePregnancy(id, { status });
-    load();
+    reload();
   };
 
   const handleSaveBirthPlan = async () => {
@@ -108,7 +124,7 @@ export default function PregnanciesPage() {
       delivery_type: birthPlanForm.deliveryType || null,
     });
     setShowBirthPlan(false);
-    load();
+    reload();
   };
 
   const openBirthPlan = (p: PregnancyView) => {

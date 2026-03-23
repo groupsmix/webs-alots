@@ -60,29 +60,45 @@ export default function VaccinationsPage() {
     notes: "",
   });
 
-  const load = useCallback(async () => {
+  const fetchData = useCallback(async () => {
     const user = await getCurrentUser();
-    if (!user?.clinic_id) { setLoading(false); return; }
+    if (!user?.clinic_id) return null;
     const [v, p] = await Promise.all([
       fetchVaccinations(user.clinic_id, selectedPatient || undefined),
       fetchPatients(user.clinic_id),
     ]);
     // Auto-mark overdue
     const today = new Date().toISOString().split("T")[0];
-    const updated = v.map((vac) => {
+    const vaccinations = v.map((vac) => {
       if (vac.status === "scheduled" && vac.scheduledDate < today) {
         return { ...vac, status: "overdue" as const };
       }
       return vac;
     });
-    setVaccinations(updated);
-    setPatients(p);
-    setLoading(false);
+    return { vaccinations, patients: p };
   }, [selectedPatient]);
 
   useEffect(() => {
-    load();
-  }, [load]);
+    let cancelled = false;
+    fetchData().then((result) => {
+      if (cancelled) return;
+      if (result) {
+        setVaccinations(result.vaccinations);
+        setPatients(result.patients);
+      }
+      setLoading(false);
+    });
+    return () => { cancelled = true; };
+  }, [fetchData]);
+
+  const reload = async () => {
+    const result = await fetchData();
+    if (result) {
+      setVaccinations(result.vaccinations);
+      setPatients(result.patients);
+    }
+    setLoading(false);
+  };
 
   const handleSave = async () => {
     const user = await getCurrentUser();
@@ -98,7 +114,7 @@ export default function VaccinationsPage() {
     });
     setShowAdd(false);
     setForm({ patientId: "", vaccineName: "", doseNumber: "1", scheduledDate: new Date().toISOString().split("T")[0], notes: "" });
-    load();
+    reload();
   };
 
   const handleAdminister = async (id: string) => {
@@ -106,12 +122,12 @@ export default function VaccinationsPage() {
       status: "administered",
       administered_date: new Date().toISOString().split("T")[0],
     });
-    load();
+    reload();
   };
 
   const handleSkip = async (id: string) => {
     await updateVaccination(id, { status: "skipped" });
-    load();
+    reload();
   };
 
   if (loading) {
