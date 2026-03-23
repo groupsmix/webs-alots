@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { withAuth } from "@/lib/with-auth";
 import { logger } from "@/lib/logger";
+import { impersonateSchema, safeParse } from "@/lib/validations";
 
 /**
  * POST /api/impersonate
@@ -16,12 +17,12 @@ import { logger } from "@/lib/logger";
  */
 export const POST = withAuth(async (request, { supabase, user }) => {
   try {
-    const body = await request.json();
-    const { clinicId, clinicName } = body as { clinicId: string; clinicName: string };
-
-    if (!clinicId) {
-      return NextResponse.json({ error: "clinicId is required" }, { status: 400 });
+    const raw = await request.json();
+    const parsed = safeParse(impersonateSchema, raw);
+    if (!parsed.success) {
+      return NextResponse.json({ error: parsed.error }, { status: 400 });
     }
+    const { clinicId, clinicName } = parsed.data;
 
     // Verify the clinic exists
     const { data: clinic } = await supabase

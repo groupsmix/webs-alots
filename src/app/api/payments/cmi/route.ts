@@ -3,6 +3,7 @@ import { createCmiPayment, isCmiConfigured } from "@/lib/cmi";
 import { withAuth } from "@/lib/with-auth";
 import { STAFF_ROLES } from "@/lib/auth-roles";
 import { logger } from "@/lib/logger";
+import { cmiPaymentSchema, safeParse } from "@/lib/validations";
 
 /**
  * Validate that a redirect URL is same-origin to prevent open redirects.
@@ -49,7 +50,11 @@ export const POST = withAuth(async (request, { user }) => {
   }
 
   try {
-    const body = await request.json();
+    const raw = await request.json();
+    const parsed = safeParse(cmiPaymentSchema, raw);
+    if (!parsed.success) {
+      return NextResponse.json({ error: parsed.error }, { status: 400 });
+    }
     const {
       amount,
       description = "Paiement",
@@ -57,26 +62,7 @@ export const POST = withAuth(async (request, { user }) => {
       appointmentId,
       successUrl,
       failUrl,
-    } = body as {
-      amount: number;
-      description?: string;
-      patientId?: string;
-      appointmentId?: string;
-      successUrl?: string;
-      failUrl?: string;
-    };
-
-    if (
-      typeof amount !== "number" ||
-      !Number.isFinite(amount) ||
-      amount <= 0
-    ) {
-      return NextResponse.json({ error: "Invalid amount" }, { status: 400 });
-    }
-
-    if (description && typeof description === "string" && description.length > 500) {
-      return NextResponse.json({ error: "Description exceeds maximum length" }, { status: 400 });
-    }
+    } = parsed.data;
 
     const origin = request.nextUrl.origin;
     const orderId = `ord_${Date.now()}_${crypto.randomUUID().slice(0, 8)}`;

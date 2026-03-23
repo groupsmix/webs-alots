@@ -217,8 +217,11 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-  // --- Rate limiting for API mutations ---
-  if (pathname.startsWith("/api/") && MUTATION_METHODS.has(request.method)) {
+  // --- Rate limiting for API requests ---
+  // S1: Apply rate limiting to ALL HTTP methods (not just mutations).
+  // GET endpoints like /api/v1/*, /api/chat, /api/health can be abused
+  // for data scraping or resource exhaustion.
+  if (pathname.startsWith("/api/")) {
     const rateLimitKey = extractClientIp(request);
 
     const rule = rateLimitRules.find((r) => pathname.startsWith(r.prefix));

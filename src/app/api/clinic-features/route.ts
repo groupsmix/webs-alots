@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase-server";
+import { withAuth } from "@/lib/with-auth";
 import { logger } from "@/lib/logger";
 
 export const runtime = "edge";
@@ -8,8 +9,9 @@ export const runtime = "edge";
  * GET /api/clinic-features?type_key=general_medicine
  *
  * Returns the features_config for a given clinic type key.
+ * S4: Protected — requires authentication.
  */
-export async function GET(request: NextRequest) {
+export const GET = withAuth(async (request: NextRequest) => {
   try {
     const typeKey = request.nextUrl.searchParams.get("type_key");
 
@@ -47,4 +49,4 @@ export async function GET(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+}, null);

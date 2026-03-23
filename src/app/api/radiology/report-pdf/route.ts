@@ -14,6 +14,7 @@ import { withAuth } from "@/lib/with-auth";
 import { STAFF_ROLES } from "@/lib/auth-roles";
 import { logger } from "@/lib/logger";
 import { escapeHtml } from "@/lib/escape-html";
+import { radiologyReportPdfSchema, safeParse } from "@/lib/validations";
 
 function generateReportHtml(data: {
   patientName: string;
@@ -65,7 +66,11 @@ function generateReportHtml(data: {
 
 export const POST = withAuth(async (request) => {
   try {
-    const body = await request.json();
+    const raw = await request.json();
+    const parsed = safeParse(radiologyReportPdfSchema, raw);
+    if (!parsed.success) {
+      return NextResponse.json({ error: parsed.error }, { status: 400 });
+    }
     const {
       orderId,
       clinicId,
@@ -76,14 +81,7 @@ export const POST = withAuth(async (request) => {
       impression,
       reportText,
       radiologistName,
-    } = body;
-
-    if (!orderId || !clinicId || !patientName || !modality) {
-      return NextResponse.json(
-        { error: "orderId, clinicId, patientName, and modality are required" },
-        { status: 400 },
-      );
-    }
+    } = parsed.data;
 
     if (!findings && !impression && !reportText) {
       return NextResponse.json(

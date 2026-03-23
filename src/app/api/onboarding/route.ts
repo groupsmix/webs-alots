@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { withAuth } from "@/lib/with-auth";
 import { logger } from "@/lib/logger";
+import { onboardingSchema, safeParse } from "@/lib/validations";
 
 export const runtime = "edge";
 
@@ -54,14 +55,12 @@ export const POST = withAuth(async (request, { supabase, user }) => {
       );
     }
 
-    const body = (await request.json()) as OnboardingRequestBody;
-
-    if (!body.clinic_type_key || !body.clinic_name || !body.owner_name || !body.phone) {
-      return NextResponse.json(
-        { error: "clinic_type_key, clinic_name, owner_name, and phone are required" },
-        { status: 400 },
-      );
+    const raw = await request.json();
+    const parsed = safeParse(onboardingSchema, raw);
+    if (!parsed.success) {
+      return NextResponse.json({ error: parsed.error }, { status: 400 });
     }
+    const body = parsed.data;
 
     // Map category to the legacy clinic type field
     const legacyTypeMap: Record<string, string> = {
@@ -81,7 +80,7 @@ export const POST = withAuth(async (request, { supabase, user }) => {
 
     const legacyType =
       typeKeyOverrides[body.clinic_type_key] ??
-      legacyTypeMap[body.category] ??
+      (body.category ? legacyTypeMap[body.category] : undefined) ??
       "doctor";
 
     // --- Idempotency guard ---

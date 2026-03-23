@@ -4,6 +4,7 @@ import { clinicConfig } from "@/config/clinic.config";
 import type { UserRole } from "@/lib/types/database";
 import { withAuth } from "@/lib/with-auth";
 import { logger } from "@/lib/logger";
+import { paymentRefundSchema, safeParse } from "@/lib/validations";
 
 export const runtime = "edge";
 
@@ -16,11 +17,12 @@ const ADMIN_ROLES: UserRole[] = ["super_admin", "clinic_admin"];
  */
 export const POST = withAuth(async (request, { supabase }) => {
   try {
-    const body = (await request.json()) as { paymentId: string; amount?: number };
-
-    if (!body.paymentId) {
-      return NextResponse.json({ error: "paymentId is required" }, { status: 400 });
+    const raw = await request.json();
+    const parsed = safeParse(paymentRefundSchema, raw);
+    if (!parsed.success) {
+      return NextResponse.json({ error: parsed.error }, { status: 400 });
     }
+    const body = parsed.data;
 
     // Fetch the payment (include refunded_amount to track cumulative refunds)
     const { data: payment, error: fetchError } = await supabase

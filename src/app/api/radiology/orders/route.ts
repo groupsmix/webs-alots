@@ -16,18 +16,16 @@ import {
 import { withAuth } from "@/lib/with-auth";
 import { STAFF_ROLES } from "@/lib/auth-roles";
 import { logger } from "@/lib/logger";
+import { radiologyOrderCreateSchema, radiologyOrderPatchSchema, safeParse } from "@/lib/validations";
 
 export const POST = withAuth(async (request) => {
   try {
-    const body = await request.json();
-    const { clinicId, patientId, modality, bodyPart, clinicalIndication, priority, scheduledAt, orderingDoctorId } = body;
-
-    if (!clinicId || !patientId || !modality) {
-      return NextResponse.json(
-        { error: "clinicId, patientId, and modality are required" },
-        { status: 400 },
-      );
+    const raw = await request.json();
+    const parsed = safeParse(radiologyOrderCreateSchema, raw);
+    if (!parsed.success) {
+      return NextResponse.json({ error: parsed.error }, { status: 400 });
     }
+    const { clinicId, patientId, modality, bodyPart, clinicalIndication, priority, scheduledAt, orderingDoctorId } = parsed.data;
 
     const result = await createRadiologyOrder({
       clinic_id: clinicId,
@@ -56,24 +54,16 @@ export const POST = withAuth(async (request) => {
 
 export const PATCH = withAuth(async (request) => {
   try {
-    const body = await request.json();
-    const { orderId, action } = body;
-
-    if (!orderId || !action) {
-      return NextResponse.json(
-        { error: "orderId and action are required" },
-        { status: 400 },
-      );
+    const raw = await request.json();
+    const parsed = safeParse(radiologyOrderPatchSchema, raw);
+    if (!parsed.success) {
+      return NextResponse.json({ error: parsed.error }, { status: 400 });
     }
+    const body = parsed.data;
+    const { orderId, action } = body;
 
     if (action === "status") {
       const { status } = body;
-      if (!status) {
-        return NextResponse.json(
-          { error: "status is required for status update" },
-          { status: 400 },
-        );
-      }
       const success = await updateRadiologyOrderStatus(orderId, status);
       if (!success) {
         return NextResponse.json(

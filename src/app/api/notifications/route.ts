@@ -9,6 +9,7 @@ import type { NotificationChannel as DBNotificationChannel } from "@/lib/types/d
 import { withAuth } from "@/lib/with-auth";
 import { STAFF_ROLES } from "@/lib/auth-roles";
 import { logger } from "@/lib/logger";
+import { notificationDispatchSchema, safeParse } from "@/lib/validations";
 
 export const runtime = "edge";
 
@@ -21,26 +22,17 @@ export const runtime = "edge";
 
 export const POST = withAuth(async (request, { supabase, profile }) => {
   try {
-    const body = await request.json();
-
-    const {
-      trigger,
-      variables,
-      recipientId,
-      channels,
-    } = body as {
+    const raw = await request.json();
+    const parsed = safeParse(notificationDispatchSchema, raw);
+    if (!parsed.success) {
+      return NextResponse.json({ error: parsed.error }, { status: 400 });
+    }
+    const { trigger, variables, recipientId, channels } = parsed.data as {
       trigger: NotificationTrigger;
       variables: TemplateVariables;
       recipientId: string;
       channels: NotificationChannel[];
     };
-
-    if (!trigger || !recipientId || !channels || channels.length === 0) {
-      return NextResponse.json(
-        { error: "trigger, recipientId, and channels are required" },
-        { status: 400 },
-      );
-    }
 
     // Tenant isolation: verify the recipient belongs to the same clinic
     // as the authenticated user (super_admin bypasses this check).

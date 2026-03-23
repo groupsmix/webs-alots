@@ -5,6 +5,7 @@ import { APPOINTMENT_STATUS } from "@/lib/types/database";
 import { withAuth } from "@/lib/with-auth";
 import { STAFF_ROLES } from "@/lib/auth-roles";
 import { logger } from "@/lib/logger";
+import { paymentConfirmSchema, safeParse } from "@/lib/validations";
 
 export const runtime = "edge";
 
@@ -15,11 +16,12 @@ export const runtime = "edge";
  */
 export const POST = withAuth(async (request, { supabase }) => {
   try {
-    const body = (await request.json()) as { paymentId: string };
-
-    if (!body.paymentId) {
-      return NextResponse.json({ error: "paymentId is required" }, { status: 400 });
+    const raw = await request.json();
+    const parsed = safeParse(paymentConfirmSchema, raw);
+    if (!parsed.success) {
+      return NextResponse.json({ error: parsed.error }, { status: 400 });
     }
+    const body = parsed.data;
 
     // Fetch the payment
     const { data: payment, error: fetchError } = await supabase
