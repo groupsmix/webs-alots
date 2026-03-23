@@ -16,7 +16,7 @@ import { uploadToR2, isR2Configured, buildUploadKey } from "@/lib/r2";
 import { createRadiologyImage } from "@/lib/data/server";
 import { withAuth } from "@/lib/with-auth";
 import { STAFF_ROLES } from "@/lib/auth-roles";
-const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50 MB for medical images
+const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB (aligned with main upload route)
 
 const ALLOWED_TYPES = new Set([
   "image/jpeg",
@@ -26,8 +26,39 @@ const ALLOWED_TYPES = new Set([
   "image/bmp",
   "application/pdf",
   "application/dicom",
-  "application/octet-stream", // DICOM files often have this type
 ]);
+
+// Magic byte signatures for server-side file content validation.
+// Client-supplied MIME types are attacker-controlled and cannot be trusted.
+const MAGIC_BYTES: Record<string, Uint8Array[]> = {
+  "image/jpeg": [new Uint8Array([0xFF, 0xD8, 0xFF])],
+  "image/png": [new Uint8Array([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A])],
+  "image/webp": [new Uint8Array([0x52, 0x49, 0x46, 0x46])],
+  "image/tiff": [
+    new Uint8Array([0x49, 0x49, 0x2A, 0x00]), // Little-endian
+    new Uint8Array([0x4D, 0x4D, 0x00, 0x2A]), // Big-endian
+  ],
+  "image/bmp": [new Uint8Array([0x42, 0x4D])],
+  "application/pdf": [new Uint8Array([0x25, 0x50, 0x44, 0x46])],
+  "application/dicom": [new Uint8Array([0x44, 0x49, 0x43, 0x4D])], // "DICM" at offset 128
+};
+
+function validateFileContent(buffer: Buffer, declaredType: string): boolean {
+  const signatures = MAGIC_BYTES[declaredType];
+  if (!signatures) return false;
+
+  // DICOM files have "DICM" at byte offset 128
+  if (declaredType === "application/dicom") {
+    if (buffer.length < 132) return false;
+    return signatures.some((sig) =>
+      sig.every((byte, i) => buffer[128 + i] === byte),
+    );
+  }
+
+  return signatures.some((sig) =>
+    sig.every((byte, i) => i < buffer.length && buffer[i] === byte),
+  );
+}
 
 export const POST = withAuth(async (request, { profile }) => {
   if (!isR2Configured()) {
@@ -59,7 +90,7 @@ export const POST = withAuth(async (request, { profile }) => {
 
   if (file.size > MAX_FILE_SIZE) {
     return NextResponse.json(
-      { error: "File too large (max 50 MB)" },
+      { error: "File too large (max 10 MB)" },
       { status: 400 },
     );
   }
@@ -77,6 +108,15 @@ export const POST = withAuth(async (request, { profile }) => {
 
   const key = buildUploadKey(clinicId, "radiology", file.name);
   const buffer = Buffer.from(await file.arrayBuffer());
+
+  // Validate file content matches declared MIME type via magic bytes.
+  // Prevents attackers from uploading malicious files with a spoofed Content-Type.
+  if (!validateFileContent(buffer, file.type)) {
+    return NextResponse.json(
+      { error: "File content does not match declared type" },
+      { status: 400 },
+    );
+  }
 
   const url = await uploadToR2(key, buffer, file.type);
   if (!url) {

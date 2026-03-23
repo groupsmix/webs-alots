@@ -120,7 +120,12 @@ export async function GET(request: NextRequest) {
       const slotStart = appt.slot_start as string | null;
 
       if (appt.appointment_date && appt.start_time) {
-        apptDatetime = new Date(`${appt.appointment_date}T${appt.start_time}`);
+        // Normalize time to include seconds — "HH:MM" → "HH:MM:00" — so that
+        // the ISO-8601-like string is unambiguous across runtimes (V8 vs others).
+        const normalizedTime = String(appt.start_time).length === 5
+          ? `${appt.start_time}:00`
+          : appt.start_time;
+        apptDatetime = new Date(`${appt.appointment_date}T${normalizedTime}`);
       } else if (slotStart) {
         apptDatetime = new Date(slotStart);
       } else {
