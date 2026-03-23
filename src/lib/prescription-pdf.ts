@@ -7,6 +7,20 @@
  * browser print/save-as-PDF. Uses the same pattern as invoice-generator.ts.
  */
 
+/**
+ * Escape HTML special characters to prevent XSS when interpolating
+ * user-controlled data into HTML template literals.
+ */
+function escapeHtml(str: string | undefined | null): string {
+  if (!str) return "";
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 interface PrescriptionMedication {
   name: string;
   dosage: string;
@@ -37,11 +51,11 @@ function generatePrescriptionHTML(data: PrescriptionData): string {
       (med, i) => `
       <tr>
         <td style="padding:8px 10px;border-bottom:1px solid #eee;font-size:12px;">${i + 1}</td>
-        <td style="padding:8px 10px;border-bottom:1px solid #eee;font-size:12px;font-weight:600;">${med.name}</td>
-        <td style="padding:8px 10px;border-bottom:1px solid #eee;font-size:12px;">${med.dosage}</td>
-        <td style="padding:8px 10px;border-bottom:1px solid #eee;font-size:12px;">${med.frequency}</td>
-        <td style="padding:8px 10px;border-bottom:1px solid #eee;font-size:12px;">${med.duration}</td>
-        <td style="padding:8px 10px;border-bottom:1px solid #eee;font-size:12px;">${med.instructions || "-"}</td>
+        <td style="padding:8px 10px;border-bottom:1px solid #eee;font-size:12px;font-weight:600;">${escapeHtml(med.name)}</td>
+        <td style="padding:8px 10px;border-bottom:1px solid #eee;font-size:12px;">${escapeHtml(med.dosage)}</td>
+        <td style="padding:8px 10px;border-bottom:1px solid #eee;font-size:12px;">${escapeHtml(med.frequency)}</td>
+        <td style="padding:8px 10px;border-bottom:1px solid #eee;font-size:12px;">${escapeHtml(med.duration)}</td>
+        <td style="padding:8px 10px;border-bottom:1px solid #eee;font-size:12px;">${escapeHtml(med.instructions) || "-"}</td>
       </tr>`,
     )
     .join("\n");
@@ -51,7 +65,7 @@ function generatePrescriptionHTML(data: PrescriptionData): string {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Prescription - ${data.patientName}</title>
+  <title>Prescription - ${escapeHtml(data.patientName)}</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-size: 12px; color: #333; padding: 20mm; }
@@ -86,9 +100,9 @@ function generatePrescriptionHTML(data: PrescriptionData): string {
   <div class="prescription">
     <div class="header">
       <div class="clinic-info">
-        <h1>${data.clinicName || "Medical Clinic"}</h1>
-        <p>Date: ${data.date}</p>
-        ${data.doctorName ? `<p>Dr. ${data.doctorName}</p>` : ""}
+        <h1>${escapeHtml(data.clinicName) || "Medical Clinic"}</h1>
+        <p>Date: ${escapeHtml(data.date)}</p>
+        ${data.doctorName ? `<p>Dr. ${escapeHtml(data.doctorName)}</p>` : ""}
       </div>
       <div class="rx-symbol">Rx</div>
     </div>
@@ -96,15 +110,15 @@ function generatePrescriptionHTML(data: PrescriptionData): string {
     <div class="patient-info">
       <h3>Patient Information</h3>
       <div class="row">
-        <div><span>Name: </span><strong>${data.patientName}</strong></div>
+        <div><span>Name: </span><strong>${escapeHtml(data.patientName)}</strong></div>
         ${data.patientAge ? `<div><span>Age: </span><strong>${data.patientAge}</strong></div>` : ""}
-        ${data.patientGender ? `<div><span>Gender: </span><strong>${data.patientGender === "M" ? "Male" : "Female"}</strong></div>` : ""}
+        ${data.patientGender ? `<div><span>Gender: </span><strong>${escapeHtml(data.patientGender) === "M" ? "Male" : "Female"}</strong></div>` : ""}
       </div>
     </div>
 
     ${data.diagnosis ? `<div class="diagnosis">
       <h3>Diagnosis</h3>
-      <p>${data.diagnosis}</p>
+      <p>${escapeHtml(data.diagnosis)}</p>
     </div>` : ""}
 
     <table>
@@ -125,17 +139,17 @@ function generatePrescriptionHTML(data: PrescriptionData): string {
 
     ${data.notes ? `<div class="notes">
       <h3>Additional Notes</h3>
-      <p>${data.notes}</p>
+      <p>${escapeHtml(data.notes)}</p>
     </div>` : ""}
 
     <div class="signature">
       <div class="line">
-        <p>${data.doctorName ? `Dr. ${data.doctorName}` : "Physician Signature"}</p>
+        <p>${data.doctorName ? `Dr. ${escapeHtml(data.doctorName)}` : "Physician Signature"}</p>
       </div>
     </div>
 
     <div class="footer">
-      <p>${data.clinicName || "Medical Clinic"} &mdash; Prescription generated on ${data.date}</p>
+      <p>${escapeHtml(data.clinicName) || "Medical Clinic"} &mdash; Prescription generated on ${escapeHtml(data.date)}</p>
     </div>
   </div>
 </body>

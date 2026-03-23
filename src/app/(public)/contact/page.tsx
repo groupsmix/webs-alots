@@ -6,6 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { defaultWebsiteConfig } from "@/lib/website-config";
+import { safeJsonLdStringify } from "@/lib/json-ld";
 import Link from "next/link";
 
 export const metadata: Metadata = {
@@ -54,7 +55,7 @@ export default function ContactPage() {
         type="application/ld+json"
         // SAFETY: JSON.stringify of a server-controlled object built from static
         // config values (defaultWebsiteConfig). No user-sourced content.
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(contactSchema) }}
+        dangerouslySetInnerHTML={{ __html: safeJsonLdStringify(contactSchema) }}
       />
       <div className="text-center mb-12">
         <h1 className="text-3xl font-bold mb-4">{cfg.title}</h1>

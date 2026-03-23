@@ -57,7 +57,7 @@ export async function POST(request: NextRequest) {
         }
       }
 
-      console.log(`[CMI Callback] Payment approved: ${callbackData.orderId}`);
+      console.info(`[CMI Callback] Payment approved: ${callbackData.orderId}`);
     } else {
       // Mark payment as failed
       await supabase
@@ -65,7 +65,7 @@ export async function POST(request: NextRequest) {
         .update({ status: PAYMENT_STATUS.FAILED })
         .eq("gateway_session_id", callbackData.orderId);
 
-      console.log(`[CMI Callback] Payment ${callbackData.status}: ${callbackData.orderId} (code: ${callbackData.responseCode})`);
+      console.info(`[CMI Callback] Payment ${callbackData.status}: ${callbackData.orderId} (code: ${callbackData.responseCode})`);
     }
 
     // CMI expects "ACTION=POSTAUTH" response for successful processing

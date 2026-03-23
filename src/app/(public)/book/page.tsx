@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { BookingForm } from "@/components/booking/booking-form";
 import { ErrorBoundary } from "@/components/ui/error-boundary";
+import { safeJsonLdStringify } from "@/lib/json-ld";
 
 export const metadata: Metadata = {
   title: "Prendre Rendez-vous",
@@ -32,8 +33,7 @@ export default function BookingPage() {
     <div className="container mx-auto max-w-2xl px-4 py-12">
       <script
         type="application/ld+json"
-        // SAFETY: JSON.stringify of a server-controlled object with no user-sourced content.
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(bookingSchema) }}
+        dangerouslySetInnerHTML={{ __html: safeJsonLdStringify(bookingSchema) }}
       />
       <ErrorBoundary section="Booking Form">
         <BookingForm />

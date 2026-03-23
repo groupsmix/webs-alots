@@ -47,6 +47,18 @@ interface OrdonnanceData {
   notes?: string;
 }
 
+// ---- HTML Escaping ----
+
+function escapeHtml(str: string | undefined | null): string {
+  if (!str) return "";
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 // ---- Formes pharmaceutiques ----
 
 const FORMES_OPTIONS = [
@@ -344,7 +356,7 @@ function generateOrdonnanceHTML(data: OrdonnanceData): string {
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
-  <title>Ordonnance - ${data.patientName}</title>
+  <title>Ordonnance - ${escapeHtml(data.patientName)}</title>
   <style>
     @page { size: A5 portrait; margin: 10mm; }
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -377,22 +389,22 @@ function generateOrdonnanceHTML(data: OrdonnanceData): string {
 </head>
 <body>
   <div class="header">
-    <h1>${data.doctorName}</h1>
-    <div class="specialty">${data.doctorSpecialty}</div>
+    <h1>${escapeHtml(data.doctorName)}</h1>
+    <div class="specialty">${escapeHtml(data.doctorSpecialty)}</div>
     <div class="info">
-      ${data.clinicName}<br>
-      ${data.clinicAddress}, ${data.clinicCity}<br>
-      Tél: ${data.doctorPhone}
+      ${escapeHtml(data.clinicName)}<br>
+      ${escapeHtml(data.clinicAddress)}, ${escapeHtml(data.clinicCity)}<br>
+      Tél: ${escapeHtml(data.doctorPhone)}
     </div>
-    <div class="order-num">N° Ordre: ${data.orderNumber}</div>
+    <div class="order-num">N° Ordre: ${escapeHtml(data.orderNumber)}</div>
   </div>
 
-  <div class="date-line">${data.clinicCity}, le ${formatDate(data.date)}</div>
+  <div class="date-line">${escapeHtml(data.clinicCity)}, le ${formatDate(data.date)}</div>
 
   <div class="patient-info">
-    <p><strong>Patient(e):</strong> ${data.patientName}</p>
+    <p><strong>Patient(e):</strong> ${escapeHtml(data.patientName)}</p>
     ${data.patientAge ? `<p><strong>Âge:</strong> ${data.patientAge} ans</p>` : ""}
-    ${data.patientWeight ? `<p><strong>Poids:</strong> ${data.patientWeight}</p>` : ""}
+    ${data.patientWeight ? `<p><strong>Poids:</strong> ${escapeHtml(data.patientWeight)}</p>` : ""}
   </div>
 
   <div class="ordonnance-title">ORDONNANCE</div>
@@ -402,29 +414,29 @@ function generateOrdonnanceHTML(data: OrdonnanceData): string {
       (med, i) => `
   <div class="medication">
     <div class="rp">Rp/ ${i + 1}</div>
-    <div class="med-name">${med.dci} ${med.dosage} — ${med.forme}</div>
-    ${med.brandName ? `<div class="dci">(${med.brandName})</div>` : ""}
+    <div class="med-name">${escapeHtml(med.dci)} ${escapeHtml(med.dosage)} — ${escapeHtml(med.forme)}</div>
+    ${med.brandName ? `<div class="dci">(${escapeHtml(med.brandName)})</div>` : ""}
     <div class="details">
-      <span><strong>Posologie:</strong> ${med.posologie}</span>
-      <span><strong>Durée:</strong> ${med.duree}</span>
-      ${med.quantite ? `<span><strong>Qté:</strong> ${med.quantite}</span>` : ""}
-      ${med.instructions ? `<span><em>${med.instructions}</em></span>` : ""}
+      <span><strong>Posologie:</strong> ${escapeHtml(med.posologie)}</span>
+      <span><strong>Durée:</strong> ${escapeHtml(med.duree)}</span>
+      ${med.quantite ? `<span><strong>Qté:</strong> ${escapeHtml(med.quantite)}</span>` : ""}
+      ${med.instructions ? `<span><em>${escapeHtml(med.instructions)}</em></span>` : ""}
     </div>
   </div>`
     )
     .join("\n")}
 
-  ${data.notes ? `<div class="notes"><strong>Notes:</strong> ${data.notes}</div>` : ""}
-  ${data.diagnosis ? `<div class="notes"><strong>Diagnostic:</strong> ${data.diagnosis}</div>` : ""}
+  ${data.notes ? `<div class="notes"><strong>Notes:</strong> ${escapeHtml(data.notes)}</div>` : ""}
+  ${data.diagnosis ? `<div class="notes"><strong>Diagnostic:</strong> ${escapeHtml(data.diagnosis)}</div>` : ""}
 
   <div class="signature">
     <p>Cachet et signature</p>
     <div class="line"></div>
-    <p style="margin-top: 5px;">${data.doctorName}</p>
+    <p style="margin-top: 5px;">${escapeHtml(data.doctorName)}</p>
   </div>
 
   <div class="footer">
-    ${data.clinicName} — ${data.clinicAddress}, ${data.clinicCity} — Tél: ${data.doctorPhone}
+    ${escapeHtml(data.clinicName)} — ${escapeHtml(data.clinicAddress)}, ${escapeHtml(data.clinicCity)} — Tél: ${escapeHtml(data.doctorPhone)}
   </div>
 </body>
 </html>`;

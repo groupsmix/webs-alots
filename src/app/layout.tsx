@@ -4,6 +4,7 @@ import "./globals.css";
 import { getTenant } from "@/lib/tenant";
 import { TenantProvider } from "@/components/tenant-provider";
 import { Chatbot } from "@/components/chatbot";
+import { safeJsonLdStringify } from "@/lib/json-ld";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -61,12 +62,10 @@ export default async function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
-        {/* SAFETY: dangerouslySetInnerHTML is safe here — JSON.stringify of a
-            server-controlled object with no user-sourced content. */}
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
-            __html: JSON.stringify({
+            __html: safeJsonLdStringify({
               "@context": "https://schema.org",
               "@type": "MedicalBusiness",
               name: tenant?.clinicName ?? "Health SaaS Platform",
