@@ -114,7 +114,7 @@ export const POST = withAuth(async (request, { supabase, profile }) => {
       dispatched: allResults,
     });
   } catch (err) {
-    console.error("[POST /api/notifications/trigger] Error:", err instanceof Error ? err.message : "Unknown error");
+    void err;
     return NextResponse.json(
       { error: "Failed to trigger notification" },
       { status: 500 },

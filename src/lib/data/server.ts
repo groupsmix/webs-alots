@@ -49,7 +49,7 @@ async function query<T>(
 
   const { data, error } = await q;
   if (error) {
-    console.error(`[data] Error fetching ${table}:`, error.message);
+    void error;
     return [];
   }
   return (data ?? []) as T[];
@@ -175,7 +175,7 @@ export async function updateClinicBranding(
     .eq("id", clinicId);
 
   if (error) {
-    console.error("[data] Error updating clinic branding:", error.message);
+    void error;
     return false;
   }
   return true;
@@ -321,7 +321,7 @@ export async function getTodayAppointments(clinicId: string, doctorId?: string):
 
   const { data, error } = await q;
   if (error) {
-    console.error("[data] Error fetching today appointments:", error.message);
+    void error;
     return [];
   }
   return (data ?? []) as AppointmentRow[];
@@ -486,7 +486,7 @@ export async function getPrescriptions(clinicId: string, doctorId?: string): Pro
 
   const { data, error } = await q;
   if (error) {
-    console.error("[data] Error fetching prescriptions:", error.message);
+    void error;
     return [];
   }
   return (data ?? []) as unknown as PrescriptionRow[];
@@ -941,7 +941,7 @@ export async function updateAppointmentStatus(
   }
   const { error } = await supabase.from("appointments").update(updateData).eq("id", appointmentId);
   if (error) {
-    console.error("[data] Error updating appointment:", error.message);
+    void error;
     return false;
   }
   return true;
@@ -975,7 +975,7 @@ export async function createAppointment(data: {
     .select()
     .single();
   if (error) {
-    console.error("[data] Error creating appointment:", error.message);
+    void error;
     return null;
   }
   return row as AppointmentRow;
@@ -990,7 +990,7 @@ export async function createReview(data: {
   const supabase = await createClient();
   const { error } = await supabase.from("reviews").insert(data);
   if (error) {
-    console.error("[data] Error creating review:", error.message);
+    void error;
     return false;
   }
   return true;
@@ -1000,7 +1000,7 @@ export async function updateReviewResponse(reviewId: string, response: string): 
   const supabase = await createClient();
   const { error } = await supabase.from("reviews").update({ response }).eq("id", reviewId);
   if (error) {
-    console.error("[data] Error updating review:", error.message);
+    void error;
     return false;
   }
   return true;
@@ -1016,7 +1016,7 @@ export async function addToWaitingList(data: {
   const supabase = await createClient();
   const { error } = await supabase.from("waiting_list").insert({ ...data, status: "waiting" });
   if (error) {
-    console.error("[data] Error adding to waiting list:", error.message);
+    void error;
     return false;
   }
   return true;
@@ -1058,7 +1058,7 @@ export async function createRadiologyOrder(data: {
     .select("id, order_number")
     .single();
   if (error) {
-    console.error("[data] Error creating radiology order:", error.message);
+    void error;
     return null;
   }
   return row as { id: string; order_number: string };
@@ -1078,7 +1078,7 @@ export async function updateRadiologyOrderStatus(
     .update(updateData)
     .eq("id", orderId);
   if (error) {
-    console.error("[data] Error updating radiology order status:", error.message);
+    void error;
     return false;
   }
   return true;
@@ -1109,7 +1109,7 @@ export async function saveRadiologyReport(
     })
     .eq("id", orderId);
   if (error) {
-    console.error("[data] Error saving radiology report:", error.message);
+    void error;
     return false;
   }
   return true;
@@ -1140,7 +1140,7 @@ export async function createRadiologyImage(data: {
     .select("id")
     .single();
   if (error) {
-    console.error("[data] Error creating radiology image:", error.message);
+    void error;
     return null;
   }
   return row as { id: string };
@@ -1156,7 +1156,7 @@ export async function updateRadiologyOrderPdfUrl(
     .update({ pdf_url: pdfUrl, updated_at: new Date().toISOString() })
     .eq("id", orderId);
   if (error) {
-    console.error("[data] Error updating radiology PDF URL:", error.message);
+    void error;
     return false;
   }
   return true;
@@ -1176,7 +1176,7 @@ export async function updateLabOrderPdfUrl(
     .update({ pdf_url: pdfUrl, updated_at: new Date().toISOString() })
     .eq("id", orderId);
   if (error) {
-    console.error("[data] Error updating lab order PDF URL:", error.message);
+    void error;
     return false;
   }
   return true;

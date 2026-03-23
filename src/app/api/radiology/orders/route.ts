@@ -48,7 +48,7 @@ export const POST = withAuth(async (request) => {
 
     return NextResponse.json(result, { status: 201 });
   } catch (err) {
-    console.error("[POST /api/radiology/orders] Error:", err instanceof Error ? err.message : "Unknown error");
+    void err;
     return NextResponse.json({ error: "Failed to create radiology order" }, { status: 500 });
   }
 }, STAFF_ROLES);
@@ -112,7 +112,7 @@ export const PATCH = withAuth(async (request) => {
       { status: 400 },
     );
   } catch (err) {
-    console.error("[PATCH /api/radiology/orders] Error:", err instanceof Error ? err.message : "Unknown error");
+    void err;
     return NextResponse.json({ error: "Failed to update radiology order" }, { status: 500 });
   }
 }, STAFF_ROLES);

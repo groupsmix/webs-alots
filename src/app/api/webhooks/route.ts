@@ -109,10 +109,7 @@ export async function POST(request: NextRequest) {
       // query patients across all tenants. Acknowledge the webhook but
       // skip processing to maintain tenant isolation.
       if (!clinicId) {
-        console.warn(
-          `[Webhook] Cannot resolve clinic for WABA phone_number_id=${wabaPhoneNumberId}. ` +
-          `Skipping message from ${msgInfo.senderPhone} to prevent cross-tenant access.`
-        );
+        // Cannot resolve clinic — skip to maintain tenant isolation
         continue;
       }
 
@@ -177,17 +174,14 @@ export async function POST(request: NextRequest) {
           );
         }
       } else {
-        console.warn(
-          `[Webhook] No valid recipient for ${upperText} from ${msgInfo.senderPhone} ` +
-          `(clinic=${clinicId}). Notification skipped.`
-        );
+        // No valid recipient found — notification skipped
       }
       // Other messages are logged for receptionist review
     }
 
     return NextResponse.json({ status: "ok" });
   } catch (err) {
-    console.error("[POST /api/webhooks] Error:", err instanceof Error ? err.message : "Unknown error");
+    void err;
     return NextResponse.json(
       { error: "Failed to process webhook" },
       { status: 500 },

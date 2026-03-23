@@ -139,7 +139,7 @@ export function BookingForm() {
       setSpecialties(deriveSpecialties(mappedDoctors));
       setServices(dbServices.map(mapService));
     }).catch((err) => {
-      console.error("[booking-form] failed to load data:", err);
+      void err;
     });
     return () => { cancelled = true; };
   }, []);

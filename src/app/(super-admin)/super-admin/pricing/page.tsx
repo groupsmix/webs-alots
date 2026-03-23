@@ -62,7 +62,7 @@ export default function PricingPage() {
       setTiers(tiersData);
       setToggles(togglesData);
     } catch (err) {
-      console.error("[sa-pricing] failed to load data:", err);
+      void err;
     } finally {
       setLoading(false);
     }

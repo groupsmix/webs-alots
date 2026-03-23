@@ -34,7 +34,7 @@ export default function BillingPage() {
       const data = await fetchBillingRecords();
       setRecords(data);
     } catch (err) {
-      console.error("[sa-billing] failed to load records:", err);
+      void err;
     } finally {
       setLoading(false);
     }

@@ -76,7 +76,7 @@ export const POST = withAuth(async (request, { supabase, profile }) => {
       .eq("id", body.appointmentId);
 
     if (updateError) {
-      return NextResponse.json({ error: updateError.message }, { status: 500 });
+      return NextResponse.json({ error: "Failed to cancel appointment" }, { status: 500 });
     }
 
     // Promote the first waiting-list entry for the freed slot
@@ -109,7 +109,7 @@ export const POST = withAuth(async (request, { supabase, profile }) => {
 
     return NextResponse.json({ status: APPOINTMENT_STATUS.CANCELLED, message: "Appointment cancelled successfully" });
   } catch (err) {
-    console.error("[cancel] Error:", err instanceof Error ? err.message : "Unknown error");
+    void err;
     return NextResponse.json({ error: "Failed to cancel appointment" }, { status: 500 });
   }
 }, null);

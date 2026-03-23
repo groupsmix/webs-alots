@@ -93,7 +93,7 @@ export default function AllClinicsPage() {
       );
       setList(enriched);
     } catch (err) {
-      console.error("[sa-clinics] failed to load clinics:", err);
+      void err;
     } finally {
       setLoadingData(false);
     }
@@ -120,7 +120,7 @@ export default function AllClinicsPage() {
         ),
       );
     } catch (err) {
-      console.error("Failed to update status:", err);
+      void err;
     } finally {
       setActionLoading(false);
     }
@@ -313,10 +313,10 @@ export default function AllClinicsPage() {
                     router.push("/admin/dashboard");
                   } else {
                     const data = await res.json();
-                    console.error("Impersonation failed:", data.error);
+                    void data.error;
                   }
                 } catch (err) {
-                  console.error("Impersonation error:", err);
+                  void err;
                 } finally {
                   setActionLoading(false);
                 }

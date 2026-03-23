@@ -89,7 +89,7 @@ export default function SuperAdminDashboardPage() {
       setAnnouncementList(announcements);
       setActivityLogList(logs);
     } catch (err) {
-      console.error("[sa-dashboard] failed to load data:", err);
+      void err;
     } finally {
       setLoading(false);
     }

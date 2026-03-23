@@ -120,7 +120,7 @@ export const POST = withAuth(async (request, { supabase, profile }) => {
       .eq("id", body.appointmentId);
 
     if (updateError) {
-      return NextResponse.json({ error: updateError.message }, { status: 400 });
+      return NextResponse.json({ error: "Failed to update appointment" }, { status: 500 });
     }
 
     await logAuditEvent({
@@ -138,7 +138,7 @@ export const POST = withAuth(async (request, { supabase, profile }) => {
       newAppointmentId: body.appointmentId,
     });
   } catch (err) {
-    console.error("[reschedule] Error:", err instanceof Error ? err.message : "Unknown error");
+    void err;
     return NextResponse.json({ error: "Failed to reschedule appointment" }, { status: 500 });
   }
 }, null);

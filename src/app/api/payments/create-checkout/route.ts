@@ -118,7 +118,7 @@ export const POST = withAuth(async (request, { user, profile }) => {
     const session = await stripeResponse.json();
 
     if (!stripeResponse.ok) {
-      console.error("[Stripe] Checkout session error:", session.error?.message);
+      void session;
       return NextResponse.json(
         { error: "Failed to create checkout session" },
         { status: 400 },
@@ -130,7 +130,7 @@ export const POST = withAuth(async (request, { user, profile }) => {
       url: session.url,
     });
   } catch (err) {
-    console.error("[Payments] Error:", err instanceof Error ? err.message : "Unknown error");
+    void err;
     return NextResponse.json({ error: "Failed to process payment" }, { status: 500 });
   }
 }, STAFF_ROLES);

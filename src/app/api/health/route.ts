@@ -20,12 +20,13 @@ export async function GET() {
     const dbLatency = Date.now() - dbStart;
 
     checks.database = error
-      ? { status: "degraded", latencyMs: dbLatency, error: error.message }
+      ? { status: "degraded", latencyMs: dbLatency, error: "Database query failed" }
       : { status: "ok", latencyMs: dbLatency };
   } catch (err) {
+    void err;
     checks.database = {
       status: "down",
-      error: err instanceof Error ? err.message : "Unknown error",
+      error: "Database unreachable",
     };
   }
 

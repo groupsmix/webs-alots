@@ -39,7 +39,7 @@ export async function sendSms(to: string, body: string): Promise<SmsSendResult> 
   const config = getSmsConfig();
 
   if (!config) {
-    console.warn("[SMS] Twilio SMS credentials not configured");
+    // Twilio SMS credentials not configured
     return { success: false, error: "Twilio SMS not configured" };
   }
 
@@ -73,7 +73,7 @@ export async function sendSms(to: string, body: string): Promise<SmsSendResult> 
     };
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error";
-    console.error("[SMS] Send error:", message);
+    void message;
     return { success: false, error: message };
   }
 }

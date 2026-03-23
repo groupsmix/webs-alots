@@ -66,7 +66,7 @@ export async function getActiveR2Url(): Promise<string> {
         return config.primaryUrl;
       }
     } catch {
-      console.warn("[R2 Fallback] Primary bucket unreachable, trying replica...");
+      // Primary bucket unreachable — trying replica
     }
   }
 
@@ -88,11 +88,11 @@ export async function getActiveR2Url(): Promise<string> {
       if (response.ok || response.status === 404) {
         _cachedActiveUrl = config.replicaUrl;
         _lastCheck = now;
-        console.warn("[R2 Fallback] Using replica bucket URL");
+        // Using replica bucket URL
         return config.replicaUrl;
       }
     } catch {
-      console.error("[R2 Fallback] Replica bucket also unreachable!");
+      // Replica bucket also unreachable
     }
   }
 

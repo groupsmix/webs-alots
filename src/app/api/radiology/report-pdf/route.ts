@@ -139,7 +139,7 @@ export const POST = withAuth(async (request) => {
 
     return NextResponse.json({ pdfUrl: url });
   } catch (err) {
-    console.error("[POST /api/radiology/report-pdf] Error:", err instanceof Error ? err.message : "Unknown error");
+    void err;
     return NextResponse.json({ error: "Failed to generate radiology report" }, { status: 500 });
   }
 }, STAFF_ROLES);

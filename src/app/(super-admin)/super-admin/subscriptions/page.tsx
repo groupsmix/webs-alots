@@ -51,7 +51,7 @@ export default function SubscriptionsPage() {
       const data = await fetchClientSubscriptions();
       setSubscriptions(data);
     } catch (err) {
-      console.error("[sa-subscriptions] failed to load:", err);
+      void err;
     } finally {
       setLoading(false);
     }

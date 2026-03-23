@@ -27,7 +27,7 @@ export function DentalBookingExtras({
     const clinicId = clinicConfig.clinicId;
     if (!clinicId) return;
     fetchDentalTreatmentTypes(clinicId).then(setDentalTreatmentTypes).catch((err) => {
-      console.error("[dental-booking-extras] failed to load data:", err);
+      void err;
     });
   }, []);
 

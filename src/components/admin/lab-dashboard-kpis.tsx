@@ -40,7 +40,7 @@ export function LabDashboardKPIsComponent() {
       .then((result) => {
         if (!cancelled) setData(result);
       })
-      .catch((err) => console.error("[lab-dashboard-kpis] load error:", err))
+      .catch((err: unknown) => { void err; })
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
   }, []);

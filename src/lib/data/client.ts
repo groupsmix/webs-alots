@@ -95,7 +95,7 @@ async function fetchRows<T>(
   q = q.limit(opts?.limit ?? 1000);
   const { data, error } = await q;
   if (error) {
-    console.error(`[data] ${table}:`, error.message);
+    void error;
     return [];
   }
   return (data ?? []) as T[];
@@ -933,7 +933,7 @@ export async function updateAppointmentStatus(
   }
   const { error } = await supabase.from("appointments").update(updateData).eq("id", appointmentId);
   if (error) {
-    console.error("[data] update appointment:", error.message);
+    void error;
     return { success: false, error: { code: error.code, message: error.message } };
   }
   clearLookupCache();
@@ -956,7 +956,7 @@ export async function createPayment(data: {
     refunded_amount: 0,
   });
   if (error) {
-    console.error("[data] create payment:", error.message);
+    void error;
     return { success: false, error: { code: error.code, message: error.message } };
   }
   clearLookupCache();
@@ -972,7 +972,7 @@ export async function upsertReview(data: {
   const supabase = createClient();
   const { error } = await supabase.from("reviews").insert(data);
   if (error) {
-    console.error("[data] create review:", error.message);
+    void error;
     return { success: false, error: { code: error.code, message: error.message } };
   }
   clearLookupCache();
@@ -997,7 +997,7 @@ export async function createPrescription(data: {
   const supabase = createClient();
   const { error } = await supabase.from("prescriptions").insert(data);
   if (error) {
-    console.error("[data] create prescription:", error.message);
+    void error;
     return false;
   }
   return true;
@@ -1013,7 +1013,7 @@ export async function updatePrescription(
   const supabase = createClient();
   const { error } = await supabase.from("prescriptions").update(data).eq("id", id);
   if (error) {
-    console.error("[data] update prescription:", error.message);
+    void error;
     return false;
   }
   return true;
@@ -1040,7 +1040,7 @@ export async function createConsultationNote(data: {
     .select("id")
     .single();
   if (error) {
-    console.error("[data] create consultation note:", error.message);
+    void error;
     return null;
   }
   return result?.id ?? null;
@@ -1061,7 +1061,7 @@ export async function updateConsultationNote(
     .update({ ...data, updated_at: new Date().toISOString() } as never)
     .eq("id", id);
   if (error) {
-    console.error("[data] update consultation note:", error.message);
+    void error;
     return false;
   }
   return true;
@@ -1071,7 +1071,7 @@ export async function deleteConsultationNote(id: string): Promise<boolean> {
   const supabase = createClient();
   const { error } = await supabase.from("consultation_notes").delete().eq("id", id);
   if (error) {
-    console.error("[data] delete consultation note:", error.message);
+    void error;
     return false;
   }
   return true;
@@ -1094,7 +1094,7 @@ export async function upsertOdontogramEntry(data: {
     onConflict: "clinic_id,patient_id,tooth_number",
   });
   if (error) {
-    console.error("[data] upsert odontogram:", error.message);
+    void error;
     return false;
   }
   return true;
@@ -1113,7 +1113,7 @@ export async function deleteOdontogramEntry(
     .eq("patient_id", patientId)
     .eq("tooth_number", toothNumber);
   if (error) {
-    console.error("[data] delete odontogram entry:", error.message);
+    void error;
     return false;
   }
   return true;
@@ -1138,7 +1138,7 @@ export async function createTreatmentPlan(data: {
     .select("id")
     .single();
   if (error) {
-    console.error("[data] create treatment plan:", error.message);
+    void error;
     return null;
   }
   return result?.id ?? null;
@@ -1159,7 +1159,7 @@ export async function updateTreatmentPlan(
     .update({ ...data, updated_at: new Date().toISOString() } as Record<string, unknown>)
     .eq("id", id);
   if (error) {
-    console.error("[data] update treatment plan:", error.message);
+    void error;
     return false;
   }
   return true;
@@ -1185,7 +1185,7 @@ export async function createSterilizationEntry(data: {
     .select("id")
     .single();
   if (error) {
-    console.error("[data] create sterilization entry:", error.message);
+    void error;
     return null;
   }
   return result?.id ?? null;
@@ -1205,7 +1205,7 @@ export async function updateSterilizationEntry(
   const supabase = createClient();
   const { error } = await supabase.from("sterilization_log").update(data as Record<string, unknown>).eq("id", id);
   if (error) {
-    console.error("[data] update sterilization entry:", error.message);
+    void error;
     return false;
   }
   return true;
@@ -1233,7 +1233,7 @@ export async function createBeforeAfterPhoto(data: {
     .select("id")
     .single();
   if (error) {
-    console.error("[data] create before/after photo:", error.message);
+    void error;
     return null;
   }
   return result?.id ?? null;
@@ -1255,7 +1255,7 @@ export async function updateBeforeAfterPhoto(
     .update({ ...data, updated_at: new Date().toISOString() })
     .eq("id", id);
   if (error) {
-    console.error("[data] update before/after photo:", error.message);
+    void error;
     return false;
   }
   return true;
@@ -1265,7 +1265,7 @@ export async function deleteBeforeAfterPhoto(id: string): Promise<boolean> {
   const supabase = createClient();
   const { error } = await supabase.from("before_after_photos").delete().eq("id", id);
   if (error) {
-    console.error("[data] delete before/after photo:", error.message);
+    void error;
     return false;
   }
   return true;
@@ -1342,7 +1342,7 @@ export async function createMedicalCertificate(data: {
     .select("id")
     .single();
   if (error) {
-    console.error("[data] create medical certificate:", error.message);
+    void error;
     return null;
   }
   return result?.id ?? null;
@@ -1360,7 +1360,7 @@ export async function updateMedicalCertificate(
   const supabase = createClient();
   const { error } = await supabase.from("medical_certificates").update(data as never).eq("id", id);
   if (error) {
-    console.error("[data] update medical certificate:", error.message);
+    void error;
     return false;
   }
   return true;
@@ -2557,7 +2557,7 @@ export async function addToWaitingList(data: {
     .single();
 
   if (error) {
-    console.error("[data] addToWaitingList:", error.message);
+    void error;
     return { success: false, error: error.message };
   }
   clearLookupCache();
@@ -2592,7 +2592,7 @@ export async function createAppointment(data: {
     .single();
 
   if (error) {
-    console.error("[data] createAppointment:", error.message);
+    void error;
     return { success: false, error: error.message };
   }
   clearLookupCache();
@@ -3159,7 +3159,7 @@ export async function createLabTestOrder(data: {
     .select("id")
     .single();
   if (error) {
-    console.error("[data] create lab test order:", error.message);
+    void error;
     return null;
   }
   const orderId = result?.id as string;
@@ -3196,7 +3196,7 @@ export async function updateLabOrderStatus(
     .update(updateData)
     .eq("id", orderId);
   if (error) {
-    console.error("[data] update lab order status:", error.message);
+    void error;
     return false;
   }
   return true;
@@ -3215,7 +3215,7 @@ export async function assignLabTechnician(
     })
     .eq("id", orderId);
   if (error) {
-    console.error("[data] assign lab technician:", error.message);
+    void error;
     return false;
   }
   return true;
@@ -3251,7 +3251,7 @@ export async function saveLabTestResult(data: {
     .select("id")
     .single();
   if (error) {
-    console.error("[data] save lab test result:", error.message);
+    void error;
     return null;
   }
   return result?.id ?? null;
@@ -3274,7 +3274,7 @@ export async function updateLabTestResult(
     .update(data as never)
     .eq("id", resultId);
   if (error) {
-    console.error("[data] update lab test result:", error.message);
+    void error;
     return false;
   }
   return true;
@@ -3290,7 +3290,7 @@ export async function updateLabOrderPdfUrl(
     .update({ pdf_url: pdfUrl, updated_at: new Date().toISOString() })
     .eq("id", orderId);
   if (error) {
-    console.error("[data] update lab order pdf url:", error.message);
+    void error;
     return false;
   }
   return true;
@@ -3331,7 +3331,7 @@ export async function createParapharmacyProduct(data: {
     .select("id")
     .single();
   if (error) {
-    console.error("[data] create parapharmacy product:", error.message);
+    void error;
     return null;
   }
   return result?.id ?? null;
@@ -3357,7 +3357,7 @@ export async function updateParapharmacyProduct(
     .update({ ...data, updated_at: new Date().toISOString() } as never)
     .eq("id", id);
   if (error) {
-    console.error("[data] update parapharmacy product:", error.message);
+    void error;
     return false;
   }
   return true;
@@ -3367,7 +3367,7 @@ export async function deleteParapharmacyProduct(id: string): Promise<boolean> {
   const supabase = createClient();
   const { error } = await supabase.from("products").delete().eq("id", id);
   if (error) {
-    console.error("[data] delete parapharmacy product:", error.message);
+    void error;
     return false;
   }
   return true;
@@ -3396,7 +3396,7 @@ export async function createParapharmacySale(data: {
     .select("id")
     .single();
   if (error) {
-    console.error("[data] create parapharmacy sale:", error.message);
+    void error;
     return null;
   }
   // Update stock quantities
@@ -3442,7 +3442,7 @@ export async function adjustParapharmacyStock(
     const { error: insertError } = await supabase.from("stock")
       .insert({ product_id: productId, quantity: newQuantity } as never);
     if (insertError) {
-      console.error("[data] adjust stock:", insertError.message);
+      void insertError;
       return false;
     }
   }
@@ -3910,7 +3910,7 @@ export async function createEquipmentItem(data: {
     .select("id")
     .single();
   if (error) {
-    console.error("[data] create equipment item:", error.message);
+    void error;
     return null;
   }
   return result?.id ?? null;
@@ -3944,7 +3944,7 @@ export async function updateEquipmentItem(
     .update({ ...data, updated_at: new Date().toISOString() } as never)
     .eq("id", id);
   if (error) {
-    console.error("[data] update equipment item:", error.message);
+    void error;
     return false;
   }
   return true;
@@ -3954,7 +3954,7 @@ export async function deleteEquipmentItem(id: string): Promise<boolean> {
   const supabase = createClient();
   const { error } = await supabase.from("equipment_inventory").delete().eq("id", id);
   if (error) {
-    console.error("[data] delete equipment item:", error.message);
+    void error;
     return false;
   }
   return true;
@@ -3992,7 +3992,7 @@ export async function createEquipmentRental(data: {
     .select("id")
     .single();
   if (error) {
-    console.error("[data] create equipment rental:", error.message);
+    void error;
     return null;
   }
   return result?.id ?? null;
@@ -4023,7 +4023,7 @@ export async function updateEquipmentRental(
     .update(data as never)
     .eq("id", id);
   if (error) {
-    console.error("[data] update equipment rental:", error.message);
+    void error;
     return false;
   }
   return true;
@@ -4033,7 +4033,7 @@ export async function deleteEquipmentRental(id: string): Promise<boolean> {
   const supabase = createClient();
   const { error } = await supabase.from("equipment_rentals").delete().eq("id", id);
   if (error) {
-    console.error("[data] delete equipment rental:", error.message);
+    void error;
     return false;
   }
   return true;
@@ -4067,7 +4067,7 @@ export async function createEquipmentMaintenance(data: {
     .select("id")
     .single();
   if (error) {
-    console.error("[data] create equipment maintenance:", error.message);
+    void error;
     return null;
   }
   return result?.id ?? null;
@@ -4094,7 +4094,7 @@ export async function updateEquipmentMaintenance(
     .update(data as never)
     .eq("id", id);
   if (error) {
-    console.error("[data] update equipment maintenance:", error.message);
+    void error;
     return false;
   }
   return true;
@@ -4104,7 +4104,7 @@ export async function deleteEquipmentMaintenance(id: string): Promise<boolean> {
   const supabase = createClient();
   const { error } = await supabase.from("equipment_maintenance").delete().eq("id", id);
   if (error) {
-    console.error("[data] delete equipment maintenance:", error.message);
+    void error;
     return false;
   }
   return true;
@@ -4263,7 +4263,7 @@ export async function createGrowthMeasurement(data: {
     .insert(data)
     .select("id")
     .single();
-  if (error) { console.error("[data] growth_measurements insert:", error.message); return null; }
+  if (error) { void error; return null; }
   return row?.id ?? null;
 }
 
@@ -4343,14 +4343,14 @@ export async function createVaccination(data: {
     .insert(data)
     .select("id")
     .single();
-  if (error) { console.error("[data] vaccinations insert:", error.message); return null; }
+  if (error) { void error; return null; }
   return row?.id ?? null;
 }
 
 export async function updateVaccination(id: string, updates: Record<string, unknown>): Promise<boolean> {
   const supabase = createClient();
   const { error } = await supabase.from("vaccinations").update(updates).eq("id", id);
-  if (error) { console.error("[data] vaccinations update:", error.message); return false; }
+  if (error) { void error; return false; }
   return true;
 }
 
@@ -4420,14 +4420,14 @@ export async function createMilestone(data: {
     .insert(data)
     .select("id")
     .single();
-  if (error) { console.error("[data] developmental_milestones insert:", error.message); return null; }
+  if (error) { void error; return null; }
   return row?.id ?? null;
 }
 
 export async function updateMilestone(id: string, updates: Record<string, unknown>): Promise<boolean> {
   const supabase = createClient();
   const { error } = await supabase.from("developmental_milestones").update(updates).eq("id", id);
-  if (error) { console.error("[data] developmental_milestones update:", error.message); return false; }
+  if (error) { void error; return false; }
   return true;
 }
 
@@ -4548,14 +4548,14 @@ export async function createPregnancy(data: {
     .insert(data)
     .select("id")
     .single();
-  if (error) { console.error("[data] pregnancies insert:", error.message); return null; }
+  if (error) { void error; return null; }
   return row?.id ?? null;
 }
 
 export async function updatePregnancy(id: string, updates: Record<string, unknown>): Promise<boolean> {
   const supabase = createClient();
   const { error } = await supabase.from("pregnancies").update(updates).eq("id", id);
-  if (error) { console.error("[data] pregnancies update:", error.message); return false; }
+  if (error) { void error; return false; }
   return true;
 }
 
@@ -4639,7 +4639,7 @@ export async function createUltrasound(data: {
     .insert(data as never)
     .select("id")
     .single();
-  if (error) { console.error("[data] ultrasound_records insert:", error.message); return null; }
+  if (error) { void error; return null; }
   return row?.id ?? null;
 }
 
@@ -4740,7 +4740,7 @@ export async function createVisionTest(data: {
     .insert(data)
     .select("id")
     .single();
-  if (error) { console.error("[data] vision_tests insert:", error.message); return null; }
+  if (error) { void error; return null; }
   return row?.id ?? null;
 }
 
@@ -4809,7 +4809,7 @@ export async function createIopMeasurement(data: {
     .insert(data)
     .select("id")
     .single();
-  if (error) { console.error("[data] iop_measurements insert:", error.message); return null; }
+  if (error) { void error; return null; }
   return row?.id ?? null;
 }
 

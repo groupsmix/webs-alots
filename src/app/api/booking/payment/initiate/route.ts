@@ -109,7 +109,7 @@ export const POST = withAuth(async (request, { supabase }) => {
           { status: 409 },
         );
       }
-      console.error("[POST /api/booking/payment/initiate] Insert error:", insertError?.message);
+      void insertError;
       return NextResponse.json({ error: "Failed to initiate payment" }, { status: 500 });
     }
 
@@ -128,7 +128,7 @@ export const POST = withAuth(async (request, { supabase }) => {
       gatewaySessionId,
     });
   } catch (err) {
-    console.error("[POST /api/booking/payment/initiate] Error:", err instanceof Error ? err.message : "Unknown error");
+    void err;
     return NextResponse.json({ error: "Failed to initiate payment" }, { status: 500 });
   }
 }, STAFF_ROLES);

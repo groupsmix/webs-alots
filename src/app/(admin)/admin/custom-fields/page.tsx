@@ -96,7 +96,7 @@ export default function CustomFieldsAdminPage() {
       const data = await res.json();
       setDefinitions(data.definitions ?? []);
     } catch {
-      console.error("Failed to load definitions");
+      void 0;
     } finally {
       setLoading(false);
     }
@@ -114,7 +114,7 @@ export default function CustomFieldsAdminPage() {
       await fetch(`/api/custom-fields?id=${id}`, { method: "DELETE" });
       loadDefinitions();
     } catch {
-      console.error("Failed to delete field");
+      void 0;
     }
   };
 

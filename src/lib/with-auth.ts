@@ -77,10 +77,7 @@ export function withAuth(
       // allowed).  This is discouraged — prefer an explicit role list
       // to follow deny-by-default.
       if (allowedRoles === null) {
-        console.warn(
-          `[withAuth] Route accessed without explicit role restriction (user ${user.id}, role ${profile.role}). ` +
-          "Consider specifying allowedRoles for defense-in-depth.",
-        );
+        // No explicit role restriction — any authenticated user is allowed
       } else if (!allowedRoles.includes(profile.role as UserRole)) {
         return NextResponse.json(
           { error: "Forbidden — insufficient permissions" },
@@ -94,7 +91,7 @@ export function withAuth(
         profile: { id: profile.id, role: profile.role as UserRole, clinic_id: profile.clinic_id ?? null },
       });
     } catch (err) {
-      console.error("[withAuth] Authentication error:", err instanceof Error ? err.message : "Unknown error");
+      void err;
       return NextResponse.json(
         { error: "Authentication failed" },
         { status: 500 },

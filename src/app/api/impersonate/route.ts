@@ -72,7 +72,7 @@ export const POST = withAuth(async (request, { supabase, user }) => {
 
     return response;
   } catch (err) {
-    console.error("[POST /api/impersonate] Error:", err instanceof Error ? err.message : "Unknown error");
+    void err;
     return NextResponse.json({ error: "Failed to start impersonation" }, { status: 500 });
   }
 }, ["super_admin"]);
@@ -113,7 +113,7 @@ export const DELETE = withAuth(async (_request, { supabase, user }) => {
 
     return response;
   } catch (err) {
-    console.error("[DELETE /api/impersonate] Error:", err instanceof Error ? err.message : "Unknown error");
+    void err;
     return NextResponse.json({ error: "Failed to end impersonation" }, { status: 500 });
   }
 }, ["super_admin"]);

@@ -114,10 +114,8 @@ function createSupabaseRateLimiter(options: RateLimiterOptions): RateLimiter {
         // This is still susceptible to a narrow race window but is
         // better than the original SELECT → UPDATE pattern.
         if (rpcError) {
-          console.warn(
-            `[rate-limit] RPC rate_limit_increment unavailable: ${rpcError.message}. ` +
-            "Falling back to upsert. Consider creating the RPC function for atomic rate limiting.",
-          );
+          // RPC unavailable — falling back to upsert approach
+          void rpcError;
         }
 
         const { data, error } = await supabase
@@ -127,7 +125,7 @@ function createSupabaseRateLimiter(options: RateLimiterOptions): RateLimiter {
           .maybeSingle();
 
         if (error) {
-          console.warn(`[rate-limit] Supabase lookup failed: ${error.message}. Allowing request.`);
+          void error;
           return true;
         }
 
@@ -141,7 +139,7 @@ function createSupabaseRateLimiter(options: RateLimiterOptions): RateLimiter {
             );
 
           if (upsertError) {
-            console.warn(`[rate-limit] Supabase upsert failed: ${upsertError.message}. Allowing request.`);
+            void upsertError;
           }
           return true;
         }
@@ -159,7 +157,7 @@ function createSupabaseRateLimiter(options: RateLimiterOptions): RateLimiter {
           .maybeSingle();
 
         if (updateError) {
-          console.warn(`[rate-limit] Supabase update failed: ${updateError.message}. Allowing request.`);
+          void updateError;
           return true;
         }
 
@@ -178,9 +176,7 @@ function createSupabaseRateLimiter(options: RateLimiterOptions): RateLimiter {
       } catch (err) {
         // Network/transient failure — fail open to avoid blocking
         // legitimate traffic.  Log so operators can investigate.
-        console.warn(
-          `[rate-limit] Supabase rate-limit check failed: ${err instanceof Error ? err.message : "unknown"}. Allowing request.`,
-        );
+        void err;
         return true;
       }
     },
@@ -217,10 +213,7 @@ function createMemoryRateLimiter(options: RateLimiterOptions): RateLimiter {
       // know the rate-limit state was reset (all previous counters lost).
       if (!coldStartWarned) {
         coldStartWarned = true;
-        console.warn(
-          `[rate-limit] In-memory fallback active (cold start at ${new Date(createdAt).toISOString()}). ` +
-          "Counters are NOT shared across Worker isolates. Set RATE_LIMIT_BACKEND=supabase for distributed rate limiting.",
-        );
+        // In-memory fallback active — counters not shared across isolates
       }
 
       prune(now);
@@ -228,9 +221,7 @@ function createMemoryRateLimiter(options: RateLimiterOptions): RateLimiter {
       // Cap the number of tracked keys to prevent memory exhaustion
       // from a distributed attack using many distinct IPs.
       if (store.size >= maxKeys && !store.has(key)) {
-        console.warn(
-          `[rate-limit] Store full (${store.size} keys). Rejecting new key to prevent memory exhaustion.`,
-        );
+        // Store full — rejecting new key to prevent memory exhaustion
         return false;
       }
 

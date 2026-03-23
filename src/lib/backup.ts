@@ -89,7 +89,7 @@ export async function createBackup(
       .limit(MAX_ROWS_PER_TABLE);
 
     if (error) {
-      console.error(`[Backup] Failed to export ${table}:`, error.message);
+      void error;
       data[table] = [];
       tables.push({ name: table, recordCount: 0 });
       continue;
@@ -264,7 +264,7 @@ export async function restoreBackup(
   } else if (rpcError.message?.includes("function") && rpcError.message?.includes("does not exist")) {
     // Fallback: RPC function not deployed yet — use sequential inserts
     // (non-atomic, but preserves existing behavior)
-    console.warn("[restore] restore_backup_transaction RPC not found, using sequential inserts");
+    // RPC not found — using sequential inserts as fallback
     for (const table of BACKUP_TABLES) {
       const mappedRows = allMappedRows[table];
       if (!mappedRows || mappedRows.length === 0) {

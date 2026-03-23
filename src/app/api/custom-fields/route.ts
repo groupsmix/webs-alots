@@ -100,7 +100,7 @@ export const POST = withAuth(async (request, { supabase }) => {
       .single();
 
     if (error) {
-      console.error("[POST /api/custom-fields] Insert error:", error.message);
+      void error;
       return NextResponse.json(
         { error: "Failed to create custom field definition" },
         { status: 500 },
@@ -109,7 +109,7 @@ export const POST = withAuth(async (request, { supabase }) => {
 
     return NextResponse.json({ definition: data }, { status: 201 });
   } catch (err) {
-    console.error("[POST /api/custom-fields] Error:", err instanceof Error ? err.message : "Unknown error");
+    void err;
     return NextResponse.json(
       { error: "Invalid request body" },
       { status: 400 },
@@ -157,7 +157,7 @@ export const PATCH = withAuth(async (request, { supabase }) => {
       .single();
 
     if (error) {
-      console.error("[PATCH /api/custom-fields] Update error:", error.message);
+      void error;
       return NextResponse.json(
         { error: "Failed to update custom field definition" },
         { status: 500 },
@@ -166,7 +166,7 @@ export const PATCH = withAuth(async (request, { supabase }) => {
 
     return NextResponse.json({ definition: data });
   } catch (err) {
-    console.error("[PATCH /api/custom-fields] Error:", err instanceof Error ? err.message : "Unknown error");
+    void err;
     return NextResponse.json(
       { error: "Invalid request body" },
       { status: 400 },
@@ -210,7 +210,7 @@ export const DELETE = withAuth(async (request, { supabase }) => {
     .eq("id", id);
 
   if (error) {
-    console.error("[DELETE /api/custom-fields] Update error:", error.message);
+    void error;
     return NextResponse.json(
       { error: "Failed to delete custom field definition" },
       { status: 500 },

@@ -41,7 +41,7 @@ export default function ClientBillingPage() {
       setCurrentSub(sub);
       setAllTiers(tiers);
     } catch (err) {
-      console.error("[billing] failed to load:", err);
+      void err;
     } finally {
       setLoading(false);
     }

@@ -139,7 +139,7 @@ export function ChatbotProvider({
         setMessages((prev) => [...prev, assistantMsg]);
       }
     } catch (error) {
-      console.error("Chat error:", error);
+      void error;
       const errorMsg: ChatMessage = {
         id: `msg-${Date.now()}-error`,
         role: "assistant",

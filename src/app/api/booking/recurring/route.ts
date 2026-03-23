@@ -253,7 +253,7 @@ export const POST = withAuth(async (request, { supabase }) => {
 
     return NextResponse.json({ error: "action must be 'create' or 'cancel'" }, { status: 400 });
   } catch (err) {
-    console.error("[recurring] Error:", err instanceof Error ? err.message : "Unknown error");
+    void err;
     return NextResponse.json({ error: "Failed to process recurring booking" }, { status: 500 });
   }
 }, STAFF_ROLES);

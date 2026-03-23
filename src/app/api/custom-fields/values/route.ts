@@ -30,7 +30,7 @@ export const GET = withAuth(async (request, { supabase }) => {
     .single();
 
   if (error && error.code !== "PGRST116") {
-    console.error("[GET /api/custom-fields/values] Query error:", error.message);
+    void error;
     return NextResponse.json(
       { error: "Failed to fetch custom field values" },
       { status: 500 },
@@ -125,7 +125,7 @@ export const POST = withAuth(async (request, { supabase }) => {
       .single();
 
     if (error) {
-      console.error("[POST /api/custom-fields/values] Upsert error:", error.message);
+      void error;
       return NextResponse.json(
         { error: "Failed to save custom field values" },
         { status: 500 },
@@ -134,7 +134,7 @@ export const POST = withAuth(async (request, { supabase }) => {
 
     return NextResponse.json({ values: data });
   } catch (err) {
-    console.error("[POST /api/custom-fields/values] Error:", err instanceof Error ? err.message : "Unknown error");
+    void err;
     return NextResponse.json(
       { error: "Invalid request body" },
       { status: 400 },
@@ -236,7 +236,7 @@ export const PATCH = withAuth(async (request, { supabase }) => {
       .single();
 
     if (error) {
-      console.error("[PATCH /api/custom-fields/values] Upsert error:", error.message);
+      void error;
       return NextResponse.json(
         { error: "Failed to update custom field values" },
         { status: 500 },
@@ -245,7 +245,7 @@ export const PATCH = withAuth(async (request, { supabase }) => {
 
     return NextResponse.json({ values: data });
   } catch (err) {
-    console.error("[PATCH /api/custom-fields/values] Error:", err instanceof Error ? err.message : "Unknown error");
+    void err;
     return NextResponse.json(
       { error: "Invalid request body" },
       { status: 400 },

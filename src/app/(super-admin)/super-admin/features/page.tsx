@@ -38,7 +38,7 @@ export default function FeatureTogglesPage() {
       setFeatures(feats);
       setTotalClinicsCount(clinics.length);
     } catch (err) {
-      console.error("[sa-features] failed to load:", err);
+      void err;
     } finally {
       setLoading(false);
     }

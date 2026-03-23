@@ -190,7 +190,7 @@ export const POST = withAuth(async (request, { supabase }) => {
 
     return NextResponse.json({ error: "action must be 'create' or 'book'" }, { status: 400 });
   } catch (err) {
-    console.error("[emergency-slot] Error:", err instanceof Error ? err.message : "Unknown error");
+    void err;
     return NextResponse.json({ error: "Failed to process emergency slot request" }, { status: 500 });
   }
 }, STAFF_ROLES);
