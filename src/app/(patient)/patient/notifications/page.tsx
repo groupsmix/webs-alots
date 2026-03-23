@@ -109,19 +109,21 @@ export default function PatientNotificationsPage() {
   const [savedPrefs, setSavedPrefs] = useState(false);
 
   useEffect(() => {
-    let cancelled = false;
+    const controller = new AbortController();
     getCurrentUser().then(async (user) => {
-      if (!user || cancelled) { if (!cancelled) setPageLoading(false); return; }
+      if (!user || controller.signal.aborted) { if (!controller.signal.aborted) setPageLoading(false); return; }
       const notifs = await fetchNotifications(user.id);
-      if (cancelled) return;
+      if (controller.signal.aborted) return;
       setNotifications(notifs.map((n) => ({
         ...n,
         type: triggerToType(n.trigger),
         time: formatTimeAgo(n.createdAt),
       })));
       setPageLoading(false);
+    }).catch(() => {
+      // ignored — component unmounted or fetch failed
     });
-    return () => { cancelled = true; };
+    return () => { controller.abort(); };
   }, []);
 
   if (pageLoading) {

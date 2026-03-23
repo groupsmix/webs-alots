@@ -97,7 +97,7 @@ export default function ChatbotSettingsPage() {
   const [savedMessage, setSavedMessage] = useState<string | null>(null);
 
   useEffect(() => {
-    let cancelled = false;
+    const controller = new AbortController();
     (async () => {
       const supabase = getSupabase();
 
@@ -105,7 +105,7 @@ export default function ChatbotSettingsPage() {
       const {
         data: { user },
       } = await supabase.auth.getUser();
-      if (!user || cancelled) return;
+      if (!user || controller.signal.aborted) return;
 
       const { data: profile } = await supabase
         .from("users")
@@ -113,7 +113,7 @@ export default function ChatbotSettingsPage() {
         .eq("auth_id", user.id)
         .single();
 
-      if (!profile?.clinic_id || cancelled) return;
+      if (!profile?.clinic_id || controller.signal.aborted) return;
       setClinicId(profile.clinic_id as string);
 
       // Load chatbot config
@@ -123,7 +123,7 @@ export default function ChatbotSettingsPage() {
         .eq("clinic_id", profile.clinic_id)
         .single();
 
-      if (cancelled) return;
+      if (controller.signal.aborted) return;
       if (configData) {
         const row = configData as Record<string, unknown>;
         setConfig({
@@ -142,19 +142,19 @@ export default function ChatbotSettingsPage() {
         .eq("clinic_id", profile.clinic_id)
         .order("sort_order", { ascending: true });
 
-      if (cancelled) return;
+      if (controller.signal.aborted) return;
       if (faqData) {
         setFaqs(faqData as FaqEntry[]);
       }
 
       setLoading(false);
     })().catch((err) => {
-      if (!cancelled) {
+      if (!controller.signal.aborted) {
         setError(err instanceof Error ? err : new Error(String(err)));
         setLoading(false);
       }
     });
-    return () => { cancelled = true; };
+    return () => { controller.abort(); };
   }, []);
 
   async function saveConfig() {

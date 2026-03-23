@@ -65,16 +65,22 @@ export default function UltrasoundsPage() {
   }, [selectedPregnancy]);
 
   useEffect(() => {
-    let cancelled = false;
-    fetchData().then((result) => {
-      if (cancelled) return;
-      if (result) {
-        setUltrasounds(result.ultrasounds);
-        setPregnancies(result.pregnancies);
-      }
-      setLoading(false);
-    });
-    return () => { cancelled = true; };
+    const controller = new AbortController();
+    fetchData()
+      .then((result) => {
+        if (controller.signal.aborted) return;
+        if (result) {
+          setUltrasounds(result.ultrasounds);
+          setPregnancies(result.pregnancies);
+        }
+      })
+      .catch(() => {
+        // ignored — component unmounted or fetch failed
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setLoading(false);
+      });
+    return () => { controller.abort(); };
   }, [fetchData]);
 
   const reload = async () => {

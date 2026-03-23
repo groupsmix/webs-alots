@@ -26,11 +26,15 @@ export default function DoctorChatPage() {
   const [user, setUser] = useState<ClinicUser | null>(null);
 
   useEffect(() => {
-    let cancelled = false;
-    getCurrentUser().then((u) => {
-      if (!cancelled) setUser(u);
-    });
-    return () => { cancelled = true; };
+    const controller = new AbortController();
+    getCurrentUser()
+      .then((u) => {
+        if (!controller.signal.aborted) setUser(u);
+      })
+      .catch(() => {
+        // ignored — component unmounted or fetch failed
+      });
+    return () => { controller.abort(); };
   }, []);
 
   const doctorId = user?.id ?? "";
