@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { fetchChatbotContext, buildSystemPrompt, getBasicResponse } from "@/lib/chatbot-data";
 import { TENANT_HEADERS } from "@/lib/tenant";
 import { createClient } from "@/lib/supabase-server";
+import { chatLimiter, extractClientIp } from "@/lib/rate-limit";
 import { logger } from "@/lib/logger";
 
 export const runtime = "edge";
@@ -63,6 +64,18 @@ function sanitizeUserInput(text: string): string {
 
 export async function POST(request: NextRequest) {
   try {
+    // Defence-in-depth: per-IP rate limit for the chat endpoint.
+    // The middleware also applies chatLimiter, but checking here guards
+    // against deployment configs that skip the middleware layer.
+    const clientIp = extractClientIp(request);
+    const allowed = await chatLimiter.check(`chat:${clientIp}`);
+    if (!allowed) {
+      return NextResponse.json(
+        { error: "Too many requests. Please try again later." },
+        { status: 429 },
+      );
+    }
+
     // Resolve clinic ID from tenant headers or request body
     const tenantClinicId = request.headers.get(TENANT_HEADERS.clinicId);
     const body = (await request.json()) as ChatRequestBody;

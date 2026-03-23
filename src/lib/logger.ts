@@ -51,7 +51,6 @@ function emit(level: LogLevel, message: string, meta?: LogMeta): void {
   // In Cloudflare Workers this is captured by `wrangler tail`.
   // NOTE: We intentionally use console here (unlike application code)
   // because this IS the logging infrastructure.
-  // eslint-disable-next-line no-console
   console.error(JSON.stringify(payload));
 }
 

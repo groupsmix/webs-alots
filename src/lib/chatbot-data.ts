@@ -61,24 +61,22 @@ export async function fetchChatbotContext(clinicId: string): Promise<ChatbotClin
         .eq("clinic_id", clinicId),
     ]);
 
-  // Query chatbot tables (not yet in generated DB types) via untyped client
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const untypedSupabase = supabase as any;
+  // chatbot_faqs and chatbot_config are now in the generated DB types.
   const [faqsRes, configRes] = await Promise.all([
-    untypedSupabase
+    supabase
       .from("chatbot_faqs")
       .select("question, answer, keywords")
       .eq("clinic_id", clinicId)
       .eq("is_active", true)
-      .order("sort_order", { ascending: true }) as Promise<{ data: { question: string; answer: string; keywords: string[] }[] | null }>,
-    untypedSupabase
+      .order("sort_order", { ascending: true }),
+    supabase
       .from("chatbot_config")
       .select("enabled, intelligence, greeting, language")
       .eq("clinic_id", clinicId)
-      .single() as Promise<{ data: Record<string, unknown> | null }>,
+      .single(),
   ]);
 
-  const clinicData = clinicRes.data as Record<string, unknown> | null;
+  const clinicData = clinicRes.data;
 
   return {
     clinic: clinicData
@@ -87,7 +85,7 @@ export async function fetchChatbotContext(clinicId: string): Promise<ChatbotClin
           name: clinicData.name as string,
           type: clinicData.type as string,
           tier: clinicData.tier as string,
-          address: (clinicData.config as Record<string, unknown>)?.address as string | undefined,
+          address: (clinicData.config as Record<string, unknown> | null)?.address as string | undefined,
           city: clinicData.city as string | undefined,
           phone: clinicData.owner_phone as string | undefined,
           email: clinicData.owner_email as string | undefined,
@@ -95,16 +93,34 @@ export async function fetchChatbotContext(clinicId: string): Promise<ChatbotClin
           config: (clinicData.config as Record<string, unknown>) ?? {},
         }
       : null,
-    services: ((servicesRes.data ?? []) as { name: string; price: number | null; category: string | null; duration_minutes: number }[]),
-    doctors: ((doctorsRes.data ?? []) as { name: string; phone: string | null; email: string | null }[]),
-    workingHours: ((slotsRes.data ?? []) as unknown as { day_of_week: number; start_time: string; end_time: string; is_available: boolean }[]),
-    faqs: ((faqsRes.data ?? []) as { question: string; answer: string; keywords: string[] }[]),
+    services: (servicesRes.data ?? []).map((s) => ({
+      name: s.name,
+      price: s.price,
+      category: s.category,
+      duration_minutes: s.duration_minutes,
+    })),
+    doctors: (doctorsRes.data ?? []).map((d) => ({
+      name: d.name,
+      phone: d.phone,
+      email: d.email,
+    })),
+    workingHours: (slotsRes.data ?? []).map((s) => ({
+      day_of_week: s.day_of_week,
+      start_time: s.start_time,
+      end_time: s.end_time,
+      is_available: true as boolean,
+    })),
+    faqs: (faqsRes.data ?? []).map((f) => ({
+      question: f.question,
+      answer: f.answer,
+      keywords: f.keywords ?? [],
+    })),
     chatbotConfig: configRes.data
       ? {
-          enabled: (configRes.data as Record<string, unknown>).enabled as boolean,
-          intelligence: (configRes.data as Record<string, unknown>).intelligence as "basic" | "smart" | "advanced",
-          greeting: (configRes.data as Record<string, unknown>).greeting as string,
-          language: (configRes.data as Record<string, unknown>).language as string,
+          enabled: configRes.data.enabled ?? true,
+          intelligence: (configRes.data.intelligence ?? "basic") as "basic" | "smart" | "advanced",
+          greeting: configRes.data.greeting ?? "",
+          language: configRes.data.language ?? "fr",
         }
       : null,
   };

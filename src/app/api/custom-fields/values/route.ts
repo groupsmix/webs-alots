@@ -26,7 +26,8 @@ export const GET = withAuth(async (request, { supabase }) => {
     .from("custom_field_values")
     .select("*")
     .eq("clinic_id", clinicId)
-    .eq("entity_type", entityType as unknown as never)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    .eq("entity_type", entityType as any)
     .eq("entity_id", entityId)
     .single();
 
@@ -73,7 +74,8 @@ export const POST = withAuth(async (request, { supabase }) => {
       .from("custom_field_definitions")
       .select("field_key, field_type")
       .eq("clinic_id", clinic_id)
-      .eq("entity_type", entity_type as unknown as never);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .eq("entity_type", entity_type as any);
 
     if (definitions && definitions.length > 0) {
       const defMap = new Map(
@@ -172,7 +174,8 @@ export const PATCH = withAuth(async (request, { supabase }) => {
       .from("custom_field_definitions")
       .select("field_key, field_type")
       .eq("clinic_id", clinic_id)
-      .eq("entity_type", entity_type as unknown as never);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .eq("entity_type", entity_type as any);
 
     if (definitions && definitions.length > 0) {
       const defMap = new Map(

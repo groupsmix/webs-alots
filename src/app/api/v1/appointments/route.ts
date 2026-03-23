@@ -46,7 +46,8 @@ export async function GET(request: NextRequest) {
     query = query.eq("appointment_date", date);
   }
   if (status) {
-    query = query.eq("status", status as unknown as never);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    query = query.eq("status", status as any);
   }
 
   const { data, count, error } = await query;

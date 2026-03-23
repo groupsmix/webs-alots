@@ -51,10 +51,11 @@ describe("getPlanConfig", () => {
     expect(config.name).toBe("Starter");
   });
 
-  it("returns free plan as default for unknown plan", () => {
+  it("throws on unknown plan", () => {
     // TypeScript won't normally allow this, but testing runtime safety
-    const config = getPlanConfig("nonexistent" as "free");
-    expect(config.id).toBe("free");
+    expect(() => getPlanConfig("nonexistent" as "free")).toThrow(
+      /Unknown subscription plan: "nonexistent"/,
+    );
   });
 
   it("returns enterprise plan correctly", () => {
