@@ -120,7 +120,7 @@ export const POST = withAuth(async (request, { supabase, profile }) => {
       .eq("id", body.appointmentId);
 
     if (updateError) {
-      return NextResponse.json({ error: updateError.message }, { status: 400 });
+      return NextResponse.json({ error: "Failed to update appointment" }, { status: 500 });
     }
 
     await logAuditEvent({
