@@ -100,10 +100,44 @@ function setTenantHeaders(
  *  rejected before any route handler runs, preventing memory exhaustion. */
 const MAX_BODY_BYTES = 25 * 1024 * 1024;
 
+/**
+ * Build the Content-Security-Policy header value with a per-request nonce
+ * for script-src (replaces 'unsafe-inline').
+ *
+ * style-src retains 'unsafe-inline' because Tailwind CSS and shadcn/ui
+ * inject inline styles that cannot be nonce-gated without significant
+ * architectural changes.
+ */
+function buildCsp(nonce: string): string {
+  const isDev = process.env.NODE_ENV === "development";
+  return [
+    "default-src 'self'",
+    `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'${isDev ? " 'unsafe-eval'" : ""}`,
+    // Styles: self + inline (Tailwind, shadcn)
+    "style-src 'self' 'unsafe-inline'",
+    // Images: self + R2 storage + Supabase storage + data URIs + blobs
+    "img-src 'self' data: blob: *.supabase.co *.r2.cloudflarestorage.com *.r2.dev",
+    // Fonts: self + common CDNs
+    "font-src 'self' data:",
+    // API connections: self + Supabase + WhatsApp + Cloudflare + Google
+    "connect-src 'self' *.supabase.co wss://*.supabase.co graph.facebook.com api.twilio.com api.cloudflare.com *.googleapis.com",
+    // Frames: Google Maps embeds only
+    "frame-src 'self' www.google.com",
+    // Form actions: self only
+    "form-action 'self'",
+    // Base URI: self only
+    "base-uri 'self'",
+  ].join("; ");
+}
+
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const hostname = request.headers.get("host") ?? "";
   const rootDomain = process.env.ROOT_DOMAIN;
+
+  // --- Generate a per-request nonce for CSP ---
+  const nonce = Buffer.from(crypto.randomUUID()).toString("base64");
+  const cspHeaderValue = buildCsp(nonce);
 
   // --- Global body size limit ---
   const contentLength = request.headers.get("content-length");
@@ -113,6 +147,12 @@ export async function middleware(request: NextRequest) {
       { status: 413 },
     );
   }
+
+  // --- Inject CSP nonce into request headers so Server Components
+  //     can read it via headers().get('x-nonce') ---
+  const requestHeaders = new Headers(request.headers);
+  requestHeaders.set("x-nonce", nonce);
+  requestHeaders.set("Content-Security-Policy", cspHeaderValue);
 
   // --- Subdomain resolution ---
   const subdomain = extractSubdomain(hostname, rootDomain);
@@ -206,12 +246,19 @@ export async function middleware(request: NextRequest) {
       loginUrl.searchParams.set("redirect", pathname);
       return NextResponse.redirect(loginUrl);
     }
-    return NextResponse.next({ request });
+    const noSupabaseResponse = NextResponse.next({
+      request: { headers: requestHeaders },
+    });
+    noSupabaseResponse.headers.set("Content-Security-Policy", cspHeaderValue);
+    noSupabaseResponse.headers.set("x-nonce", nonce);
+    return noSupabaseResponse;
   }
 
   let supabaseResponse = NextResponse.next({
-    request,
+    request: { headers: requestHeaders },
   });
+  supabaseResponse.headers.set("Content-Security-Policy", cspHeaderValue);
+  supabaseResponse.headers.set("x-nonce", nonce);
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -226,8 +273,10 @@ export async function middleware(request: NextRequest) {
             request.cookies.set(name, value)
           );
           supabaseResponse = NextResponse.next({
-            request,
+            request: { headers: requestHeaders },
           });
+          supabaseResponse.headers.set("Content-Security-Policy", cspHeaderValue);
+          supabaseResponse.headers.set("x-nonce", nonce);
           cookiesToSet.forEach(({ name, value, options }) =>
             supabaseResponse.cookies.set(name, value, options)
           );

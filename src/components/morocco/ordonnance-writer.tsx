@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { escapeHtml } from "@/lib/escape-html";
 
 // ---- Types ----
 
@@ -45,18 +46,6 @@ interface OrdonnanceData {
   diagnosis?: string;
   medications: OrdonnanceMedication[];
   notes?: string;
-}
-
-// ---- HTML Escaping ----
-
-function escapeHtml(str: string | undefined | null): string {
-  if (!str) return "";
-  return str
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#39;");
 }
 
 // ---- Formes pharmaceutiques ----

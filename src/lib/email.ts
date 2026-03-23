@@ -14,18 +14,9 @@
  */
 
 import { logger } from "@/lib/logger";
+import { escapeHtml } from "@/lib/escape-html";
 
 const RESEND_API_URL = "https://api.resend.com/emails";
-
-/** Escape HTML special characters to prevent injection in email templates. */
-function escapeHtml(str: string): string {
-  return str
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#39;");
-}
 
 export interface EmailSendResult {
   success: boolean;

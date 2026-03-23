@@ -13,6 +13,7 @@ import { updateLabOrderPdfUrl } from "@/lib/data/server";
 import { withAuth } from "@/lib/with-auth";
 import { STAFF_ROLES } from "@/lib/auth-roles";
 import { logger } from "@/lib/logger";
+import { escapeHtml } from "@/lib/escape-html";
 
 interface LabResultItem {
   testName: string;
@@ -21,14 +22,6 @@ interface LabResultItem {
   referenceMin: number | null;
   referenceMax: number | null;
   flag: string | null;
-}
-
-function escapeHtml(str: string): string {
-  return str
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
 }
 
 function flagLabel(flag: string | null): string {
