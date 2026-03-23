@@ -38,7 +38,9 @@ export default function AnnouncementsPage() {
   }, []);
 
   useEffect(() => {
+    const controller = new AbortController();
     loadAnnouncements();
+    return () => { controller.abort(); };
   }, [loadAnnouncements]);
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState<TypeFilter>("all");

@@ -40,6 +40,7 @@ export default function RadiologyOrdersPage() {
   const [orders, setOrders] = useState<RadiologyOrderView[]>([]);
   const [templates, setTemplates] = useState<RadiologyTemplateView[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -72,14 +73,22 @@ export default function RadiologyOrdersPage() {
   }, []);
 
   useEffect(() => {
+    const controller = new AbortController();
     Promise.all([
       fetchRadiologyOrders(clinicConfig.clinicId),
       fetchRadiologyTemplates(clinicConfig.clinicId),
     ]).then(([o, t]) => {
+      if (controller.signal.aborted) return;
       setOrders(o);
       setTemplates(t);
-      setLoading(false);
+    }).catch((err) => {
+      if (!controller.signal.aborted) {
+        setError(err instanceof Error ? err : new Error(String(err)));
+      }
+    }).finally(() => {
+      if (!controller.signal.aborted) setLoading(false);
     });
+    return () => { controller.abort(); };
   }, []);
 
   const handleCreateOrder = async () => {

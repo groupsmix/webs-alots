@@ -63,6 +63,7 @@ export default function EquipmentInventoryPage() {
   const { t } = useEquipmentI18n(locale);
   const [items, setItems] = useState<EquipmentItemView[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
   const [search, setSearch] = useState("");
   const [conditionFilter, setConditionFilter] = useState("all");
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -91,11 +92,18 @@ export default function EquipmentInventoryPage() {
   }
 
   useEffect(() => {
+    const controller = new AbortController();
     function init() {
       setLoading(true);
       fetchEquipmentInventory(clinicConfig.clinicId)
         .then(setItems)
-        .finally(() => setLoading(false));
+        .catch((err) => {
+      if (!controller.signal.aborted) {
+        setError(err instanceof Error ? err : new Error(String(err)));
+      }
+    })
+    .finally(() => { if (!controller.signal.aborted) setLoading(false); });
+    return () => { controller.abort(); };
     }
     init();
   }, []);

@@ -26,6 +26,7 @@ export default function PatientFeedbackPage() {
   const [submitted, setSubmitted] = useState(false);
 
   useEffect(() => {
+    const controller = new AbortController();
     async function loadData() {
       const user = await getCurrentUser();
       if (!user?.clinic_id) { setPageLoading(false); return; }
@@ -38,6 +39,7 @@ export default function PatientFeedbackPage() {
       setPageLoading(false);
     }
     loadData();
+    return () => { controller.abort(); };
   }, []);
 
   if (pageLoading) {

@@ -33,6 +33,7 @@ interface WaitingPatient {
 export function WaitingRoomManager() {
   const [queue, setQueue] = useState<WaitingPatient[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
 
   const statusConfig: Record<string, { color: string; label: string; icon: typeof Clock }> = {
     waiting: { color: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200", label: "Waiting", icon: Clock },
@@ -55,13 +56,16 @@ export function WaitingRoomManager() {
   }, []);
 
   useEffect(() => {
+    const controller = new AbortController();
     async function load() {
       const user = await getCurrentUser();
+      if (controller.signal.aborted) return;
       if (!user?.clinic_id) { setLoading(false); return; }
       const [appts, pts] = await Promise.all([
         fetchTodayAppointments(user.clinic_id),
         fetchPatients(user.clinic_id),
       ]);
+      if (controller.signal.aborted) return;
       // Build waiting queue from today's checked-in / confirmed / in-progress appointments
       const relevantStatuses = new Set(["confirmed", "in-progress", "scheduled"]);
       const waitingAppts = appts.filter((a) => relevantStatuses.has(a.status));
@@ -94,7 +98,13 @@ export function WaitingRoomManager() {
       setQueue(recalculateWaitTimes(initialQueue.map((p, i) => ({ ...p, priority: i + 1 }))));
       setLoading(false);
     }
-    load();
+    load().catch((err) => {
+      if (!controller.signal.aborted) {
+        setError(err instanceof Error ? err : new Error(String(err)));
+        setLoading(false);
+      }
+    });
+    return () => { controller.abort(); };
   }, [recalculateWaitTimes]);
 
   const moveUp = (id: string) => {

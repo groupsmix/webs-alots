@@ -31,16 +31,20 @@ export default function PaymentsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [paymentEntries, setPaymentEntries] = useState<PaymentEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
+    const controller = new AbortController();
     async function load() {
       const user = await getCurrentUser();
+      if (controller.signal.aborted) return;
       if (!user?.clinic_id) { setLoading(false); return; }
       const clinicId = user.clinic_id;
       const [appts, invoices] = await Promise.all([
         fetchTodayAppointments(clinicId),
         fetchInvoices(clinicId),
       ]);
+      if (controller.signal.aborted) return;
       const invoiceByAppt = new Map<string, InvoiceView>();
       for (const inv of invoices) {
         if (inv.appointmentId) invoiceByAppt.set(inv.appointmentId, inv);
@@ -61,7 +65,13 @@ export default function PaymentsPage() {
       setPaymentEntries(entries);
       setLoading(false);
     }
-    load();
+    load().catch((err) => {
+      if (!controller.signal.aborted) {
+        setError(err instanceof Error ? err : new Error(String(err)));
+        setLoading(false);
+      }
+    });
+    return () => { controller.abort(); };
   }, []);
 
   const filteredEntries = paymentEntries.filter((e) =>

@@ -37,6 +37,7 @@ export default function ParapharmacyCatalogPage() {
   const [products, setProducts] = useState<ProductView[]>([]);
   const [categories, setCategories] = useState<ParapharmacyCategoryView[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
 
@@ -53,16 +54,24 @@ export default function ParapharmacyCatalogPage() {
   }, []);
 
   useEffect(() => {
+    const controller = new AbortController();
     const cId = clinicConfig.clinicId;
     Promise.all([
       fetchParapharmacyProducts(cId),
       fetchParapharmacyCategories(cId),
     ])
       .then(([p, c]) => {
+      if (controller.signal.aborted) return;
         setProducts(p);
         setCategories(c);
       })
-      .finally(() => setLoading(false));
+      .catch((err) => {
+      if (!controller.signal.aborted) {
+        setError(err instanceof Error ? err : new Error(String(err)));
+      }
+    })
+    .finally(() => { if (!controller.signal.aborted) setLoading(false); });
+    return () => { controller.abort(); };
   }, []);
 
   const openCreate = () => {

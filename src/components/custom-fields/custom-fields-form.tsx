@@ -32,8 +32,10 @@ export function CustomFieldsForm({
   const [definitions, setDefinitions] = useState<CustomFieldDefinition[]>([]);
   const [values, setValues] = useState<Record<string, unknown>>({});
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
+    const controller = new AbortController();
     async function loadData() {
       setLoading(true);
       try {
@@ -65,6 +67,7 @@ export function CustomFieldsForm({
     if (clinicTypeKey && entityType) {
       loadData();
     }
+    return () => { controller.abort(); };
   }, [clinicTypeKey, entityType, clinicId, entityId]);
 
   const handleFieldChange = useCallback(

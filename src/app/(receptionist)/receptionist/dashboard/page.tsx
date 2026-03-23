@@ -33,17 +33,21 @@ export default function ReceptionistDashboardPage() {
   const [patientMap, setPatientMap] = useState<Map<string, PatientView>>(new Map());
   const [totalRevenue, setTotalRevenue] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
   const [checkedInIds, setCheckedInIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
+    const controller = new AbortController();
     async function load() {
       const user = await getCurrentUser();
+      if (controller.signal.aborted) return;
       if (!user?.clinic_id) { setLoading(false); return; }
       const [appts, invoices, patients] = await Promise.all([
         fetchTodayAppointments(user.clinic_id),
         fetchInvoices(user.clinic_id),
         fetchPatients(user.clinic_id),
       ]);
+      if (controller.signal.aborted) return;
       setTodayAppts(appts);
       setPatientMap(new Map(patients.map((p) => [p.id, p])));
       const revenue = invoices
@@ -52,7 +56,13 @@ export default function ReceptionistDashboardPage() {
       setTotalRevenue(revenue);
       setLoading(false);
     }
-    load();
+    load().catch((err) => {
+      if (!controller.signal.aborted) {
+        setError(err instanceof Error ? err : new Error(String(err)));
+        setLoading(false);
+      }
+    });
+    return () => { controller.abort(); };
   }, []);
 
   const checkedIn = todayAppts.filter((a) => a.status === "confirmed" || a.status === "in-progress").length;

@@ -30,6 +30,7 @@ export default function ParapharmacySalesPage() {
   const [sales, setSales] = useState<DailySaleView[]>([]);
   const [products, setProducts] = useState<ProductView[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
   const [search, setSearch] = useState("");
 
   // POS state
@@ -45,15 +46,23 @@ export default function ParapharmacySalesPage() {
   }, []);
 
   useEffect(() => {
+    const controller = new AbortController();
     Promise.all([
       fetchDailySales(clinicConfig.clinicId),
       fetchParapharmacyProducts(clinicConfig.clinicId),
     ])
       .then(([s, p]) => {
+      if (controller.signal.aborted) return;
         setSales(s);
         setProducts(p);
       })
-      .finally(() => setLoading(false));
+      .catch((err) => {
+      if (!controller.signal.aborted) {
+        setError(err instanceof Error ? err : new Error(String(err)));
+      }
+    })
+    .finally(() => { if (!controller.signal.aborted) setLoading(false); });
+    return () => { controller.abort(); };
   }, []);
 
   const addToCart = (product: ProductView) => {

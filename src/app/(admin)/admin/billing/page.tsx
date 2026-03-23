@@ -49,7 +49,9 @@ export default function ClientBillingPage() {
   }, []);
 
   useEffect(() => {
+    const controller = new AbortController();
     loadData();
+    return () => { controller.abort(); };
   }, [loadData]);
 
   const statusIcon = (status: string) => {

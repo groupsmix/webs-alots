@@ -109,9 +109,11 @@ export default function PatientNotificationsPage() {
   const [savedPrefs, setSavedPrefs] = useState(false);
 
   useEffect(() => {
+    let cancelled = false;
     getCurrentUser().then(async (user) => {
-      if (!user) { setPageLoading(false); return; }
+      if (!user || cancelled) { if (!cancelled) setPageLoading(false); return; }
       const notifs = await fetchNotifications(user.id);
+      if (cancelled) return;
       setNotifications(notifs.map((n) => ({
         ...n,
         type: triggerToType(n.trigger),
@@ -119,6 +121,7 @@ export default function PatientNotificationsPage() {
       })));
       setPageLoading(false);
     });
+    return () => { cancelled = true; };
   }, []);
 
   if (pageLoading) {

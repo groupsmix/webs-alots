@@ -35,22 +35,32 @@ export default function AdminPatientDatabasePage() {
   const [appointmentsList, setAppointmentsList] = useState<AppointmentView[]>([]);
   const [prescriptionsList, setPrescriptionsList] = useState<PrescriptionView[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
+    const controller = new AbortController();
     async function load() {
     const user = await getCurrentUser();
+      if (controller.signal.aborted) return;
     if (!user?.clinic_id) { setLoading(false); return; }
     const [p, a, rx] = await Promise.all([
       fetchPatients(user.clinic_id),
       fetchAppointments(user.clinic_id),
       fetchPrescriptions(user.clinic_id),
     ]);
+      if (controller.signal.aborted) return;
     setPatientsList(p);
     setAppointmentsList(a);
     setPrescriptionsList(rx);
     setLoading(false);
   }
-    load();
+    load().catch((err) => {
+      if (!controller.signal.aborted) {
+        setError(err instanceof Error ? err : new Error(String(err)));
+        setLoading(false);
+      }
+    });
+    return () => { controller.abort(); };
   }, []);
 
   const patients = patientsList;

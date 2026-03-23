@@ -14,14 +14,22 @@ import { PageLoader } from "@/components/ui/page-loader";
 export default function RadiologyReportsPage() {
   const [orders, setOrders] = useState<RadiologyOrderView[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
   const [search, setSearch] = useState("");
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [generatingPdf, setGeneratingPdf] = useState<string | null>(null);
 
   useEffect(() => {
+    const controller = new AbortController();
     fetchRadiologyOrders(clinicConfig.clinicId)
       .then((all) => setOrders(all.filter((o) => o.status === "reported" || o.status === "validated")))
-      .finally(() => setLoading(false));
+      .catch((err) => {
+      if (!controller.signal.aborted) {
+        setError(err instanceof Error ? err : new Error(String(err)));
+      }
+    })
+    .finally(() => { if (!controller.signal.aborted) setLoading(false); });
+    return () => { controller.abort(); };
   }, []);
 
   const handleGeneratePdf = async (order: RadiologyOrderView) => {

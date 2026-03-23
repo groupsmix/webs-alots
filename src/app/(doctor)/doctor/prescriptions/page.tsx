@@ -100,6 +100,7 @@ export default function DoctorPrescriptionsPage() {
   const [showWriter, setShowWriter] = useState(false);
   const [selectedPatient, setSelectedPatient] = useState("");
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
   const [diagnosis, setDiagnosis] = useState("");
   const [notes, setNotes] = useState("");
   const [medications, setMedications] = useState<MedicationEntry[]>([
@@ -107,19 +108,28 @@ export default function DoctorPrescriptionsPage() {
   ]);
 
   useEffect(() => {
+    const controller = new AbortController();
     async function load() {
     const user = await getCurrentUser();
+      if (controller.signal.aborted) return;
     if (!user?.clinic_id) { setLoading(false); return; }
     const [rxs, pts] = await Promise.all([
       fetchPrescriptions(user.clinic_id),
       fetchPatients(user.clinic_id),
     ]);
+      if (controller.signal.aborted) return;
     setRxList(rxs);
     setPatients(pts);
     if (pts.length > 0) setSelectedPatient(pts[0].id);
     setLoading(false);
   }
-    load();
+    load().catch((err) => {
+      if (!controller.signal.aborted) {
+        setError(err instanceof Error ? err : new Error(String(err)));
+        setLoading(false);
+      }
+    });
+    return () => { controller.abort(); };
   }, []);
 
   if (loading) {

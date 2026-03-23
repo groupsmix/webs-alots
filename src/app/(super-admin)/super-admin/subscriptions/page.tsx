@@ -59,7 +59,9 @@ export default function SubscriptionsPage() {
   }, []);
 
   useEffect(() => {
+    const controller = new AbortController();
     loadSubscriptions();
+    return () => { controller.abort(); };
   }, [loadSubscriptions]);
 
   const stats = {

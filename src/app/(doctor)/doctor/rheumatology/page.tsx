@@ -46,6 +46,7 @@ export default function RheumatologyPage() {
   const [assessments, setAssessments] = useState<JointAssessmentView[]>([]);
   const [mobilityTests, setMobilityTests] = useState<MobilityTestView[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
   const [showAssessmentForm, setShowAssessmentForm] = useState(false);
   const [showMobilityForm, setShowMobilityForm] = useState(false);
 
@@ -59,18 +60,27 @@ export default function RheumatologyPage() {
   });
 
   useEffect(() => {
+    const controller = new AbortController();
     async function load() {
     const user = await getCurrentUser();
+      if (controller.signal.aborted) return;
     if (!user?.clinic_id) { setLoading(false); return; }
     const [a, m] = await Promise.all([
       fetchJointAssessments(user.clinic_id),
       fetchMobilityTests(user.clinic_id),
     ]);
+      if (controller.signal.aborted) return;
     setAssessments(a);
     setMobilityTests(m);
     setLoading(false);
   }
-    load();
+    load().catch((err) => {
+      if (!controller.signal.aborted) {
+        setError(err instanceof Error ? err : new Error(String(err)));
+        setLoading(false);
+      }
+    });
+    return () => { controller.abort(); };
   }, []);
 
   if (loading) {

@@ -15,6 +15,7 @@ export default function DoctorOdontogramPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    const controller = new AbortController();
     async function loadPatients() {
       const user = await getCurrentUser();
       if (!user?.clinic_id) { setLoading(false); return; }
@@ -28,6 +29,7 @@ export default function DoctorOdontogramPage() {
       setLoading(false);
     }
     loadPatients();
+    return () => { controller.abort(); };
   }, []);
 
   useEffect(() => {

@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Check, Layout, Loader2, Save } from "lucide-react";
+import { useState } from "react";
+import { AlertCircle, Check, Layout, Loader2, Save } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -12,24 +12,30 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { templateList, type TemplateId } from "@/lib/templates";
+import { useAsyncData } from "@/lib/hooks/use-async-data";
 
 export default function TemplatesPage() {
+  const { data: initialTemplate, loading, error } = useAsyncData(
+    (signal) =>
+      fetch("/api/branding", { signal })
+        .then((r) => {
+          if (!r.ok) throw new Error(`Failed to load templates (${r.status})`);
+          return r.json();
+        })
+        .then((data) => (data.template_id ?? "modern") as TemplateId),
+    "modern" as TemplateId,
+  );
   const [selected, setSelected] = useState<TemplateId>("modern");
   const [saved, setSaved] = useState<TemplateId>("modern");
-  const [loading, setLoading] = useState(true);
+  const [initialized, setInitialized] = useState(false);
   const [saving, setSaving] = useState(false);
 
-  useEffect(() => {
-    fetch("/api/branding")
-      .then((r) => r.json())
-      .then((data) => {
-        const id = (data.template_id ?? "modern") as TemplateId;
-        setSelected(id);
-        setSaved(id);
-      })
-      .catch(() => {})
-      .finally(() => setLoading(false));
-  }, []);
+  // Sync initial data once loaded
+  if (!initialized && !loading && !error) {
+    setSelected(initialTemplate);
+    setSaved(initialTemplate);
+    setInitialized(true);
+  }
 
   const handleSave = async () => {
     setSaving(true);
@@ -55,6 +61,21 @@ export default function TemplatesPage() {
           <Loader2 className="h-4 w-4 animate-spin" />
           Loading templates...
         </p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div>
+        <h1 className="text-2xl font-bold mb-6">Layout Templates</h1>
+        <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-4 flex items-start gap-3">
+          <AlertCircle className="h-5 w-5 text-destructive mt-0.5" />
+          <div>
+            <p className="font-medium text-destructive">Failed to load templates</p>
+            <p className="text-sm text-muted-foreground mt-1">{error.message}</p>
+          </div>
+        </div>
       </div>
     );
   }

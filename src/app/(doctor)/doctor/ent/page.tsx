@@ -47,6 +47,7 @@ export default function ENTPage() {
   const [hearingTests, setHearingTests] = useState<HearingTestView[]>([]);
   const [exams, setExams] = useState<ENTExamView[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
   const [showTestForm, setShowTestForm] = useState(false);
   const [showExamForm, setShowExamForm] = useState(false);
 
@@ -67,18 +68,27 @@ export default function ENTPage() {
   });
 
   useEffect(() => {
+    const controller = new AbortController();
     async function load() {
     const user = await getCurrentUser();
+      if (controller.signal.aborted) return;
     if (!user?.clinic_id) { setLoading(false); return; }
     const [t, e] = await Promise.all([
       fetchHearingTests(user.clinic_id),
       fetchENTExams(user.clinic_id),
     ]);
+      if (controller.signal.aborted) return;
     setHearingTests(t);
     setExams(e);
     setLoading(false);
   }
-    load();
+    load().catch((err) => {
+      if (!controller.signal.aborted) {
+        setError(err instanceof Error ? err : new Error(String(err)));
+        setLoading(false);
+      }
+    });
+    return () => { controller.abort(); };
   }, []);
 
   if (loading) {

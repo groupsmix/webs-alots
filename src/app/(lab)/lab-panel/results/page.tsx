@@ -37,6 +37,7 @@ export default function ResultsPage() {
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
   const [results, setResults] = useState<LabTestResultView[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
   const [resultsLoading, setResultsLoading] = useState(false);
   const [search, setSearch] = useState("");
 
@@ -65,12 +66,20 @@ export default function ResultsPage() {
   }, [selectedOrderId]);
 
   useEffect(() => {
+    const controller = new AbortController();
     fetchLabTestOrders(clinicConfig.clinicId)
       .then((all) => {
+      if (controller.signal.aborted) return;
         const active = all.filter((o) => o.status !== "cancelled");
         setOrders(active);
       })
-      .finally(() => setLoading(false));
+      .catch((err) => {
+      if (!controller.signal.aborted) {
+        setError(err instanceof Error ? err : new Error(String(err)));
+      }
+    })
+    .finally(() => { if (!controller.signal.aborted) setLoading(false); });
+    return () => { controller.abort(); };
   }, []);
 
   useEffect(() => {

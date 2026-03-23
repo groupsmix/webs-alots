@@ -12,16 +12,26 @@ import { PageLoader } from "@/components/ui/page-loader";
 export default function PatientToothMapPage() {
   const [entries, setEntries] = useState<OdontogramView[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
+    const controller = new AbortController();
     async function load() {
     const user = await getCurrentUser();
+      if (controller.signal.aborted) return;
     if (!user?.clinic_id) { setLoading(false); return; }
     const data = await fetchOdontogram(user.clinic_id, user.id);
+      if (controller.signal.aborted) return;
     setEntries(data);
     setLoading(false);
   }
-    load();
+    load().catch((err) => {
+      if (!controller.signal.aborted) {
+        setError(err instanceof Error ? err : new Error(String(err)));
+        setLoading(false);
+      }
+    });
+    return () => { controller.abort(); };
   }, []);
 
   if (loading) {

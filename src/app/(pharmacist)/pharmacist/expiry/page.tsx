@@ -12,11 +12,19 @@ import { PageLoader } from "@/components/ui/page-loader";
 export default function ExpiryTrackerPage() {
   const [allProducts, setAllProducts] = useState<ProductView[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
+    const controller = new AbortController();
     fetchProducts(clinicConfig.clinicId)
-      .then(setAllProducts)
-      .finally(() => setLoading(false));
+      .then((d) => { if (!controller.signal.aborted) setAllProducts(d); })
+      .catch((err) => {
+      if (!controller.signal.aborted) {
+        setError(err instanceof Error ? err : new Error(String(err)));
+      }
+    })
+    .finally(() => { if (!controller.signal.aborted) setLoading(false); });
+    return () => { controller.abort(); };
   }, []);
 
   const products = useMemo(() => {

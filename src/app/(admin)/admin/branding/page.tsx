@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import {
+  AlertCircle,
   Palette,
   Upload,
   Save,
@@ -25,6 +26,7 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { PageLoader } from "@/components/ui/page-loader";
+import { useAsyncData } from "@/lib/hooks/use-async-data";
 
 interface BrandingState {
   name: string;
@@ -70,22 +72,14 @@ const DEFAULT_BRANDING: BrandingState = {
 };
 
 export default function BrandingPage() {
-  const [branding, setBranding] = useState<BrandingState>(DEFAULT_BRANDING);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [uploading, setUploading] = useState<string | null>(null);
-  const [saved, setSaved] = useState(false);
-
-  const logoRef = useRef<HTMLInputElement>(null);
-  const faviconRef = useRef<HTMLInputElement>(null);
-  const heroRef = useRef<HTMLInputElement>(null);
-  const coverRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    fetch("/api/branding")
-      .then((r) => r.json())
-      .then((data) => {
-        setBranding({
+  const { data: initialBranding, loading, error } = useAsyncData(
+    (signal) =>
+      fetch("/api/branding", { signal })
+        .then((r) => {
+          if (!r.ok) throw new Error(`Failed to load branding (${r.status})`);
+          return r.json();
+        })
+        .then((data) => ({
           name: data.name ?? "",
           tagline: data.tagline ?? "",
           phone: data.phone ?? "",
@@ -98,11 +92,25 @@ export default function BrandingPage() {
           heading_font: data.heading_font ?? "Geist",
           body_font: data.body_font ?? "Geist",
           hero_image_url: data.hero_image_url ?? null,
-        });
-      })
-      .catch(() => {})
-      .finally(() => setLoading(false));
-  }, []);
+        })),
+    DEFAULT_BRANDING,
+  );
+  const [branding, setBranding] = useState<BrandingState>(DEFAULT_BRANDING);
+  const [initialized, setInitialized] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState<string | null>(null);
+  const [saved, setSaved] = useState(false);
+
+  const logoRef = useRef<HTMLInputElement>(null);
+  const faviconRef = useRef<HTMLInputElement>(null);
+  const heroRef = useRef<HTMLInputElement>(null);
+  const coverRef = useRef<HTMLInputElement>(null);
+
+  // Sync initial data once loaded
+  if (!initialized && !loading && !error) {
+    setBranding(initialBranding);
+    setInitialized(true);
+  }
 
   const handleSave = async () => {
     setSaving(true);
@@ -173,6 +181,21 @@ export default function BrandingPage() {
 
   if (loading) {
     return <PageLoader message="Loading branding settings..." />;
+  }
+
+  if (error) {
+    return (
+      <div>
+        <h1 className="text-2xl font-bold mb-6">Branding</h1>
+        <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-4 flex items-start gap-3">
+          <AlertCircle className="h-5 w-5 text-destructive mt-0.5" />
+          <div>
+            <p className="font-medium text-destructive">Failed to load branding settings</p>
+            <p className="text-sm text-muted-foreground mt-1">{error.message}</p>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (

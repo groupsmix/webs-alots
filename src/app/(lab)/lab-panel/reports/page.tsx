@@ -14,14 +14,23 @@ import { PageLoader } from "@/components/ui/page-loader";
 export default function LabReportsPage() {
   const [orders, setOrders] = useState<LabTestOrderView[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
   const [search, setSearch] = useState("");
 
   useEffect(() => {
+    const controller = new AbortController();
     fetchLabTestOrders(clinicConfig.clinicId)
       .then((all) => {
+      if (controller.signal.aborted) return;
         setOrders(all.filter((o) => o.status === "completed" || o.status === "validated"));
       })
-      .finally(() => setLoading(false));
+      .catch((err) => {
+      if (!controller.signal.aborted) {
+        setError(err instanceof Error ? err : new Error(String(err)));
+      }
+    })
+    .finally(() => { if (!controller.signal.aborted) setLoading(false); });
+    return () => { controller.abort(); };
   }, []);
 
   if (loading) {

@@ -26,7 +26,11 @@ export default function DoctorChatPage() {
   const [user, setUser] = useState<ClinicUser | null>(null);
 
   useEffect(() => {
-    getCurrentUser().then((u) => setUser(u));
+    let cancelled = false;
+    getCurrentUser().then((u) => {
+      if (!cancelled) setUser(u);
+    });
+    return () => { cancelled = true; };
   }, []);
 
   const doctorId = user?.id ?? "";

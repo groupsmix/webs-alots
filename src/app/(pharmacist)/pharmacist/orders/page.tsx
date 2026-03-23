@@ -28,13 +28,21 @@ export default function OrdersPage() {
   const [allOrders, setAllOrders] = useState<PurchaseOrderView[]>([]);
   const [allSuppliers, setAllSuppliers] = useState<SupplierView[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
   const [filterStatus, setFilterStatus] = useState<string>("all");
 
   useEffect(() => {
+    const controller = new AbortController();
     const cId = clinicConfig.clinicId;
     Promise.all([fetchPurchaseOrders(cId), fetchSuppliers(cId)])
       .then(([o, s]) => { setAllOrders(o); setAllSuppliers(s); })
-      .finally(() => setLoading(false));
+      .catch((err) => {
+      if (!controller.signal.aborted) {
+        setError(err instanceof Error ? err : new Error(String(err)));
+      }
+    })
+    .finally(() => { if (!controller.signal.aborted) setLoading(false); });
+    return () => { controller.abort(); };
   }, []);
 
   if (loading) {

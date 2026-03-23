@@ -34,6 +34,7 @@ export default function RadiologyImagesPage() {
   const [orders, setOrders] = useState<RadiologyOrderView[]>([]);
   const [allOrders, setAllOrders] = useState<RadiologyOrderView[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
   const [search, setSearch] = useState("");
 
   // Upload dialog state
@@ -53,12 +54,20 @@ export default function RadiologyImagesPage() {
   }, []);
 
   useEffect(() => {
+    const controller = new AbortController();
     fetchRadiologyOrders(clinicConfig.clinicId)
       .then((all) => {
+      if (controller.signal.aborted) return;
         setAllOrders(all);
         setOrders(all.filter((o) => o.imageCount > 0));
       })
-      .finally(() => setLoading(false));
+      .catch((err) => {
+      if (!controller.signal.aborted) {
+        setError(err instanceof Error ? err : new Error(String(err)));
+      }
+    })
+    .finally(() => { if (!controller.signal.aborted) setLoading(false); });
+    return () => { controller.abort(); };
   }, []);
 
   const handleDrop = (e: React.DragEvent) => {

@@ -38,10 +38,13 @@ export default function PatientDashboardPage() {
   const [notificationsList, setNotificationsList] = useState<NotificationView[]>([]);
   const [userName, setUserName] = useState("");
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
+    const controller = new AbortController();
     async function load() {
     const user = await getCurrentUser();
+      if (controller.signal.aborted) return;
     if (!user?.clinic_id) { setLoading(false); return; }
     setUserName(user.name);
     const [appts, rxs, invs, notifs] = await Promise.all([
@@ -50,13 +53,20 @@ export default function PatientDashboardPage() {
       fetchInvoices(user.clinic_id),
       fetchNotifications(user.id),
     ]);
+      if (controller.signal.aborted) return;
     setAppointmentsList(appts);
     setPrescriptionsList(rxs.filter(rx => rx.patientId === user.id));
     setInvoicesList(invs);
     setNotificationsList(notifs);
     setLoading(false);
   }
-    load();
+    load().catch((err) => {
+      if (!controller.signal.aborted) {
+        setError(err instanceof Error ? err : new Error(String(err)));
+        setLoading(false);
+      }
+    });
+    return () => { controller.abort(); };
   }, []);
 
   if (loading) {

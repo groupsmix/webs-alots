@@ -34,6 +34,7 @@ export default function TestOrdersPage() {
   const [catalog, setCatalog] = useState<LabTestCatalogView[]>([]);
   const [patients, setPatients] = useState<PatientView[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -59,16 +60,24 @@ export default function TestOrdersPage() {
   }, []);
 
   useEffect(() => {
+    const controller = new AbortController();
     Promise.all([
       fetchLabTestOrders(clinicConfig.clinicId),
       fetchLabTestCatalog(clinicConfig.clinicId),
       fetchPatients(clinicConfig.clinicId),
     ]).then(([o, c, p]) => {
+      if (controller.signal.aborted) return;
       setOrders(o);
       setCatalog(c);
       setPatients(p);
-      setLoading(false);
+    }).catch((err) => {
+      if (!controller.signal.aborted) {
+        setError(err instanceof Error ? err : new Error(String(err)));
+      }
+    }).finally(() => {
+      if (!controller.signal.aborted) setLoading(false);
     });
+    return () => { controller.abort(); };
   }, []);
 
   const handleCreateOrder = async () => {

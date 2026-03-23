@@ -41,6 +41,7 @@ export default function EndocrinologyPage() {
   const [hormones, setHormones] = useState<HormoneLevelView[]>([]);
   const [diabetes, setDiabetes] = useState<DiabetesManagementView[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
   const [showSugarForm, setShowSugarForm] = useState(false);
   const [showHormoneForm, setShowHormoneForm] = useState(false);
   const [showDiabetesForm, setShowDiabetesForm] = useState(false);
@@ -57,20 +58,29 @@ export default function EndocrinologyPage() {
   });
 
   useEffect(() => {
+    const controller = new AbortController();
     async function load() {
     const user = await getCurrentUser();
+      if (controller.signal.aborted) return;
     if (!user?.clinic_id) { setLoading(false); return; }
     const [s, h, d] = await Promise.all([
       fetchBloodSugarReadings(user.clinic_id),
       fetchHormoneLevels(user.clinic_id),
       fetchDiabetesManagement(user.clinic_id),
     ]);
+      if (controller.signal.aborted) return;
     setSugars(s);
     setHormones(h);
     setDiabetes(d);
     setLoading(false);
   }
-    load();
+    load().catch((err) => {
+      if (!controller.signal.aborted) {
+        setError(err instanceof Error ? err : new Error(String(err)));
+        setLoading(false);
+      }
+    });
+    return () => { controller.abort(); };
   }, []);
 
   if (loading) {

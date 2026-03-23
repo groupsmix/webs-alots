@@ -97,7 +97,9 @@ export default function SuperAdminDashboardPage() {
   }, []);
 
   useEffect(() => {
+    const controller = new AbortController();
     loadStats();
+    return () => { controller.abort(); };
   }, [loadStats]);
 
   const activeAnnouncements = announcementList.filter((a) => a.active);

@@ -36,6 +36,7 @@ export default function OrthopedicsPage() {
   const [fractures, setFractures] = useState<FractureRecordView[]>([]);
   const [rehabPlans, setRehabPlans] = useState<RehabPlanView[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
   const [showXrayForm, setShowXrayForm] = useState(false);
   const [showFractureForm, setShowFractureForm] = useState(false);
   const [showRehabForm, setShowRehabForm] = useState(false);
@@ -50,20 +51,29 @@ export default function OrthopedicsPage() {
   });
 
   useEffect(() => {
+    const controller = new AbortController();
     async function load() {
     const user = await getCurrentUser();
+      if (controller.signal.aborted) return;
     if (!user?.clinic_id) { setLoading(false); return; }
     const [x, f, r] = await Promise.all([
       fetchXRayRecords(user.clinic_id),
       fetchFractureRecords(user.clinic_id),
       fetchRehabPlans(user.clinic_id),
     ]);
+      if (controller.signal.aborted) return;
     setXrays(x);
     setFractures(f);
     setRehabPlans(r);
     setLoading(false);
   }
-    load();
+    load().catch((err) => {
+      if (!controller.signal.aborted) {
+        setError(err instanceof Error ? err : new Error(String(err)));
+        setLoading(false);
+      }
+    });
+    return () => { controller.abort(); };
   }, []);
 
   if (loading) {

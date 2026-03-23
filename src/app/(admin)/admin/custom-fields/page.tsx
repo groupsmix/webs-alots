@@ -58,6 +58,7 @@ export default function CustomFieldsAdminPage() {
 
   // Load clinic types
   useEffect(() => {
+    const controller = new AbortController();
     async function loadClinicTypes() {
       try {
         const res = await fetch("/api/custom-fields?clinic_type_key=_all_types");
@@ -82,6 +83,7 @@ export default function CustomFieldsAdminPage() {
       ]);
     }
     loadClinicTypes();
+    return () => { controller.abort(); };
   }, []);
 
   const loadDefinitions = useCallback(async () => {
