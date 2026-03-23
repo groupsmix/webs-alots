@@ -71,55 +71,60 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const body = await request.json();
+  try {
+    const body = await request.json();
 
-  const required = ["full_name"];
-  const missing = required.filter((f) => !body[f]);
-  if (missing.length > 0) {
-    return NextResponse.json(
-      { error: `Missing required fields: ${missing.join(", ")}` },
-      { status: 400, headers: getCorsHeaders(request) },
-    );
-  }
-
-  // Input length validation to prevent oversized payloads
-  const lengthLimits: Record<string, number> = {
-    full_name: 200,
-    email: 254,
-    phone: 30,
-    address: 500,
-    gender: 20,
-    insurance_type: 100,
-  };
-  for (const [field, maxLen] of Object.entries(lengthLimits)) {
-    if (typeof body[field] === "string" && body[field].length > maxLen) {
+    const required = ["full_name"];
+    const missing = required.filter((f) => !body[f]);
+    if (missing.length > 0) {
       return NextResponse.json(
-        { error: `Field '${field}' exceeds maximum length of ${maxLen} characters` },
+        { error: `Missing required fields: ${missing.join(", ")}` },
         { status: 400, headers: getCorsHeaders(request) },
       );
     }
+
+    // Input length validation to prevent oversized payloads
+    const lengthLimits: Record<string, number> = {
+      full_name: 200,
+      email: 254,
+      phone: 30,
+      address: 500,
+      gender: 20,
+      insurance_type: 100,
+    };
+    for (const [field, maxLen] of Object.entries(lengthLimits)) {
+      if (typeof body[field] === "string" && body[field].length > maxLen) {
+        return NextResponse.json(
+          { error: `Field '${field}' exceeds maximum length of ${maxLen} characters` },
+          { status: 400, headers: getCorsHeaders(request) },
+        );
+      }
+    }
+
+    const supabase = await createClient();
+    const { data, error } = await supabase.from("users")
+      .insert({
+        clinic_id: auth.clinicId,
+        role: "patient",
+        full_name: body.full_name,
+        email: body.email || null,
+        phone: body.phone || null,
+        date_of_birth: body.date_of_birth || null,
+        gender: body.gender || null,
+        insurance_type: body.insurance_type || null,
+        address: body.address || null,
+      } as never)
+      .select()
+      .single();
+
+    if (error) {
+      void error;
+      return NextResponse.json({ error: "Failed to create patient" }, { status: 500, headers: getCorsHeaders(request) });
+    }
+
+    return NextResponse.json({ data }, { status: 201, headers: getCorsHeaders(request) });
+  } catch (err) {
+    void err;
+    return NextResponse.json({ error: "Invalid request body" }, { status: 400, headers: getCorsHeaders(request) });
   }
-
-  const supabase = await createClient();
-  const { data, error } = await supabase.from("users")
-    .insert({
-      clinic_id: auth.clinicId,
-      role: "patient",
-      full_name: body.full_name,
-      email: body.email || null,
-      phone: body.phone || null,
-      date_of_birth: body.date_of_birth || null,
-      gender: body.gender || null,
-      insurance_type: body.insurance_type || null,
-      address: body.address || null,
-    } as never)
-    .select()
-    .single();
-
-  if (error) {
-    void error;
-    return NextResponse.json({ error: "Failed to create patient" }, { status: 500, headers: getCorsHeaders(request) });
-  }
-
-  return NextResponse.json({ data }, { status: 201, headers: getCorsHeaders(request) });
 }

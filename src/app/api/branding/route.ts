@@ -39,40 +39,48 @@ const FIELD_MAP: Record<string, string> = {
 // ── GET — return current branding ──
 
 export async function GET() {
-  const clinicId = clinicConfig.clinicId;
-  const supabase = await createClient();
+  try {
+    const clinicId = clinicConfig.clinicId;
+    const supabase = await createClient();
 
-  const { data, error } = await supabase
-    .from("clinics")
-    .select(
-      "name, logo_url, favicon_url, primary_color, secondary_color, heading_font, body_font, hero_image_url, tagline, cover_photo_url, template_id, section_visibility, phone, address",
-    )
-    .eq("id", clinicId)
-    .single();
+    const { data, error } = await supabase
+      .from("clinics")
+      .select(
+        "name, logo_url, favicon_url, primary_color, secondary_color, heading_font, body_font, hero_image_url, tagline, cover_photo_url, template_id, section_visibility, phone, address",
+      )
+      .eq("id", clinicId)
+      .single();
 
-  if (error || !data) {
+    if (error || !data) {
+      return NextResponse.json(
+        {
+          name: clinicConfig.name,
+          logo_url: null,
+          favicon_url: null,
+          primary_color: "#1E4DA1",
+          secondary_color: "#0F6E56",
+          heading_font: "Geist",
+          body_font: "Geist",
+          hero_image_url: null,
+          tagline: null,
+          cover_photo_url: null,
+          template_id: "modern",
+          section_visibility: {},
+          phone: null,
+          address: null,
+        },
+        { status: 200 },
+      );
+    }
+
+    return NextResponse.json(data);
+  } catch (err) {
+    void err;
     return NextResponse.json(
-      {
-        name: clinicConfig.name,
-        logo_url: null,
-        favicon_url: null,
-        primary_color: "#1E4DA1",
-        secondary_color: "#0F6E56",
-        heading_font: "Geist",
-        body_font: "Geist",
-        hero_image_url: null,
-        tagline: null,
-        cover_photo_url: null,
-        template_id: "modern",
-        section_visibility: {},
-        phone: null,
-        address: null,
-      },
-      { status: 200 },
+      { error: "Failed to fetch branding" },
+      { status: 500 },
     );
   }
-
-  return NextResponse.json(data);
 }
 
 // ── PUT — update text branding fields (colors, fonts) ──

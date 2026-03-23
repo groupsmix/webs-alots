@@ -43,23 +43,28 @@ export default function RegisterPage() {
     setError(null);
     setLoading(true);
 
-    const result = await registerPatient({
-      phone,
-      name: `${firstName} ${lastName}`.trim(),
-      email: email || undefined,
-      age: age ? parseInt(age, 10) : undefined,
-      gender: gender || undefined,
-      insurance: insurance || undefined,
-    });
+    try {
+      const result = await registerPatient({
+        phone,
+        name: `${firstName} ${lastName}`.trim(),
+        email: email || undefined,
+        age: age ? parseInt(age, 10) : undefined,
+        gender: gender || undefined,
+        insurance: insurance || undefined,
+      });
 
-    if (result.error) {
-      setError(result.error);
+      if (result.error) {
+        setError(result.error);
+        setLoading(false);
+        return;
+      }
+
+      setStep("otp");
       setLoading(false);
-      return;
+    } catch {
+      setError("An unexpected error occurred. Please try again.");
+      setLoading(false);
     }
-
-    setStep("otp");
-    setLoading(false);
   }
 
   async function handleVerifyOTP(e: React.FormEvent) {
@@ -74,7 +79,8 @@ export default function RegisterPage() {
         setLoading(false);
       }
     } catch {
-      router.refresh();
+      setError("An unexpected error occurred. Please try again.");
+      setLoading(false);
     }
   }
 

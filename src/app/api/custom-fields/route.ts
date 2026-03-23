@@ -10,39 +10,47 @@ export const runtime = "edge";
  * Returns custom field definitions for a given clinic type and entity.
  */
 export async function GET(request: NextRequest) {
-  const clinicTypeKey = request.nextUrl.searchParams.get("clinic_type_key");
-  const entityType = request.nextUrl.searchParams.get("entity_type");
+  try {
+    const clinicTypeKey = request.nextUrl.searchParams.get("clinic_type_key");
+    const entityType = request.nextUrl.searchParams.get("entity_type");
 
-  if (!clinicTypeKey) {
+    if (!clinicTypeKey) {
+      return NextResponse.json(
+        { error: "clinic_type_key query parameter is required" },
+        { status: 400 },
+      );
+    }
+
+    const supabase = await createClient();
+
+    let query = supabase
+      .from("custom_field_definitions")
+      .select("*")
+      .eq("clinic_type_key", clinicTypeKey)
+      .eq("is_active", true)
+      .order("sort_order", { ascending: true });
+
+    if (entityType) {
+      query = query.eq("entity_type", entityType as unknown as never);
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+      return NextResponse.json(
+        { error: "Failed to fetch custom field definitions" },
+        { status: 500 },
+      );
+    }
+
+    return NextResponse.json({ definitions: data ?? [] });
+  } catch (err) {
+    void err;
     return NextResponse.json(
-      { error: "clinic_type_key query parameter is required" },
-      { status: 400 },
-    );
-  }
-
-  const supabase = await createClient();
-
-  let query = supabase
-    .from("custom_field_definitions")
-    .select("*")
-    .eq("clinic_type_key", clinicTypeKey)
-    .eq("is_active", true)
-    .order("sort_order", { ascending: true });
-
-  if (entityType) {
-    query = query.eq("entity_type", entityType as unknown as never);
-  }
-
-  const { data, error } = await query;
-
-  if (error) {
-    return NextResponse.json(
-      { error: "Failed to fetch custom field definitions" },
+      { error: "Failed to process request" },
       { status: 500 },
     );
   }
-
-  return NextResponse.json({ definitions: data ?? [] });
 }
 
 /**

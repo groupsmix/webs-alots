@@ -4,6 +4,26 @@ import { withAuth } from "@/lib/with-auth";
 import { STAFF_ROLES } from "@/lib/auth-roles";
 
 /**
+ * Validate that a redirect URL is same-origin to prevent open redirects.
+ * Falls back to a safe default if the URL is invalid or cross-origin.
+ */
+function validateRedirectUrl(
+  url: string | undefined,
+  origin: string,
+  type: "success" | "failed",
+): string {
+  const fallback = `${origin}/patient/dashboard?payment=${type}`;
+  if (!url) return fallback;
+  try {
+    const parsed = new URL(url);
+    if (parsed.origin !== origin) return fallback;
+    return url;
+  } catch {
+    return fallback;
+  }
+}
+
+/**
  * POST /api/payments/cmi
  *
  * Creates a CMI payment session and returns form data needed
@@ -45,8 +65,16 @@ export const POST = withAuth(async (request, { user }) => {
       failUrl?: string;
     };
 
-    if (!amount || amount <= 0) {
+    if (
+      typeof amount !== "number" ||
+      !Number.isFinite(amount) ||
+      amount <= 0
+    ) {
       return NextResponse.json({ error: "Invalid amount" }, { status: 400 });
+    }
+
+    if (description && typeof description === "string" && description.length > 500) {
+      return NextResponse.json({ error: "Description exceeds maximum length" }, { status: 400 });
     }
 
     const origin = request.nextUrl.origin;
@@ -57,8 +85,8 @@ export const POST = withAuth(async (request, { user }) => {
       orderId,
       description,
       customerEmail: user.email,
-      successUrl: successUrl || `${origin}/patient/dashboard?payment=success`,
-      failUrl: failUrl || `${origin}/patient/dashboard?payment=failed`,
+      successUrl: validateRedirectUrl(successUrl, origin, "success"),
+      failUrl: validateRedirectUrl(failUrl, origin, "failed"),
       callbackUrl: `${origin}/api/payments/cmi/callback`,
       metadata: {
         patient_id: patientId || "",
