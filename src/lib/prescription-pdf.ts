@@ -7,19 +7,7 @@
  * browser print/save-as-PDF. Uses the same pattern as invoice-generator.ts.
  */
 
-/**
- * Escape HTML special characters to prevent XSS when interpolating
- * user-controlled data into HTML template literals.
- */
-function escapeHtml(str: string | undefined | null): string {
-  if (!str) return "";
-  return str
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#39;");
-}
+import { escapeHtml } from "@/lib/escape-html";
 
 interface PrescriptionMedication {
   name: string;

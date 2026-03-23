@@ -26,29 +26,8 @@ const securityHeaders = [
     key: "Strict-Transport-Security",
     value: "max-age=63072000; includeSubDomains; preload",
   },
-  {
-    // Content Security Policy
-    key: "Content-Security-Policy",
-    value: [
-      "default-src 'self'",
-      // Scripts: self + inline (Next.js hydration requires it)
-      "script-src 'self' 'unsafe-inline'",
-      // Styles: self + inline (Tailwind, shadcn)
-      "style-src 'self' 'unsafe-inline'",
-      // Images: self + R2 storage + Supabase storage + data URIs + blobs
-      "img-src 'self' data: blob: *.supabase.co *.r2.cloudflarestorage.com *.r2.dev",
-      // Fonts: self + common CDNs
-      "font-src 'self' data:",
-      // API connections: self + Supabase + WhatsApp + Cloudflare + Google
-      "connect-src 'self' *.supabase.co wss://*.supabase.co graph.facebook.com api.twilio.com api.cloudflare.com *.googleapis.com",
-      // Frames: Google Maps embeds only
-      "frame-src 'self' www.google.com",
-      // Form actions: self only
-      "form-action 'self'",
-      // Base URI: self only
-      "base-uri 'self'",
-    ].join("; "),
-  },
+  // Content Security Policy is set dynamically in middleware.ts
+  // with a per-request nonce for script-src (instead of 'unsafe-inline').
 ];
 
 const nextConfig: NextConfig = {

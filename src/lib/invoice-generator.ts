@@ -17,22 +17,7 @@ import {
   type PatientInsurance,
   calculateResteACharge,
 } from "./morocco";
-
-// ---- HTML Escaping ----
-
-/**
- * Escape HTML special characters to prevent XSS when interpolating
- * user-controlled data into HTML template literals.
- */
-function escapeHtml(str: string | undefined | null): string {
-  if (!str) return "";
-  return str
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#39;");
-}
+import { escapeHtml } from "./escape-html";
 
 // ---- Invoice Types ----
 

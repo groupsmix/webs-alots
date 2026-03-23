@@ -11,6 +11,7 @@
 import { useState, useMemo, useCallback, useRef } from "react";
 import { Download, Printer, Copy, Check, QrCode } from "lucide-react";
 import QRCodeLib from "qrcode";
+import { escapeHtml } from "@/lib/escape-html";
 
 interface QrCodeGeneratorProps {
   url: string;
@@ -18,16 +19,6 @@ interface QrCodeGeneratorProps {
   subtitle?: string;
   size?: number;
   className?: string;
-}
-
-function escapeHtml(str: string | undefined | null): string {
-  if (!str) return "";
-  return str
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#39;");
 }
 
 // ---- Component ----
