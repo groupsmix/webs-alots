@@ -1,0 +1,622 @@
+# Database Performance & Query Efficiency Audit
+**Date:** 2026-03-23
+**Scope:** `data/server.ts`, `data/client.ts`, `data/public.ts`, `data/lab-public.ts`, API routes, Supabase queries, database schema (indexes, relations)
+**Auditor:** Devin (automated deep audit)
+---
+## Executive Summary
+| Severity | Count |
+|----------|-------|
+| CRITICAL | 5 |
+| HIGH | 9 |
+| MEDIUM | 12 |
+| LOW | 6 |
+The codebase has **systemic performance risks** that will cause degradation as data volume grows. The most dangerous pattern is the `fetchAnalytics()` function that fetches ALL appointments, payments, and reviews for a clinic using `SELECT *` with no date bounds, no pagination, and no server-side aggregation. Combined with widespread `SELECT *` defaults, missing pagination on 20+ endpoints, and N+1-adjacent lookup patterns, the application will hit Supabase response size limits and slow page loads as clinics grow beyond ~1,000 appointments.
+---
+## CRITICAL Findings
+### CRIT-01: `fetchAnalytics()` fetches ALL rows from 3 tables with SELECT *
+**File:** `src/lib/data/client.ts:2339-2497`
+**Severity:** CRITICAL
+**Tables affected:** `appointments`, `payments`, `reviews`
+```typescript
+// client.ts:2342-2347
+const [apptsRes, paymentsRes, reviewsRes, patientsRes] = await Promise.all([
+  supabase.from("appointments").select("*").eq("clinic_id", clinicId),
+  supabase.from("payments").select("*").eq("clinic_id", clinicId).eq("status", "completed"),
+  supabase.from("reviews").select("*").eq("clinic_id", clinicId),
+  supabase.from("users").select("id, created_at").eq("clinic_id", clinicId).eq("role", "patient"),
+]);
+```
+**Impact:**
+- A clinic with 10,000 appointments fetches ALL 10,000 rows with ALL columns to the browser
+- Supabase default limit is 1,000 rows per request -- this silently truncates results, producing **incorrect analytics** (wrong counts, wrong revenue totals)
+- Appointments table has 27+ columns -- massive payload transferred to client
+- All aggregation (daily counts, revenue sums, service popularity, heatmaps) is done client-side in JavaScript instead of SQL
+- This function is called on the analytics/dashboard page -- loaded on every admin visit
+**Remediation:**
+- Use Supabase RPC functions to compute aggregations server-side (SUM, COUNT, GROUP BY)
+- At minimum, restrict to a date range (e.g. last 6 months) and select only needed columns
+- Move this to a server-side function to avoid shipping raw data to the browser
+---
+### CRIT-02: Generic `query<T>()` helper defaults to `SELECT *` with no pagination
+**File:** `src/lib/data/server.ts:22-57`
+**Severity:** CRITICAL
+```typescript
+// server.ts:34
+let q = supabase.from(table).select(opts?.select ?? "*");
+// No default limit applied -- unbounded result set
+```
+**Impact:**
+- 30+ server-side functions use `query<T>()` without specifying a `select` or `limit`
+- Every call fetches ALL columns and ALL matching rows
+- Functions affected (all unbounded):
+  - `getAppointments()` (line 293) -- all appointments for a clinic
+  - `getAppointmentsByDoctor()` (line 300) -- all appointments for a doctor
+  - `getAppointmentsByPatient()` (line 307) -- all appointments for a patient
+  - `getNotifications()` (line 438) -- all notifications for a user
+  - `getConsultationNotes()` (line 538) -- all notes for a clinic
+  - `getWaitingList()` (line 562) -- all waiting list entries
+  - `getProducts()` (line 742) -- all products
+  - `getStock()` (line 763) -- all stock entries
+  - `getLabOrders()` (line 658) -- all lab orders
+  - `getSterilizationLog()` (line 712) -- all sterilization entries
+  - `getPrescriptionRequests()` (line 812) -- all prescription requests
+  - `getLoyaltyPoints()` (line 842) -- all loyalty records
+  - `getTreatmentPlans()` (line 625) -- all treatment plans (no clinic_id filter when doctorId is empty!)
+  - And 15+ more
+**Remediation:**
+- Add a default limit to `query<T>()` (e.g., `q = q.limit(opts?.limit ?? 1000)`) as `fetchRows<T>()` already does on the client side
+- Require callers to explicitly pass `select` columns
+- Add cursor-based pagination for list endpoints
+---
+### CRIT-03: `getTreatmentPlans()` missing clinic_id filter
+**File:** `src/lib/data/server.ts:625-632`
+**Severity:** CRITICAL
+```typescript
+export async function getTreatmentPlans(clinicId: string, doctorId?: string): Promise<TreatmentPlanRow[]> {
+  const eq: [string, unknown][] = [];
+  if (doctorId) eq.push(["doctor_id", doctorId]);
+  return query<TreatmentPlanRow>("treatment_plans", {
+    eq: eq.length > 0 ? eq : undefined, // <-- when no doctorId, eq is undefined = NO FILTER AT ALL
+    order: ["created_at", { ascending: false }],
+  });
+}
+```
+**Impact:**
+- When called without `doctorId`, this fetches ALL treatment plans from ALL clinics
+- `clinicId` parameter is accepted but NEVER used in the query
+- Cross-tenant data leak AND unbounded full table scan
+- RLS may prevent the cross-tenant leak, but the full table scan still hits the DB
+**Remediation:**
+```typescript
+const eq: [string, unknown][] = [["clinic_id", clinicId]];
+if (doctorId) eq.push(["doctor_id", doctorId]);
+```
+---
+### CRIT-04: `getSuperAdminStats()` fetches ALL clinics with SELECT * and ALL payments
+**File:** `src/lib/data/server.ts:919-943`
+**Severity:** CRITICAL
+```typescript
+// server.ts:923
+supabase.from("clinics").select("*").order("created_at", { ascending: false }),
+// ...
+supabase.from("payments").select("amount").eq("status", "completed"),
+```
+**Impact:**
+- Fetches ALL clinics with all columns (including config JSON blobs)
+- Fetches ALL completed payments across ALL clinics to sum revenue client-side
+- No pagination, no date range
+- As the platform scales to 100+ clinics, this becomes a multi-MB payload
+- `totalRevenue` should be a DB-level SUM, not application-level reduce
+**Remediation:**
+- Use `select("id, name, type, tier, status, created_at")` for clinics (already done in `super-admin-actions.ts:294`)
+- Use Supabase RPC or DB function for `SUM(amount)` instead of fetching all payment rows
+- Add pagination for the clinic listing
+---
+### CRIT-05: `fetchDashboardStats()` (client) fetches ALL patients to count insurance
+**File:** `src/lib/data/client.ts:877-916`
+**Severity:** CRITICAL
+```typescript
+// client.ts:896
+supabase.from("users").select("id, metadata").eq("clinic_id", clinicId).eq("role", "patient"),
+```
+**Impact:**
+- Fetches ALL patient records (including JSONB `metadata`) just to count how many have `metadata.insurance`
+- A clinic with 5,000 patients downloads 5,000 user rows with their metadata to the browser
+- The insurance count is computed by filtering in JavaScript: `insurancePatients.filter(p => p.metadata?.insurance)`
+- This should be a server-side COUNT with a JSONB filter
+**Remediation:**
+- Use Supabase RPC: `SELECT COUNT(*) FROM users WHERE clinic_id = $1 AND role = 'patient' AND metadata->>'insurance' IS NOT NULL`
+- Or add a boolean `has_insurance` column to avoid JSONB scanning
+---
+## HIGH Findings
+### HIGH-01: `ensureLookups()` fetches ALL users and services per clinic on every page
+**File:** `src/lib/data/client.ts:164-184`
+**Severity:** HIGH
+```typescript
+async function ensureLookups(clinicId: string) {
+  if (_userMap && _serviceMap && Date.now() - _lookupsBuiltAt < CACHE_TTL_MS) return;
+  const [usersRes, servicesRes] = await Promise.all([
+    supabase.from("users").select("id, name, phone, email").eq("clinic_id", clinicId),
+    supabase.from("services").select("id, name, price").eq("clinic_id", clinicId),
+  ]);
+  // ...builds Maps from ALL results
+}
+```
+**Impact:**
+- Fetches ALL users (patients + doctors + staff) for a clinic -- could be thousands
+- Called by 20+ client-side fetch functions (appointments, reviews, prescriptions, treatment plans, etc.)
+- 5-minute cache TTL means this fires every 5 minutes per active session
+- No Supabase default limit applied -- silent truncation at 1,000 rows
+  - If clinic has >1,000 users, the lookup map is INCOMPLETE and patient names show as "Patient"
+**Remediation:**
+- Limit the user lookup to roles that are actually needed for display (doctors, staff) -- patients can be fetched per-query via joins
+- Or use Supabase foreign-key joins (`select("*, patient:patient_id(name)")`) to fetch names inline
+- Add explicit `.limit()` or paginate
+---
+### HIGH-02: Backup module uses SELECT * on 9 tables sequentially
+**File:** `src/lib/backup.ts:85-91`
+**Severity:** HIGH
+```typescript
+for (const table of BACKUP_TABLES) {
+  const { data: rows, error } = await supabase
+    .from(table)
+    .select("*")
+    .eq("clinic_id", clinicId)
+    .order("created_at", { ascending: false })
+    .limit(MAX_ROWS_PER_TABLE); // 10,000
+}
+```
+**Impact:**
+- Sequential SELECT * on 9 tables, up to 10,000 rows each = up to 90,000 rows loaded into memory
+- All data held in a single JS object before JSON serialization
+- Potential OOM on large clinics
+- Tables include `notifications` (high volume) and `appointments` (high volume)
+**Remediation:**
+- Stream data in chunks using Supabase range queries
+- Select only columns needed for backup (exclude computed/derived columns)
+- Consider server-side pg_dump for large backups
+---
+### HIGH-03: `fetchPurchaseOrders()` is a textbook N+1 pattern
+**File:** `src/lib/data/client.ts:2035-2068`
+**Severity:** HIGH
+```typescript
+export async function fetchPurchaseOrders(clinicId: string): Promise<PurchaseOrderView[]> {
+  const { data: orders } = await supabase
+    .from("purchase_orders").select("*").eq("clinic_id", clinicId)...;
+  // THEN a second query to get supplier names:
+  const { data: suppliersData } = await supabase
+    .from("suppliers").select("id, name").in("id", supplierIds);
+}
+```
+**Impact:**
+- 2 sequential queries instead of 1 joined query
+- The first query uses SELECT * on purchase_orders
+- Could be solved with a single Supabase join: `select("*, supplier:supplier_id(name)")`
+**Remediation:**
+```typescript
+supabase.from("purchase_orders")
+  .select("*, supplier:supplier_id(name)")
+  .eq("clinic_id", clinicId)
+```
+---
+### HIGH-04: `fetchFamilyMembers()` is a 2-query N+1 pattern
+**File:** `src/lib/data/client.ts:839-860`
+**Severity:** HIGH
+```typescript
+export async function fetchFamilyMembers(userId: string): Promise<FamilyMemberView[]> {
+  const rows = await fetchRows<FamilyMemberRaw>("family_members", { eq: [["primary_user_id", userId]] });
+  const memberIds = rows.map((r) => r.member_user_id);
+  const { data: members } = await supabase.from("users").select("id, name, phone").in("id", memberIds);
+}
+```
+**Impact:**
+- 2 sequential queries instead of using a Supabase join
+- Second query uses `.in()` which becomes problematic with many family members
+**Remediation:**
+```typescript
+supabase.from("family_members")
+  .select("*, member:member_user_id(id, name, phone)")
+  .eq("primary_user_id", userId)
+```
+---
+### HIGH-05: `fetchLabTestOrders()` is a 3-query pattern with ensureLookups
+**File:** `src/lib/data/client.ts:3030-3074`
+**Severity:** HIGH
+```typescript
+export async function fetchLabTestOrders(clinicId: string): Promise<LabTestOrderView[]> {
+  await ensureLookups(clinicId);           // Query 1+2 (users + services)
+  const rows = await fetchRows<...>(...);  // Query 3 (lab_test_orders)
+  items = await fetchRows<...>(...);       // Query 4 (lab_test_items)
+}
+```
+**Impact:**
+- 4 sequential queries (2 from ensureLookups + orders + items)
+- Could be 1 query with proper joins
+- Duplicated in `fetchPatientLabOrders()` (lines 3076-3120) -- identical pattern
+**Remediation:**
+- Use Supabase joins: `select("*, patient:patient_id(name), doctor:ordering_doctor_id(name), items:lab_test_items(*)")`
+---
+### HIGH-06: `getPublicPharmacyProducts()` uses SELECT * on products AND stock
+**File:** `src/lib/data/public.ts:442-485`
+**Severity:** HIGH
+```typescript
+const [{ data: products }, { data: stockRows }] = await Promise.all([
+  supabase.from("products").select("*").eq("clinic_id", clinicId),
+  supabase.from("stock").select("*").eq("clinic_id", clinicId),
+]);
+```
+**Impact:**
+- Public-facing page (no auth required) fetches ALL product columns + ALL stock columns
+- 2 parallel queries instead of a single join
+- Products table has 15+ columns, stock has 8+ columns
+- No pagination -- a pharmacy with 1,000+ products sends everything
+**Remediation:**
+- Select only needed columns
+- Use a join: `select("id, name, price, ..., stock!inner(quantity, min_threshold, expiry_date)")`
+- Add pagination or limit for the public catalog
+---
+### HIGH-07: `fetchProducts()` client-side duplicates the same 2-query pattern
+**File:** `src/lib/data/client.ts:1707-1735`
+**Severity:** HIGH
+```typescript
+const [products, stock] = await Promise.all([
+  fetchRows<ProductRaw>("products", { eq: [["clinic_id", clinicId]] }),
+  fetchRows<StockRaw>("stock", { eq: [["clinic_id", clinicId]] }),
+]);
+const stockMap = new Map(stock.map((s) => [s.product_id, s]));
+```
+**Impact:**
+- Same as HIGH-06 but via the authenticated client
+- Both tables fetched entirely, then joined in JavaScript
+- `fetchRows` applies a 1,000-row limit -- pharmacies with >1,000 products get truncated stock data
+---
+### HIGH-08: `checkPlanLimits()` uses `select("*")` with `head: true`
+**File:** `src/lib/subscription-billing.ts:211-227`
+**Severity:** HIGH
+```typescript
+supabase.from("users").select("*", { count: "exact", head: true })...
+supabase.from("appointments").select("*", { count: "exact", head: true })...
+```
+**Impact:**
+- Using `select("*")` with `head: true` still causes Supabase to parse the full column list
+- Should use `select("id", { count: "exact", head: true })` for pure count queries
+- Called by cron billing job -- runs for every clinic on renewal check
+**Remediation:**
+- Change `select("*", ...)` to `select("id", ...)` in all count-only queries
+---
+### HIGH-09: `getPublicAverageRating()` makes 2 separate queries to compute average
+**File:** `src/lib/data/public.ts:167-208`
+**Severity:** HIGH
+```typescript
+// First tries RPC (good), then falls back to:
+const { count } = await supabase.from("reviews").select("id", { count: "exact", head: true })...;
+const { data } = await supabase.from("reviews").select("stars")...;
+// Then sums in JS
+```
+**Impact:**
+- Fallback path makes 2 sequential queries to compute a simple AVG
+- First query counts rows, second fetches all stars values
+- Should be a single `AVG(stars)` query or guaranteed RPC
+---
+## MEDIUM Findings
+### MED-01: `getClinicDashboardStats()` fires 8 parallel queries
+**File:** `src/lib/data/server.ts:863-904`
+**Severity:** MEDIUM
+```typescript
+const [patientCountRes, appointmentCountRes, completedCountRes, noShowCountRes,
+       paymentsRes, reviewsRes, doctorCountRes, serviceCountRes] = await Promise.all([...]);
+```
+**Impact:**
+- 8 separate queries to Supabase for dashboard stats
+- `paymentsRes` fetches ALL completed payment amounts to sum client-side
+- `reviewsRes` fetches ALL review stars to average client-side
+- Good: uses `count: "exact", head: true` for counts
+- Bad: payments and reviews fetch full result sets for aggregation
+**Remediation:**
+- Create a DB function `get_clinic_dashboard_stats(clinic_id)` that returns all stats in 1 query
+- At minimum, use SUM/AVG RPCs for payments and reviews
+---
+### MED-02: 35+ explicit `SELECT *` calls across the codebase
+**Locations (non-exhaustive):**
+- `backup.ts:88` -- backup tables
+- `subscription-billing.ts:261` -- subscription fetch
+- `auth.ts:149` -- user auth lookup
+- `server.ts:322, 489, 923` -- today appointments, prescriptions, clinics
+- `public.ts:449, 453, 528, 564, 632` -- pharmacy, on-duty, prescriptions, blog
+- `client.ts:2039, 2343-2345, 2848` -- purchase orders, analytics, subscription
+- `lab-public.ts:56, 100` -- lab tests, collection points
+- `super-admin-actions.ts:131, 176, 208, 411, 447, 481, 522, 559` -- multiple admin tables
+- `api/custom-fields/route.ts:31` -- custom field definitions
+- `api/custom-fields/values/route.ts:29` -- custom field values
+- `api/booking/waiting-list/route.ts:90, 101` -- waiting list
+**Impact:**
+- Transfers unnecessary columns (notes, metadata, JSON blobs, image URLs)
+- Increases network payload and Supabase compute time
+- Some tables have JSONB columns (config, metadata, content, steps) that can be large
+---
+### MED-03: Missing pagination on server-side list endpoints
+**File:** `src/lib/data/server.ts`
+**Severity:** MEDIUM
+Functions without any limit/pagination:
+| Function | Line | Table |
+|----------|------|-------|
+| `getAppointments()` | 293 | appointments |
+| `getAppointmentsByDoctor()` | 300 | appointments |
+| `getAppointmentsByPatient()` | 307 | appointments |
+| `getNotifications()` | 438 | notifications |
+| `getConsultationNotes()` | 538 | consultation_notes |
+| `getWaitingList()` | 562 | waiting_list |
+| `getTreatmentPlans()` | 625 | treatment_plans |
+| `getPatientTreatmentPlans()` | 634 | treatment_plans |
+| `getLabOrders()` | 658 | lab_orders |
+| `getInstallments()` | 682 | installments |
+| `getPatientInstallments()` | 689 | installments |
+| `getSterilizationLog()` | 712 | sterilization_log |
+| `getProducts()` | 742 | products |
+| `getStock()` | 763 | stock |
+| `getSuppliers()` | 790 | suppliers |
+| `getPrescriptionRequests()` | 812 | prescription_requests |
+| `getLoyaltyPoints()` | 842 | loyalty_points |
+| `getReviews()` | 415 | reviews |
+| `getPayments()` | 385 | payments |
+| `getPaymentsByPatient()` | 392 | payments |
+| `getDocuments()` | 460 | documents |
+| `getClinics()` | 132 | clinics |
+| `getClinicUsers()` | 212 | users |
+**Impact:**
+- All 23+ functions return unbounded result sets
+- Supabase has a default row limit (typically 1,000) that silently truncates
+- Users may see incomplete data without any error
+---
+### MED-04: Client-side `fetchRows<T>()` has 1,000-row hard limit
+**File:** `src/lib/data/client.ts:96`
+**Severity:** MEDIUM
+```typescript
+q = q.limit(opts?.limit ?? 1000);
+```
+**Impact:**
+- Good: prevents truly unbounded queries
+- Bad: 1,000 is not always appropriate (notifications could have thousands, analytics needs all data)
+- No cursor-based pagination -- callers that need >1,000 rows silently get truncated data
+- `fetchAnalytics()` bypasses this by using raw Supabase client (CRIT-01)
+---
+### MED-05: Redundant `ensureLookups()` calls in page-level compositions
+**File:** `src/lib/data/client.ts` (multiple locations)
+**Severity:** MEDIUM
+When a page calls multiple fetch functions, each one calls `ensureLookups()`:
+```
+fetchAppointments()      -> ensureLookups()  (cached after first call)
+fetchConsultationNotes() -> ensureLookups()  (cache hit)
+fetchPrescriptions()     -> ensureLookups()  (cache hit)
+fetchWaitingList()       -> ensureLookups()  (cache hit)
+```
+**Impact:**
+- First call in a session downloads ALL users + ALL services
+- Subsequent calls hit cache (5-min TTL) -- but on page load, 4+ functions may call ensureLookups simultaneously before the first one resolves
+- Race condition: multiple concurrent ensureLookups() calls may fire 2+ parallel fetches of ALL users
+- No mutex/lock on the cache check
+---
+### MED-06: `fetchWaitingRoom()` calls `fetchTodayAppointments()` which calls `ensureLookups()`
+**File:** `src/lib/data/client.ts:2133-2145`
+**Severity:** MEDIUM
+```typescript
+export async function fetchWaitingRoom(clinicId: string): Promise<WaitingRoomEntry[]> {
+  const todayAppts = await fetchTodayAppointments(clinicId);
+  return todayAppts.filter(...).map(...);
+}
+```
+**Impact:**
+- Fetching the waiting room triggers: ensureLookups (2 queries) + fetchTodayAppointments (1 query) = 3 queries
+- If the waiting room page also shows today's appointments, the same data is fetched twice
+---
+### MED-07: Cron reminders uses Supabase joins correctly but has 500-row limit
+**File:** `src/app/api/cron/reminders/route.ts:44-66`
+**Severity:** MEDIUM
+```typescript
+.select(`id, clinic_id, patient_id, ..., patients:patient_id(id, name, phone), ...`)
+.limit(500);
+```
+**Impact:**
+- Good: Uses joins to avoid N+1 queries
+- Risk: If >500 appointments need reminders in a 30-minute window, some will be skipped silently
+- No retry mechanism for skipped appointments
+- Large multi-clinic deployment could hit this limit
+---
+### MED-08: `fetchBillingRecords()` (super-admin) fetches ALL payments, no pagination
+**File:** `src/lib/super-admin-actions.ts:349-390`
+**Severity:** MEDIUM
+```typescript
+supabase.from("payments")
+  .select("id, clinic_id, amount, status, payment_type, created_at")
+  .order("created_at", { ascending: false }),
+```
+**Impact:**
+- No `.limit()` -- fetches ALL payments across ALL clinics
+- Good: selects specific columns (not SELECT *)
+- Bad: as the platform grows, this becomes a massive result set
+---
+### MED-09: `fetchAnnouncements()`, `fetchFeatureDefinitions()`, `fetchPricingTiers()`, `fetchFeatureToggles()` all use SELECT *
+**File:** `src/lib/super-admin-actions.ts:407-574`
+**Severity:** MEDIUM
+**Impact:**
+- Super-admin-only queries so lower traffic, but still wasteful
+- `fetchAnnouncements()` has no limit -- grows unbounded
+---
+### MED-10: `fetchClinicSubscription()` makes 3 sequential queries
+**File:** `src/lib/data/client.ts:2829-2911`
+**Severity:** MEDIUM
+```typescript
+// Query 1: clinic details
+supabase.from("clinics").select("id, name, type, tier, status").eq("id", clinicId).single();
+// Query 2: pricing tier (SELECT *)
+supabase.from("pricing_tiers").select("*").eq("slug", tierSlug).single();
+// Query 3: recent payments
+supabase.from("payments").select("id, amount, status, created_at").eq("clinic_id", clinicId).limit(10);
+```
+**Impact:**
+- 3 sequential waterfall queries on every billing page load
+- Could be parallelized with `Promise.all()` or combined with joins
+---
+### MED-11: `processRenewal()` uses SELECT * to fetch subscription
+**File:** `src/lib/subscription-billing.ts:259-263`
+**Severity:** MEDIUM
+```typescript
+const { data: sub, error: fetchError } = await supabase
+  .from("clinic_subscriptions").select("*").eq("clinic_id", clinicId).single();
+```
+**Impact:**
+- Fetches all columns when only ~10 are needed
+- Called by cron billing job for every clinic
+---
+### MED-12: `fetchDailySales()` references `pharmacy_sales` table that may not exist
+**File:** `src/lib/data/client.ts:2716`
+**Severity:** MEDIUM
+```typescript
+const rows = await fetchRows<PharmacySaleRaw>("pharmacy_sales" as TableName, {...});
+```
+**Impact:**
+- Cast to `TableName` bypasses type safety -- table may not exist in schema
+- Would fail silently (fetchRows returns `[]` on error)
+- No index verification possible for a phantom table
+---
+## LOW Findings
+### LOW-01: `getPublicBlogPosts()` queries `blog_posts` table with SELECT * but no index on `clinic_id`
+**File:** `src/lib/data/public.ts:678-699`
+**Severity:** LOW (public page, likely low volume)
+### LOW-02: Missing composite indexes for common query patterns
+**Severity:** LOW (single-column indexes exist, composite would be optimization)
+| Query Pattern | Columns | Current Index |
+|--------------|---------|---------------|
+| Appointments by clinic + date | `(clinic_id, appointment_date)` | Only `idx_appointments_clinic` |
+| Appointments by clinic + status | `(clinic_id, status)` | Separate indexes exist |
+| Users by clinic + role | `(clinic_id, role)` | Separate indexes exist |
+| Payments by clinic + status | `(clinic_id, status)` | Only `idx_payments_clinic` |
+| Notifications by user + is_read | `(user_id, is_read)` | Only `idx_notifications_user` |
+| Reviews by clinic + created_at | `(clinic_id, created_at)` | Only `idx_reviews_clinic` |
+### LOW-03: `notification_log` table missing index on `appointment_id`
+**File:** `src/app/api/cron/reminders/route.ts:81-86`
+**Severity:** LOW
+```typescript
+supabase.from("notification_log")
+  .select("appointment_id, trigger")
+  .in("appointment_id", appointmentIds)
+  .eq("channel", "reminder")
+  .eq("status", "sent");
+```
+**Impact:**
+- `.in("appointment_id", ...)` without an index on `appointment_id` does a seq scan
+- Only called by cron every 30 minutes, but batch size can be up to 500
+### LOW-04: `activity_logs` table queried with limit(20) but SELECT *
+**File:** `src/lib/super-admin-actions.ts:445-449`
+**Severity:** LOW
+Good: Has `.limit(20)`. Bad: Uses `SELECT *` when only display fields needed.
+### LOW-05: Duplicate fetch patterns between server.ts and client.ts
+**Severity:** LOW
+Many entities have nearly identical fetch logic in both `server.ts` and `client.ts`:
+- `getAppointments()` (server) vs `fetchAppointments()` (client)
+- `getConsultationNotes()` (server) vs `fetchConsultationNotes()` (client)
+- `getWaitingList()` (server) vs `fetchWaitingList()` (client)
+- `getPayments()` (server) vs `fetchInvoices()` (client)
+**Impact:**
+- Maintenance burden -- performance fixes must be applied in 2 places
+- Server versions are simpler (no ensureLookups) but also lack pagination
+### LOW-06: `fetchGeneratedSlots()` calls `fetchTimeSlots()` which calls `ensureLookups()`
+**File:** `src/lib/data/client.ts:2507-2536`
+**Severity:** LOW
+**Impact:**
+- Slot generation triggers a user+service lookup even though it only needs time slot data
+- Wasted query when called independently
+---
+## Index Coverage Analysis
+### Existing Indexes (Good)
+Migration `00001` and `00024` provide good baseline coverage:
+- `idx_appointments_clinic`, `idx_appointments_doctor`, `idx_appointments_patient`, `idx_appointments_status`, `idx_appointments_slot`
+- `idx_users_clinic`, `idx_users_auth`, `idx_users_role`
+- `idx_notifications_user`
+- `idx_payments_clinic`, `idx_payments_patient`
+- `idx_reviews_clinic`, `idx_reviews_patient`
+- `idx_documents_user`, `idx_documents_clinic`
+- `idx_waiting_list_clinic`, `idx_waiting_list_patient`
+- `idx_prescriptions_doctor`, `idx_prescriptions_patient`
+- Plus 100+ FK indexes added in migration `00024`
+### Missing Indexes
+| Table | Column(s) | Queried By | Priority |
+|-------|-----------|------------|----------|
+| `notification_log` | `appointment_id` | Cron reminders idempotency check | MEDIUM |
+| `notification_log` | `(channel, status)` | Cron reminders filter | MEDIUM |
+| `appointments` | `(clinic_id, appointment_date)` | Date-range queries, analytics | MEDIUM |
+| `appointments` | `(clinic_id, doctor_id, appointment_date)` | Slot booking counts | MEDIUM |
+| `payments` | `(clinic_id, status)` | Dashboard revenue, billing | LOW |
+| `users` | `(clinic_id, role)` | Doctor/patient/receptionist lists | LOW |
+| `blog_posts` | `clinic_id` | Public blog page | LOW |
+| `pharmacy_sales` | `clinic_id` | Daily sales page | LOW (table may not exist) |
+| `loyalty_transactions` | `clinic_id` | Loyalty transactions page | LOW |
+### Partial Index (Excellent)
+```sql
+-- Migration 00026: Prevents double-booking
+CREATE UNIQUE INDEX idx_no_double_booking
+ON appointments (clinic_id, doctor_id, appointment_date, start_time)
+WHERE status NOT IN ('cancelled', 'no_show');
+```
+This is a well-designed partial unique index.
+---
+## Data Volume Risk Assessment
+### Tier 1: Critical Growth Tables
+| Table | Growth Pattern | Risk | Mitigation Status |
+|-------|---------------|------|-------------------|
+| `appointments` | +N per doctor per day | HIGH -- unbounded queries in 5+ functions, analytics fetches ALL rows | NO mitigation |
+| `notifications` | +N per appointment (reminders, confirmations) | HIGH -- grows faster than appointments, no pagination on read | NO mitigation |
+| `payments` | +1 per appointment | MEDIUM -- dashboard sums ALL payments | NO mitigation |
+| `notification_log` | +1 per sent reminder | MEDIUM -- queried by cron with `.in()` | Partial (limit 500 in cron) |
+### Tier 2: Moderate Growth Tables
+| Table | Growth Pattern | Risk | Mitigation Status |
+|-------|---------------|------|-------------------|
+| `consultation_notes` | +1 per appointment | LOW-MEDIUM -- no pagination | NO mitigation |
+| `prescriptions` | +1 per consultation | LOW-MEDIUM -- no pagination | NO mitigation |
+| `reviews` | +1 per patient visit | LOW -- moderate growth | NO mitigation |
+| `documents` | +N per patient | LOW-MEDIUM -- file metadata grows with uploads | NO mitigation |
+| `lab_test_orders` | +1 per test order | LOW-MEDIUM -- 4-query pattern for list | NO mitigation |
+| `lab_test_results` | +N per order | LOW -- only queried per-order | OK |
+### Tier 3: Low Growth Tables
+| Table | Notes |
+|-------|-------|
+| `users` | Grows slowly, but fetched entirely by `ensureLookups()` |
+| `services` | Low cardinality, fetched entirely by `ensureLookups()` |
+| `clinics` | Very low cardinality |
+| `time_slots` | Low cardinality (7 days * N doctors) |
+| `products` | Moderate -- pharmacy inventory |
+| `stock` | 1:1 with products |
+---
+## Performance Bottleneck Summary (Prioritized)
+### Immediate Action Required (Will break at scale)
+1. **CRIT-01:** `fetchAnalytics()` -- move aggregations to DB functions, add date range filters
+2. **CRIT-02:** Add default limit to `query<T>()` in server.ts
+3. **CRIT-03:** Fix `getTreatmentPlans()` missing `clinic_id` filter
+4. **CRIT-04:** Optimize `getSuperAdminStats()` -- select specific columns, use SUM RPC
+5. **CRIT-05:** Replace `fetchDashboardStats()` insurance patient count with server-side query
+### Short-Term (Before 1,000+ appointments per clinic)
+6. **HIGH-01:** Refactor `ensureLookups()` to exclude patients or use per-query joins
+7. **HIGH-03/04/05:** Convert N+1 patterns to Supabase joins (purchase orders, family members, lab orders)
+8. **HIGH-06/07:** Merge product+stock into single joined query
+9. **MED-01:** Create `get_clinic_dashboard_stats()` DB function
+10. **MED-03:** Add pagination support to all list endpoints
+### Medium-Term (Before 10,000+ rows in high-growth tables)
+11. Add composite indexes for common multi-column filters
+12. Add `notification_log.appointment_id` index
+13. Implement cursor-based pagination in `fetchRows<T>()`
+14. Create Supabase RPC functions for all aggregation queries (SUM, AVG, COUNT)
+15. Add data archival strategy for notifications and logs
+---
+## Appendix: Query Count per Page Load (Estimated)
+| Page | Queries | Heaviest Query |
+|------|---------|----------------|
+| Admin Dashboard | 8-10 | `getClinicDashboardStats()` -- 8 parallel queries |
+| Analytics | 4-6 | `fetchAnalytics()` -- 4 queries, ALL rows from 3 tables |
+| Appointments List | 3 | `ensureLookups()` (2) + `fetchAppointments()` (1) |
+| Patient Detail | 8-12 | Multiple fetches (appointments, prescriptions, notes, documents, treatment plans) |
+| Super Admin Dashboard | 4-6 | `getSuperAdminStats()` -- ALL clinics + ALL payments |
+| Pharmacy Products | 4 | `ensureLookups()` (2) + products (1) + stock (1) |
+| Lab Orders | 4+ | `ensureLookups()` (2) + orders (1) + items (1) |
+| Billing Page | 3 | `fetchClinicSubscription()` -- 3 sequential queries |
+| Public Booking | 2-3 | Slot generation + booking counts |
+| Cron Reminders | 2 | Appointments + notification_log (well-optimized) |
