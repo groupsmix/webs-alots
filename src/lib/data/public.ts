@@ -171,9 +171,9 @@ export async function getPublicAverageRating(): Promise<number> {
   // no data transferred).  Falls back to application-level computation
   // if the RPC function doesn't exist yet.
   try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: rpcResult, error: rpcError } = await (supabase as any)
-      .rpc("avg_clinic_rating", { cid: clinicId });
+    const { data: rpcResult, error: rpcError } = await supabase
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .rpc("avg_clinic_rating" as any, { cid: clinicId });
 
     if (!rpcError && rpcResult !== null && rpcResult !== undefined) {
       const avg = typeof rpcResult === "number" ? rpcResult : Number(rpcResult);

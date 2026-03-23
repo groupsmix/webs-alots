@@ -75,8 +75,7 @@ export async function POST(request: NextRequest) {
       headers: { "Content-Type": "text/plain" },
     });
   } catch (err) {
-    const message = err instanceof Error ? err.message : "Unknown error";
-    logger.warn("Operation failed", { context: "route" });
+    logger.warn("Operation failed", { context: "route", error: err });
     return NextResponse.json({ error: "Failed to process payment callback" }, { status: 500 });
   }
 }

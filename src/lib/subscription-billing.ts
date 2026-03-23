@@ -134,7 +134,11 @@ export const SUBSCRIPTION_PLANS: PlanConfig[] = [
 // ---- Helpers ----
 
 export function getPlanConfig(plan: SubscriptionPlan): PlanConfig {
-  return SUBSCRIPTION_PLANS.find((p) => p.id === plan) ?? SUBSCRIPTION_PLANS[0];
+  const config = SUBSCRIPTION_PLANS.find((p) => p.id === plan);
+  if (!config) {
+    throw new Error(`Unknown subscription plan: "${plan}". Valid plans: ${SUBSCRIPTION_PLANS.map((p) => p.id).join(", ")}`);
+  }
+  return config;
 }
 
 export function getPlanPrice(plan: SubscriptionPlan, interval: BillingInterval): number {

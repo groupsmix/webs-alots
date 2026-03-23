@@ -93,7 +93,13 @@ async function sendViaResend(payload: EmailPayload): Promise<EmailSendResult> {
   }
 }
 
-// ---- Generic SMTP via fetch (Mailgun-compatible REST endpoint) ----
+// ---- Generic HTTP relay (Mailgun / Postmark / compatible REST API) ----
+//
+// IMPORTANT: This is NOT a raw SMTP transport. It constructs an HTTPS URL
+// from SMTP_HOST and SMTP_PORT and speaks JSON over HTTP — designed for
+// HTTP-based transactional email APIs such as Mailgun or Postmark.
+// If you need raw SMTP (port 25/465/587), integrate a Node.js SMTP
+// library like `nodemailer` instead.
 
 async function sendViaHttpRelay(payload: EmailPayload): Promise<EmailSendResult> {
   const host = process.env.SMTP_HOST;
@@ -105,8 +111,8 @@ async function sendViaHttpRelay(payload: EmailPayload): Promise<EmailSendResult>
   }
   const from = payload.from || process.env.EMAIL_FROM || "noreply@example.com";
 
-  // For SMTP, we use a simple HTTP relay if available (e.g., Mailgun, Postmark)
-  // Otherwise log a warning and return success to not block the flow
+  // Construct the HTTP relay endpoint (e.g., Mailgun, Postmark).
+  // This does NOT speak raw SMTP — see comment above.
   const smtpEndpoint = `https://${host}:${port}`;
 
   try {

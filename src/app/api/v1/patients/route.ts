@@ -114,7 +114,8 @@ export async function POST(request: NextRequest) {
         gender: body.gender || null,
         insurance_type: body.insurance_type || null,
         address: body.address || null,
-      } as never)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      } as any)
       .select()
       .single();
 

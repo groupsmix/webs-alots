@@ -11,15 +11,17 @@
  */
 
 import { createClient } from "@/lib/supabase-server";
+import { requireRole } from "@/lib/auth";
 import type {
   ClinicType,
   ClinicTier,
   Json,
 } from "@/lib/types/database";
 
-/** Server-side Supabase client that uses the cookie-based auth session
- *  instead of the public anon key exposed to the browser. */
+/** Server-side Supabase client that verifies the caller is super_admin
+ *  before returning a cookie-based auth session client. */
 async function rawClient() {
+  await requireRole("super_admin");
   return createClient();
 }
 
