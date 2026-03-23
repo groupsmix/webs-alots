@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Plus, Activity, AlertTriangle } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -61,7 +61,7 @@ export default function IopTrackingPage() {
     notes: "",
   });
 
-  const load = async () => {
+  const load = useCallback(async () => {
     const user = await getCurrentUser();
     if (!user?.clinic_id) { setLoading(false); return; }
     const [m, p] = await Promise.all([
@@ -71,12 +71,11 @@ export default function IopTrackingPage() {
     setMeasurements(m);
     setPatients(p);
     setLoading(false);
-  };
+  }, [selectedPatient]);
 
   useEffect(() => {
     load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedPatient]);
+  }, [load]);
 
   const handleSave = async () => {
     const user = await getCurrentUser();

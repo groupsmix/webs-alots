@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Plus, Syringe, AlertTriangle, CheckCircle, Clock, XCircle } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -60,7 +60,7 @@ export default function VaccinationsPage() {
     notes: "",
   });
 
-  const load = async () => {
+  const load = useCallback(async () => {
     const user = await getCurrentUser();
     if (!user?.clinic_id) { setLoading(false); return; }
     const [v, p] = await Promise.all([
@@ -78,12 +78,11 @@ export default function VaccinationsPage() {
     setVaccinations(updated);
     setPatients(p);
     setLoading(false);
-  };
+  }, [selectedPatient]);
 
   useEffect(() => {
     load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedPatient]);
+  }, [load]);
 
   const handleSave = async () => {
     const user = await getCurrentUser();

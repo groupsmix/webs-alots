@@ -631,6 +631,7 @@ export interface ConsultationNoteView {
   date: string;
   diagnosis: string;
   notes: string;
+  content?: Record<string, string>;
   prescriptionId?: string;
   followUpDate?: string;
   vitals?: {
@@ -649,6 +650,7 @@ interface ConsultationNoteRaw {
   patient_id: string;
   notes: string | null;
   diagnosis: string | null;
+  content: Record<string, string> | null;
   created_at: string;
   updated_at: string;
 }
@@ -670,6 +672,7 @@ export async function fetchConsultationNotes(clinicId: string, doctorId?: string
     date: r.created_at?.split("T")[0] ?? "",
     diagnosis: r.diagnosis ?? "",
     notes: r.notes ?? "",
+    content: r.content ?? undefined,
   }));
 }
 
@@ -1485,6 +1488,28 @@ export async function fetchLabOrders(clinicId: string): Promise<LabOrderView[]> 
     dueDate: r.due_date ?? "",
     createdAt: r.created_at?.split("T")[0] ?? "",
   }));
+}
+
+export async function createLabOrder(data: {
+  clinic_id: string;
+  patient_id: string;
+  doctor_id: string;
+  details: string;
+  lab_name?: string;
+  status?: string;
+  due_date?: string;
+}): Promise<string | null> {
+  const supabase = createClient();
+  const { data: result, error } = await supabase
+    .from("lab_orders")
+    .insert({ ...data, status: data.status ?? "pending" } as Database["public"]["Tables"]["lab_orders"]["Insert"])
+    .select("id")
+    .single();
+  if (error) {
+    logger.warn("Query failed", { context: "data/client", error });
+    return null;
+  }
+  return result?.id ?? null;
 }
 
 // ─────────────────────────────────────────────

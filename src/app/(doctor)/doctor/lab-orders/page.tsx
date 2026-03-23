@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { LabOrdersPanel } from "@/components/dental/lab-orders-panel";
-import { getCurrentUser, fetchLabOrders } from "@/lib/data/client";
+import { getCurrentUser, fetchLabOrders, createLabOrder } from "@/lib/data/client";
 import type { LabOrder } from "@/lib/types/dental";
 import { PageLoader } from "@/components/ui/page-loader";
 
@@ -35,12 +35,25 @@ export default function DoctorLabOrdersPage() {
     );
   };
 
-  const handleAddOrder = (order: Omit<LabOrder, "id" | "createdAt" | "updatedAt">) => {
+  const handleAddOrder = async (order: Omit<LabOrder, "id" | "createdAt" | "updatedAt">) => {
+    const user = await getCurrentUser();
+    if (!user?.clinic_id) return;
+
+    const newId = await createLabOrder({
+      clinic_id: user.clinic_id,
+      patient_id: order.patientId,
+      doctor_id: order.doctorId,
+      details: order.description,
+      lab_name: order.labName || undefined,
+      status: order.status,
+      due_date: order.dueDate || undefined,
+    });
+
     const today = new Date().toISOString().split("T")[0];
     setOrders((prev) => [
       {
         ...order,
-        id: `lo${prev.length + 1}`,
+        id: newId ?? `lo${prev.length + 1}`,
         createdAt: today,
         updatedAt: today,
       },

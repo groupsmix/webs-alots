@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Plus, Baby, CheckCircle, AlertCircle, Clock } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -87,7 +87,7 @@ export default function ChildInfoPage() {
     notes: "",
   });
 
-  const load = async () => {
+  const load = useCallback(async () => {
     const user = await getCurrentUser();
     if (!user?.clinic_id) { setLoading(false); return; }
     const [m, p] = await Promise.all([
@@ -97,12 +97,11 @@ export default function ChildInfoPage() {
     setMilestones(m);
     setPatients(p);
     setLoading(false);
-  };
+  }, [selectedPatient]);
 
   useEffect(() => {
     load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedPatient]);
+  }, [load]);
 
   const handleSave = async () => {
     const user = await getCurrentUser();

@@ -265,7 +265,19 @@ export async function processRenewal(
     return { success: false, error: "Subscription not found" };
   }
 
-  const subscription = sub as unknown as ClinicSubscription;
+  const subscription: ClinicSubscription = {
+    id: sub.id,
+    clinicId: sub.clinic_id,
+    plan: sub.plan as SubscriptionPlan,
+    status: sub.status as SubscriptionStatus,
+    billingInterval: (sub.billing_interval ?? "monthly") as BillingInterval,
+    currentPeriodStart: sub.current_period_start ?? "",
+    currentPeriodEnd: sub.current_period_end ?? "",
+    cancelAtPeriodEnd: sub.cancel_at_period_end ?? false,
+    stripeCustomerId: sub.stripe_customer_id ?? undefined,
+    stripeSubscriptionId: sub.stripe_subscription_id ?? undefined,
+    trialEnd: sub.trial_end ?? undefined,
+  };
 
   if (!needsRenewal(subscription)) {
     return { success: true }; // No renewal needed
@@ -336,7 +348,7 @@ export async function processRenewal(
       status: "active",
       current_period_start: nextPeriod.start,
       current_period_end: nextPeriod.end,
-    } as Record<string, unknown>)
+    })
     .eq("clinic_id", clinicId);
 
   // Log the event

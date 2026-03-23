@@ -38,7 +38,7 @@ interface ConsultationNote {
 }
 
 function mapDbNoteToLocal(n: ConsultationNoteView): ConsultationNote {
-  const content = (n as unknown as { content?: Record<string, string> }).content ?? {};
+  const content = n.content ?? {};
   return {
     id: n.id,
     appointmentId: n.appointmentId,
