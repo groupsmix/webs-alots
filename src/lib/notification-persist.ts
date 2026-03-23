@@ -5,7 +5,7 @@
  * so they appear in the user's notification feed.
  */
 
-import { createClient } from "@/lib/supabase-client";
+import { createClient } from "@/lib/supabase-server";
 import type { NotificationTrigger } from "./notifications";
 import { logger } from "@/lib/logger";
 
@@ -30,7 +30,7 @@ export async function insertInAppNotification(
   params: InsertNotificationParams,
 ): Promise<InsertResult> {
   try {
-    const supabase = createClient();
+    const supabase = await createClient();
 
     // Look up the user to get their clinic_id
     const { data: user } = await supabase

@@ -4,6 +4,14 @@
  * https://nextjs.org/docs/app/building-your-application/optimizing/instrumentation
  */
 export function register() {
+  // Validate all required environment variables at startup so missing
+  // config is surfaced immediately rather than at runtime.
+  // Dynamic import avoids pulling logger into the module graph before
+  // Next.js has finished bootstrapping.
+  import("@/lib/env").then(({ enforceEnvValidation }) => {
+    enforceEnvValidation();
+  });
+
   // CRITICAL-03: Enforce seed password rotation in production.
   // Migration 00019 creates seed users with the well-known password
   // "seed-password-change-me". In production, operators MUST rotate

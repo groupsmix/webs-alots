@@ -8,11 +8,6 @@ import { chatRequestSchema, safeParse } from "@/lib/validations";
 
 export const runtime = "edge";
 
-interface _ChatRequestBody {
-  messages: { role: "user" | "assistant" | "system"; content: string }[];
-  clinicId?: string;
-}
-
 /**
  * POST /api/chat
  *
@@ -231,7 +226,6 @@ export async function POST(request: NextRequest) {
     });
 
     if (!apiResponse.ok) {
-      void apiResponse;
       const reply = getBasicResponse(lastMessage.content, ctx);
       return NextResponse.json({
         message: { role: "assistant" as const, content: reply },

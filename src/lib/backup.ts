@@ -284,7 +284,11 @@ export async function restoreBackup(
   } else if (rpcError.message?.includes("function") && rpcError.message?.includes("does not exist")) {
     // Fallback: RPC function not deployed yet — use sequential inserts
     // (non-atomic, but preserves existing behavior)
-    // RPC not found — using sequential inserts as fallback
+    logger.warn(
+      "restore_backup_transaction RPC not found — falling back to non-atomic sequential inserts. " +
+      "Deploy the RPC function to enable atomic restores.",
+      { context: "backup/restore", rpcError: rpcError.message },
+    );
     for (const table of BACKUP_TABLES) {
       const mappedRows = allMappedRows[table];
       if (!mappedRows || mappedRows.length === 0) {
