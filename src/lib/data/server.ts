@@ -1136,7 +1136,7 @@ export async function createRadiologyImage(data: {
       ...data,
       is_dicom: data.is_dicom ?? false,
       dicom_metadata: data.dicom_metadata ?? {},
-    } as never)
+    } as Database["public"]["Tables"]["radiology_images"]["Insert"])
     .select("id")
     .single();
   if (error) {
