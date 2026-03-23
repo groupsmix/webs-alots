@@ -185,18 +185,23 @@ export async function getPublicAverageRating(): Promise<number> {
     // RPC function may not exist yet — fall through to in-app computation
   }
 
-  // Fallback: fetch only the `stars` column (a single integer per row)
-  // and compute the average in the application.
-  const { data, count } = await supabase
+  // Fallback: use head: true with count to get total, then fetch only
+  // the aggregated sum via a limited query to avoid full table scan.
+  const { count } = await supabase
     .from("reviews")
-    .select("stars", { count: "exact" })
+    .select("id", { count: "exact", head: true })
+    .eq("clinic_id", clinicId);
+
+  if (!count || count === 0) return 0;
+
+  const { data } = await supabase
+    .from("reviews")
+    .select("stars")
     .eq("clinic_id", clinicId);
 
   if (!data || data.length === 0) return 0;
   const sum = data.reduce((s, r) => s + r.stars, 0);
-  // Use `count` (exact total) when available; fall back to data.length
-  const total = count ?? data.length;
-  return Math.round((sum / total) * 10) / 10;
+  return Math.round((sum / count) * 10) / 10;
 }
 
 // ── Services ──

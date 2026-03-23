@@ -55,7 +55,8 @@ export async function GET(request: NextRequest) {
         notes,
         patients:patient_id (id, name, phone),
         doctors:doctor_id (id, name),
-        services:service_id (name)
+        services:service_id (name),
+        clinics:clinic_id (name)
       `)
       .in("status", [APPOINTMENT_STATUS.CONFIRMED, APPOINTMENT_STATUS.PENDING])
       .or(
@@ -87,20 +88,8 @@ export async function GET(request: NextRequest) {
       (sentLogs ?? []).map((l) => `${l.appointment_id}:${l.trigger}`),
     );
 
-    // --- Batch clinic name lookup ---
-    // Resolve clinic names upfront in a single query so notification
-    // templates can include the real clinic name instead of an empty string.
-    const uniqueClinicIds = [...new Set(appointments.map((a) => a.clinic_id).filter(Boolean))] as string[];
-    const clinicNameMap = new Map<string, string>();
-    if (uniqueClinicIds.length > 0) {
-      const { data: clinicRows } = await supabase
-        .from("clinics")
-        .select("id, name")
-        .in("id", uniqueClinicIds);
-      for (const c of clinicRows ?? []) {
-        clinicNameMap.set(c.id, c.name);
-      }
-    }
+    // Clinic names are now joined in the main appointment query above
+    // (clinics:clinic_id (name)), so no separate lookup is needed.
 
     const results: { appointmentId: string; type: string; success: boolean }[] = [];
     const pendingLogInserts: {
@@ -176,7 +165,8 @@ export async function GET(request: NextRequest) {
         continue;
       }
 
-      const clinicName = clinicNameMap.get(appt.clinic_id as string) ?? "Clinic";
+      const clinic = appt.clinics as unknown as { name: string } | null;
+      const clinicName = clinic?.name ?? "Clinic";
 
       dispatchQueue.push({
         apptId: appt.id,

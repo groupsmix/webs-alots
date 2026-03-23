@@ -871,30 +871,41 @@ export interface DashboardStats {
 
 export async function fetchDashboardStats(clinicId: string): Promise<DashboardStats> {
   const supabase = createClient();
-  const [patientsRes, appointmentsRes, paymentsRes, reviewsRes, doctorsRes] = await Promise.all([
-  supabase.from("users").select("id, metadata").eq("clinic_id", clinicId).eq("role", "patient"),
-  supabase.from("appointments").select("id, status").eq("clinic_id", clinicId),
-  supabase.from("payments").select("id, amount").eq("clinic_id", clinicId).eq("status", "completed"),
-  supabase.from("reviews").select("id, stars").eq("clinic_id", clinicId),
-  supabase.from("users").select("id").eq("clinic_id", clinicId).eq("role", "doctor"),
+  const [
+    patientCountRes,
+    appointmentCountRes,
+    completedCountRes,
+    noShowCountRes,
+    paymentsRes,
+    reviewsRes,
+    doctorCountRes,
+    insurancePatientsRes,
+  ] = await Promise.all([
+    supabase.from("users").select("id", { count: "exact", head: true }).eq("clinic_id", clinicId).eq("role", "patient"),
+    supabase.from("appointments").select("id", { count: "exact", head: true }).eq("clinic_id", clinicId),
+    supabase.from("appointments").select("id", { count: "exact", head: true }).eq("clinic_id", clinicId).eq("status", "completed"),
+    supabase.from("appointments").select("id", { count: "exact", head: true }).eq("clinic_id", clinicId).in("status", ["no_show", "no-show"]),
+    supabase.from("payments").select("amount").eq("clinic_id", clinicId).eq("status", "completed"),
+    supabase.from("reviews").select("stars").eq("clinic_id", clinicId),
+    supabase.from("users").select("id", { count: "exact", head: true }).eq("clinic_id", clinicId).eq("role", "doctor"),
+    supabase.from("users").select("id, metadata").eq("clinic_id", clinicId).eq("role", "patient"),
   ]);
-  const patients = (patientsRes.data ?? []) as { id: string; metadata: Record<string, unknown> | null }[];
-  const appts = (appointmentsRes.data ?? []) as { id: string; status: string }[];
-  const payments = (paymentsRes.data ?? []) as { id: string; amount: number }[];
-  const reviews = (reviewsRes.data ?? []) as { id: string; stars: number }[];
+  const payments = (paymentsRes.data ?? []) as { amount: number }[];
+  const reviews = (reviewsRes.data ?? []) as { stars: number }[];
+  const insurancePatients = (insurancePatientsRes.data ?? []) as { id: string; metadata: Record<string, unknown> | null }[];
 
   const totalRevenue = payments.reduce((s, p) => s + (p.amount ?? 0), 0);
   const avgRating = reviews.length > 0 ? reviews.reduce((s, r) => s + r.stars, 0) / reviews.length : 0;
-  const insuranceCount = patients.filter((p) => p.metadata && (p.metadata as Record<string, unknown>).insurance).length;
+  const insuranceCount = insurancePatients.filter((p) => p.metadata && (p.metadata as Record<string, unknown>).insurance).length;
 
   return {
-    totalPatients: patients.length,
-    totalAppointments: appts.length,
-    completedAppointments: appts.filter((a) => a.status === "completed").length,
-    noShowCount: appts.filter((a) => a.status === "no_show" || a.status === "no-show").length,
+    totalPatients: patientCountRes.count ?? 0,
+    totalAppointments: appointmentCountRes.count ?? 0,
+    completedAppointments: completedCountRes.count ?? 0,
+    noShowCount: noShowCountRes.count ?? 0,
     totalRevenue,
     averageRating: avgRating,
-    doctorCount: (doctorsRes.data ?? []).length,
+    doctorCount: doctorCountRes.count ?? 0,
     insurancePatients: insuranceCount,
   };
 }
@@ -903,10 +914,16 @@ export async function fetchDashboardStats(clinicId: string): Promise<DashboardSt
 // Mutations
 // ─────────────────────────────────────────────
 
+export interface MutationResult<T = void> {
+  success: boolean;
+  data?: T;
+  error?: { code: string; message: string };
+}
+
 export async function updateAppointmentStatus(
   appointmentId: string,
   status: string,
-): Promise<boolean> {
+): Promise<MutationResult> {
   const supabase = createClient();
   // Map UI status names to DB status names
   const dbStatus = status.replace("-", "_");
@@ -917,10 +934,10 @@ export async function updateAppointmentStatus(
   const { error } = await supabase.from("appointments").update(updateData).eq("id", appointmentId);
   if (error) {
     console.error("[data] update appointment:", error.message);
-    return false;
+    return { success: false, error: { code: error.code, message: error.message } };
   }
   clearLookupCache();
-  return true;
+  return { success: true };
 }
 
 export async function createPayment(data: {
@@ -930,7 +947,7 @@ export async function createPayment(data: {
   amount: number;
   method?: string;
   status?: string;
-}): Promise<boolean> {
+}): Promise<MutationResult> {
   const supabase = createClient();
   const { error } = await supabase.from("payments").insert({
     ...data,
@@ -940,10 +957,10 @@ export async function createPayment(data: {
   });
   if (error) {
     console.error("[data] create payment:", error.message);
-    return false;
+    return { success: false, error: { code: error.code, message: error.message } };
   }
   clearLookupCache();
-  return true;
+  return { success: true };
 }
 
 export async function upsertReview(data: {
@@ -951,15 +968,15 @@ export async function upsertReview(data: {
   patient_id: string;
   stars: number;
   comment?: string;
-}): Promise<boolean> {
+}): Promise<MutationResult> {
   const supabase = createClient();
   const { error } = await supabase.from("reviews").insert(data);
   if (error) {
     console.error("[data] create review:", error.message);
-    return false;
+    return { success: false, error: { code: error.code, message: error.message } };
   }
   clearLookupCache();
-  return true;
+  return { success: true };
 }
 
 export async function updateReviewResponse(reviewId: string, response: string): Promise<boolean> {

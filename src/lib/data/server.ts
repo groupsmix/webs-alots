@@ -69,9 +69,9 @@ async function queryOne<T>(
       q = q.eq(col, val as string);
     }
   }
-  const { data, error } = await q.single();
+  const { data, error } = await q.maybeSingle();
   if (error) return null;
-  return data as T;
+  return data as T | null;
 }
 
 // ────────────────────────────────────────────
@@ -843,39 +843,43 @@ export interface ClinicDashboardStats {
 export async function getClinicDashboardStats(clinicId: string): Promise<ClinicDashboardStats> {
   const supabase = await createClient();
 
-  const [patientsRes, appointmentsRes, paymentsRes, reviewsRes, doctorsRes, servicesRes] = await Promise.all([
-    supabase.from("users").select("id").eq("clinic_id", clinicId).eq("role", "patient"),
-    supabase.from("appointments").select("id, status").eq("clinic_id", clinicId),
-    supabase.from("payments").select("id, amount, status").eq("clinic_id", clinicId).eq("status", "completed"),
-    supabase.from("reviews").select("id, stars").eq("clinic_id", clinicId),
-    supabase.from("users").select("id").eq("clinic_id", clinicId).eq("role", "doctor"),
-    supabase.from("services").select("id").eq("clinic_id", clinicId),
+  const [
+    patientCountRes,
+    appointmentCountRes,
+    completedCountRes,
+    noShowCountRes,
+    paymentsRes,
+    reviewsRes,
+    doctorCountRes,
+    serviceCountRes,
+  ] = await Promise.all([
+    supabase.from("users").select("id", { count: "exact", head: true }).eq("clinic_id", clinicId).eq("role", "patient"),
+    supabase.from("appointments").select("id", { count: "exact", head: true }).eq("clinic_id", clinicId),
+    supabase.from("appointments").select("id", { count: "exact", head: true }).eq("clinic_id", clinicId).eq("status", "completed"),
+    supabase.from("appointments").select("id", { count: "exact", head: true }).eq("clinic_id", clinicId).eq("status", "no_show"),
+    supabase.from("payments").select("amount").eq("clinic_id", clinicId).eq("status", "completed"),
+    supabase.from("reviews").select("stars").eq("clinic_id", clinicId),
+    supabase.from("users").select("id", { count: "exact", head: true }).eq("clinic_id", clinicId).eq("role", "doctor"),
+    supabase.from("services").select("id", { count: "exact", head: true }).eq("clinic_id", clinicId),
   ]);
 
-  const patients = patientsRes.data ?? [];
-  const appointments = appointmentsRes.data ?? [];
-  const payments = paymentsRes.data ?? [];
-  const reviews = reviewsRes.data ?? [];
-  const doctors = doctorsRes.data ?? [];
-  const services = servicesRes.data ?? [];
-
-  const totalRevenue = payments.reduce((sum, p) => sum + ((p as { amount: number }).amount ?? 0), 0);
-  const completed = appointments.filter((a) => (a as { status: string }).status === "completed").length;
-  const noShows = appointments.filter((a) => (a as { status: string }).status === "no_show").length;
+  const payments = (paymentsRes.data ?? []) as { amount: number }[];
+  const reviews = (reviewsRes.data ?? []) as { stars: number }[];
+  const totalRevenue = payments.reduce((sum, p) => sum + (p.amount ?? 0), 0);
   const avgRating =
     reviews.length > 0
-      ? reviews.reduce((sum, r) => sum + ((r as { stars: number }).stars ?? 0), 0) / reviews.length
+      ? reviews.reduce((sum, r) => sum + (r.stars ?? 0), 0) / reviews.length
       : 0;
 
   return {
-    totalPatients: patients.length,
-    totalAppointments: appointments.length,
+    totalPatients: patientCountRes.count ?? 0,
+    totalAppointments: appointmentCountRes.count ?? 0,
     totalRevenue,
-    completedAppointments: completed,
-    noShowCount: noShows,
+    completedAppointments: completedCountRes.count ?? 0,
+    noShowCount: noShowCountRes.count ?? 0,
     averageRating: avgRating,
-    doctorCount: doctors.length,
-    activeServices: services.length,
+    doctorCount: doctorCountRes.count ?? 0,
+    activeServices: serviceCountRes.count ?? 0,
   };
 }
 
@@ -895,25 +899,26 @@ export interface SuperAdminStats {
 export async function getSuperAdminStats(): Promise<SuperAdminStats> {
   const supabase = await createClient();
 
-  const [clinicsRes, usersRes, appointmentsRes, paymentsRes] = await Promise.all([
+  const [clinicsRes, patientCountRes, appointmentCountRes, revenueRes] = await Promise.all([
     supabase.from("clinics").select("*").order("created_at", { ascending: false }),
-    supabase.from("users").select("id").eq("role", "patient"),
-    supabase.from("appointments").select("id"),
-    supabase.from("payments").select("id, amount, status").eq("status", "completed"),
+    supabase.from("users").select("id", { count: "exact", head: true }).eq("role", "patient"),
+    supabase.from("appointments").select("id", { count: "exact", head: true }),
+    supabase.from("payments").select("amount").eq("status", "completed"),
   ]);
 
   const clinics = (clinicsRes.data ?? []) as ClinicRow[];
-  const patients = usersRes.data ?? [];
-  const appointments = appointmentsRes.data ?? [];
-  const payments = (paymentsRes.data ?? []) as { id: string; amount: number; status: string }[];
+  const totalRevenue = (revenueRes.data ?? []).reduce(
+    (sum, p) => sum + ((p as { amount: number }).amount ?? 0),
+    0,
+  );
 
   return {
     clinics,
     totalClinics: clinics.length,
     activeClinics: clinics.filter((c) => c.status === "active").length,
-    totalPatients: patients.length,
-    totalAppointments: appointments.length,
-    totalRevenue: payments.reduce((sum, p) => sum + (p.amount ?? 0), 0),
+    totalPatients: patientCountRes.count ?? 0,
+    totalAppointments: appointmentCountRes.count ?? 0,
+    totalRevenue,
   };
 }
 

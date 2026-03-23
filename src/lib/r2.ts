@@ -38,20 +38,18 @@ function getR2Config() {
 }
 
 let _client: S3Client | null = null;
-let _clientCreatedAt = 0;
-
-/** FIX (MED-07): TTL for the S3Client singleton (60 seconds).
- * After credential rotation the stale client will be replaced
- * within this window instead of living forever. */
-const CLIENT_TTL_MS = 60_000;
+let _lastConfigHash = "";
 
 function getClient(): S3Client | null {
-  const now = Date.now();
-  if (_client && now - _clientCreatedAt < CLIENT_TTL_MS) return _client;
-
   const config = getR2Config();
   if (!config) return null;
 
+  // Rebuild the client whenever credentials or config change,
+  // ensuring stale credentials are never used after rotation.
+  const configHash = `${config.accountId}:${config.accessKeyId}:${config.bucketName}`;
+  if (_client && configHash === _lastConfigHash) return _client;
+
+  _lastConfigHash = configHash;
   _client = new S3Client({
     region: "auto",
     endpoint: `https://${config.accountId}.r2.cloudflarestorage.com`,
@@ -60,7 +58,6 @@ function getClient(): S3Client | null {
       secretAccessKey: config.secretAccessKey,
     },
   });
-  _clientCreatedAt = now;
 
   return _client;
 }

@@ -129,6 +129,21 @@ export async function middleware(request: NextRequest) {
       const protocol = request.nextUrl.protocol;
       allowedOrigins.add(`${protocol}//${rootDomain}`);
     }
+    // Allow valid subdomain origins (e.g. clinic1.example.com)
+    if (origin && rootDomain) {
+      try {
+        const originHost = new URL(origin).hostname;
+        const rootHost = rootDomain.split(":")[0];
+        if (
+          originHost.endsWith(`.${rootHost}`) &&
+          !originHost.slice(0, -(rootHost.length + 1)).includes(".")
+        ) {
+          allowedOrigins.add(origin);
+        }
+      } catch {
+        /* malformed origin — will be rejected below */
+      }
+    }
     // Allow localhost origins in development
     if (process.env.NODE_ENV !== "production") {
       allowedOrigins.add(`${request.nextUrl.protocol}//${hostname}`);
@@ -240,21 +255,30 @@ export async function middleware(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  // If user is on a public route, allow through
-  if (isPublicRoute(pathname)) {
-    // If authenticated user visits login/register, redirect to their dashboard
-    if (user && (pathname === "/login" || pathname === "/register")) {
-      const { data: profile } = await supabase
+  // Single profile query for authenticated users, reused for both
+  // login-redirect and role-enforcement (avoids duplicate DB calls).
+  let profile: { role: string } | null = null;
+  if (user) {
+    const needsProfile =
+      (isPublicRoute(pathname) && (pathname === "/login" || pathname === "/register")) ||
+      isProtectedRoute(pathname);
+    if (needsProfile) {
+      const { data } = await supabase
         .from("users")
         .select("role")
         .eq("auth_id", user.id)
-        .single();
+        .maybeSingle();
+      profile = data;
+    }
+  }
 
-      if (profile) {
-        const dashboardPath =
-          ROLE_DASHBOARD_MAP[profile.role] || "/patient/dashboard";
-        return NextResponse.redirect(new URL(dashboardPath, request.url));
-      }
+  // If user is on a public route, allow through
+  if (isPublicRoute(pathname)) {
+    // If authenticated user visits login/register, redirect to their dashboard
+    if (user && (pathname === "/login" || pathname === "/register") && profile) {
+      const dashboardPath =
+        ROLE_DASHBOARD_MAP[profile.role] || "/patient/dashboard";
+      return NextResponse.redirect(new URL(dashboardPath, request.url));
     }
     return supabaseResponse;
   }
@@ -267,27 +291,19 @@ export async function middleware(request: NextRequest) {
   }
 
   // If authenticated, check role-based access
-  if (user && isProtectedRoute(pathname)) {
-    const { data: profile } = await supabase
-      .from("users")
-      .select("role")
-      .eq("auth_id", user.id)
-      .single();
+  if (user && isProtectedRoute(pathname) && profile) {
+    const allowedPrefix = ROLE_ROUTE_MAP[profile.role];
 
-    if (profile) {
-      const allowedPrefix = ROLE_ROUTE_MAP[profile.role];
+    // Super admin can access everything
+    if (profile.role === "super_admin") {
+      return supabaseResponse;
+    }
 
-      // Super admin can access everything
-      if (profile.role === "super_admin") {
-        return supabaseResponse;
-      }
-
-      // Check if user is accessing their allowed routes
-      if (allowedPrefix && !pathname.startsWith(allowedPrefix)) {
-        const dashboardPath =
-          ROLE_DASHBOARD_MAP[profile.role] || "/patient/dashboard";
-        return NextResponse.redirect(new URL(dashboardPath, request.url));
-      }
+    // Check if user is accessing their allowed routes
+    if (allowedPrefix && !pathname.startsWith(allowedPrefix)) {
+      const dashboardPath =
+        ROLE_DASHBOARD_MAP[profile.role] || "/patient/dashboard";
+      return NextResponse.redirect(new URL(dashboardPath, request.url));
     }
   }
 
