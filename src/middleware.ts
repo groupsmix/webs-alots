@@ -101,6 +101,21 @@ function setTenantHeaders(
 const MAX_BODY_BYTES = 25 * 1024 * 1024;
 
 /**
+ * Apply defense-in-depth security headers to early-return error responses
+ * (CSRF rejection, rate limiting, payload-too-large) that bypass the normal
+ * response flow where headers are set on the forwarded `supabaseResponse`.
+ */
+function withSecurityHeaders(
+  response: NextResponse,
+  cspHeaderValue: string,
+): NextResponse {
+  response.headers.set("Content-Security-Policy", cspHeaderValue);
+  response.headers.set("Strict-Transport-Security", "max-age=63072000; includeSubDomains; preload");
+  response.headers.set("X-Content-Type-Options", "nosniff");
+  return response;
+}
+
+/**
  * Build the Content-Security-Policy header value with a per-request nonce
  * for script-src (replaces 'unsafe-inline').
  *
@@ -148,9 +163,12 @@ export async function middleware(request: NextRequest) {
   // --- Global body size limit ---
   const contentLength = request.headers.get("content-length");
   if (contentLength && Number(contentLength) > MAX_BODY_BYTES) {
-    return NextResponse.json(
-      { error: "Payload too large" },
-      { status: 413 },
+    return withSecurityHeaders(
+      NextResponse.json(
+        { error: "Payload too large" },
+        { status: 413 },
+      ),
+      cspHeaderValue,
     );
   }
 
@@ -209,16 +227,22 @@ export async function middleware(request: NextRequest) {
     }
 
     if (!origin) {
-      return NextResponse.json(
-        { error: "CSRF validation failed: missing origin header" },
-        { status: 403 },
+      return withSecurityHeaders(
+        NextResponse.json(
+          { error: "CSRF validation failed: missing origin header" },
+          { status: 403 },
+        ),
+        cspHeaderValue,
       );
     }
 
     if (!allowedOrigins.has(origin)) {
-      return NextResponse.json(
-        { error: "CSRF validation failed: origin not allowed" },
-        { status: 403 },
+      return withSecurityHeaders(
+        NextResponse.json(
+          { error: "CSRF validation failed: origin not allowed" },
+          { status: 403 },
+        ),
+        cspHeaderValue,
       );
     }
   }
@@ -234,9 +258,12 @@ export async function middleware(request: NextRequest) {
     if (rule) {
       const allowed = await rule.limiter.check(rateLimitKey);
       if (!allowed) {
-        return NextResponse.json(
-          { error: "Too many requests. Please try again later." },
-          { status: 429 },
+        return withSecurityHeaders(
+          NextResponse.json(
+            { error: "Too many requests. Please try again later." },
+            { status: 429 },
+          ),
+          cspHeaderValue,
         );
       }
     }

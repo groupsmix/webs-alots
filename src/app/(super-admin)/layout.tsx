@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -87,20 +87,23 @@ export default function SuperAdminLayout({
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
+  const mountedRef = useRef(true);
 
   useEffect(() => {
+    mountedRef.current = true;
+
     async function loadNotifications() {
       try {
         const supabase = createClient();
         const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return;
+        if (!user || !mountedRef.current) return;
 
         const { data: profile } = await supabase
           .from("users")
           .select("id")
           .eq("auth_id", user.id)
           .single();
-        if (!profile) return;
+        if (!profile || !mountedRef.current) return;
 
         const { data } = await supabase
           .from("notifications")
@@ -109,7 +112,7 @@ export default function SuperAdminLayout({
           .order("sent_at", { ascending: false })
           .limit(10);
 
-        if (data) {
+        if (data && mountedRef.current) {
           setNotifications(
             data.map((n) => {
               const sentAt = new Date(n.sent_at ?? Date.now());
@@ -136,7 +139,13 @@ export default function SuperAdminLayout({
         // Notifications are non-critical; fail silently
       }
     }
+
     loadNotifications();
+    const interval = setInterval(loadNotifications, 60_000);
+    return () => {
+      mountedRef.current = false;
+      clearInterval(interval);
+    };
   }, []);
 
   const unreadCount = notifications.filter((n) => n.unread).length;
