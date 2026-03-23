@@ -31,7 +31,7 @@ export function AnalyticsDashboard({ role = "admin" }: { role?: "admin" | "docto
   const [revenuePeriod, setRevenuePeriod] = useState<"daily" | "weekly" | "monthly">("daily");
   const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
+  const [_error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
     const controller = new AbortController();

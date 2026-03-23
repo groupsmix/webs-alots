@@ -56,7 +56,7 @@ function canCancelAppointment(
 export function AppointmentList({ patientId }: { patientId?: string }) {
   const [allAppts, setAllAppts] = useState<AppointmentView[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
+  const [_error, setError] = useState<Error | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
   const [rescheduleAppt, setRescheduleAppt] = useState<string | null>(null);
   const [cancellingId, setCancellingId] = useState<string | null>(null);

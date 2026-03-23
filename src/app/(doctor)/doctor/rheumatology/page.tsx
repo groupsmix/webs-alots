@@ -46,7 +46,7 @@ export default function RheumatologyPage() {
   const [assessments, setAssessments] = useState<JointAssessmentView[]>([]);
   const [mobilityTests, setMobilityTests] = useState<MobilityTestView[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
+  const [_error, setError] = useState<Error | null>(null);
   const [showAssessmentForm, setShowAssessmentForm] = useState(false);
   const [showMobilityForm, setShowMobilityForm] = useState(false);
 

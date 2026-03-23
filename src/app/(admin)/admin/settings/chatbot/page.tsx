@@ -92,7 +92,7 @@ export default function ChatbotSettingsPage() {
   });
   const [faqs, setFaqs] = useState<FaqEntry[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
+  const [_error, setError] = useState<Error | null>(null);
   const [saving, setSaving] = useState(false);
   const [savedMessage, setSavedMessage] = useState<string | null>(null);
 

@@ -33,7 +33,7 @@ export default function ReceptionistDashboardPage() {
   const [patientMap, setPatientMap] = useState<Map<string, PatientView>>(new Map());
   const [totalRevenue, setTotalRevenue] = useState(0);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
+  const [_error, setError] = useState<Error | null>(null);
   const [checkedInIds, setCheckedInIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {

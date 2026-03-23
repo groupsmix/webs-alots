@@ -25,7 +25,7 @@ const statusVariant: Record<string, "default" | "success" | "warning" | "destruc
 export default function DoctorSchedulePage() {
   const [doctorAppointments, setDoctorAppointments] = useState<AppointmentView[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
+  const [_error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
     const controller = new AbortController();

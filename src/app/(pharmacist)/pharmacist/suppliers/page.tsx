@@ -17,7 +17,7 @@ export default function SuppliersPage() {
   const [allSuppliers, setAllSuppliers] = useState<SupplierView[]>([]);
   const [allOrders, setAllOrders] = useState<PurchaseOrderView[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
+  const [_error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
     const controller = new AbortController();

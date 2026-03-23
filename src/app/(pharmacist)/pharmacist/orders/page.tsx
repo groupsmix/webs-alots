@@ -28,7 +28,7 @@ export default function OrdersPage() {
   const [allOrders, setAllOrders] = useState<PurchaseOrderView[]>([]);
   const [allSuppliers, setAllSuppliers] = useState<SupplierView[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
+  const [_error, setError] = useState<Error | null>(null);
   const [filterStatus, setFilterStatus] = useState<string>("all");
 
   useEffect(() => {

@@ -45,7 +45,7 @@ export default function DermatologyPage() {
   const [photos, setPhotos] = useState<SkinPhotoView[]>([]);
   const [conditions, setConditions] = useState<SkinConditionView[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
+  const [_error, setError] = useState<Error | null>(null);
   const [showPhotoForm, setShowPhotoForm] = useState(false);
   const [showConditionForm, setShowConditionForm] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");

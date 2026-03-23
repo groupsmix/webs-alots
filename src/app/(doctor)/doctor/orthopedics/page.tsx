@@ -36,7 +36,7 @@ export default function OrthopedicsPage() {
   const [fractures, setFractures] = useState<FractureRecordView[]>([]);
   const [rehabPlans, setRehabPlans] = useState<RehabPlanView[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
+  const [_error, setError] = useState<Error | null>(null);
   const [showXrayForm, setShowXrayForm] = useState(false);
   const [showFractureForm, setShowFractureForm] = useState(false);
   const [showRehabForm, setShowRehabForm] = useState(false);

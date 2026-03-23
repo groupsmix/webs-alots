@@ -100,7 +100,7 @@ export default function DoctorPrescriptionsPage() {
   const [showWriter, setShowWriter] = useState(false);
   const [selectedPatient, setSelectedPatient] = useState("");
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
+  const [_error, setError] = useState<Error | null>(null);
   const [diagnosis, setDiagnosis] = useState("");
   const [notes, setNotes] = useState("");
   const [medications, setMedications] = useState<MedicationEntry[]>([

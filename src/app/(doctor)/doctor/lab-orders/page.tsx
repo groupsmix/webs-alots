@@ -9,7 +9,7 @@ import { PageLoader } from "@/components/ui/page-loader";
 export default function DoctorLabOrdersPage() {
   const [orders, setOrders] = useState<LabOrder[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
+  const [_error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
     const controller = new AbortController();

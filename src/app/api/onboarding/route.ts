@@ -5,7 +5,7 @@ import { onboardingSchema, safeParse } from "@/lib/validations";
 
 export const runtime = "edge";
 
-interface OnboardingRequestBody {
+interface _OnboardingRequestBody {
   clinic_type_key: string;
   category: string;
   clinic_name: string;

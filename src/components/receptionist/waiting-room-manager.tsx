@@ -33,7 +33,7 @@ interface WaitingPatient {
 export function WaitingRoomManager() {
   const [queue, setQueue] = useState<WaitingPatient[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
+  const [_error, setError] = useState<Error | null>(null);
 
   const statusConfig: Record<string, { color: string; label: string; icon: typeof Clock }> = {
     waiting: { color: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200", label: "Waiting", icon: Clock },

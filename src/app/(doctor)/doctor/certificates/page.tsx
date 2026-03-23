@@ -16,7 +16,7 @@ export default function DoctorCertificatesPage() {
   const [certificates, setCertificates] = useState<MedicalCertificateView[]>([]);
   const [patients, setPatients] = useState<PatientView[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
+  const [_error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
     const controller = new AbortController();

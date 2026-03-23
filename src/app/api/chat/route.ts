@@ -8,7 +8,7 @@ import { chatRequestSchema, safeParse } from "@/lib/validations";
 
 export const runtime = "edge";
 
-interface ChatRequestBody {
+interface _ChatRequestBody {
   messages: { role: "user" | "assistant" | "system"; content: string }[];
   clinicId?: string;
 }

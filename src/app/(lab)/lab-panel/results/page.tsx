@@ -37,7 +37,7 @@ export default function ResultsPage() {
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
   const [results, setResults] = useState<LabTestResultView[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
+  const [_error, setError] = useState<Error | null>(null);
   const [resultsLoading, setResultsLoading] = useState(false);
   const [search, setSearch] = useState("");
 

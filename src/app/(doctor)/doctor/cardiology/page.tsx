@@ -36,7 +36,7 @@ export default function CardiologyPage() {
   const [bpReadings, setBpReadings] = useState<BloodPressureView[]>([]);
   const [heartNotes, setHeartNotes] = useState<HeartMonitoringNoteView[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
+  const [_error, setError] = useState<Error | null>(null);
   const [showEcgForm, setShowEcgForm] = useState(false);
   const [showBpForm, setShowBpForm] = useState(false);
   const [showNoteForm, setShowNoteForm] = useState(false);

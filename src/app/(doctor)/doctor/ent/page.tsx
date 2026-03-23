@@ -47,7 +47,7 @@ export default function ENTPage() {
   const [hearingTests, setHearingTests] = useState<HearingTestView[]>([]);
   const [exams, setExams] = useState<ENTExamView[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
+  const [_error, setError] = useState<Error | null>(null);
   const [showTestForm, setShowTestForm] = useState(false);
   const [showExamForm, setShowExamForm] = useState(false);
 

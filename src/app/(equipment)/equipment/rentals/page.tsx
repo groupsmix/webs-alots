@@ -58,7 +58,7 @@ export default function EquipmentRentalsPage() {
   const [rentals, setRentals] = useState<EquipmentRentalView[]>([]);
   const [equipment, setEquipment] = useState<EquipmentItemView[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
+  const [_error, setError] = useState<Error | null>(null);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [expandedId, setExpandedId] = useState<string | null>(null);

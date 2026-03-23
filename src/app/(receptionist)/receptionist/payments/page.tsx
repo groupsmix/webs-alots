@@ -31,7 +31,7 @@ export default function PaymentsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [paymentEntries, setPaymentEntries] = useState<PaymentEntry[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
+  const [_error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
     const controller = new AbortController();

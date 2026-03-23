@@ -40,7 +40,7 @@ const TEMPLATE_FIELDS: Record<string, string[]> = {
 export default function UrologyPage() {
   const [exams, setExams] = useState<UrologyExamView[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
+  const [_error, setError] = useState<Error | null>(null);
   const [showForm, setShowForm] = useState(false);
 
   const [form, setForm] = useState({

@@ -2110,7 +2110,6 @@ export interface BlogPostView {
 
 // Blog posts aren't in the DB schema — they may be stored in clinic config
 // For now we return empty; pages will fall back to demo data if empty
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export async function fetchBlogPosts(_clinicId: string): Promise<BlogPostView[]> {
   return [];
 }

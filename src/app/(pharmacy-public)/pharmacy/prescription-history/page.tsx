@@ -97,7 +97,7 @@ const statusConfig: Record<PharmacyPrescription["status"], { label: string; colo
 export default function PrescriptionHistoryPage() {
   const [prescriptions, setPrescriptions] = useState<PharmacyPrescription[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
+  const [_error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
     const controller = new AbortController();

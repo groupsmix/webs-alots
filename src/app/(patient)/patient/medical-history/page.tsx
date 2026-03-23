@@ -35,7 +35,7 @@ export default function MedicalHistoryPage() {
   const [consultNotes, setConsultNotes] = useState<ConsultationNoteView[]>([]);
   const [patient, setPatient] = useState<{ dateOfBirth: string; gender: string; insurance: string; allergies: string[] } | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
+  const [_error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
     const controller = new AbortController();

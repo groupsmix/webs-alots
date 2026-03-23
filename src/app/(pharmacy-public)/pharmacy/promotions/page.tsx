@@ -69,7 +69,7 @@ const promoCategories = [
 export default function PromotionsPage() {
   const [products, setProducts] = useState<PromotionProduct[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
+  const [_error, setError] = useState<Error | null>(null);
   const [query, setQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
 

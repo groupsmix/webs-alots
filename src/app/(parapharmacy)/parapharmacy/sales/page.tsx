@@ -30,7 +30,7 @@ export default function ParapharmacySalesPage() {
   const [sales, setSales] = useState<DailySaleView[]>([]);
   const [products, setProducts] = useState<ProductView[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
+  const [_error, setError] = useState<Error | null>(null);
   const [search, setSearch] = useState("");
 
   // POS state

@@ -32,7 +32,7 @@ export default function WorkingHoursPage() {
   const [schedules, setSchedules] = useState<DoctorSchedule[]>([]);
   const [selectedDoctor, setSelectedDoctor] = useState("");
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
+  const [_error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
     const controller = new AbortController();

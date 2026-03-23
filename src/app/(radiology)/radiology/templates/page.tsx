@@ -14,7 +14,7 @@ import { PageLoader } from "@/components/ui/page-loader";
 export default function RadiologyTemplatesPage() {
   const [templates, setTemplates] = useState<RadiologyTemplateView[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
+  const [_error, setError] = useState<Error | null>(null);
   const [search, setSearch] = useState("");
   const [expandedId, setExpandedId] = useState<string | null>(null);
 

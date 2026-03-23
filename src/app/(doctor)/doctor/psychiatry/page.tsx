@@ -28,7 +28,7 @@ export default function PsychiatryPage() {
   const [sessions, setSessions] = useState<PsychSessionNoteView[]>([]);
   const [medications, setMedications] = useState<PsychMedicationView[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
+  const [_error, setError] = useState<Error | null>(null);
   const [showSessionForm, setShowSessionForm] = useState(false);
   const [showMedForm, setShowMedForm] = useState(false);
   const [revealedNotes, setRevealedNotes] = useState<Set<string>>(new Set());
