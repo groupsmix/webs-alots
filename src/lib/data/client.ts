@@ -1036,7 +1036,7 @@ export async function createConsultationNote(data: {
   const supabase = createClient();
   const { data: result, error } = await supabase
     .from("consultation_notes")
-    .insert(data as never)
+    .insert(data as Database["public"]["Tables"]["consultation_notes"]["Insert"])
     .select("id")
     .single();
   if (error) {
@@ -1058,7 +1058,7 @@ export async function updateConsultationNote(
   const supabase = createClient();
   const { error } = await supabase
     .from("consultation_notes")
-    .update({ ...data, updated_at: new Date().toISOString() } as never)
+    .update({ ...data, updated_at: new Date().toISOString() } as Database["public"]["Tables"]["consultation_notes"]["Update"])
     .eq("id", id);
   if (error) {
     void error;
@@ -1338,7 +1338,7 @@ export async function createMedicalCertificate(data: {
   const supabase = createClient();
   const { data: result, error } = await supabase
     .from("medical_certificates")
-    .insert(data as never)
+    .insert(data as Database["public"]["Tables"]["medical_certificates"]["Insert"])
     .select("id")
     .single();
   if (error) {
@@ -1358,7 +1358,7 @@ export async function updateMedicalCertificate(
   },
 ): Promise<boolean> {
   const supabase = createClient();
-  const { error } = await supabase.from("medical_certificates").update(data as never).eq("id", id);
+  const { error } = await supabase.from("medical_certificates").update(data as Database["public"]["Tables"]["medical_certificates"]["Update"]).eq("id", id);
   if (error) {
     void error;
     return false;
@@ -2587,7 +2587,7 @@ export async function createAppointment(data: {
     .insert({
       ...data,
       status: "confirmed",
-    } as never)
+    } as Database["public"]["Tables"]["appointments"]["Insert"])
     .select("id")
     .single();
 
@@ -2798,7 +2798,7 @@ export async function fetchClinicSubscription(clinicId: string): Promise<ClinicS
   const { data: tierData } = await supabase
     .from("pricing_tiers")
     .select("*")
-    .eq("slug", tierSlug as unknown as never)
+    .eq("slug", tierSlug)
     .single();
 
   // Fetch recent payments as invoices
@@ -3271,7 +3271,7 @@ export async function updateLabTestResult(
   const supabase = createClient();
   const { error } = await supabase
     .from("lab_test_results")
-    .update(data as never)
+    .update(data as Database["public"]["Tables"]["lab_test_results"]["Update"])
     .eq("id", resultId);
   if (error) {
     void error;
@@ -3354,7 +3354,7 @@ export async function updateParapharmacyProduct(
   const supabase = createClient();
   const { error } = await supabase
     .from("products")
-    .update({ ...data, updated_at: new Date().toISOString() } as never)
+    .update({ ...data, updated_at: new Date().toISOString() } as Database["public"]["Tables"]["products"]["Update"])
     .eq("id", id);
   if (error) {
     void error;
@@ -3401,8 +3401,11 @@ export async function createParapharmacySale(data: {
   }
   // Update stock quantities
   for (const item of data.items) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await (supabase.rpc as any)("decrement_stock", {
+    const rpcCall = supabase.rpc as (
+      fn: string,
+      args: { p_product_id: string; p_quantity: number },
+    ) => ReturnType<typeof supabase.rpc>;
+    await rpcCall("decrement_stock", {
       p_product_id: item.product_id,
       p_quantity: item.quantity,
     }).then(({ error: rpcErr }: { error: { message: string } | null }) => {
@@ -3418,7 +3421,7 @@ export async function createParapharmacySale(data: {
               const newQty = Math.max(0, (stockRow as { quantity: number }).quantity - item.quantity);
               supabase
                 .from("stock")
-                .update({ quantity: newQty } as never)
+                .update({ quantity: newQty } as Database["public"]["Tables"]["stock"]["Update"])
                 .eq("product_id", item.product_id);
             }
           });
@@ -3435,12 +3438,12 @@ export async function adjustParapharmacyStock(
   const supabase = createClient();
   const { error } = await supabase
     .from("stock")
-    .update({ quantity: newQuantity, updated_at: new Date().toISOString() } as never)
+    .update({ quantity: newQuantity, updated_at: new Date().toISOString() } as Database["public"]["Tables"]["stock"]["Update"])
     .eq("product_id", productId);
   if (error) {
     // Try insert if no stock row exists
     const { error: insertError } = await supabase.from("stock")
-      .insert({ product_id: productId, quantity: newQuantity } as never);
+      .insert({ product_id: productId, quantity: newQuantity } as Database["public"]["Tables"]["stock"]["Insert"]);
     if (insertError) {
       void insertError;
       return false;
@@ -3941,7 +3944,7 @@ export async function updateEquipmentItem(
   const supabase = createClient();
   const { error } = await supabase
     .from("equipment_inventory")
-    .update({ ...data, updated_at: new Date().toISOString() } as never)
+    .update({ ...data, updated_at: new Date().toISOString() } as Database["public"]["Tables"]["equipment_inventory"]["Update"])
     .eq("id", id);
   if (error) {
     void error;
@@ -3988,7 +3991,7 @@ export async function createEquipmentRental(data: {
       status: data.status ?? "active",
       currency: data.currency ?? "MAD",
       payment_status: data.payment_status ?? "pending",
-    } as never)
+    } as Database["public"]["Tables"]["equipment_rentals"]["Insert"])
     .select("id")
     .single();
   if (error) {
@@ -4020,7 +4023,7 @@ export async function updateEquipmentRental(
   const supabase = createClient();
   const { error } = await supabase
     .from("equipment_rentals")
-    .update(data as never)
+    .update(data as Database["public"]["Tables"]["equipment_rentals"]["Update"])
     .eq("id", id);
   if (error) {
     void error;
@@ -4063,7 +4066,7 @@ export async function createEquipmentMaintenance(data: {
       ...data,
       currency: data.currency ?? "MAD",
       status: data.status ?? "scheduled",
-    } as never)
+    } as Database["public"]["Tables"]["equipment_maintenance"]["Insert"])
     .select("id")
     .single();
   if (error) {
@@ -4091,7 +4094,7 @@ export async function updateEquipmentMaintenance(
   const supabase = createClient();
   const { error } = await supabase
     .from("equipment_maintenance")
-    .update(data as never)
+    .update(data as Database["public"]["Tables"]["equipment_maintenance"]["Update"])
     .eq("id", id);
   if (error) {
     void error;
@@ -4636,7 +4639,7 @@ export async function createUltrasound(data: {
 }): Promise<string | null> {
   const supabase = createClient();
   const { data: row, error } = await supabase.from("ultrasound_records")
-    .insert(data as never)
+    .insert(data as Database["public"]["Tables"]["ultrasound_records"]["Insert"])
     .select("id")
     .single();
   if (error) { void error; return null; }

@@ -24,10 +24,11 @@ export const runtime = "edge";
 async function verifyBookingToken(token: string): Promise<boolean> {
   const secret = process.env.BOOKING_TOKEN_SECRET;
   if (!secret) {
-    // If no secret is configured, reject all tokens in production
-    if (process.env.NODE_ENV === "production") return false;
-    // In development, allow a bypass for testing
-    return token === "dev-bypass";
+    // Only allow the dev-bypass token in explicit development mode.
+    // Any other environment (production, staging, test) rejects all tokens
+    // when BOOKING_TOKEN_SECRET is not configured.
+    if (process.env.NODE_ENV === "development") return token === "dev-bypass";
+    return false;
   }
 
   const parts = token.split(":");

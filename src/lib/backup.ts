@@ -9,6 +9,7 @@
  */
 
 import { createClient } from "@/lib/supabase-server";
+import type { Database } from "@/lib/types/database";
 
 // ---- Types ----
 
@@ -247,8 +248,15 @@ export async function restoreBackup(
 
   // Try transactional restore via RPC first (atomic, all-or-nothing).
   // Falls back to sequential inserts if the RPC function does not exist.
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- RPC may not exist in generated types yet
-  const { error: rpcError } = await (supabase.rpc as any)("restore_backup_transaction", {
+  // Note: restore_backup_transaction is not yet in the generated Supabase
+  // types. The type assertion below allows calling it without suppressing
+  // all type safety via `as any`. Once the RPC is added to the DB and types
+  // are regenerated, remove the assertion.
+  const rpcClient = supabase.rpc as (
+    fn: string,
+    args: { backup_data: string; target_clinic: string },
+  ) => ReturnType<typeof supabase.rpc>;
+  const { error: rpcError } = await rpcClient("restore_backup_transaction", {
     backup_data: JSON.stringify(allMappedRows),
     target_clinic: targetClinicId,
   });
@@ -273,7 +281,7 @@ export async function restoreBackup(
       }
 
       const { error } = await supabase.from(table)
-        .insert(mappedRows as never[]);
+        .insert(mappedRows as Database["public"]["Tables"][typeof table]["Insert"][]);
 
       if (error) {
         errors.push(`${table}: ${error.message}`);
