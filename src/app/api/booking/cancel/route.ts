@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { clinicConfig } from "@/config/clinic.config";
 import { withAuth } from "@/lib/with-auth";
+import { requireTenant } from "@/lib/tenant";
 import { APPOINTMENT_STATUS, WAITING_LIST_STATUS } from "@/lib/types/database";
 import { logAuditEvent } from "@/lib/audit-log";
 import { clinicDateTime } from "@/lib/timezone";
@@ -23,12 +24,15 @@ export const POST = withAuth(async (request, { supabase, profile }) => {
     }
     const body = parsed.data;
 
+    const tenant = await requireTenant();
+    const clinicId = tenant.clinicId;
+
     // Fetch the appointment
     const { data: appt, error: fetchError } = await supabase
       .from("appointments")
       .select("id, doctor_id, appointment_date, start_time, status")
       .eq("id", body.appointmentId)
-      .eq("clinic_id", clinicConfig.clinicId)
+      .eq("clinic_id", clinicId)
       .single();
 
     if (fetchError || !appt) {
@@ -81,7 +85,7 @@ export const POST = withAuth(async (request, { supabase, profile }) => {
     const { data: candidate } = await supabase
       .from("waiting_list")
       .select("id")
-      .eq("clinic_id", clinicConfig.clinicId)
+      .eq("clinic_id", clinicId)
       .eq("doctor_id", appt.doctor_id)
       .eq("preferred_date", appt.appointment_date)
       .eq("status", WAITING_LIST_STATUS.WAITING)
@@ -101,7 +105,7 @@ export const POST = withAuth(async (request, { supabase, profile }) => {
       action: "appointment.cancelled",
       type: "booking",
       actor: profile.id,
-      clinicId: profile.clinic_id ?? clinicConfig.clinicId,
+      clinicId: profile.clinic_id ?? clinicId,
       description: `Appointment ${body.appointmentId} cancelled. Reason: ${body.reason ?? "Cancelled by patient"}`,
     });
 
@@ -124,11 +128,13 @@ export const GET = withAuth(async (request, { supabase }) => {
     return NextResponse.json({ error: "appointmentId is required" }, { status: 400 });
   }
 
+  const tenant = await requireTenant();
+
   const { data: appt, error } = await supabase
     .from("appointments")
     .select("id, appointment_date, start_time, status")
     .eq("id", appointmentId)
-    .eq("clinic_id", clinicConfig.clinicId)
+    .eq("clinic_id", tenant.clinicId)
     .single();
 
   if (error || !appt) {

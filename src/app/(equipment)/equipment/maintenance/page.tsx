@@ -10,7 +10,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
 import { Search, Wrench, ChevronDown, CalendarClock, Plus, Pencil, Trash2, AlertTriangle } from "lucide-react";
-import { clinicConfig } from "@/config/clinic.config";
+import { useTenant } from "@/components/tenant-provider";
 import {
   fetchEquipmentMaintenance, fetchEquipmentInventory,
   createEquipmentMaintenance, updateEquipmentMaintenance, deleteEquipmentMaintenance,
@@ -59,6 +59,7 @@ const emptyForm: MaintenanceFormState = {
 export default function EquipmentMaintenancePage() {
   const { locale } = useEquipmentLocale();
   const { t } = useEquipmentI18n(locale);
+  const tenant = useTenant();
   const [records, setRecords] = useState<EquipmentMaintenanceView[]>([]);
   const [equipment, setEquipment] = useState<EquipmentItemView[]>([]);
   const [loading, setLoading] = useState(true);
@@ -94,7 +95,7 @@ export default function EquipmentMaintenancePage() {
 
   function reload() {
     setLoading(true);
-    const cId = clinicConfig.clinicId;
+    const cId = tenant?.clinicId ?? "";
     Promise.all([fetchEquipmentMaintenance(cId), fetchEquipmentInventory(cId)])
       .then(([r, e]) => { setRecords(r); setEquipment(e); })
       .finally(() => setLoading(false));
@@ -104,7 +105,7 @@ export default function EquipmentMaintenancePage() {
     const controller = new AbortController();
     function init() {
       setLoading(true);
-      const cId = clinicConfig.clinicId;
+      const cId = tenant?.clinicId ?? "";
       Promise.all([fetchEquipmentMaintenance(cId), fetchEquipmentInventory(cId)])
         .then(([r, e]) => { setRecords(r); setEquipment(e); })
         .catch((err) => {
@@ -157,7 +158,7 @@ export default function EquipmentMaintenancePage() {
       });
     } else {
       await createEquipmentMaintenance({
-        clinic_id: clinicConfig.clinicId,
+        clinic_id: tenant?.clinicId ?? "",
         equipment_id: form.equipmentId,
         type: form.type,
         description: form.description || undefined,

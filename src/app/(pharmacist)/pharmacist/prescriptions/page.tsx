@@ -9,7 +9,7 @@ import {
   Clock, Check, Eye, AlertCircle, Package, Truck,
   Search, Phone, MessageCircle, RefreshCw, X, ClipboardList,
 } from "lucide-react";
-import { clinicConfig } from "@/config/clinic.config";
+import { useTenant } from "@/components/tenant-provider";
 import { fetchPrescriptionRequests } from "@/lib/data/client";
 import type { PharmacyPrescriptionView } from "@/lib/data/client";
 import { PageLoader } from "@/components/ui/page-loader";
@@ -29,6 +29,7 @@ const statusConfig: Record<PrescriptionStatus, { label: string; color: string; i
 const statusFilters: PrescriptionStatus[] = ["pending", "reviewing", "partially-ready", "ready", "picked-up", "delivered"];
 
 export default function PrescriptionsPage() {
+  const tenant = useTenant();
   const [allPrescriptions, setAllPrescriptions] = useState<PharmacyPrescriptionView[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
@@ -37,7 +38,7 @@ export default function PrescriptionsPage() {
 
   useEffect(() => {
     const controller = new AbortController();
-    fetchPrescriptionRequests(clinicConfig.clinicId)
+    fetchPrescriptionRequests(tenant?.clinicId ?? "")
       .then((d) => { if (!controller.signal.aborted) setAllPrescriptions(d); })
       .catch((err) => {
       if (!controller.signal.aborted) {

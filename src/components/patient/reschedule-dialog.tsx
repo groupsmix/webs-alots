@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { BookingCalendar } from "@/components/booking/calendar";
 import { TimeSlotPicker } from "@/components/booking/time-slots";
 import { clinicConfig } from "@/config/clinic.config";
+import { useTenant } from "@/components/tenant-provider";
 import { fetchAvailableSlots, fetchGeneratedSlots, fetchSlotBookingCounts } from "@/lib/data/client";
 
 interface RescheduleAppointment {
@@ -36,6 +37,7 @@ export function RescheduleDialog({ appointment, onClose, onReschedule }: Resched
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const tenant = useTenant();
 
   const [availableSlots, setAvailableSlots] = useState<string[]>([]);
   const [allSlots, setAllSlots] = useState<string[]>([]);
@@ -49,7 +51,7 @@ export function RescheduleDialog({ appointment, onClose, onReschedule }: Resched
       setSlotCounts({});
       return;
     }
-    const clinicId = clinicConfig.clinicId;
+    const clinicId = tenant?.clinicId ?? "";
     Promise.all([
       fetchAvailableSlots(clinicId, selectedDate, appointment.doctorId),
       fetchGeneratedSlots(clinicId, selectedDate, appointment.doctorId),

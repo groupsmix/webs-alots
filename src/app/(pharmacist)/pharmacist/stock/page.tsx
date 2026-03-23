@@ -9,7 +9,7 @@ import {
   Search, Package, Plus, Filter,
   ArrowUpDown, ShoppingCart,
 } from "lucide-react";
-import { clinicConfig } from "@/config/clinic.config";
+import { useTenant } from "@/components/tenant-provider";
 import {
   fetchProducts,
   searchProductsLocal,
@@ -37,6 +37,7 @@ const stockFilters = [
 ];
 
 export default function StockPage() {
+  const tenant = useTenant();
   const [allProducts, setAllProducts] = useState<ProductView[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
@@ -47,7 +48,7 @@ export default function StockPage() {
 
   useEffect(() => {
     const controller = new AbortController();
-    fetchProducts(clinicConfig.clinicId)
+    fetchProducts(tenant?.clinicId ?? "")
       .then((d) => { if (!controller.signal.aborted) setAllProducts(d); })
       .catch((err) => {
       if (!controller.signal.aborted) {

@@ -8,7 +8,7 @@ import {
   Plus, Truck, Check, Package,
   Send, X, FileText,
 } from "lucide-react";
-import { clinicConfig } from "@/config/clinic.config";
+import { useTenant } from "@/components/tenant-provider";
 import { fetchPurchaseOrders, fetchSuppliers } from "@/lib/data/client";
 import type { PurchaseOrderView, SupplierView } from "@/lib/data/client";
 import { PageLoader } from "@/components/ui/page-loader";
@@ -25,6 +25,7 @@ const statusConfig: Record<OrderStatus, { label: string; color: string; icon: Re
 };
 
 export default function OrdersPage() {
+  const tenant = useTenant();
   const [allOrders, setAllOrders] = useState<PurchaseOrderView[]>([]);
   const [allSuppliers, setAllSuppliers] = useState<SupplierView[]>([]);
   const [loading, setLoading] = useState(true);
@@ -33,7 +34,7 @@ export default function OrdersPage() {
 
   useEffect(() => {
     const controller = new AbortController();
-    const cId = clinicConfig.clinicId;
+    const cId = tenant?.clinicId ?? "";
     Promise.all([fetchPurchaseOrders(cId), fetchSuppliers(cId)])
       .then(([o, s]) => { setAllOrders(o); setAllSuppliers(s); })
       .catch((err) => {

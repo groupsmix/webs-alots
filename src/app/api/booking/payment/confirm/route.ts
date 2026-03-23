@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { logAuditEvent } from "@/lib/audit-log";
-import { clinicConfig } from "@/config/clinic.config";
+import { requireTenant } from "@/lib/tenant";
 import { APPOINTMENT_STATUS } from "@/lib/types/database";
 import { withAuth } from "@/lib/with-auth";
 import { STAFF_ROLES } from "@/lib/auth-roles";
@@ -23,12 +23,15 @@ export const POST = withAuth(async (request, { supabase }) => {
     }
     const body = parsed.data;
 
+    const tenant = await requireTenant();
+    const clinicId = tenant.clinicId;
+
     // Fetch the payment
     const { data: payment, error: fetchError } = await supabase
       .from("payments")
       .select("id, status, appointment_id")
       .eq("id", body.paymentId)
-      .eq("clinic_id", clinicConfig.clinicId)
+      .eq("clinic_id", clinicId)
       .single();
 
     if (fetchError || !payment) {
@@ -63,7 +66,7 @@ export const POST = withAuth(async (request, { supabase }) => {
       supabase,
       action: "payment_confirmed",
       type: "payment",
-      clinicId: clinicConfig.clinicId,
+      clinicId,
       description: `Payment ${body.paymentId} confirmed`,
     });
 

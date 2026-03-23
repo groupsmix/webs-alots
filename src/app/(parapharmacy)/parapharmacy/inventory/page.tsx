@@ -5,12 +5,13 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Search, Package, AlertTriangle } from "lucide-react";
-import { clinicConfig } from "@/config/clinic.config";
+import { useTenant } from "@/components/tenant-provider";
 import { fetchParapharmacyProducts, getStockStatus, getExpiryStatus } from "@/lib/data/client";
 import type { ProductView } from "@/lib/data/client";
 import { PageLoader } from "@/components/ui/page-loader";
 
 export default function ParapharmacyInventoryPage() {
+  const tenant = useTenant();
   const [products, setProducts] = useState<ProductView[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
@@ -19,7 +20,7 @@ export default function ParapharmacyInventoryPage() {
 
   useEffect(() => {
     const controller = new AbortController();
-    fetchParapharmacyProducts(clinicConfig.clinicId)
+    fetchParapharmacyProducts(tenant?.clinicId ?? "")
       .then((d) => { if (!controller.signal.aborted) setProducts(d); })
       .catch((err) => {
       if (!controller.signal.aborted) {

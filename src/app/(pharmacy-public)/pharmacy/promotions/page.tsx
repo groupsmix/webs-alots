@@ -8,6 +8,7 @@ import {
   Tag, Search, Percent, Star, ShoppingBag, ArrowRight,
   Loader2, Sparkles,
 } from "lucide-react";
+import { useTenant } from "@/components/tenant-provider";
 import { clinicConfig } from "@/config/clinic.config";
 import { createClient } from "@/lib/supabase-client";
 import Link from "next/link";
@@ -25,8 +26,7 @@ interface PromotionProduct {
   active: boolean;
 }
 
-async function fetchFeaturedProducts(): Promise<PromotionProduct[]> {
-  const clinicId = clinicConfig.clinicId;
+async function fetchFeaturedProducts(clinicId: string): Promise<PromotionProduct[]> {
   const supabase = createClient();
 
   const [{ data: products }, { data: stockRows }] = await Promise.all([
@@ -67,6 +67,7 @@ const promoCategories = [
 ];
 
 export default function PromotionsPage() {
+  const tenant = useTenant();
   const [products, setProducts] = useState<PromotionProduct[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
@@ -75,7 +76,7 @@ export default function PromotionsPage() {
 
   useEffect(() => {
     const controller = new AbortController();
-    fetchFeaturedProducts()
+    fetchFeaturedProducts(tenant?.clinicId ?? "")
       .then((d) => { if (!controller.signal.aborted) setProducts(d); })
       .catch((err) => {
       if (!controller.signal.aborted) {

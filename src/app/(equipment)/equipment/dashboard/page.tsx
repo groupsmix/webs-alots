@@ -8,7 +8,7 @@ import {
   ArrowRight, AlertTriangle, CheckCircle, Bell,
 } from "lucide-react";
 import Link from "next/link";
-import { clinicConfig } from "@/config/clinic.config";
+import { useTenant } from "@/components/tenant-provider";
 import { fetchEquipmentInventory, fetchEquipmentRentals, fetchEquipmentMaintenance } from "@/lib/data/client";
 import type { EquipmentItemView, EquipmentRentalView, EquipmentMaintenanceView } from "@/lib/data/client";
 import { useEquipmentLocale } from "../../layout";
@@ -18,6 +18,7 @@ import { PageLoader } from "@/components/ui/page-loader";
 export default function EquipmentDashboardPage() {
   const { locale } = useEquipmentLocale();
   const { t } = useEquipmentI18n(locale);
+  const tenant = useTenant();
   const [inventory, setInventory] = useState<EquipmentItemView[]>([]);
   const [rentals, setRentals] = useState<EquipmentRentalView[]>([]);
   const [maintenance, setMaintenance] = useState<EquipmentMaintenanceView[]>([]);
@@ -26,7 +27,7 @@ export default function EquipmentDashboardPage() {
 
   useEffect(() => {
     const controller = new AbortController();
-    const cId = clinicConfig.clinicId;
+    const cId = tenant?.clinicId ?? "";
     Promise.all([
       fetchEquipmentInventory(cId),
       fetchEquipmentRentals(cId),

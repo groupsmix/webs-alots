@@ -8,19 +8,20 @@ import {
   ArrowRight, CheckCircle, Hourglass, AlertTriangle,
 } from "lucide-react";
 import Link from "next/link";
-import { clinicConfig } from "@/config/clinic.config";
+import { useTenant } from "@/components/tenant-provider";
 import { fetchRadiologyOrders } from "@/lib/data/client";
 import type { RadiologyOrderView } from "@/lib/data/client";
 import { PageLoader } from "@/components/ui/page-loader";
 
 export default function RadiologyDashboardPage() {
+  const tenant = useTenant();
   const [orders, setOrders] = useState<RadiologyOrderView[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
     const controller = new AbortController();
-    fetchRadiologyOrders(clinicConfig.clinicId)
+    fetchRadiologyOrders(tenant?.clinicId ?? "")
       .then((d) => { if (!controller.signal.aborted) setOrders(d); })
       .catch((err) => {
       if (!controller.signal.aborted) {

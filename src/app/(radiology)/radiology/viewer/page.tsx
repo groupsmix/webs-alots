@@ -4,18 +4,19 @@ import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ExternalLink, Monitor, Info, FileImage, Scan } from "lucide-react";
-import { clinicConfig } from "@/config/clinic.config";
+import { useTenant } from "@/components/tenant-provider";
 import { fetchRadiologyOrders } from "@/lib/data/client";
 import type { RadiologyOrderView } from "@/lib/data/client";
 
 export default function DicomViewerPage() {
+  const tenant = useTenant();
   const [orders, setOrders] = useState<RadiologyOrderView[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
     const controller = new AbortController();
-    fetchRadiologyOrders(clinicConfig.clinicId)
+    fetchRadiologyOrders(tenant?.clinicId ?? "")
       .then((all) => setOrders(all.filter((o) => o.imageCount > 0)))
       .catch((err) => {
       if (!controller.signal.aborted) {

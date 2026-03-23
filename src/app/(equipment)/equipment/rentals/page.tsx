@@ -10,7 +10,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
 import { Search, HandCoins, ChevronDown, AlertTriangle, Plus, Pencil, Trash2, RotateCcw } from "lucide-react";
-import { clinicConfig } from "@/config/clinic.config";
+import { useTenant } from "@/components/tenant-provider";
 import {
   fetchEquipmentRentals, fetchEquipmentInventory,
   createEquipmentRental, updateEquipmentRental, deleteEquipmentRental,
@@ -55,6 +55,7 @@ const emptyRentalForm: RentalFormState = {
 export default function EquipmentRentalsPage() {
   const { locale } = useEquipmentLocale();
   const { t } = useEquipmentI18n(locale);
+  const tenant = useTenant();
   const [rentals, setRentals] = useState<EquipmentRentalView[]>([]);
   const [equipment, setEquipment] = useState<EquipmentItemView[]>([]);
   const [loading, setLoading] = useState(true);
@@ -100,7 +101,7 @@ export default function EquipmentRentalsPage() {
 
   function reload() {
     setLoading(true);
-    const cId = clinicConfig.clinicId;
+    const cId = tenant?.clinicId ?? "";
     Promise.all([fetchEquipmentRentals(cId), fetchEquipmentInventory(cId)])
       .then(([r, e]) => { setRentals(r); setEquipment(e); })
       .finally(() => setLoading(false));
@@ -110,7 +111,7 @@ export default function EquipmentRentalsPage() {
     const controller = new AbortController();
     function init() {
       setLoading(true);
-      const cId = clinicConfig.clinicId;
+      const cId = tenant?.clinicId ?? "";
       Promise.all([fetchEquipmentRentals(cId), fetchEquipmentInventory(cId)])
         .then(([r, e]) => { setRentals(r); setEquipment(e); })
         .catch((err) => {
@@ -166,7 +167,7 @@ export default function EquipmentRentalsPage() {
       });
     } else {
       await createEquipmentRental({
-        clinic_id: clinicConfig.clinicId,
+        clinic_id: tenant?.clinicId ?? "",
         equipment_id: form.equipmentId,
         client_name: form.clientName,
         client_phone: form.clientPhone || undefined,

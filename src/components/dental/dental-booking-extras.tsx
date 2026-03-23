@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { fetchDentalTreatmentTypes, type DentalTreatmentTypeView } from "@/lib/data/client";
-import { clinicConfig } from "@/config/clinic.config";
+import { useTenant } from "@/components/tenant-provider";
 import { logger } from "@/lib/logger";
 
 interface DentalBookingExtrasProps {
@@ -23,9 +23,10 @@ export function DentalBookingExtras({
   onSedationChange,
 }: DentalBookingExtrasProps) {
   const [dentalTreatmentTypes, setDentalTreatmentTypes] = useState<DentalTreatmentTypeView[]>([]);
+  const tenant = useTenant();
 
   useEffect(() => {
-    const clinicId = clinicConfig.clinicId;
+    const clinicId = tenant?.clinicId;
     if (!clinicId) return;
     fetchDentalTreatmentTypes(clinicId).then(setDentalTreatmentTypes).catch((err) => {
       logger.warn("Operation failed", { context: "dental-booking-extras", error: err });

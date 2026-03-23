@@ -6,12 +6,13 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Search, FileText, Download, Scan, Loader2 } from "lucide-react";
-import { clinicConfig } from "@/config/clinic.config";
+import { useTenant } from "@/components/tenant-provider";
 import { fetchRadiologyOrders } from "@/lib/data/client";
 import type { RadiologyOrderView } from "@/lib/data/client";
 import { PageLoader } from "@/components/ui/page-loader";
 
 export default function RadiologyReportsPage() {
+  const tenant = useTenant();
   const [orders, setOrders] = useState<RadiologyOrderView[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
@@ -21,7 +22,7 @@ export default function RadiologyReportsPage() {
 
   useEffect(() => {
     const controller = new AbortController();
-    fetchRadiologyOrders(clinicConfig.clinicId)
+    fetchRadiologyOrders(tenant?.clinicId ?? "")
       .then((all) => setOrders(all.filter((o) => o.status === "reported" || o.status === "validated")))
       .catch((err) => {
       if (!controller.signal.aborted) {
@@ -40,7 +41,7 @@ export default function RadiologyReportsPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           orderId: order.id,
-          clinicId: clinicConfig.clinicId,
+          clinicId: tenant?.clinicId ?? "",
           patientName: order.patientName,
           modality: order.modality,
           bodyPart: order.bodyPart,
@@ -55,7 +56,7 @@ export default function RadiologyReportsPage() {
         if (data.pdfUrl) {
           window.open(data.pdfUrl, "_blank");
           // Refresh to get updated pdfUrl
-          fetchRadiologyOrders(clinicConfig.clinicId)
+          fetchRadiologyOrders(tenant?.clinicId ?? "")
             .then((all) => setOrders(all.filter((o) => o.status === "reported" || o.status === "validated")));
         }
       }
