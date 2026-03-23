@@ -181,6 +181,41 @@ export async function getPresignedDownloadUrl(
 }
 
 /**
+ * Read the first N bytes of an object from R2 for content validation.
+ *
+ * @param key      Object key
+ * @param bytes    Number of bytes to read (default: 16)
+ * @returns Buffer with the first bytes, or null if not found / not configured
+ */
+export async function readR2ObjectHead(
+  key: string,
+  bytes = 16,
+): Promise<Buffer | null> {
+  const client = getClient();
+  const config = getR2Config();
+  if (!client || !config) return null;
+
+  const command = new GetObjectCommand({
+    Bucket: config.bucketName,
+    Key: key,
+    Range: `bytes=0-${bytes - 1}`,
+  });
+
+  try {
+    const response = await client.send(command);
+    if (!response.Body) return null;
+    const chunks: Uint8Array[] = [];
+    // @ts-expect-error -- Body is a Readable stream in Node.js
+    for await (const chunk of response.Body) {
+      chunks.push(chunk as Uint8Array);
+    }
+    return Buffer.concat(chunks);
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Build the R2 object key for a clinic upload.
  *
  * Format: clinics/{clinicId}/{category}/{timestamp}-{filename}
