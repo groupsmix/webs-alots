@@ -66,7 +66,7 @@ export async function GET(request: NextRequest) {
       .limit(500);
 
     if (error) {
-        logger.warn("Operation failed", { context: "route", error });
+        logger.warn("Operation failed", { context: "cron/reminders", error });
         return NextResponse.json({ error: "Failed to query appointments" }, { status: 500 });
     }
 
@@ -239,7 +239,7 @@ export async function GET(request: NextRequest) {
       results,
     });
   } catch (err) {
-    logger.warn("Operation failed", { context: "route", error: err });
+    logger.warn("Operation failed", { context: "cron/reminders", error: err });
     return NextResponse.json({ error: "Failed to process reminders" }, { status: 500 });
   }
 }

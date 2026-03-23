@@ -55,7 +55,7 @@ export async function GET(request: NextRequest) {
   const { data, count, error } = await query;
 
   if (error) {
-    logger.warn("Operation failed", { context: "route", error });
+    logger.warn("Operation failed", { context: "v1/patients", error });
     return NextResponse.json({ error: "Failed to fetch patients" }, { status: 500, headers: getCorsHeaders(request) });
   }
 
@@ -107,13 +107,13 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (error) {
-      logger.warn("Operation failed", { context: "route", error });
+      logger.warn("Operation failed", { context: "v1/patients", error });
       return NextResponse.json({ error: "Failed to create patient" }, { status: 500, headers: getCorsHeaders(request) });
     }
 
     return NextResponse.json({ data }, { status: 201, headers: getCorsHeaders(request) });
   } catch (err) {
-    logger.warn("Operation failed", { context: "route", error: err });
+    logger.warn("Operation failed", { context: "v1/patients", error: err });
     return NextResponse.json({ error: "Invalid request body" }, { status: 400, headers: getCorsHeaders(request) });
   }
 }

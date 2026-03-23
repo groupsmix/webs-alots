@@ -47,7 +47,7 @@ export const POST = withAuth(async (request, { supabase }) => {
       .single();
 
     if (error || !entry) {
-      logger.warn("Operation failed", { context: "route", error });
+      logger.warn("Operation failed", { context: "booking/waiting-list", error });
       return NextResponse.json({ error: "Failed to add to waiting list" }, { status: 400 });
     }
 
@@ -66,7 +66,7 @@ export const POST = withAuth(async (request, { supabase }) => {
       entryId: entry.id,
     });
   } catch (err) {
-    logger.warn("Operation failed", { context: "route", error: err });
+    logger.warn("Operation failed", { context: "booking/waiting-list", error: err });
     return NextResponse.json({ error: "Failed to add to waiting list" }, { status: 500 });
   }
 }, null);
@@ -137,7 +137,7 @@ export const DELETE = withAuth(async (request, { supabase }) => {
       .eq("clinic_id", clinicConfig.clinicId);
 
     if (error) {
-      logger.warn("Operation failed", { context: "route", error });
+      logger.warn("Operation failed", { context: "booking/waiting-list", error });
       return NextResponse.json({ error: "Failed to remove from waiting list" }, { status: 400 });
     }
 
@@ -152,7 +152,7 @@ export const DELETE = withAuth(async (request, { supabase }) => {
 
     return NextResponse.json({ status: "removed", message: "Removed from waiting list" });
   } catch (err) {
-    logger.warn("Operation failed", { context: "route", error: err });
+    logger.warn("Operation failed", { context: "booking/waiting-list", error: err });
     return NextResponse.json({ error: "Failed to remove from waiting list" }, { status: 500 });
   }
 }, null);

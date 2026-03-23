@@ -287,7 +287,7 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (err) {
-    logger.warn("Operation failed", { context: "route", error: err });
+    logger.warn("Operation failed", { context: "chat", error: err });
     return NextResponse.json(
       { error: "Failed to process chat message" },
       { status: 500 },

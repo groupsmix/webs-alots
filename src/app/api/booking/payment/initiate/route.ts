@@ -104,7 +104,7 @@ export const POST = withAuth(async (request, { supabase }) => {
       gatewaySessionId,
     });
   } catch (err) {
-    logger.warn("Operation failed", { context: "route", error: err });
+    logger.warn("Operation failed", { context: "booking/payment/initiate", error: err });
     return NextResponse.json({ error: "Failed to initiate payment" }, { status: 500 });
   }
 }, STAFF_ROLES);

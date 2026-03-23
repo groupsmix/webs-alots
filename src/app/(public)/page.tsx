@@ -37,14 +37,17 @@ const linkBtnOutline =
   "inline-flex items-center justify-center rounded-lg border border-border bg-background px-2.5 py-1.5 text-sm font-medium hover:bg-muted hover:text-foreground transition-colors";
 
 export default async function HomePage() {
-  const branding = await getPublicBranding();
+  // Fetch branding, reviews, and average rating in parallel to reduce TTFB
+  const [branding, reviews, avgRating] = await Promise.all([
+    getPublicBranding(),
+    getPublicReviews(),
+    getPublicAverageRating(),
+  ]);
   const sections = mergeSectionVisibility(
     branding.sectionVisibility as Record<string, boolean>,
   );
   const template = getTemplate(branding.templateId);
 
-  const reviews = await getPublicReviews();
-  const avgRating = await getPublicAverageRating();
   const topReviews = reviews.filter((r) => r.rating >= 4).slice(0, 3);
 
   return (

@@ -48,7 +48,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ definitions: data ?? [] });
   } catch (err) {
-    logger.warn("Operation failed", { context: "route", error: err });
+    logger.warn("Operation failed", { context: "custom-fields", error: err });
     return NextResponse.json(
       { error: "Failed to process request" },
       { status: 500 },
@@ -107,7 +107,7 @@ export const POST = withAuth(async (request, { supabase }) => {
       .single();
 
     if (error) {
-      logger.warn("Operation failed", { context: "route", error });
+      logger.warn("Operation failed", { context: "custom-fields", error });
       return NextResponse.json(
         { error: "Failed to create custom field definition" },
         { status: 500 },
@@ -116,7 +116,7 @@ export const POST = withAuth(async (request, { supabase }) => {
 
     return NextResponse.json({ definition: data }, { status: 201 });
   } catch (err) {
-    logger.warn("Operation failed", { context: "route", error: err });
+    logger.warn("Operation failed", { context: "custom-fields", error: err });
     return NextResponse.json(
       { error: "Invalid request body" },
       { status: 400 },
@@ -161,7 +161,7 @@ export const PATCH = withAuth(async (request, { supabase }) => {
       .single();
 
     if (error) {
-      logger.warn("Operation failed", { context: "route", error });
+      logger.warn("Operation failed", { context: "custom-fields", error });
       return NextResponse.json(
         { error: "Failed to update custom field definition" },
         { status: 500 },
@@ -170,7 +170,7 @@ export const PATCH = withAuth(async (request, { supabase }) => {
 
     return NextResponse.json({ definition: data });
   } catch (err) {
-    logger.warn("Operation failed", { context: "route", error: err });
+    logger.warn("Operation failed", { context: "custom-fields", error: err });
     return NextResponse.json(
       { error: "Invalid request body" },
       { status: 400 },
@@ -214,7 +214,7 @@ export const DELETE = withAuth(async (request, { supabase }) => {
     .eq("id", id);
 
   if (error) {
-    logger.warn("Operation failed", { context: "route", error });
+    logger.warn("Operation failed", { context: "custom-fields", error });
     return NextResponse.json(
       { error: "Failed to delete custom field definition" },
       { status: 500 },

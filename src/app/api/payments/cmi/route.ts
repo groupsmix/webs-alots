@@ -95,7 +95,7 @@ export const POST = withAuth(async (request, { user }) => {
       formFields: result.formFields,
     });
   } catch (err) {
-    logger.warn("Operation failed", { context: "route", error: err });
+    logger.warn("Operation failed", { context: "payments/cmi", error: err });
     return NextResponse.json({ error: "Failed to create CMI payment" }, { status: 500 });
   }
 }, STAFF_ROLES);

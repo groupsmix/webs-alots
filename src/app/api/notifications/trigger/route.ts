@@ -108,7 +108,7 @@ export const POST = withAuth(async (request, { supabase, profile }) => {
       dispatched: allResults,
     });
   } catch (err) {
-    logger.warn("Operation failed", { context: "route", error: err });
+    logger.warn("Operation failed", { context: "notifications/trigger", error: err });
     return NextResponse.json(
       { error: "Failed to trigger notification" },
       { status: 500 },

@@ -43,7 +43,7 @@ export const GET = withAuth(async (request: NextRequest) => {
       features_config: data.features_config,
     });
   } catch (err) {
-    logger.warn("Operation failed", { context: "route", error: err });
+    logger.warn("Operation failed", { context: "clinic-features", error: err });
     return NextResponse.json(
       { error: "Failed to fetch clinic features" },
       { status: 500 },

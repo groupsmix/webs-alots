@@ -5,16 +5,6 @@ import { onboardingSchema, safeParse } from "@/lib/validations";
 
 export const runtime = "edge";
 
-interface _OnboardingRequestBody {
-  clinic_type_key: string;
-  category: string;
-  clinic_name: string;
-  owner_name: string;
-  phone: string;
-  email?: string;
-  city?: string;
-}
-
 /**
  * POST /api/onboarding
  *
@@ -191,7 +181,7 @@ export const POST = withAuth(async (request, { supabase, user }) => {
       clinic_id: clinicId,
     });
   } catch (err) {
-    logger.warn("Operation failed", { context: "route", error: err });
+    logger.warn("Operation failed", { context: "onboarding/route", error: err });
     return NextResponse.json(
       { error: "Failed to process onboarding" },
       { status: 500 },
