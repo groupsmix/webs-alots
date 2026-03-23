@@ -217,7 +217,7 @@ export function VideoConsultation({
 
       pc.onicecandidate = (event) => {
         if (event.candidate) {
-          console.log("[Video] ICE candidate:", event.candidate.candidate);
+          // ICE candidate received
         }
       };
 
@@ -248,7 +248,7 @@ export function VideoConsultation({
       try {
         const offer = await pc.createOffer();
         await pc.setLocalDescription(offer);
-        console.log("[Video] Offer created for room:", roomId);
+        // Offer created, waiting for peer
         setConnectionStatus("waiting");
       } catch (err) {
         console.error("[Video] Error creating offer:", err);

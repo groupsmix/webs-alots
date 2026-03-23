@@ -101,7 +101,7 @@ export async function POST(request: NextRequest) {
             .eq("status", APPOINTMENT_STATUS.PENDING);
         }
 
-        console.log(`[Stripe Webhook] Payment completed: ${session.id}`);
+        console.info(`[Stripe Webhook] Payment completed: ${session.id}`);
         break;
       }
 
@@ -134,7 +134,7 @@ export async function POST(request: NextRequest) {
       }
 
       default:
-        console.log(`[Stripe Webhook] Unhandled event type: ${event.type}`);
+        console.info(`[Stripe Webhook] Unhandled event type: ${event.type}`);
     }
 
     return NextResponse.json({ received: true });
