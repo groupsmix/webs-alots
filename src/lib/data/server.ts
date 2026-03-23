@@ -244,8 +244,9 @@ export interface ServiceRow {
   name: string;
   description: string | null;
   duration_minutes: number;
-  duration_min: number;
+  duration_min: number | null;
   price: number | null;
+  currency: string | null;
   category: string | null;
   is_active: boolean;
   created_at: string;
