@@ -30,16 +30,21 @@ export default function LoginPage() {
     setError(null);
     setLoading(true);
 
-    const result = await signInWithOTP(phone);
+    try {
+      const result = await signInWithOTP(phone);
 
-    if (result.error) {
-      setError(result.error);
+      if (result.error) {
+        setError(result.error);
+        setLoading(false);
+        return;
+      }
+
+      setStep("otp");
       setLoading(false);
-      return;
+    } catch {
+      setError("An unexpected error occurred. Please try again.");
+      setLoading(false);
     }
-
-    setStep("otp");
-    setLoading(false);
   }
 
   async function handleVerifyOTP(e: React.FormEvent) {
@@ -54,7 +59,8 @@ export default function LoginPage() {
         setLoading(false);
       }
     } catch {
-      router.refresh();
+      setError("An unexpected error occurred. Please try again.");
+      setLoading(false);
     }
   }
 

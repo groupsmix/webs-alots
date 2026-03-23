@@ -377,29 +377,37 @@ export async function POST(request: NextRequest) {
  * Returns available time slots for a given doctor and date.
  */
 export async function GET(request: NextRequest) {
-  const searchParams = request.nextUrl.searchParams;
-  const doctorId = searchParams.get("doctorId");
-  const date = searchParams.get("date");
+  try {
+    const searchParams = request.nextUrl.searchParams;
+    const doctorId = searchParams.get("doctorId");
+    const date = searchParams.get("date");
 
-  if (!doctorId || !date) {
+    if (!doctorId || !date) {
+      return NextResponse.json(
+        { error: "doctorId and date are required" },
+        { status: 400 },
+      );
+    }
+
+    const [allSlots, availableSlots, bookedCounts] = await Promise.all([
+      getPublicGeneratedSlots(date, doctorId),
+      getPublicAvailableSlots(date, doctorId),
+      getPublicSlotBookingCounts(date, doctorId),
+    ]);
+
+    return NextResponse.json({
+      slots: availableSlots,
+      allSlots,
+      bookedCounts,
+      maxPerSlot: clinicConfig.booking.maxPerSlot,
+      slotDuration: clinicConfig.booking.slotDuration,
+      bufferTime: clinicConfig.booking.bufferTime,
+    });
+  } catch (err) {
+    void err;
     return NextResponse.json(
-      { error: "doctorId and date are required" },
-      { status: 400 },
+      { error: "Failed to fetch available slots" },
+      { status: 500 },
     );
   }
-
-  const [allSlots, availableSlots, bookedCounts] = await Promise.all([
-    getPublicGeneratedSlots(date, doctorId),
-    getPublicAvailableSlots(date, doctorId),
-    getPublicSlotBookingCounts(date, doctorId),
-  ]);
-
-  return NextResponse.json({
-    slots: availableSlots,
-    allSlots,
-    bookedCounts,
-    maxPerSlot: clinicConfig.booking.maxPerSlot,
-    slotDuration: clinicConfig.booking.slotDuration,
-    bufferTime: clinicConfig.booking.bufferTime,
-  });
 }

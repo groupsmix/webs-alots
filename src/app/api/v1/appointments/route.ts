@@ -70,65 +70,70 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const body = await request.json();
+  try {
+    const body = await request.json();
 
-  const required = ["patient_id", "doctor_id", "appointment_date", "start_time"];
-  const missing = required.filter((f) => !body[f]);
-  if (missing.length > 0) {
-    return NextResponse.json(
-      { error: `Missing required fields: ${missing.join(", ")}` },
-      { status: 400, headers: getCorsHeaders(request) },
-    );
-  }
-
-  // Input length validation to prevent oversized payloads
-  const lengthLimits: Record<string, number> = {
-    patient_id: 100,
-    doctor_id: 100,
-    appointment_date: 10,
-    start_time: 8,
-    end_time: 8,
-    status: 20,
-    notes: 2000,
-  };
-  for (const [field, maxLen] of Object.entries(lengthLimits)) {
-    if (typeof body[field] === "string" && body[field].length > maxLen) {
+    const required = ["patient_id", "doctor_id", "appointment_date", "start_time"];
+    const missing = required.filter((f) => !body[f]);
+    if (missing.length > 0) {
       return NextResponse.json(
-        { error: `Field '${field}' exceeds maximum length of ${maxLen} characters` },
+        { error: `Missing required fields: ${missing.join(", ")}` },
         { status: 400, headers: getCorsHeaders(request) },
       );
     }
+
+    // Input length validation to prevent oversized payloads
+    const lengthLimits: Record<string, number> = {
+      patient_id: 100,
+      doctor_id: 100,
+      appointment_date: 10,
+      start_time: 8,
+      end_time: 8,
+      status: 20,
+      notes: 2000,
+    };
+    for (const [field, maxLen] of Object.entries(lengthLimits)) {
+      if (typeof body[field] === "string" && body[field].length > maxLen) {
+        return NextResponse.json(
+          { error: `Field '${field}' exceeds maximum length of ${maxLen} characters` },
+          { status: 400, headers: getCorsHeaders(request) },
+        );
+      }
+    }
+
+    // Build slot_start / slot_end from appointment_date + start_time / end_time.
+    // These are required NOT NULL columns in the appointments table.
+    const slotStart = `${body.appointment_date}T${body.start_time}`;
+    const slotEnd = body.end_time
+      ? `${body.appointment_date}T${body.end_time}`
+      : new Date(new Date(slotStart).getTime() + 30 * 60_000).toISOString(); // default 30 min
+
+    const supabase = await createClient();
+    const { data, error } = await supabase
+      .from("appointments")
+      .insert({
+        clinic_id: auth.clinicId,
+        patient_id: body.patient_id,
+        doctor_id: body.doctor_id,
+        appointment_date: body.appointment_date,
+        start_time: body.start_time,
+        end_time: body.end_time || null,
+        slot_start: slotStart,
+        slot_end: slotEnd,
+        status: body.status || APPOINTMENT_STATUS.SCHEDULED,
+        notes: body.notes || null,
+      })
+      .select()
+      .single();
+
+    if (error) {
+      void error;
+      return NextResponse.json({ error: "Failed to create appointment" }, { status: 500, headers: getCorsHeaders(request) });
+    }
+
+    return NextResponse.json({ data }, { status: 201, headers: getCorsHeaders(request) });
+  } catch (err) {
+    void err;
+    return NextResponse.json({ error: "Invalid request body" }, { status: 400, headers: getCorsHeaders(request) });
   }
-
-  // Build slot_start / slot_end from appointment_date + start_time / end_time.
-  // These are required NOT NULL columns in the appointments table.
-  const slotStart = `${body.appointment_date}T${body.start_time}`;
-  const slotEnd = body.end_time
-    ? `${body.appointment_date}T${body.end_time}`
-    : new Date(new Date(slotStart).getTime() + 30 * 60_000).toISOString(); // default 30 min
-
-  const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("appointments")
-    .insert({
-      clinic_id: auth.clinicId,
-      patient_id: body.patient_id,
-      doctor_id: body.doctor_id,
-      appointment_date: body.appointment_date,
-      start_time: body.start_time,
-      end_time: body.end_time || null,
-      slot_start: slotStart,
-      slot_end: slotEnd,
-      status: body.status || APPOINTMENT_STATUS.SCHEDULED,
-      notes: body.notes || null,
-    })
-    .select()
-    .single();
-
-  if (error) {
-    void error;
-    return NextResponse.json({ error: "Failed to create appointment" }, { status: 500, headers: getCorsHeaders(request) });
-  }
-
-  return NextResponse.json({ data }, { status: 201, headers: getCorsHeaders(request) });
 }

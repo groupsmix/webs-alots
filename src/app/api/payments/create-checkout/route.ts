@@ -72,7 +72,11 @@ export const POST = withAuth(async (request, { user, profile }) => {
       metadata?: Record<string, string>;
     };
 
-    if (!amount || amount <= 0) {
+    if (
+      typeof amount !== "number" ||
+      !Number.isFinite(amount) ||
+      amount <= 0
+    ) {
       return NextResponse.json({ error: "Invalid amount" }, { status: 400 });
     }
 
