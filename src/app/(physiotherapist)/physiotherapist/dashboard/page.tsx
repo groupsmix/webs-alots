@@ -1,4 +1,3 @@
-"use client";
 
 import {
   Dumbbell, Users, ClipboardList, Camera, Calendar,

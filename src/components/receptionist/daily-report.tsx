@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, useEffect } from "react";
+import { useRef, useState, useEffect, useCallback } from "react";
 import { Printer, FileText, Calendar, Users, CreditCard, Clock, Download } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -69,9 +69,15 @@ export function DailyReport() {
   const uniquePatients = new Set(todayAppointments.map((a) => a.patientId)).size;
   const firstVisits = todayAppointments.filter((a) => a.isFirstVisit).length;
 
-  const handlePrint = () => {
+  const handlePrint = useCallback(() => {
     const content = reportRef.current;
     if (!content) return;
+
+    // Sanitize innerHTML: clone the DOM subtree and strip any <script> tags
+    // to prevent XSS if upstream components ever inject unescaped HTML.
+    const clone = content.cloneNode(true) as HTMLElement;
+    clone.querySelectorAll("script").forEach((s) => s.remove());
+    const sanitizedHtml = clone.innerHTML;
 
     const printWindow = window.open("", "_blank");
     if (!printWindow) return;
@@ -104,13 +110,13 @@ export function DailyReport() {
           </style>
         </head>
         <body>
-          ${content.innerHTML}
+          ${sanitizedHtml}
         </body>
       </html>
     `);
     printWindow.document.close();
     printWindow.print();
-  };
+  }, []);
 
   if (loading) {
     return <PageLoader message="Loading report..." />;

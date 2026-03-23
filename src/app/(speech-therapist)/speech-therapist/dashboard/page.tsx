@@ -1,4 +1,3 @@
-"use client";
 
 import {
   Mic, Users, BookOpen, FileText, Calendar, TrendingUp,

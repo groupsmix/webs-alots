@@ -31,7 +31,12 @@ function canCancelAppointment(
   if (appt.status === "cancelled" || appt.status === "completed" || appt.status === "rescheduled") {
     return { canCancel: false, reason: "Appointment cannot be cancelled in its current state" };
   }
-  const appointmentDateTime = new Date(`${appt.date}T${appt.time}:00`);
+  // Normalize time to "HH:MM:00" and use a full ISO-8601 format with UTC
+  // offset to avoid ambiguous date parsing across browsers/timezones.
+  const normalizedTime = String(appt.time).length === 5
+    ? `${appt.time}:00`
+    : appt.time;
+  const appointmentDateTime = new Date(`${appt.date}T${normalizedTime}`);
   const hoursUntil = (appointmentDateTime.getTime() - Date.now()) / (1000 * 60 * 60);
   if (hoursUntil < CANCELLATION_WINDOW_HOURS) {
     return {

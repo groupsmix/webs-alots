@@ -9,18 +9,11 @@ import {
   Clock,
   Check,
   Plus,
-  Trash2,
-  ArrowLeft,
-  ArrowRight,
-  Loader2,
   CheckCircle2,
   AlertCircle,
 } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import {
   createClinic,
@@ -30,48 +23,23 @@ import {
   type CreateUserInput,
   type CreateServiceInput,
 } from "@/lib/super-admin-actions";
-
-// ---------- Types ----------
-
-interface ClinicFormData {
-  name: string;
-  type: "doctor" | "dentist" | "pharmacy";
-  tier: "vitrine" | "cabinet" | "pro" | "premium" | "saas";
-  city: string;
-  phone: string;
-  email: string;
-  address: string;
-  specialty: string;
-  domain: string;
-}
-
-interface UserFormData {
-  role: "clinic_admin" | "receptionist" | "doctor";
-  name: string;
-  phone: string;
-  email: string;
-}
-
-interface ServiceFormData {
-  name: string;
-  price: string;
-  duration_minutes: string;
-  category: string;
-}
-
-interface TimeSlotFormData {
-  day_of_week: number;
-  start_time: string;
-  end_time: string;
-  max_capacity: string;
-  buffer_minutes: string;
-}
-
-interface DoctorTimeSlots {
-  doctorId: string;
-  doctorName: string;
-  slots: TimeSlotFormData[];
-}
+import {
+  OnboardingStepClinic,
+  type ClinicFormData,
+} from "@/components/super-admin/onboarding-step-clinic";
+import {
+  OnboardingStepStaff,
+  type UserFormData,
+} from "@/components/super-admin/onboarding-step-staff";
+import {
+  OnboardingStepServices,
+  type ServiceFormData,
+} from "@/components/super-admin/onboarding-step-services";
+import {
+  OnboardingStepTimeSlots,
+  type DoctorTimeSlots,
+  type TimeSlotFormData,
+} from "@/components/super-admin/onboarding-step-timeslots";
 
 // ---------- Constants ----------
 
@@ -80,16 +48,6 @@ const STEPS = [
   { id: 2, label: "Add Staff", icon: Users },
   { id: 3, label: "Add Services", icon: Stethoscope },
   { id: 4, label: "Time Slots", icon: Clock },
-];
-
-const DAY_NAMES = [
-  "Sunday",
-  "Monday",
-  "Tuesday",
-  "Wednesday",
-  "Thursday",
-  "Friday",
-  "Saturday",
 ];
 
 const DEFAULT_SLOT: TimeSlotFormData = {
@@ -495,505 +453,51 @@ export default function OnboardingPage() {
         </div>
       )}
 
-      {/* Step 1: Create Clinic */}
+      {/* Step Forms */}
       {step === 1 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Building2 className="h-5 w-5" />
-              Step 1: Create Clinic
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>
-                  Clinic Name <span className="text-destructive">*</span>
-                </Label>
-                <Input
-                  placeholder="e.g. Cabinet Dr. Sara Tazi"
-                  value={clinicForm.name}
-                  onChange={(e) => updateClinicField("name", e.target.value)}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Clinic Type</Label>
-                <select
-                  className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
-                  value={clinicForm.type}
-                  onChange={(e) => updateClinicField("type", e.target.value)}
-                >
-                  <option value="doctor">Doctor</option>
-                  <option value="dentist">Dentist</option>
-                  <option value="pharmacy">Pharmacy</option>
-                </select>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Subscription Tier</Label>
-                <select
-                  className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
-                  value={clinicForm.tier}
-                  onChange={(e) => updateClinicField("tier", e.target.value)}
-                >
-                  <option value="vitrine">Vitrine — 2,500-3,000 MAD</option>
-                  <option value="cabinet">Cabinet — 6,000-8,000 MAD</option>
-                  <option value="pro">Pro — 12,000-15,000 MAD</option>
-                  <option value="premium">Premium — 20,000-25,000 MAD</option>
-                  <option value="saas">SaaS Monthly — 500-1,000 MAD/mo</option>
-                </select>
-              </div>
-              <div className="space-y-2">
-                <Label>Specialty</Label>
-                <Input
-                  placeholder="e.g. Dermatology, General Medicine"
-                  value={clinicForm.specialty}
-                  onChange={(e) =>
-                    updateClinicField("specialty", e.target.value)
-                  }
-                />
-              </div>
-            </div>
-
-            <Separator />
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Phone</Label>
-                <Input
-                  placeholder="+212 5 37 XX XX XX"
-                  value={clinicForm.phone}
-                  onChange={(e) => updateClinicField("phone", e.target.value)}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Email</Label>
-                <Input
-                  type="email"
-                  placeholder="contact@clinic.ma"
-                  value={clinicForm.email}
-                  onChange={(e) => updateClinicField("email", e.target.value)}
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>City</Label>
-                <Input
-                  placeholder="e.g. Rabat"
-                  value={clinicForm.city}
-                  onChange={(e) => updateClinicField("city", e.target.value)}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Domain (optional)</Label>
-                <Input
-                  placeholder="e.g. dr-sara.ma"
-                  value={clinicForm.domain}
-                  onChange={(e) => updateClinicField("domain", e.target.value)}
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label>Address</Label>
-              <Input
-                placeholder="45 Avenue Hassan II, Rabat"
-                value={clinicForm.address}
-                onChange={(e) => updateClinicField("address", e.target.value)}
-              />
-            </div>
-
-            <div className="flex justify-end pt-4">
-              <Button onClick={handleStep1} disabled={loading}>
-                {loading && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}
-                Create Clinic & Continue
-                <ArrowRight className="h-4 w-4 ml-1" />
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+        <OnboardingStepClinic
+          clinicForm={clinicForm}
+          loading={loading}
+          onUpdateField={updateClinicField}
+          onSubmit={handleStep1}
+        />
       )}
 
-      {/* Step 2: Add Staff */}
       {step === 2 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Users className="h-5 w-5" />
-              Step 2: Add Staff Members
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <p className="text-sm text-muted-foreground">
-              Add the clinic owner (admin), doctors, and receptionists.
-              At least one clinic_admin is required.
-            </p>
-
-            {users.map((user, index) => (
-              <div
-                key={index}
-                className="rounded-lg border p-4 space-y-3"
-              >
-                <div className="flex items-center justify-between">
-                  <Badge variant="outline" className="capitalize">
-                    Staff #{index + 1}
-                  </Badge>
-                  {users.length > 1 && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="text-destructive"
-                      onClick={() => removeUser(index)}
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </Button>
-                  )}
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  <div className="space-y-2">
-                    <Label>Role</Label>
-                    <select
-                      className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
-                      value={user.role}
-                      onChange={(e) =>
-                        updateUser(index, "role", e.target.value)
-                      }
-                    >
-                      <option value="clinic_admin">
-                        Clinic Admin (Owner)
-                      </option>
-                      <option value="doctor">Doctor</option>
-                      <option value="receptionist">Receptionist</option>
-                    </select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>
-                      Full Name <span className="text-destructive">*</span>
-                    </Label>
-                    <Input
-                      placeholder="Dr. Sara Tazi"
-                      value={user.name}
-                      onChange={(e) =>
-                        updateUser(index, "name", e.target.value)
-                      }
-                    />
-                  </div>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  <div className="space-y-2">
-                    <Label>Phone</Label>
-                    <Input
-                      placeholder="+212 6 XX XX XX XX"
-                      value={user.phone}
-                      onChange={(e) =>
-                        updateUser(index, "phone", e.target.value)
-                      }
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Email</Label>
-                    <Input
-                      type="email"
-                      placeholder="sara@clinic.ma"
-                      value={user.email}
-                      onChange={(e) =>
-                        updateUser(index, "email", e.target.value)
-                      }
-                    />
-                  </div>
-                </div>
-              </div>
-            ))}
-
-            <Button variant="outline" onClick={addUser}>
-              <Plus className="h-4 w-4 mr-1" />
-              Add Another Staff Member
-            </Button>
-
-            <div className="flex justify-between pt-4">
-              <Button variant="outline" onClick={() => setStep(1)}>
-                <ArrowLeft className="h-4 w-4 mr-1" />
-                Back
-              </Button>
-              <Button onClick={handleStep2} disabled={loading}>
-                {loading && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}
-                Save Staff & Continue
-                <ArrowRight className="h-4 w-4 ml-1" />
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+        <OnboardingStepStaff
+          users={users}
+          loading={loading}
+          onAddUser={addUser}
+          onRemoveUser={removeUser}
+          onUpdateUser={updateUser}
+          onBack={() => setStep(1)}
+          onSubmit={handleStep2}
+        />
       )}
 
-      {/* Step 3: Add Services */}
       {step === 3 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Stethoscope className="h-5 w-5" />
-              Step 3: Add Services
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <p className="text-sm text-muted-foreground">
-              Add the services this clinic offers (consultations, treatments, etc.)
-            </p>
-
-            {services.map((service, index) => (
-              <div
-                key={index}
-                className="rounded-lg border p-4 space-y-3"
-              >
-                <div className="flex items-center justify-between">
-                  <Badge variant="outline">Service #{index + 1}</Badge>
-                  {services.length > 1 && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="text-destructive"
-                      onClick={() => removeService(index)}
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </Button>
-                  )}
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  <div className="space-y-2">
-                    <Label>
-                      Service Name{" "}
-                      <span className="text-destructive">*</span>
-                    </Label>
-                    <Input
-                      placeholder="e.g. Consultation Générale"
-                      value={service.name}
-                      onChange={(e) =>
-                        updateService(index, "name", e.target.value)
-                      }
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Category</Label>
-                    <select
-                      className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
-                      value={service.category}
-                      onChange={(e) =>
-                        updateService(index, "category", e.target.value)
-                      }
-                    >
-                      <option value="consultation">Consultation</option>
-                      <option value="treatment">Treatment</option>
-                      <option value="follow-up">Follow-up</option>
-                      <option value="diagnostic">Diagnostic</option>
-                      <option value="screening">Screening</option>
-                      <option value="vaccination">Vaccination</option>
-                      <option value="dental">Dental</option>
-                      <option value="pharmacy">Pharmacy</option>
-                      <option value="other">Other</option>
-                    </select>
-                  </div>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  <div className="space-y-2">
-                    <Label>Price (MAD)</Label>
-                    <Input
-                      type="number"
-                      placeholder="e.g. 400"
-                      value={service.price}
-                      onChange={(e) =>
-                        updateService(index, "price", e.target.value)
-                      }
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Duration (minutes)</Label>
-                    <Input
-                      type="number"
-                      placeholder="30"
-                      value={service.duration_minutes}
-                      onChange={(e) =>
-                        updateService(
-                          index,
-                          "duration_minutes",
-                          e.target.value,
-                        )
-                      }
-                    />
-                  </div>
-                </div>
-              </div>
-            ))}
-
-            <Button variant="outline" onClick={addService}>
-              <Plus className="h-4 w-4 mr-1" />
-              Add Another Service
-            </Button>
-
-            <div className="flex justify-between pt-4">
-              <Button variant="outline" onClick={() => setStep(2)}>
-                <ArrowLeft className="h-4 w-4 mr-1" />
-                Back
-              </Button>
-              <Button onClick={handleStep3} disabled={loading}>
-                {loading && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}
-                Save Services & Continue
-                <ArrowRight className="h-4 w-4 ml-1" />
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+        <OnboardingStepServices
+          services={services}
+          loading={loading}
+          onAddService={addService}
+          onRemoveService={removeService}
+          onUpdateService={updateService}
+          onBack={() => setStep(2)}
+          onSubmit={handleStep3}
+        />
       )}
 
-      {/* Step 4: Time Slots */}
       {step === 4 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Clock className="h-5 w-5" />
-              Step 4: Configure Time Slots
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {doctorSlots.length === 0 ? (
-              <div className="text-center py-8">
-                <p className="text-muted-foreground mb-4">
-                  No doctors were added in Step 2. You can skip this step or go
-                  back to add doctors.
-                </p>
-                <div className="flex gap-3 justify-center">
-                  <Button variant="outline" onClick={() => setStep(2)}>
-                    <ArrowLeft className="h-4 w-4 mr-1" />
-                    Back to Add Staff
-                  </Button>
-                  <Button onClick={handleSkipTimeSlots}>
-                    Skip & Finish
-                  </Button>
-                </div>
-              </div>
-            ) : (
-              <>
-                <p className="text-sm text-muted-foreground">
-                  Configure weekly availability for each doctor. Default is
-                  Mon-Fri 9-12 &amp; 14-17. Adjust as needed.
-                </p>
-
-                {doctorSlots.map((doctor, dIndex) => (
-                  <div key={doctor.doctorId} className="space-y-3">
-                    <h3 className="font-semibold text-sm flex items-center gap-2">
-                      <Users className="h-4 w-4" />
-                      {doctor.doctorName}
-                    </h3>
-
-                    <div className="space-y-2 pl-2">
-                      {doctor.slots.map((slot, sIndex) => (
-                        <div
-                          key={sIndex}
-                          className="flex items-center gap-2 flex-wrap"
-                        >
-                          <select
-                            className="h-9 rounded-md border border-input bg-transparent px-2 py-1 text-sm"
-                            value={slot.day_of_week}
-                            onChange={(e) =>
-                              updateSlot(
-                                dIndex,
-                                sIndex,
-                                "day_of_week",
-                                parseInt(e.target.value),
-                              )
-                            }
-                          >
-                            {DAY_NAMES.map((name, i) => (
-                              <option key={i} value={i}>
-                                {name}
-                              </option>
-                            ))}
-                          </select>
-                          <Input
-                            type="time"
-                            className="w-28"
-                            value={slot.start_time}
-                            onChange={(e) =>
-                              updateSlot(
-                                dIndex,
-                                sIndex,
-                                "start_time",
-                                e.target.value,
-                              )
-                            }
-                          />
-                          <span className="text-muted-foreground text-sm">
-                            to
-                          </span>
-                          <Input
-                            type="time"
-                            className="w-28"
-                            value={slot.end_time}
-                            onChange={(e) =>
-                              updateSlot(
-                                dIndex,
-                                sIndex,
-                                "end_time",
-                                e.target.value,
-                              )
-                            }
-                          />
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="text-destructive"
-                            onClick={() =>
-                              removeSlotFromDoctor(dIndex, sIndex)
-                            }
-                          >
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </Button>
-                        </div>
-                      ))}
-                    </div>
-
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => addSlotToDoctor(dIndex)}
-                    >
-                      <Plus className="h-3.5 w-3.5 mr-1" />
-                      Add Slot
-                    </Button>
-
-                    {dIndex < doctorSlots.length - 1 && (
-                      <Separator />
-                    )}
-                  </div>
-                ))}
-
-                <div className="flex justify-between pt-4">
-                  <Button variant="outline" onClick={() => setStep(3)}>
-                    <ArrowLeft className="h-4 w-4 mr-1" />
-                    Back
-                  </Button>
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      onClick={handleSkipTimeSlots}
-                    >
-                      Skip
-                    </Button>
-                    <Button onClick={handleStep4} disabled={loading}>
-                      {loading && (
-                        <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-                      )}
-                      Save Slots & Finish
-                      <Check className="h-4 w-4 ml-1" />
-                    </Button>
-                  </div>
-                </div>
-              </>
-            )}
-          </CardContent>
-        </Card>
+        <OnboardingStepTimeSlots
+          doctorSlots={doctorSlots}
+          loading={loading}
+          onAddSlot={addSlotToDoctor}
+          onRemoveSlot={removeSlotFromDoctor}
+          onUpdateSlot={updateSlot}
+          onBack={() => setStep(3)}
+          onSkip={handleSkipTimeSlots}
+          onSubmit={handleStep4}
+        />
       )}
     </div>
   );

@@ -1,4 +1,3 @@
-"use client";
 
 import {
   Eye, Package, Glasses, FileText, Calendar, TrendingUp,

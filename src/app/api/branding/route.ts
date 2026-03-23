@@ -25,10 +25,27 @@ const ALLOWED_IMAGE_TYPES = new Set([
   "image/jpeg",
   "image/png",
   "image/webp",
-  "image/svg+xml",
+  // SVG removed: can contain embedded <script> tags leading to XSS
   "image/x-icon",
   "image/vnd.microsoft.icon",
 ]);
+
+// Magic byte signatures for server-side file content validation.
+const MAGIC_BYTES: Record<string, Uint8Array[]> = {
+  "image/jpeg": [new Uint8Array([0xFF, 0xD8, 0xFF])],
+  "image/png": [new Uint8Array([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A])],
+  "image/webp": [new Uint8Array([0x52, 0x49, 0x46, 0x46])],
+  "image/x-icon": [new Uint8Array([0x00, 0x00, 0x01, 0x00])],
+  "image/vnd.microsoft.icon": [new Uint8Array([0x00, 0x00, 0x01, 0x00])],
+};
+
+function validateFileContent(buffer: Buffer, declaredType: string): boolean {
+  const signatures = MAGIC_BYTES[declaredType];
+  if (!signatures) return false;
+  return signatures.some((sig) =>
+    sig.every((byte, i) => i < buffer.length && buffer[i] === byte),
+  );
+}
 
 const FIELD_MAP: Record<string, string> = {
   logo: "logo_url",
@@ -182,6 +199,15 @@ export const POST = withAuth(async (request, { supabase }) => {
 
   const key = buildUploadKey(clinicId, "branding", `${field}-${file.name}`);
   const buffer = Buffer.from(await file.arrayBuffer());
+
+  // Validate file content matches declared MIME type via magic bytes.
+  if (!validateFileContent(buffer, file.type)) {
+    return NextResponse.json(
+      { error: "File content does not match declared type" },
+      { status: 400 },
+    );
+  }
+
   const url = await uploadToR2(key, buffer, file.type);
 
   if (!url) {

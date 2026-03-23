@@ -1,4 +1,3 @@
-"use client";
 
 import {
   Apple, Users, Scale, Calculator, Calendar, TrendingUp,
