@@ -4,6 +4,7 @@ import { TENANT_HEADERS } from "@/lib/tenant";
 import { createClient } from "@/lib/supabase-server";
 import { chatLimiter, extractClientIp } from "@/lib/rate-limit";
 import { logger } from "@/lib/logger";
+import { chatRequestSchema, safeParse } from "@/lib/validations";
 
 export const runtime = "edge";
 
@@ -78,19 +79,17 @@ export async function POST(request: NextRequest) {
 
     // Resolve clinic ID from tenant headers or request body
     const tenantClinicId = request.headers.get(TENANT_HEADERS.clinicId);
-    const body = (await request.json()) as ChatRequestBody;
+    const raw = await request.json();
+    const parsed = safeParse(chatRequestSchema, raw);
+    if (!parsed.success) {
+      return NextResponse.json({ error: parsed.error }, { status: 400 });
+    }
+    const body = parsed.data;
     const clinicId = tenantClinicId || body.clinicId;
 
     if (!clinicId) {
       return NextResponse.json(
         { error: "No clinic context. Please access via a clinic subdomain." },
-        { status: 400 },
-      );
-    }
-
-    if (!body.messages || !Array.isArray(body.messages) || body.messages.length === 0) {
-      return NextResponse.json(
-        { error: "messages array is required and must not be empty" },
         { status: 400 },
       );
     }

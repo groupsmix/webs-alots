@@ -8,6 +8,7 @@ import type { TablesInsert } from "@/lib/types/database";
 import { computeEndTime } from "@/lib/timezone";
 import { STAFF_ROLES } from "@/lib/auth-roles";
 import { logger } from "@/lib/logger";
+import { recurringSchema, safeParse } from "@/lib/validations";
 
 export const runtime = "edge";
 
@@ -37,33 +38,14 @@ function addInterval(date: Date, pattern: "weekly" | "biweekly" | "monthly"): Da
  */
 export const POST = withAuth(async (request, { supabase }) => {
   try {
-    const body = (await request.json()) as {
-      action: "create" | "cancel";
-      // Create fields
-      patientId?: string;
-      patientName?: string;
-      patientPhone?: string;
-      doctorId?: string;
-      serviceId?: string;
-      date?: string;
-      time?: string;
-      pattern?: "weekly" | "biweekly" | "monthly";
-      occurrences?: number;
-      isFirstVisit?: boolean;
-      hasInsurance?: boolean;
-      // Cancel fields
-      groupId?: string;
-      cancelAll?: boolean;
-      appointmentId?: string;
-    };
+    const raw = await request.json();
+    const parsed = safeParse(recurringSchema, raw);
+    if (!parsed.success) {
+      return NextResponse.json({ error: parsed.error }, { status: 400 });
+    }
+    const body = parsed.data;
 
     if (body.action === "create") {
-      if (!body.patientId || !body.patientName || !body.doctorId || !body.date || !body.time || !body.pattern || !body.occurrences) {
-        return NextResponse.json(
-          { error: "patientId, patientName, doctorId, date, time, pattern, and occurrences are required" },
-          { status: 400 },
-        );
-      }
 
       // Input length validation to prevent DoS via oversized payloads
       if (body.patientName.length > 200 || (body.patientPhone && body.patientPhone.length > 30)) {

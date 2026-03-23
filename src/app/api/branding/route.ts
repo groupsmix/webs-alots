@@ -16,6 +16,7 @@ import {
 import type { UserRole } from "@/lib/types/database";
 import { withAuth } from "@/lib/with-auth";
 import { logger } from "@/lib/logger";
+import { brandingUpdateSchema, safeParse } from "@/lib/validations";
 
 const ADMIN_ROLES: UserRole[] = ["super_admin", "clinic_admin"];
 
@@ -105,9 +106,15 @@ export async function GET() {
 
 export const PUT = withAuth(async (request, { supabase }) => {
   const clinicId = clinicConfig.clinicId;
-  const body = await request.json();
+  const raw = await request.json();
+  const parsed = safeParse(brandingUpdateSchema, raw);
+  if (!parsed.success) {
+    return NextResponse.json({ error: parsed.error }, { status: 400 });
+  }
+  const body = parsed.data;
 
-  const allowed = [
+  const updates: Record<string, unknown> = {};
+  const stringKeys = [
     "primary_color",
     "secondary_color",
     "heading_font",
@@ -117,11 +124,11 @@ export const PUT = withAuth(async (request, { supabase }) => {
     "phone",
     "address",
     "template_id",
-  ];
-  const updates: Record<string, unknown> = {};
-  for (const key of allowed) {
-    if (typeof body[key] === "string") {
-      updates[key] = body[key].trim();
+  ] as const;
+  for (const key of stringKeys) {
+    const val = body[key as keyof typeof body];
+    if (typeof val === "string") {
+      updates[key] = val.trim();
     }
   }
 

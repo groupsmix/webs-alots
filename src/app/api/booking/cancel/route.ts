@@ -5,6 +5,7 @@ import { APPOINTMENT_STATUS, WAITING_LIST_STATUS } from "@/lib/types/database";
 import { logAuditEvent } from "@/lib/audit-log";
 import { clinicDateTime } from "@/lib/timezone";
 import { logger } from "@/lib/logger";
+import { bookingCancelSchema, safeParse } from "@/lib/validations";
 
 export const runtime = "edge";
 
@@ -15,16 +16,12 @@ export const runtime = "edge";
  */
 export const POST = withAuth(async (request, { supabase, profile }) => {
   try {
-    const body = (await request.json()) as { appointmentId: string; reason?: string };
-
-    if (!body.appointmentId) {
-      return NextResponse.json({ error: "appointmentId is required" }, { status: 400 });
+    const raw = await request.json();
+    const parsed = safeParse(bookingCancelSchema, raw);
+    if (!parsed.success) {
+      return NextResponse.json({ error: parsed.error }, { status: 400 });
     }
-
-    // Input length validation to prevent DoS via oversized payloads
-    if (body.reason && body.reason.length > 1000) {
-      return NextResponse.json({ error: "Reason exceeds maximum allowed length" }, { status: 400 });
-    }
+    const body = parsed.data;
 
     // Fetch the appointment
     const { data: appt, error: fetchError } = await supabase

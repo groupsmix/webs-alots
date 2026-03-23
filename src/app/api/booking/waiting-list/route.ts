@@ -5,6 +5,7 @@ import { findOrCreatePatient } from "@/lib/find-or-create-patient";
 import { logAuditEvent } from "@/lib/audit-log";
 import { WAITING_LIST_STATUS } from "@/lib/types/database";
 import { logger } from "@/lib/logger";
+import { waitingListSchema, safeParse } from "@/lib/validations";
 
 export const runtime = "edge";
 
@@ -15,27 +16,12 @@ export const runtime = "edge";
  */
 export const POST = withAuth(async (request, { supabase }) => {
   try {
-    const body = (await request.json()) as {
-      patientId: string;
-      patientName: string;
-      patientPhone?: string;
-      doctorId: string;
-      preferredDate: string;
-      preferredTime?: string;
-      serviceId?: string;
-    };
-
-    if (!body.patientId || !body.patientName || !body.doctorId || !body.preferredDate) {
-      return NextResponse.json(
-        { error: "patientId, patientName, doctorId, and preferredDate are required" },
-        { status: 400 },
-      );
+    const raw = await request.json();
+    const parsed = safeParse(waitingListSchema, raw);
+    if (!parsed.success) {
+      return NextResponse.json({ error: parsed.error }, { status: 400 });
     }
-
-    // Input length validation to prevent DoS via oversized payloads
-    if (body.patientName.length > 200 || (body.patientPhone && body.patientPhone.length > 30)) {
-      return NextResponse.json({ error: "Input exceeds maximum allowed length" }, { status: 400 });
-    }
+    const body = parsed.data;
 
     // Find or create patient (prefer phone-based lookup to avoid name collisions)
     const patientId = await findOrCreatePatient(

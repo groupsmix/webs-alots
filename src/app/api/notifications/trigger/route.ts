@@ -8,6 +8,7 @@ import {
 import { withAuth } from "@/lib/with-auth";
 import { STAFF_ROLES } from "@/lib/auth-roles";
 import { logger } from "@/lib/logger";
+import { notificationTriggerSchema, safeParse } from "@/lib/validations";
 
 export const runtime = "edge";
 
@@ -38,24 +39,16 @@ export const runtime = "edge";
  */
 export const POST = withAuth(async (request, { supabase, profile }) => {
   try {
-    const body = await request.json();
-
-    const {
-      trigger,
-      variables,
-      recipients,
-    } = body as {
+    const raw = await request.json();
+    const parsed = safeParse(notificationTriggerSchema, raw);
+    if (!parsed.success) {
+      return NextResponse.json({ error: parsed.error }, { status: 400 });
+    }
+    const { trigger, variables, recipients } = parsed.data as {
       trigger: NotificationTrigger;
       variables: TemplateVariables;
       recipients: Array<{ id: string; channels: ("whatsapp" | "in_app")[] }>;
     };
-
-    if (!trigger || !recipients || recipients.length === 0) {
-      return NextResponse.json(
-        { error: "trigger and recipients are required" },
-        { status: 400 },
-      );
-    }
 
     // Tenant isolation: verify all recipients belong to the same clinic
     // as the authenticated user (super_admin bypasses this check).

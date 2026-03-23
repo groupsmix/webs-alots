@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase-server";
 import { withAuth } from "@/lib/with-auth";
 import { logger } from "@/lib/logger";
+import { customFieldCreateSchema, customFieldUpdateSchema, safeParse } from "@/lib/validations";
+import type { Json } from "@/lib/types/database";
 
 export const runtime = "edge";
 
@@ -62,30 +64,26 @@ export async function GET(request: NextRequest) {
  */
 export const POST = withAuth(async (request, { supabase }) => {
   try {
-    const body = await request.json();
-
+    const raw = await request.json();
+    const parsed = safeParse(customFieldCreateSchema, raw);
+    if (!parsed.success) {
+      return NextResponse.json({ error: parsed.error }, { status: 400 });
+    }
     const {
       clinic_type_key,
       entity_type,
       field_key,
       field_type,
       label_fr,
-      label_ar = "",
-      description = null,
-      placeholder = null,
-      is_required = false,
-      sort_order = 0,
-      options = [],
-      validation = {},
-      default_value = null,
-    } = body;
-
-    if (!clinic_type_key || !entity_type || !field_key || !field_type || !label_fr) {
-      return NextResponse.json(
-        { error: "clinic_type_key, entity_type, field_key, field_type, and label_fr are required" },
-        { status: 400 },
-      );
-    }
+      label_ar,
+      description,
+      placeholder,
+      is_required,
+      sort_order,
+      options,
+      validation,
+      default_value,
+    } = parsed.data;
 
     const { data, error } = await supabase
       .from("custom_field_definitions")
@@ -100,9 +98,9 @@ export const POST = withAuth(async (request, { supabase }) => {
         placeholder,
         is_required,
         sort_order,
-        options,
-        validation,
-        default_value,
+        options: options as Json,
+        validation: validation as Json,
+        default_value: default_value as Json,
         is_system: false,
       })
       .select()
@@ -134,15 +132,12 @@ export const POST = withAuth(async (request, { supabase }) => {
  */
 export const PATCH = withAuth(async (request, { supabase }) => {
   try {
-    const body = await request.json();
-    const { id, ...updates } = body;
-
-    if (!id) {
-      return NextResponse.json(
-        { error: "id is required" },
-        { status: 400 },
-      );
+    const raw = await request.json();
+    const parsed = safeParse(customFieldUpdateSchema, raw);
+    if (!parsed.success) {
+      return NextResponse.json({ error: parsed.error }, { status: 400 });
     }
+    const { id, ...updates } = parsed.data;
 
     // Prevent modifying system field keys
     const allowedUpdates: Record<string, unknown> = {};
@@ -153,7 +148,7 @@ export const PATCH = withAuth(async (request, { supabase }) => {
     ];
     for (const key of allowedKeys) {
       if (key in updates) {
-        allowedUpdates[key] = updates[key];
+        allowedUpdates[key] = (updates as Record<string, unknown>)[key];
       }
     }
     allowedUpdates.updated_at = new Date().toISOString();

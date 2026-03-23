@@ -7,6 +7,7 @@ import { logAuditEvent } from "@/lib/audit-log";
 import { computeEndTime } from "@/lib/timezone";
 import { STAFF_ROLES } from "@/lib/auth-roles";
 import { logger } from "@/lib/logger";
+import { emergencySlotSchema, safeParse } from "@/lib/validations";
 
 export const runtime = "edge";
 
@@ -17,29 +18,14 @@ export const runtime = "edge";
  */
 export const POST = withAuth(async (request, { supabase }) => {
   try {
-    const body = (await request.json()) as {
-      action: "create" | "book";
-      // Create fields
-      doctorId?: string;
-      date?: string;
-      startTime?: string;
-      durationMin?: number;
-      reason?: string;
-      // Book fields
-      slotId?: string;
-      patientId?: string;
-      patientName?: string;
-      patientPhone?: string;
-      serviceId?: string;
-    };
+    const raw = await request.json();
+    const parsed = safeParse(emergencySlotSchema, raw);
+    if (!parsed.success) {
+      return NextResponse.json({ error: parsed.error }, { status: 400 });
+    }
+    const body = parsed.data;
 
     if (body.action === "create") {
-      if (!body.doctorId || !body.date || !body.startTime || !body.durationMin) {
-        return NextResponse.json(
-          { error: "doctorId, date, startTime, and durationMin are required" },
-          { status: 400 },
-        );
-      }
 
       // Input length validation to prevent DoS via oversized payloads
       if (body.reason && body.reason.length > 1000) {

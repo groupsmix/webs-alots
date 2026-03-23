@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { withAuth } from "@/lib/with-auth";
 import { STAFF_ROLES } from "@/lib/auth-roles";
 import { logger } from "@/lib/logger";
+import { customFieldValuesSchema, safeParse } from "@/lib/validations";
+import type { Json } from "@/lib/types/database";
 
 export const runtime = "edge";
 
@@ -51,23 +53,12 @@ export const GET = withAuth(async (request, { supabase }) => {
  */
 export const POST = withAuth(async (request, { supabase }) => {
   try {
-    const body = await request.json();
-    const { clinic_id, entity_type, entity_id, field_values } = body;
-
-    if (!clinic_id || !entity_type || !entity_id || !field_values) {
-      return NextResponse.json(
-        { error: "clinic_id, entity_type, entity_id, and field_values are required" },
-        { status: 400 },
-      );
+    const raw = await request.json();
+    const parsed = safeParse(customFieldValuesSchema, raw);
+    if (!parsed.success) {
+      return NextResponse.json({ error: parsed.error }, { status: 400 });
     }
-
-    // Validate field_values keys against defined custom field definitions
-    if (typeof field_values !== "object" || field_values === null || Array.isArray(field_values)) {
-      return NextResponse.json(
-        { error: "field_values must be a plain object" },
-        { status: 400 },
-      );
-    }
+    const { clinic_id, entity_type, entity_id, field_values } = parsed.data;
 
     const { data: definitions } = await supabase
       .from("custom_field_definitions")
@@ -115,7 +106,7 @@ export const POST = withAuth(async (request, { supabase }) => {
           clinic_id,
           entity_type,
           entity_id,
-          field_values,
+          field_values: field_values as Json,
           updated_at: new Date().toISOString(),
         },
         {
@@ -150,23 +141,12 @@ export const POST = withAuth(async (request, { supabase }) => {
  */
 export const PATCH = withAuth(async (request, { supabase }) => {
   try {
-    const body = await request.json();
-    const { clinic_id, entity_type, entity_id, field_values } = body;
-
-    if (!clinic_id || !entity_type || !entity_id || !field_values) {
-      return NextResponse.json(
-        { error: "clinic_id, entity_type, entity_id, and field_values are required" },
-        { status: 400 },
-      );
+    const raw = await request.json();
+    const parsed = safeParse(customFieldValuesSchema, raw);
+    if (!parsed.success) {
+      return NextResponse.json({ error: parsed.error }, { status: 400 });
     }
-
-    // Validate field_values keys against defined custom field definitions
-    if (typeof field_values !== "object" || field_values === null || Array.isArray(field_values)) {
-      return NextResponse.json(
-        { error: "field_values must be a plain object" },
-        { status: 400 },
-      );
-    }
+    const { clinic_id, entity_type, entity_id, field_values } = parsed.data;
 
     const { data: definitions } = await supabase
       .from("custom_field_definitions")
@@ -226,7 +206,7 @@ export const PATCH = withAuth(async (request, { supabase }) => {
           clinic_id,
           entity_type,
           entity_id,
-          field_values: mergedValues,
+          field_values: mergedValues as Json,
           updated_at: new Date().toISOString(),
         },
         {

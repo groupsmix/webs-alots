@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { withAuth } from "@/lib/with-auth";
 import { STAFF_ROLES } from "@/lib/auth-roles";
 import { logger } from "@/lib/logger";
+import { stripeCheckoutSchema, safeParse } from "@/lib/validations";
 
 /**
  * HIGH-03: Validate that a redirect URL is same-origin to prevent open redirects.
@@ -52,7 +53,11 @@ export const POST = withAuth(async (request, { user, profile }) => {
   }
 
   try {
-    const body = await request.json();
+    const raw = await request.json();
+    const parsed = safeParse(stripeCheckoutSchema, raw);
+    if (!parsed.success) {
+      return NextResponse.json({ error: parsed.error }, { status: 400 });
+    }
     const {
       amount,
       currency = "mad",
@@ -62,24 +67,7 @@ export const POST = withAuth(async (request, { user, profile }) => {
       successUrl,
       cancelUrl,
       metadata = {},
-    } = body as {
-      amount: number;
-      currency?: string;
-      description?: string;
-      patientId?: string;
-      appointmentId?: string;
-      successUrl?: string;
-      cancelUrl?: string;
-      metadata?: Record<string, string>;
-    };
-
-    if (
-      typeof amount !== "number" ||
-      !Number.isFinite(amount) ||
-      amount <= 0
-    ) {
-      return NextResponse.json({ error: "Invalid amount" }, { status: 400 });
-    }
+    } = parsed.data;
 
     const origin = request.nextUrl.origin;
 

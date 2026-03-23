@@ -5,6 +5,7 @@ import { findOrCreatePatient } from "@/lib/find-or-create-patient";
 import { withAuth } from "@/lib/with-auth";
 import { STAFF_ROLES } from "@/lib/auth-roles";
 import { logger } from "@/lib/logger";
+import { paymentInitiateSchema, safeParse } from "@/lib/validations";
 
 export const runtime = "edge";
 
@@ -15,38 +16,12 @@ export const runtime = "edge";
  */
 export const POST = withAuth(async (request, { supabase }) => {
   try {
-    const body = (await request.json()) as {
-      appointmentId: string;
-      patientId: string;
-      patientName: string;
-      amount: number;
-      paymentType: "deposit" | "full";
-      method?: "cash" | "card" | "online" | "insurance";
-    };
-
-    if (!body.appointmentId || !body.patientId || !body.patientName || !body.paymentType) {
-      return NextResponse.json(
-        { error: "appointmentId, patientId, patientName, amount, and paymentType are required" },
-        { status: 400 },
-      );
+    const raw = await request.json();
+    const parsed = safeParse(paymentInitiateSchema, raw);
+    if (!parsed.success) {
+      return NextResponse.json({ error: parsed.error }, { status: 400 });
     }
-
-    // Input length validation to prevent DoS via oversized payloads
-    if (body.patientName.length > 200) {
-      return NextResponse.json({ error: "Patient name exceeds maximum allowed length" }, { status: 400 });
-    }
-
-    // Validate payment amount is a positive finite number
-    if (
-      typeof body.amount !== "number" ||
-      !Number.isFinite(body.amount) ||
-      body.amount <= 0
-    ) {
-      return NextResponse.json(
-        { error: "amount must be a positive number" },
-        { status: 400 },
-      );
-    }
+    const body = parsed.data;
 
     // Verify the appointment exists
     const { data: appt, error: apptError } = await supabase

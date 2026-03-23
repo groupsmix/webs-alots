@@ -13,6 +13,7 @@ import { authenticateApiKey } from "@/lib/api-auth";
 import { getCorsHeaders, handlePreflight } from "@/lib/cors";
 import { logger } from "@/lib/logger";
 import type { TablesInsert } from "@/lib/types/database";
+import { v1PatientCreateSchema, safeParse } from "@/lib/validations";
 
 /** Handle CORS preflight requests. */
 export function OPTIONS(request: NextRequest) {
@@ -74,34 +75,15 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const body = await request.json();
-
-    const required = ["full_name"];
-    const missing = required.filter((f) => !body[f]);
-    if (missing.length > 0) {
+    const raw = await request.json();
+    const parsed = safeParse(v1PatientCreateSchema, raw);
+    if (!parsed.success) {
       return NextResponse.json(
-        { error: `Missing required fields: ${missing.join(", ")}` },
+        { error: parsed.error },
         { status: 400, headers: getCorsHeaders(request) },
       );
     }
-
-    // Input length validation to prevent oversized payloads
-    const lengthLimits: Record<string, number> = {
-      full_name: 200,
-      email: 254,
-      phone: 30,
-      address: 500,
-      gender: 20,
-      insurance_type: 100,
-    };
-    for (const [field, maxLen] of Object.entries(lengthLimits)) {
-      if (typeof body[field] === "string" && body[field].length > maxLen) {
-        return NextResponse.json(
-          { error: `Field '${field}' exceeds maximum length of ${maxLen} characters` },
-          { status: 400, headers: getCorsHeaders(request) },
-        );
-      }
-    }
+    const body = parsed.data;
 
     const supabase = await createClient();
     // The users table has columns (full_name, date_of_birth, gender,

@@ -14,6 +14,27 @@ import { logAuditEvent } from "@/lib/audit-log";
 import { findOrCreatePatient } from "@/lib/find-or-create-patient";
 import { computeEndTime } from "@/lib/timezone";
 import { logger } from "@/lib/logger";
+import { safeParse } from "@/lib/validations";
+import { z } from "zod";
+
+const bookingRequestSchema = z.object({
+  specialtyId: z.string().min(1),
+  doctorId: z.string().min(1),
+  doctorIds: z.array(z.string()).optional(),
+  serviceId: z.string().min(1),
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Expected YYYY-MM-DD"),
+  time: z.string().regex(/^\d{2}:\d{2}$/, "Expected HH:MM"),
+  isFirstVisit: z.boolean(),
+  hasInsurance: z.boolean(),
+  patient: z.object({
+    name: z.string().min(2).max(200),
+    phone: z.string().min(6).max(30),
+    email: z.string().email().optional(),
+    reason: z.string().max(1000).optional(),
+  }),
+  slotDuration: z.number().int().positive(),
+  bufferTime: z.number().int().min(0),
+});
 
 export const runtime = "edge";
 
@@ -187,18 +208,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const body = (await request.json()) as BookingRequestBody;
-
-    // Input length validation to prevent DoS via oversized payloads
-    if (body.patient?.name && body.patient.name.length > 200) {
-      return NextResponse.json({ error: "Patient name exceeds maximum allowed length" }, { status: 400 });
+    const raw = await request.json();
+    const parsed = safeParse(bookingRequestSchema, raw);
+    if (!parsed.success) {
+      return NextResponse.json({ error: parsed.error }, { status: 400 });
     }
-    if (body.patient?.phone && body.patient.phone.length > 30) {
-      return NextResponse.json({ error: "Phone number exceeds maximum allowed length" }, { status: 400 });
-    }
-    if (body.patient?.reason && body.patient.reason.length > 1000) {
-      return NextResponse.json({ error: "Reason exceeds maximum allowed length" }, { status: 400 });
-    }
+    const body = parsed.data;
 
     const validation = await validateBookingRequest(body);
     if (validation.error) {

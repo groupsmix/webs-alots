@@ -13,6 +13,7 @@ import { authenticateApiKey } from "@/lib/api-auth";
 import { APPOINTMENT_STATUS } from "@/lib/types/database";
 import { getCorsHeaders, handlePreflight } from "@/lib/cors";
 import { logger } from "@/lib/logger";
+import { v1AppointmentCreateSchema, safeParse } from "@/lib/validations";
 
 /** Handle CORS preflight requests. */
 export function OPTIONS(request: NextRequest) {
@@ -72,35 +73,15 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const body = await request.json();
-
-    const required = ["patient_id", "doctor_id", "appointment_date", "start_time"];
-    const missing = required.filter((f) => !body[f]);
-    if (missing.length > 0) {
+    const raw = await request.json();
+    const parsed = safeParse(v1AppointmentCreateSchema, raw);
+    if (!parsed.success) {
       return NextResponse.json(
-        { error: `Missing required fields: ${missing.join(", ")}` },
+        { error: parsed.error },
         { status: 400, headers: getCorsHeaders(request) },
       );
     }
-
-    // Input length validation to prevent oversized payloads
-    const lengthLimits: Record<string, number> = {
-      patient_id: 100,
-      doctor_id: 100,
-      appointment_date: 10,
-      start_time: 8,
-      end_time: 8,
-      status: 20,
-      notes: 2000,
-    };
-    for (const [field, maxLen] of Object.entries(lengthLimits)) {
-      if (typeof body[field] === "string" && body[field].length > maxLen) {
-        return NextResponse.json(
-          { error: `Field '${field}' exceeds maximum length of ${maxLen} characters` },
-          { status: 400, headers: getCorsHeaders(request) },
-        );
-      }
-    }
+    const body = parsed.data;
 
     // Build slot_start / slot_end from appointment_date + start_time / end_time.
     // These are required NOT NULL columns in the appointments table.

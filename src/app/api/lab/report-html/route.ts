@@ -14,6 +14,7 @@ import { withAuth } from "@/lib/with-auth";
 import { STAFF_ROLES } from "@/lib/auth-roles";
 import { logger } from "@/lib/logger";
 import { escapeHtml } from "@/lib/escape-html";
+import { labReportSchema, safeParse } from "@/lib/validations";
 
 interface LabResultItem {
   testName: string;
@@ -116,22 +117,12 @@ function generateLabReportHtml(data: {
 
 export const POST = withAuth(async (request) => {
   try {
-    const body = await request.json();
-    const { orderId, clinicId, patientName, orderNumber, results } = body;
-
-    if (!orderId || !clinicId || !patientName || !orderNumber) {
-      return NextResponse.json(
-        { error: "orderId, clinicId, patientName, and orderNumber are required" },
-        { status: 400 },
-      );
+    const raw = await request.json();
+    const parsed = safeParse(labReportSchema, raw);
+    if (!parsed.success) {
+      return NextResponse.json({ error: parsed.error }, { status: 400 });
     }
-
-    if (!results || !Array.isArray(results) || results.length === 0) {
-      return NextResponse.json(
-        { error: "At least one result is required" },
-        { status: 400 },
-      );
-    }
+    const { orderId, clinicId, patientName, orderNumber, results } = parsed.data;
 
     const generatedAt = new Date().toLocaleString("en-US", {
       dateStyle: "long",

@@ -5,6 +5,7 @@ import { getPublicAvailableSlots } from "@/lib/data/public";
 import { APPOINTMENT_STATUS } from "@/lib/types/database";
 import { logAuditEvent } from "@/lib/audit-log";
 import { logger } from "@/lib/logger";
+import { rescheduleSchema, safeParse } from "@/lib/validations";
 
 export const runtime = "edge";
 
@@ -17,26 +18,12 @@ export const runtime = "edge";
  */
 export const POST = withAuth(async (request, { supabase, profile }) => {
   try {
-    const body = (await request.json()) as {
-      appointmentId: string;
-      newDate: string;
-      newTime: string;
-    };
-
-    if (!body.appointmentId || !body.newDate || !body.newTime) {
-      return NextResponse.json(
-        { error: "appointmentId, newDate, and newTime are required" },
-        { status: 400 },
-      );
+    const raw = await request.json();
+    const parsed = safeParse(rescheduleSchema, raw);
+    if (!parsed.success) {
+      return NextResponse.json({ error: parsed.error }, { status: 400 });
     }
-
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(body.newDate)) {
-      return NextResponse.json({ error: "Invalid date format (expected YYYY-MM-DD)" }, { status: 400 });
-    }
-
-    if (!/^\d{2}:\d{2}$/.test(body.newTime)) {
-      return NextResponse.json({ error: "Invalid time format (expected HH:MM)" }, { status: 400 });
-    }
+    const body = parsed.data;
 
     // Reject past dates
     const tz = clinicConfig.timezone ?? "Africa/Casablanca";
