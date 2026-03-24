@@ -70,8 +70,8 @@ const nextConfig: NextConfig = {
       // Redirect www to non-www (canonical domain)
       {
         source: "/:path*",
-        has: [{ type: "host", value: "www.groupsmix.com" }],
-        destination: "https://groupsmix.com/:path*",
+        has: [{ type: "host", value: "www.oltigo.com" }],
+        destination: "https://oltigo.com/:path*",
         permanent: true,
       },
     ];
