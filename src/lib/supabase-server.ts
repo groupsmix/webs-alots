@@ -1,5 +1,4 @@
 import { createServerClient } from "@supabase/ssr";
-import { cookies } from "next/headers";
 import type { Database } from "@/lib/types/database";
 import { setTenantContext } from "@/lib/tenant-context";
 
@@ -15,8 +14,13 @@ function requireEnv(name: string): string {
  * Create a Supabase server client with cookie-based auth.
  * Use this for requests where tenant context will be set separately
  * (e.g. middleware, auth flows).
+ *
+ * NOTE: `cookies` is loaded via dynamic import to avoid pulling
+ * `next/headers` into Client Components, Edge Middleware, and other
+ * contexts where it is not available (Next.js 16 / Turbopack).
  */
 export async function createClient() {
+  const { cookies } = await import("next/headers");
   const cookieStore = await cookies();
 
   return createServerClient<Database>(
