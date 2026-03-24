@@ -17,14 +17,14 @@ bucket_name = "webs-alots-uploads"
 
 # ---- Non-Sensitive Environment Variables ----
 [vars]
-ROOT_DOMAIN = "groupsmix.com"
-NEXT_PUBLIC_SITE_URL = "https://groupsmix.com"
+ROOT_DOMAIN = "oltigo.com"
+NEXT_PUBLIC_SITE_URL = "https://oltigo.com"
 R2_BUCKET_NAME = "webs-alots-uploads"
 
 # ---- Workers Routes (custom domain + wildcard subdomains) ----
 routes = [
-  { pattern = "groupsmix.com/*", zone_name = "groupsmix.com" },
-  { pattern = "*.groupsmix.com/*", zone_name = "groupsmix.com" },
+  { pattern = "oltigo.com/*", zone_name = "oltigo.com" },
+  { pattern = "*.oltigo.com/*", zone_name = "oltigo.com" },
 ]
 
 # ---- Cron Triggers ----
@@ -35,7 +35,7 @@ crons = ["*/30 * * * *", "0 2 * * *"]
 
 # ---- Staging Environment ----
 # Deploy with: wrangler deploy --env staging
-# URL: staging.groupsmix.com
+# URL: staging.oltigo.com
 # Uses separate Supabase project for data isolation
 [env.staging]
 name = "webs-alots-staging"
@@ -43,7 +43,7 @@ main = "worker-cron-handler.ts"
 compatibility_date = "2025-04-01"
 compatibility_flags = ["nodejs_compat"]
 routes = [
-  { pattern = "staging.groupsmix.com/*", zone_name = "groupsmix.com" },
+  { pattern = "staging.oltigo.com/*", zone_name = "oltigo.com" },
 ]
 
 [env.staging.assets]
@@ -55,8 +55,8 @@ binding = "R2_BUCKET"
 bucket_name = "webs-alots-uploads-staging"
 
 [env.staging.vars]
-ROOT_DOMAIN = "groupsmix.com"
-NEXT_PUBLIC_SITE_URL = "https://staging.groupsmix.com"
+ROOT_DOMAIN = "oltigo.com"
+NEXT_PUBLIC_SITE_URL = "https://staging.oltigo.com"
 R2_BUCKET_NAME = "webs-alots-uploads-staging"
 
 # ---- Staging Cron Triggers ----
