@@ -7,7 +7,7 @@ import { Card } from "@/components/ui/card";
 /* eslint-disable @next/next/no-img-element */
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { buttonVariants } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button-variants";
 import Link from "next/link";
 import { getPublicDoctors, getPublicBranding } from "@/lib/data/public";
 import { clinicConfig } from "@/config/clinic.config";
