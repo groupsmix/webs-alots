@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Search, Filter, Loader2 } from "lucide-react";
 import { clinicConfig } from "@/config/clinic.config";
+import { useTenant } from "@/lib/hooks/use-tenant";
 import { createClient } from "@/lib/supabase-client";
 
 interface PublicPharmacyProduct {
@@ -49,8 +50,7 @@ function searchProducts(
   );
 }
 
-async function fetchProductsClient(): Promise<PublicPharmacyProduct[]> {
-  const clinicId = clinicConfig.clinicId;
+async function fetchProductsClient(clinicId: string): Promise<PublicPharmacyProduct[]> {
   const supabase = createClient();
 
   const [{ data: products }, { data: stockRows }] = await Promise.all([
@@ -99,6 +99,7 @@ const categories = [
 ];
 
 export default function CatalogPage() {
+  const { clinicId } = useTenant();
   const [query, setQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [allProducts, setAllProducts] = useState<PublicPharmacyProduct[]>([]);
@@ -107,7 +108,8 @@ export default function CatalogPage() {
 
   useEffect(() => {
     const controller = new AbortController();
-    fetchProductsClient()
+    if (!clinicId) return;
+    fetchProductsClient(clinicId)
       .then((d) => { if (!controller.signal.aborted) setAllProducts(d); })
       .catch((err) => {
       if (!controller.signal.aborted) {

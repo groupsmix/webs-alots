@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { clinicConfig } from "@/config/clinic.config";
 import { withAuth } from "@/lib/with-auth";
 import { findOrCreatePatient } from "@/lib/find-or-create-patient";
 import { APPOINTMENT_STATUS, BOOKING_SOURCE } from "@/lib/types/database";
@@ -8,6 +7,7 @@ import { computeEndTime } from "@/lib/timezone";
 import { STAFF_ROLES } from "@/lib/auth-roles";
 import { logger } from "@/lib/logger";
 import { emergencySlotSchema, safeParse } from "@/lib/validations";
+import { resolveClinicId } from "@/lib/tenant";
 
 export const runtime = "edge";
 
@@ -16,8 +16,10 @@ export const runtime = "edge";
  *
  * Create an emergency slot (doctor only) or book an existing one.
  */
-export const POST = withAuth(async (request, { supabase }) => {
+export const POST = withAuth(async (request, { supabase, profile }) => {
   try {
+    const clinicId = await resolveClinicId(profile.clinic_id);
+
     const raw = await request.json();
     const parsed = safeParse(emergencySlotSchema, raw);
     if (!parsed.success) {
@@ -37,7 +39,7 @@ export const POST = withAuth(async (request, { supabase }) => {
         .from("users")
         .select("id")
         .eq("id", body.doctorId)
-        .eq("clinic_id", clinicConfig.clinicId)
+        .eq("clinic_id", clinicId)
         .eq("role", "doctor")
         .single();
 
@@ -57,7 +59,7 @@ export const POST = withAuth(async (request, { supabase }) => {
       const { data: slot, error: insertError } = await supabase
         .from("emergency_slots")
         .insert({
-          clinic_id: clinicConfig.clinicId,
+          clinic_id: clinicId,
           doctor_id: body.doctorId,
           slot_date: body.date,
           start_time: body.startTime,
@@ -98,7 +100,7 @@ export const POST = withAuth(async (request, { supabase }) => {
         .from("emergency_slots")
         .update({ is_booked: true })
         .eq("id", body.slotId)
-        .eq("clinic_id", clinicConfig.clinicId)
+        .eq("clinic_id", clinicId)
         .eq("is_booked", false)
         .select("id, doctor_id, slot_date, start_time, end_time")
         .single();
@@ -112,7 +114,7 @@ export const POST = withAuth(async (request, { supabase }) => {
 
       // Find or create patient (prefer phone-based lookup to avoid name collisions)
       const patientId = await findOrCreatePatient(
-        supabase, clinicConfig.clinicId, body.patientId, body.patientName,
+        supabase, clinicId, body.patientId, body.patientName,
         { phone: body.patientPhone },
       );
       if (!patientId) {
@@ -131,7 +133,7 @@ export const POST = withAuth(async (request, { supabase }) => {
       const { data: appointment, error: apptError } = await supabase
         .from("appointments")
         .insert({
-          clinic_id: clinicConfig.clinicId,
+          clinic_id: clinicId,
           patient_id: patientId,
           doctor_id: claimedSlot.doctor_id,
           service_id: body.serviceId ?? null,
@@ -164,7 +166,7 @@ export const POST = withAuth(async (request, { supabase }) => {
         supabase,
         action: "appointment.emergency_booked",
         type: "booking",
-        clinicId: clinicConfig.clinicId,
+        clinicId,
         description: `Emergency appointment ${appointment.id} created for patient ${patientId} with doctor ${claimedSlot.doctor_id} on ${claimedSlot.slot_date}`,
       });
 
@@ -187,14 +189,15 @@ export const POST = withAuth(async (request, { supabase }) => {
  *
  * Get available emergency slots. Requires authentication.
  */
-export const GET = withAuth(async (request, { supabase }) => {
+export const GET = withAuth(async (request, { supabase, profile }) => {
+  const clinicId = await resolveClinicId(profile.clinic_id);
   const doctorId = request.nextUrl.searchParams.get("doctorId") ?? undefined;
   const date = request.nextUrl.searchParams.get("date") ?? undefined;
 
   let q = supabase
     .from("emergency_slots")
     .select("id, doctor_id, slot_date, start_time, end_time, reason, is_booked, created_at")
-    .eq("clinic_id", clinicConfig.clinicId);
+    .eq("clinic_id", clinicId);
 
   if (doctorId) {
     q = q.eq("doctor_id", doctorId);

@@ -9,18 +9,20 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { clinicConfig } from "@/config/clinic.config";
+import { useTenant } from "@/lib/hooks/use-tenant";
 import { fetchRadiologyOrders } from "@/lib/data/client";
 import type { RadiologyOrderView } from "@/lib/data/client";
 import { PageLoader } from "@/components/ui/page-loader";
 
 export default function RadiologyDashboardPage() {
+  const { clinicId } = useTenant();
   const [orders, setOrders] = useState<RadiologyOrderView[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
     const controller = new AbortController();
-    fetchRadiologyOrders(clinicConfig.clinicId)
+    fetchRadiologyOrders(clinicId)
       .then((d) => { if (!controller.signal.aborted) setOrders(d); })
       .catch((err) => {
       if (!controller.signal.aborted) {

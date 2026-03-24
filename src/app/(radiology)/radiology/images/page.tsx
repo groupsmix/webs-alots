@@ -26,11 +26,13 @@ import {
 import { Search, Image as ImageIcon, ExternalLink, Eye, FileImage, Upload, Loader2, X } from "lucide-react";
 import Link from "next/link";
 import { clinicConfig } from "@/config/clinic.config";
+import { useTenant } from "@/lib/hooks/use-tenant";
 import { fetchRadiologyOrders } from "@/lib/data/client";
 import type { RadiologyOrderView } from "@/lib/data/client";
 import { PageLoader } from "@/components/ui/page-loader";
 
 export default function RadiologyImagesPage() {
+  const { clinicId } = useTenant();
   const [orders, setOrders] = useState<RadiologyOrderView[]>([]);
   const [allOrders, setAllOrders] = useState<RadiologyOrderView[]>([]);
   const [loading, setLoading] = useState(true);
@@ -47,7 +49,7 @@ export default function RadiologyImagesPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const refreshOrders = useCallback(() => {
-    fetchRadiologyOrders(clinicConfig.clinicId).then((all) => {
+    fetchRadiologyOrders(clinicId).then((all) => {
       setAllOrders(all);
       setOrders(all.filter((o) => o.imageCount > 0));
     });
@@ -55,7 +57,7 @@ export default function RadiologyImagesPage() {
 
   useEffect(() => {
     const controller = new AbortController();
-    fetchRadiologyOrders(clinicConfig.clinicId)
+    fetchRadiologyOrders(clinicId)
       .then((all) => {
       if (controller.signal.aborted) return;
         setAllOrders(all);
@@ -96,7 +98,7 @@ export default function RadiologyImagesPage() {
         const formData = new FormData();
         formData.append("file", uploadFiles[i]);
         formData.append("orderId", uploadOrderId);
-        formData.append("clinicId", clinicConfig.clinicId);
+        formData.append("clinicId", clinicId);
         await fetch("/api/radiology/upload", { method: "POST", body: formData });
       }
       setUploadOpen(false);

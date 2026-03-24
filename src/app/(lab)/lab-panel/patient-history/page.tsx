@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Search, History, FlaskConical, TrendingUp, TrendingDown, Minus } from "lucide-react";
 import { clinicConfig } from "@/config/clinic.config";
+import { useTenant } from "@/lib/hooks/use-tenant";
 import { fetchPatients, fetchPatientLabOrders, fetchLabTestResults } from "@/lib/data/client";
 import type { PatientView, LabTestOrderView, LabTestResultView } from "@/lib/data/client";
 import { PageLoader } from "@/components/ui/page-loader";
@@ -26,6 +27,7 @@ function FlagBadge({ flag }: { flag: string }) {
 }
 
 export default function PatientHistoryPage() {
+  const { clinicId } = useTenant();
   const [patients, setPatients] = useState<PatientView[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
@@ -39,7 +41,7 @@ export default function PatientHistoryPage() {
 
   useEffect(() => {
     const controller = new AbortController();
-    fetchPatients(clinicConfig.clinicId)
+    fetchPatients(clinicId)
       .then((d) => { if (!controller.signal.aborted) setPatients(d); })
       .catch((err) => {
       if (!controller.signal.aborted) {
@@ -56,7 +58,7 @@ export default function PatientHistoryPage() {
       setOrdersLoading(true);
       setSelectedOrderId(null);
       setSelectedOrderResults([]);
-      fetchPatientLabOrders(clinicConfig.clinicId, selectedPatientId)
+      fetchPatientLabOrders(clinicId, selectedPatientId)
         .then(setPatientOrders)
         .finally(() => setOrdersLoading(false));
     }

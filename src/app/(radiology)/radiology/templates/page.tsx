@@ -7,11 +7,13 @@ import { Input } from "@/components/ui/input";
 import { Search, FileStack, Copy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { clinicConfig } from "@/config/clinic.config";
+import { useTenant } from "@/lib/hooks/use-tenant";
 import { fetchRadiologyTemplates } from "@/lib/data/client";
 import type { RadiologyTemplateView } from "@/lib/data/client";
 import { PageLoader } from "@/components/ui/page-loader";
 
 export default function RadiologyTemplatesPage() {
+  const { clinicId } = useTenant();
   const [templates, setTemplates] = useState<RadiologyTemplateView[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
@@ -20,7 +22,7 @@ export default function RadiologyTemplatesPage() {
 
   useEffect(() => {
     const controller = new AbortController();
-    fetchRadiologyTemplates(clinicConfig.clinicId)
+    fetchRadiologyTemplates(clinicId)
       .then((d) => { if (!controller.signal.aborted) setTemplates(d); })
       .catch((err) => {
       if (!controller.signal.aborted) {

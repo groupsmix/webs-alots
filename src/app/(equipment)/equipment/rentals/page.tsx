@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/dialog";
 import { Search, HandCoins, ChevronDown, AlertTriangle, Plus, Pencil, Trash2, RotateCcw } from "lucide-react";
 import { clinicConfig } from "@/config/clinic.config";
+import { useTenant } from "@/lib/hooks/use-tenant";
 import {
   fetchEquipmentRentals, fetchEquipmentInventory,
   createEquipmentRental, updateEquipmentRental, deleteEquipmentRental,
@@ -53,6 +54,7 @@ const emptyRentalForm: RentalFormState = {
 };
 
 export default function EquipmentRentalsPage() {
+  const { clinicId } = useTenant();
   const { locale } = useEquipmentLocale();
   const { t } = useEquipmentI18n(locale);
   const [rentals, setRentals] = useState<EquipmentRentalView[]>([]);
@@ -100,7 +102,7 @@ export default function EquipmentRentalsPage() {
 
   function reload() {
     setLoading(true);
-    const cId = clinicConfig.clinicId;
+    const cId = clinicId;
     Promise.all([fetchEquipmentRentals(cId), fetchEquipmentInventory(cId)])
       .then(([r, e]) => { setRentals(r); setEquipment(e); })
       .finally(() => setLoading(false));
@@ -110,7 +112,7 @@ export default function EquipmentRentalsPage() {
     const controller = new AbortController();
     function init() {
       setLoading(true);
-      const cId = clinicConfig.clinicId;
+      const cId = clinicId;
       Promise.all([fetchEquipmentRentals(cId), fetchEquipmentInventory(cId)])
         .then(([r, e]) => { setRentals(r); setEquipment(e); })
         .catch((err) => {
@@ -166,7 +168,7 @@ export default function EquipmentRentalsPage() {
       });
     } else {
       await createEquipmentRental({
-        clinic_id: clinicConfig.clinicId,
+        clinic_id: clinicId,
         equipment_id: form.equipmentId,
         client_name: form.clientName,
         client_phone: form.clientPhone || undefined,

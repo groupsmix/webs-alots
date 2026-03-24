@@ -28,6 +28,7 @@ import {
   FileText, Loader2,
 } from "lucide-react";
 import { clinicConfig } from "@/config/clinic.config";
+import { useTenant } from "@/lib/hooks/use-tenant";
 import { fetchRadiologyOrders, fetchRadiologyTemplates } from "@/lib/data/client";
 import type { RadiologyOrderView, RadiologyTemplateView } from "@/lib/data/client";
 import { PageLoader } from "@/components/ui/page-loader";
@@ -37,6 +38,7 @@ const modalityOptions = ["xray", "ct", "mri", "ultrasound", "mammography", "pet"
 const priorityOptions = ["normal", "urgent", "stat"] as const;
 
 export default function RadiologyOrdersPage() {
+  const { clinicId } = useTenant();
   const [orders, setOrders] = useState<RadiologyOrderView[]>([]);
   const [templates, setTemplates] = useState<RadiologyTemplateView[]>([]);
   const [loading, setLoading] = useState(true);
@@ -69,14 +71,14 @@ export default function RadiologyOrdersPage() {
   const [updatingStatusId, setUpdatingStatusId] = useState<string | null>(null);
 
   const refreshOrders = useCallback(() => {
-    fetchRadiologyOrders(clinicConfig.clinicId).then(setOrders);
+    fetchRadiologyOrders(clinicId).then(setOrders);
   }, []);
 
   useEffect(() => {
     const controller = new AbortController();
     Promise.all([
-      fetchRadiologyOrders(clinicConfig.clinicId),
-      fetchRadiologyTemplates(clinicConfig.clinicId),
+      fetchRadiologyOrders(clinicId),
+      fetchRadiologyTemplates(clinicId),
     ]).then(([o, t]) => {
       if (controller.signal.aborted) return;
       setOrders(o);
@@ -99,7 +101,7 @@ export default function RadiologyOrdersPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          clinicId: clinicConfig.clinicId,
+          clinicId: clinicId,
           patientId: newOrder.patientId,
           modality: newOrder.modality,
           bodyPart: newOrder.bodyPart || undefined,
@@ -181,7 +183,7 @@ export default function RadiologyOrdersPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         orderId: order.id,
-        clinicId: clinicConfig.clinicId,
+        clinicId: clinicId,
         patientName: order.patientName,
         modality: order.modality,
         bodyPart: order.bodyPart,

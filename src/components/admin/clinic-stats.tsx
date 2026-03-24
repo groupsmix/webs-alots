@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { fetchDashboardStats, fetchTodayAppointments, type DashboardStats } from "@/lib/data/client";
 import { clinicConfig } from "@/config/clinic.config";
+import { useTenant } from "@/lib/hooks/use-tenant";
 import { logger } from "@/lib/logger";
 
 /**
@@ -14,11 +15,11 @@ import { logger } from "@/lib/logger";
  * Key metrics cards: patient count, no-show rate, booking sources, busiest hours.
  */
 export function ClinicStats() {
+  const { clinicId } = useTenant();
   const [dashData, setDashData] = useState<DashboardStats | null>(null);
   const [todayCount, setTodayCount] = useState(0);
 
   useEffect(() => {
-    const clinicId = clinicConfig.clinicId;
     if (!clinicId) return;
 
     let cancelled = false;

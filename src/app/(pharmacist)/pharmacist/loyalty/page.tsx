@@ -11,6 +11,7 @@ import {
   ArrowDown, ArrowUp, History,
 } from "lucide-react";
 import { clinicConfig } from "@/config/clinic.config";
+import { useTenant } from "@/lib/hooks/use-tenant";
 import { fetchLoyaltyMembers, fetchLoyaltyTransactions, getPointsValue } from "@/lib/data/client";
 import type { LoyaltyMemberView, LoyaltyTransactionView } from "@/lib/data/client";
 import { PageLoader } from "@/components/ui/page-loader";
@@ -34,6 +35,7 @@ const transactionTypeConfig: Record<TransactionType, { label: string; color: str
 };
 
 export default function LoyaltyPage() {
+  const { clinicId } = useTenant();
   const [allMembers, setAllMembers] = useState<LoyaltyMemberView[]>([]);
   const [allTransactions, setAllTransactions] = useState<LoyaltyTransactionView[]>([]);
   const [loading, setLoading] = useState(true);
@@ -44,7 +46,7 @@ export default function LoyaltyPage() {
 
   useEffect(() => {
     const controller = new AbortController();
-    const cId = clinicConfig.clinicId;
+    const cId = clinicId;
     Promise.all([fetchLoyaltyMembers(cId), fetchLoyaltyTransactions(cId)])
       .then(([m, t]) => { setAllMembers(m); setAllTransactions(t); })
       .catch((err) => {

@@ -19,6 +19,7 @@ import {
   Clock, CheckCircle, Loader2, UserPlus, ArrowRight,
 } from "lucide-react";
 import { clinicConfig } from "@/config/clinic.config";
+import { useTenant } from "@/lib/hooks/use-tenant";
 import {
   fetchLabTestOrders, fetchLabTestCatalog, fetchPatients,
   createLabTestOrder, updateLabOrderStatus, assignLabTechnician,
@@ -30,6 +31,7 @@ const statusOptions = ["all", "pending", "sample_collected", "in_progress", "com
 const priorityOptions = ["normal", "urgent", "stat"] as const;
 
 export default function TestOrdersPage() {
+  const { clinicId } = useTenant();
   const [orders, setOrders] = useState<LabTestOrderView[]>([]);
   const [catalog, setCatalog] = useState<LabTestCatalogView[]>([]);
   const [patients, setPatients] = useState<PatientView[]>([]);
@@ -56,15 +58,15 @@ export default function TestOrdersPage() {
   const [updatingStatusId, setUpdatingStatusId] = useState<string | null>(null);
 
   const refreshOrders = useCallback(() => {
-    fetchLabTestOrders(clinicConfig.clinicId).then(setOrders);
+    fetchLabTestOrders(clinicId).then(setOrders);
   }, []);
 
   useEffect(() => {
     const controller = new AbortController();
     Promise.all([
-      fetchLabTestOrders(clinicConfig.clinicId),
-      fetchLabTestCatalog(clinicConfig.clinicId),
-      fetchPatients(clinicConfig.clinicId),
+      fetchLabTestOrders(clinicId),
+      fetchLabTestCatalog(clinicId),
+      fetchPatients(clinicId),
     ]).then(([o, c, p]) => {
       if (controller.signal.aborted) return;
       setOrders(o);
@@ -85,7 +87,7 @@ export default function TestOrdersPage() {
     setNewOrderSaving(true);
     try {
       await createLabTestOrder({
-        clinic_id: clinicConfig.clinicId,
+        clinic_id: clinicId,
         patient_id: newOrder.patientId,
         priority: newOrder.priority,
         clinical_notes: newOrder.clinicalNotes || undefined,

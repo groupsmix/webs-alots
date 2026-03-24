@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/select";
 import { Search, FlaskConical, ArrowUpDown, TrendingUp, TrendingDown, Minus, Plus, Loader2, FileText } from "lucide-react";
 import { clinicConfig } from "@/config/clinic.config";
+import { useTenant } from "@/lib/hooks/use-tenant";
 import { fetchLabTestOrders, fetchLabTestResults, saveLabTestResult } from "@/lib/data/client";
 import type { LabTestOrderView, LabTestResultView } from "@/lib/data/client";
 import { PageLoader } from "@/components/ui/page-loader";
@@ -33,6 +34,7 @@ function flagColor(flag: string): string {
 }
 
 export default function ResultsPage() {
+  const { clinicId } = useTenant();
   const [orders, setOrders] = useState<LabTestOrderView[]>([]);
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
   const [results, setResults] = useState<LabTestResultView[]>([]);
@@ -67,7 +69,7 @@ export default function ResultsPage() {
 
   useEffect(() => {
     const controller = new AbortController();
-    fetchLabTestOrders(clinicConfig.clinicId)
+    fetchLabTestOrders(clinicId)
       .then((all) => {
       if (controller.signal.aborted) return;
         const active = all.filter((o) => o.status !== "cancelled");
@@ -127,7 +129,7 @@ export default function ResultsPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           orderId: selectedOrderId,
-          clinicId: clinicConfig.clinicId,
+          clinicId: clinicId,
           patientName: order.patientName,
           orderNumber: order.orderNumber,
           results: results.map((r) => ({

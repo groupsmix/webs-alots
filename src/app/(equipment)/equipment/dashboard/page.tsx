@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { clinicConfig } from "@/config/clinic.config";
+import { useTenant } from "@/lib/hooks/use-tenant";
 import { fetchEquipmentInventory, fetchEquipmentRentals, fetchEquipmentMaintenance } from "@/lib/data/client";
 import type { EquipmentItemView, EquipmentRentalView, EquipmentMaintenanceView } from "@/lib/data/client";
 import { useEquipmentLocale } from "../../layout";
@@ -16,6 +17,7 @@ import { useEquipmentI18n } from "@/lib/hooks/use-equipment-i18n";
 import { PageLoader } from "@/components/ui/page-loader";
 
 export default function EquipmentDashboardPage() {
+  const { clinicId } = useTenant();
   const { locale } = useEquipmentLocale();
   const { t } = useEquipmentI18n(locale);
   const [inventory, setInventory] = useState<EquipmentItemView[]>([]);
@@ -26,7 +28,7 @@ export default function EquipmentDashboardPage() {
 
   useEffect(() => {
     const controller = new AbortController();
-    const cId = clinicConfig.clinicId;
+    const cId = clinicId;
     Promise.all([
       fetchEquipmentInventory(cId),
       fetchEquipmentRentals(cId),

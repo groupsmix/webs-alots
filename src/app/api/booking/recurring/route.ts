@@ -9,6 +9,7 @@ import { computeEndTime } from "@/lib/timezone";
 import { STAFF_ROLES } from "@/lib/auth-roles";
 import { logger } from "@/lib/logger";
 import { recurringSchema, safeParse } from "@/lib/validations";
+import { resolveClinicId } from "@/lib/tenant";
 
 export const runtime = "edge";
 
@@ -36,8 +37,10 @@ function addInterval(date: Date, pattern: "weekly" | "biweekly" | "monthly"): Da
  *
  * Create a recurring booking series or cancel one.
  */
-export const POST = withAuth(async (request, { supabase }) => {
+export const POST = withAuth(async (request, { supabase, profile }) => {
   try {
+    const clinicId = await resolveClinicId(profile.clinic_id);
+
     const raw = await request.json();
     const parsed = safeParse(recurringSchema, raw);
     if (!parsed.success) {
@@ -67,7 +70,7 @@ export const POST = withAuth(async (request, { supabase }) => {
 
       // Find or create patient (prefer phone-based lookup to avoid name collisions)
       const patientId = await findOrCreatePatient(
-        supabase, clinicConfig.clinicId, body.patientId, body.patientName,
+        supabase, clinicId, body.patientId, body.patientName,
         { phone: body.patientPhone },
       );
       if (!patientId) {
@@ -108,7 +111,7 @@ export const POST = withAuth(async (request, { supabase }) => {
         const slotEnd = `${dateStr}T${endTime}:00`;
 
         appointmentRows.push({
-          clinic_id: clinicConfig.clinicId,
+          clinic_id: clinicId,
           patient_id: patientId,
           doctor_id: body.doctorId,
           service_id: body.serviceId ?? null,
@@ -139,7 +142,7 @@ export const POST = withAuth(async (request, { supabase }) => {
       const { data: existingAppts } = await supabase
         .from("appointments")
         .select("appointment_date, start_time, end_time")
-        .eq("clinic_id", clinicConfig.clinicId)
+        .eq("clinic_id", clinicId)
         .eq("doctor_id", body.doctorId)
         .in("appointment_date", datesToCheck)
         .neq("status", APPOINTMENT_STATUS.CANCELLED);
@@ -204,7 +207,7 @@ export const POST = withAuth(async (request, { supabase }) => {
       const { data: groupAppts } = await supabase
         .from("appointments")
         .select("id, status")
-        .eq("clinic_id", clinicConfig.clinicId)
+        .eq("clinic_id", clinicId)
         .eq("recurrence_group_id", body.groupId);
 
       if (!groupAppts || groupAppts.length === 0) {

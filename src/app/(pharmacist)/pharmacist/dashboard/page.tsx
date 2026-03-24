@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { clinicConfig } from "@/config/clinic.config";
+import { useTenant } from "@/lib/hooks/use-tenant";
 import {
   fetchProducts,
   fetchPrescriptionRequests,
@@ -51,6 +52,7 @@ function toDateStr(d: Date): string {
 }
 
 export default function PharmacistDashboardPage() {
+  const { clinicId } = useTenant();
   const [products, setProducts] = useState<ProductView[]>([]);
   const [prescriptions, setPrescriptions] = useState<PharmacyPrescriptionView[]>([]);
   const [sales, setSales] = useState<DailySaleView[]>([]);
@@ -67,7 +69,7 @@ export default function PharmacistDashboardPage() {
 
   useEffect(() => {
     const controller = new AbortController();
-    const cId = clinicConfig.clinicId;
+    const cId = clinicId;
     Promise.all([
       fetchProducts(cId),
       fetchPrescriptionRequests(cId),

@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { clinicConfig } from "@/config/clinic.config";
+import { useTenant } from "@/lib/hooks/use-tenant";
 import {
   fetchParapharmacyProducts,
   fetchParapharmacyCategories,
@@ -19,6 +20,7 @@ import type { ProductView, ParapharmacyCategoryView } from "@/lib/data/client";
 import { PageLoader } from "@/components/ui/page-loader";
 
 export default function ParapharmacyDashboardPage() {
+  const { clinicId } = useTenant();
   const [products, setProducts] = useState<ProductView[]>([]);
   const [categories, setCategories] = useState<ParapharmacyCategoryView[]>([]);
   const [loading, setLoading] = useState(true);
@@ -26,7 +28,7 @@ export default function ParapharmacyDashboardPage() {
 
   useEffect(() => {
     const controller = new AbortController();
-    const cId = clinicConfig.clinicId;
+    const cId = clinicId;
     Promise.all([
       fetchParapharmacyProducts(cId),
       fetchParapharmacyCategories(cId),

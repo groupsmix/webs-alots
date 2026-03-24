@@ -4,6 +4,7 @@ import { useState, useMemo, useEffect } from "react";
 import { ChevronLeft, ChevronRight, Check, Stethoscope, User, ShieldCheck, Repeat, Users, Loader2 } from "lucide-react";
 import { fetchDoctors, fetchServices, type DoctorView, type ServiceView } from "@/lib/data/client";
 import { clinicConfig } from "@/config/clinic.config";
+import { useTenant } from "@/lib/hooks/use-tenant";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -91,6 +92,7 @@ function mapService(s: ServiceView): Service {
 }
 
 export function BookingForm() {
+  const { clinicId } = useTenant();
   const steps = useMemo(() => getSteps(), []);
   const [step, setStep] = useState(0);
   const [selectedSpecialty, setSelectedSpecialty] = useState("");
@@ -126,7 +128,6 @@ export function BookingForm() {
 
   // Load doctors, services, and specialties from Supabase on mount
   useEffect(() => {
-    const clinicId = clinicConfig.clinicId;
     if (!clinicId) return;
 
     let cancelled = false;

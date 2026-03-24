@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/select";
 import { Search, Receipt, DollarSign, Plus, Minus, ShoppingCart, Loader2, Trash2 } from "lucide-react";
 import { clinicConfig } from "@/config/clinic.config";
+import { useTenant } from "@/lib/hooks/use-tenant";
 import { fetchDailySales, fetchParapharmacyProducts, createParapharmacySale } from "@/lib/data/client";
 import type { DailySaleView, ProductView } from "@/lib/data/client";
 import { PageLoader } from "@/components/ui/page-loader";
@@ -27,6 +28,7 @@ interface CartItem {
 }
 
 export default function ParapharmacySalesPage() {
+  const { clinicId } = useTenant();
   const [sales, setSales] = useState<DailySaleView[]>([]);
   const [products, setProducts] = useState<ProductView[]>([]);
   const [loading, setLoading] = useState(true);
@@ -42,14 +44,14 @@ export default function ParapharmacySalesPage() {
   const [saving, setSaving] = useState(false);
 
   const refreshSales = useCallback(() => {
-    fetchDailySales(clinicConfig.clinicId).then(setSales);
+    fetchDailySales(clinicId).then(setSales);
   }, []);
 
   useEffect(() => {
     const controller = new AbortController();
     Promise.all([
-      fetchDailySales(clinicConfig.clinicId),
-      fetchParapharmacyProducts(clinicConfig.clinicId),
+      fetchDailySales(clinicId),
+      fetchParapharmacyProducts(clinicId),
     ])
       .then(([s, p]) => {
       if (controller.signal.aborted) return;
@@ -103,7 +105,7 @@ export default function ParapharmacySalesPage() {
     setSaving(true);
     try {
       await createParapharmacySale({
-        clinic_id: clinicConfig.clinicId,
+        clinic_id: clinicId,
         patient_name: customerName,
         payment_method: paymentMethod,
         items: cart.map((c) => ({

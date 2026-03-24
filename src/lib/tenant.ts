@@ -45,3 +45,41 @@ export async function getTenant(): Promise<TenantInfo | null> {
     clinicTier: h.get(TENANT_HEADERS.clinicTier) ?? "",
   };
 }
+
+/**
+ * Get the current tenant or throw if not resolved.
+ *
+ * Use this in API routes and server functions where a tenant is REQUIRED.
+ * Throws a descriptive error if the tenant could not be resolved from
+ * the request context (e.g. missing subdomain).
+ */
+export async function requireTenant(): Promise<TenantInfo> {
+  const tenant = await getTenant();
+  if (!tenant?.clinicId) {
+    throw new Error(
+      "Tenant resolution failed: no clinic_id in request context. " +
+      "Ensure the request is routed through a valid tenant subdomain.",
+    );
+  }
+  return tenant;
+}
+
+/**
+ * Resolve the clinic_id for the current request.
+ *
+ * For authenticated API routes that receive an AuthContext from withAuth(),
+ * prefer using the profile's clinic_id (which comes from the user's DB record).
+ * Falls back to the tenant header resolved by middleware.
+ *
+ * @param profileClinicId - The clinic_id from the authenticated user's profile (may be null for super_admin).
+ * @returns The resolved clinic_id string.
+ * @throws Error if neither source provides a clinic_id.
+ */
+export async function resolveClinicId(profileClinicId?: string | null): Promise<string> {
+  if (profileClinicId) return profileClinicId;
+  const tenant = await getTenant();
+  if (tenant?.clinicId) return tenant.clinicId;
+  throw new Error(
+    "Tenant resolution failed: no clinic_id from user profile or request headers.",
+  );
+}

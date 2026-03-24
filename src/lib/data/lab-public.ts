@@ -2,13 +2,14 @@
  * Server-side data fetching for Lab & Radiology public-facing pages.
  *
  * These functions use the server Supabase client and scope queries
- * to the current clinic via `clinicConfig.clinicId`.
+ * to the current tenant resolved from the request context.
  * Tables are accessed gracefully — if a table doesn't exist yet the
  * function returns an empty array instead of crashing.
  */
 
 import { createClient } from "@/lib/supabase-server";
 import { clinicConfig } from "@/config/clinic.config";
+import { requireTenant } from "@/lib/tenant";
 
 // ── Types ──
 
@@ -41,14 +42,15 @@ export interface CollectionPoint {
 
 // ── Helpers ──
 
-function getClinicId(): string {
-  return clinicConfig.clinicId;
+async function getClinicId(): Promise<string> {
+  const tenant = await requireTenant();
+  return tenant.clinicId;
 }
 
 // ── Lab Tests / Exams ──
 
 export async function getPublicLabTests(): Promise<LabTest[]> {
-  const clinicId = getClinicId();
+  const clinicId = await getClinicId();
   const supabase = await createClient();
 
   const { data, error } = await supabase
@@ -92,7 +94,7 @@ export function searchLabTests(tests: LabTest[], query: string): LabTest[] {
 // ── Collection Points ──
 
 export async function getPublicCollectionPoints(): Promise<CollectionPoint[]> {
-  const clinicId = getClinicId();
+  const clinicId = await getClinicId();
   const supabase = await createClient();
 
   const { data, error } = await supabase

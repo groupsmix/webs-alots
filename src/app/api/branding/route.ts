@@ -17,6 +17,7 @@ import type { UserRole } from "@/lib/types/database";
 import { withAuth } from "@/lib/with-auth";
 import { logger } from "@/lib/logger";
 import { brandingUpdateSchema, safeParse } from "@/lib/validations";
+import { requireTenant, resolveClinicId } from "@/lib/tenant";
 
 const ADMIN_ROLES: UserRole[] = ["super_admin", "clinic_admin"];
 
@@ -59,7 +60,8 @@ const FIELD_MAP: Record<string, string> = {
 
 export async function GET() {
   try {
-    const clinicId = clinicConfig.clinicId;
+    const tenant = await requireTenant();
+    const clinicId = tenant.clinicId;
     const supabase = await createClient();
 
     const { data, error } = await supabase
@@ -108,8 +110,8 @@ export async function GET() {
 
 // ── PUT — update text branding fields (colors, fonts) ──
 
-export const PUT = withAuth(async (request, { supabase }) => {
-  const clinicId = clinicConfig.clinicId;
+export const PUT = withAuth(async (request, { supabase, profile }) => {
+  const clinicId = await resolveClinicId(profile.clinic_id);
   const raw = await request.json();
   const parsed = safeParse(brandingUpdateSchema, raw);
   if (!parsed.success) {
@@ -166,8 +168,8 @@ export const PUT = withAuth(async (request, { supabase }) => {
 
 // ── POST — upload a branding image and save URL ──
 
-export const POST = withAuth(async (request, { supabase }) => {
-  const clinicId = clinicConfig.clinicId;
+export const POST = withAuth(async (request, { supabase, profile }) => {
+  const clinicId = await resolveClinicId(profile.clinic_id);
 
   if (!isR2Configured()) {
     return NextResponse.json(

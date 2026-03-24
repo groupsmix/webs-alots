@@ -12,6 +12,7 @@ import {
 import { Search, Package, ChevronDown, Plus, Pencil, Trash2, Wrench } from "lucide-react";
 import Link from "next/link";
 import { clinicConfig } from "@/config/clinic.config";
+import { useTenant } from "@/lib/hooks/use-tenant";
 import {
   fetchEquipmentInventory,
   createEquipmentItem,
@@ -59,6 +60,7 @@ const emptyForm: EquipmentFormState = {
 };
 
 export default function EquipmentInventoryPage() {
+  const { clinicId } = useTenant();
   const { locale } = useEquipmentLocale();
   const { t } = useEquipmentI18n(locale);
   const [items, setItems] = useState<EquipmentItemView[]>([]);
@@ -86,7 +88,7 @@ export default function EquipmentInventoryPage() {
 
   function reload() {
     setLoading(true);
-    fetchEquipmentInventory(clinicConfig.clinicId)
+    fetchEquipmentInventory(clinicId)
       .then(setItems)
       .finally(() => setLoading(false));
   }
@@ -95,7 +97,7 @@ export default function EquipmentInventoryPage() {
     const controller = new AbortController();
     function init() {
       setLoading(true);
-      fetchEquipmentInventory(clinicConfig.clinicId)
+      fetchEquipmentInventory(clinicId)
         .then(setItems)
         .catch((err) => {
       if (!controller.signal.aborted) {
@@ -159,7 +161,7 @@ export default function EquipmentInventoryPage() {
       });
     } else {
       await createEquipmentItem({
-        clinic_id: clinicConfig.clinicId,
+        clinic_id: clinicId,
         name: form.name,
         category: form.category,
         serial_number: form.serialNumber || undefined,

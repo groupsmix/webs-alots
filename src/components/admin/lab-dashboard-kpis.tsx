@@ -14,6 +14,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { fetchLabDashboardKPIs, type LabDashboardKPIs } from "@/lib/data/client";
 import { clinicConfig } from "@/config/clinic.config";
+import { useTenant } from "@/lib/hooks/use-tenant";
 import { PageLoader } from "@/components/ui/page-loader";
 import { logger } from "@/lib/logger";
 
@@ -27,11 +28,11 @@ import { logger } from "@/lib/logger";
  *  - Average turnaround time
  */
 export function LabDashboardKPIsComponent() {
+  const { clinicId } = useTenant();
   const [data, setData] = useState<LabDashboardKPIs | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const clinicId = clinicConfig.clinicId;
     let cancelled = false;
     if (!clinicId) {
       Promise.resolve().then(() => { if (!cancelled) setLoading(false); });

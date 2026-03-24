@@ -16,6 +16,7 @@ import {
 import { Loader2 } from "lucide-react";
 import { tierColors, type TierSlug } from "@/lib/config/pricing";
 import { clinicConfig } from "@/config/clinic.config";
+import { useTenant } from "@/lib/hooks/use-tenant";
 import {
   fetchClinicSubscription,
   type ClinicSubscriptionView,
@@ -27,6 +28,7 @@ import {
 } from "@/lib/super-admin-actions";
 
 export default function ClientBillingPage() {
+  const { clinicId } = useTenant();
   const [upgradeOpen, setUpgradeOpen] = useState(false);
   const [selectedUpgrade, setSelectedUpgrade] = useState<TierSlug | null>(null);
   const [currentSub, setCurrentSub] = useState<ClinicSubscriptionView | null>(null);
@@ -36,7 +38,7 @@ export default function ClientBillingPage() {
   const loadData = useCallback(async () => {
     try {
       const [sub, tiers] = await Promise.all([
-        fetchClinicSubscription(clinicConfig.clinicId),
+        fetchClinicSubscription(clinicId),
         fetchPricingTiers(),
       ]);
       setCurrentSub(sub);

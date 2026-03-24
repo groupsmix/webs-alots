@@ -6,6 +6,7 @@ import { APPOINTMENT_STATUS } from "@/lib/types/database";
 import { logAuditEvent } from "@/lib/audit-log";
 import { logger } from "@/lib/logger";
 import { rescheduleSchema, safeParse } from "@/lib/validations";
+import { resolveClinicId } from "@/lib/tenant";
 
 export const runtime = "edge";
 
@@ -18,6 +19,8 @@ export const runtime = "edge";
  */
 export const POST = withAuth(async (request, { supabase, profile }) => {
   try {
+    const clinicId = await resolveClinicId(profile.clinic_id);
+
     const raw = await request.json();
     const parsed = safeParse(rescheduleSchema, raw);
     if (!parsed.success) {
@@ -51,7 +54,7 @@ export const POST = withAuth(async (request, { supabase, profile }) => {
       .from("appointments")
       .select("id, status, clinic_id, doctor_id, service_id")
       .eq("id", body.appointmentId)
-      .eq("clinic_id", clinicConfig.clinicId)
+      .eq("clinic_id", clinicId)
       .single();
 
     if (fetchError || !existing) {
@@ -116,7 +119,7 @@ export const POST = withAuth(async (request, { supabase, profile }) => {
       action: "appointment.rescheduled",
       type: "booking",
       actor: profile.id,
-      clinicId: profile.clinic_id ?? clinicConfig.clinicId,
+      clinicId,
       description: `Appointment ${body.appointmentId} rescheduled to ${body.newDate} ${body.newTime}`,
     });
 
