@@ -6,7 +6,7 @@ import { buttonVariants } from "@/components/ui/button";
 import Link from "next/link";
 import { getPublicBranding } from "@/lib/data/public";
 import { createClient } from "@/lib/supabase-server";
-import { clinicConfig } from "@/config/clinic.config";
+import { requireTenant } from "@/lib/tenant";
 
 export const metadata: Metadata = {
   title: "Before & After Gallery",
@@ -23,11 +23,12 @@ interface GalleryCase {
 }
 
 async function getApprovedBeforeAfterCases(): Promise<GalleryCase[]> {
+  const tenant = await requireTenant();
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("before_after_photos")
     .select("id, description, category, before_date, after_date")
-    .eq("clinic_id", clinicConfig.clinicId)
+    .eq("clinic_id", tenant.clinicId)
     .not("after_date", "is", null)
     .order("before_date", { ascending: false });
 

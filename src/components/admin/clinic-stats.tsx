@@ -5,7 +5,7 @@ import { Users, Calendar, TrendingDown, DollarSign, Activity, Clock, UserCheck, 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { fetchDashboardStats, fetchTodayAppointments, type DashboardStats } from "@/lib/data/client";
-import { clinicConfig } from "@/config/clinic.config";
+import { useTenant } from "@/components/tenant-provider";
 import { logger } from "@/lib/logger";
 
 /**
@@ -16,9 +16,10 @@ import { logger } from "@/lib/logger";
 export function ClinicStats() {
   const [dashData, setDashData] = useState<DashboardStats | null>(null);
   const [todayCount, setTodayCount] = useState(0);
+  const tenant = useTenant();
 
   useEffect(() => {
-    const clinicId = clinicConfig.clinicId;
+    const clinicId = tenant?.clinicId;
     if (!clinicId) return;
 
     let cancelled = false;

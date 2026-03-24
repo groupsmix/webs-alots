@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Clock, Check, Package, Truck, AlertCircle, RefreshCw, Eye, Loader2 } from "lucide-react";
+import { useTenant } from "@/components/tenant-provider";
 import { clinicConfig } from "@/config/clinic.config";
 import { createClient } from "@/lib/supabase-client";
 
@@ -36,8 +37,7 @@ interface PharmacyPrescription {
   whatsappNotified: boolean;
 }
 
-async function fetchPrescriptionsClient(): Promise<PharmacyPrescription[]> {
-  const clinicId = clinicConfig.clinicId;
+async function fetchPrescriptionsClient(clinicId: string): Promise<PharmacyPrescription[]> {
   const supabase = createClient();
 
   const { data: requests, error } = await supabase
@@ -95,13 +95,14 @@ const statusConfig: Record<PharmacyPrescription["status"], { label: string; colo
 };
 
 export default function PrescriptionHistoryPage() {
+  const tenant = useTenant();
   const [prescriptions, setPrescriptions] = useState<PharmacyPrescription[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
     const controller = new AbortController();
-    fetchPrescriptionsClient()
+    fetchPrescriptionsClient(tenant?.clinicId ?? "")
       .then((d) => { if (!controller.signal.aborted) setPrescriptions(d); })
       .catch((err) => {
       if (!controller.signal.aborted) {

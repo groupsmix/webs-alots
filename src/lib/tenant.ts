@@ -45,3 +45,17 @@ export async function getTenant(): Promise<TenantInfo | null> {
     clinicTier: h.get(TENANT_HEADERS.clinicTier) ?? "",
   };
 }
+
+/**
+ * Get the current tenant or throw an error if not resolved.
+ *
+ * Use in API routes and server-side logic where tenant context
+ * is mandatory. Prevents execution without tenant isolation.
+ */
+export async function requireTenant(): Promise<TenantInfo> {
+  const tenant = await getTenant();
+  if (!tenant?.clinicId) {
+    throw new Error("Tenant context is required but was not resolved. Ensure the request includes a valid subdomain.");
+  }
+  return tenant;
+}

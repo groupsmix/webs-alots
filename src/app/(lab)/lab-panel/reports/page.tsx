@@ -6,12 +6,13 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Search, FileText, Download } from "lucide-react";
-import { clinicConfig } from "@/config/clinic.config";
+import { useTenant } from "@/components/tenant-provider";
 import { fetchLabTestOrders } from "@/lib/data/client";
 import type { LabTestOrderView } from "@/lib/data/client";
 import { PageLoader } from "@/components/ui/page-loader";
 
 export default function LabReportsPage() {
+  const tenant = useTenant();
   const [orders, setOrders] = useState<LabTestOrderView[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
@@ -19,7 +20,7 @@ export default function LabReportsPage() {
 
   useEffect(() => {
     const controller = new AbortController();
-    fetchLabTestOrders(clinicConfig.clinicId)
+    fetchLabTestOrders(tenant?.clinicId ?? "")
       .then((all) => {
       if (controller.signal.aborted) return;
         setOrders(all.filter((o) => o.status === "completed" || o.status === "validated"));

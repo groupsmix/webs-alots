@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { clinicConfig } from "@/config/clinic.config";
+import { requireTenant } from "@/lib/tenant";
 import {
   getPublicGeneratedSlots,
   getPublicAvailableSlots,
@@ -212,6 +213,8 @@ export async function POST(request: NextRequest) {
     const service = validation.services.find((s) => s.id === body.serviceId);
 
     const supabase = await createClient();
+    const tenant = await requireTenant();
+    const clinicId = tenant.clinicId;
 
     // Verify doctorId and serviceId belong to this clinic in a single
     // parallel query instead of two sequential ones.  This also avoids
@@ -222,14 +225,14 @@ export async function POST(request: NextRequest) {
         .from("users")
         .select("id")
         .eq("id", body.doctorId)
-        .eq("clinic_id", clinicConfig.clinicId)
+        .eq("clinic_id", clinicId)
         .eq("role", "doctor")
         .single(),
       supabase
         .from("services")
         .select("id")
         .eq("id", body.serviceId)
-        .eq("clinic_id", clinicConfig.clinicId)
+        .eq("clinic_id", clinicId)
         .single(),
     ]);
 
@@ -244,7 +247,7 @@ export async function POST(request: NextRequest) {
     // Find or create a patient record using the shared utility
     // (prefers phone-based lookup to avoid name collisions)
     const patientId = await findOrCreatePatient(
-      supabase, clinicConfig.clinicId, "patient-new", body.patient.name,
+      supabase, clinicId, "patient-new", body.patient.name,
       { phone: body.patient.phone, email: body.patient.email },
     );
     if (!patientId) {
@@ -275,7 +278,7 @@ export async function POST(request: NextRequest) {
     const { data: appointment, error: apptError } = await supabase
       .from("appointments")
       .insert({
-        clinic_id: clinicConfig.clinicId,
+        clinic_id: clinicId,
         patient_id: patientId,
         doctor_id: body.doctorId,
         service_id: body.serviceId,
@@ -316,7 +319,7 @@ export async function POST(request: NextRequest) {
     const { count: slotCount } = await supabase
       .from("appointments")
       .select("id", { count: "exact", head: true })
-      .eq("clinic_id", clinicConfig.clinicId)
+      .eq("clinic_id", clinicId)
       .eq("doctor_id", body.doctorId)
       .eq("appointment_date", body.date)
       .eq("start_time", body.time)
@@ -343,7 +346,7 @@ export async function POST(request: NextRequest) {
       supabase,
       action: "appointment.created",
       type: "booking",
-      clinicId: clinicConfig.clinicId,
+      clinicId,
       description: `Appointment ${appointment.id} created for patient ${patientId} with doctor ${body.doctorId}`,
     });
 

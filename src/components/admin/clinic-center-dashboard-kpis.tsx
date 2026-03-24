@@ -16,7 +16,7 @@ import {
   fetchClinicCenterDashboardKPIs,
   type ClinicCenterDashboardKPIs,
 } from "@/lib/data/client";
-import { clinicConfig } from "@/config/clinic.config";
+import { useTenant } from "@/components/tenant-provider";
 import { PageLoader } from "@/components/ui/page-loader";
 import { logger } from "@/lib/logger";
 
@@ -32,9 +32,10 @@ import { logger } from "@/lib/logger";
 export function ClinicCenterDashboardKPIsComponent() {
   const [data, setData] = useState<ClinicCenterDashboardKPIs | null>(null);
   const [loading, setLoading] = useState(true);
+  const tenant = useTenant();
 
   useEffect(() => {
-    const clinicId = clinicConfig.clinicId;
+    const clinicId = tenant?.clinicId;
     let cancelled = false;
     if (!clinicId) {
       Promise.resolve().then(() => { if (!cancelled) setLoading(false); });

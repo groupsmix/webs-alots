@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { clinicConfig } from "@/config/clinic.config";
 import { withAuth } from "@/lib/with-auth";
+import { requireTenant } from "@/lib/tenant";
 import { findOrCreatePatient } from "@/lib/find-or-create-patient";
 import { logAuditEvent } from "@/lib/audit-log";
 import { WAITING_LIST_STATUS } from "@/lib/types/database";
@@ -24,8 +24,11 @@ export const POST = withAuth(async (request, { supabase }) => {
     const body = parsed.data;
 
     // Find or create patient (prefer phone-based lookup to avoid name collisions)
+    const tenant = await requireTenant();
+    const clinicId = tenant.clinicId;
+
     const patientId = await findOrCreatePatient(
-      supabase, clinicConfig.clinicId, body.patientId, body.patientName,
+      supabase, clinicId, body.patientId, body.patientName,
       { phone: body.patientPhone },
     );
     if (!patientId) {
@@ -35,7 +38,7 @@ export const POST = withAuth(async (request, { supabase }) => {
     const { data: entry, error } = await supabase
       .from("waiting_list")
       .insert({
-        clinic_id: clinicConfig.clinicId,
+        clinic_id: clinicId,
         patient_id: patientId,
         doctor_id: body.doctorId,
         preferred_date: body.preferredDate,
@@ -56,7 +59,7 @@ export const POST = withAuth(async (request, { supabase }) => {
       supabase,
       action: "waiting_list.added",
       type: "booking",
-      clinicId: clinicConfig.clinicId,
+      clinicId,
       description: `Patient ${patientId} added to waiting list (entry ${entry.id}) for doctor ${body.doctorId} on ${body.preferredDate}`,
     });
 
@@ -82,7 +85,8 @@ export const GET = withAuth(async (request, { supabase }) => {
   const date = request.nextUrl.searchParams.get("date");
   const time = request.nextUrl.searchParams.get("time");
 
-  const clinicId = clinicConfig.clinicId;
+  const tenant = await requireTenant();
+  const clinicId = tenant.clinicId;
 
   if (patientId) {
     const { data: entries } = await supabase
@@ -130,11 +134,14 @@ export const DELETE = withAuth(async (request, { supabase }) => {
       return NextResponse.json({ error: "entryId is required" }, { status: 400 });
     }
 
+    const tenant = await requireTenant();
+    const clinicId = tenant.clinicId;
+
     const { error } = await supabase
       .from("waiting_list")
       .delete()
       .eq("id", body.entryId)
-      .eq("clinic_id", clinicConfig.clinicId);
+      .eq("clinic_id", clinicId);
 
     if (error) {
       logger.warn("Operation failed", { context: "booking/waiting-list", error });
@@ -146,7 +153,7 @@ export const DELETE = withAuth(async (request, { supabase }) => {
       supabase,
       action: "waiting_list.removed",
       type: "booking",
-      clinicId: clinicConfig.clinicId,
+      clinicId,
       description: `Waiting list entry ${body.entryId} removed`,
     });
 

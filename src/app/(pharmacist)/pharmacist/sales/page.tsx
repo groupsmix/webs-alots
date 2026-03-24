@@ -8,12 +8,13 @@ import {
   Plus, Receipt, DollarSign, CreditCard, Banknote,
   Shield, Gift,
 } from "lucide-react";
-import { clinicConfig } from "@/config/clinic.config";
+import { useTenant } from "@/components/tenant-provider";
 import { fetchDailySales } from "@/lib/data/client";
 import type { DailySaleView } from "@/lib/data/client";
 import { PageLoader } from "@/components/ui/page-loader";
 
 export default function SalesPage() {
+  const tenant = useTenant();
   const [allSales, setAllSales] = useState<DailySaleView[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
@@ -23,7 +24,7 @@ export default function SalesPage() {
 
   useEffect(() => {
     const controller = new AbortController();
-    fetchDailySales(clinicConfig.clinicId)
+    fetchDailySales(tenant?.clinicId ?? "")
       .then((d) => { if (!controller.signal.aborted) setAllSales(d); })
       .catch((err) => {
       if (!controller.signal.aborted) {

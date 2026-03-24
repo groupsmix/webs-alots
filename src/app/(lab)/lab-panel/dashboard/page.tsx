@@ -8,19 +8,20 @@ import {
   ArrowRight, CheckCircle, Hourglass,
 } from "lucide-react";
 import Link from "next/link";
-import { clinicConfig } from "@/config/clinic.config";
+import { useTenant } from "@/components/tenant-provider";
 import { fetchLabTestOrders } from "@/lib/data/client";
 import type { LabTestOrderView } from "@/lib/data/client";
 import { PageLoader } from "@/components/ui/page-loader";
 
 export default function LabDashboardPage() {
+  const tenant = useTenant();
   const [orders, setOrders] = useState<LabTestOrderView[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
     const controller = new AbortController();
-    fetchLabTestOrders(clinicConfig.clinicId)
+    fetchLabTestOrders(tenant?.clinicId ?? "")
       .then((d) => { if (!controller.signal.aborted) setOrders(d); })
       .catch((err) => {
       if (!controller.signal.aborted) {

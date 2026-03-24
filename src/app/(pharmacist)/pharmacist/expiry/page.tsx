@@ -4,19 +4,20 @@ import { useState, useEffect, useMemo } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { AlertTriangle, Check, Clock, X } from "lucide-react";
-import { clinicConfig } from "@/config/clinic.config";
+import { useTenant } from "@/components/tenant-provider";
 import { fetchProducts, getExpiryStatus } from "@/lib/data/client";
 import type { ProductView } from "@/lib/data/client";
 import { PageLoader } from "@/components/ui/page-loader";
 
 export default function ExpiryTrackerPage() {
+  const tenant = useTenant();
   const [allProducts, setAllProducts] = useState<ProductView[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
     const controller = new AbortController();
-    fetchProducts(clinicConfig.clinicId)
+    fetchProducts(tenant?.clinicId ?? "")
       .then((d) => { if (!controller.signal.aborted) setAllProducts(d); })
       .catch((err) => {
       if (!controller.signal.aborted) {

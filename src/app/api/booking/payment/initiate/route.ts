@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { logAuditEvent } from "@/lib/audit-log";
-import { clinicConfig } from "@/config/clinic.config";
+import { requireTenant } from "@/lib/tenant";
 import { findOrCreatePatient } from "@/lib/find-or-create-patient";
 import { withAuth } from "@/lib/with-auth";
 import { STAFF_ROLES } from "@/lib/auth-roles";
@@ -23,12 +23,15 @@ export const POST = withAuth(async (request, { supabase }) => {
     }
     const body = parsed.data;
 
+    const tenant = await requireTenant();
+    const clinicId = tenant.clinicId;
+
     // Verify the appointment exists
     const { data: appt, error: apptError } = await supabase
       .from("appointments")
       .select("id")
       .eq("id", body.appointmentId)
-      .eq("clinic_id", clinicConfig.clinicId)
+      .eq("clinic_id", clinicId)
       .single();
 
     if (apptError || !appt) {
@@ -40,7 +43,7 @@ export const POST = withAuth(async (request, { supabase }) => {
       .from("payments")
       .select("id")
       .eq("appointment_id", body.appointmentId)
-      .eq("clinic_id", clinicConfig.clinicId)
+      .eq("clinic_id", clinicId)
       .not("status", "in", '("refunded","failed")')
       .limit(1)
       .single();
@@ -52,7 +55,7 @@ export const POST = withAuth(async (request, { supabase }) => {
     // Find or create patient using shared utility (prefers phone-based lookup
     // over name-based to avoid assigning payments to the wrong patient).
     const patientId = await findOrCreatePatient(
-      supabase, clinicConfig.clinicId, body.patientId, body.patientName,
+      supabase, clinicId, body.patientId, body.patientName,
     );
     if (!patientId) {
       return NextResponse.json({ error: "Failed to resolve patient" }, { status: 500 });
@@ -64,7 +67,7 @@ export const POST = withAuth(async (request, { supabase }) => {
     const { data: payment, error: insertError } = await supabase
       .from("payments")
       .insert({
-        clinic_id: clinicConfig.clinicId,
+        clinic_id: clinicId,
         appointment_id: body.appointmentId,
         patient_id: patientId,
         amount: body.amount,
@@ -93,7 +96,7 @@ export const POST = withAuth(async (request, { supabase }) => {
       supabase,
       action: "payment_initiated",
       type: "payment",
-      clinicId: clinicConfig.clinicId,
+      clinicId,
       description: `Payment initiated: ${body.paymentType} ${body.amount} via ${method} for appointment ${body.appointmentId}`,
     });
 

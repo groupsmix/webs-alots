@@ -13,7 +13,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { fetchLabDashboardKPIs, type LabDashboardKPIs } from "@/lib/data/client";
-import { clinicConfig } from "@/config/clinic.config";
+import { useTenant } from "@/components/tenant-provider";
 import { PageLoader } from "@/components/ui/page-loader";
 import { logger } from "@/lib/logger";
 
@@ -29,9 +29,10 @@ import { logger } from "@/lib/logger";
 export function LabDashboardKPIsComponent() {
   const [data, setData] = useState<LabDashboardKPIs | null>(null);
   const [loading, setLoading] = useState(true);
+  const tenant = useTenant();
 
   useEffect(() => {
-    const clinicId = clinicConfig.clinicId;
+    const clinicId = tenant?.clinicId;
     let cancelled = false;
     if (!clinicId) {
       Promise.resolve().then(() => { if (!cancelled) setLoading(false); });

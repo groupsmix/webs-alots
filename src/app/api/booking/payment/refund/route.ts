@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { logAuditEvent } from "@/lib/audit-log";
-import { clinicConfig } from "@/config/clinic.config";
+import { requireTenant } from "@/lib/tenant";
 import type { UserRole } from "@/lib/types/database";
 import { withAuth } from "@/lib/with-auth";
 import { logger } from "@/lib/logger";
@@ -24,12 +24,15 @@ export const POST = withAuth(async (request, { supabase }) => {
     }
     const body = parsed.data;
 
+    const tenant = await requireTenant();
+    const clinicId = tenant.clinicId;
+
     // Fetch the payment (include refunded_amount to track cumulative refunds)
     const { data: payment, error: fetchError } = await supabase
       .from("payments")
       .select("id, status, amount, refunded_amount")
       .eq("id", body.paymentId)
-      .eq("clinic_id", clinicConfig.clinicId)
+      .eq("clinic_id", clinicId)
       .single();
 
     if (fetchError || !payment) {
@@ -84,7 +87,7 @@ export const POST = withAuth(async (request, { supabase }) => {
       supabase,
       action: "payment_refunded",
       type: "payment",
-      clinicId: clinicConfig.clinicId,
+      clinicId,
       description: `Payment ${body.paymentId} refunded: ${refundAmount} of ${payment.amount}`,
     });
 

@@ -14,7 +14,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { Search, ShoppingBag, Plus, Pencil, Trash2, Loader2 } from "lucide-react";
-import { clinicConfig } from "@/config/clinic.config";
+import { useTenant } from "@/components/tenant-provider";
 import {
   fetchParapharmacyProducts, fetchParapharmacyCategories, getStockStatus,
   createParapharmacyProduct, updateParapharmacyProduct, deleteParapharmacyProduct,
@@ -34,6 +34,7 @@ const defaultForm = {
 };
 
 export default function ParapharmacyCatalogPage() {
+  const tenant = useTenant();
   const [products, setProducts] = useState<ProductView[]>([]);
   const [categories, setCategories] = useState<ParapharmacyCategoryView[]>([]);
   const [loading, setLoading] = useState(true);
@@ -50,12 +51,13 @@ export default function ParapharmacyCatalogPage() {
   const [deleting, setDeleting] = useState(false);
 
   const refreshProducts = useCallback(() => {
-    fetchParapharmacyProducts(clinicConfig.clinicId).then(setProducts);
-  }, []);
+    if (!tenant?.clinicId) return;
+    fetchParapharmacyProducts(tenant.clinicId).then(setProducts);
+  }, [tenant?.clinicId]);
 
   useEffect(() => {
     const controller = new AbortController();
-    const cId = clinicConfig.clinicId;
+    const cId = tenant?.clinicId ?? "";
     Promise.all([
       fetchParapharmacyProducts(cId),
       fetchParapharmacyCategories(cId),
@@ -112,7 +114,7 @@ export default function ParapharmacyCatalogPage() {
         });
       } else {
         await createParapharmacyProduct({
-          clinic_id: clinicConfig.clinicId,
+          clinic_id: tenant?.clinicId ?? "",
           name: form.name,
           generic_name: form.genericName || undefined,
           category: form.category || undefined,

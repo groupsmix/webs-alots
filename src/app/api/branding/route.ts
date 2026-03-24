@@ -8,6 +8,7 @@
 import { NextResponse } from "next/server";
 import { clinicConfig } from "@/config/clinic.config";
 import { createClient } from "@/lib/supabase-server";
+import { requireTenant } from "@/lib/tenant";
 import {
   uploadToR2,
   isR2Configured,
@@ -59,7 +60,8 @@ const FIELD_MAP: Record<string, string> = {
 
 export async function GET() {
   try {
-    const clinicId = clinicConfig.clinicId;
+    const tenant = await requireTenant();
+    const clinicId = tenant.clinicId;
     const supabase = await createClient();
 
     const { data, error } = await supabase
@@ -109,7 +111,8 @@ export async function GET() {
 // ── PUT — update text branding fields (colors, fonts) ──
 
 export const PUT = withAuth(async (request, { supabase }) => {
-  const clinicId = clinicConfig.clinicId;
+  const tenant = await requireTenant();
+  const clinicId = tenant.clinicId;
   const raw = await request.json();
   const parsed = safeParse(brandingUpdateSchema, raw);
   if (!parsed.success) {
@@ -167,7 +170,8 @@ export const PUT = withAuth(async (request, { supabase }) => {
 // ── POST — upload a branding image and save URL ──
 
 export const POST = withAuth(async (request, { supabase }) => {
-  const clinicId = clinicConfig.clinicId;
+  const tenant = await requireTenant();
+  const clinicId = tenant.clinicId;
 
   if (!isR2Configured()) {
     return NextResponse.json(
