@@ -6,7 +6,6 @@
  */
 
 import { NextResponse } from "next/server";
-import { clinicConfig } from "@/config/clinic.config";
 import { createClient } from "@/lib/supabase-server";
 import { requireTenant } from "@/lib/tenant";
 import {
@@ -75,7 +74,7 @@ export async function GET() {
     if (error || !data) {
       return NextResponse.json(
         {
-          name: clinicConfig.name,
+          name: tenant.clinicName || "Clinic",
           logo_url: null,
           favicon_url: null,
           primary_color: "#1E4DA1",

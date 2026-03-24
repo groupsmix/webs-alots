@@ -1,7 +1,8 @@
 /**
  * POST /api/radiology/report-pdf — Generate a PDF report for a radiology order
  *
- * Body: { orderId, clinicId, patientName, modality, bodyPart?, findings, impression, reportText, radiologistName? }
+ * Body: { orderId, patientName, modality, bodyPart?, findings, impression, reportText, radiologistName? }
+ * clinic_id is derived from the authenticated user's profile.
  *
  * Generates a simple PDF, uploads to R2, and updates the order's pdf_url.
  * Returns: { pdfUrl }
@@ -64,7 +65,7 @@ function generateReportHtml(data: {
 </html>`;
 }
 
-export const POST = withAuth(async (request) => {
+export const POST = withAuth(async (request, { profile }) => {
   try {
     const raw = await request.json();
     const parsed = safeParse(radiologyReportPdfSchema, raw);
@@ -73,7 +74,6 @@ export const POST = withAuth(async (request) => {
     }
     const {
       orderId,
-      clinicId,
       patientName,
       modality,
       bodyPart,
@@ -82,6 +82,14 @@ export const POST = withAuth(async (request) => {
       reportText,
       radiologistName,
     } = parsed.data;
+    // Derive clinic_id from the authenticated user's profile — never from the request body
+    const clinicId = profile.clinic_id;
+    if (!clinicId) {
+      return NextResponse.json(
+        { error: "User must belong to a clinic" },
+        { status: 400 },
+      );
+    }
 
     if (!findings && !impression && !reportText) {
       return NextResponse.json(

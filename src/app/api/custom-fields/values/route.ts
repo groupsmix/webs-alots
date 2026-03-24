@@ -8,18 +8,19 @@ import type { Json } from "@/lib/types/database";
 export const runtime = "edge";
 
 /**
- * GET /api/custom-fields/values?clinic_id=...&entity_type=...&entity_id=...
+ * GET /api/custom-fields/values?entity_type=...&entity_id=...
  *
  * Returns custom field values for a specific entity instance.
+ * clinic_id is derived from the authenticated user's profile.
  */
-export const GET = withAuth(async (request, { supabase }) => {
-  const clinicId = request.nextUrl.searchParams.get("clinic_id");
+export const GET = withAuth(async (request, { supabase, profile }) => {
+  const clinicId = profile.clinic_id;
   const entityType = request.nextUrl.searchParams.get("entity_type");
   const entityId = request.nextUrl.searchParams.get("entity_id");
 
   if (!clinicId || !entityType || !entityId) {
     return NextResponse.json(
-      { error: "clinic_id, entity_type, and entity_id are required" },
+      { error: "entity_type and entity_id are required, and user must belong to a clinic" },
       { status: 400 },
     );
   }
@@ -51,14 +52,22 @@ export const GET = withAuth(async (request, { supabase }) => {
  *
  * Save (upsert) custom field values for a specific entity instance.
  */
-export const POST = withAuth(async (request, { supabase }) => {
+export const POST = withAuth(async (request, { supabase, profile }) => {
   try {
     const raw = await request.json();
     const parsed = safeParse(customFieldValuesSchema, raw);
     if (!parsed.success) {
       return NextResponse.json({ error: parsed.error }, { status: 400 });
     }
-    const { clinic_id, entity_type, entity_id, field_values } = parsed.data;
+    const { entity_type, entity_id, field_values } = parsed.data;
+    // Always derive clinic_id from the authenticated user's profile
+    const clinic_id = profile.clinic_id;
+    if (!clinic_id) {
+      return NextResponse.json(
+        { error: "User must belong to a clinic" },
+        { status: 400 },
+      );
+    }
 
     const { data: definitions } = await supabase
       .from("custom_field_definitions")
@@ -139,14 +148,22 @@ export const POST = withAuth(async (request, { supabase }) => {
  *
  * Partially update custom field values (merge with existing).
  */
-export const PATCH = withAuth(async (request, { supabase }) => {
+export const PATCH = withAuth(async (request, { supabase, profile }) => {
   try {
     const raw = await request.json();
     const parsed = safeParse(customFieldValuesSchema, raw);
     if (!parsed.success) {
       return NextResponse.json({ error: parsed.error }, { status: 400 });
     }
-    const { clinic_id, entity_type, entity_id, field_values } = parsed.data;
+    const { entity_type, entity_id, field_values } = parsed.data;
+    // Always derive clinic_id from the authenticated user's profile
+    const clinic_id = profile.clinic_id;
+    if (!clinic_id) {
+      return NextResponse.json(
+        { error: "User must belong to a clinic" },
+        { status: 400 },
+      );
+    }
 
     const { data: definitions } = await supabase
       .from("custom_field_definitions")

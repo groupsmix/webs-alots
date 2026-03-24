@@ -8,7 +8,6 @@
  */
 
 import { createClient } from "@/lib/supabase-server";
-import { clinicConfig } from "@/config/clinic.config";
 import { APPOINTMENT_STATUS } from "@/lib/types/database";
 import { requireTenant, getClinicConfig } from "@/lib/tenant";
 
@@ -81,8 +80,13 @@ export interface ClinicBranding {
 
 // ── Helpers ──
 
-async function getClinicId(): Promise<string> {
+async function getTenantInfo() {
   const tenant = await requireTenant();
+  return tenant;
+}
+
+async function getClinicId(): Promise<string> {
+  const tenant = await getTenantInfo();
   return tenant.clinicId;
 }
 
@@ -98,6 +102,9 @@ export async function getPublicBranding(): Promise<ClinicBranding> {
     .eq("id", clinicId)
     .single();
 
+  // Resolve tenant info for fallback values (never use static clinicConfig)
+  const tenant = await getTenantInfo();
+
   if (error || !data) {
     return {
       logoUrl: null,
@@ -107,14 +114,14 @@ export async function getPublicBranding(): Promise<ClinicBranding> {
       headingFont: "Geist",
       bodyFont: "Geist",
       heroImageUrl: null,
-      clinicName: clinicConfig.name,
+      clinicName: tenant.clinicName || "Clinic",
       tagline: null,
       coverPhotoUrl: null,
       templateId: "modern",
       sectionVisibility: {},
-      phone: clinicConfig.contact.phone ?? null,
-      address: clinicConfig.contact.address ?? null,
-      email: clinicConfig.contact.email ?? null,
+      phone: null,
+      address: null,
+      email: null,
     };
   }
 
@@ -126,14 +133,14 @@ export async function getPublicBranding(): Promise<ClinicBranding> {
     headingFont: data.heading_font ?? "Geist",
     bodyFont: data.body_font ?? "Geist",
     heroImageUrl: data.hero_image_url ?? null,
-    clinicName: data.name ?? clinicConfig.name,
+    clinicName: data.name ?? (tenant.clinicName || "Clinic"),
     tagline: (data.tagline as string | null) ?? null,
     coverPhotoUrl: (data.cover_photo_url as string | null) ?? null,
     templateId: (data.template_id as string | null) ?? "modern",
     sectionVisibility: (data.section_visibility as Record<string, boolean> | null) ?? {},
-    phone: (data.phone as string | null) ?? clinicConfig.contact.phone ?? null,
-    address: (data.address as string | null) ?? clinicConfig.contact.address ?? null,
-    email: (data.owner_email as string | null) ?? clinicConfig.contact.email ?? null,
+    phone: (data.phone as string | null) ?? null,
+    address: (data.address as string | null) ?? null,
+    email: (data.owner_email as string | null) ?? null,
   };
 }
 
