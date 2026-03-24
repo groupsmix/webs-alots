@@ -135,7 +135,7 @@ function createSupabaseRateLimiter(options: RateLimiterOptions): RateLimiter {
 
         if (error) {
           logger.error("Rate limiter query failed", { context: "rate-limit", error });
-          return true;
+          return false;
         }
 
         if (!data || data.reset_at <= windowStart) {
@@ -149,6 +149,7 @@ function createSupabaseRateLimiter(options: RateLimiterOptions): RateLimiter {
 
           if (upsertError) {
             logger.error("Rate limiter upsert failed", { context: "rate-limit", error: upsertError });
+            return false;
           }
           return true;
         }
@@ -167,7 +168,7 @@ function createSupabaseRateLimiter(options: RateLimiterOptions): RateLimiter {
 
         if (updateError) {
           logger.error("Rate limiter update failed", { context: "rate-limit", error: updateError });
-          return true;
+          return false;
         }
 
         // If no row was updated, another request incremented concurrently.
@@ -183,10 +184,11 @@ function createSupabaseRateLimiter(options: RateLimiterOptions): RateLimiter {
 
         return newCount <= max;
       } catch (err) {
-        // Network/transient failure — fail open to avoid blocking
-        // legitimate traffic.  Log so operators can investigate.
-        logger.error("Rate limiter network failure — failing open", { context: "rate-limit", error: err });
-        return true;
+        // Network/transient failure — fail closed to prevent abuse.
+        // This may briefly block legitimate traffic during outages,
+        // but is safer than allowing unlimited requests.
+        logger.error("Rate limiter network failure — failing closed", { context: "rate-limit", error: err });
+        return false;
       }
     },
   };

@@ -131,7 +131,7 @@ export const POST = withAuth(async (request, { profile }) => {
  * Body: { key: string, contentType: string }
  * Returns: { valid: true } or { error: string } (with 400 status + deletion)
  */
-export const PUT = withAuth(async (request) => {
+export const PUT = withAuth(async (request, { profile }) => {
   if (!isR2Configured()) {
     return NextResponse.json(
       { error: "File storage is not configured" },
@@ -146,6 +146,16 @@ export const PUT = withAuth(async (request) => {
     return NextResponse.json(
       { error: "key and contentType are required" },
       { status: 400 },
+    );
+  }
+
+  // Tenant isolation: verify the R2 key belongs to this user's clinic.
+  // Keys follow the pattern: {clinicId}/{category}/{filename}
+  const clinicId = profile.clinic_id ?? (profile.role === "super_admin" ? null : null);
+  if (clinicId && !key.startsWith(`${clinicId}/`)) {
+    return NextResponse.json(
+      { error: "Access denied: file does not belong to your clinic" },
+      { status: 403 },
     );
   }
 

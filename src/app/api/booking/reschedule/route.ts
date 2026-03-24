@@ -6,6 +6,10 @@ import { APPOINTMENT_STATUS } from "@/lib/types/database";
 import { logAuditEvent } from "@/lib/audit-log";
 import { logger } from "@/lib/logger";
 import { rescheduleSchema, safeParse } from "@/lib/validations";
+import { STAFF_ROLES } from "@/lib/auth-roles";
+import type { UserRole } from "@/lib/types/database";
+
+const RESCHEDULE_ROLES: UserRole[] = [...STAFF_ROLES, "patient"];
 
 export const runtime = "edge";
 
@@ -48,16 +52,21 @@ export const POST = withAuth(async (request, { supabase, profile }) => {
       );
     }
 
-    // Get the existing appointment (include doctor_id and service_id for validation)
+    // Get the existing appointment (include patient_id for ownership check)
     const { data: existing, error: fetchError } = await supabase
       .from("appointments")
-      .select("id, status, clinic_id, doctor_id, service_id")
+      .select("id, status, clinic_id, patient_id, doctor_id, service_id")
       .eq("id", body.appointmentId)
       .eq("clinic_id", clinicId)
       .single();
 
     if (fetchError || !existing) {
       return NextResponse.json({ error: "Appointment not found" }, { status: 404 });
+    }
+
+    // Ownership check: patients can only reschedule their OWN appointments
+    if (profile.role === "patient" && existing.patient_id !== profile.id) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     // Only allow rescheduling appointments in a valid state
@@ -131,4 +140,4 @@ export const POST = withAuth(async (request, { supabase, profile }) => {
     logger.warn("Operation failed", { context: "booking/reschedule", error: err });
     return NextResponse.json({ error: "Failed to reschedule appointment" }, { status: 500 });
   }
-}, null);
+}, RESCHEDULE_ROLES);

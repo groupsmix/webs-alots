@@ -6,6 +6,10 @@ import { logAuditEvent } from "@/lib/audit-log";
 import { WAITING_LIST_STATUS } from "@/lib/types/database";
 import { logger } from "@/lib/logger";
 import { waitingListSchema, safeParse } from "@/lib/validations";
+import { STAFF_ROLES } from "@/lib/auth-roles";
+import type { UserRole } from "@/lib/types/database";
+
+const WAITING_LIST_ROLES: UserRole[] = [...STAFF_ROLES, "patient"];
 
 export const runtime = "edge";
 
@@ -72,14 +76,14 @@ export const POST = withAuth(async (request, { supabase }) => {
     logger.warn("Operation failed", { context: "booking/waiting-list", error: err });
     return NextResponse.json({ error: "Failed to add to waiting list" }, { status: 500 });
   }
-}, null);
+}, WAITING_LIST_ROLES);
 
 /**
  * GET /api/booking/waiting-list?patientId=...  OR  ?doctorId=...&date=...
  *
  * Get waiting list entries.
  */
-export const GET = withAuth(async (request, { supabase }) => {
+export const GET = withAuth(async (request, { supabase, profile }) => {
   const patientId = request.nextUrl.searchParams.get("patientId");
   const doctorId = request.nextUrl.searchParams.get("doctorId");
   const date = request.nextUrl.searchParams.get("date");
@@ -87,6 +91,11 @@ export const GET = withAuth(async (request, { supabase }) => {
 
   const tenant = await requireTenant();
   const clinicId = tenant.clinicId;
+
+  // Ownership check: patients can only view their OWN waiting list entries
+  if (profile.role === "patient" && patientId && patientId !== profile.id) {
+    return NextResponse.json({ entries: [] });
+  }
 
   if (patientId) {
     const { data: entries } = await supabase
@@ -119,14 +128,14 @@ export const GET = withAuth(async (request, { supabase }) => {
     { error: "patientId, or doctorId and date are required" },
     { status: 400 },
   );
-}, null);
+}, WAITING_LIST_ROLES);
 
 /**
  * DELETE /api/booking/waiting-list
  *
  * Remove a patient from the waiting list.
  */
-export const DELETE = withAuth(async (request, { supabase }) => {
+export const DELETE = withAuth(async (request, { supabase, profile }) => {
   try {
     const body = (await request.json()) as { entryId: string };
 
@@ -136,6 +145,20 @@ export const DELETE = withAuth(async (request, { supabase }) => {
 
     const tenant = await requireTenant();
     const clinicId = tenant.clinicId;
+
+    // For patients, verify they own this waiting list entry before deleting
+    if (profile.role === "patient") {
+      const { data: entry } = await supabase
+        .from("waiting_list")
+        .select("patient_id")
+        .eq("id", body.entryId)
+        .eq("clinic_id", clinicId)
+        .single();
+
+      if (!entry || entry.patient_id !== profile.id) {
+        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      }
+    }
 
     const { error } = await supabase
       .from("waiting_list")
@@ -162,4 +185,4 @@ export const DELETE = withAuth(async (request, { supabase }) => {
     logger.warn("Operation failed", { context: "booking/waiting-list", error: err });
     return NextResponse.json({ error: "Failed to remove from waiting list" }, { status: 500 });
   }
-}, null);
+}, WAITING_LIST_ROLES);
