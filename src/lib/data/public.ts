@@ -9,7 +9,8 @@
 
 import { createClient } from "@/lib/supabase-server";
 import { APPOINTMENT_STATUS } from "@/lib/types/database";
-import { requireTenant, getClinicConfig } from "@/lib/tenant";
+import { getTenant, getClinicConfig } from "@/lib/tenant";
+import { clinicConfig } from "@/config/clinic.config";
 
 // ── Types (match existing UI shapes) ──
 
@@ -80,20 +81,49 @@ export interface ClinicBranding {
 
 // ── Helpers ──
 
+/**
+ * Get tenant info, returning null when accessed on the root domain
+ * (no subdomain resolved). Callers must handle the null case.
+ */
 async function getTenantInfo() {
-  const tenant = await requireTenant();
-  return tenant;
+  return await getTenant();
 }
 
-async function getClinicId(): Promise<string> {
+/**
+ * Get the current clinic ID, or null when on the root domain.
+ */
+async function getClinicId(): Promise<string | null> {
   const tenant = await getTenantInfo();
-  return tenant.clinicId;
+  return tenant?.clinicId ?? null;
 }
 
 // ── Clinic Branding ──
 
 export async function getPublicBranding(): Promise<ClinicBranding> {
   const clinicId = await getClinicId();
+  const tenant = await getTenantInfo();
+
+  // No tenant resolved (root domain) — return static defaults
+  if (!clinicId) {
+    return {
+      logoUrl: null,
+      faviconUrl: null,
+      primaryColor: "#1E4DA1",
+      secondaryColor: "#0F6E56",
+      headingFont: "Geist",
+      bodyFont: "Geist",
+      heroImageUrl: null,
+      clinicName: clinicConfig.name,
+      tagline: null,
+      coverPhotoUrl: null,
+      templateId: "modern",
+      sectionVisibility: {},
+      phone: clinicConfig.contact.phone ?? null,
+      address: clinicConfig.contact.address ?? null,
+      email: clinicConfig.contact.email ?? null,
+    };
+  }
+
   const supabase = await createClient();
 
   const { data, error } = await supabase
@@ -101,9 +131,6 @@ export async function getPublicBranding(): Promise<ClinicBranding> {
     .select("name, logo_url, favicon_url, primary_color, secondary_color, heading_font, body_font, hero_image_url, tagline, cover_photo_url, template_id, section_visibility, phone, address, owner_email")
     .eq("id", clinicId)
     .single();
-
-  // Resolve tenant info for fallback values (never use static clinicConfig)
-  const tenant = await getTenantInfo();
 
   if (error || !data) {
     return {
@@ -114,7 +141,7 @@ export async function getPublicBranding(): Promise<ClinicBranding> {
       headingFont: "Geist",
       bodyFont: "Geist",
       heroImageUrl: null,
-      clinicName: tenant.clinicName || "Clinic",
+      clinicName: tenant?.clinicName || clinicConfig.name,
       tagline: null,
       coverPhotoUrl: null,
       templateId: "modern",
@@ -133,7 +160,7 @@ export async function getPublicBranding(): Promise<ClinicBranding> {
     headingFont: data.heading_font ?? "Geist",
     bodyFont: data.body_font ?? "Geist",
     heroImageUrl: data.hero_image_url ?? null,
-    clinicName: data.name ?? (tenant.clinicName || "Clinic"),
+    clinicName: data.name ?? (tenant?.clinicName || clinicConfig.name),
     tagline: (data.tagline as string | null) ?? null,
     coverPhotoUrl: (data.cover_photo_url as string | null) ?? null,
     templateId: (data.template_id as string | null) ?? "modern",
@@ -148,6 +175,7 @@ export async function getPublicBranding(): Promise<ClinicBranding> {
 
 export async function getPublicReviews(): Promise<PublicReview[]> {
   const clinicId = await getClinicId();
+  if (!clinicId) return [];
   const supabase = await createClient();
 
   // Fetch reviews with patient names via Supabase join (single query)
@@ -175,6 +203,7 @@ export async function getPublicReviews(): Promise<PublicReview[]> {
 
 export async function getPublicAverageRating(): Promise<number> {
   const clinicId = await getClinicId();
+  if (!clinicId) return 0;
   const supabase = await createClient();
 
   // Try DB-level AVG via Supabase RPC first (single row returned,
@@ -220,6 +249,7 @@ export async function getPublicAverageRating(): Promise<number> {
 
 export async function getPublicServices(): Promise<PublicService[]> {
   const clinicId = await getClinicId();
+  if (!clinicId) return [];
   const supabase = await createClient();
 
   const { data, error } = await supabase
@@ -248,6 +278,7 @@ export async function getPublicServices(): Promise<PublicService[]> {
 
 export async function getPublicDoctors(): Promise<PublicDoctor[]> {
   const clinicId = await getClinicId();
+  if (!clinicId) return [];
   const supabase = await createClient();
 
   const { data, error } = await supabase
@@ -313,6 +344,7 @@ export async function getPublicTimeSlots(
   doctorId?: string,
 ): Promise<TimeSlotConfig[]> {
   const clinicId = await getClinicId();
+  if (!clinicId) return [];
   const supabase = await createClient();
 
   let q = supabase
@@ -354,7 +386,9 @@ export async function getPublicGeneratedSlots(
   const slotConfigs = await getPublicTimeSlots(doctorId);
   const daySlots = slotConfigs.filter((s) => s.dayOfWeek === dayOfWeek);
 
-  const tenantCfg = await getClinicConfig(await getClinicId());
+  const currentClinicId = await getClinicId();
+  if (!currentClinicId) return [];
+  const tenantCfg = await getClinicConfig(currentClinicId);
   const slots: string[] = [];
   const duration = tenantCfg.booking.slotDuration;
   const buffer = tenantCfg.booking.bufferTime;
@@ -385,6 +419,7 @@ export async function getPublicSlotBookingCounts(
   doctorId: string,
 ): Promise<Record<string, number>> {
   const clinicId = await getClinicId();
+  if (!clinicId) return {};
   const supabase = await createClient();
 
   const dayStart = `${date}T00:00:00`;
@@ -426,7 +461,9 @@ export async function getPublicAvailableSlots(
     getPublicSlotBookingCounts(date, doctorId),
   ]);
 
-  const tenantCfg = await getClinicConfig(await getClinicId());
+  const currentClinicId = await getClinicId();
+  if (!currentClinicId) return [];
+  const tenantCfg = await getClinicConfig(currentClinicId);
   const maxPerSlot = tenantCfg.booking.maxPerSlot;
   return allSlots.filter((slot) => (bookingCounts[slot] ?? 0) < maxPerSlot);
 }
@@ -454,6 +491,7 @@ export interface PublicPharmacyProduct {
 
 export async function getPublicPharmacyProducts(): Promise<PublicPharmacyProduct[]> {
   const clinicId = await getClinicId();
+  if (!clinicId) return [];
   const supabase = await createClient();
 
   const [{ data: products }, { data: stockRows }] = await Promise.all([
@@ -536,6 +574,7 @@ export interface PublicPharmacyService {
 
 export async function getPublicPharmacyServices(): Promise<PublicPharmacyService[]> {
   const clinicId = await getClinicId();
+  if (!clinicId) return [];
   const supabase = await createClient();
 
   const { data, error } = await supabase
@@ -573,6 +612,7 @@ export interface PublicOnDutySchedule {
 
 export async function getPublicOnDutySchedule(): Promise<PublicOnDutySchedule[]> {
   const clinicId = await getClinicId();
+  if (!clinicId) return [];
   const supabase = await createClient();
 
   // Try fetching from on_duty_schedule table if it exists
@@ -642,6 +682,7 @@ export interface PublicPharmacyPrescription {
 
 export async function getPublicPharmacyPrescriptions(): Promise<PublicPharmacyPrescription[]> {
   const clinicId = await getClinicId();
+  if (!clinicId) return [];
   const supabase = await createClient();
 
   const { data: requests, error } = await supabase
@@ -696,6 +737,7 @@ export async function getPublicPharmacyPrescriptions(): Promise<PublicPharmacyPr
 
 export async function getPublicBlogPosts(): Promise<PublicBlogPost[]> {
   const clinicId = await getClinicId();
+  if (!clinicId) return [];
   const supabase = await createClient();
 
   const { data, error } = await supabase
