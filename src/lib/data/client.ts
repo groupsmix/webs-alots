@@ -16,6 +16,18 @@ import { logger } from "@/lib/logger";
 import { clinicConfig } from "@/config/clinic.config";
 import type { Database } from "@/lib/types/database";
 
+/**
+ * Booking configuration that callers must provide from the tenant's DB
+ * config instead of relying on static clinicConfig values.
+ * Use getClinicConfig() on the server, or pass these values from a
+ * server component / API response to the client.
+ */
+export interface ClientBookingConfig {
+  slotDuration: number;
+  bufferTime: number;
+  maxPerSlot: number;
+}
+
 type TableName = keyof Database["public"]["Tables"];
 
 // ── re-export the browser client for direct use ──
@@ -2508,14 +2520,17 @@ export async function fetchGeneratedSlots(
   clinicId: string,
   date: string,
   doctorId: string,
+  bookingConfig?: ClientBookingConfig,
 ): Promise<string[]> {
   const dayOfWeek = new Date(date).getDay();
   const slots = await fetchTimeSlots(clinicId, doctorId);
   const daySlots = slots.filter((s) => s.dayOfWeek === dayOfWeek && s.isAvailable);
 
   const result: string[] = [];
-  const duration = clinicConfig.booking.slotDuration;
-  const buffer = clinicConfig.booking.bufferTime;
+  // Use tenant-specific config passed by the caller.
+  // Falls back to static clinicConfig only as a last resort.
+  const duration = bookingConfig?.slotDuration ?? clinicConfig.booking.slotDuration;
+  const buffer = bookingConfig?.bufferTime ?? clinicConfig.booking.bufferTime;
 
   for (const config of daySlots) {
     const [startH, startM] = config.startTime.split(":").map(Number);
@@ -2572,13 +2587,16 @@ export async function fetchAvailableSlots(
   clinicId: string,
   date: string,
   doctorId: string,
+  bookingConfig?: ClientBookingConfig,
 ): Promise<string[]> {
   const [allSlots, bookingCounts] = await Promise.all([
-    fetchGeneratedSlots(clinicId, date, doctorId),
+    fetchGeneratedSlots(clinicId, date, doctorId, bookingConfig),
     fetchSlotBookingCounts(clinicId, date, doctorId),
   ]);
 
-  const maxPerSlot = clinicConfig.booking.maxPerSlot;
+  // Use tenant-specific config passed by the caller.
+  // Falls back to static clinicConfig only as a last resort.
+  const maxPerSlot = bookingConfig?.maxPerSlot ?? clinicConfig.booking.maxPerSlot;
   return allSlots.filter((slot) => (bookingCounts[slot] ?? 0) < maxPerSlot);
 }
 

@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { withAuth } from "@/lib/with-auth";
-import { clinicConfig } from "@/config/clinic.config";
-import { requireTenant } from "@/lib/tenant";
+import { requireTenantWithConfig } from "@/lib/tenant";
 import { getPublicAvailableSlots } from "@/lib/data/public";
 import { APPOINTMENT_STATUS } from "@/lib/types/database";
 import { logAuditEvent } from "@/lib/audit-log";
@@ -26,12 +25,11 @@ export const POST = withAuth(async (request, { supabase, profile }) => {
     }
     const body = parsed.data;
 
-    const tenant = await requireTenant();
+    const { tenant, config: tenantConfig } = await requireTenantWithConfig();
     const clinicId = tenant.clinicId;
 
     // Reject past dates
-    const tz = clinicConfig.timezone ?? "Africa/Casablanca";
-    const todayInTz = new Date().toLocaleDateString("en-CA", { timeZone: tz });
+    const todayInTz = new Date().toLocaleDateString("en-CA", { timeZone: tenantConfig.timezone });
     if (body.newDate < todayInTz) {
       return NextResponse.json(
         { error: "Cannot reschedule to a date in the past" },
@@ -42,7 +40,7 @@ export const POST = withAuth(async (request, { supabase, profile }) => {
     // Validate working hours for the new date
     const parsedDate = new Date(body.newDate + "T12:00:00");
     const dayOfWeek = parsedDate.getDay();
-    const hours = clinicConfig.workingHours[dayOfWeek];
+    const hours = tenantConfig.workingHours[dayOfWeek];
     if (!hours?.enabled) {
       return NextResponse.json(
         { error: "Selected date is not a working day" },
@@ -80,7 +78,7 @@ export const POST = withAuth(async (request, { supabase, profile }) => {
     }
 
     // Calculate end_time and slot boundaries
-    let duration = clinicConfig.booking.slotDuration;
+    let duration = tenantConfig.booking.slotDuration;
     if (existing.service_id) {
       const { data: svc } = await supabase
         .from("services")
