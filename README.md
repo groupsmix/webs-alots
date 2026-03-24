@@ -166,7 +166,7 @@ The middleware enforces Origin-header checks on all mutation requests (`POST`, `
 
 This project deploys as a **Cloudflare Worker** using [OpenNext for Cloudflare](https://opennext.js.org/cloudflare), **not** Cloudflare Pages. The build produces a Worker bundle (`.open-next/worker.js`) and static assets (`.open-next/assets/`), both served by the Workers runtime.
 
-> **Note:** This repo supports both Cloudflare Workers (`wrangler deploy`) and Cloudflare Pages deployments. The `pages_build_output_dir` in `wrangler.toml` tells Pages where to find static assets after `npm run build:cf`.
+> **Note:** A Cloudflare Pages project is also connected to this repo. The Pages output directory (`destination_dir`) is configured via the Cloudflare dashboard/API to `.open-next/assets`. Do **not** add `pages_build_output_dir` to `wrangler.toml` — the `ASSETS` binding name used by OpenNext is reserved by Pages and will cause the build to fail.
 
 ### Manual Deploy
 
