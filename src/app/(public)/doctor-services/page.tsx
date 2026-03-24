@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Clock, CreditCard, Calendar, Stethoscope } from "lucide-react";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { buttonVariants } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button-variants";
 import Link from "next/link";
 import { getPublicServices, getPublicBranding } from "@/lib/data/public";
 

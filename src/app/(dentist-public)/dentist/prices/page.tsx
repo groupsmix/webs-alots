@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { CreditCard, Calendar, Info, CheckCircle } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { buttonVariants } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button-variants";
 import Link from "next/link";
 import { getPublicServices } from "@/lib/data/public";
 import { clinicConfig } from "@/config/clinic.config";

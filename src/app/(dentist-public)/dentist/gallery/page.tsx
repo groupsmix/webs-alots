@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Camera, Calendar, Shield } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { buttonVariants } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button-variants";
 import Link from "next/link";
 import { getPublicBranding } from "@/lib/data/public";
 import { createClient } from "@/lib/supabase-server";
