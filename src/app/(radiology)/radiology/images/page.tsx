@@ -52,7 +52,7 @@ export default function RadiologyImagesPage() {
       setAllOrders(all);
       setOrders(all.filter((o) => o.imageCount > 0));
     });
-  }, []);
+  }, [tenant?.clinicId]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -69,7 +69,7 @@ export default function RadiologyImagesPage() {
     })
     .finally(() => { if (!controller.signal.aborted) setLoading(false); });
     return () => { controller.abort(); };
-  }, []);
+  }, [tenant?.clinicId]);
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();

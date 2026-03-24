@@ -57,7 +57,7 @@ export default function StockPage() {
     })
     .finally(() => { if (!controller.signal.aborted) setLoading(false); });
     return () => { controller.abort(); };
-  }, []);
+  }, [tenant?.clinicId]);
 
   const filtered = useMemo(() => {
     let results: ProductView[];

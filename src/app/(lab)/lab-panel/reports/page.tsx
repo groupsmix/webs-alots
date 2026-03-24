@@ -32,7 +32,7 @@ export default function LabReportsPage() {
     })
     .finally(() => { if (!controller.signal.aborted) setLoading(false); });
     return () => { controller.abort(); };
-  }, []);
+  }, [tenant?.clinicId]);
 
   if (loading) {
     return <PageLoader message="Loading reports..." />;

@@ -45,7 +45,7 @@ export function LabDashboardKPIsComponent() {
       .catch((err: unknown) => { logger.warn("Operation failed", { context: "lab-dashboard-kpis", error: err }); })
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
-  }, []);
+  }, [tenant?.clinicId]);
 
   if (loading) {
     return <PageLoader message="Loading lab KPIs..." />;

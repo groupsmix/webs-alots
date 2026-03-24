@@ -74,7 +74,7 @@ export default function ParapharmacyCatalogPage() {
     })
     .finally(() => { if (!controller.signal.aborted) setLoading(false); });
     return () => { controller.abort(); };
-  }, []);
+  }, [tenant?.clinicId]);
 
   const openCreate = () => {
     setEditingId(null);

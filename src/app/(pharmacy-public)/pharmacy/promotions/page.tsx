@@ -85,7 +85,7 @@ export default function PromotionsPage() {
     })
     .finally(() => { if (!controller.signal.aborted) setLoading(false); });
     return () => { controller.abort(); };
-  }, []);
+  }, [tenant?.clinicId]);
 
   const featured = useMemo(() => {
     let results = products.filter((p) => p.stockQuantity > 0);

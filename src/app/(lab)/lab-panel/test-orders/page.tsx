@@ -80,7 +80,7 @@ export default function TestOrdersPage() {
       if (!controller.signal.aborted) setLoading(false);
     });
     return () => { controller.abort(); };
-  }, []);
+  }, [tenant?.clinicId]);
 
   const handleCreateOrder = async () => {
     if (!newOrder.patientId) return;

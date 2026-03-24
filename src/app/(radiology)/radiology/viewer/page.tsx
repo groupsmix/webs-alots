@@ -25,7 +25,7 @@ export default function DicomViewerPage() {
     })
     .finally(() => { if (!controller.signal.aborted) setLoading(false); });
     return () => { controller.abort(); };
-  }, []);
+  }, [tenant?.clinicId]);
 
   const dicomOrders = orders.filter((o) =>
     o.images.some((img) => img.isDicom || img.dicomStudyUid)

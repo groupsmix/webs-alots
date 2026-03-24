@@ -49,7 +49,7 @@ export default function PatientHistoryPage() {
     })
     .finally(() => { if (!controller.signal.aborted) setLoading(false); });
     return () => { controller.abort(); };
-  }, []);
+  }, [tenant?.clinicId]);
 
   useEffect(() => {
     function loadOrders() {
@@ -62,7 +62,7 @@ export default function PatientHistoryPage() {
         .finally(() => setOrdersLoading(false));
     }
     loadOrders();
-  }, [selectedPatientId]);
+  }, [selectedPatientId, tenant?.clinicId]);
 
   useEffect(() => {
     function loadResults() {

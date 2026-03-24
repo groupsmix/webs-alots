@@ -91,7 +91,7 @@ export default function PharmacistDashboardPage() {
     })
     .finally(() => { if (!controller.signal.aborted) setLoading(false); });
     return () => { controller.abort(); };
-  }, []);
+  }, [tenant?.clinicId]);
 
   const pendingRx = prescriptions.filter((p) => p.status === "pending" || p.status === "reviewing");
   const lowStock = getLowStockProducts(products);

@@ -81,7 +81,7 @@ export default function ResultsPage() {
     })
     .finally(() => { if (!controller.signal.aborted) setLoading(false); });
     return () => { controller.abort(); };
-  }, []);
+  }, [tenant?.clinicId]);
 
   useEffect(() => {
     if (!selectedOrderId) {

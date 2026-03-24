@@ -123,7 +123,7 @@ export default function EquipmentRentalsPage() {
     return () => { controller.abort(); };
     }
     init();
-  }, []);
+  }, [tenant?.clinicId]);
 
   const openAddDialog = () => {
     setEditingRental(null);

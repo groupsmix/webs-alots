@@ -48,7 +48,7 @@ export function ClinicCenterDashboardKPIsComponent() {
       .catch((err: unknown) => { logger.warn("Operation failed", { context: "clinic-center-dashboard-kpis", error: err }); })
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
-  }, []);
+  }, [tenant?.clinicId]);
 
   if (loading) {
     return <PageLoader message="Loading clinic/center KPIs..." />;

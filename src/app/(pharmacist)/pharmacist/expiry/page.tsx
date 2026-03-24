@@ -26,7 +26,7 @@ export default function ExpiryTrackerPage() {
     })
     .finally(() => { if (!controller.signal.aborted) setLoading(false); });
     return () => { controller.abort(); };
-  }, []);
+  }, [tenant?.clinicId]);
 
   const products = useMemo(() => {
     return allProducts
