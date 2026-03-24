@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { BookingCalendar } from "@/components/booking/calendar";
 import { TimeSlotPicker } from "@/components/booking/time-slots";
 import { clinicConfig } from "@/config/clinic.config";
-import { fetchAvailableSlots, fetchGeneratedSlots, fetchSlotBookingCounts } from "@/lib/data/client";
+import { getCurrentUser, fetchAvailableSlots, fetchGeneratedSlots, fetchSlotBookingCounts } from "@/lib/data/client";
 
 interface RescheduleAppointment {
   id: string;
@@ -49,20 +49,29 @@ export function RescheduleDialog({ appointment, onClose, onReschedule }: Resched
       setSlotCounts({});
       return;
     }
-    const clinicId = clinicConfig.clinicId;
-    Promise.all([
-      fetchAvailableSlots(clinicId, selectedDate, appointment.doctorId),
-      fetchGeneratedSlots(clinicId, selectedDate, appointment.doctorId),
-      fetchSlotBookingCounts(clinicId, selectedDate, appointment.doctorId),
-    ]).then(([available, all, counts]) => {
+    let cancelled = false;
+    async function load() {
+      const user = await getCurrentUser();
+      const clinicId = user?.clinic_id;
+      if (!clinicId || cancelled) return;
+      const [available, all, counts] = await Promise.all([
+        fetchAvailableSlots(clinicId, selectedDate, appointment.doctorId),
+        fetchGeneratedSlots(clinicId, selectedDate, appointment.doctorId),
+        fetchSlotBookingCounts(clinicId, selectedDate, appointment.doctorId),
+      ]);
+      if (cancelled) return;
       setAvailableSlots(available);
       setAllSlots(all);
       setSlotCounts(counts);
-    }).catch(() => {
-      setAvailableSlots([]);
-      setAllSlots([]);
-      setSlotCounts({});
+    }
+    load().catch(() => {
+      if (!cancelled) {
+        setAvailableSlots([]);
+        setAllSlots([]);
+        setSlotCounts({});
+      }
     });
+    return () => { cancelled = true; };
   }, [selectedDate, appointment.doctorId]);
 
   const handleReschedule = async () => {

@@ -8,8 +8,7 @@ import {
   Plus, Truck, Check, Package,
   Send, X, FileText,
 } from "lucide-react";
-import { clinicConfig } from "@/config/clinic.config";
-import { fetchPurchaseOrders, fetchSuppliers } from "@/lib/data/client";
+import { getCurrentUser, fetchPurchaseOrders, fetchSuppliers } from "@/lib/data/client";
 import type { PurchaseOrderView, SupplierView } from "@/lib/data/client";
 import { PageLoader } from "@/components/ui/page-loader";
 
@@ -33,15 +32,23 @@ export default function OrdersPage() {
 
   useEffect(() => {
     const controller = new AbortController();
-    const cId = clinicConfig.clinicId;
-    Promise.all([fetchPurchaseOrders(cId), fetchSuppliers(cId)])
-      .then(([o, s]) => { setAllOrders(o); setAllSuppliers(s); })
+    async function load() {
+      const user = await getCurrentUser();
+      if (controller.signal.aborted) return;
+      const cId = user?.clinic_id;
+      if (!cId) { setLoading(false); return; }
+      const [o, s] = await Promise.all([fetchPurchaseOrders(cId), fetchSuppliers(cId)]);
+      if (controller.signal.aborted) return;
+      setAllOrders(o);
+      setAllSuppliers(s);
+    }
+    load()
       .catch((err) => {
-      if (!controller.signal.aborted) {
-        setError(err instanceof Error ? err : new Error(String(err)));
-      }
-    })
-    .finally(() => { if (!controller.signal.aborted) setLoading(false); });
+        if (!controller.signal.aborted) {
+          setError(err instanceof Error ? err : new Error(String(err)));
+        }
+      })
+      .finally(() => { if (!controller.signal.aborted) setLoading(false); });
     return () => { controller.abort(); };
   }, []);
 

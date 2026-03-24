@@ -14,8 +14,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { Search, FlaskConical, ArrowUpDown, TrendingUp, TrendingDown, Minus, Plus, Loader2, FileText } from "lucide-react";
-import { clinicConfig } from "@/config/clinic.config";
-import { fetchLabTestOrders, fetchLabTestResults, saveLabTestResult } from "@/lib/data/client";
+import { getCurrentUser, fetchLabTestOrders, fetchLabTestResults, saveLabTestResult } from "@/lib/data/client";
 import type { LabTestOrderView, LabTestResultView } from "@/lib/data/client";
 import { PageLoader } from "@/components/ui/page-loader";
 
@@ -65,20 +64,28 @@ export default function ResultsPage() {
       .finally(() => setResultsLoading(false));
   }, [selectedOrderId]);
 
+  const [clinicId, setClinicId] = useState<string | null>(null);
+
   useEffect(() => {
     const controller = new AbortController();
-    fetchLabTestOrders(clinicConfig.clinicId)
-      .then((all) => {
+    async function load() {
+      const user = await getCurrentUser();
       if (controller.signal.aborted) return;
-        const active = all.filter((o) => o.status !== "cancelled");
-        setOrders(active);
-      })
+      const cId = user?.clinic_id;
+      if (!cId) { setLoading(false); return; }
+      setClinicId(cId);
+      const all = await fetchLabTestOrders(cId);
+      if (controller.signal.aborted) return;
+      const active = all.filter((o) => o.status !== "cancelled");
+      setOrders(active);
+    }
+    load()
       .catch((err) => {
-      if (!controller.signal.aborted) {
-        setError(err instanceof Error ? err : new Error(String(err)));
-      }
-    })
-    .finally(() => { if (!controller.signal.aborted) setLoading(false); });
+        if (!controller.signal.aborted) {
+          setError(err instanceof Error ? err : new Error(String(err)));
+        }
+      })
+      .finally(() => { if (!controller.signal.aborted) setLoading(false); });
     return () => { controller.abort(); };
   }, []);
 
@@ -127,7 +134,7 @@ export default function ResultsPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           orderId: selectedOrderId,
-          clinicId: clinicConfig.clinicId,
+          clinicId: clinicId!,
           patientName: order.patientName,
           orderNumber: order.orderNumber,
           results: results.map((r) => ({

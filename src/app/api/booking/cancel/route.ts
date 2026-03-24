@@ -16,6 +16,11 @@ export const runtime = "edge";
  */
 export const POST = withAuth(async (request, { supabase, profile }) => {
   try {
+    if (!profile.clinic_id) {
+      return NextResponse.json({ error: "Missing tenant context" }, { status: 400 });
+    }
+    const clinicId = profile.clinic_id;
+
     const raw = await request.json();
     const parsed = safeParse(bookingCancelSchema, raw);
     if (!parsed.success) {
@@ -28,7 +33,7 @@ export const POST = withAuth(async (request, { supabase, profile }) => {
       .from("appointments")
       .select("id, doctor_id, appointment_date, start_time, status")
       .eq("id", body.appointmentId)
-      .eq("clinic_id", clinicConfig.clinicId)
+      .eq("clinic_id", clinicId)
       .single();
 
     if (fetchError || !appt) {
@@ -81,7 +86,7 @@ export const POST = withAuth(async (request, { supabase, profile }) => {
     const { data: candidate } = await supabase
       .from("waiting_list")
       .select("id")
-      .eq("clinic_id", clinicConfig.clinicId)
+      .eq("clinic_id", clinicId)
       .eq("doctor_id", appt.doctor_id)
       .eq("preferred_date", appt.appointment_date)
       .eq("status", WAITING_LIST_STATUS.WAITING)
@@ -101,7 +106,7 @@ export const POST = withAuth(async (request, { supabase, profile }) => {
       action: "appointment.cancelled",
       type: "booking",
       actor: profile.id,
-      clinicId: profile.clinic_id ?? clinicConfig.clinicId,
+      clinicId: clinicId,
       description: `Appointment ${body.appointmentId} cancelled. Reason: ${body.reason ?? "Cancelled by patient"}`,
     });
 
@@ -117,7 +122,12 @@ export const POST = withAuth(async (request, { supabase, profile }) => {
  *
  * Check if an appointment can be cancelled.
  */
-export const GET = withAuth(async (request, { supabase }) => {
+export const GET = withAuth(async (request, { supabase, profile }) => {
+  if (!profile.clinic_id) {
+    return NextResponse.json({ error: "Missing tenant context" }, { status: 400 });
+  }
+  const clinicId = profile.clinic_id;
+
   const appointmentId = request.nextUrl.searchParams.get("appointmentId");
 
   if (!appointmentId) {
@@ -128,7 +138,7 @@ export const GET = withAuth(async (request, { supabase }) => {
     .from("appointments")
     .select("id, appointment_date, start_time, status")
     .eq("id", appointmentId)
-    .eq("clinic_id", clinicConfig.clinicId)
+    .eq("clinic_id", clinicId)
     .single();
 
   if (error || !appt) {

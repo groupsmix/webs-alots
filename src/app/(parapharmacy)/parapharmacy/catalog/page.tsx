@@ -14,8 +14,8 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { Search, ShoppingBag, Plus, Pencil, Trash2, Loader2 } from "lucide-react";
-import { clinicConfig } from "@/config/clinic.config";
 import {
+  getCurrentUser,
   fetchParapharmacyProducts, fetchParapharmacyCategories, getStockStatus,
   createParapharmacyProduct, updateParapharmacyProduct, deleteParapharmacyProduct,
 } from "@/lib/data/client";
@@ -49,28 +49,36 @@ export default function ParapharmacyCatalogPage() {
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
 
+  const [clinicId, setClinicId] = useState<string | null>(null);
+
   const refreshProducts = useCallback(() => {
-    fetchParapharmacyProducts(clinicConfig.clinicId).then(setProducts);
-  }, []);
+    if (!clinicId) return;
+    fetchParapharmacyProducts(clinicId).then(setProducts);
+  }, [clinicId]);
 
   useEffect(() => {
     const controller = new AbortController();
-    const cId = clinicConfig.clinicId;
-    Promise.all([
-      fetchParapharmacyProducts(cId),
-      fetchParapharmacyCategories(cId),
-    ])
-      .then(([p, c]) => {
+    async function load() {
+      const user = await getCurrentUser();
       if (controller.signal.aborted) return;
-        setProducts(p);
-        setCategories(c);
-      })
+      const cId = user?.clinic_id;
+      if (!cId) { setLoading(false); return; }
+      setClinicId(cId);
+      const [p, c] = await Promise.all([
+        fetchParapharmacyProducts(cId),
+        fetchParapharmacyCategories(cId),
+      ]);
+      if (controller.signal.aborted) return;
+      setProducts(p);
+      setCategories(c);
+    }
+    load()
       .catch((err) => {
-      if (!controller.signal.aborted) {
-        setError(err instanceof Error ? err : new Error(String(err)));
-      }
-    })
-    .finally(() => { if (!controller.signal.aborted) setLoading(false); });
+        if (!controller.signal.aborted) {
+          setError(err instanceof Error ? err : new Error(String(err)));
+        }
+      })
+      .finally(() => { if (!controller.signal.aborted) setLoading(false); });
     return () => { controller.abort(); };
   }, []);
 
@@ -112,7 +120,7 @@ export default function ParapharmacyCatalogPage() {
         });
       } else {
         await createParapharmacyProduct({
-          clinic_id: clinicConfig.clinicId,
+          clinic_id: clinicId!,
           name: form.name,
           generic_name: form.genericName || undefined,
           category: form.category || undefined,

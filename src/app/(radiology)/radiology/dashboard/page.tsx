@@ -8,8 +8,7 @@ import {
   ArrowRight, CheckCircle, Hourglass, AlertTriangle,
 } from "lucide-react";
 import Link from "next/link";
-import { clinicConfig } from "@/config/clinic.config";
-import { fetchRadiologyOrders } from "@/lib/data/client";
+import { getCurrentUser, fetchRadiologyOrders } from "@/lib/data/client";
 import type { RadiologyOrderView } from "@/lib/data/client";
 import { PageLoader } from "@/components/ui/page-loader";
 
@@ -20,14 +19,21 @@ export default function RadiologyDashboardPage() {
 
   useEffect(() => {
     const controller = new AbortController();
-    fetchRadiologyOrders(clinicConfig.clinicId)
-      .then((d) => { if (!controller.signal.aborted) setOrders(d); })
+    async function load() {
+      const user = await getCurrentUser();
+      if (controller.signal.aborted) return;
+      const cId = user?.clinic_id;
+      if (!cId) { setLoading(false); return; }
+      const d = await fetchRadiologyOrders(cId);
+      if (!controller.signal.aborted) setOrders(d);
+    }
+    load()
       .catch((err) => {
-      if (!controller.signal.aborted) {
-        setError(err instanceof Error ? err : new Error(String(err)));
-      }
-    })
-    .finally(() => { if (!controller.signal.aborted) setLoading(false); });
+        if (!controller.signal.aborted) {
+          setError(err instanceof Error ? err : new Error(String(err)));
+        }
+      })
+      .finally(() => { if (!controller.signal.aborted) setLoading(false); });
     return () => { controller.abort(); };
   }, []);
 

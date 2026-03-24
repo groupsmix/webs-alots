@@ -10,8 +10,8 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
 import { Search, Wrench, ChevronDown, CalendarClock, Plus, Pencil, Trash2, AlertTriangle } from "lucide-react";
-import { clinicConfig } from "@/config/clinic.config";
 import {
+  getCurrentUser,
   fetchEquipmentMaintenance, fetchEquipmentInventory,
   createEquipmentMaintenance, updateEquipmentMaintenance, deleteEquipmentMaintenance,
 } from "@/lib/data/client";
@@ -92,30 +92,36 @@ export default function EquipmentMaintenancePage() {
     return map[s] ?? s;
   }, [t]);
 
+  const [clinicId, setClinicId] = useState<string | null>(null);
+
   function reload() {
+    if (!clinicId) return;
     setLoading(true);
-    const cId = clinicConfig.clinicId;
-    Promise.all([fetchEquipmentMaintenance(cId), fetchEquipmentInventory(cId)])
+    Promise.all([fetchEquipmentMaintenance(clinicId), fetchEquipmentInventory(clinicId)])
       .then(([r, e]) => { setRecords(r); setEquipment(e); })
       .finally(() => setLoading(false));
   }
 
   useEffect(() => {
     const controller = new AbortController();
-    function init() {
-      setLoading(true);
-      const cId = clinicConfig.clinicId;
-      Promise.all([fetchEquipmentMaintenance(cId), fetchEquipmentInventory(cId)])
-        .then(([r, e]) => { setRecords(r); setEquipment(e); })
-        .catch((err) => {
-      if (!controller.signal.aborted) {
-        setError(err instanceof Error ? err : new Error(String(err)));
-      }
-    })
-    .finally(() => { if (!controller.signal.aborted) setLoading(false); });
-    return () => { controller.abort(); };
+    async function init() {
+      const user = await getCurrentUser();
+      if (controller.signal.aborted) return;
+      const cId = user?.clinic_id;
+      if (!cId) { setLoading(false); return; }
+      setClinicId(cId);
+      const [r, e] = await Promise.all([fetchEquipmentMaintenance(cId), fetchEquipmentInventory(cId)]);
+      if (controller.signal.aborted) return;
+      setRecords(r); setEquipment(e);
     }
-    init();
+    init()
+      .catch((err) => {
+        if (!controller.signal.aborted) {
+          setError(err instanceof Error ? err : new Error(String(err)));
+        }
+      })
+      .finally(() => { if (!controller.signal.aborted) setLoading(false); });
+    return () => { controller.abort(); };
   }, []);
 
   const openAddDialog = () => {
@@ -157,7 +163,7 @@ export default function EquipmentMaintenancePage() {
       });
     } else {
       await createEquipmentMaintenance({
-        clinic_id: clinicConfig.clinicId,
+        clinic_id: clinicId!,
         equipment_id: form.equipmentId,
         type: form.type,
         description: form.description || undefined,

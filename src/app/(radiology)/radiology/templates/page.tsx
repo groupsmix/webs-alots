@@ -6,8 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Search, FileStack, Copy } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { clinicConfig } from "@/config/clinic.config";
-import { fetchRadiologyTemplates } from "@/lib/data/client";
+import { getCurrentUser, fetchRadiologyTemplates } from "@/lib/data/client";
 import type { RadiologyTemplateView } from "@/lib/data/client";
 import { PageLoader } from "@/components/ui/page-loader";
 
@@ -20,14 +19,21 @@ export default function RadiologyTemplatesPage() {
 
   useEffect(() => {
     const controller = new AbortController();
-    fetchRadiologyTemplates(clinicConfig.clinicId)
-      .then((d) => { if (!controller.signal.aborted) setTemplates(d); })
+    async function load() {
+      const user = await getCurrentUser();
+      if (controller.signal.aborted) return;
+      const cId = user?.clinic_id;
+      if (!cId) { setLoading(false); return; }
+      const d = await fetchRadiologyTemplates(cId);
+      if (!controller.signal.aborted) setTemplates(d);
+    }
+    load()
       .catch((err) => {
-      if (!controller.signal.aborted) {
-        setError(err instanceof Error ? err : new Error(String(err)));
-      }
-    })
-    .finally(() => { if (!controller.signal.aborted) setLoading(false); });
+        if (!controller.signal.aborted) {
+          setError(err instanceof Error ? err : new Error(String(err)));
+        }
+      })
+      .finally(() => { if (!controller.signal.aborted) setLoading(false); });
     return () => { controller.abort(); };
   }, []);
 

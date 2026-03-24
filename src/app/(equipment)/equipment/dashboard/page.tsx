@@ -8,8 +8,7 @@ import {
   ArrowRight, AlertTriangle, CheckCircle, Bell,
 } from "lucide-react";
 import Link from "next/link";
-import { clinicConfig } from "@/config/clinic.config";
-import { fetchEquipmentInventory, fetchEquipmentRentals, fetchEquipmentMaintenance } from "@/lib/data/client";
+import { getCurrentUser, fetchEquipmentInventory, fetchEquipmentRentals, fetchEquipmentMaintenance } from "@/lib/data/client";
 import type { EquipmentItemView, EquipmentRentalView, EquipmentMaintenanceView } from "@/lib/data/client";
 import { useEquipmentLocale } from "../../layout";
 import { useEquipmentI18n } from "@/lib/hooks/use-equipment-i18n";
@@ -26,24 +25,28 @@ export default function EquipmentDashboardPage() {
 
   useEffect(() => {
     const controller = new AbortController();
-    const cId = clinicConfig.clinicId;
-    Promise.all([
-      fetchEquipmentInventory(cId),
-      fetchEquipmentRentals(cId),
-      fetchEquipmentMaintenance(cId),
-    ])
-      .then(([inv, rent, maint]) => {
+    async function load() {
+      const user = await getCurrentUser();
       if (controller.signal.aborted) return;
-        setInventory(inv);
-        setRentals(rent);
-        setMaintenance(maint);
-      })
+      const cId = user?.clinic_id;
+      if (!cId) { setLoading(false); return; }
+      const [inv, rent, maint] = await Promise.all([
+        fetchEquipmentInventory(cId),
+        fetchEquipmentRentals(cId),
+        fetchEquipmentMaintenance(cId),
+      ]);
+      if (controller.signal.aborted) return;
+      setInventory(inv);
+      setRentals(rent);
+      setMaintenance(maint);
+    }
+    load()
       .catch((err) => {
-      if (!controller.signal.aborted) {
-        setError(err instanceof Error ? err : new Error(String(err)));
-      }
-    })
-    .finally(() => { if (!controller.signal.aborted) setLoading(false); });
+        if (!controller.signal.aborted) {
+          setError(err instanceof Error ? err : new Error(String(err)));
+        }
+      })
+      .finally(() => { if (!controller.signal.aborted) setLoading(false); });
     return () => { controller.abort(); };
   }, []);
 

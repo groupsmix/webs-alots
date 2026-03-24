@@ -25,8 +25,7 @@ import {
 } from "@/components/ui/select";
 import { Search, Image as ImageIcon, ExternalLink, Eye, FileImage, Upload, Loader2, X } from "lucide-react";
 import Link from "next/link";
-import { clinicConfig } from "@/config/clinic.config";
-import { fetchRadiologyOrders } from "@/lib/data/client";
+import { getCurrentUser, fetchRadiologyOrders } from "@/lib/data/client";
 import type { RadiologyOrderView } from "@/lib/data/client";
 import { PageLoader } from "@/components/ui/page-loader";
 
@@ -46,27 +45,36 @@ export default function RadiologyImagesPage() {
   const [dragOver, setDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const [clinicId, setClinicId] = useState<string | null>(null);
+
   const refreshOrders = useCallback(() => {
-    fetchRadiologyOrders(clinicConfig.clinicId).then((all) => {
+    if (!clinicId) return;
+    fetchRadiologyOrders(clinicId).then((all) => {
       setAllOrders(all);
       setOrders(all.filter((o) => o.imageCount > 0));
     });
-  }, []);
+  }, [clinicId]);
 
   useEffect(() => {
     const controller = new AbortController();
-    fetchRadiologyOrders(clinicConfig.clinicId)
-      .then((all) => {
+    async function load() {
+      const user = await getCurrentUser();
       if (controller.signal.aborted) return;
-        setAllOrders(all);
-        setOrders(all.filter((o) => o.imageCount > 0));
-      })
+      const cId = user?.clinic_id;
+      if (!cId) { setLoading(false); return; }
+      setClinicId(cId);
+      const all = await fetchRadiologyOrders(cId);
+      if (controller.signal.aborted) return;
+      setAllOrders(all);
+      setOrders(all.filter((o) => o.imageCount > 0));
+    }
+    load()
       .catch((err) => {
-      if (!controller.signal.aborted) {
-        setError(err instanceof Error ? err : new Error(String(err)));
-      }
-    })
-    .finally(() => { if (!controller.signal.aborted) setLoading(false); });
+        if (!controller.signal.aborted) {
+          setError(err instanceof Error ? err : new Error(String(err)));
+        }
+      })
+      .finally(() => { if (!controller.signal.aborted) setLoading(false); });
     return () => { controller.abort(); };
   }, []);
 
@@ -96,7 +104,7 @@ export default function RadiologyImagesPage() {
         const formData = new FormData();
         formData.append("file", uploadFiles[i]);
         formData.append("orderId", uploadOrderId);
-        formData.append("clinicId", clinicConfig.clinicId);
+        formData.append("clinicId", clinicId!);
         await fetch("/api/radiology/upload", { method: "POST", body: formData });
       }
       setUploadOpen(false);

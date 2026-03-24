@@ -9,8 +9,8 @@ import {
   Search, Package, Plus, Filter,
   ArrowUpDown, ShoppingCart,
 } from "lucide-react";
-import { clinicConfig } from "@/config/clinic.config";
 import {
+  getCurrentUser,
   fetchProducts,
   searchProductsLocal,
   getStockStatus,
@@ -47,14 +47,21 @@ export default function StockPage() {
 
   useEffect(() => {
     const controller = new AbortController();
-    fetchProducts(clinicConfig.clinicId)
-      .then((d) => { if (!controller.signal.aborted) setAllProducts(d); })
+    async function load() {
+      const user = await getCurrentUser();
+      if (controller.signal.aborted) return;
+      const cId = user?.clinic_id;
+      if (!cId) { setLoading(false); return; }
+      const d = await fetchProducts(cId);
+      if (!controller.signal.aborted) setAllProducts(d);
+    }
+    load()
       .catch((err) => {
-      if (!controller.signal.aborted) {
-        setError(err instanceof Error ? err : new Error(String(err)));
-      }
-    })
-    .finally(() => { if (!controller.signal.aborted) setLoading(false); });
+        if (!controller.signal.aborted) {
+          setError(err instanceof Error ? err : new Error(String(err)));
+        }
+      })
+      .finally(() => { if (!controller.signal.aborted) setLoading(false); });
     return () => { controller.abort(); };
   }, []);
 

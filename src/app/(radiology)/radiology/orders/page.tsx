@@ -27,8 +27,7 @@ import {
   Search, Filter, ChevronDown, Scan, Plus,
   FileText, Loader2,
 } from "lucide-react";
-import { clinicConfig } from "@/config/clinic.config";
-import { fetchRadiologyOrders, fetchRadiologyTemplates } from "@/lib/data/client";
+import { getCurrentUser, fetchRadiologyOrders, fetchRadiologyTemplates } from "@/lib/data/client";
 import type { RadiologyOrderView, RadiologyTemplateView } from "@/lib/data/client";
 import { PageLoader } from "@/components/ui/page-loader";
 
@@ -67,21 +66,30 @@ export default function RadiologyOrdersPage() {
   });
 
   const [updatingStatusId, setUpdatingStatusId] = useState<string | null>(null);
+  const [clinicId, setClinicId] = useState<string | null>(null);
 
   const refreshOrders = useCallback(() => {
-    fetchRadiologyOrders(clinicConfig.clinicId).then(setOrders);
-  }, []);
+    if (!clinicId) return;
+    fetchRadiologyOrders(clinicId).then(setOrders);
+  }, [clinicId]);
 
   useEffect(() => {
     const controller = new AbortController();
-    Promise.all([
-      fetchRadiologyOrders(clinicConfig.clinicId),
-      fetchRadiologyTemplates(clinicConfig.clinicId),
-    ]).then(([o, t]) => {
+    async function load() {
+      const user = await getCurrentUser();
+      if (controller.signal.aborted) return;
+      const cId = user?.clinic_id;
+      if (!cId) { setLoading(false); return; }
+      setClinicId(cId);
+      const [o, t] = await Promise.all([
+        fetchRadiologyOrders(cId),
+        fetchRadiologyTemplates(cId),
+      ]);
       if (controller.signal.aborted) return;
       setOrders(o);
       setTemplates(t);
-    }).catch((err) => {
+    }
+    load().catch((err) => {
       if (!controller.signal.aborted) {
         setError(err instanceof Error ? err : new Error(String(err)));
       }
@@ -99,7 +107,7 @@ export default function RadiologyOrdersPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          clinicId: clinicConfig.clinicId,
+          clinicId: clinicId!,
           patientId: newOrder.patientId,
           modality: newOrder.modality,
           bodyPart: newOrder.bodyPart || undefined,
@@ -181,7 +189,7 @@ export default function RadiologyOrdersPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         orderId: order.id,
-        clinicId: clinicConfig.clinicId,
+        clinicId: clinicId!,
         patientName: order.patientName,
         modality: order.modality,
         bodyPart: order.bodyPart,

@@ -5,8 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Search, History, FlaskConical, TrendingUp, TrendingDown, Minus } from "lucide-react";
-import { clinicConfig } from "@/config/clinic.config";
-import { fetchPatients, fetchPatientLabOrders, fetchLabTestResults } from "@/lib/data/client";
+import { getCurrentUser, fetchPatients, fetchPatientLabOrders, fetchLabTestResults } from "@/lib/data/client";
 import type { PatientView, LabTestOrderView, LabTestResultView } from "@/lib/data/client";
 import { PageLoader } from "@/components/ui/page-loader";
 
@@ -37,16 +36,26 @@ export default function PatientHistoryPage() {
   const [resultsLoading, setResultsLoading] = useState(false);
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
 
+  const [clinicId, setClinicId] = useState<string | null>(null);
+
   useEffect(() => {
     const controller = new AbortController();
-    fetchPatients(clinicConfig.clinicId)
-      .then((d) => { if (!controller.signal.aborted) setPatients(d); })
+    async function load() {
+      const user = await getCurrentUser();
+      if (controller.signal.aborted) return;
+      const cId = user?.clinic_id;
+      if (!cId) { setLoading(false); return; }
+      setClinicId(cId);
+      const d = await fetchPatients(cId);
+      if (!controller.signal.aborted) setPatients(d);
+    }
+    load()
       .catch((err) => {
-      if (!controller.signal.aborted) {
-        setError(err instanceof Error ? err : new Error(String(err)));
-      }
-    })
-    .finally(() => { if (!controller.signal.aborted) setLoading(false); });
+        if (!controller.signal.aborted) {
+          setError(err instanceof Error ? err : new Error(String(err)));
+        }
+      })
+      .finally(() => { if (!controller.signal.aborted) setLoading(false); });
     return () => { controller.abort(); };
   }, []);
 
@@ -56,7 +65,7 @@ export default function PatientHistoryPage() {
       setOrdersLoading(true);
       setSelectedOrderId(null);
       setSelectedOrderResults([]);
-      fetchPatientLabOrders(clinicConfig.clinicId, selectedPatientId)
+      fetchPatientLabOrders(clinicId!, selectedPatientId)
         .then(setPatientOrders)
         .finally(() => setOrdersLoading(false));
     }

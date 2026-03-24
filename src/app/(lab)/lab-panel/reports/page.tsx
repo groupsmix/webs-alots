@@ -6,8 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Search, FileText, Download } from "lucide-react";
-import { clinicConfig } from "@/config/clinic.config";
-import { fetchLabTestOrders } from "@/lib/data/client";
+import { getCurrentUser, fetchLabTestOrders } from "@/lib/data/client";
 import type { LabTestOrderView } from "@/lib/data/client";
 import { PageLoader } from "@/components/ui/page-loader";
 
@@ -19,17 +18,21 @@ export default function LabReportsPage() {
 
   useEffect(() => {
     const controller = new AbortController();
-    fetchLabTestOrders(clinicConfig.clinicId)
-      .then((all) => {
+    async function load() {
+      const user = await getCurrentUser();
       if (controller.signal.aborted) return;
-        setOrders(all.filter((o) => o.status === "completed" || o.status === "validated"));
-      })
+      const cId = user?.clinic_id;
+      if (!cId) { setLoading(false); return; }
+      const all = await fetchLabTestOrders(cId);
+      if (!controller.signal.aborted) setOrders(all.filter((o) => o.status === "completed" || o.status === "validated"));
+    }
+    load()
       .catch((err) => {
-      if (!controller.signal.aborted) {
-        setError(err instanceof Error ? err : new Error(String(err)));
-      }
-    })
-    .finally(() => { if (!controller.signal.aborted) setLoading(false); });
+        if (!controller.signal.aborted) {
+          setError(err instanceof Error ? err : new Error(String(err)));
+        }
+      })
+      .finally(() => { if (!controller.signal.aborted) setLoading(false); });
     return () => { controller.abort(); };
   }, []);
 

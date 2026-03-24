@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import { logAuditEvent } from "@/lib/audit-log";
-import { clinicConfig } from "@/config/clinic.config";
 import type { UserRole } from "@/lib/types/database";
 import { withAuth } from "@/lib/with-auth";
 import { logger } from "@/lib/logger";
@@ -15,8 +14,13 @@ const ADMIN_ROLES: UserRole[] = ["super_admin", "clinic_admin"];
  *
  * Refund a completed payment (full or partial).
  */
-export const POST = withAuth(async (request, { supabase }) => {
+export const POST = withAuth(async (request, { supabase, profile }) => {
   try {
+    if (!profile.clinic_id) {
+      return NextResponse.json({ error: "Missing tenant context" }, { status: 400 });
+    }
+    const clinicId = profile.clinic_id;
+
     const raw = await request.json();
     const parsed = safeParse(paymentRefundSchema, raw);
     if (!parsed.success) {
@@ -29,7 +33,7 @@ export const POST = withAuth(async (request, { supabase }) => {
       .from("payments")
       .select("id, status, amount, refunded_amount")
       .eq("id", body.paymentId)
-      .eq("clinic_id", clinicConfig.clinicId)
+      .eq("clinic_id", clinicId)
       .single();
 
     if (fetchError || !payment) {
@@ -84,7 +88,7 @@ export const POST = withAuth(async (request, { supabase }) => {
       supabase,
       action: "payment_refunded",
       type: "payment",
-      clinicId: clinicConfig.clinicId,
+      clinicId: clinicId,
       description: `Payment ${body.paymentId} refunded: ${refundAmount} of ${payment.amount}`,
     });
 

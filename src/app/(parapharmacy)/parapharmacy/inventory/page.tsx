@@ -5,8 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Search, Package, AlertTriangle } from "lucide-react";
-import { clinicConfig } from "@/config/clinic.config";
-import { fetchParapharmacyProducts, getStockStatus, getExpiryStatus } from "@/lib/data/client";
+import { getCurrentUser, fetchParapharmacyProducts, getStockStatus, getExpiryStatus } from "@/lib/data/client";
 import type { ProductView } from "@/lib/data/client";
 import { PageLoader } from "@/components/ui/page-loader";
 
@@ -19,14 +18,21 @@ export default function ParapharmacyInventoryPage() {
 
   useEffect(() => {
     const controller = new AbortController();
-    fetchParapharmacyProducts(clinicConfig.clinicId)
-      .then((d) => { if (!controller.signal.aborted) setProducts(d); })
+    async function load() {
+      const user = await getCurrentUser();
+      if (controller.signal.aborted) return;
+      const cId = user?.clinic_id;
+      if (!cId) { setLoading(false); return; }
+      const d = await fetchParapharmacyProducts(cId);
+      if (!controller.signal.aborted) setProducts(d);
+    }
+    load()
       .catch((err) => {
-      if (!controller.signal.aborted) {
-        setError(err instanceof Error ? err : new Error(String(err)));
-      }
-    })
-    .finally(() => { if (!controller.signal.aborted) setLoading(false); });
+        if (!controller.signal.aborted) {
+          setError(err instanceof Error ? err : new Error(String(err)));
+        }
+      })
+      .finally(() => { if (!controller.signal.aborted) setLoading(false); });
     return () => { controller.abort(); };
   }, []);
 

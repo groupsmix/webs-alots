@@ -12,8 +12,7 @@ import {
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { fetchLabDashboardKPIs, type LabDashboardKPIs } from "@/lib/data/client";
-import { clinicConfig } from "@/config/clinic.config";
+import { getCurrentUser, fetchLabDashboardKPIs, type LabDashboardKPIs } from "@/lib/data/client";
 import { PageLoader } from "@/components/ui/page-loader";
 import { logger } from "@/lib/logger";
 
@@ -31,16 +30,16 @@ export function LabDashboardKPIsComponent() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const clinicId = clinicConfig.clinicId;
     let cancelled = false;
-    if (!clinicId) {
-      Promise.resolve().then(() => { if (!cancelled) setLoading(false); });
-      return () => { cancelled = true; };
+    async function load() {
+      const user = await getCurrentUser();
+      if (cancelled) return;
+      const clinicId = user?.clinic_id;
+      if (!clinicId) { setLoading(false); return; }
+      const result = await fetchLabDashboardKPIs(clinicId);
+      if (!cancelled) setData(result);
     }
-    fetchLabDashboardKPIs(clinicId)
-      .then((result) => {
-        if (!cancelled) setData(result);
-      })
+    load()
       .catch((err: unknown) => { logger.warn("Operation failed", { context: "lab-dashboard-kpis", error: err }); })
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };

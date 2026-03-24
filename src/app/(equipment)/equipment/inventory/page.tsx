@@ -11,8 +11,8 @@ import {
 } from "@/components/ui/dialog";
 import { Search, Package, ChevronDown, Plus, Pencil, Trash2, Wrench } from "lucide-react";
 import Link from "next/link";
-import { clinicConfig } from "@/config/clinic.config";
 import {
+  getCurrentUser,
   fetchEquipmentInventory,
   createEquipmentItem,
   updateEquipmentItem,
@@ -84,28 +84,36 @@ export default function EquipmentInventoryPage() {
     return map[c] ?? c;
   }, [t]);
 
+  const [clinicId, setClinicId] = useState<string | null>(null);
+
   function reload() {
+    if (!clinicId) return;
     setLoading(true);
-    fetchEquipmentInventory(clinicConfig.clinicId)
+    fetchEquipmentInventory(clinicId)
       .then(setItems)
       .finally(() => setLoading(false));
   }
 
   useEffect(() => {
     const controller = new AbortController();
-    function init() {
-      setLoading(true);
-      fetchEquipmentInventory(clinicConfig.clinicId)
-        .then(setItems)
-        .catch((err) => {
-      if (!controller.signal.aborted) {
-        setError(err instanceof Error ? err : new Error(String(err)));
-      }
-    })
-    .finally(() => { if (!controller.signal.aborted) setLoading(false); });
-    return () => { controller.abort(); };
+    async function init() {
+      const user = await getCurrentUser();
+      if (controller.signal.aborted) return;
+      const cId = user?.clinic_id;
+      if (!cId) { setLoading(false); return; }
+      setClinicId(cId);
+      const data = await fetchEquipmentInventory(cId);
+      if (controller.signal.aborted) return;
+      setItems(data);
     }
-    init();
+    init()
+      .catch((err) => {
+        if (!controller.signal.aborted) {
+          setError(err instanceof Error ? err : new Error(String(err)));
+        }
+      })
+      .finally(() => { if (!controller.signal.aborted) setLoading(false); });
+    return () => { controller.abort(); };
   }, []);
 
   const openAddDialog = () => {
@@ -159,7 +167,7 @@ export default function EquipmentInventoryPage() {
       });
     } else {
       await createEquipmentItem({
-        clinic_id: clinicConfig.clinicId,
+        clinic_id: clinicId!,
         name: form.name,
         category: form.category,
         serial_number: form.serialNumber || undefined,

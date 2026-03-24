@@ -5,11 +5,11 @@ import { Stethoscope, Clock, Shield } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { fetchDentalTreatmentTypes, type DentalTreatmentTypeView } from "@/lib/data/client";
-import { clinicConfig } from "@/config/clinic.config";
+import { getCurrentUser, fetchDentalTreatmentTypes, type DentalTreatmentTypeView } from "@/lib/data/client";
 import { logger } from "@/lib/logger";
 
 interface DentalBookingExtrasProps {
+  clinicId?: string;
   selectedTreatment: string;
   onSelectTreatment: (id: string) => void;
   sedationRequested: boolean;
@@ -17,6 +17,7 @@ interface DentalBookingExtrasProps {
 }
 
 export function DentalBookingExtras({
+  clinicId: propClinicId,
   selectedTreatment,
   onSelectTreatment,
   sedationRequested,
@@ -25,12 +26,22 @@ export function DentalBookingExtras({
   const [dentalTreatmentTypes, setDentalTreatmentTypes] = useState<DentalTreatmentTypeView[]>([]);
 
   useEffect(() => {
-    const clinicId = clinicConfig.clinicId;
-    if (!clinicId) return;
-    fetchDentalTreatmentTypes(clinicId).then(setDentalTreatmentTypes).catch((err) => {
+    let cancelled = false;
+    async function load() {
+      let clinicId = propClinicId;
+      if (!clinicId) {
+        const user = await getCurrentUser();
+        clinicId = user?.clinic_id ?? undefined;
+      }
+      if (!clinicId) return;
+      const types = await fetchDentalTreatmentTypes(clinicId);
+      if (!cancelled) setDentalTreatmentTypes(types);
+    }
+    load().catch((err) => {
       logger.warn("Operation failed", { context: "dental-booking-extras", error: err });
     });
-  }, []);
+    return () => { cancelled = true; };
+  }, [propClinicId]);
 
   const categories = Array.from(new Set(dentalTreatmentTypes.map((t) => t.category)));
 

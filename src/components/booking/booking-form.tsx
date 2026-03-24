@@ -4,6 +4,7 @@ import { useState, useMemo, useEffect } from "react";
 import { ChevronLeft, ChevronRight, Check, Stethoscope, User, ShieldCheck, Repeat, Users, Loader2 } from "lucide-react";
 import { fetchDoctors, fetchServices, type DoctorView, type ServiceView } from "@/lib/data/client";
 import { clinicConfig } from "@/config/clinic.config";
+import { getCurrentUser } from "@/lib/data/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -90,7 +91,7 @@ function mapService(s: ServiceView): Service {
   };
 }
 
-export function BookingForm() {
+export function BookingForm({ clinicId: propClinicId }: { clinicId?: string } = {}) {
   const steps = useMemo(() => getSteps(), []);
   const [step, setStep] = useState(0);
   const [selectedSpecialty, setSelectedSpecialty] = useState("");
@@ -126,24 +127,29 @@ export function BookingForm() {
 
   // Load doctors, services, and specialties from Supabase on mount
   useEffect(() => {
-    const clinicId = clinicConfig.clinicId;
-    if (!clinicId) return;
-
     let cancelled = false;
-    Promise.all([
-      fetchDoctors(clinicId),
-      fetchServices(clinicId),
-    ]).then(([dbDoctors, dbServices]) => {
+    async function load() {
+      let clinicId = propClinicId;
+      if (!clinicId) {
+        const user = await getCurrentUser();
+        clinicId = user?.clinic_id ?? undefined;
+      }
+      if (!clinicId) return;
+      const [dbDoctors, dbServices] = await Promise.all([
+        fetchDoctors(clinicId),
+        fetchServices(clinicId),
+      ]);
       if (cancelled) return;
       const mappedDoctors = dbDoctors.map(mapDoctor);
       setDoctors(mappedDoctors);
       setSpecialties(deriveSpecialties(mappedDoctors));
       setServices(dbServices.map(mapService));
-    }).catch((err) => {
+    }
+    load().catch((err) => {
       logger.warn("Operation failed", { context: "booking-form", error: err });
     });
     return () => { cancelled = true; };
-  }, []);
+  }, [propClinicId]);
 
   // Fetch available slots when date or doctor changes
   useEffect(() => {

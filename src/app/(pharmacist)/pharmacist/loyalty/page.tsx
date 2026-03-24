@@ -10,8 +10,7 @@ import {
   TrendingUp, Plus, CreditCard, Cake, UserPlus,
   ArrowDown, ArrowUp, History,
 } from "lucide-react";
-import { clinicConfig } from "@/config/clinic.config";
-import { fetchLoyaltyMembers, fetchLoyaltyTransactions, getPointsValue } from "@/lib/data/client";
+import { getCurrentUser, fetchLoyaltyMembers, fetchLoyaltyTransactions, getPointsValue } from "@/lib/data/client";
 import type { LoyaltyMemberView, LoyaltyTransactionView } from "@/lib/data/client";
 import { PageLoader } from "@/components/ui/page-loader";
 
@@ -44,15 +43,23 @@ export default function LoyaltyPage() {
 
   useEffect(() => {
     const controller = new AbortController();
-    const cId = clinicConfig.clinicId;
-    Promise.all([fetchLoyaltyMembers(cId), fetchLoyaltyTransactions(cId)])
-      .then(([m, t]) => { setAllMembers(m); setAllTransactions(t); })
+    async function load() {
+      const user = await getCurrentUser();
+      if (controller.signal.aborted) return;
+      const cId = user?.clinic_id;
+      if (!cId) { setLoading(false); return; }
+      const [m, t] = await Promise.all([fetchLoyaltyMembers(cId), fetchLoyaltyTransactions(cId)]);
+      if (controller.signal.aborted) return;
+      setAllMembers(m);
+      setAllTransactions(t);
+    }
+    load()
       .catch((err) => {
-      if (!controller.signal.aborted) {
-        setError(err instanceof Error ? err : new Error(String(err)));
-      }
-    })
-    .finally(() => { if (!controller.signal.aborted) setLoading(false); });
+        if (!controller.signal.aborted) {
+          setError(err instanceof Error ? err : new Error(String(err)));
+        }
+      })
+      .finally(() => { if (!controller.signal.aborted) setLoading(false); });
     return () => { controller.abort(); };
   }, []);
 

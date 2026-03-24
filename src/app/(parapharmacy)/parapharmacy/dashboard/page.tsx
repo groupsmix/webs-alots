@@ -8,8 +8,8 @@ import {
   ArrowRight, DollarSign,
 } from "lucide-react";
 import Link from "next/link";
-import { clinicConfig } from "@/config/clinic.config";
 import {
+  getCurrentUser,
   fetchParapharmacyProducts,
   fetchParapharmacyCategories,
   getLowStockProducts,
@@ -26,22 +26,26 @@ export default function ParapharmacyDashboardPage() {
 
   useEffect(() => {
     const controller = new AbortController();
-    const cId = clinicConfig.clinicId;
-    Promise.all([
-      fetchParapharmacyProducts(cId),
-      fetchParapharmacyCategories(cId),
-    ])
-      .then(([p, c]) => {
+    async function load() {
+      const user = await getCurrentUser();
       if (controller.signal.aborted) return;
-        setProducts(p);
-        setCategories(c);
-      })
+      const cId = user?.clinic_id;
+      if (!cId) { setLoading(false); return; }
+      const [p, c] = await Promise.all([
+        fetchParapharmacyProducts(cId),
+        fetchParapharmacyCategories(cId),
+      ]);
+      if (controller.signal.aborted) return;
+      setProducts(p);
+      setCategories(c);
+    }
+    load()
       .catch((err) => {
-      if (!controller.signal.aborted) {
-        setError(err instanceof Error ? err : new Error(String(err)));
-      }
-    })
-    .finally(() => { if (!controller.signal.aborted) setLoading(false); });
+        if (!controller.signal.aborted) {
+          setError(err instanceof Error ? err : new Error(String(err)));
+        }
+      })
+      .finally(() => { if (!controller.signal.aborted) setLoading(false); });
     return () => { controller.abort(); };
   }, []);
 

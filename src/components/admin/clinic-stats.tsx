@@ -4,8 +4,7 @@ import { useState, useEffect } from "react";
 import { Users, Calendar, TrendingDown, DollarSign, Activity, Clock, UserCheck, AlertTriangle } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { fetchDashboardStats, fetchTodayAppointments, type DashboardStats } from "@/lib/data/client";
-import { clinicConfig } from "@/config/clinic.config";
+import { getCurrentUser, fetchDashboardStats, fetchTodayAppointments, type DashboardStats } from "@/lib/data/client";
 import { logger } from "@/lib/logger";
 
 /**
@@ -18,18 +17,21 @@ export function ClinicStats() {
   const [todayCount, setTodayCount] = useState(0);
 
   useEffect(() => {
-    const clinicId = clinicConfig.clinicId;
-    if (!clinicId) return;
-
     let cancelled = false;
-    Promise.all([
-      fetchDashboardStats(clinicId),
-      fetchTodayAppointments(clinicId),
-    ]).then(([dashStats, todayAppts]) => {
+    async function load() {
+      const user = await getCurrentUser();
+      if (cancelled) return;
+      const clinicId = user?.clinic_id;
+      if (!clinicId) return;
+      const [dashStats, todayAppts] = await Promise.all([
+        fetchDashboardStats(clinicId),
+        fetchTodayAppointments(clinicId),
+      ]);
       if (cancelled) return;
       setDashData(dashStats);
       setTodayCount(todayAppts.length);
-    }).catch((err) => {
+    }
+    load().catch((err) => {
       logger.warn("Operation failed", { context: "clinic-stats", error: err });
     });
     return () => { cancelled = true; };

@@ -18,8 +18,8 @@ import {
   Search, Filter, ChevronDown, FlaskConical, Plus,
   Clock, CheckCircle, Loader2, UserPlus, ArrowRight,
 } from "lucide-react";
-import { clinicConfig } from "@/config/clinic.config";
 import {
+  getCurrentUser,
   fetchLabTestOrders, fetchLabTestCatalog, fetchPatients,
   createLabTestOrder, updateLabOrderStatus, assignLabTechnician,
 } from "@/lib/data/client";
@@ -55,22 +55,32 @@ export default function TestOrdersPage() {
   const [techSaving, setTechSaving] = useState(false);
   const [updatingStatusId, setUpdatingStatusId] = useState<string | null>(null);
 
+  const [clinicId, setClinicId] = useState<string | null>(null);
+
   const refreshOrders = useCallback(() => {
-    fetchLabTestOrders(clinicConfig.clinicId).then(setOrders);
-  }, []);
+    if (!clinicId) return;
+    fetchLabTestOrders(clinicId).then(setOrders);
+  }, [clinicId]);
 
   useEffect(() => {
     const controller = new AbortController();
-    Promise.all([
-      fetchLabTestOrders(clinicConfig.clinicId),
-      fetchLabTestCatalog(clinicConfig.clinicId),
-      fetchPatients(clinicConfig.clinicId),
-    ]).then(([o, c, p]) => {
+    async function load() {
+      const user = await getCurrentUser();
+      if (controller.signal.aborted) return;
+      const cId = user?.clinic_id;
+      if (!cId) { setLoading(false); return; }
+      setClinicId(cId);
+      const [o, c, p] = await Promise.all([
+        fetchLabTestOrders(cId),
+        fetchLabTestCatalog(cId),
+        fetchPatients(cId),
+      ]);
       if (controller.signal.aborted) return;
       setOrders(o);
       setCatalog(c);
       setPatients(p);
-    }).catch((err) => {
+    }
+    load().catch((err) => {
       if (!controller.signal.aborted) {
         setError(err instanceof Error ? err : new Error(String(err)));
       }
@@ -85,7 +95,7 @@ export default function TestOrdersPage() {
     setNewOrderSaving(true);
     try {
       await createLabTestOrder({
-        clinic_id: clinicConfig.clinicId,
+        clinic_id: clinicId!,
         patient_id: newOrder.patientId,
         priority: newOrder.priority,
         clinical_notes: newOrder.clinicalNotes || undefined,

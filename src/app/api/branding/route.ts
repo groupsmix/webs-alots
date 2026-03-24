@@ -7,6 +7,7 @@
 
 import { NextResponse } from "next/server";
 import { clinicConfig } from "@/config/clinic.config";
+import { getTenant } from "@/lib/tenant";
 import { createClient } from "@/lib/supabase-server";
 import {
   uploadToR2,
@@ -59,7 +60,14 @@ const FIELD_MAP: Record<string, string> = {
 
 export async function GET() {
   try {
-    const clinicId = clinicConfig.clinicId;
+    const tenant = await getTenant();
+    if (!tenant?.clinicId) {
+      return NextResponse.json(
+        { error: "Missing tenant context" },
+        { status: 400 },
+      );
+    }
+    const clinicId = tenant.clinicId;
     const supabase = await createClient();
 
     const { data, error } = await supabase
@@ -108,8 +116,11 @@ export async function GET() {
 
 // ── PUT — update text branding fields (colors, fonts) ──
 
-export const PUT = withAuth(async (request, { supabase }) => {
-  const clinicId = clinicConfig.clinicId;
+export const PUT = withAuth(async (request, { supabase, profile }) => {
+  if (!profile.clinic_id) {
+    return NextResponse.json({ error: "Missing tenant context" }, { status: 400 });
+  }
+  const clinicId = profile.clinic_id;
   const raw = await request.json();
   const parsed = safeParse(brandingUpdateSchema, raw);
   if (!parsed.success) {
@@ -166,8 +177,11 @@ export const PUT = withAuth(async (request, { supabase }) => {
 
 // ── POST — upload a branding image and save URL ──
 
-export const POST = withAuth(async (request, { supabase }) => {
-  const clinicId = clinicConfig.clinicId;
+export const POST = withAuth(async (request, { supabase, profile }) => {
+  if (!profile.clinic_id) {
+    return NextResponse.json({ error: "Missing tenant context" }, { status: 400 });
+  }
+  const clinicId = profile.clinic_id;
 
   if (!isR2Configured()) {
     return NextResponse.json(

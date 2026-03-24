@@ -14,8 +14,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { Search, Receipt, DollarSign, Plus, Minus, ShoppingCart, Loader2, Trash2 } from "lucide-react";
-import { clinicConfig } from "@/config/clinic.config";
-import { fetchDailySales, fetchParapharmacyProducts, createParapharmacySale } from "@/lib/data/client";
+import { getCurrentUser, fetchDailySales, fetchParapharmacyProducts, createParapharmacySale } from "@/lib/data/client";
 import type { DailySaleView, ProductView } from "@/lib/data/client";
 import { PageLoader } from "@/components/ui/page-loader";
 
@@ -41,27 +40,36 @@ export default function ParapharmacySalesPage() {
   const [productSearch, setProductSearch] = useState("");
   const [saving, setSaving] = useState(false);
 
+  const [clinicId, setClinicId] = useState<string | null>(null);
+
   const refreshSales = useCallback(() => {
-    fetchDailySales(clinicConfig.clinicId).then(setSales);
-  }, []);
+    if (!clinicId) return;
+    fetchDailySales(clinicId).then(setSales);
+  }, [clinicId]);
 
   useEffect(() => {
     const controller = new AbortController();
-    Promise.all([
-      fetchDailySales(clinicConfig.clinicId),
-      fetchParapharmacyProducts(clinicConfig.clinicId),
-    ])
-      .then(([s, p]) => {
+    async function load() {
+      const user = await getCurrentUser();
       if (controller.signal.aborted) return;
-        setSales(s);
-        setProducts(p);
-      })
+      const cId = user?.clinic_id;
+      if (!cId) { setLoading(false); return; }
+      setClinicId(cId);
+      const [s, p] = await Promise.all([
+        fetchDailySales(cId),
+        fetchParapharmacyProducts(cId),
+      ]);
+      if (controller.signal.aborted) return;
+      setSales(s);
+      setProducts(p);
+    }
+    load()
       .catch((err) => {
-      if (!controller.signal.aborted) {
-        setError(err instanceof Error ? err : new Error(String(err)));
-      }
-    })
-    .finally(() => { if (!controller.signal.aborted) setLoading(false); });
+        if (!controller.signal.aborted) {
+          setError(err instanceof Error ? err : new Error(String(err)));
+        }
+      })
+      .finally(() => { if (!controller.signal.aborted) setLoading(false); });
     return () => { controller.abort(); };
   }, []);
 
@@ -103,7 +111,7 @@ export default function ParapharmacySalesPage() {
     setSaving(true);
     try {
       await createParapharmacySale({
-        clinic_id: clinicConfig.clinicId,
+        clinic_id: clinicId!,
         patient_name: customerName,
         payment_method: paymentMethod,
         items: cart.map((c) => ({

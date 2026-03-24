@@ -4,8 +4,7 @@ import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ExternalLink, Monitor, Info, FileImage, Scan } from "lucide-react";
-import { clinicConfig } from "@/config/clinic.config";
-import { fetchRadiologyOrders } from "@/lib/data/client";
+import { getCurrentUser, fetchRadiologyOrders } from "@/lib/data/client";
 import type { RadiologyOrderView } from "@/lib/data/client";
 
 export default function DicomViewerPage() {
@@ -15,14 +14,21 @@ export default function DicomViewerPage() {
 
   useEffect(() => {
     const controller = new AbortController();
-    fetchRadiologyOrders(clinicConfig.clinicId)
-      .then((all) => setOrders(all.filter((o) => o.imageCount > 0)))
+    async function load() {
+      const user = await getCurrentUser();
+      if (controller.signal.aborted) return;
+      const cId = user?.clinic_id;
+      if (!cId) { setLoading(false); return; }
+      const all = await fetchRadiologyOrders(cId);
+      if (!controller.signal.aborted) setOrders(all.filter((o) => o.imageCount > 0));
+    }
+    load()
       .catch((err) => {
-      if (!controller.signal.aborted) {
-        setError(err instanceof Error ? err : new Error(String(err)));
-      }
-    })
-    .finally(() => { if (!controller.signal.aborted) setLoading(false); });
+        if (!controller.signal.aborted) {
+          setError(err instanceof Error ? err : new Error(String(err)));
+        }
+      })
+      .finally(() => { if (!controller.signal.aborted) setLoading(false); });
     return () => { controller.abort(); };
   }, []);
 

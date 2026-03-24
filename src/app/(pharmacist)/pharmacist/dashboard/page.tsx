@@ -11,8 +11,8 @@ import {
   Package, Pill, BarChart3,
 } from "lucide-react";
 import Link from "next/link";
-import { clinicConfig } from "@/config/clinic.config";
 import {
+  getCurrentUser,
   fetchProducts,
   fetchPrescriptionRequests,
   fetchDailySales,
@@ -67,28 +67,32 @@ export default function PharmacistDashboardPage() {
 
   useEffect(() => {
     const controller = new AbortController();
-    const cId = clinicConfig.clinicId;
-    Promise.all([
-      fetchProducts(cId),
-      fetchPrescriptionRequests(cId),
-      fetchDailySales(cId),
-      fetchPurchaseOrders(cId),
-      fetchLoyaltyMembers(cId),
-    ])
-      .then(([p, rx, s, o, l]) => {
+    async function load() {
+      const user = await getCurrentUser();
       if (controller.signal.aborted) return;
-        setProducts(p);
-        setPrescriptions(rx);
-        setSales(s);
-        setAllOrders(o);
-        setMembers(l);
-      })
+      const cId = user?.clinic_id;
+      if (!cId) { setLoading(false); return; }
+      const [p, rx, s, o, l] = await Promise.all([
+        fetchProducts(cId),
+        fetchPrescriptionRequests(cId),
+        fetchDailySales(cId),
+        fetchPurchaseOrders(cId),
+        fetchLoyaltyMembers(cId),
+      ]);
+      if (controller.signal.aborted) return;
+      setProducts(p);
+      setPrescriptions(rx);
+      setSales(s);
+      setAllOrders(o);
+      setMembers(l);
+    }
+    load()
       .catch((err) => {
-      if (!controller.signal.aborted) {
-        setError(err instanceof Error ? err : new Error(String(err)));
-      }
-    })
-    .finally(() => { if (!controller.signal.aborted) setLoading(false); });
+        if (!controller.signal.aborted) {
+          setError(err instanceof Error ? err : new Error(String(err)));
+        }
+      })
+      .finally(() => { if (!controller.signal.aborted) setLoading(false); });
     return () => { controller.abort(); };
   }, []);
 
