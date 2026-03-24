@@ -25,19 +25,21 @@ import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import { logger } from "@/lib/logger";
 
 /**
- * Extract the real client IP from a request, respecting common reverse-proxy
- * headers.  Cloudflare sets `CF-Connecting-IP`; other proxies use
- * `X-Forwarded-For` (first entry) or `X-Real-IP`.  Falls back to "unknown"
- * which effectively rate-limits all header-less requests together — safe for
- * a server behind a trusted proxy.
+ * Extract the real client IP from a request.
+ *
+ * Priority order (HIGH-02 hardened):
+ *   1. CF-Connecting-IP — set by Cloudflare's edge, cannot be spoofed by
+ *      the client when traffic goes through Cloudflare.
+ *   2. "unknown" fallback — groups all unidentified requests together,
+ *      which is safe behind a trusted proxy.
+ *
+ * X-Forwarded-For and X-Real-IP are intentionally NOT used because they
+ * are attacker-controlled when the request does not pass through a trusted
+ * proxy that overwrites them.  Since this app runs behind Cloudflare,
+ * CF-Connecting-IP is the only trustworthy source of client IP.
  */
 export function extractClientIp(request: NextRequest): string {
-  return (
-    request.headers.get("cf-connecting-ip") ??
-    request.headers.get("x-real-ip") ??
-    request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
-    "unknown"
-  );
+  return request.headers.get("cf-connecting-ip") ?? "unknown";
 }
 
 interface RateLimitEntry {

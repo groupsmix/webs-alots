@@ -93,7 +93,14 @@ export async function GET() {
       );
     }
 
-    return NextResponse.json(data, {
+    // MED-01: Redact potentially sensitive contact fields from the
+    // unauthenticated public branding response.  Name, colors, fonts,
+    // images, and template settings are intentionally public (needed to
+    // render the clinic's branded booking page).  Phone and address are
+    // PII that should only be visible to authenticated users.
+    const { phone: _phone, address: _address, ...publicData } = data;
+
+    return NextResponse.json(publicData, {
       headers: {
         "Cache-Control": "public, s-maxage=60, stale-while-revalidate=300",
       },
