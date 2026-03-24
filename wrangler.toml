@@ -4,6 +4,11 @@ main = "worker-cron-handler.ts"
 compatibility_date = "2025-04-01"
 compatibility_flags = ["nodejs_compat"]
 
+# Cloudflare Pages: tells Pages where to find static assets after build.
+# This property is ignored by `wrangler deploy` (Workers), so it is safe
+# to keep alongside the Workers configuration.
+pages_build_output_dir = ".open-next/assets"
+
 # Static assets served by the Workers runtime
 [assets]
 directory = ".open-next/assets"
