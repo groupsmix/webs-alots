@@ -435,9 +435,9 @@ export interface NotificationRow {
   sent_at: string;
 }
 
-export async function getNotifications(userId: string): Promise<NotificationRow[]> {
+export async function getNotifications(clinicId: string, userId: string): Promise<NotificationRow[]> {
   return query<NotificationRow>("notifications", {
-    eq: [["user_id", userId]],
+    eq: [["clinic_id", clinicId], ["user_id", userId]],
     order: ["sent_at", { ascending: false }],
   });
 }
@@ -487,9 +487,9 @@ export async function getPrescriptions(clinicId: string, doctorId?: string): Pro
   let q = supabase
     .from("prescriptions")
     .select("*")
+    .eq("clinic_id", clinicId)
     .order("created_at", { ascending: false });
 
-  // Prescriptions table may not have clinic_id directly; filter via doctor/patient clinic
   if (doctorId) {
     q = q.eq("doctor_id", doctorId);
   }
@@ -512,9 +512,9 @@ export async function getPrescriptions(clinicId: string, doctorId?: string): Pro
   }));
 }
 
-export async function getPatientPrescriptions(patientId: string): Promise<PrescriptionRow[]> {
+export async function getPatientPrescriptions(clinicId: string, patientId: string): Promise<PrescriptionRow[]> {
   return query<PrescriptionRow>("prescriptions", {
-    eq: [["patient_id", patientId]],
+    eq: [["clinic_id", clinicId], ["patient_id", patientId]],
     order: ["created_at", { ascending: false }],
   });
 }
@@ -535,9 +535,9 @@ export interface ConsultationNoteRow {
   updated_at: string;
 }
 
-export async function getConsultationNotes(doctorId: string): Promise<ConsultationNoteRow[]> {
+export async function getConsultationNotes(clinicId: string, doctorId: string): Promise<ConsultationNoteRow[]> {
   return query<ConsultationNoteRow>("consultation_notes", {
-    eq: [["doctor_id", doctorId]],
+    eq: [["clinic_id", clinicId], ["doctor_id", doctorId]],
     order: ["created_at", { ascending: false }],
   });
 }
@@ -578,9 +578,9 @@ export interface FamilyMemberRow {
   created_at: string;
 }
 
-export async function getFamilyMembers(userId: string): Promise<FamilyMemberRow[]> {
+export async function getFamilyMembers(clinicId: string, userId: string): Promise<FamilyMemberRow[]> {
   return query<FamilyMemberRow>("family_members", {
-    eq: [["primary_user_id", userId]],
+    eq: [["clinic_id", clinicId], ["primary_user_id", userId]],
   });
 }
 
@@ -598,9 +598,9 @@ export interface OdontogramRow {
   updated_at: string;
 }
 
-export async function getOdontogram(patientId: string): Promise<OdontogramRow[]> {
+export async function getOdontogram(clinicId: string, patientId: string): Promise<OdontogramRow[]> {
   return query<OdontogramRow>("odontogram", {
-    eq: [["patient_id", patientId]],
+    eq: [["clinic_id", clinicId], ["patient_id", patientId]],
     order: ["tooth_number", { ascending: true }],
   });
 }
@@ -623,17 +623,17 @@ export interface TreatmentPlanRow {
 }
 
 export async function getTreatmentPlans(clinicId: string, doctorId?: string): Promise<TreatmentPlanRow[]> {
-  const eq: [string, unknown][] = [];
+  const eq: [string, unknown][] = [["clinic_id", clinicId]];
   if (doctorId) eq.push(["doctor_id", doctorId]);
   return query<TreatmentPlanRow>("treatment_plans", {
-    eq: eq.length > 0 ? eq : undefined,
+    eq,
     order: ["created_at", { ascending: false }],
   });
 }
 
-export async function getPatientTreatmentPlans(patientId: string): Promise<TreatmentPlanRow[]> {
+export async function getPatientTreatmentPlans(clinicId: string, patientId: string): Promise<TreatmentPlanRow[]> {
   return query<TreatmentPlanRow>("treatment_plans", {
-    eq: [["patient_id", patientId]],
+    eq: [["clinic_id", clinicId], ["patient_id", patientId]],
     order: ["created_at", { ascending: false }],
   });
 }
@@ -679,16 +679,16 @@ export interface InstallmentRow {
   created_at: string;
 }
 
-export async function getInstallments(treatmentPlanId: string): Promise<InstallmentRow[]> {
+export async function getInstallments(clinicId: string, treatmentPlanId: string): Promise<InstallmentRow[]> {
   return query<InstallmentRow>("installments", {
-    eq: [["treatment_plan_id", treatmentPlanId]],
+    eq: [["clinic_id", clinicId], ["treatment_plan_id", treatmentPlanId]],
     order: ["due_date", { ascending: true }],
   });
 }
 
-export async function getPatientInstallments(patientId: string): Promise<InstallmentRow[]> {
+export async function getPatientInstallments(clinicId: string, patientId: string): Promise<InstallmentRow[]> {
   return query<InstallmentRow>("installments", {
-    eq: [["patient_id", patientId]],
+    eq: [["clinic_id", clinicId], ["patient_id", patientId]],
     order: ["due_date", { ascending: true }],
   });
 }

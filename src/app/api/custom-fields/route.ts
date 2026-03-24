@@ -1,5 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase-server";
+import { NextResponse } from "next/server";
 import { withAuth } from "@/lib/with-auth";
 import { logger } from "@/lib/logger";
 import { customFieldCreateSchema, customFieldUpdateSchema, safeParse } from "@/lib/validations";
@@ -11,8 +10,9 @@ export const runtime = "edge";
  * GET /api/custom-fields?clinic_type_key=...&entity_type=...
  *
  * Returns custom field definitions for a given clinic type and entity.
+ * Requires authentication to prevent unauthenticated enumeration.
  */
-export async function GET(request: NextRequest) {
+export const GET = withAuth(async (request, { supabase }) => {
   try {
     const clinicTypeKey = request.nextUrl.searchParams.get("clinic_type_key");
     const entityType = request.nextUrl.searchParams.get("entity_type");
@@ -23,8 +23,6 @@ export async function GET(request: NextRequest) {
         { status: 400 },
       );
     }
-
-    const supabase = await createClient();
 
     let query = supabase
       .from("custom_field_definitions")
@@ -54,7 +52,7 @@ export async function GET(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+}, null);
 
 /**
  * POST /api/custom-fields
