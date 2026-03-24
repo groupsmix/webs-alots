@@ -11,6 +11,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase-server";
 import { processRenewal } from "@/lib/subscription-billing";
 import { verifyCronSecret } from "@/lib/cron-auth";
+import { logger } from "@/lib/logger";
+import { assertClinicId } from "@/lib/assert-tenant";
 
 export async function GET(request: NextRequest) {
   // DRY: Use shared cron secret verification helper
@@ -34,14 +36,29 @@ export async function GET(request: NextRequest) {
     );
   }
 
+  logger.info("Billing cron started", {
+    context: "cron/billing",
+    subscriptionCount: subscriptions?.length ?? 0,
+  });
+
   const results: { clinicId: string; success: boolean; error?: string }[] = [];
   const BATCH_SIZE = 10;
-  // SAFETY ASSERTION: Filter out any subscriptions without a clinic_id to
-  // prevent cross-tenant operations. This should never happen with correct
+  // SAFETY ASSERTION: Filter out any subscriptions without a valid clinic_id
+  // to prevent cross-tenant operations. This should never happen with correct
   // data integrity but acts as defense-in-depth.
   const subs = (subscriptions ?? []).filter((sub) => {
     if (!sub.clinic_id) {
       results.push({ clinicId: "unknown", success: false, error: "Missing clinic_id — skipped for tenant safety" });
+      return false;
+    }
+    try {
+      assertClinicId(sub.clinic_id, "cron/billing:subscription");
+    } catch {
+      logger.warn("Invalid clinic_id on subscription — skipped", {
+        context: "cron/billing",
+        clinicId: sub.clinic_id,
+      });
+      results.push({ clinicId: sub.clinic_id, success: false, error: "Invalid clinic_id format" });
       return false;
     }
     return true;

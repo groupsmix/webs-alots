@@ -3,6 +3,8 @@ import { createClient } from "@/lib/supabase-server";
 import { hmacSha256Hex, timingSafeEqual } from "@/lib/crypto-utils";
 import { APPOINTMENT_STATUS, PAYMENT_STATUS } from "@/lib/types/database";
 import { logger } from "@/lib/logger";
+import { assertClinicId } from "@/lib/assert-tenant";
+import { setTenantContext, logTenantContext } from "@/lib/tenant-context";
 
 /**
  * POST /api/payments/webhook
@@ -78,6 +80,18 @@ export async function POST(request: NextRequest) {
 
         // Record payment in Supabase (idempotent via upsert on reference)
         if (clinicId && patientId) {
+          try {
+            assertClinicId(clinicId, "payments/webhook:checkout.completed");
+            await setTenantContext(supabase, clinicId);
+          } catch (tenantErr) {
+            logger.error("Invalid tenant context in Stripe webhook", {
+              context: "payments/webhook",
+              clinicId,
+              error: tenantErr,
+            });
+            break;
+          }
+          logTenantContext(clinicId, "payments/webhook:checkout.completed");
           await supabase.from("payments").upsert(
             {
               clinic_id: clinicId,
@@ -117,6 +131,18 @@ export async function POST(request: NextRequest) {
         const failedAppointmentId = intent.metadata?.appointment_id;
 
         if (failedClinicId && failedPatientId) {
+          try {
+            assertClinicId(failedClinicId, "payments/webhook:payment_failed");
+            await setTenantContext(supabase, failedClinicId);
+          } catch (tenantErr) {
+            logger.error("Invalid tenant context in Stripe webhook (failed payment)", {
+              context: "payments/webhook",
+              clinicId: failedClinicId,
+              error: tenantErr,
+            });
+            break;
+          }
+          logTenantContext(failedClinicId, "payments/webhook:payment_failed");
           await supabase.from("payments").insert({
             clinic_id: failedClinicId,
             patient_id: failedPatientId,

@@ -6,7 +6,7 @@
  */
 
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase-server";
+import { createTenantClient } from "@/lib/supabase-server";
 import { requireTenant } from "@/lib/tenant";
 import {
   uploadToR2,
@@ -61,7 +61,7 @@ export async function GET() {
   try {
     const tenant = await requireTenant();
     const clinicId = tenant.clinicId;
-    const supabase = await createClient();
+    const supabase = await createTenantClient(clinicId);
 
     const { data, error } = await supabase
       .from("clinics")

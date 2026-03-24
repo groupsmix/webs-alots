@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase-server";
 import { verifyCmiCallback } from "@/lib/cmi";
 import { APPOINTMENT_STATUS, PAYMENT_STATUS } from "@/lib/types/database";
 import { logger } from "@/lib/logger";
+import { setTenantContext, logTenantContext } from "@/lib/tenant-context";
 
 /**
  * POST /api/payments/cmi/callback
@@ -40,6 +41,20 @@ export async function POST(request: NextRequest) {
         .single();
 
       if (payment && payment.status !== PAYMENT_STATUS.COMPLETED) {
+        // Set tenant context for defense-in-depth RLS enforcement
+        if (payment.clinic_id) {
+          try {
+            await setTenantContext(supabase, payment.clinic_id);
+            logTenantContext(payment.clinic_id, "payments/cmi/callback:approved");
+          } catch (tenantErr) {
+            logger.error("Failed to set tenant context for CMI callback", {
+              context: "payments/cmi/callback",
+              clinicId: payment.clinic_id,
+              error: tenantErr,
+            });
+          }
+        }
+
         // Mark payment as completed — scoped to the payment's clinic_id
         // to prevent any cross-tenant state mutation.
         await supabase
@@ -72,6 +87,19 @@ export async function POST(request: NextRequest) {
         .single();
 
       if (failedPayment) {
+        // Set tenant context for defense-in-depth
+        if (failedPayment.clinic_id) {
+          try {
+            await setTenantContext(supabase, failedPayment.clinic_id);
+            logTenantContext(failedPayment.clinic_id, "payments/cmi/callback:failed");
+          } catch (tenantErr) {
+            logger.error("Failed to set tenant context for CMI callback (failed payment)", {
+              context: "payments/cmi/callback",
+              clinicId: failedPayment.clinic_id,
+              error: tenantErr,
+            });
+          }
+        }
         await supabase
           .from("payments")
           .update({ status: PAYMENT_STATUS.FAILED })

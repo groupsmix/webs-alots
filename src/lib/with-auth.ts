@@ -21,6 +21,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/types/database";
 import type { User } from "@supabase/supabase-js";
 import { logger } from "@/lib/logger";
+import { setTenantContext, logTenantContext } from "@/lib/tenant-context";
 
 export interface AuthContext {
   supabase: SupabaseClient<Database>;
@@ -85,6 +86,26 @@ export function withAuth(
           { status: 403 },
         );
       }
+
+      // Set tenant context on the Supabase client so RLS policies
+      // can use app.current_clinic_id as an additional isolation check.
+      if (profile.clinic_id) {
+        try {
+          await setTenantContext(supabase, profile.clinic_id);
+        } catch (tenantErr) {
+          logger.error("Failed to set tenant context in withAuth", {
+            context: "with-auth",
+            clinicId: profile.clinic_id,
+            error: tenantErr,
+          });
+          // Continue — RLS via get_user_clinic_id() still protects
+        }
+      }
+
+      logTenantContext(profile.clinic_id, "with-auth", {
+        userId: profile.id,
+        role: profile.role,
+      });
 
       return handler(request, {
         supabase,
