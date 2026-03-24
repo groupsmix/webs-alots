@@ -117,7 +117,7 @@ export default function EquipmentMaintenancePage() {
     return () => { controller.abort(); };
     }
     init();
-  }, []);
+  }, [tenant?.clinicId]);
 
   const openAddDialog = () => {
     setEditingRecord(null);

@@ -65,7 +65,7 @@ export default function ParapharmacySalesPage() {
     })
     .finally(() => { if (!controller.signal.aborted) setLoading(false); });
     return () => { controller.abort(); };
-  }, []);
+  }, [tenant?.clinicId]);
 
   const addToCart = (product: ProductView) => {
     setCart((prev) => {

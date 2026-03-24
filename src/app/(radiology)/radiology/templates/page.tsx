@@ -30,7 +30,7 @@ export default function RadiologyTemplatesPage() {
     })
     .finally(() => { if (!controller.signal.aborted) setLoading(false); });
     return () => { controller.abort(); };
-  }, []);
+  }, [tenant?.clinicId]);
 
   if (loading) {
     return <PageLoader message="Loading templates..." />;

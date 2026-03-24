@@ -34,7 +34,7 @@ export function ClinicStats() {
       logger.warn("Operation failed", { context: "clinic-stats", error: err });
     });
     return () => { cancelled = true; };
-  }, []);
+  }, [tenant?.clinicId]);
 
   const totalPatients = dashData?.totalPatients ?? 0;
   const completedAppts = dashData?.completedAppointments ?? 0;

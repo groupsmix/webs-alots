@@ -31,7 +31,7 @@ export function DentalBookingExtras({
     fetchDentalTreatmentTypes(clinicId).then(setDentalTreatmentTypes).catch((err) => {
       logger.warn("Operation failed", { context: "dental-booking-extras", error: err });
     });
-  }, []);
+  }, [tenant?.clinicId]);
 
   const categories = Array.from(new Set(dentalTreatmentTypes.map((t) => t.category)));
 

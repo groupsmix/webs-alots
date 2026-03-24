@@ -117,7 +117,7 @@ export default function CatalogPage() {
     })
     .finally(() => { if (!controller.signal.aborted) setLoading(false); });
     return () => { controller.abort(); };
-  }, []);
+  }, [tenant?.clinicId]);
 
   const filtered = useMemo(() => {
     let results: PublicPharmacyProduct[];

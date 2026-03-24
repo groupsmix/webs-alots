@@ -65,7 +65,7 @@ export function RescheduleDialog({ appointment, onClose, onReschedule }: Resched
       setAllSlots([]);
       setSlotCounts({});
     });
-  }, [selectedDate, appointment.doctorId]);
+  }, [selectedDate, appointment.doctorId, tenant?.clinicId]);
 
   const handleReschedule = async () => {
     if (!selectedDate || !selectedTime) return;

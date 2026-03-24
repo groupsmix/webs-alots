@@ -47,7 +47,7 @@ export default function ClientBillingPage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [tenant?.clinicId]);
 
   useEffect(() => {
     const controller = new AbortController();

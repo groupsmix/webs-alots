@@ -33,7 +33,7 @@ export default function SalesPage() {
     })
     .finally(() => { if (!controller.signal.aborted) setLoading(false); });
     return () => { controller.abort(); };
-  }, []);
+  }, [tenant?.clinicId]);
 
   const filteredSales = useMemo(() => {
     return allSales.filter((s) => s.date === dateFilter);

@@ -145,7 +145,7 @@ export function BookingForm() {
       logger.warn("Operation failed", { context: "booking-form", error: err });
     });
     return () => { cancelled = true; };
-  }, []);
+  }, [tenant?.clinicId]);
 
   // Fetch available slots when date or doctor changes
   useEffect(() => {

@@ -31,7 +31,7 @@ export default function RadiologyReportsPage() {
     })
     .finally(() => { if (!controller.signal.aborted) setLoading(false); });
     return () => { controller.abort(); };
-  }, []);
+  }, [tenant?.clinicId]);
 
   const handleGeneratePdf = async (order: RadiologyOrderView) => {
     setGeneratingPdf(order.id);

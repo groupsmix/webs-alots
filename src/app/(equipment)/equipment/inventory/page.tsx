@@ -107,7 +107,7 @@ export default function EquipmentInventoryPage() {
     return () => { controller.abort(); };
     }
     init();
-  }, []);
+  }, [tenant?.clinicId]);
 
   const openAddDialog = () => {
     setEditingItem(null);
