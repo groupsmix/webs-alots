@@ -3,9 +3,14 @@
  *
  * In middleware, the resolved clinic is stored in request headers.
  * Server Components and API routes read it from headers().
+ *
+ * IMPORTANT: All tenant-specific data (clinic_id, timezone, booking config,
+ * working hours, currency) MUST come from request context or DB — never
+ * from the static clinicConfig file.
  */
 
 import { headers } from "next/headers";
+import { clinicConfig } from "@/config/clinic.config";
 
 /** Minimal tenant info passed via request headers from middleware. */
 export interface TenantInfo {
@@ -58,4 +63,82 @@ export async function requireTenant(): Promise<TenantInfo> {
     throw new Error("Tenant context is required but was not resolved. Ensure the request includes a valid subdomain.");
   }
   return tenant;
+}
+
+// ── Tenant-specific clinic configuration ──────────────────────────────
+
+/**
+ * Per-tenant booking configuration resolved from the clinics table `config`
+ * JSONB column, with fallbacks to static clinicConfig defaults.
+ */
+export interface TenantClinicConfig {
+  timezone: string;
+  currency: string;
+  workingHours: Record<number, { open: string; close: string; enabled: boolean }>;
+  booking: {
+    slotDuration: number;
+    bufferTime: number;
+    maxAdvanceDays: number;
+    maxPerSlot: number;
+    cancellationHours: number;
+    depositAmount?: number;
+    depositPercentage?: number;
+    maxRecurringWeeks: number;
+  };
+}
+
+/**
+ * Fetch tenant-specific clinic configuration from the DB.
+ *
+ * Reads the `config` JSONB column from the `clinics` table for the
+ * current tenant and merges with static defaults from clinicConfig.
+ * This ensures each tenant can have its own timezone, currency,
+ * working hours, and booking settings.
+ *
+ * Use in API routes and server-side logic instead of accessing
+ * clinicConfig directly for these business-critical settings.
+ */
+export async function getClinicConfig(clinicId: string): Promise<TenantClinicConfig> {
+  // Dynamic import to avoid circular dependency
+  const { createClient } = await import("@/lib/supabase-server");
+  const supabase = await createClient();
+
+  const { data } = await supabase
+    .from("clinics")
+    .select("config")
+    .eq("id", clinicId)
+    .single();
+
+  const dbConfig = (data?.config ?? {}) as Record<string, unknown>;
+
+  // Merge DB config with static defaults (DB takes precedence)
+  return {
+    timezone: (dbConfig.timezone as string) ?? clinicConfig.timezone ?? "Africa/Casablanca",
+    currency: (dbConfig.currency as string) ?? clinicConfig.currency ?? "MAD",
+    workingHours: (dbConfig.workingHours as TenantClinicConfig["workingHours"])
+      ?? clinicConfig.workingHours,
+    booking: {
+      slotDuration: (dbConfig.slotDuration as number) ?? clinicConfig.booking.slotDuration,
+      bufferTime: (dbConfig.bufferTime as number) ?? clinicConfig.booking.bufferTime,
+      maxAdvanceDays: (dbConfig.maxAdvanceDays as number) ?? clinicConfig.booking.maxAdvanceDays,
+      maxPerSlot: (dbConfig.maxPerSlot as number) ?? clinicConfig.booking.maxPerSlot,
+      cancellationHours: (dbConfig.cancellationHours as number) ?? clinicConfig.booking.cancellationHours,
+      depositAmount: (dbConfig.depositAmount as number) ?? clinicConfig.booking.depositAmount,
+      depositPercentage: (dbConfig.depositPercentage as number) ?? clinicConfig.booking.depositPercentage,
+      maxRecurringWeeks: (dbConfig.maxRecurringWeeks as number) ?? clinicConfig.booking.maxRecurringWeeks,
+    },
+  };
+}
+
+/**
+ * Convenience: resolve tenant + load its clinic config in one call.
+ * Returns both the TenantInfo and the TenantClinicConfig.
+ */
+export async function requireTenantWithConfig(): Promise<{
+  tenant: TenantInfo;
+  config: TenantClinicConfig;
+}> {
+  const tenant = await requireTenant();
+  const config = await getClinicConfig(tenant.clinicId);
+  return { tenant, config };
 }

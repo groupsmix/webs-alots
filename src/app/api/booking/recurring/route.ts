@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
-import { clinicConfig } from "@/config/clinic.config";
-import { requireTenant } from "@/lib/tenant";
+import { requireTenantWithConfig } from "@/lib/tenant";
 import { getPublicServices } from "@/lib/data/public";
 import { withAuth } from "@/lib/with-auth";
 import { findOrCreatePatient } from "@/lib/find-or-create-patient";
@@ -46,7 +45,7 @@ export const POST = withAuth(async (request, { supabase }) => {
     }
     const body = parsed.data;
 
-    const tenant = await requireTenant();
+    const { tenant, config: tenantConfig } = await requireTenantWithConfig();
     const clinicId = tenant.clinicId;
 
     if (body.action === "create") {
@@ -58,7 +57,7 @@ export const POST = withAuth(async (request, { supabase }) => {
 
       // FIX (MED-04): Validate occurrences against clinic config limit
       // to prevent unbounded recurring booking creation.
-      const maxOccurrences = clinicConfig.booking.maxRecurringWeeks;
+      const maxOccurrences = tenantConfig.booking.maxRecurringWeeks;
       if (body.occurrences < 1 || body.occurrences > maxOccurrences) {
         return NextResponse.json(
           { error: `occurrences must be between 1 and ${maxOccurrences}` },
@@ -82,7 +81,7 @@ export const POST = withAuth(async (request, { supabase }) => {
       const skippedDates: string[] = [];
       // Use noon-based parsing to avoid UTC day-of-week issues near midnight
       let currentDate = new Date(body.date + "T12:00:00");
-      const duration = service?.duration ?? clinicConfig.booking.slotDuration;
+      const duration = service?.duration ?? tenantConfig.booking.slotDuration;
       const { endTime, overflows } = computeEndTime(body.time, duration);
       if (overflows) {
         return NextResponse.json(
@@ -100,7 +99,7 @@ export const POST = withAuth(async (request, { supabase }) => {
         // Use noon-based date to safely extract day-of-week regardless of timezone
         const dateStr = currentDate.toISOString().split("T")[0];
         const dayOfWeek = currentDate.getDay();
-        const hours = clinicConfig.workingHours[dayOfWeek];
+        const hours = tenantConfig.workingHours[dayOfWeek];
 
         if (!hours?.enabled) {
           skippedDates.push(dateStr);

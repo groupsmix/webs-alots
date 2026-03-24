@@ -2,7 +2,7 @@
  * Server-side data fetching for public-facing pages.
  *
  * These functions use the server Supabase client and scope all queries
- * to the current clinic via `clinicConfig.clinicId`.
+ * to the current tenant via requireTenant() (never clinicConfig.clinicId).
  * They return data shaped to match the existing UI types so pages
  * can swap from demo-data imports with minimal changes.
  */
@@ -10,7 +10,7 @@
 import { createClient } from "@/lib/supabase-server";
 import { clinicConfig } from "@/config/clinic.config";
 import { APPOINTMENT_STATUS } from "@/lib/types/database";
-import { requireTenant } from "@/lib/tenant";
+import { requireTenant, getClinicConfig } from "@/lib/tenant";
 
 // ── Types (match existing UI shapes) ──
 
@@ -223,13 +223,15 @@ export async function getPublicServices(): Promise<PublicService[]> {
 
   if (error || !data) return [];
 
+  const tenantCfg = await getClinicConfig(clinicId);
+
   return data.map((s) => ({
     id: s.id,
     name: s.name,
     description: (s.description as string) ?? "",
     duration: (s.duration_minutes as number) ?? (s.duration_min as number) ?? 30,
     price: s.price ?? 0,
-    currency: clinicConfig.currency,
+    currency: tenantCfg.currency,
     active: (s.is_active as boolean) ?? true,
     category: (s.category as string) ?? "General",
   }));
@@ -345,9 +347,10 @@ export async function getPublicGeneratedSlots(
   const slotConfigs = await getPublicTimeSlots(doctorId);
   const daySlots = slotConfigs.filter((s) => s.dayOfWeek === dayOfWeek);
 
+  const tenantCfg = await getClinicConfig(await getClinicId());
   const slots: string[] = [];
-  const duration = clinicConfig.booking.slotDuration;
-  const buffer = clinicConfig.booking.bufferTime;
+  const duration = tenantCfg.booking.slotDuration;
+  const buffer = tenantCfg.booking.bufferTime;
 
   for (const config of daySlots) {
     const [startH, startM] = config.startTime.split(":").map(Number);
@@ -416,7 +419,8 @@ export async function getPublicAvailableSlots(
     getPublicSlotBookingCounts(date, doctorId),
   ]);
 
-  const maxPerSlot = clinicConfig.booking.maxPerSlot;
+  const tenantCfg = await getClinicConfig(await getClinicId());
+  const maxPerSlot = tenantCfg.booking.maxPerSlot;
   return allSlots.filter((slot) => (bookingCounts[slot] ?? 0) < maxPerSlot);
 }
 
@@ -463,6 +467,8 @@ export async function getPublicPharmacyProducts(): Promise<PublicPharmacyProduct
       .map((s) => [s.product_id, s]),
   );
 
+  const tenantCfg = await getClinicConfig(clinicId);
+
   return products.map((p: Record<string, unknown>) => {
     const s = stockMap.get(p.id as string);
     return {
@@ -472,7 +478,7 @@ export async function getPublicPharmacyProducts(): Promise<PublicPharmacyProduct
       category: (p.category as string) ?? "medication",
       description: (p.description as string) ?? "",
       price: (p.price as number) ?? 0,
-      currency: clinicConfig.currency,
+      currency: tenantCfg.currency,
       requiresPrescription: (p.requires_prescription as boolean) ?? false,
       stockQuantity: s?.quantity ?? 0,
       minimumStock: s?.min_threshold ?? 0,
@@ -533,12 +539,14 @@ export async function getPublicPharmacyServices(): Promise<PublicPharmacyService
 
   if (error || !data) return [];
 
+  const tenantCfg = await getClinicConfig(clinicId);
+
   return data.map((s: Record<string, unknown>) => ({
     id: s.id as string,
     name: s.name as string,
     description: (s.description as string) ?? "",
     price: (s.price as number) ?? 0,
-    currency: clinicConfig.currency,
+    currency: tenantCfg.currency,
     duration: (s.duration_minutes as number) ?? (s.duration_min as number) ?? 0,
     available: (s.is_active as boolean) ?? true,
     icon: (s.icon as string) ?? "Pill",
@@ -648,6 +656,8 @@ export async function getPublicPharmacyPrescriptions(): Promise<PublicPharmacyPr
     ((users ?? []) as { id: string; name: string; phone: string | null }[]).map((u) => [u.id, u]),
   );
 
+  const tenantCfg = await getClinicConfig(clinicId);
+
   return requests.map((r: Record<string, unknown>) => {
     const patient = userMap.get(r.patient_id as string);
     // Map DB status to UI status
@@ -665,7 +675,7 @@ export async function getPublicPharmacyPrescriptions(): Promise<PublicPharmacyPr
       pharmacistNotes: (r.notes as string) ?? undefined,
       items: ((r.items as PublicPharmacyPrescription["items"]) ?? []),
       totalPrice: (r.total_price as number) ?? 0,
-      currency: clinicConfig.currency,
+      currency: tenantCfg.currency,
       deliveryOption: ((r.delivery_option as string) ?? "pickup") as "pickup" | "delivery",
       deliveryAddress: (r.delivery_address as string) ?? undefined,
       isChronic: (r.is_chronic as boolean) ?? false,

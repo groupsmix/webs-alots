@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
-import { clinicConfig } from "@/config/clinic.config";
 import { withAuth } from "@/lib/with-auth";
-import { requireTenant } from "@/lib/tenant";
+import { requireTenantWithConfig } from "@/lib/tenant";
 import { APPOINTMENT_STATUS, WAITING_LIST_STATUS } from "@/lib/types/database";
 import { logAuditEvent } from "@/lib/audit-log";
 import { clinicDateTime } from "@/lib/timezone";
@@ -24,7 +23,7 @@ export const POST = withAuth(async (request, { supabase, profile }) => {
     }
     const body = parsed.data;
 
-    const tenant = await requireTenant();
+    const { tenant, config: tenantConfig } = await requireTenantWithConfig();
     const clinicId = tenant.clinicId;
 
     // Fetch the appointment
@@ -54,9 +53,9 @@ export const POST = withAuth(async (request, { supabase, profile }) => {
       );
     }
 
-    const appointmentDateTime = clinicDateTime(appt.appointment_date, appt.start_time);
+    const appointmentDateTime = clinicDateTime(appt.appointment_date, appt.start_time, tenantConfig.timezone);
     const hoursUntilAppt = (appointmentDateTime.getTime() - Date.now()) / (1000 * 60 * 60);
-    const cancellationWindowHours = clinicConfig.booking.cancellationHours;
+    const cancellationWindowHours = tenantConfig.booking.cancellationHours;
 
     if (hoursUntilAppt < cancellationWindowHours) {
       return NextResponse.json(
@@ -128,7 +127,7 @@ export const GET = withAuth(async (request, { supabase }) => {
     return NextResponse.json({ error: "appointmentId is required" }, { status: 400 });
   }
 
-  const tenant = await requireTenant();
+  const { tenant, config: tenantCfg } = await requireTenantWithConfig();
 
   const { data: appt, error } = await supabase
     .from("appointments")
@@ -155,9 +154,9 @@ export const GET = withAuth(async (request, { supabase }) => {
     });
   }
 
-  const appointmentDateTime = clinicDateTime(appt.appointment_date, appt.start_time);
+  const appointmentDateTime = clinicDateTime(appt.appointment_date, appt.start_time, tenantCfg.timezone);
   const hoursUntilAppt = (appointmentDateTime.getTime() - Date.now()) / (1000 * 60 * 60);
-  const cancellationWindowHours = clinicConfig.booking.cancellationHours;
+  const cancellationWindowHours = tenantCfg.booking.cancellationHours;
 
   if (hoursUntilAppt < cancellationWindowHours) {
     return NextResponse.json({

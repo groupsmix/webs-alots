@@ -10,8 +10,12 @@ export type ClinicType = "doctor" | "dentist" | "pharmacy";
 export type ClinicTier = "vitrine" | "cabinet" | "pro" | "premium" | "saas";
 
 export interface ClinicConfig {
-  /** Unique clinic identifier (matches clinic_id in Supabase) */
-  clinicId: string;
+  /**
+   * @deprecated Do NOT use for tenant identification.
+   * Tenant clinic_id MUST come from request context via requireTenant().
+   * This field is retained only for backward-compatible branding fallback.
+   */
+  clinicId?: string;
 
   /** Display name of the clinic */
   name: string;
@@ -125,7 +129,7 @@ export interface ClinicConfig {
  * Override per client by editing this file before deployment.
  */
 export const clinicConfig: ClinicConfig = {
-  clinicId: "demo-clinic",
+  // clinicId removed — tenant identity comes from request context (requireTenant())
   name: "Demo Clinic",
   type: "doctor",
   tier: "pro",

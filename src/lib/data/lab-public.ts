@@ -2,14 +2,13 @@
  * Server-side data fetching for Lab & Radiology public-facing pages.
  *
  * These functions use the server Supabase client and scope queries
- * to the current clinic via `clinicConfig.clinicId`.
+ * to the current tenant via requireTenant() (never clinicConfig.clinicId).
  * Tables are accessed gracefully — if a table doesn't exist yet the
  * function returns an empty array instead of crashing.
  */
 
 import { createClient } from "@/lib/supabase-server";
-import { clinicConfig } from "@/config/clinic.config";
-import { requireTenant } from "@/lib/tenant";
+import { requireTenant, getClinicConfig } from "@/lib/tenant";
 
 // ── Types ──
 
@@ -61,6 +60,8 @@ export async function getPublicLabTests(): Promise<LabTest[]> {
 
   if (error || !data) return [];
 
+  const tenantCfg = await getClinicConfig(clinicId);
+
   return data.map((t: Record<string, unknown>) => ({
     id: (t.id as string) ?? "",
     name: (t.name as string) ?? "",
@@ -69,7 +70,7 @@ export async function getPublicLabTests(): Promise<LabTest[]> {
     preparationInstructions: (t.preparation_instructions as string) ?? "",
     turnaroundTime: (t.turnaround_time as string) ?? "24-48h",
     price: (t.price as number) ?? 0,
-    currency: clinicConfig.currency,
+    currency: tenantCfg.currency,
     requiresFasting: (t.requires_fasting as boolean) ?? false,
     sampleType: (t.sample_type as string) ?? "blood",
     active: (t.is_active as boolean) ?? true,

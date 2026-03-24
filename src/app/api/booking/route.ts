@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { clinicConfig } from "@/config/clinic.config";
-import { requireTenant } from "@/lib/tenant";
+import { requireTenantWithConfig } from "@/lib/tenant";
 import {
   getPublicGeneratedSlots,
   getPublicAvailableSlots,
@@ -94,7 +93,11 @@ interface ValidationResult {
   services: Awaited<ReturnType<typeof getPublicServices>>;
 }
 
-async function validateBookingRequest(body: BookingRequestBody): Promise<ValidationResult> {
+async function validateBookingRequest(
+  body: BookingRequestBody,
+  timezone: string,
+  workingHours: Record<number, { open: string; close: string; enabled: boolean }>,
+): Promise<ValidationResult> {
   const [doctors, services] = await Promise.all([
     getPublicDoctors(),
     getPublicServices(),
@@ -126,9 +129,8 @@ async function validateBookingRequest(body: BookingRequestBody): Promise<Validat
     return fail("Valid phone number is required");
   }
 
-  // Reject past dates (compared in the clinic's configured timezone)
-  const tz = clinicConfig.timezone ?? "Africa/Casablanca";
-  const todayInTz = new Date().toLocaleDateString("en-CA", { timeZone: tz }); // "YYYY-MM-DD"
+  // Reject past dates (compared in the tenant's configured timezone)
+  const todayInTz = new Date().toLocaleDateString("en-CA", { timeZone: timezone }); // "YYYY-MM-DD"
   if (body.date < todayInTz) {
     return fail("Cannot book an appointment in the past");
   }
@@ -138,14 +140,14 @@ async function validateBookingRequest(body: BookingRequestBody): Promise<Validat
   // with the `weekday` option is timezone-aware, unlike Date.getDay().
   const dayFormatter = new Intl.DateTimeFormat("en-US", {
     weekday: "short",
-    timeZone: tz,
+    timeZone: timezone,
   });
   const dayMap: Record<string, number> = {
     Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6,
   };
   const parsedDate = new Date(body.date + "T12:00:00");
   const dayOfWeek = dayMap[dayFormatter.format(parsedDate)] ?? parsedDate.getDay();
-  const hours = clinicConfig.workingHours[dayOfWeek];
+  const hours = workingHours[dayOfWeek];
   if (!hours?.enabled) {
     return fail("Selected date is not a working day");
   }
@@ -200,7 +202,11 @@ export async function POST(request: NextRequest) {
     }
     const body = parsed.data;
 
-    const validation = await validateBookingRequest(body);
+    const supabase = await createClient();
+    const { tenant, config: tenantConfig } = await requireTenantWithConfig();
+    const clinicId = tenant.clinicId;
+
+    const validation = await validateBookingRequest(body, tenantConfig.timezone, tenantConfig.workingHours);
     if (validation.error) {
       return NextResponse.json(
         { error: validation.error },
@@ -211,10 +217,6 @@ export async function POST(request: NextRequest) {
     // Reuse data already fetched during validation (avoids duplicate queries)
     const doctor = validation.doctors.find((d) => d.id === body.doctorId);
     const service = validation.services.find((s) => s.id === body.serviceId);
-
-    const supabase = await createClient();
-    const tenant = await requireTenant();
-    const clinicId = tenant.clinicId;
 
     // Verify doctorId and serviceId belong to this clinic in a single
     // parallel query instead of two sequential ones.  This also avoids
@@ -255,7 +257,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Calculate end time with midnight overflow guard
-    const duration = service?.duration ?? clinicConfig.booking.slotDuration;
+    const duration = service?.duration ?? tenantConfig.booking.slotDuration;
     const { endTime, overflows } = computeEndTime(body.time, duration);
     if (overflows) {
       return NextResponse.json(
@@ -265,8 +267,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Determine initial status based on clinic payment requirements
-    const requiresDeposit = (clinicConfig.booking.depositAmount ?? 0) > 0
-      || (clinicConfig.booking.depositPercentage ?? 0) > 0;
+    const requiresDeposit = (tenantConfig.booking.depositAmount ?? 0) > 0
+      || (tenantConfig.booking.depositPercentage ?? 0) > 0;
     const initialStatus = requiresDeposit
       ? APPOINTMENT_STATUS.PENDING
       : APPOINTMENT_STATUS.CONFIRMED;
@@ -315,7 +317,7 @@ export async function POST(request: NextRequest) {
     // count how many active bookings now exist for this slot.  If the
     // count exceeds maxPerSlot the just-inserted row lost the race and
     // must be rolled back.  This guarantees the cap is never exceeded.
-    const maxPerSlot = clinicConfig.booking.maxPerSlot;
+    const maxPerSlot = tenantConfig.booking.maxPerSlot;
     const { count: slotCount } = await supabase
       .from("appointments")
       .select("id", { count: "exact", head: true })
@@ -393,6 +395,8 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    const { config: tenantCfg } = await requireTenantWithConfig();
+
     const [allSlots, availableSlots, bookedCounts] = await Promise.all([
       getPublicGeneratedSlots(date, doctorId),
       getPublicAvailableSlots(date, doctorId),
@@ -403,9 +407,9 @@ export async function GET(request: NextRequest) {
       slots: availableSlots,
       allSlots,
       bookedCounts,
-      maxPerSlot: clinicConfig.booking.maxPerSlot,
-      slotDuration: clinicConfig.booking.slotDuration,
-      bufferTime: clinicConfig.booking.bufferTime,
+      maxPerSlot: tenantCfg.booking.maxPerSlot,
+      slotDuration: tenantCfg.booking.slotDuration,
+      bufferTime: tenantCfg.booking.bufferTime,
     });
   } catch (err) {
     logger.warn("Operation failed", { context: "booking/route", error: err });

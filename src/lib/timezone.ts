@@ -10,17 +10,20 @@
  * is critical.
  */
 
-import { clinicConfig } from "@/config/clinic.config";
-
 /**
  * Build a timezone-aware Date for a date + time string using the clinic's timezone.
  *
  * Uses a two-pass approach: first computes the offset at the naive UTC instant,
  * then re-checks the offset at the corrected instant to handle DST transitions
  * where the offset differs between the two.
+ *
+ * @param dateStr  Date in YYYY-MM-DD format
+ * @param timeStr  Time in HH:MM format
+ * @param timezone IANA timezone (e.g. "Africa/Casablanca"). Must be provided
+ *                 from the tenant's DB config — never from static clinicConfig.
  */
-export function clinicDateTime(dateStr: string, timeStr: string): Date {
-  const tz = clinicConfig.timezone ?? "Africa/Casablanca";
+export function clinicDateTime(dateStr: string, timeStr: string, timezone?: string): Date {
+  const tz = timezone ?? "Africa/Casablanca";
   const [year, month, day] = dateStr.split("-").map(Number);
   const [hour, minute] = timeStr.split(":").map(Number);
 
