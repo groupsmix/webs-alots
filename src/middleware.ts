@@ -53,11 +53,16 @@ const PUBLIC_ROUTES = [
   "/auth/callback",
   "/how-to-book",
   "/location",
+  "/testimonials",
+  "/doctor-profile",
+  "/doctor-services",
 ];
 
 // Public route prefixes (no auth required)
 const PUBLIC_PREFIXES = [
   "/pharmacy",
+  "/dentist",
+  "/lab",
 ];
 
 // Protected route prefixes (require authentication)
