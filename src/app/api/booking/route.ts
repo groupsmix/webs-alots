@@ -8,7 +8,7 @@ import {
   getPublicServices,
   getPublicSpecialties,
 } from "@/lib/data/public";
-import { createClient } from "@/lib/supabase-server";
+import { createTenantClient } from "@/lib/supabase-server";
 import { APPOINTMENT_STATUS, BOOKING_SOURCE } from "@/lib/types/database";
 import { logAuditEvent } from "@/lib/audit-log";
 import { findOrCreatePatient } from "@/lib/find-or-create-patient";
@@ -202,9 +202,9 @@ export async function POST(request: NextRequest) {
     }
     const body = parsed.data;
 
-    const supabase = await createClient();
     const { tenant, config: tenantConfig } = await requireTenantWithConfig();
     const clinicId = tenant.clinicId;
+    const supabase = await createTenantClient(clinicId);
 
     const validation = await validateBookingRequest(body, tenantConfig.timezone, tenantConfig.workingHours);
     if (validation.error) {
