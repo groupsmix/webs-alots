@@ -6,6 +6,7 @@ import {
 } from "@/lib/notifications";
 import { hmacSha256Hex, timingSafeEqual } from "@/lib/crypto-utils";
 import { logger } from "@/lib/logger";
+import { setTenantContext, logTenantContext } from "@/lib/tenant-context";
 
 export const runtime = "edge";
 
@@ -113,6 +114,22 @@ export async function POST(request: NextRequest) {
         // Cannot resolve clinic — skip to maintain tenant isolation
         continue;
       }
+
+      // Set tenant context on the Supabase client for defense-in-depth
+      try {
+        await setTenantContext(supabase, clinicId);
+      } catch (tenantErr) {
+        logger.error("Failed to set tenant context for webhook", {
+          context: "webhooks",
+          clinicId,
+          error: tenantErr,
+        });
+        continue;
+      }
+
+      logTenantContext(clinicId, "webhooks/whatsapp", {
+        senderPhone: msgInfo.senderPhone,
+      });
 
       // Patient lookup is now always scoped to the resolved clinic
       const { data: patient } = await supabase

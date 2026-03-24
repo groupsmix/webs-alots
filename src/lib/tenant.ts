@@ -11,6 +11,7 @@
 
 import { headers } from "next/headers";
 import { clinicConfig } from "@/config/clinic.config";
+import { logTenantContext } from "@/lib/tenant-context";
 
 /** Minimal tenant info passed via request headers from middleware. */
 export interface TenantInfo {
@@ -62,6 +63,7 @@ export async function requireTenant(): Promise<TenantInfo> {
   if (!tenant?.clinicId) {
     throw new Error("Tenant context is required but was not resolved. Ensure the request includes a valid subdomain.");
   }
+  logTenantContext(tenant.clinicId, "requireTenant");
   return tenant;
 }
 
@@ -100,8 +102,8 @@ export interface TenantClinicConfig {
  */
 export async function getClinicConfig(clinicId: string): Promise<TenantClinicConfig> {
   // Dynamic import to avoid circular dependency
-  const { createClient } = await import("@/lib/supabase-server");
-  const supabase = await createClient();
+  const { createTenantClient } = await import("@/lib/supabase-server");
+  const supabase = await createTenantClient(clinicId);
 
   const { data } = await supabase
     .from("clinics")

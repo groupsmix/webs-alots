@@ -6,8 +6,10 @@
  * payment processing when configured.
  */
 
-import { createClient } from "@/lib/supabase-server";
+import { createTenantClient } from "@/lib/supabase-server";
 import { logger } from "@/lib/logger";
+import { assertClinicId } from "@/lib/assert-tenant";
+import { logTenantContext } from "@/lib/tenant-context";
 
 // ---- Types ----
 
@@ -200,9 +202,10 @@ export async function checkPlanLimits(
   clinicId: string,
   plan: SubscriptionPlan,
 ): Promise<{ withinLimits: boolean; exceeded: string[] }> {
+  assertClinicId(clinicId, "subscription-billing:checkPlanLimits");
   const config = getPlanConfig(plan);
   const exceeded: string[] = [];
-  const supabase = await createClient();
+  const supabase = await createTenantClient(clinicId);
 
   // Run all three independent count queries in parallel
   const now = new Date();
@@ -255,11 +258,14 @@ export async function processRenewal(
 ): Promise<{ success: boolean; error?: string }> {
   // SAFETY ASSERTION: Block execution if clinic_id is missing or invalid
   // to prevent cross-tenant operations in the billing pipeline.
-  if (!clinicId || typeof clinicId !== "string" || clinicId.trim() === "") {
+  try {
+    assertClinicId(clinicId, "subscription-billing:processRenewal");
+  } catch {
     return { success: false, error: "Missing or invalid clinic_id — blocked for tenant safety" };
   }
 
-  const supabase = await createClient();
+  logTenantContext(clinicId, "subscription-billing:processRenewal");
+  const supabase = await createTenantClient(clinicId);
 
   // Fetch current subscription
   const { data: sub, error: fetchError } = await supabase
@@ -425,7 +431,7 @@ async function logBillingEvent(
   clinicId: string,
   event: Omit<BillingEvent, "id" | "clinicId" | "createdAt">,
 ): Promise<void> {
-  const supabase = await createClient();
+  const supabase = await createTenantClient(clinicId);
   await supabase.from("billing_events").insert({
     clinic_id: clinicId,
     type: event.type,

@@ -8,12 +8,13 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase-server";
+import { createTenantClient } from "@/lib/supabase-server";
 import { authenticateApiKey } from "@/lib/api-auth";
 import { APPOINTMENT_STATUS } from "@/lib/types/database";
 import { getCorsHeaders, handlePreflight } from "@/lib/cors";
 import { logger } from "@/lib/logger";
 import { v1AppointmentCreateSchema, safeParse } from "@/lib/validations";
+import { logTenantContext } from "@/lib/tenant-context";
 
 /** Handle CORS preflight requests. */
 export function OPTIONS(request: NextRequest) {
@@ -29,7 +30,8 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  const supabase = await createClient();
+  logTenantContext(auth.clinicId, "v1/appointments:GET");
+  const supabase = await createTenantClient(auth.clinicId);
   const url = new URL(request.url);
   const date = url.searchParams.get("date");
   const status = url.searchParams.get("status");
@@ -92,7 +94,8 @@ export async function POST(request: NextRequest) {
       ? `${body.appointment_date}T${body.end_time}`
       : new Date(new Date(slotStartNormalized).getTime() + 30 * 60_000).toISOString(); // default 30 min
 
-    const supabase = await createClient();
+    logTenantContext(auth.clinicId, "v1/appointments:POST");
+    const supabase = await createTenantClient(auth.clinicId);
     const { data, error } = await supabase
       .from("appointments")
       .insert({

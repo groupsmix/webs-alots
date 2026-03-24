@@ -8,12 +8,13 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase-server";
+import { createTenantClient } from "@/lib/supabase-server";
 import { authenticateApiKey } from "@/lib/api-auth";
 import { getCorsHeaders, handlePreflight } from "@/lib/cors";
 import { logger } from "@/lib/logger";
 import type { TablesInsert } from "@/lib/types/database";
 import { v1PatientCreateSchema, safeParse } from "@/lib/validations";
+import { logTenantContext } from "@/lib/tenant-context";
 
 /** Handle CORS preflight requests. */
 export function OPTIONS(request: NextRequest) {
@@ -29,7 +30,8 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  const supabase = await createClient();
+  logTenantContext(auth.clinicId, "v1/patients:GET");
+  const supabase = await createTenantClient(auth.clinicId);
   const url = new URL(request.url);
   const search = url.searchParams.get("search");
   const limit = Math.min(Number(url.searchParams.get("limit") || 50), 100);
@@ -85,7 +87,8 @@ export async function POST(request: NextRequest) {
     }
     const body = parsed.data;
 
-    const supabase = await createClient();
+    logTenantContext(auth.clinicId, "v1/patients:POST");
+    const supabase = await createTenantClient(auth.clinicId);
     // The users table has columns (full_name, date_of_birth, gender,
     // insurance_type, address) that are not yet in the generated
     // Supabase types.  Use a Record<string, unknown> insert so the

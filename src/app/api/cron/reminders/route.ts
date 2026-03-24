@@ -4,6 +4,7 @@ import { dispatchNotification } from "@/lib/notifications";
 import { APPOINTMENT_STATUS } from "@/lib/types/database";
 import { verifyCronSecret } from "@/lib/cron-auth";
 import { logger } from "@/lib/logger";
+import { assertClinicId } from "@/lib/assert-tenant";
 
 /**
  * GET /api/cron/reminders
@@ -121,6 +122,17 @@ export async function GET(request: NextRequest) {
         logger.warn("Skipping appointment without clinic_id", {
           context: "cron/reminders",
           appointmentId: appt.id,
+        });
+        continue;
+      }
+
+      try {
+        assertClinicId(appt.clinic_id as string, "cron/reminders:appointment");
+      } catch {
+        logger.warn("Invalid clinic_id on appointment — skipped", {
+          context: "cron/reminders",
+          appointmentId: appt.id,
+          clinicId: appt.clinic_id as string,
         });
         continue;
       }

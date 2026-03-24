@@ -31,6 +31,8 @@ const transports: LogTransport[] = [];
 
 interface LogMeta {
   context?: string;
+  /** Tenant clinic_id for multi-tenant audit trail */
+  clinicId?: string | null;
   error?: unknown;
   [key: string]: unknown;
 }
@@ -47,13 +49,14 @@ function formatError(err: unknown): Record<string, unknown> {
 }
 
 function emit(level: LogLevel, message: string, meta?: LogMeta): void {
-  const { context, error, ...extra } = meta ?? {};
+  const { context, clinicId, error, ...extra } = meta ?? {};
   const payload: Record<string, unknown> = {
     level,
     message,
     timestamp: new Date().toISOString(),
   };
   if (context) payload.context = context;
+  if (clinicId !== undefined) payload.clinicId = clinicId;
   if (error !== undefined) payload.error = formatError(error);
   if (Object.keys(extra).length > 0) Object.assign(payload, extra);
 

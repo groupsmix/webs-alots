@@ -1,6 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import type { Database } from "@/lib/types/database";
+import { setTenantContext } from "@/lib/tenant-context";
 
 function requireEnv(name: string): string {
   const value = process.env[name];
@@ -10,6 +11,11 @@ function requireEnv(name: string): string {
   return value;
 }
 
+/**
+ * Create a Supabase server client with cookie-based auth.
+ * Use this for requests where tenant context will be set separately
+ * (e.g. middleware, auth flows).
+ */
 export async function createClient() {
   const cookieStore = await cookies();
 
@@ -34,4 +40,20 @@ export async function createClient() {
       },
     },
   );
+}
+
+/**
+ * Create a Supabase server client with tenant context set.
+ *
+ * Sets `app.current_clinic_id` as a PostgreSQL session variable so that
+ * RLS policies can use it as an additional isolation check. This is the
+ * preferred way to create a client for tenant-scoped operations.
+ *
+ * @param clinicId - The clinic UUID to scope all operations to
+ * @throws Error if clinicId is missing/invalid or if setting context fails
+ */
+export async function createTenantClient(clinicId: string) {
+  const client = await createClient();
+  await setTenantContext(client, clinicId);
+  return client;
 }
