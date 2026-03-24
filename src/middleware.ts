@@ -110,7 +110,7 @@ function withSecurityHeaders(
   cspHeaderValue: string,
 ): NextResponse {
   response.headers.set("Content-Security-Policy", cspHeaderValue);
-  response.headers.set("Strict-Transport-Security", "max-age=63072000; includeSubDomains; preload");
+  response.headers.set("Strict-Transport-Security", "max-age=31536000; includeSubDomains; preload");
   response.headers.set("X-Content-Type-Options", "nosniff");
   return response;
 }
@@ -296,7 +296,7 @@ export async function middleware(request: NextRequest) {
     });
     noSupabaseResponse.headers.set("Content-Security-Policy", cspHeaderValue);
     noSupabaseResponse.headers.set("x-nonce", nonce);
-    noSupabaseResponse.headers.set("Strict-Transport-Security", "max-age=63072000; includeSubDomains; preload");
+    noSupabaseResponse.headers.set("Strict-Transport-Security", "max-age=31536000; includeSubDomains; preload");
     return noSupabaseResponse;
   }
 
@@ -305,7 +305,7 @@ export async function middleware(request: NextRequest) {
   });
   supabaseResponse.headers.set("Content-Security-Policy", cspHeaderValue);
   supabaseResponse.headers.set("x-nonce", nonce);
-  supabaseResponse.headers.set("Strict-Transport-Security", "max-age=63072000; includeSubDomains; preload");
+  supabaseResponse.headers.set("Strict-Transport-Security", "max-age=31536000; includeSubDomains; preload");
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -324,7 +324,7 @@ export async function middleware(request: NextRequest) {
           });
           supabaseResponse.headers.set("Content-Security-Policy", cspHeaderValue);
           supabaseResponse.headers.set("x-nonce", nonce);
-          supabaseResponse.headers.set("Strict-Transport-Security", "max-age=63072000; includeSubDomains; preload");
+          supabaseResponse.headers.set("Strict-Transport-Security", "max-age=31536000; includeSubDomains; preload");
           cookiesToSet.forEach(({ name, value, options }) =>
             supabaseResponse.cookies.set(name, value, options)
           );

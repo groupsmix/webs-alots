@@ -52,12 +52,12 @@ binding = "ASSETS"
 
 [[env.staging.r2_buckets]]
 binding = "R2_BUCKET"
-bucket_name = "webs-alots-uploads"
+bucket_name = "webs-alots-uploads-staging"
 
 [env.staging.vars]
 ROOT_DOMAIN = "groupsmix.com"
 NEXT_PUBLIC_SITE_URL = "https://staging.groupsmix.com"
-R2_BUCKET_NAME = "webs-alots-uploads"
+R2_BUCKET_NAME = "webs-alots-uploads-staging"
 
 # ---- Staging Cron Triggers ----
 # Same schedule as production
