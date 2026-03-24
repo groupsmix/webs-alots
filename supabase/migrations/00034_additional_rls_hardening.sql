@@ -18,12 +18,15 @@
 --    Existing callers already combine with get_user_clinic_id()
 --    so this is a defense-in-depth improvement for future use.
 --
--- 4. RESTRICT set_tenant_context() for anon role
---    Revoke direct EXECUTE from anon. Instead, create a
---    read-only get_tenant_context_for_anon() that the
---    application can use via service role RPC calls.
---    (Kept for anon since public chatbot widget needs it,
---    but documented the risk.)
+-- 4. NOTE on set_tenant_context() (RLS-06)
+--    The anon role must be able to call set_tenant_context()
+--    because the public chatbot widget uses it to scope
+--    unauthenticated queries to the current clinic. This is
+--    by design and NOT changed here. The risk is accepted:
+--    an unauthenticated caller who knows a clinic UUID can
+--    read chatbot_config, chatbot_faqs, collection_points,
+--    lab_tests, and blog_posts for that clinic — all of which
+--    are intentionally public-facing data.
 -- ============================================================
 
 -- -------------------------------------------------------
