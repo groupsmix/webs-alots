@@ -1,10 +1,24 @@
 import { createClient } from "@/lib/supabase-server";
 import { NextResponse } from "next/server";
 
+/**
+ * Validate that a redirect path is a safe, same-origin relative path.
+ * Rejects protocol-relative URLs (//evil.com), absolute URLs, and
+ * paths containing encoded characters that could bypass the check.
+ */
+const SAFE_PATH_REGEX = /^\/[a-zA-Z0-9\-_/]*$/;
+
+function getSafeRedirectPath(raw: string | null): string {
+  if (raw && SAFE_PATH_REGEX.test(raw)) {
+    return raw;
+  }
+  return "/patient/dashboard";
+}
+
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
-  const next = searchParams.get("next") ?? "/patient/dashboard";
+  const next = getSafeRedirectPath(searchParams.get("next"));
 
   if (code) {
     const supabase = await createClient();

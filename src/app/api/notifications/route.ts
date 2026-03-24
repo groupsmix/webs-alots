@@ -84,6 +84,22 @@ export const GET = withAuth(async (request, { supabase, profile }) => {
     // Non-staff users can only read their own notifications
     const userId = isStaff && requestedUserId ? requestedUserId : profile.id;
 
+    // Tenant isolation: staff can only read notifications of users in the same clinic
+    if (isStaff && requestedUserId && profile.role !== "super_admin" && profile.clinic_id) {
+      const { data: targetUser } = await supabase
+        .from("users")
+        .select("clinic_id")
+        .eq("id", requestedUserId)
+        .single();
+
+      if (!targetUser || targetUser.clinic_id !== profile.clinic_id) {
+        return NextResponse.json(
+          { error: "User not found in your clinic" },
+          { status: 403 },
+        );
+      }
+    }
+
     const channel = searchParams.get("channel");
     const type = searchParams.get("type");
     const limit = Math.min(parseInt(searchParams.get("limit") ?? "50", 10) || 50, 100);

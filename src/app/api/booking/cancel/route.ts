@@ -6,6 +6,10 @@ import { logAuditEvent } from "@/lib/audit-log";
 import { clinicDateTime } from "@/lib/timezone";
 import { logger } from "@/lib/logger";
 import { bookingCancelSchema, safeParse } from "@/lib/validations";
+import { STAFF_ROLES } from "@/lib/auth-roles";
+import type { UserRole } from "@/lib/types/database";
+
+const CANCEL_ROLES: UserRole[] = [...STAFF_ROLES, "patient"];
 
 export const runtime = "edge";
 
@@ -26,16 +30,21 @@ export const POST = withAuth(async (request, { supabase, profile }) => {
     const { tenant, config: tenantConfig } = await requireTenantWithConfig();
     const clinicId = tenant.clinicId;
 
-    // Fetch the appointment
+    // Fetch the appointment (include patient_id for ownership check)
     const { data: appt, error: fetchError } = await supabase
       .from("appointments")
-      .select("id, doctor_id, appointment_date, start_time, status")
+      .select("id, patient_id, doctor_id, appointment_date, start_time, status")
       .eq("id", body.appointmentId)
       .eq("clinic_id", clinicId)
       .single();
 
     if (fetchError || !appt) {
       return NextResponse.json({ error: "Appointment not found" }, { status: 404 });
+    }
+
+    // Ownership check: patients can only cancel their OWN appointments
+    if (profile.role === "patient" && appt.patient_id !== profile.id) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     if (appt.status === APPOINTMENT_STATUS.CANCELLED || appt.status === APPOINTMENT_STATUS.COMPLETED || appt.status === APPOINTMENT_STATUS.RESCHEDULED) {
@@ -113,14 +122,14 @@ export const POST = withAuth(async (request, { supabase, profile }) => {
     logger.warn("Operation failed", { context: "booking/cancel", error: err });
     return NextResponse.json({ error: "Failed to cancel appointment" }, { status: 500 });
   }
-}, null);
+}, CANCEL_ROLES);
 
 /**
  * GET /api/booking/cancel?appointmentId=...
  *
  * Check if an appointment can be cancelled.
  */
-export const GET = withAuth(async (request, { supabase }) => {
+export const GET = withAuth(async (request, { supabase, profile }) => {
   const appointmentId = request.nextUrl.searchParams.get("appointmentId");
 
   if (!appointmentId) {
@@ -131,12 +140,17 @@ export const GET = withAuth(async (request, { supabase }) => {
 
   const { data: appt, error } = await supabase
     .from("appointments")
-    .select("id, appointment_date, start_time, status")
+    .select("id, patient_id, appointment_date, start_time, status")
     .eq("id", appointmentId)
     .eq("clinic_id", tenant.clinicId)
     .single();
 
   if (error || !appt) {
+    return NextResponse.json({ canCancel: false, reason: "Appointment not found" });
+  }
+
+  // Ownership check: patients can only check cancellability of their OWN appointments
+  if (profile.role === "patient" && appt.patient_id !== profile.id) {
     return NextResponse.json({ canCancel: false, reason: "Appointment not found" });
   }
 
@@ -167,4 +181,4 @@ export const GET = withAuth(async (request, { supabase }) => {
   }
 
   return NextResponse.json({ canCancel: true, hoursRemaining: hoursUntilAppt });
-}, null);
+}, CANCEL_ROLES);

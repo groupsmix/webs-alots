@@ -46,10 +46,10 @@ export const runtime = "edge";
 async function verifyBookingToken(token: string): Promise<boolean> {
   const secret = process.env.BOOKING_TOKEN_SECRET;
   if (!secret) {
-    // Only allow the dev-bypass token in explicit development mode.
-    // Any other environment (production, staging, test) rejects all tokens
-    // when BOOKING_TOKEN_SECRET is not configured.
-    if (process.env.NODE_ENV === "development") return token === "dev-bypass";
+    // HIGH-05: BOOKING_TOKEN_SECRET is required in ALL environments.
+    // Dev bypass removed — configure the secret even in development
+    // to prevent accidental leakage of unauthenticated booking access.
+    logger.error("BOOKING_TOKEN_SECRET is not configured — rejecting all booking tokens", { context: "booking" });
     return false;
   }
 

@@ -52,7 +52,7 @@ export const GET = withAuth(async (request, { supabase }) => {
       { status: 500 },
     );
   }
-}, null);
+}, ["super_admin", "clinic_admin", "receptionist", "doctor", "patient"]);
 
 /**
  * POST /api/custom-fields
