@@ -89,12 +89,39 @@ async function getTenantInfo() {
   return await getTenant();
 }
 
+/** Cached default clinic ID for root-domain fallback (avoids repeated DB queries). */
+let _defaultClinicId: string | null | undefined;
+
 /**
- * Get the current clinic ID, or null when on the root domain.
+ * Get the current clinic ID from tenant context, or fall back to the
+ * first active clinic when accessed on the root domain (no subdomain).
+ *
+ * This ensures public pages (services, reviews, doctors, etc.) display
+ * real data even when the site is accessed at the root domain without
+ * a subdomain.
  */
 async function getClinicId(): Promise<string | null> {
   const tenant = await getTenantInfo();
-  return tenant?.clinicId ?? null;
+  if (tenant?.clinicId) return tenant.clinicId;
+
+  // Root domain fallback: resolve the first active clinic
+  if (_defaultClinicId !== undefined) return _defaultClinicId;
+
+  try {
+    const supabase = await createClient();
+    const { data } = await supabase
+      .from("clinics")
+      .select("id")
+      .eq("is_active", true)
+      .order("created_at", { ascending: true })
+      .limit(1)
+      .single();
+    _defaultClinicId = data?.id ?? null;
+  } catch {
+    _defaultClinicId = null;
+  }
+
+  return _defaultClinicId;
 }
 
 // ── Clinic Branding ──
