@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { Phone, ShieldCheck, ArrowLeft, Heart } from "lucide-react";
+import { Phone, ShieldCheck, ArrowLeft, Heart, Mail, Lock } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -14,14 +14,34 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { signInWithOTP, verifyOTP } from "@/lib/auth";
+import { signInWithOTP, verifyOTP, signInWithPassword } from "@/lib/auth";
 
 export default function LoginPage() {
-  const [step, setStep] = useState<"phone" | "otp">("phone");
+  const [method, setMethod] = useState<"email" | "phone">("email");
+  const [step, setStep] = useState<"credentials" | "otp">("credentials");
   const [phone, setPhone] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [otp, setOtp] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  async function handleEmailLogin(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+    setLoading(true);
+
+    try {
+      const result = await signInWithPassword(email, password);
+      if (result.error) {
+        setError(result.error);
+        setLoading(false);
+      }
+    } catch {
+      setError("An unexpected error occurred. Please try again.");
+      setLoading(false);
+    }
+  }
 
   async function handleSendOTP(e?: React.FormEvent) {
     if (e) e.preventDefault();
@@ -77,19 +97,25 @@ export default function LoginPage() {
       <Card>
         <CardHeader className="text-center pb-4">
           <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
-            {step === "phone" ? (
-              <Phone className="h-6 w-6 text-primary" />
-            ) : (
+            {step === "otp" ? (
               <ShieldCheck className="h-6 w-6 text-primary" />
+            ) : method === "email" ? (
+              <Mail className="h-6 w-6 text-primary" />
+            ) : (
+              <Phone className="h-6 w-6 text-primary" />
             )}
           </div>
           <CardTitle className="text-xl">
-            {step === "phone" ? "Connexion" : "Vérifiez votre numéro"}
+            {step === "otp"
+              ? "Vérifiez votre numéro"
+              : "Connexion"}
           </CardTitle>
           <CardDescription>
-            {step === "phone"
-              ? "Entrez votre numéro de téléphone pour recevoir un code de vérification."
-              : `Nous avons envoyé un code à 6 chiffres au ${phone}`}
+            {step === "otp"
+              ? `Nous avons envoyé un code à 6 chiffres au ${phone}`
+              : method === "email"
+                ? "Entrez votre e-mail et mot de passe pour vous connecter."
+                : "Entrez votre numéro de téléphone pour recevoir un code de vérification."}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -99,28 +125,7 @@ export default function LoginPage() {
             </div>
           )}
 
-          {step === "phone" ? (
-            <form className="space-y-4" onSubmit={handleSendOTP}>
-              <div className="space-y-2">
-                <Label htmlFor="phone">Numéro de téléphone</Label>
-                <Input
-                  id="phone"
-                  type="tel"
-                  placeholder="+212 6XX XX XX XX"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  required
-                  className="text-base"
-                />
-                <p className="text-xs text-muted-foreground">
-                  Nous vous enverrons un code de vérification unique par SMS.
-                </p>
-              </div>
-              <Button type="submit" className="w-full" disabled={loading}>
-                {loading ? "Envoi du code..." : "Envoyer le code de vérification"}
-              </Button>
-            </form>
-          ) : (
+          {step === "otp" ? (
             <form className="space-y-4" onSubmit={handleVerifyOTP}>
               <div className="space-y-2">
                 <Label htmlFor="otp">Code de vérification</Label>
@@ -153,13 +158,104 @@ export default function LoginPage() {
                 variant="ghost"
                 className="w-full"
                 onClick={() => {
-                  setStep("phone");
+                  setStep("credentials");
                   setOtp("");
                   setError(null);
                 }}
               >
                 <ArrowLeft className="h-4 w-4 mr-1" />
                 Utiliser un autre numéro
+              </Button>
+            </form>
+          ) : method === "email" ? (
+            <form className="space-y-4" onSubmit={handleEmailLogin}>
+              <div className="space-y-2">
+                <Label htmlFor="email">E-mail</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="votre@email.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  className="text-base"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="password">Mot de passe</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  placeholder="Votre mot de passe"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  className="text-base"
+                />
+              </div>
+              <Button type="submit" className="w-full" disabled={loading}>
+                {loading ? "Connexion..." : "Se connecter"}
+              </Button>
+              <div className="relative my-2">
+                <div className="absolute inset-0 flex items-center">
+                  <span className="w-full border-t" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-card px-2 text-muted-foreground">ou</span>
+                </div>
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full"
+                onClick={() => {
+                  setMethod("phone");
+                  setError(null);
+                }}
+              >
+                <Phone className="h-4 w-4 mr-2" />
+                Se connecter avec téléphone
+              </Button>
+            </form>
+          ) : (
+            <form className="space-y-4" onSubmit={handleSendOTP}>
+              <div className="space-y-2">
+                <Label htmlFor="phone">Numéro de téléphone</Label>
+                <Input
+                  id="phone"
+                  type="tel"
+                  placeholder="+212 6XX XX XX XX"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  required
+                  className="text-base"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Nous vous enverrons un code de vérification unique par SMS.
+                </p>
+              </div>
+              <Button type="submit" className="w-full" disabled={loading}>
+                {loading ? "Envoi du code..." : "Envoyer le code de vérification"}
+              </Button>
+              <div className="relative my-2">
+                <div className="absolute inset-0 flex items-center">
+                  <span className="w-full border-t" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-card px-2 text-muted-foreground">ou</span>
+                </div>
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full"
+                onClick={() => {
+                  setMethod("email");
+                  setError(null);
+                }}
+              >
+                <Lock className="h-4 w-4 mr-2" />
+                Se connecter avec e-mail
               </Button>
             </form>
           )}

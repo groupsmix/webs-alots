@@ -34,6 +34,35 @@ const ROLE_DASHBOARD_MAP: Record<UserProfile["role"], string> = {
 // ============================================================
 
 /**
+ * Sign in with email and password via Supabase Auth.
+ * On success, redirects to the appropriate dashboard based on user role.
+ */
+export async function signInWithPassword(
+  email: string,
+  password: string
+): Promise<{ error: string | null }> {
+  const supabase = await createClient();
+
+  const { error } = await supabase.auth.signInWithPassword({
+    email,
+    password,
+  });
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  // Fetch user profile to determine redirect
+  const profile = await getUserProfile();
+  if (profile) {
+    redirect(ROLE_DASHBOARD_MAP[profile.role]);
+  }
+
+  // Fallback: redirect to patient dashboard
+  redirect("/patient/dashboard");
+}
+
+/**
  * Send OTP to a phone number via Supabase Auth.
  * Returns an error message if the request fails.
  */
