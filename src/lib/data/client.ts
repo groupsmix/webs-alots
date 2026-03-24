@@ -13,7 +13,6 @@
 
 import { createClient } from "@/lib/supabase-client";
 import { logger } from "@/lib/logger";
-import { clinicConfig } from "@/config/clinic.config";
 import type { Database } from "@/lib/types/database";
 
 /**
@@ -407,7 +406,7 @@ function mapService(raw: ServiceRaw): ServiceView {
     description: raw.description ?? "",
     duration: raw.duration_minutes ?? raw.duration_min ?? 30,
     price: raw.price ?? 0,
-    currency: raw.currency ?? clinicConfig.currency,
+    currency: raw.currency ?? "MAD",
     active: raw.is_active ?? true,
     category: raw.category ?? undefined,
   };
@@ -2528,9 +2527,9 @@ export async function fetchGeneratedSlots(
 
   const result: string[] = [];
   // Use tenant-specific config passed by the caller.
-  // Falls back to static clinicConfig only as a last resort.
-  const duration = bookingConfig?.slotDuration ?? clinicConfig.booking.slotDuration;
-  const buffer = bookingConfig?.bufferTime ?? clinicConfig.booking.bufferTime;
+  // Falls back to sensible defaults if bookingConfig is not provided.
+  const duration = bookingConfig?.slotDuration ?? 30;
+  const buffer = bookingConfig?.bufferTime ?? 5;
 
   for (const config of daySlots) {
     const [startH, startM] = config.startTime.split(":").map(Number);
@@ -2595,8 +2594,8 @@ export async function fetchAvailableSlots(
   ]);
 
   // Use tenant-specific config passed by the caller.
-  // Falls back to static clinicConfig only as a last resort.
-  const maxPerSlot = bookingConfig?.maxPerSlot ?? clinicConfig.booking.maxPerSlot;
+  // Falls back to a sensible default if bookingConfig is not provided.
+  const maxPerSlot = bookingConfig?.maxPerSlot ?? 1;
   return allSlots.filter((slot) => (bookingCounts[slot] ?? 0) < maxPerSlot);
 }
 

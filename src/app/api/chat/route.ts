@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { fetchChatbotContext, buildSystemPrompt, getBasicResponse } from "@/lib/chatbot-data";
-import { TENANT_HEADERS } from "@/lib/tenant";
+import { requireTenant } from "@/lib/tenant";
 import { createClient } from "@/lib/supabase-server";
 import { chatLimiter, extractClientIp } from "@/lib/rate-limit";
 import { logger } from "@/lib/logger";
@@ -16,9 +16,8 @@ export const runtime = "edge";
  *   - smart:    Cloudflare Workers AI (free tier)
  *   - advanced: OpenAI-compatible API (paid)
  *
- * The clinic is resolved from:
- *   1. x-tenant-clinic-id header (set by middleware from subdomain)
- *   2. clinicId in request body (fallback)
+ * The clinic is resolved from the tenant context (set by middleware from subdomain).
+ * clinicId in the request body is ignored — tenant MUST come from request context.
  */
 /** Max number of conversation history messages sent to the LLM. */
 const MAX_HISTORY_LENGTH = 20;
@@ -72,22 +71,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Resolve clinic ID from tenant headers or request body
-    const tenantClinicId = request.headers.get(TENANT_HEADERS.clinicId);
+    // Resolve clinic ID strictly from tenant context (middleware headers)
+    const tenant = await requireTenant();
+    const clinicId = tenant.clinicId;
     const raw = await request.json();
     const parsed = safeParse(chatRequestSchema, raw);
     if (!parsed.success) {
       return NextResponse.json({ error: parsed.error }, { status: 400 });
     }
     const body = parsed.data;
-    const clinicId = tenantClinicId || body.clinicId;
-
-    if (!clinicId) {
-      return NextResponse.json(
-        { error: "No clinic context. Please access via a clinic subdomain." },
-        { status: 400 },
-      );
-    }
 
     const lastMessage = body.messages[body.messages.length - 1];
     if (!lastMessage || lastMessage.role !== "user" || !lastMessage.content.trim()) {

@@ -1,7 +1,8 @@
 /**
  * POST /api/lab/report-html — Generate an HTML report for a lab test order
  *
- * Body: { orderId, clinicId, patientName, orderNumber, results }
+ * Body: { orderId, patientName, orderNumber, results }
+ * clinic_id is derived from the authenticated user's profile.
  *
  * Generates an HTML report, uploads to R2, and updates the order's pdf_url.
  * Returns: { pdfUrl }
@@ -115,14 +116,22 @@ function generateLabReportHtml(data: {
 </html>`;
 }
 
-export const POST = withAuth(async (request) => {
+export const POST = withAuth(async (request, { profile }) => {
   try {
     const raw = await request.json();
     const parsed = safeParse(labReportSchema, raw);
     if (!parsed.success) {
       return NextResponse.json({ error: parsed.error }, { status: 400 });
     }
-    const { orderId, clinicId, patientName, orderNumber, results } = parsed.data;
+    const { orderId, patientName, orderNumber, results } = parsed.data;
+    // Derive clinic_id from the authenticated user's profile — never from the request body
+    const clinicId = profile.clinic_id;
+    if (!clinicId) {
+      return NextResponse.json(
+        { error: "User must belong to a clinic" },
+        { status: 400 },
+      );
+    }
 
     const generatedAt = new Date().toLocaleString("en-US", {
       dateStyle: "long",

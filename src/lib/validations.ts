@@ -207,7 +207,8 @@ export const customFieldUpdateSchema = z.object({
 });
 
 export const customFieldValuesSchema = z.object({
-  clinic_id: z.string().min(1),
+  /** @deprecated Ignored by the server — clinic_id is derived from the authenticated user's profile. */
+  clinic_id: z.string().optional(),
   entity_type: z.string().min(1).max(100),
   entity_id: z.string().min(1),
   field_values: z.record(z.string(), z.unknown()),
@@ -217,7 +218,8 @@ export const customFieldValuesSchema = z.object({
 
 export const labReportSchema = z.object({
   orderId: z.string().min(1),
-  clinicId: z.string().min(1),
+  /** @deprecated Ignored by the server — clinicId is derived from the authenticated user's profile. */
+  clinicId: z.string().optional(),
   patientName: z.string().min(1).max(200),
   orderNumber: z.string().min(1).max(100),
   results: z
@@ -237,7 +239,8 @@ export const labReportSchema = z.object({
 // ── Radiology ───────────────────────────────────────────────────────────
 
 export const radiologyOrderCreateSchema = z.object({
-  clinicId: z.string().min(1),
+  /** @deprecated Ignored by the server — clinicId is derived from the authenticated user's profile. */
+  clinicId: z.string().optional(),
   patientId: z.string().min(1),
   modality: z.string().min(1).max(100),
   bodyPart: z.string().max(200).optional(),
@@ -270,7 +273,8 @@ export const radiologyOrderPatchSchema = z.discriminatedUnion("action", [
 
 export const radiologyReportPdfSchema = z.object({
   orderId: z.string().min(1),
-  clinicId: z.string().min(1),
+  /** @deprecated Ignored by the server — clinicId is derived from the authenticated user's profile. */
+  clinicId: z.string().optional(),
   patientName: z.string().min(1).max(200),
   modality: z.string().min(1).max(100),
   bodyPart: z.string().max(200).optional(),

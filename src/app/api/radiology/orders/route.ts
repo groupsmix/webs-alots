@@ -2,7 +2,8 @@
  * POST /api/radiology/orders — Create a new radiology order
  * PATCH /api/radiology/orders — Update order status or save report
  *
- * POST body: { clinicId, patientId, modality, bodyPart?, clinicalIndication?, priority?, scheduledAt?, orderingDoctorId? }
+ * POST body: { patientId, modality, bodyPart?, clinicalIndication?, priority?, scheduledAt?, orderingDoctorId? }
+ * clinic_id is derived from the authenticated user's profile.
  * PATCH body (status update): { orderId, action: "status", status }
  * PATCH body (save report): { orderId, action: "report", findings, impression, reportText, templateId?, radiologistId? }
  */
@@ -18,14 +19,22 @@ import { STAFF_ROLES } from "@/lib/auth-roles";
 import { logger } from "@/lib/logger";
 import { radiologyOrderCreateSchema, radiologyOrderPatchSchema, safeParse } from "@/lib/validations";
 
-export const POST = withAuth(async (request) => {
+export const POST = withAuth(async (request, { profile }) => {
   try {
     const raw = await request.json();
     const parsed = safeParse(radiologyOrderCreateSchema, raw);
     if (!parsed.success) {
       return NextResponse.json({ error: parsed.error }, { status: 400 });
     }
-    const { clinicId, patientId, modality, bodyPart, clinicalIndication, priority, scheduledAt, orderingDoctorId } = parsed.data;
+    const { patientId, modality, bodyPart, clinicalIndication, priority, scheduledAt, orderingDoctorId } = parsed.data;
+    // Derive clinic_id from the authenticated user's profile — never from the request body
+    const clinicId = profile.clinic_id;
+    if (!clinicId) {
+      return NextResponse.json(
+        { error: "User must belong to a clinic" },
+        { status: 400 },
+      );
+    }
 
     const result = await createRadiologyOrder({
       clinic_id: clinicId,
