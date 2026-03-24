@@ -178,6 +178,15 @@ export async function middleware(request: NextRequest) {
   requestHeaders.set("x-nonce", nonce);
   requestHeaders.set("Content-Security-Policy", cspHeaderValue);
 
+  // --- SECURITY: Strip all tenant headers from the incoming request ---
+  // Tenant context MUST only come from subdomain resolution (server-side).
+  // Without this, an attacker could inject x-tenant-clinic-id (or any
+  // x-tenant-* header) on a root-domain request and impersonate another
+  // tenant on public endpoints like /api/booking and /api/branding.
+  for (const key of Object.values(TENANT_HEADERS)) {
+    requestHeaders.delete(key);
+  }
+
   // --- Subdomain resolution ---
   const subdomain = extractSubdomain(hostname, rootDomain);
 
