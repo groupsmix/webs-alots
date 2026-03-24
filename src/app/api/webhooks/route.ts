@@ -141,15 +141,18 @@ export async function POST(request: NextRequest) {
           .single();
 
         if (upperText === "CONFIRM" && appt) {
+          // Scope update to clinic_id to prevent cross-tenant mutation
           await supabase
             .from("appointments")
             .update({ status: "confirmed" })
-            .eq("id", appt.id);
+            .eq("id", appt.id)
+            .eq("clinic_id", clinicId);
         } else if (upperText === "CANCEL" && appt) {
           await supabase
             .from("appointments")
             .update({ status: "cancelled", cancellation_reason: "Cancelled via WhatsApp" })
-            .eq("id", appt.id);
+            .eq("id", appt.id)
+            .eq("clinic_id", clinicId);
         }
 
         // Notify the relevant staff member (doctor assigned to the appointment)

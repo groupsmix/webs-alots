@@ -77,7 +77,12 @@ function shouldUseSupabase(): boolean {
 function createSupabaseRateLimiter(options: RateLimiterOptions): RateLimiter {
   const { windowMs, max } = options;
 
-  // Use the service role key for direct DB access (bypasses RLS).
+  // SECURITY NOTE: Service role key intentionally used here.
+  // rate_limit_entries is a global infrastructure table (not tenant-scoped)
+  // that tracks per-IP request counts. It contains no clinic/patient data and
+  // is NOT subject to multi-tenant isolation. RLS is enabled on the table as
+  // defense-in-depth (blocks anon/authenticated access) but the service role
+  // bypasses it to perform atomic counter operations.
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!supabaseUrl || !serviceRoleKey) {

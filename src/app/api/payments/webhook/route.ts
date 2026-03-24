@@ -93,12 +93,14 @@ export async function POST(request: NextRequest) {
           );
         }
 
-        // Update appointment payment status if applicable
-        if (appointmentId) {
+        // Update appointment payment status if applicable — scoped to
+        // clinic_id to prevent cross-tenant appointment state mutation.
+        if (appointmentId && clinicId) {
           await supabase
             .from("appointments")
             .update({ status: APPOINTMENT_STATUS.CONFIRMED })
             .eq("id", appointmentId)
+            .eq("clinic_id", clinicId)
             .eq("status", APPOINTMENT_STATUS.PENDING);
         }
 

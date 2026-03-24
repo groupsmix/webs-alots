@@ -36,7 +36,16 @@ export async function GET(request: NextRequest) {
 
   const results: { clinicId: string; success: boolean; error?: string }[] = [];
   const BATCH_SIZE = 10;
-  const subs = subscriptions ?? [];
+  // SAFETY ASSERTION: Filter out any subscriptions without a clinic_id to
+  // prevent cross-tenant operations. This should never happen with correct
+  // data integrity but acts as defense-in-depth.
+  const subs = (subscriptions ?? []).filter((sub) => {
+    if (!sub.clinic_id) {
+      results.push({ clinicId: "unknown", success: false, error: "Missing clinic_id — skipped for tenant safety" });
+      return false;
+    }
+    return true;
+  });
 
   for (let i = 0; i < subs.length; i += BATCH_SIZE) {
     const batch = subs.slice(i, i + BATCH_SIZE);

@@ -114,6 +114,17 @@ export async function GET(request: NextRequest) {
     }[] = [];
 
     for (const appt of appointments) {
+      // SAFETY ASSERTION: Skip appointments without clinic_id to prevent
+      // cross-tenant operations. This should never happen with correct RLS
+      // but acts as defense-in-depth.
+      if (!appt.clinic_id) {
+        logger.warn("Skipping appointment without clinic_id", {
+          context: "cron/reminders",
+          appointmentId: appt.id,
+        });
+        continue;
+      }
+
       // Parse appointment datetime, falling back to slot_start when
       // appointment_date or start_time are NULL.
       let apptDatetime: Date;
