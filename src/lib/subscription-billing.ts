@@ -253,6 +253,12 @@ export async function checkPlanLimits(
 export async function processRenewal(
   clinicId: string,
 ): Promise<{ success: boolean; error?: string }> {
+  // SAFETY ASSERTION: Block execution if clinic_id is missing or invalid
+  // to prevent cross-tenant operations in the billing pipeline.
+  if (!clinicId || typeof clinicId !== "string" || clinicId.trim() === "") {
+    return { success: false, error: "Missing or invalid clinic_id — blocked for tenant safety" };
+  }
+
   const supabase = await createClient();
 
   // Fetch current subscription
