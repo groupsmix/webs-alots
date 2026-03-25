@@ -6,8 +6,8 @@ import type { MetadataRoute } from "next";
  */
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "Health SaaS Platform — Gestion Médicale",
-    short_name: "Health SaaS",
+    name: "Oltigo — Gestion Médicale",
+    short_name: "Oltigo",
     description:
       "Plateforme SaaS multi-tenant pour la gestion de cabinets médicaux, dentaires et pharmacies au Maroc.",
     start_url: "/",
