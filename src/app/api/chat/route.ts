@@ -5,9 +5,6 @@ import { createClient } from "@/lib/supabase-server";
 import { chatLimiter, extractClientIp } from "@/lib/rate-limit";
 import { logger } from "@/lib/logger";
 import { chatRequestSchema, safeParse } from "@/lib/validations";
-
-export const runtime = "edge";
-
 /**
  * POST /api/chat
  *

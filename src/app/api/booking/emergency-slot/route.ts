@@ -8,9 +8,6 @@ import { computeEndTime } from "@/lib/timezone";
 import { STAFF_ROLES } from "@/lib/auth-roles";
 import { logger } from "@/lib/logger";
 import { emergencySlotSchema, safeParse } from "@/lib/validations";
-
-export const runtime = "edge";
-
 /**
  * POST /api/booking/emergency-slot
  *

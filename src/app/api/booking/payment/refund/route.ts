@@ -5,9 +5,6 @@ import type { UserRole } from "@/lib/types/database";
 import { withAuth } from "@/lib/with-auth";
 import { logger } from "@/lib/logger";
 import { paymentRefundSchema, safeParse } from "@/lib/validations";
-
-export const runtime = "edge";
-
 const ADMIN_ROLES: UserRole[] = ["super_admin", "clinic_admin"];
 
 /**

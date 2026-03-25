@@ -35,9 +35,6 @@ const bookingRequestSchema = z.object({
   slotDuration: z.number().int().positive(),
   bufferTime: z.number().int().min(0),
 });
-
-export const runtime = "edge";
-
 /**
  * Verify a booking token issued after OTP verification.
  * Tokens are HMAC-SHA256 signatures of the phone number + expiry timestamp.

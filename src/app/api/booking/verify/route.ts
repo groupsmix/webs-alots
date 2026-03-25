@@ -19,9 +19,6 @@ import { requireTenantWithConfig } from "@/lib/tenant";
 import { logger } from "@/lib/logger";
 import { safeParse } from "@/lib/validations";
 import { z } from "zod";
-
-export const runtime = "edge";
-
 const bookingVerifySchema = z.object({
   phone: z.string().min(6).max(30),
 });

@@ -11,9 +11,6 @@ import { STAFF_ROLES } from "@/lib/auth-roles";
 import type { UserRole } from "@/lib/types/database";
 
 const RESCHEDULE_ROLES: UserRole[] = [...STAFF_ROLES, "patient"];
-
-export const runtime = "edge";
-
 /**
  * POST /api/booking/reschedule
  *

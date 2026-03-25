@@ -4,9 +4,6 @@ import { STAFF_ROLES } from "@/lib/auth-roles";
 import { logger } from "@/lib/logger";
 import { customFieldValuesSchema, safeParse } from "@/lib/validations";
 import type { Json } from "@/lib/types/database";
-
-export const runtime = "edge";
-
 /**
  * GET /api/custom-fields/values?entity_type=...&entity_id=...
  *

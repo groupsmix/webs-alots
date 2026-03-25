@@ -6,9 +6,6 @@ import { withAuth } from "@/lib/with-auth";
 import { STAFF_ROLES } from "@/lib/auth-roles";
 import { logger } from "@/lib/logger";
 import { paymentConfirmSchema, safeParse } from "@/lib/validations";
-
-export const runtime = "edge";
-
 /**
  * POST /api/booking/payment/confirm
  *

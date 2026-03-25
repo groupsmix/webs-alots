@@ -2,9 +2,6 @@ import { NextResponse } from "next/server";
 import { withAuth } from "@/lib/with-auth";
 import { logger } from "@/lib/logger";
 import { onboardingSchema, safeParse } from "@/lib/validations";
-
-export const runtime = "edge";
-
 /**
  * POST /api/onboarding
  *

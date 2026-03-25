@@ -1,9 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import { logger } from "@/lib/logger";
-
-export const runtime = "edge";
-
 /**
  * GET /api/health
  *

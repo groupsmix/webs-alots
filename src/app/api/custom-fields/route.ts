@@ -3,9 +3,6 @@ import { withAuth } from "@/lib/with-auth";
 import { logger } from "@/lib/logger";
 import { customFieldCreateSchema, customFieldUpdateSchema, safeParse } from "@/lib/validations";
 import type { Json } from "@/lib/types/database";
-
-export const runtime = "edge";
-
 /**
  * GET /api/custom-fields?clinic_type_key=...&entity_type=...
  *

@@ -9,9 +9,6 @@ import { computeEndTime } from "@/lib/timezone";
 import { STAFF_ROLES } from "@/lib/auth-roles";
 import { logger } from "@/lib/logger";
 import { recurringSchema, safeParse } from "@/lib/validations";
-
-export const runtime = "edge";
-
 function addInterval(date: Date, pattern: "weekly" | "biweekly" | "monthly"): Date {
   const next = new Date(date);
   if (pattern === "weekly") {

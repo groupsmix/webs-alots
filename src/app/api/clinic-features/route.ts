@@ -2,9 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase-server";
 import { withAuth } from "@/lib/with-auth";
 import { logger } from "@/lib/logger";
-
-export const runtime = "edge";
-
 /**
  * GET /api/clinic-features?type_key=general_medicine
  *
