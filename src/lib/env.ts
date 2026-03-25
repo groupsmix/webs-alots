@@ -31,11 +31,11 @@ const ENV_RULES: EnvRule[] = [
   { name: "NEXT_PUBLIC_SUPABASE_ANON_KEY", required: true, description: "Supabase anonymous key", group: "core" },
 
   // ── Auth / Security ────────────────────────────────────────────────
-  { name: "BOOKING_TOKEN_SECRET", required: false, description: "HMAC secret for booking verification tokens", group: "auth" },
+  { name: "BOOKING_TOKEN_SECRET", required: process.env.NODE_ENV === "production", description: "HMAC secret for booking verification tokens (required in production)", group: "auth" },
 
   // ── Multi-tenant ───────────────────────────────────────────────────
-  { name: "ROOT_DOMAIN", required: false, description: "Root domain for subdomain routing", group: "tenant" },
-  { name: "NEXT_PUBLIC_SITE_URL", required: false, description: "Public site URL for CSRF and links", group: "tenant" },
+  { name: "ROOT_DOMAIN", required: process.env.NODE_ENV === "production", description: "Root domain for subdomain routing (required in production)", group: "tenant" },
+  { name: "NEXT_PUBLIC_SITE_URL", required: process.env.NODE_ENV === "production", description: "Public site URL for CSRF and links (required in production)", group: "tenant" },
 
   // ── Cloudflare R2 Storage ──────────────────────────────────────────
   { name: "R2_ACCOUNT_ID", required: false, description: "Cloudflare R2 account ID", group: "storage" },
