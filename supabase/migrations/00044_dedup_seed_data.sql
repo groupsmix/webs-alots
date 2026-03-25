@@ -44,4 +44,18 @@ WHERE id IN (
   'a0000000-0000-0000-0000-000000000005'
 );
 
+-- ── 5. Fix doctor metadata (missing specialty needed for booking flow) ──
+-- The original seed did not populate the metadata JSONB column, which the
+-- booking flow reads to derive specialties.  Without this, booking creation
+-- fails with "Invalid specialty selected".
+UPDATE users
+SET metadata = jsonb_build_object(
+  'specialty_id', 'sp-general-medicine',
+  'specialty',    'Médecine Générale',
+  'consultation_fee', 300,
+  'languages',    '["fr","ar"]'::jsonb
+)
+WHERE id = '00000000-0000-0000-0000-000000000003'
+  AND (metadata IS NULL OR metadata = '{}'::jsonb);
+
 COMMIT;
