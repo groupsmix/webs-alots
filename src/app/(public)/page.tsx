@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { getTenant } from "@/lib/tenant";
+import { LandingPage } from "@/components/landing/landing-page";
 import { HeroSection } from "@/components/public/hero-section";
 import { ServicesPreview } from "@/components/public/services-preview";
 import {
@@ -22,22 +24,49 @@ import {
   LocationSection,
 } from "@/components/public/sections";
 
-export const metadata: Metadata = {
-  title: "Accueil — Cabinet Médical",
-  description:
-    "Bienvenue dans notre cabinet médical. Prenez rendez-vous en ligne, consultez nos services et découvrez notre équipe médicale.",
-  openGraph: {
+export async function generateMetadata(): Promise<Metadata> {
+  const tenant = await getTenant();
+
+  if (!tenant) {
+    return {
+      title: "Oltigo — La plateforme complète pour gérer votre cabinet médical",
+      description:
+        "Créez le site de votre cabinet, gérez les rendez-vous et développez votre activité facilement. Plateforme SaaS pour médecins et cabinets au Maroc.",
+      openGraph: {
+        title: "Oltigo — La plateforme complète pour gérer votre cabinet médical",
+        description:
+          "Créez le site de votre cabinet, gérez les rendez-vous et développez votre activité facilement.",
+        type: "website",
+        locale: "fr_MA",
+        siteName: "Oltigo",
+      },
+    };
+  }
+
+  return {
     title: "Accueil — Cabinet Médical",
     description:
-      "Bienvenue dans notre cabinet médical. Prenez rendez-vous en ligne, consultez nos services.",
-  },
-};
+      "Bienvenue dans notre cabinet médical. Prenez rendez-vous en ligne, consultez nos services et découvrez notre équipe médicale.",
+    openGraph: {
+      title: "Accueil — Cabinet Médical",
+      description:
+        "Bienvenue dans notre cabinet médical. Prenez rendez-vous en ligne, consultez nos services.",
+    },
+  };
+}
 
 const linkBtnOutline =
   "inline-flex items-center justify-center rounded-lg border border-border bg-background px-2.5 py-1.5 text-sm font-medium hover:bg-muted hover:text-foreground transition-colors";
 
 export default async function HomePage() {
-  // Fetch branding, reviews, and average rating in parallel to reduce TTFB
+  const tenant = await getTenant();
+
+  // Root domain (no subdomain) → show SaaS landing page
+  if (!tenant) {
+    return <LandingPage />;
+  }
+
+  // Subdomain → show clinic homepage with tenant data
   const [branding, reviews, avgRating] = await Promise.all([
     getPublicBranding(),
     getPublicReviews(),
