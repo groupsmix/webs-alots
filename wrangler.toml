@@ -58,7 +58,7 @@ binding = "R2_BUCKET"
 bucket_name = "webs-alots-uploads-staging"
 
 [env.staging.vars]
-ROOT_DOMAIN = "oltigo.com"
+ROOT_DOMAIN = "staging.oltigo.com"
 NEXT_PUBLIC_SITE_URL = "https://staging.oltigo.com"
 R2_BUCKET_NAME = "webs-alots-uploads-staging"
 

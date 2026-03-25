@@ -136,8 +136,12 @@ function createSupabaseRateLimiter(options: RateLimiterOptions): RateLimiter {
           .maybeSingle();
 
         if (error) {
-          logger.error("Rate limiter query failed", { context: "rate-limit", error });
-          return false;
+          // Fail OPEN: allow the request through when the rate-limit
+          // infrastructure is unavailable (e.g. table missing, network
+          // error). Blocking all traffic because of an infra outage is
+          // worse than temporarily losing rate-limit protection.
+          logger.error("Rate limiter query failed — failing open", { context: "rate-limit", error });
+          return true;
         }
 
         if (!data || data.reset_at <= windowStart) {
@@ -150,8 +154,8 @@ function createSupabaseRateLimiter(options: RateLimiterOptions): RateLimiter {
             );
 
           if (upsertError) {
-            logger.error("Rate limiter upsert failed", { context: "rate-limit", error: upsertError });
-            return false;
+            logger.error("Rate limiter upsert failed — failing open", { context: "rate-limit", error: upsertError });
+            return true;
           }
           return true;
         }
@@ -169,8 +173,8 @@ function createSupabaseRateLimiter(options: RateLimiterOptions): RateLimiter {
           .maybeSingle();
 
         if (updateError) {
-          logger.error("Rate limiter update failed", { context: "rate-limit", error: updateError });
-          return false;
+          logger.error("Rate limiter update failed — failing open", { context: "rate-limit", error: updateError });
+          return true;
         }
 
         // If no row was updated, another request incremented concurrently.
@@ -186,11 +190,12 @@ function createSupabaseRateLimiter(options: RateLimiterOptions): RateLimiter {
 
         return newCount <= max;
       } catch (err) {
-        // Network/transient failure — fail closed to prevent abuse.
-        // This may briefly block legitimate traffic during outages,
-        // but is safer than allowing unlimited requests.
-        logger.error("Rate limiter network failure — failing closed", { context: "rate-limit", error: err });
-        return false;
+        // Network/transient failure — fail OPEN to prevent blocking
+        // all legitimate traffic during infrastructure outages.
+        // The trade-off (briefly losing rate-limit protection) is
+        // preferable to returning 429 to every user.
+        logger.error("Rate limiter network failure — failing open", { context: "rate-limit", error: err });
+        return true;
       }
     },
   };
