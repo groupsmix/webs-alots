@@ -328,6 +328,7 @@ export async function POST(request: NextRequest) {
       .in("status", [
         APPOINTMENT_STATUS.CONFIRMED,
         APPOINTMENT_STATUS.PENDING,
+        APPOINTMENT_STATUS.RESCHEDULED,
       ]);
 
     if (slotCount !== null && slotCount > maxPerSlot) {

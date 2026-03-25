@@ -121,6 +121,17 @@ function withSecurityHeaders(
 }
 
 /**
+ * Apply security headers to redirect responses.  Redirects have no body
+ * so CSP is omitted, but HSTS and X-Content-Type-Options still apply.
+ */
+function secureRedirect(url: string | URL, init?: number | ResponseInit): NextResponse {
+  const response = NextResponse.redirect(url, init);
+  response.headers.set("Strict-Transport-Security", "max-age=31536000; includeSubDomains; preload");
+  response.headers.set("X-Content-Type-Options", "nosniff");
+  return response;
+}
+
+/**
  * Build the Content-Security-Policy header value with a per-request nonce
  * for script-src (replaces 'unsafe-inline').
  *
@@ -166,7 +177,7 @@ export async function middleware(request: NextRequest) {
   if (hostWithoutPort === `www.${rootDomain?.split(":")[0] ?? ""}`) {
     const url = request.nextUrl.clone();
     url.host = rootDomain ?? hostname.replace(/^www\./, "");
-    return NextResponse.redirect(url, 301);
+    return secureRedirect(url, 301);
   }
 
   // --- Generate a per-request nonce for CSP ---
@@ -302,7 +313,7 @@ export async function middleware(request: NextRequest) {
     if (isProtectedRoute(pathname)) {
       const loginUrl = new URL("/login", request.url);
       loginUrl.searchParams.set("redirect", pathname);
-      return NextResponse.redirect(loginUrl);
+      return secureRedirect(loginUrl);
     }
     const noSupabaseResponse = NextResponse.next({
       request: { headers: requestHeaders },
@@ -362,7 +373,7 @@ export async function middleware(request: NextRequest) {
       const rootUrl = rootDomain
         ? `${request.nextUrl.protocol}//${rootDomain}`
         : request.nextUrl.origin;
-      return NextResponse.redirect(rootUrl);
+      return secureRedirect(rootUrl);
     }
 
     // Attach tenant info to all responses so pages can read it
@@ -404,7 +415,7 @@ export async function middleware(request: NextRequest) {
     if (user && (pathname === "/login" || pathname === "/register") && profile) {
       const dashboardPath =
         ROLE_DASHBOARD_MAP[profile.role] || "/patient/dashboard";
-      return NextResponse.redirect(new URL(dashboardPath, request.url));
+      return secureRedirect(new URL(dashboardPath, request.url));
     }
     return supabaseResponse;
   }
@@ -413,7 +424,7 @@ export async function middleware(request: NextRequest) {
   if (isProtectedRoute(pathname) && !user) {
     const loginUrl = new URL("/login", request.url);
     loginUrl.searchParams.set("redirect", pathname);
-    return NextResponse.redirect(loginUrl);
+    return secureRedirect(loginUrl);
   }
 
   // If authenticated, check role-based access
@@ -429,7 +440,7 @@ export async function middleware(request: NextRequest) {
     if (allowedPrefix && !pathname.startsWith(allowedPrefix)) {
       const dashboardPath =
         ROLE_DASHBOARD_MAP[profile.role] || "/patient/dashboard";
-      return NextResponse.redirect(new URL(dashboardPath, request.url));
+      return secureRedirect(new URL(dashboardPath, request.url));
     }
   }
 

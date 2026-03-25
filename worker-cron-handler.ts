@@ -47,9 +47,11 @@ export default {
     const headers: HeadersInit = {};
 
     const cronSecret = env.CRON_SECRET;
-    if (cronSecret) {
-      headers["Authorization"] = `Bearer ${cronSecret}`;
+    if (!cronSecret) {
+      console.error(`[Cron] CRON_SECRET is not set — skipping ${route} to prevent unauthenticated requests`);
+      return;
     }
+    headers["Authorization"] = `Bearer ${cronSecret}`;
 
     const request = new Request(url.toString(), { headers });
 
