@@ -26,6 +26,9 @@ jobs:
       - name: Run ESLint
         run: npm run lint
 
+      - name: Type check
+        run: npx tsc --noEmit
+
   deploy:
     runs-on: ubuntu-latest
     needs: lint
