@@ -136,7 +136,7 @@ function buildCsp(nonce: string): string {
   const isDev = process.env.NODE_ENV === "development";
   return [
     "default-src 'self'",
-    `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'${isDev ? " 'unsafe-eval'" : ""}`,
+    `script-src 'self' 'nonce-${nonce}' 'strict-dynamic' https://static.cloudflareinsights.com${isDev ? " 'unsafe-eval'" : ""}`,
     // Styles: self + inline (Tailwind, shadcn) — see ACCEPTED RISK above
     "style-src 'self' 'unsafe-inline'",
     // Images: self + R2 storage + Supabase storage + data URIs + blobs
@@ -144,7 +144,7 @@ function buildCsp(nonce: string): string {
     // Fonts: self + common CDNs
     "font-src 'self' data:",
     // API connections: self + Supabase + WhatsApp + Cloudflare + Google
-    "connect-src 'self' *.supabase.co wss://*.supabase.co graph.facebook.com api.twilio.com api.cloudflare.com *.googleapis.com",
+    "connect-src 'self' *.supabase.co wss://*.supabase.co graph.facebook.com api.twilio.com api.cloudflare.com *.googleapis.com https://cloudflareinsights.com https://static.cloudflareinsights.com",
     // Frames: Google Maps embeds + Cloudflare Turnstile CAPTCHA
     "frame-src 'self' www.google.com https://challenges.cloudflare.com",
     // Form actions: self only
