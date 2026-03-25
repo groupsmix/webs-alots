@@ -66,15 +66,11 @@ const nextConfig: NextConfig = {
   },
 
   async redirects() {
-    return [
-      // Redirect www to non-www (canonical domain)
-      {
-        source: "/:path*",
-        has: [{ type: "host", value: "www.oltigo.com" }],
-        destination: "https://oltigo.com/:path*",
-        permanent: true,
-      },
-    ];
+    // WWW → non-www redirect is handled in middleware.ts so it works
+    // on Cloudflare Workers (next.config redirects are not supported
+    // by OpenNext on Workers). This block is kept for any future
+    // non-host-based redirects.
+    return [];
   },
 };
 

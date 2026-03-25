@@ -8,13 +8,13 @@ import { buttonVariants } from "@/components/ui/button";
 import { clinicConfig } from "@/config/clinic.config";
 
 const navLinks = [
-  { href: "/", label: "Home" },
+  { href: "/", label: "Accueil" },
   { href: "/services", label: "Services" },
-  { href: "/about", label: "About" },
-  { href: "/how-to-book", label: "How to Book" },
-  { href: "/location", label: "Location & Hours" },
+  { href: "/about", label: "À propos" },
+  { href: "/how-to-book", label: "Rendez-vous" },
+  { href: "/location", label: "Accès & Horaires" },
   { href: "/contact", label: "Contact" },
-  { href: "/reviews", label: "Reviews" },
+  { href: "/reviews", label: "Avis" },
 ];
 
 interface PublicHeaderProps {
@@ -48,7 +48,7 @@ export function PublicHeader({ logoUrl, clinicName }: PublicHeaderProps) {
             </Link>
           ))}
           <Link href="/book" className={buttonVariants()}>
-            Book Now
+            Prendre RDV
           </Link>
         </nav>
 
@@ -77,7 +77,7 @@ export function PublicHeader({ logoUrl, clinicName }: PublicHeaderProps) {
               </Link>
             ))}
             <Link href="/book" className={buttonVariants({ className: "mt-2" })}>
-              Book Now
+              Prendre RDV
             </Link>
           </div>
         </nav>

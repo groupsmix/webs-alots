@@ -40,7 +40,7 @@ export function ProgressPhotoGallery({ photos }: ProgressPhotoGalleryProps) {
           }`}
           onClick={() => setSelectedPatient(null)}
         >
-          All Patients
+          Tous les patients
         </button>
         {patients.map((name) => (
           <button
@@ -59,7 +59,7 @@ export function ProgressPhotoGallery({ photos }: ProgressPhotoGalleryProps) {
       {Object.keys(dateGroups).length === 0 ? (
         <div className="text-center py-12">
           <Camera className="h-12 w-12 mx-auto text-muted-foreground mb-3" />
-          <p className="text-sm text-muted-foreground">No progress photos yet.</p>
+          <p className="text-sm text-muted-foreground">Aucune photo de suivi pour le moment.</p>
         </div>
       ) : (
         <div className="space-y-6">
@@ -106,7 +106,7 @@ export function ProgressPhotoGallery({ photos }: ProgressPhotoGalleryProps) {
           <CardHeader>
             <CardTitle className="text-sm flex items-center gap-2">
               <ChevronLeft className="h-4 w-4" />
-              Progress Comparison
+              Comparaison de progrès
               <ChevronRight className="h-4 w-4" />
             </CardTitle>
           </CardHeader>

@@ -8,7 +8,7 @@ interface PublicFooterProps {
 
 export function PublicFooter({ clinicName }: PublicFooterProps) {
   const contact = defaultWebsiteConfig.contact;
-  const displayName = clinicName || clinicConfig.name;
+  const displayName = clinicName || clinicConfig.name || "Oltigo";
 
   return (
     <footer className="border-t bg-muted/50 py-8">
@@ -20,7 +20,7 @@ export function PublicFooter({ clinicName }: PublicFooterProps) {
           </div>
 
           <div>
-            <h3 className="font-semibold mb-2">Quick Links</h3>
+            <h3 className="font-semibold mb-2">Liens rapides</h3>
             <nav className="flex flex-col gap-1">
               <Link
                 href="/services"
@@ -32,13 +32,13 @@ export function PublicFooter({ clinicName }: PublicFooterProps) {
                 href="/how-to-book"
                 className="text-sm text-muted-foreground hover:text-foreground"
               >
-                How to Book
+                Rendez-vous
               </Link>
               <Link
                 href="/location"
                 className="text-sm text-muted-foreground hover:text-foreground"
               >
-                Location & Hours
+                Accès & Horaires
               </Link>
               <Link
                 href="/contact"
@@ -57,8 +57,8 @@ export function PublicFooter({ clinicName }: PublicFooterProps) {
         </div>
 
         <div className="mt-8 border-t pt-4 text-center text-xs text-muted-foreground">
-          &copy; {new Date().getFullYear()} {displayName}. All rights
-          reserved.
+          &copy; {new Date().getFullYear()} {displayName}. Tous droits
+          réservés.
         </div>
       </div>
     </footer>

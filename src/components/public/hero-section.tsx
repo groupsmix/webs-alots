@@ -50,8 +50,8 @@ export function HeroSection() {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                     </svg>
                   </div>
-                  <p className="text-sm font-medium">Doctor Photo</p>
-                  <p className="text-xs mt-1">Set via Website Editor</p>
+                  <p className="text-sm font-medium">Photo du médecin</p>
+                  <p className="text-xs mt-1">Configurable via l&apos;éditeur</p>
                 </div>
               </div>
             )}

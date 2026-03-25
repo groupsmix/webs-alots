@@ -63,8 +63,9 @@ function validateFileContent(buffer: Buffer, declaredType: string): boolean {
 
 export const POST = withAuth(async (request, { profile }) => {
   if (!isR2Configured()) {
+    logger.warn("Upload attempted but R2 storage is not configured", { context: "upload" });
     return NextResponse.json(
-      { error: "File storage is not configured" },
+      { error: "File storage is not configured. Contact the administrator." },
       { status: 503 },
     );
   }

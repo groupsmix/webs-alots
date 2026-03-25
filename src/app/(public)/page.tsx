@@ -67,7 +67,7 @@ export default async function HomePage() {
           <div className="container mx-auto px-4">
             <div className="text-center mb-12">
               <h2 className="text-3xl font-bold mb-4">
-                What Our Patients Say
+                Ce que disent nos patients
               </h2>
               <div className="flex items-center justify-center gap-2">
                 <span className="text-3xl font-bold">{avgRating}</span>
@@ -84,7 +84,7 @@ export default async function HomePage() {
                   ))}
                 </div>
                 <span className="text-sm text-muted-foreground">
-                  ({reviews.length} reviews)
+                  ({reviews.length} avis)
                 </span>
               </div>
             </div>
@@ -114,7 +114,7 @@ export default async function HomePage() {
             </div>
             <div className="mt-10 text-center">
               <Link href="/reviews" className={linkBtnOutline}>
-                View All Reviews
+                Voir tous les avis
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Link>
             </div>

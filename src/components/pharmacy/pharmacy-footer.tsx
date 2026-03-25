@@ -6,40 +6,40 @@ export function PharmacyFooter() {
       <div className="container mx-auto px-4">
         <div className="grid gap-8 md:grid-cols-4">
           <div>
-            <h3 className="font-semibold mb-2">Pharmacie Centrale</h3>
+            <h3 className="font-semibold mb-2">Pharmacie</h3>
             <p className="text-sm text-muted-foreground">
-              Your trusted neighborhood pharmacy providing quality healthcare products and services.
+              Votre pharmacie de confiance pour des produits et services de santé de qualité.
             </p>
           </div>
 
           <div>
-            <h3 className="font-semibold mb-2">Quick Links</h3>
+            <h3 className="font-semibold mb-2">Liens rapides</h3>
             <nav className="flex flex-col gap-1">
-              <Link href="/pharmacy/catalog" className="text-sm text-muted-foreground hover:text-foreground">Products</Link>
+              <Link href="/pharmacy/catalog" className="text-sm text-muted-foreground hover:text-foreground">Produits</Link>
               <Link href="/pharmacy/services" className="text-sm text-muted-foreground hover:text-foreground">Services</Link>
-              <Link href="/pharmacy/prescription-upload" className="text-sm text-muted-foreground hover:text-foreground">Upload Prescription</Link>
-              <Link href="/pharmacy/prescription-history" className="text-sm text-muted-foreground hover:text-foreground">Prescription History</Link>
+              <Link href="/pharmacy/prescription-upload" className="text-sm text-muted-foreground hover:text-foreground">Envoyer une ordonnance</Link>
+              <Link href="/pharmacy/prescription-history" className="text-sm text-muted-foreground hover:text-foreground">Historique des ordonnances</Link>
             </nav>
           </div>
 
           <div>
-            <h3 className="font-semibold mb-2">Hours</h3>
-            <p className="text-sm text-muted-foreground">Mon - Fri: 08:30 - 20:00</p>
-            <p className="text-sm text-muted-foreground">Saturday: 09:00 - 18:00</p>
-            <p className="text-sm text-muted-foreground">Sunday: Closed</p>
-            <p className="text-sm text-emerald-600 font-medium mt-1">On-duty nights: See schedule</p>
+            <h3 className="font-semibold mb-2">Horaires</h3>
+            <p className="text-sm text-muted-foreground">Lun - Ven : 08h30 - 20h00</p>
+            <p className="text-sm text-muted-foreground">Samedi : 09h00 - 18h00</p>
+            <p className="text-sm text-muted-foreground">Dimanche : Fermé</p>
+            <p className="text-sm text-emerald-600 font-medium mt-1">Garde de nuit : Voir le planning</p>
           </div>
 
           <div>
             <h3 className="font-semibold mb-2">Contact</h3>
-            <p className="text-sm text-muted-foreground">+212 5 22 30 40 50</p>
-            <p className="text-sm text-muted-foreground">contact@pharmacie-centrale.ma</p>
-            <p className="text-sm text-muted-foreground">123 Bd Mohammed V, Casablanca</p>
+            <p className="text-sm text-muted-foreground"></p>
+            <p className="text-sm text-muted-foreground"></p>
+            <p className="text-sm text-muted-foreground"></p>
           </div>
         </div>
 
         <div className="mt-8 border-t pt-4 text-center text-xs text-muted-foreground">
-          &copy; {new Date().getFullYear()} Pharmacie Centrale. All rights reserved.
+          &copy; {new Date().getFullYear()} Pharmacie. Tous droits réservés.
         </div>
       </div>
     </footer>

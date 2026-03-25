@@ -23,10 +23,10 @@ export default function ContactPage() {
   const cfg = defaultWebsiteConfig.contact;
 
   const contactInfo = [
-    { icon: Phone, label: "Phone", value: cfg.phone },
+    { icon: Phone, label: "Téléphone", value: cfg.phone },
     { icon: MessageCircle, label: "WhatsApp", value: cfg.whatsapp },
     { icon: Mail, label: "Email", value: cfg.email },
-    { icon: MapPin, label: "Address", value: cfg.address },
+    { icon: MapPin, label: "Adresse", value: cfg.address },
   ];
 
   const whatsappLink = `https://wa.me/${cfg.whatsapp.replace(/\s+/g, "")}?text=${encodeURIComponent(cfg.whatsappMessage)}`;
@@ -89,9 +89,9 @@ export default function ContactPage() {
                 <MessageCircle className="h-6 w-6 text-green-600" />
               </div>
               <div className="flex-1">
-                <p className="font-medium">Chat with us on WhatsApp</p>
+                <p className="font-medium">Écrivez-nous sur WhatsApp</p>
                 <p className="text-sm text-muted-foreground">
-                  Quick responses during working hours
+                  Réponses rapides pendant les heures de travail
                 </p>
               </div>
               <Link
@@ -100,7 +100,7 @@ export default function ContactPage() {
                 rel="noopener noreferrer"
                 className="inline-flex items-center justify-center rounded-lg bg-green-600 text-white px-4 py-2 text-sm font-medium hover:bg-green-700 transition-colors"
               >
-                Open WhatsApp
+                Ouvrir WhatsApp
               </Link>
             </CardContent>
           </Card>
@@ -108,17 +108,17 @@ export default function ContactPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Send us a Message</CardTitle>
+            <CardTitle>Envoyez-nous un message</CardTitle>
           </CardHeader>
           <CardContent>
             <form className="space-y-4">
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
-                  <Label htmlFor="name">Full Name</Label>
-                  <Input id="name" placeholder="Your name" />
+                  <Label htmlFor="name">Nom complet</Label>
+                  <Input id="name" placeholder="Votre nom" />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="phone">Phone Number</Label>
+                  <Label htmlFor="phone">Téléphone</Label>
                   <Input id="phone" placeholder="+212 6XX XX XX XX" />
                 </div>
               </div>
@@ -127,15 +127,15 @@ export default function ContactPage() {
                 <Input id="email" type="email" placeholder="your@email.com" />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="subject">Subject</Label>
-                <Input id="subject" placeholder="How can we help?" />
+                <Label htmlFor="subject">Objet</Label>
+                <Input id="subject" placeholder="Comment pouvons-nous vous aider ?" />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="message">Message</Label>
-                <Textarea id="message" placeholder="Your message..." rows={4} />
+                <Textarea id="message" placeholder="Votre message..." rows={4} />
               </div>
               <Button type="button" className="w-full">
-                Send Message
+                Envoyer le message
               </Button>
             </form>
           </CardContent>

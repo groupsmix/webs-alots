@@ -90,18 +90,16 @@ export const defaultWebsiteConfig: WebsiteConfig = {
   },
 
   about: {
-    doctorName: "Dr. Ahmed Benali",
-    specialty: "General Medicine",
-    bio: "Dedicated to providing exceptional healthcare with a patient-centered approach. Combining modern medical practices with compassionate care for every patient.",
+    doctorName: "",
+    specialty: "",
+    bio: "",
     photoUrl: undefined,
-    education: "Doctor of Medicine \u2014 University of Casablanca",
-    specialization: "Board Certified in General & Internal Medicine",
-    experience: "15+ years of clinical practice",
-    languages: "Arabic, French, English",
-    practiceDescription:
-      "Our clinic is equipped with modern medical technology and provides a comfortable, welcoming environment for all patients. We believe in preventive medicine and thorough diagnosis to ensure the best outcomes.",
-    practiceDetails:
-      "Whether you need a routine check-up, specialized consultation, or ongoing care management, our team is here to support your health journey. We accept most major insurance providers including CNSS and CNOPS.",
+    education: "",
+    specialization: "",
+    experience: "",
+    languages: "",
+    practiceDescription: "",
+    practiceDetails: "",
   },
 
   howToBook: {
@@ -136,10 +134,9 @@ export const defaultWebsiteConfig: WebsiteConfig = {
     title: "Location & Hours",
     subtitle:
       "Visit us at our conveniently located clinic. We look forward to welcoming you.",
-    address: "123 Bd Mohammed V, Casablanca",
-    city: "Casablanca, Morocco",
-    googleMapsEmbedUrl:
-      "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3323.846!2d-7.6192!3d33.5731!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zMzPCsDM0JzIzLjIiTiA3wrAzNycwOS4xIlc!5e0!3m2!1sen!2sma!4v1",
+    address: "",
+    city: "",
+    googleMapsEmbedUrl: "",
     workingHours: [
       { day: "Monday", hours: "09:00 - 17:00" },
       { day: "Tuesday", hours: "09:00 - 17:00" },
@@ -155,10 +152,10 @@ export const defaultWebsiteConfig: WebsiteConfig = {
     title: "Contact Us",
     subtitle:
       "Have a question or need to reach us? We're here to help. Use any of the methods below or send us a message.",
-    phone: "+212 6 12 34 56 78",
-    whatsapp: "+212 6 12 34 56 78",
-    email: "contact@clinic.ma",
-    address: "123 Bd Mohammed V, Casablanca",
+    phone: "",
+    whatsapp: "",
+    email: "",
+    address: "",
     whatsappMessage: "Hello, I would like to book an appointment.",
   },
 

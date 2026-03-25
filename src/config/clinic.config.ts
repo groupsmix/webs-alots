@@ -130,7 +130,7 @@ export interface ClinicConfig {
  */
 export const clinicConfig: ClinicConfig = {
   // clinicId removed — tenant identity comes from request context (requireTenant())
-  name: "Demo Clinic",
+  name: "",
   type: "doctor",
   tier: "pro",
   domain: undefined,
