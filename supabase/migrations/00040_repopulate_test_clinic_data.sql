@@ -12,7 +12,10 @@
 -- ============================================================
 
 -- Known clinic ID (seed clinic, subdomain: dr-ahmed)
--- Verify it still exists before inserting dependent rows.
+-- UUIDs use only hex characters (0-9, a-f).
+-- Clinic:  c1000000 → keep as-is (valid hex)
+-- Doctor:  d1000000 → keep as-is (valid hex)
+-- Services: use a1-a5 prefix instead of invalid "s" prefix
 DO $$
 BEGIN
   IF NOT EXISTS (
@@ -36,7 +39,7 @@ VALUES (
   'ahmed@dr-benali.ma',
   'c1000000-0000-0000-0000-000000000001',
   '{
-    "specialty_id": "spec-general-medicine",
+    "specialty_id": "a0000000-0000-0000-0000-0000000000a0",
     "specialty": "General Medicine",
     "consultation_fee": 300,
     "languages": ["fr", "ar"]
@@ -50,19 +53,19 @@ ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO services (id, clinic_id, name, price, duration_minutes, category)
 VALUES
-  ('s0000000-0000-0000-0000-000000000001',
+  ('a0000000-0000-0000-0000-000000000001',
    'c1000000-0000-0000-0000-000000000001',
    'General Consultation', 300.00, 30, 'consultation'),
-  ('s0000000-0000-0000-0000-000000000002',
+  ('a0000000-0000-0000-0000-000000000002',
    'c1000000-0000-0000-0000-000000000001',
    'Follow-up Visit', 200.00, 20, 'follow-up'),
-  ('s0000000-0000-0000-0000-000000000003',
+  ('a0000000-0000-0000-0000-000000000003',
    'c1000000-0000-0000-0000-000000000001',
    'ECG Checkup', 500.00, 45, 'diagnostic'),
-  ('s0000000-0000-0000-0000-000000000004',
+  ('a0000000-0000-0000-0000-000000000004',
    'c1000000-0000-0000-0000-000000000001',
    'Blood Pressure Check', 150.00, 15, 'screening'),
-  ('s0000000-0000-0000-0000-000000000005',
+  ('a0000000-0000-0000-0000-000000000005',
    'c1000000-0000-0000-0000-000000000001',
    'Vaccination', 200.00, 15, 'vaccination')
 ON CONFLICT (id) DO NOTHING;
