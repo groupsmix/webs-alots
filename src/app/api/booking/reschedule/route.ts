@@ -4,6 +4,7 @@ import { requireTenantWithConfig } from "@/lib/tenant";
 import { getPublicAvailableSlots } from "@/lib/data/public";
 import { APPOINTMENT_STATUS } from "@/lib/types/database";
 import { logAuditEvent } from "@/lib/audit-log";
+import { computeEndTime } from "@/lib/timezone";
 import { logger } from "@/lib/logger";
 import { rescheduleSchema, safeParse } from "@/lib/validations";
 import { STAFF_ROLES } from "@/lib/auth-roles";
@@ -65,7 +66,7 @@ export const POST = withAuth(async (request, { supabase, profile }) => {
     // Get the existing appointment (include patient_id for ownership check)
     const { data: existing, error: fetchError } = await supabase
       .from("appointments")
-      .select("id, status, clinic_id, patient_id, doctor_id, service_id")
+      .select("id, status, clinic_id, patient_id, doctor_id, service_id, appointment_date, start_time, end_time, slot_start, slot_end")
       .eq("id", body.appointmentId)
       .eq("clinic_id", clinicId)
       .single();
@@ -96,7 +97,7 @@ export const POST = withAuth(async (request, { supabase, profile }) => {
       );
     }
 
-    // Calculate end_time and slot boundaries
+    // Calculate end_time and slot boundaries using shared computeEndTime
     let duration = tenantConfig.booking.slotDuration;
     if (existing.service_id) {
       const { data: svc } = await supabase
@@ -109,9 +110,13 @@ export const POST = withAuth(async (request, { supabase, profile }) => {
       }
     }
 
-    const [h, m] = body.newTime.split(":").map(Number);
-    const endMinutes = h * 60 + m + duration;
-    const endTime = `${Math.floor(endMinutes / 60).toString().padStart(2, "0")}:${(endMinutes % 60).toString().padStart(2, "0")}`;
+    const { endTime, overflows } = computeEndTime(body.newTime, duration);
+    if (overflows) {
+      return NextResponse.json(
+        { error: "Appointment would extend past midnight. Please choose an earlier time." },
+        { status: 400 },
+      );
+    }
     const slotStart = `${body.newDate}T${body.newTime}:00`;
     const slotEnd = `${body.newDate}T${endTime}:00`;
 
@@ -130,6 +135,44 @@ export const POST = withAuth(async (request, { supabase, profile }) => {
 
     if (updateError) {
       return NextResponse.json({ error: "Failed to update appointment" }, { status: 500 });
+    }
+
+    // ── Post-update maxPerSlot enforcement (TOCTOU guard) ──────────────
+    // Same pattern as the main booking route: after updating we count how
+    // many active bookings now exist for this slot.  If the count exceeds
+    // maxPerSlot the just-updated row lost a race and must be rolled back.
+    const maxPerSlot = tenantConfig.booking.maxPerSlot;
+    const { count: slotCount } = await supabase
+      .from("appointments")
+      .select("id", { count: "exact", head: true })
+      .eq("clinic_id", clinicId)
+      .eq("doctor_id", existing.doctor_id)
+      .eq("appointment_date", body.newDate)
+      .eq("start_time", body.newTime)
+      .in("status", [
+        APPOINTMENT_STATUS.CONFIRMED,
+        APPOINTMENT_STATUS.PENDING,
+        APPOINTMENT_STATUS.RESCHEDULED,
+      ]);
+
+    if (slotCount !== null && slotCount > maxPerSlot) {
+      // Roll back: revert the appointment to its original state
+      await supabase
+        .from("appointments")
+        .update({
+          appointment_date: existing.appointment_date,
+          start_time: existing.start_time,
+          end_time: existing.end_time,
+          slot_start: existing.slot_start,
+          slot_end: existing.slot_end,
+          status: existing.status,
+        })
+        .eq("id", body.appointmentId);
+
+      return NextResponse.json(
+        { error: "This slot has just been fully booked. Please choose another time." },
+        { status: 409 },
+      );
     }
 
     await logAuditEvent({
