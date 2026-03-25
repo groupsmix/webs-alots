@@ -19,10 +19,10 @@ export default function AboutPage() {
   const cfg = defaultWebsiteConfig.about;
 
   const credentials = [
-    { icon: GraduationCap, label: "Education", value: cfg.education },
-    { icon: Award, label: "Specialization", value: cfg.specialization },
-    { icon: Briefcase, label: "Experience", value: cfg.experience },
-    { icon: Languages, label: "Languages", value: cfg.languages },
+    { icon: GraduationCap, label: "Formation", value: cfg.education },
+    { icon: Award, label: "Spécialisation", value: cfg.specialization },
+    { icon: Briefcase, label: "Expérience", value: cfg.experience },
+    { icon: Languages, label: "Langues", value: cfg.languages },
   ];
 
   return (
@@ -69,7 +69,7 @@ export default function AboutPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>About Our Practice</CardTitle>
+            <CardTitle>À propos de notre cabinet</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4 text-sm text-muted-foreground">
             <p>{cfg.practiceDescription}</p>

@@ -19,11 +19,11 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   manifest: "/manifest.webmanifest",
   title: {
-    default: "Health SaaS Platform — Gestion Médicale en Ligne",
-    template: "%s | Health SaaS Platform",
+    default: "Oltigo — Gestion Médicale en Ligne",
+    template: "%s | Oltigo",
   },
   description:
-    "Plateforme SaaS multi-tenant pour la gestion de cabinets médicaux, dentaires et pharmacies au Maroc. Prise de rendez-vous, dossiers patients, ordonnances et plus.",
+    "Plateforme de gestion de cabinets médicaux, dentaires et pharmacies au Maroc. Prise de rendez-vous en ligne, dossiers patients, ordonnances et plus.",
   keywords: [
     "gestion cabinet médical",
     "logiciel médecin",
@@ -34,14 +34,14 @@ export const metadata: Metadata = {
     "dossier patient électronique",
     "plateforme médicale",
   ],
-  authors: [{ name: "Health SaaS Platform" }],
+  authors: [{ name: "Oltigo" }],
   openGraph: {
     type: "website",
     locale: "fr_MA",
-    siteName: "Health SaaS Platform",
-    title: "Health SaaS Platform — Gestion Médicale en Ligne",
+    siteName: "Oltigo",
+    title: "Oltigo — Gestion Médicale en Ligne",
     description:
-      "Plateforme SaaS multi-tenant pour la gestion de cabinets médicaux, dentaires et pharmacies au Maroc.",
+      "Plateforme de gestion de cabinets médicaux, dentaires et pharmacies au Maroc.",
   },
   robots: {
     index: true,
@@ -68,7 +68,7 @@ export default async function RootLayout({
             __html: safeJsonLdStringify({
               "@context": "https://schema.org",
               "@type": "MedicalBusiness",
-              name: tenant?.clinicName ?? "Health SaaS Platform",
+              name: tenant?.clinicName ?? "Oltigo",
               description:
                 "Plateforme SaaS multi-tenant pour la gestion de cabinets m\u00e9dicaux, dentaires et pharmacies au Maroc.",
               url: process.env.NEXT_PUBLIC_SITE_URL ?? "https://example.com",
@@ -80,7 +80,7 @@ export default async function RootLayout({
                 target:
                   (process.env.NEXT_PUBLIC_SITE_URL ?? "https://example.com") +
                   "/book",
-                name: "Prendre rendez-vous",
+                name: "Prendre rendez-vous en ligne",
               },
             }),
           }}
