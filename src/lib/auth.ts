@@ -39,13 +39,15 @@ const ROLE_DASHBOARD_MAP: Record<UserProfile["role"], string> = {
  */
 export async function signInWithPassword(
   email: string,
-  password: string
+  password: string,
+  captchaToken?: string
 ): Promise<{ error: string | null }> {
   const supabase = await createClient();
 
   const { error } = await supabase.auth.signInWithPassword({
     email,
     password,
+    options: captchaToken ? { captchaToken } : undefined,
   });
 
   if (error) {
@@ -66,11 +68,12 @@ export async function signInWithPassword(
  * Send OTP to a phone number via Supabase Auth.
  * Returns an error message if the request fails.
  */
-export async function signInWithOTP(phone: string): Promise<{ error: string | null }> {
+export async function signInWithOTP(phone: string, captchaToken?: string): Promise<{ error: string | null }> {
   const supabase = await createClient();
 
   const { error } = await supabase.auth.signInWithOtp({
     phone,
+    options: captchaToken ? { captchaToken } : undefined,
   });
 
   if (error) {
@@ -86,7 +89,8 @@ export async function signInWithOTP(phone: string): Promise<{ error: string | nu
  */
 export async function verifyOTP(
   phone: string,
-  token: string
+  token: string,
+  captchaToken?: string
 ): Promise<{ error: string | null }> {
   const supabase = await createClient();
 
@@ -94,6 +98,7 @@ export async function verifyOTP(
     phone,
     token,
     type: "sms",
+    options: captchaToken ? { captchaToken } : undefined,
   });
 
   if (error) {
@@ -122,12 +127,14 @@ export async function registerPatient(data: {
   age?: number;
   gender?: string;
   insurance?: string;
+  captchaToken?: string;
 }): Promise<{ error: string | null }> {
   const supabase = await createClient();
 
   const { error } = await supabase.auth.signInWithOtp({
     phone: data.phone,
     options: {
+      captchaToken: data.captchaToken,
       data: {
         name: data.name,
         phone: data.phone,
