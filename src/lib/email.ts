@@ -184,7 +184,7 @@ export async function sendNotificationEmail(
   body: string,
   clinicName?: string,
 ): Promise<EmailSendResult> {
-  const safeBrandName = escapeHtml(clinicName || "Health SaaS Platform");
+  const safeBrandName = escapeHtml(clinicName || "Oltigo");
   const safeSubject = escapeHtml(subject);
   const safeBody = escapeHtml(body);
 
