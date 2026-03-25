@@ -145,8 +145,8 @@ function buildCsp(nonce: string): string {
     "font-src 'self' data:",
     // API connections: self + Supabase + WhatsApp + Cloudflare + Google
     "connect-src 'self' *.supabase.co wss://*.supabase.co graph.facebook.com api.twilio.com api.cloudflare.com *.googleapis.com",
-    // Frames: Google Maps embeds only
-    "frame-src 'self' www.google.com",
+    // Frames: Google Maps embeds + Cloudflare Turnstile CAPTCHA
+    "frame-src 'self' www.google.com https://challenges.cloudflare.com",
     // Form actions: self only
     "form-action 'self'",
     // Base URI: self only
