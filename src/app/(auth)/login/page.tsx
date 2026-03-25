@@ -18,6 +18,7 @@ import { signInWithOTP, verifyOTP, signInWithPassword } from "@/lib/auth";
 import { Turnstile } from "@/components/turnstile";
 
 const TURNSTILE_SITE_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ?? "";
+const PHONE_AUTH_ENABLED = process.env.NEXT_PUBLIC_PHONE_AUTH_ENABLED === "true";
 
 export default function LoginPage() {
   const [method, setMethod] = useState<"email" | "phone">("email");
@@ -235,18 +236,20 @@ export default function LoginPage() {
                   <span className="bg-card px-2 text-muted-foreground">ou</span>
                 </div>
               </div>
-              <Button
-                type="button"
-                variant="outline"
-                className="w-full"
-                onClick={() => {
-                  setMethod("phone");
-                  setError(null);
-                }}
-              >
-                <Phone className="h-4 w-4 mr-2" />
-                Se connecter avec téléphone
-              </Button>
+              {PHONE_AUTH_ENABLED && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full"
+                  onClick={() => {
+                    setMethod("phone");
+                    setError(null);
+                  }}
+                >
+                  <Phone className="h-4 w-4 mr-2" />
+                  Se connecter avec téléphone
+                </Button>
+              )}
             </form>
           ) : (
             <form className="space-y-4" onSubmit={handleSendOTP}>

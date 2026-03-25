@@ -67,8 +67,13 @@ export async function signInWithPassword(
 /**
  * Send OTP to a phone number via Supabase Auth.
  * Returns an error message if the request fails.
+ * Blocked when NEXT_PUBLIC_PHONE_AUTH_ENABLED is not "true".
  */
 export async function signInWithOTP(phone: string, captchaToken?: string): Promise<{ error: string | null }> {
+  if (process.env.NEXT_PUBLIC_PHONE_AUTH_ENABLED !== "true") {
+    return { error: "Phone authentication is currently disabled." };
+  }
+
   const supabase = await createClient();
 
   const { error } = await supabase.auth.signInWithOtp({
@@ -119,6 +124,7 @@ export async function verifyOTP(
  * Register a new patient account.
  * Sends OTP to the phone number. The auth trigger in the DB
  * will auto-create the user profile with the provided metadata.
+ * Blocked when NEXT_PUBLIC_PHONE_AUTH_ENABLED is not "true".
  */
 export async function registerPatient(data: {
   phone: string;
@@ -129,6 +135,10 @@ export async function registerPatient(data: {
   insurance?: string;
   captchaToken?: string;
 }): Promise<{ error: string | null }> {
+  if (process.env.NEXT_PUBLIC_PHONE_AUTH_ENABLED !== "true") {
+    return { error: "Phone registration is currently disabled." };
+  }
+
   const supabase = await createClient();
 
   const { error } = await supabase.auth.signInWithOtp({

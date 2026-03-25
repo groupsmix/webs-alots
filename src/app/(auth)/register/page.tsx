@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/select";
 
 const TURNSTILE_SITE_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ?? "";
+const PHONE_AUTH_ENABLED = process.env.NEXT_PUBLIC_PHONE_AUTH_ENABLED === "true";
 
 export default function RegisterPage() {
   const [step, setStep] = useState<"info" | "otp">("info");
@@ -51,6 +52,11 @@ export default function RegisterPage() {
   async function handleRegister(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+
+    if (!PHONE_AUTH_ENABLED) {
+      setError("L'inscription par t\u00e9l\u00e9phone est temporairement d\u00e9sactiv\u00e9e. Veuillez r\u00e9essayer plus tard.");
+      return;
+    }
 
     if (TURNSTILE_SITE_KEY && !captchaToken) {
       setError("Veuillez compl\u00e9ter la v\u00e9rification de s\u00e9curit\u00e9.");
