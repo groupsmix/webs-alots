@@ -1,10 +1,10 @@
 import Link from "next/link";
 
 const links = [
-  { label: "À propos", href: "/about" },
+  { label: "\u00c0 propos", href: "/about" },
   { label: "Contact", href: "/contact" },
   { label: "Connexion", href: "/login" },
-  { label: "Confidentialité", href: "/privacy" },
+  { label: "Confidentialit\u00e9", href: "/privacy" },
 ] as const;
 
 export function LandingFooter() {
@@ -14,7 +14,7 @@ export function LandingFooter() {
         <div className="flex flex-col items-center justify-between gap-6 sm:flex-row">
           <Link
             href="/"
-            className="text-lg font-bold tracking-tight text-gray-900"
+            className="text-xl font-bold tracking-tight text-gray-900"
           >
             Oltigo
           </Link>
@@ -33,7 +33,7 @@ export function LandingFooter() {
         </div>
 
         <div className="mt-8 border-t border-gray-100 pt-8 text-center text-xs text-gray-400">
-          &copy; {new Date().getFullYear()} Oltigo. Tous droits réservés.
+          &copy; {new Date().getFullYear()} Oltigo. Tous droits r&eacute;serv&eacute;s.
         </div>
       </div>
     </footer>
