@@ -11,7 +11,9 @@ import {
 import { createTenantClient } from "@/lib/supabase-server";
 import { APPOINTMENT_STATUS, BOOKING_SOURCE } from "@/lib/types/database";
 import { logAuditEvent } from "@/lib/audit-log";
-import { findOrCreatePatient } from "@/lib/find-or-create-patient";
+// findOrCreatePatient is used by authenticated routes (recurring, emergency-slot, etc.)
+// For the anonymous booking flow we use the booking_find_or_create_patient RPC instead
+// (SECURITY DEFINER function that bypasses users-table RLS).
 import { computeEndTime } from "@/lib/timezone";
 import { logger } from "@/lib/logger";
 import { safeParse } from "@/lib/validations";
@@ -243,13 +245,20 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Service not found in this clinic" }, { status: 400 });
     }
 
-    // Find or create a patient record using the shared utility
-    // (prefers phone-based lookup to avoid name collisions)
-    const patientId = await findOrCreatePatient(
-      supabase, clinicId, "patient-new", body.patient.name,
-      { phone: body.patient.phone, email: body.patient.email },
-    );
-    if (!patientId) {
+    // Find or create a patient record using the SECURITY DEFINER RPC
+    // (bypasses users-table RLS for the anon role while keeping tenant isolation)
+    const { data: patientId, error: patientError } = await supabase
+      .rpc("booking_find_or_create_patient", {
+        p_clinic_id: clinicId,
+        p_name: body.patient.name,
+        p_phone: body.patient.phone,
+        p_email: body.patient.email ?? undefined,
+      });
+    if (patientError || !patientId) {
+      logger.warn("Failed to find/create patient", {
+        context: "booking/route",
+        error: patientError,
+      });
       return NextResponse.json({ error: "Failed to create patient record" }, { status: 500 });
     }
 
