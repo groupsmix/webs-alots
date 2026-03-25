@@ -33,6 +33,16 @@ const ENV_RULES: EnvRule[] = [
   // ── Auth / Security ────────────────────────────────────────────────
   { name: "BOOKING_TOKEN_SECRET", required: process.env.NODE_ENV === "production", description: "HMAC secret for booking verification tokens (required in production)", group: "auth" },
 
+  // ── Phone Auth (Twilio SMS OTP) ──────────────────────────────────────
+  // These are NOT required at startup. They are only needed when
+  // NEXT_PUBLIC_PHONE_AUTH_ENABLED is set to "true". Documented here
+  // so that `validateEnv()` can warn when phone auth is enabled but
+  // the Twilio credentials are missing.
+  // Configure these in Supabase Dashboard > Auth > Providers > Phone:
+  //   - TWILIO_ACCOUNT_SID
+  //   - TWILIO_AUTH_TOKEN
+  //   - TWILIO_MESSAGE_SERVICE_SID
+
   // ── Multi-tenant ───────────────────────────────────────────────────
   { name: "ROOT_DOMAIN", required: process.env.NODE_ENV === "production", description: "Root domain for subdomain routing (required in production)", group: "tenant" },
   { name: "NEXT_PUBLIC_SITE_URL", required: process.env.NODE_ENV === "production", description: "Public site URL for CSRF and links (required in production)", group: "tenant" },
