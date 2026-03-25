@@ -7,9 +7,6 @@ import {
 import { hmacSha256Hex, timingSafeEqual } from "@/lib/crypto-utils";
 import { logger } from "@/lib/logger";
 import { setTenantContext, logTenantContext } from "@/lib/tenant-context";
-
-export const runtime = "edge";
-
 /**
  * Verifies the Meta webhook signature (X-Hub-Signature-256) using HMAC-SHA256.
  * Returns true if the signature is valid, false otherwise.
