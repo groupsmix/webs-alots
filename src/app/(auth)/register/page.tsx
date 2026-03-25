@@ -107,6 +107,46 @@ export default function RegisterPage() {
     }
   }
 
+  if (!PHONE_AUTH_ENABLED) {
+    return (
+      <div className="w-full max-w-md mx-auto">
+        <div className="text-center mb-6">
+          <div className="flex items-center justify-center gap-2 mb-2">
+            <div className="h-10 w-10 rounded-xl bg-primary flex items-center justify-center">
+              <Heart className="h-5 w-5 text-primary-foreground" />
+            </div>
+          </div>
+          <h1 className="text-xl font-bold">Portail Santé</h1>
+          <p className="text-sm text-muted-foreground">Créez votre compte patient</p>
+        </div>
+
+        <Card>
+          <CardHeader className="text-center pb-4">
+            <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-muted">
+              <UserPlus className="h-6 w-6 text-muted-foreground" />
+            </div>
+            <CardTitle className="text-xl">Inscription indisponible</CardTitle>
+            <CardDescription>
+              L&apos;inscription par téléphone n&apos;est pas encore activée.
+              Veuillez contacter votre clinique pour créer un compte.
+            </CardDescription>
+          </CardHeader>
+          <CardFooter className="justify-center border-t pt-4">
+            <p className="text-sm text-muted-foreground">
+              Vous avez déjà un compte ?{" "}
+              <Link
+                href="/login"
+                className="text-primary hover:underline font-medium"
+              >
+                Se connecter
+              </Link>
+            </p>
+          </CardFooter>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="w-full max-w-md mx-auto">
       <div className="text-center mb-6">

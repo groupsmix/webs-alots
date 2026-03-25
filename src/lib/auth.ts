@@ -3,6 +3,18 @@
 import { createClient } from "@/lib/supabase-server";
 import { redirect } from "next/navigation";
 
+/**
+ * Phone auth feature flag.
+ *
+ * When `false` (the default), all phone/OTP server actions reject
+ * immediately — even if a caller somehow bypasses the UI gate.
+ * Flip to `"true"` only after Twilio credentials are configured in
+ * Supabase Dashboard and end-to-end SMS delivery is verified.
+ */
+function isPhoneAuthEnabled(): boolean {
+  return process.env.NEXT_PUBLIC_PHONE_AUTH_ENABLED === "true";
+}
+
 // ============================================================
 // Types
 // ============================================================
@@ -67,11 +79,13 @@ export async function signInWithPassword(
 /**
  * Send OTP to a phone number via Supabase Auth.
  * Returns an error message if the request fails.
- * Blocked when NEXT_PUBLIC_PHONE_AUTH_ENABLED is not "true".
+ *
+ * Gated by `NEXT_PUBLIC_PHONE_AUTH_ENABLED`. When the flag is not
+ * `"true"`, this action rejects immediately without calling Supabase.
  */
 export async function signInWithOTP(phone: string, captchaToken?: string): Promise<{ error: string | null }> {
-  if (process.env.NEXT_PUBLIC_PHONE_AUTH_ENABLED !== "true") {
-    return { error: "Phone authentication is currently disabled." };
+  if (!isPhoneAuthEnabled()) {
+    return { error: "Phone authentication is not currently available." };
   }
 
   const supabase = await createClient();
@@ -91,12 +105,18 @@ export async function signInWithOTP(phone: string, captchaToken?: string): Promi
 /**
  * Verify the OTP code entered by the user.
  * On success, redirects to the appropriate dashboard based on user role.
+ *
+ * Gated by `NEXT_PUBLIC_PHONE_AUTH_ENABLED`.
  */
 export async function verifyOTP(
   phone: string,
   token: string,
   captchaToken?: string
 ): Promise<{ error: string | null }> {
+  if (!isPhoneAuthEnabled()) {
+    return { error: "Phone authentication is not currently available." };
+  }
+
   const supabase = await createClient();
 
   const { error } = await supabase.auth.verifyOtp({
@@ -124,7 +144,8 @@ export async function verifyOTP(
  * Register a new patient account.
  * Sends OTP to the phone number. The auth trigger in the DB
  * will auto-create the user profile with the provided metadata.
- * Blocked when NEXT_PUBLIC_PHONE_AUTH_ENABLED is not "true".
+ *
+ * Gated by `NEXT_PUBLIC_PHONE_AUTH_ENABLED`.
  */
 export async function registerPatient(data: {
   phone: string;
@@ -135,8 +156,8 @@ export async function registerPatient(data: {
   insurance?: string;
   captchaToken?: string;
 }): Promise<{ error: string | null }> {
-  if (process.env.NEXT_PUBLIC_PHONE_AUTH_ENABLED !== "true") {
-    return { error: "Phone registration is currently disabled." };
+  if (!isPhoneAuthEnabled()) {
+    return { error: "Phone registration is not currently available." };
   }
 
   const supabase = await createClient();

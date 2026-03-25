@@ -150,7 +150,7 @@ export default function LoginPage() {
             </div>
           )}
 
-          {step === "otp" ? (
+          {step === "otp" && PHONE_AUTH_ENABLED ? (
             <form className="space-y-4" onSubmit={handleVerifyOTP}>
               <div className="space-y-2">
                 <Label htmlFor="otp">Code de vérification</Label>
@@ -228,30 +228,32 @@ export default function LoginPage() {
               <Button type="submit" className="w-full" disabled={loading}>
                 {loading ? "Connexion..." : "Se connecter"}
               </Button>
-              <div className="relative my-2">
-                <div className="absolute inset-0 flex items-center">
-                  <span className="w-full border-t" />
-                </div>
-                <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-card px-2 text-muted-foreground">ou</span>
-                </div>
-              </div>
               {PHONE_AUTH_ENABLED && (
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="w-full"
-                  onClick={() => {
-                    setMethod("phone");
-                    setError(null);
-                  }}
-                >
-                  <Phone className="h-4 w-4 mr-2" />
-                  Se connecter avec téléphone
-                </Button>
+                <>
+                  <div className="relative my-2">
+                    <div className="absolute inset-0 flex items-center">
+                      <span className="w-full border-t" />
+                    </div>
+                    <div className="relative flex justify-center text-xs uppercase">
+                      <span className="bg-card px-2 text-muted-foreground">ou</span>
+                    </div>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full"
+                    onClick={() => {
+                      setMethod("phone");
+                      setError(null);
+                    }}
+                  >
+                    <Phone className="h-4 w-4 mr-2" />
+                    Se connecter avec téléphone
+                  </Button>
+                </>
               )}
             </form>
-          ) : (
+          ) : PHONE_AUTH_ENABLED ? (
             <form className="space-y-4" onSubmit={handleSendOTP}>
               <div className="space-y-2">
                 <Label htmlFor="phone">Numéro de téléphone</Label>
@@ -299,7 +301,7 @@ export default function LoginPage() {
                 Se connecter avec e-mail
               </Button>
             </form>
-          )}
+          ) : null}
         </CardContent>
         <CardFooter className="justify-center border-t pt-4">
           <p className="text-sm text-muted-foreground">
