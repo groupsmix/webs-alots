@@ -75,7 +75,7 @@ const ENV_RULES: EnvRule[] = [
   { name: "CLOUDFLARE_AI_API_TOKEN", required: false, description: "Cloudflare AI API token", group: "ai" },
 
   // ── Cron ───────────────────────────────────────────────────────────
-  { name: "CRON_SECRET", required: false, description: "Bearer token for cron endpoints", group: "cron" },
+  { name: "CRON_SECRET", required: process.env.NODE_ENV === "production", description: "Bearer token for cron endpoints (required in production)", group: "cron" },
 
   // ── Custom Domains ─────────────────────────────────────────────────
   { name: "CLOUDFLARE_API_TOKEN", required: false, description: "Cloudflare API token for DNS management", group: "domains" },

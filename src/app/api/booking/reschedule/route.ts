@@ -41,9 +41,19 @@ export const POST = withAuth(async (request, { supabase, profile }) => {
       );
     }
 
-    // Validate working hours for the new date
+    // Validate working hours for the new date.
+    // Use Intl.DateTimeFormat with the clinic's timezone (same approach as
+    // the main booking route) to avoid midnight-boundary bugs where the
+    // server's UTC date differs from the clinic's local date.
     const parsedDate = new Date(body.newDate + "T12:00:00");
-    const dayOfWeek = parsedDate.getDay();
+    const dayFormatter = new Intl.DateTimeFormat("en-US", {
+      weekday: "short",
+      timeZone: tenantConfig.timezone,
+    });
+    const dayMap: Record<string, number> = {
+      Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6,
+    };
+    const dayOfWeek = dayMap[dayFormatter.format(parsedDate)] ?? parsedDate.getDay();
     const hours = tenantConfig.workingHours[dayOfWeek];
     if (!hours?.enabled) {
       return NextResponse.json(
@@ -114,7 +124,7 @@ export const POST = withAuth(async (request, { supabase, profile }) => {
         end_time: endTime,
         slot_start: slotStart,
         slot_end: slotEnd,
-        status: APPOINTMENT_STATUS.RESCHEDULED,
+        status: APPOINTMENT_STATUS.CONFIRMED,
       })
       .eq("id", body.appointmentId);
 
