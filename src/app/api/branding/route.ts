@@ -7,7 +7,7 @@
 
 import { NextResponse } from "next/server";
 import { createTenantClient } from "@/lib/supabase-server";
-import { requireTenant } from "@/lib/tenant";
+import { getTenant, requireTenant } from "@/lib/tenant";
 import {
   uploadToR2,
   isR2Configured,
@@ -59,7 +59,15 @@ const FIELD_MAP: Record<string, string> = {
 
 export async function GET() {
   try {
-    const tenant = await requireTenant();
+    const tenant = await getTenant();
+
+    if (!tenant?.clinicId) {
+      return NextResponse.json(
+        { error: "No clinic context. This endpoint requires a clinic subdomain." },
+        { status: 400 },
+      );
+    }
+
     const clinicId = tenant.clinicId;
     const supabase = await createTenantClient(clinicId);
 
