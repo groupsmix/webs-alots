@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { UserPlus, ShieldCheck, ArrowLeft, Heart } from "lucide-react";
 import {
   Card,
@@ -15,6 +15,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { registerPatient, verifyOTP } from "@/lib/auth";
+import { Turnstile } from "@/components/turnstile";
 import {
   Select,
   SelectTrigger,
@@ -22,6 +23,8 @@ import {
   SelectContent,
   SelectItem,
 } from "@/components/ui/select";
+
+const TURNSTILE_SITE_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ?? "";
 
 export default function RegisterPage() {
   const [step, setStep] = useState<"info" | "otp">("info");
@@ -35,10 +38,25 @@ export default function RegisterPage() {
   const [otp, setOtp] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+
+  const handleCaptchaVerify = useCallback((token: string) => {
+    setCaptchaToken(token);
+  }, []);
+
+  const handleCaptchaExpire = useCallback(() => {
+    setCaptchaToken(null);
+  }, []);
 
   async function handleRegister(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+
+    if (TURNSTILE_SITE_KEY && !captchaToken) {
+      setError("Veuillez compl\u00e9ter la v\u00e9rification de s\u00e9curit\u00e9.");
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -49,6 +67,7 @@ export default function RegisterPage() {
         age: age ? parseInt(age, 10) : undefined,
         gender: gender || undefined,
         insurance: insurance || undefined,
+        captchaToken: captchaToken ?? undefined,
       });
 
       if (result.error) {
@@ -71,7 +90,7 @@ export default function RegisterPage() {
     setLoading(true);
 
     try {
-      const result = await verifyOTP(phone, otp);
+      const result = await verifyOTP(phone, otp, captchaToken ?? undefined);
       if (result.error) {
         setError(result.error);
         setLoading(false);
@@ -201,6 +220,13 @@ export default function RegisterPage() {
                   </SelectContent>
                 </Select>
               </div>
+              {TURNSTILE_SITE_KEY && (
+                <Turnstile
+                  siteKey={TURNSTILE_SITE_KEY}
+                  onVerify={handleCaptchaVerify}
+                  onExpire={handleCaptchaExpire}
+                />
+              )}
               <Button type="submit" className="w-full" disabled={loading}>
                 {loading ? "Création du compte..." : "Créer un compte"}
               </Button>
