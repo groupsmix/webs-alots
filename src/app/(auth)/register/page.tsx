@@ -53,6 +53,11 @@ export default function RegisterPage() {
     e.preventDefault();
     setError(null);
 
+    if (!PHONE_AUTH_ENABLED) {
+      setError("L'inscription par t\u00e9l\u00e9phone est temporairement d\u00e9sactiv\u00e9e. Veuillez r\u00e9essayer plus tard.");
+      return;
+    }
+
     if (TURNSTILE_SITE_KEY && !captchaToken) {
       setError("Veuillez compl\u00e9ter la v\u00e9rification de s\u00e9curit\u00e9.");
       return;
