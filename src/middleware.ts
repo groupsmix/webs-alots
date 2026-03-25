@@ -161,6 +161,14 @@ export async function middleware(request: NextRequest) {
   const hostname = request.headers.get("host") ?? "";
   const rootDomain = process.env.ROOT_DOMAIN;
 
+  // --- WWW redirect (works on Cloudflare Workers unlike next.config redirects) ---
+  const hostWithoutPort = hostname.split(":")[0];
+  if (hostWithoutPort === `www.${rootDomain?.split(":")[0] ?? ""}`) {
+    const url = request.nextUrl.clone();
+    url.host = rootDomain ?? hostname.replace(/^www\./, "");
+    return NextResponse.redirect(url, 301);
+  }
+
   // --- Generate a per-request nonce for CSP ---
   const nonce = Buffer.from(crypto.randomUUID()).toString("base64");
   const cspHeaderValue = buildCsp(nonce);
