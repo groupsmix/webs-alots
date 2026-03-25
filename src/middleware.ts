@@ -35,6 +35,14 @@ const CSRF_EXEMPT_PREFIXES = [
   "/api/cron/billing",
 ];
 
+// Lightweight API routes that should skip rate limiting AND the heavy
+// Supabase auth/subdomain path in the middleware.  These are hit by
+// load-balancers, monitoring tools, and uptime probes — they must
+// never be rate-limited or fail because of cookie/auth issues.
+const LIGHTWEIGHT_API_PATHS = new Set([
+  "/api/health",
+]);
+
 function isCsrfExempt(pathname: string): boolean {
   return CSRF_EXEMPT_PREFIXES.some((prefix) => pathname.startsWith(prefix));
 }
@@ -280,10 +288,25 @@ export async function middleware(request: NextRequest) {
     }
   }
 
+  // --- Fast path for lightweight API routes (health checks, etc.) ---
+  // These endpoints must respond quickly and reliably for load-balancers
+  // and monitoring probes.  They skip rate limiting, Supabase auth, and
+  // subdomain resolution — none of which are needed for their function.
+  if (LIGHTWEIGHT_API_PATHS.has(pathname)) {
+    const lightResponse = NextResponse.next({
+      request: { headers: requestHeaders },
+    });
+    lightResponse.headers.set("Content-Security-Policy", cspHeaderValue);
+    lightResponse.headers.set("x-nonce", nonce);
+    lightResponse.headers.set("Strict-Transport-Security", "max-age=31536000; includeSubDomains; preload");
+    lightResponse.headers.set("X-Content-Type-Options", "nosniff");
+    return lightResponse;
+  }
+
   // --- Rate limiting for API requests ---
   // S1: Apply rate limiting to ALL HTTP methods (not just mutations).
-  // GET endpoints like /api/v1/*, /api/chat, /api/health can be abused
-  // for data scraping or resource exhaustion.
+  // GET endpoints like /api/v1/*, /api/chat can be abused for data
+  // scraping or resource exhaustion.
   if (pathname.startsWith("/api/")) {
     const rateLimitKey = extractClientIp(request);
 
