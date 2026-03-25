@@ -50,28 +50,26 @@ export function Turnstile({ siteKey, onVerify, onExpire, onError }: TurnstilePro
   useEffect(() => {
     if (scriptLoadedRef.current) {
       renderWidget();
-      return;
+    } else {
+      const existingScript = document.querySelector(
+        `script[src="${TURNSTILE_SCRIPT_URL}"]`
+      );
+
+      if (existingScript) {
+        scriptLoadedRef.current = true;
+        renderWidget();
+      } else {
+        const script = document.createElement("script");
+        script.src = TURNSTILE_SCRIPT_URL;
+        script.async = true;
+        script.defer = true;
+        script.onload = () => {
+          scriptLoadedRef.current = true;
+          renderWidget();
+        };
+        document.head.appendChild(script);
+      }
     }
-
-    const existingScript = document.querySelector(
-      `script[src="${TURNSTILE_SCRIPT_URL}"]`
-    );
-
-    if (existingScript) {
-      scriptLoadedRef.current = true;
-      renderWidget();
-      return;
-    }
-
-    const script = document.createElement("script");
-    script.src = TURNSTILE_SCRIPT_URL;
-    script.async = true;
-    script.defer = true;
-    script.onload = () => {
-      scriptLoadedRef.current = true;
-      renderWidget();
-    };
-    document.head.appendChild(script);
 
     return () => {
       if (widgetIdRef.current !== null && window.turnstile) {
