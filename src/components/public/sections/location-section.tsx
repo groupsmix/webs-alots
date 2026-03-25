@@ -9,7 +9,7 @@ export function LocationSection() {
     <section className="py-16 bg-muted/30">
       <div className="container mx-auto px-4">
         <h2 className="text-center text-3xl font-bold mb-4">
-          Location &amp; Hours
+          Localisation &amp; Horaires
         </h2>
         <p className="text-center text-muted-foreground mb-8 max-w-xl mx-auto">
           {loc.subtitle}
@@ -28,7 +28,7 @@ export function LocationSection() {
                   loading="lazy"
                   referrerPolicy="no-referrer-when-downgrade"
                   className="rounded-lg"
-                  title="Clinic Location"
+                  title="Localisation du cabinet"
                 />
               ) : (
                 <div className="h-[300px] rounded-lg bg-muted flex items-center justify-center">
@@ -49,7 +49,7 @@ export function LocationSection() {
             <CardContent className="pt-6">
               <div className="flex items-center gap-2 mb-4">
                 <Clock className="h-5 w-5 text-primary" />
-                <h3 className="font-semibold">Working Hours</h3>
+                <h3 className="font-semibold">Horaires d&apos;ouverture</h3>
               </div>
               <div className="space-y-3">
                 {loc.workingHours.map((wh) => (
@@ -60,7 +60,7 @@ export function LocationSection() {
                     <span className="font-medium">{wh.day}</span>
                     <span
                       className={
-                        wh.hours === "Closed"
+                        wh.hours === "Fermé"
                           ? "text-destructive"
                           : "text-muted-foreground"
                       }

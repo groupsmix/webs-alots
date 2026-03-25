@@ -14,11 +14,11 @@ export async function BlogSection() {
     <section className="py-16">
       <div className="container mx-auto px-4">
         <h2 className="text-center text-3xl font-bold mb-4">
-          Health Articles
+          Articles Santé
         </h2>
         <p className="text-center text-muted-foreground mb-8 max-w-xl mx-auto">
-          Stay informed with the latest health tips and medical insights from
-          our team.
+          Restez informé avec les derniers conseils santé et actualités
+          médicales de notre équipe.
         </p>
         {previewPosts.length > 0 ? (
           <div className="grid gap-6 md:grid-cols-3 max-w-4xl mx-auto">
@@ -37,12 +37,12 @@ export async function BlogSection() {
           </div>
         ) : (
           <p className="text-center text-muted-foreground">
-            No articles published yet. Check back soon!
+            Aucun article publié pour le moment. Revenez bientôt !
           </p>
         )}
         <div className="mt-10 text-center">
           <Link href="/blog" className={linkBtnOutline}>
-            View All Articles
+            Voir tous les articles
             <ArrowRight className="ml-2 h-4 w-4" />
           </Link>
         </div>

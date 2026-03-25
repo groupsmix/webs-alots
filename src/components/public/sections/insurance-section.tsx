@@ -16,11 +16,11 @@ export function InsuranceSection() {
     <section className="py-16 bg-muted/30">
       <div className="container mx-auto px-4">
         <h2 className="text-center text-3xl font-bold mb-4">
-          Insurance Accepted
+          Assurances Acceptées
         </h2>
         <p className="text-center text-muted-foreground mb-8 max-w-xl mx-auto">
-          We accept most major insurance providers. Contact us if you don&apos;t
-          see your provider listed.
+          Nous acceptons la plupart des assurances majeures. Contactez-nous si
+          votre assurance ne figure pas dans la liste.
         </p>
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-4 max-w-2xl mx-auto">
           {insuranceProviders.map((provider) => (
