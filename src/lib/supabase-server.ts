@@ -1,6 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import type { Database } from "@/lib/types/database";
-import { setTenantContext } from "@/lib/tenant-context";
+import { setTenantContext, isValidClinicId } from "@/lib/tenant-context";
+import { logger } from "@/lib/logger";
 
 function requireEnv(name: string): string {
   const value = process.env[name];
@@ -49,15 +50,62 @@ export async function createClient() {
 /**
  * Create a Supabase server client with tenant context set.
  *
- * Sets `app.current_clinic_id` as a PostgreSQL session variable so that
- * RLS policies can use it as an additional isolation check. This is the
- * preferred way to create a client for tenant-scoped operations.
+ * Passes the clinic_id as a custom HTTP header (`x-clinic-id`) on every
+ * request so that PostgREST makes it available in PostgreSQL as
+ * `current_setting('request.header.x-clinic-id', true)`.  RLS policies
+ * read this header to scope anonymous queries to the correct tenant.
+ *
+ * The old `set_tenant_context` RPC is kept as a best-effort fallback
+ * for any code paths that run within a single PostgREST transaction
+ * (e.g. SECURITY DEFINER functions).
  *
  * @param clinicId - The clinic UUID to scope all operations to
- * @throws Error if clinicId is missing/invalid or if setting context fails
+ * @throws Error if clinicId is missing/invalid
  */
 export async function createTenantClient(clinicId: string) {
-  const client = await createClient();
-  await setTenantContext(client, clinicId);
+  if (!clinicId || !isValidClinicId(clinicId)) {
+    throw new Error(`createTenantClient: invalid clinicId: ${clinicId}`);
+  }
+
+  const { cookies } = await import("next/headers");
+  const cookieStore = await cookies();
+
+  const client = createServerClient<Database>(
+    requireEnv("NEXT_PUBLIC_SUPABASE_URL"),
+    requireEnv("NEXT_PUBLIC_SUPABASE_ANON_KEY"),
+    {
+      cookies: {
+        getAll() {
+          return cookieStore.getAll();
+        },
+        setAll(cookiesToSet) {
+          try {
+            cookiesToSet.forEach(({ name, value, options }) =>
+              cookieStore.set(name, value, options),
+            );
+          } catch {
+            // Server Component context — safe to ignore
+          }
+        },
+      },
+      global: {
+        headers: { "x-clinic-id": clinicId },
+      },
+    },
+  );
+
+  // Best-effort: also set the session variable for same-transaction queries.
+  // This is redundant with the header approach but provides defense-in-depth
+  // for any SECURITY DEFINER functions that read app.current_clinic_id.
+  try {
+    await setTenantContext(client, clinicId);
+  } catch (err) {
+    logger.warn("setTenantContext RPC failed (header fallback active)", {
+      context: "supabase-server",
+      clinicId,
+      error: err,
+    });
+  }
+
   return client;
 }
