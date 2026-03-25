@@ -8267,6 +8267,15 @@ export type Database = {
       is_clinic_admin: { Args: { check_clinic_id: string }; Returns: boolean }
       is_clinic_staff: { Args: never; Returns: boolean }
       is_super_admin: { Args: never; Returns: boolean }
+      booking_find_or_create_patient: {
+        Args: {
+          p_clinic_id: string
+          p_name: string
+          p_phone?: string
+          p_email?: string
+        }
+        Returns: string
+      }
     }
     Enums: {
       [_ in never]: never
