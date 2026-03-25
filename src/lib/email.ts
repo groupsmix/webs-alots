@@ -56,10 +56,10 @@ async function sendViaResend(payload: EmailPayload): Promise<EmailSendResult> {
   if (!apiKey) {
     return { success: false, error: "RESEND_API_KEY is not configured" };
   }
-  const from = payload.from || process.env.EMAIL_FROM || "noreply@example.com";
+    const from = payload.from || process.env.EMAIL_FROM || "noreply@oltigo.com";
 
-  try {
-    const response = await fetch(RESEND_API_URL, {
+    try {
+      const response = await fetch(RESEND_API_URL, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${apiKey}`,
@@ -115,9 +115,9 @@ async function sendViaHttpRelay(payload: EmailPayload): Promise<EmailSendResult>
   if (!host || !user || !pass) {
     return { success: false, error: "EMAIL_RELAY_HOST, EMAIL_RELAY_USER, and EMAIL_RELAY_PASS must all be configured" };
   }
-  const from = payload.from || process.env.EMAIL_FROM || "noreply@example.com";
+    const from = payload.from || process.env.EMAIL_FROM || "noreply@oltigo.com";
 
-  // Build the HTTPS endpoint. For standard HTTPS (port 443), omit the port
+    // Build the HTTPS endpoint. For standard HTTPS (port 443), omit the port
   // to avoid issues with TLS certificate validation on non-standard ports.
   const baseUrl = port === "443" ? `https://${host}` : `https://${host}:${port}`;
 

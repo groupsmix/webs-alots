@@ -7,24 +7,24 @@ import {
 
 const faqs = [
   {
-    q: "How do I book an appointment?",
-    a: "You can book online through our website by clicking the 'Book an Appointment' button, or call us directly during working hours.",
+    q: "Comment prendre rendez-vous ?",
+    a: "Vous pouvez prendre rendez-vous en ligne via notre site web en cliquant sur le bouton \u00ab Prendre rendez-vous \u00bb, ou nous appeler directement pendant les heures d'ouverture.",
   },
   {
-    q: "What insurance do you accept?",
-    a: "We accept most major insurance providers including CNSS, CNOPS, RMA, SAHAM, and AXA. Please contact us for specific coverage details.",
+    q: "Quelles assurances acceptez-vous ?",
+    a: "Nous acceptons la plupart des assurances majeures, notamment CNSS, CNOPS, RMA, SAHAM et AXA. Contactez-nous pour les détails de couverture.",
   },
   {
-    q: "What are your working hours?",
-    a: "We are open Monday to Friday from 9:00 AM to 5:00 PM, and Saturday from 9:00 AM to 1:00 PM. We are closed on Sundays.",
+    q: "Quels sont vos horaires d'ouverture ?",
+    a: "Nous sommes ouverts du lundi au vendredi de 9h00 à 17h00, et le samedi de 9h00 à 13h00. Nous sommes fermés le dimanche.",
   },
   {
-    q: "Do I need a referral?",
-    a: "No referral is needed for a general consultation. Some specialized services may require a referral from your primary care physician.",
+    q: "Ai-je besoin d'une recommandation ?",
+    a: "Aucune recommandation n'est nécessaire pour une consultation générale. Certains services spécialisés peuvent nécessiter une orientation de votre médecin traitant.",
   },
   {
-    q: "Can I cancel or reschedule?",
-    a: "Yes, you can cancel or reschedule your appointment up to 24 hours in advance through our website or by calling us.",
+    q: "Puis-je annuler ou reporter mon rendez-vous ?",
+    a: "Oui, vous pouvez annuler ou reporter votre rendez-vous jusqu'à 24 heures à l'avance via notre site web ou en nous appelant.",
   },
 ];
 
@@ -33,10 +33,10 @@ export function FaqSection() {
     <section className="py-16">
       <div className="container mx-auto px-4 max-w-3xl">
         <h2 className="text-center text-3xl font-bold mb-4">
-          Frequently Asked Questions
+          Questions Fréquentes
         </h2>
         <p className="text-center text-muted-foreground mb-8">
-          Find answers to common questions about our services.
+          Trouvez les réponses aux questions les plus courantes sur nos services.
         </p>
         <div className="space-y-4">
           {faqs.map((faq) => (

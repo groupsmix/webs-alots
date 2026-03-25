@@ -5,7 +5,7 @@ import type { MetadataRoute } from "next";
  * Next.js serves this at /sitemap.xml automatically.
  */
 export default function sitemap(): MetadataRoute.Sitemap {
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://example.com";
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://oltigo.com";
 
   const staticPages = [
     { path: "/", priority: 1.0, changeFrequency: "weekly" as const },

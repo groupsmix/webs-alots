@@ -8,9 +8,9 @@ export async function DoctorsSection() {
   return (
     <section className="py-16 bg-muted/30">
       <div className="container mx-auto px-4">
-        <h2 className="text-center text-3xl font-bold mb-4">Our Team</h2>
+        <h2 className="text-center text-3xl font-bold mb-4">Notre Équipe</h2>
         <p className="text-center text-muted-foreground mb-12 max-w-2xl mx-auto">
-          Meet our experienced medical professionals dedicated to your health.
+          Découvrez nos professionnels de santé dédiés à votre bien-être.
         </p>
         {doctors.length > 0 ? (
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 max-w-4xl mx-auto">
@@ -46,7 +46,7 @@ export async function DoctorsSection() {
           </div>
         ) : (
           <p className="text-center text-muted-foreground">
-            Our team information will be available soon.
+            Les informations sur notre équipe seront disponibles prochainement.
           </p>
         )}
       </div>

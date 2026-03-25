@@ -81,11 +81,11 @@ export interface WebsiteConfig {
 
 export const defaultWebsiteConfig: WebsiteConfig = {
   hero: {
-    title: "Your Health, Our Priority",
+    title: "Votre Santé, Notre Priorité",
     subtitle:
-      "Professional healthcare services with a personal touch. Book your appointment online and experience modern, compassionate care.",
-    ctaPrimary: "Book an Appointment",
-    ctaSecondary: "Our Services",
+      "Des soins de santé professionnels avec une touche personnelle. Prenez rendez-vous en ligne et bénéficiez de soins modernes et attentionnés.",
+    ctaPrimary: "Prendre rendez-vous",
+    ctaSecondary: "Nos Services",
     imageUrl: undefined,
   },
 
@@ -103,71 +103,71 @@ export const defaultWebsiteConfig: WebsiteConfig = {
   },
 
   howToBook: {
-    title: "How to Book an Appointment",
+    title: "Comment Prendre Rendez-vous",
     subtitle:
-      "Booking your appointment is quick and easy. Follow these simple steps to get started.",
+      "Prendre rendez-vous est rapide et facile. Suivez ces étapes simples pour commencer.",
     steps: [
       {
-        title: "Choose a Service",
+        title: "Choisir un service",
         description:
-          "Browse our list of medical services and select the one that matches your needs.",
+          "Parcourez notre liste de services médicaux et sélectionnez celui qui correspond à vos besoins.",
       },
       {
-        title: "Pick a Date & Time",
+        title: "Choisir une date et un horaire",
         description:
-          "Select from available time slots that work best for your schedule.",
+          "Sélectionnez parmi les créneaux disponibles qui conviennent à votre emploi du temps.",
       },
       {
-        title: "Fill in Your Details",
+        title: "Remplir vos informations",
         description:
-          "Enter your name, phone number, and any relevant medical information.",
+          "Saisissez votre nom, numéro de téléphone et toute information médicale pertinente.",
       },
       {
-        title: "Confirm Your Booking",
+        title: "Confirmer votre rendez-vous",
         description:
-          "Review your appointment details and confirm. You will receive a confirmation via WhatsApp or SMS.",
+          "Vérifiez les détails de votre rendez-vous et confirmez. Vous recevrez une confirmation par WhatsApp ou SMS.",
       },
     ],
   },
 
   location: {
-    title: "Location & Hours",
+    title: "Localisation & Horaires",
     subtitle:
-      "Visit us at our conveniently located clinic. We look forward to welcoming you.",
+      "Rendez-nous visite dans notre cabinet. Nous serons ravis de vous accueillir.",
     address: "",
     city: "",
     googleMapsEmbedUrl: "",
     workingHours: [
-      { day: "Monday", hours: "09:00 - 17:00" },
-      { day: "Tuesday", hours: "09:00 - 17:00" },
-      { day: "Wednesday", hours: "09:00 - 17:00" },
-      { day: "Thursday", hours: "09:00 - 17:00" },
-      { day: "Friday", hours: "09:00 - 17:00" },
-      { day: "Saturday", hours: "09:00 - 13:00" },
-      { day: "Sunday", hours: "Closed" },
+      { day: "Lundi", hours: "09:00 - 17:00" },
+      { day: "Mardi", hours: "09:00 - 17:00" },
+      { day: "Mercredi", hours: "09:00 - 17:00" },
+      { day: "Jeudi", hours: "09:00 - 17:00" },
+      { day: "Vendredi", hours: "09:00 - 17:00" },
+      { day: "Samedi", hours: "09:00 - 13:00" },
+      { day: "Dimanche", hours: "Fermé" },
     ],
   },
 
   contact: {
-    title: "Contact Us",
+    title: "Contactez-nous",
     subtitle:
-      "Have a question or need to reach us? We're here to help. Use any of the methods below or send us a message.",
+      "Vous avez une question ou souhaitez nous contacter ? Nous sommes là pour vous aider. Utilisez l'un des moyens ci-dessous ou envoyez-nous un message.",
     phone: "",
     whatsapp: "",
     email: "",
     address: "",
-    whatsappMessage: "Hello, I would like to book an appointment.",
+    whatsappMessage: "Bonjour, je souhaite prendre rendez-vous.",
   },
 
   reviews: {
-    title: "Patient Reviews",
-    subtitle: "See what our patients have to say about their experience.",
+    title: "Avis Patients",
+    subtitle: "Découvrez ce que nos patients disent de leur expérience.",
   },
 
   services: {
-    title: "Our Services",
+    title: "Nos Services",
     subtitle:
-      "We offer a wide range of medical services to meet your healthcare needs. All consultations include a thorough examination and personalized care.",
+      "Nous proposons une large gamme de services médicaux pour répondre à vos besoins de santé. Toutes les consultations comprennent un examen approfondi et des soins personnalisés.",
   },
 
   theme: {

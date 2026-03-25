@@ -45,7 +45,7 @@ export const translations = {
     "action.next": "Suivant",
     "action.close": "Fermer",
     "action.add": "Ajouter",
-    "action.bookAppointment": "حجز موعد",
+    "action.bookAppointment": "Prendre rendez-vous",
 
     // Booking
     "booking.title": "Prendre rendez-vous",

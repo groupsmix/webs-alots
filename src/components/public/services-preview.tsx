@@ -12,7 +12,7 @@ export async function ServicesPreview() {
   return (
     <section className="py-16">
       <div className="container mx-auto px-4">
-        <h2 className="text-center text-3xl font-bold mb-12">Our Services</h2>
+        <h2 className="text-center text-3xl font-bold mb-12">Nos Services</h2>
         <div className="grid gap-8 md:grid-cols-3">
           {activeServices.length > 0 ? (
             activeServices.map((service) => (
@@ -31,7 +31,7 @@ export async function ServicesPreview() {
             ))
           ) : (
             <p className="col-span-3 text-center text-muted-foreground">
-              No services available yet. Check back soon!
+              Aucun service disponible pour le moment.
             </p>
           )}
         </div>
@@ -40,7 +40,7 @@ export async function ServicesPreview() {
             href="/services"
             className={linkBtnOutline}
           >
-            View All Services
+            Voir tous les services
             <ArrowRight className="ml-2 h-4 w-4" />
           </Link>
         </div>
