@@ -37,6 +37,9 @@ const ENV_RULES: EnvRule[] = [
   { name: "ROOT_DOMAIN", required: process.env.NODE_ENV === "production", description: "Root domain for subdomain routing (required in production)", group: "tenant" },
   { name: "NEXT_PUBLIC_SITE_URL", required: process.env.NODE_ENV === "production", description: "Public site URL for CSRF and links (required in production)", group: "tenant" },
 
+  // ── Supabase Service Role (needed for rate limiter, cron, admin ops) ─
+  { name: "SUPABASE_SERVICE_ROLE_KEY", required: false, description: "Supabase service-role key for server-side admin operations", group: "core" },
+
   // ── Cloudflare R2 Storage ──────────────────────────────────────────
   { name: "R2_ACCOUNT_ID", required: false, description: "Cloudflare R2 account ID", group: "storage" },
   { name: "R2_ACCESS_KEY_ID", required: false, description: "Cloudflare R2 access key", group: "storage" },
