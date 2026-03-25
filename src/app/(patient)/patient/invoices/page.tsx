@@ -51,7 +51,8 @@ export default function PatientInvoicesPage() {
   if (error) {
     return (
       <div className="p-8 text-center">
-        <p className="text-red-600">Failed to load data. Please try refreshing the page.</p>
+        <p className="text-red-600 font-medium">Failed to load data. Please try refreshing the page.</p>
+        {error.message && <p className="text-sm text-muted-foreground mt-2">{error.message}</p>}
       </div>
     );
   }
