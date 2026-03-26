@@ -9,22 +9,31 @@ const links = [
 
 export function LandingFooter() {
   return (
-    <footer className="border-t border-gray-100 bg-white py-12">
-      <div className="mx-auto max-w-6xl px-4 sm:px-6">
-        <div className="flex flex-col items-center justify-between gap-6 sm:flex-row">
-          <Link
-            href="/"
-            className="text-xl font-bold tracking-tight text-gray-900"
-          >
-            Oltigo
-          </Link>
+    <footer className="border-t border-gray-950/[0.04] bg-white">
+      <div className="mx-auto max-w-7xl px-6 py-12 lg:px-8 lg:py-16">
+        <div className="flex flex-col gap-10 sm:flex-row sm:items-start sm:justify-between">
+          {/* Brand */}
+          <div className="max-w-xs">
+            <Link href="/" className="flex items-center gap-2">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gray-900">
+                <span className="text-sm font-bold text-white">O</span>
+              </div>
+              <span className="text-lg font-semibold tracking-tight text-gray-900">
+                Oltigo
+              </span>
+            </Link>
+            <p className="mt-4 text-[14px] leading-relaxed text-gray-400">
+              La plateforme tout-en-un pour les professionnels de sant&eacute;.
+            </p>
+          </div>
 
-          <nav className="flex flex-wrap items-center justify-center gap-6">
+          {/* Nav */}
+          <nav className="flex flex-wrap gap-x-10 gap-y-3">
             {links.map(({ label, href }) => (
               <Link
                 key={href}
                 href={href}
-                className="text-sm text-gray-500 transition-colors hover:text-gray-900"
+                className="text-[14px] text-gray-400 transition-colors duration-150 hover:text-gray-900"
               >
                 {label}
               </Link>
@@ -32,8 +41,9 @@ export function LandingFooter() {
           </nav>
         </div>
 
-        <div className="mt-8 border-t border-gray-100 pt-8 text-center text-xs text-gray-400">
-          &copy; {new Date().getFullYear()} Oltigo. Tous droits r&eacute;serv&eacute;s.
+        <div className="mt-12 border-t border-gray-950/[0.04] pt-8 text-[13px] text-gray-300">
+          &copy; {new Date().getFullYear()} Oltigo. Tous droits
+          r&eacute;serv&eacute;s.
         </div>
       </div>
     </footer>
