@@ -199,18 +199,39 @@ jobs:
           sudo -u postgres createuser -s runner 2>/dev/null || true
           createdb backup_verify_test 2>/dev/null || true
 
+      - name: Install Supabase-compatible extensions
+        run: |
+          # Supabase dumps reference extensions that aren't in default PostgreSQL.
+          # Install common ones so the restore can create tables that depend on them.
+          PG_VERSION=$(pg_config --version | grep -oP '\d+' | head -1)
+          sudo apt-get install -y \
+            postgresql-${PG_VERSION}-pgcrypto 2>/dev/null || true
+
+          # Pre-create extensions that Supabase uses so CREATE EXTENSION doesn't fail
+          psql backup_verify_test -c "CREATE EXTENSION IF NOT EXISTS pgcrypto;" 2>/dev/null || true
+          psql backup_verify_test -c "CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\";" 2>/dev/null || true
+
       - name: Test restore
         run: |
           # The dump uses --clean which generates DROP/ALTER for objects that
           # don't exist in a fresh database. Pipe through psql with ON_ERROR_STOP
           # disabled so those harmless errors don't abort the restore.
-          gunzip -c /tmp/verify_backup.sql.gz | psql -v ON_ERROR_STOP=0 backup_verify_test 2>&1 | tail -5
+          gunzip -c /tmp/verify_backup.sql.gz \
+            | psql -v ON_ERROR_STOP=0 backup_verify_test 2>&1 \
+            | tail -20
 
-          # Verify key tables exist
-          TABLES=$(psql backup_verify_test -t -c "SELECT count(*) FROM information_schema.tables WHERE table_schema = 'public';" | tr -d ' ')
+          # Verify key tables exist in public schema
+          TABLES=$(psql backup_verify_test -t -c \
+            "SELECT count(*) FROM information_schema.tables WHERE table_schema = 'public';" \
+            | tr -d '[:space:]')
           echo "Tables restored: ${TABLES}"
 
-          if [ -z "${TABLES}" ] || [ "${TABLES}" -lt 5 ]; then
+          if [ -z "${TABLES}" ] || [ "${TABLES}" = "" ]; then
+            echo "ERROR: Could not count tables. Backup may be corrupt."
+            exit 1
+          fi
+
+          if [ "${TABLES}" -lt 5 ] 2>/dev/null; then
             echo "ERROR: Too few tables restored (${TABLES}). Backup may be corrupt."
             exit 1
           fi
