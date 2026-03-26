@@ -61,6 +61,7 @@ export async function sendSms(to: string, body: string): Promise<SmsSendResult> 
         "Content-Type": "application/x-www-form-urlencoded",
       },
       body: formData.toString(),
+      signal: AbortSignal.timeout(10_000),
     });
 
     const data = await response.json();

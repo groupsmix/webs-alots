@@ -161,6 +161,7 @@ export async function POST(request: NextRequest) {
             messages: cfMessages,
             max_tokens: 500,
           }),
+          signal: AbortSignal.timeout(30_000),
         },
       );
 
@@ -212,6 +213,7 @@ export async function POST(request: NextRequest) {
         max_tokens: 500,
         temperature: 0.7,
       }),
+      signal: AbortSignal.timeout(30_000),
     });
 
     if (!apiResponse.ok) {

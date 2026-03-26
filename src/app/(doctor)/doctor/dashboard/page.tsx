@@ -141,7 +141,7 @@ export default function DoctorDashboardPage() {
     totalAppointments: weekAppts.length,
     uniquePatients: new Set(weekAppts.map((a) => a.patientId)).size,
     completed: weekAppts.filter((a) => a.status === "completed").length,
-    noShows: weekAppts.filter((a) => a.status === "no-show" || a.status === "no_show").length,
+    noShows: weekAppts.filter((a) => a.status === "no-show").length,
     consultations: weekConsultations.length,
     revenue: weekRevenue,
   };
@@ -149,7 +149,7 @@ export default function DoctorDashboardPage() {
     totalAppointments: monthAppts.length,
     uniquePatients: new Set(monthAppts.map((a) => a.patientId)).size,
     completed: monthAppts.filter((a) => a.status === "completed").length,
-    noShows: monthAppts.filter((a) => a.status === "no-show" || a.status === "no_show").length,
+    noShows: monthAppts.filter((a) => a.status === "no-show").length,
     consultations: monthConsultations.length,
     revenue: monthRevenue,
   };
