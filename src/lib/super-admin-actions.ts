@@ -10,8 +10,10 @@
  * All operations require the authenticated user to have role = "super_admin".
  */
 
-import { createClient } from "@/lib/supabase-server";
+import { createClient, createAdminClient } from "@/lib/supabase-server";
 import { requireRole } from "@/lib/auth";
+import { logger } from "@/lib/logger";
+import { STAFF_DEFAULT_PASSWORD } from "@/lib/constants";
 import type {
   ClinicType,
   ClinicTier,
@@ -88,6 +90,7 @@ export interface CreateUserInput {
   email?: string;
 }
 
+
 export interface CreateServiceInput {
   clinic_id: string;
   name: string;
@@ -162,8 +165,64 @@ export async function updateClinicStatus(
 
 // ---------- User CRUD ----------
 
+/**
+ * Create a staff user with a real Supabase Auth login account.
+ *
+ * When a valid email is provided and SUPABASE_SERVICE_ROLE_KEY is configured,
+ * this function:
+ *   1. Creates a Supabase Auth user (email + default password, auto-confirmed)
+ *   2. Inserts a row in public.users linked via auth_id
+ *
+ * If the service role key is missing or auth creation fails, the user is still
+ * inserted into public.users (without auth_id) so onboarding doesn't break.
+ * A warning is logged in that case.
+ */
 export async function createUser(input: CreateUserInput): Promise<UserRow> {
   const supabase = await rawClient();
+  let authId: string | null = null;
+
+  // Attempt to create a Supabase Auth account if email is provided
+  if (input.email && process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    try {
+      const admin = createAdminClient();
+      const { data: authUser, error: authError } = await admin.auth.admin.createUser({
+        email: input.email,
+        password: STAFF_DEFAULT_PASSWORD,
+        email_confirm: true,
+        user_metadata: {
+          name: input.name,
+          role: input.role,
+          clinic_id: input.clinic_id,
+        },
+      });
+
+      if (authError) {
+        // If user already exists, try to look up their auth_id
+        if (authError.message?.includes("already been registered")) {
+          const { data: listData } = await admin.auth.admin.listUsers();
+          const existing = listData?.users?.find((u) => u.email === input.email);
+          if (existing) {
+            authId = existing.id;
+          }
+        } else {
+          logger.warn("Failed to create auth account for staff — user will be created without login", {
+            context: "super-admin-actions",
+            email: input.email,
+            error: authError.message,
+          });
+        }
+      } else if (authUser?.user) {
+        authId = authUser.user.id;
+      }
+    } catch (err) {
+      logger.warn("Auth account creation threw — user will be created without login", {
+        context: "super-admin-actions",
+        email: input.email,
+        error: err,
+      });
+    }
+  }
+
   const { data, error } = await supabase
     .from("users")
     .insert({
@@ -172,6 +231,7 @@ export async function createUser(input: CreateUserInput): Promise<UserRow> {
       name: input.name,
       phone: input.phone ?? null,
       email: input.email ?? null,
+      ...(authId ? { auth_id: authId } : {}),
     })
     .select()
     .single();

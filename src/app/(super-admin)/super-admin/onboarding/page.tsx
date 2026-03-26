@@ -23,6 +23,7 @@ import {
   type CreateUserInput,
   type CreateServiceInput,
 } from "@/lib/super-admin-actions";
+import { STAFF_DEFAULT_PASSWORD } from "@/lib/constants";
 import {
   OnboardingStepClinic,
   type ClinicFormData,
@@ -86,7 +87,7 @@ export default function OnboardingPage() {
     { role: "clinic_admin", name: "", phone: "", email: "" },
   ]);
   const [createdUsers, setCreatedUsers] = useState<
-    { id: string; name: string; role: string }[]
+    { id: string; name: string; role: string; email?: string }[]
   >([]);
 
   // Step 3: Services
@@ -259,7 +260,7 @@ export default function OnboardingPage() {
     setLoading(true);
     setError(null);
     try {
-      const created: { id: string; name: string; role: string }[] = [];
+      const created: { id: string; name: string; role: string; email?: string }[] = [];
       for (const u of validUsers) {
         const input: CreateUserInput = {
           clinic_id: createdClinicId,
@@ -269,7 +270,7 @@ export default function OnboardingPage() {
           email: u.email || undefined,
         };
         const user = await createUser(input);
-        created.push({ id: user.id, name: user.name, role: user.role });
+        created.push({ id: user.id, name: user.name, role: user.role, email: user.email ?? undefined });
       }
       setCreatedUsers(created);
 
@@ -393,6 +394,37 @@ export default function OnboardingPage() {
               <p>{services.filter((s) => s.name.trim()).length} service(s) added</p>
             </div>
             <Separator className="my-6" />
+            {/* Staff Login Credentials */}
+            {createdUsers.filter((u) => u.email).length > 0 && (
+              <div className="bg-muted/50 rounded-lg p-4 text-left text-sm mb-6">
+                <h3 className="font-semibold mb-3">Staff Login Credentials:</h3>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b">
+                        <th className="text-left py-2 pr-4 font-medium">Role</th>
+                        <th className="text-left py-2 pr-4 font-medium">Name</th>
+                        <th className="text-left py-2 pr-4 font-medium">Email</th>
+                        <th className="text-left py-2 font-medium">Password</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {createdUsers.filter((u) => u.email).map((u) => (
+                        <tr key={u.id} className="border-b last:border-0">
+                          <td className="py-2 pr-4 capitalize">{u.role.replace("_", " ")}</td>
+                          <td className="py-2 pr-4">{u.name}</td>
+                          <td className="py-2 pr-4 font-mono text-xs">{u.email}</td>
+                          <td className="py-2 font-mono text-xs">{STAFF_DEFAULT_PASSWORD}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                <p className="text-xs text-amber-600 mt-3">
+                  Please change the passwords after first login.
+                </p>
+              </div>
+            )}
             <div className="bg-muted/50 rounded-lg p-4 text-left text-sm mb-6">
               <h3 className="font-semibold mb-2">Clinic is Live:</h3>
               <div className="space-y-2 text-muted-foreground">
@@ -410,7 +442,20 @@ export default function OnboardingPage() {
                   </p>
                 )}
                 <p>The clinic is automatically accessible — no deployment needed.</p>
-                <p>Staff can log in at the clinic URL above using their credentials.</p>
+                {clinicForm.subdomain && (
+                  <p>
+                    Staff can log in at{" "}
+                    <a
+                      href={`https://${clinicForm.subdomain}.oltigo.com/login`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-primary underline font-mono"
+                    >
+                      {clinicForm.subdomain}.oltigo.com/login
+                    </a>
+                    {" "}using the credentials above.
+                  </p>
+                )}
                 <p>Branding, colors, and website content can be customized from <strong>Admin → Branding</strong>.</p>
               </div>
             </div>
