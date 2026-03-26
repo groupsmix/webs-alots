@@ -86,6 +86,7 @@ export async function exchangeCodeForTokens(
       redirect_uri: redirectUri,
       grant_type: "authorization_code",
     }).toString(),
+    signal: AbortSignal.timeout(10_000),
   });
 
   const data = await response.json();
@@ -123,6 +124,7 @@ export async function refreshAccessToken(
       refresh_token: refreshToken,
       grant_type: "refresh_token",
     }).toString(),
+    signal: AbortSignal.timeout(10_000),
   });
 
   const data = await response.json();
@@ -169,6 +171,7 @@ export async function createCalendarEvent(
         "Content-Type": "application/json",
       },
       body: JSON.stringify(event),
+      signal: AbortSignal.timeout(10_000),
     },
   );
 
@@ -201,6 +204,7 @@ export async function updateCalendarEvent(
         "Content-Type": "application/json",
       },
       body: JSON.stringify(event),
+      signal: AbortSignal.timeout(10_000),
     },
   );
 
@@ -230,6 +234,7 @@ export async function deleteCalendarEvent(
       headers: {
         Authorization: `Bearer ${validTokens.accessToken}`,
       },
+      signal: AbortSignal.timeout(10_000),
     },
   );
 
