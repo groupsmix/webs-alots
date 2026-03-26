@@ -33,6 +33,7 @@ interface ClinicRow {
   config: Record<string, unknown> | null;
   tier: string | null;
   status: string | null;
+  subdomain: string | null;
   created_at: string | null;
 }
 
@@ -76,6 +77,7 @@ export interface CreateClinicInput {
   tier: ClinicTier;
   config?: Record<string, unknown>;
   status?: "active" | "inactive" | "suspended";
+  subdomain?: string;
 }
 
 export interface CreateUserInput {
@@ -116,6 +118,7 @@ export async function createClinic(input: CreateClinicInput): Promise<ClinicRow>
       type: input.type,
       tier: input.tier,
       config: (input.config ?? {}) as Json,
+      subdomain: input.subdomain ?? null,
     })
     .select()
     .single();

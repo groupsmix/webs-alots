@@ -75,9 +75,11 @@ export default function OnboardingPage() {
     email: "",
     address: "",
     specialty: "",
+    subdomain: "",
     domain: "",
   });
   const [createdClinicId, setCreatedClinicId] = useState<string | null>(null);
+  const [subdomainManuallyEdited, setSubdomainManuallyEdited] = useState(false);
 
   // Step 2: Users
   const [users, setUsers] = useState<UserFormData[]>([
@@ -101,7 +103,22 @@ export default function OnboardingPage() {
   // ---------- Handlers ----------
 
   function updateClinicField(field: keyof ClinicFormData, value: string) {
-    setClinicForm((prev) => ({ ...prev, [field]: value }));
+    setClinicForm((prev) => {
+      const next = { ...prev, [field]: value };
+      // Auto-generate subdomain from clinic name if subdomain hasn't been manually edited
+      if (field === "name" && !subdomainManuallyEdited) {
+        next.subdomain = value
+          .toLowerCase()
+          .replace(/[^a-z0-9\s-]/g, "")
+          .trim()
+          .replace(/\s+/g, "-")
+          .replace(/--+/g, "-");
+      }
+      return next;
+    });
+    if (field === "subdomain") {
+      setSubdomainManuallyEdited(true);
+    }
   }
 
   function addUser() {
@@ -193,6 +210,10 @@ export default function OnboardingPage() {
       setError("Clinic name is required");
       return;
     }
+    if (!clinicForm.subdomain.trim()) {
+      setError("Subdomain is required — the clinic needs a URL to be accessible");
+      return;
+    }
 
     setLoading(true);
     setError(null);
@@ -201,6 +222,7 @@ export default function OnboardingPage() {
         name: clinicForm.name,
         type: clinicForm.type,
         tier: clinicForm.tier,
+        subdomain: clinicForm.subdomain || undefined,
         config: {
           locale: "fr",
           currency: "MAD",
@@ -372,14 +394,25 @@ export default function OnboardingPage() {
             </div>
             <Separator className="my-6" />
             <div className="bg-muted/50 rounded-lg p-4 text-left text-sm mb-6">
-              <h3 className="font-semibold mb-2">Next Steps:</h3>
-              <ol className="list-decimal list-inside space-y-1 text-muted-foreground">
-                <li>Edit <code>src/config/clinic.config.ts</code> with the clinic ID above</li>
-                <li>Customize <code>src/config/theme.config.ts</code> with brand colors</li>
-                <li>Update <code>src/lib/website-config.ts</code> with website content</li>
-                <li>Create a git branch: <code>client/{clinicForm.name.toLowerCase().replace(/\s+/g, "-")}</code></li>
-                <li>Deploy to Cloudflare Pages</li>
-              </ol>
+              <h3 className="font-semibold mb-2">Clinic is Live:</h3>
+              <div className="space-y-2 text-muted-foreground">
+                {clinicForm.subdomain && (
+                  <p>
+                    Clinic URL:{" "}
+                    <a
+                      href={`https://${clinicForm.subdomain}.oltigo.com`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-primary underline font-mono"
+                    >
+                      {clinicForm.subdomain}.oltigo.com
+                    </a>
+                  </p>
+                )}
+                <p>The clinic is automatically accessible — no deployment needed.</p>
+                <p>Staff can log in at the clinic URL above using their credentials.</p>
+                <p>Branding, colors, and website content can be customized from <strong>Admin → Branding</strong>.</p>
+              </div>
             </div>
             <div className="flex gap-3 justify-center">
               <Link href="/super-admin/clinics">
