@@ -61,6 +61,21 @@ jobs:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
 
+      - name: Set Worker Secrets (Production)
+        if: github.ref_name == 'main'
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: secret bulk
+          stdin: |
+            {
+              "SUPABASE_SERVICE_ROLE_KEY": "${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}",
+              "RESEND_API_KEY": "${{ secrets.RESEND_API_KEY }}",
+              "BOOKING_TOKEN_SECRET": "${{ secrets.BOOKING_TOKEN_SECRET }}",
+              "CRON_SECRET": "${{ secrets.CRON_SECRET }}"
+            }
+
       - name: Deploy to Cloudflare Workers (Staging)
         if: github.ref_name == 'staging'
         uses: cloudflare/wrangler-action@v3
@@ -68,3 +83,18 @@ jobs:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           command: deploy --env staging
+
+      - name: Set Worker Secrets (Staging)
+        if: github.ref_name == 'staging'
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: secret bulk --env staging
+          stdin: |
+            {
+              "SUPABASE_SERVICE_ROLE_KEY": "${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}",
+              "RESEND_API_KEY": "${{ secrets.RESEND_API_KEY }}",
+              "BOOKING_TOKEN_SECRET": "${{ secrets.BOOKING_TOKEN_SECRET }}",
+              "CRON_SECRET": "${{ secrets.CRON_SECRET }}"
+            }
