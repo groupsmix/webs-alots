@@ -111,14 +111,22 @@ export interface CreateTimeSlotInput {
 
 export async function createClinic(input: CreateClinicInput): Promise<ClinicRow> {
   const supabase = await rawClient();
+  const cfg = input.config ?? {};
   const { data, error } = await supabase
     .from("clinics")
     .insert({
       name: input.name,
       type: input.type,
       tier: input.tier,
-      config: (input.config ?? {}) as Json,
+      config: cfg as Json,
       subdomain: input.subdomain ?? null,
+      // Also set direct columns so public branding queries work
+      phone: (cfg.phone as string) || null,
+      address: (cfg.address as string) || null,
+      owner_email: (cfg.email as string) || null,
+      owner_name: (cfg.owner_name as string) || null,
+      city: (cfg.city as string) || null,
+      domain: (cfg.domain as string) || null,
     })
     .select()
     .single();
