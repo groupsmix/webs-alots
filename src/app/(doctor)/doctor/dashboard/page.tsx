@@ -175,24 +175,39 @@ export default function DoctorDashboardPage() {
   }
 
   const handleMarkDone = async (appointmentId: string) => {
-    await updateAppointmentStatus(appointmentId, "completed");
-    setAppointmentList((prev) =>
-      prev.map((a) => (a.id === appointmentId ? { ...a, status: "completed" } : a))
-    );
+    try {
+      const result = await updateAppointmentStatus(appointmentId, "completed");
+      if (!result.success) throw new Error(result.error?.message ?? "Failed to mark appointment as done");
+      setAppointmentList((prev) =>
+        prev.map((a) => (a.id === appointmentId ? { ...a, status: "completed" } : a))
+      );
+    } catch {
+      setError(new Error("Failed to update appointment status. Please try again."));
+    }
   };
 
   const handleNoShow = async (appointmentId: string) => {
-    await updateAppointmentStatus(appointmentId, "no-show");
-    setAppointmentList((prev) =>
-      prev.map((a) => (a.id === appointmentId ? { ...a, status: "no-show" } : a))
-    );
+    try {
+      const result = await updateAppointmentStatus(appointmentId, "no-show");
+      if (!result.success) throw new Error(result.error?.message ?? "Failed to mark appointment as no-show");
+      setAppointmentList((prev) =>
+        prev.map((a) => (a.id === appointmentId ? { ...a, status: "no-show" } : a))
+      );
+    } catch {
+      setError(new Error("Failed to update appointment status. Please try again."));
+    }
   };
 
   const handleStartConsultation = async (appointmentId: string) => {
-    await updateAppointmentStatus(appointmentId, "in-progress");
-    setAppointmentList((prev) =>
-      prev.map((a) => (a.id === appointmentId ? { ...a, status: "in-progress" } : a))
-    );
+    try {
+      const result = await updateAppointmentStatus(appointmentId, "in-progress");
+      if (!result.success) throw new Error(result.error?.message ?? "Failed to start consultation");
+      setAppointmentList((prev) =>
+        prev.map((a) => (a.id === appointmentId ? { ...a, status: "in-progress" } : a))
+      );
+    } catch {
+      setError(new Error("Failed to update appointment status. Please try again."));
+    }
   };
 
   const filteredPatients = searchQuery.trim()

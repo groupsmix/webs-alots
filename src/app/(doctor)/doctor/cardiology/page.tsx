@@ -24,10 +24,12 @@ import {
 import { PageLoader } from "@/components/ui/page-loader";
 
 function bpCategory(systolic: number, diastolic: number): { label: string; color: string } {
-  if (systolic < 120 && diastolic < 80) return { label: "Normal", color: "text-green-600" };
-  if (systolic < 130 && diastolic < 80) return { label: "Elevated", color: "text-yellow-600" };
-  if (systolic < 140 || diastolic < 90) return { label: "High Stage 1", color: "text-orange-600" };
+  // AHA BP classification (checked top-down; Stage 2 must be tested before Stage 1)
+  if (systolic >= 180 || diastolic >= 120) return { label: "Hypertensive Crisis", color: "text-red-800" };
   if (systolic >= 140 || diastolic >= 90) return { label: "High Stage 2", color: "text-red-600" };
+  if ((systolic >= 130 && systolic < 140) || (diastolic >= 80 && diastolic < 90)) return { label: "High Stage 1", color: "text-orange-600" };
+  if (systolic >= 120 && systolic < 130 && diastolic < 80) return { label: "Elevated", color: "text-yellow-600" };
+  if (systolic < 120 && diastolic < 80) return { label: "Normal", color: "text-green-600" };
   return { label: "Unknown", color: "text-muted-foreground" };
 }
 

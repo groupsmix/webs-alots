@@ -109,7 +109,7 @@ export function TreatmentPlanBuilder({
                     const Icon = STATUS_ICON[step.status];
                     return (
                       <div
-                        key={index}
+                        key={`step-${step.step}`}
                         className={`flex items-start gap-3 p-3 rounded-lg border ${
                           step.status === "completed" ? "bg-green-50/50 dark:bg-green-950/20" :
                           step.status === "in_progress" ? "bg-blue-50/50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800" :
