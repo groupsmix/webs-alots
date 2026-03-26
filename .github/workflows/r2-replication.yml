@@ -20,13 +20,26 @@ jobs:
       R2_REPLICA_SECRET_ACCESS_KEY: ${{ secrets.R2_REPLICA_SECRET_ACCESS_KEY }}
       R2_REPLICA_BUCKET_NAME: ${{ secrets.R2_REPLICA_BUCKET_NAME }}
     steps:
+      - name: Check replica configuration
+        id: check_replica
+        run: |
+          if [ -z "${{ secrets.R2_REPLICA_ACCOUNT_ID }}" ] || [ -z "${{ secrets.R2_REPLICA_BUCKET_NAME }}" ]; then
+            echo "skip=true" >> $GITHUB_OUTPUT
+            echo "::warning::R2 replica not configured. Set R2_REPLICA_ACCOUNT_ID, R2_REPLICA_ACCESS_KEY_ID, R2_REPLICA_SECRET_ACCESS_KEY, and R2_REPLICA_BUCKET_NAME secrets to enable replication."
+          else
+            echo "skip=false" >> $GITHUB_OUTPUT
+          fi
+
       - name: Checkout
+        if: steps.check_replica.outputs.skip != 'true'
         uses: actions/checkout@v4
 
       - name: Install AWS CLI
+        if: steps.check_replica.outputs.skip != 'true'
         run: pip install awscli
 
       - name: Configure primary R2 credentials
+        if: steps.check_replica.outputs.skip != 'true'
         run: |
           mkdir -p ~/.aws
           cat > ~/.aws/credentials << EOF
@@ -45,6 +58,7 @@ jobs:
           EOF
 
       - name: Sync primary to replica bucket
+        if: steps.check_replica.outputs.skip != 'true'
         run: |
           PRIMARY_ENDPOINT="https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com"
           REPLICA_ENDPOINT="https://${R2_REPLICA_ACCOUNT_ID}.r2.cloudflarestorage.com"
@@ -74,6 +88,7 @@ jobs:
           echo "Replication complete: ${FILE_COUNT} files synced"
 
       - name: Verify replica integrity
+        if: steps.check_replica.outputs.skip != 'true'
         run: |
           PRIMARY_ENDPOINT="https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com"
           REPLICA_ENDPOINT="https://${R2_REPLICA_ACCOUNT_ID}.r2.cloudflarestorage.com"
@@ -95,5 +110,5 @@ jobs:
           echo "Replication verification PASSED"
 
       - name: Cleanup
-        if: always()
+        if: always() && steps.check_replica.outputs.skip != 'true'
         run: rm -rf /tmp/r2-sync

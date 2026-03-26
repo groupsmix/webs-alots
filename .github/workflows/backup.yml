@@ -201,13 +201,16 @@ jobs:
 
       - name: Test restore
         run: |
-          gunzip -c /tmp/verify_backup.sql.gz | psql backup_verify_test
+          # The dump uses --clean which generates DROP/ALTER for objects that
+          # don't exist in a fresh database. Pipe through psql with ON_ERROR_STOP
+          # disabled so those harmless errors don't abort the restore.
+          gunzip -c /tmp/verify_backup.sql.gz | psql -v ON_ERROR_STOP=0 backup_verify_test 2>&1 | tail -5
 
           # Verify key tables exist
-          TABLES=$(psql backup_verify_test -t -c "SELECT count(*) FROM information_schema.tables WHERE table_schema = 'public';")
+          TABLES=$(psql backup_verify_test -t -c "SELECT count(*) FROM information_schema.tables WHERE table_schema = 'public';" | tr -d ' ')
           echo "Tables restored: ${TABLES}"
 
-          if [ "${TABLES}" -lt 5 ]; then
+          if [ -z "${TABLES}" ] || [ "${TABLES}" -lt 5 ]; then
             echo "ERROR: Too few tables restored (${TABLES}). Backup may be corrupt."
             exit 1
           fi
