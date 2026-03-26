@@ -116,7 +116,13 @@ export function OnboardingStepClinic({
               placeholder="contact@clinic.ma"
               value={clinicForm.email}
               onChange={(e) => onUpdateField("email", e.target.value)}
+              className={clinicForm.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(clinicForm.email) ? "border-destructive focus-visible:ring-destructive" : ""}
             />
+            {clinicForm.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(clinicForm.email) && (
+              <p className="text-[11px] text-destructive font-medium">
+                Please enter a valid email address (e.g. contact@clinic.ma)
+              </p>
+            )}
           </div>
         </div>
 

@@ -377,18 +377,24 @@ export default function OnboardingPage() {
                     required
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder="contact@cabinet.ma"
-                    value={details.email}
-                    onChange={(e) =>
-                      setDetails({ ...details, email: e.target.value })
-                    }
-                  />
-                </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="email">Email</Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      placeholder="contact@cabinet.ma"
+                      value={details.email}
+                      onChange={(e) =>
+                        setDetails({ ...details, email: e.target.value })
+                      }
+                      className={details.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(details.email) ? "border-destructive focus-visible:ring-destructive" : ""}
+                    />
+                    {details.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(details.email) && (
+                      <p className="text-[11px] text-destructive font-medium">
+                        Veuillez entrer une adresse email valide (ex: contact@cabinet.ma)
+                      </p>
+                    )}
+                  </div>
               </div>
 
               <div className="space-y-2">

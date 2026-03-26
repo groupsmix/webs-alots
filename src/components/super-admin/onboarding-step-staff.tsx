@@ -7,12 +7,20 @@ import {
   ArrowLeft,
   ArrowRight,
   Loader2,
+  KeyRound,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { STAFF_DEFAULT_PASSWORD } from "@/lib/constants";
+
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+function isValidEmail(email: string): boolean {
+  return EMAIL_REGEX.test(email);
+}
 
 export interface UserFormData {
   role: "clinic_admin" | "receptionist" | "doctor";
@@ -127,10 +135,16 @@ export function OnboardingStepStaff({
                     onUpdateUser(index, "email", e.target.value)
                   }
                   required={user.role === "clinic_admin"}
+                  className={user.email && !isValidEmail(user.email) ? "border-destructive focus-visible:ring-destructive" : ""}
                 />
+                {user.email && !isValidEmail(user.email) && (
+                  <p className="text-[11px] text-destructive font-medium">
+                    Please enter a valid email address (e.g. sara@clinic.ma)
+                  </p>
+                )}
                 <p className="text-[11px] text-muted-foreground">
                   {user.role === "clinic_admin"
-                    ? "Required — a login account will be created with a default password."
+                    ? "Required — a login account will be created with the default password shown below."
                     : "A login account will be created automatically if a valid email is provided."}
                 </p>
               </div>
@@ -142,6 +156,22 @@ export function OnboardingStepStaff({
           <Plus className="h-4 w-4 mr-1" />
           Add Another Staff Member
         </Button>
+
+        <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 flex items-start gap-2">
+          <KeyRound className="h-4 w-4 text-amber-600 mt-0.5 shrink-0" />
+          <div>
+            <p className="text-sm font-medium text-amber-800">Default Login Password</p>
+            <p className="text-xs text-amber-700 mt-0.5">
+              All staff accounts created here will use this password:
+            </p>
+            <code className="mt-1 inline-block bg-white px-3 py-1 rounded border border-amber-200 text-sm font-mono font-bold text-amber-900 select-all">
+              {STAFF_DEFAULT_PASSWORD}
+            </code>
+            <p className="text-xs text-amber-600 mt-1">
+              Share this password with staff so they can log in. They should change it after first login.
+            </p>
+          </div>
+        </div>
 
         <div className="flex justify-between pt-4">
           <Button variant="outline" onClick={onBack}>
