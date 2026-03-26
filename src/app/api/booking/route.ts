@@ -17,6 +17,8 @@ import { logAuditEvent } from "@/lib/audit-log";
 import { computeEndTime } from "@/lib/timezone";
 import { logger } from "@/lib/logger";
 import { safeParse } from "@/lib/validations";
+import { dispatchNotification } from "@/lib/notifications";
+import type { TemplateVariables } from "@/lib/notifications";
 import { z } from "zod";
 
 const bookingRequestSchema = z.object({
@@ -357,6 +359,25 @@ export async function POST(request: NextRequest) {
       type: "booking",
       clinicId,
       description: `Appointment ${appointment.id} created for patient ${patientId} with doctor ${body.doctorId}`,
+    });
+
+    // ── Dispatch notifications (fire-and-forget) ──────────────────
+    // Notification failure must NOT affect the booking outcome.
+    const notifVars: TemplateVariables = {
+      patient_name: body.patient.name,
+      doctor_name: doctor?.name ?? "Doctor",
+      clinic_name: tenant.clinicName,
+      service_name: service?.name ?? "Consultation",
+      date: body.date,
+      time: body.time,
+    };
+
+    // booking_confirmation → patient, new_booking → staff
+    Promise.allSettled([
+      dispatchNotification("booking_confirmation", notifVars, patientId, ["in_app", "email", "whatsapp"]),
+      dispatchNotification("new_booking", notifVars, body.doctorId, ["in_app"]),
+    ]).catch((err) => {
+      logger.warn("Booking notification dispatch failed", { context: "booking/route", error: err });
     });
 
     return NextResponse.json({
