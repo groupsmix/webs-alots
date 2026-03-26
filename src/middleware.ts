@@ -155,7 +155,7 @@ function buildCsp(nonce: string): string {
   const isDev = process.env.NODE_ENV === "development";
   return [
     "default-src 'self'",
-    `script-src 'self' 'nonce-${nonce}' https://static.cloudflareinsights.com${isDev ? " 'unsafe-eval'" : ""}`,
+    `script-src 'self' 'nonce-${nonce}' https://static.cloudflareinsights.com https://challenges.cloudflare.com${isDev ? " 'unsafe-eval'" : ""}`,
     // Styles: self + inline (Tailwind, shadcn) — see ACCEPTED RISK above
     "style-src 'self' 'unsafe-inline'",
     // Images: self + R2 storage + Supabase storage + data URIs + blobs
