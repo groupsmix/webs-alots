@@ -12,6 +12,29 @@ import type { Database } from "@/lib/types/database";
 
 type TableName = keyof Database["public"]["Tables"];
 
+// ── Patient name resolution helper ──
+
+async function resolvePatientNames(
+  patientIds: string[],
+): Promise<Map<string, string>> {
+  if (patientIds.length === 0) return new Map();
+  const supabase = createClient();
+  const uniqueIds = [...new Set(patientIds)];
+  const { data, error } = await supabase
+    .from("users")
+    .select("id, name")
+    .in("id", uniqueIds);
+  if (error) {
+    logger.warn("Failed to resolve patient names", { context: "data/specialists", error });
+    return new Map();
+  }
+  const map = new Map<string, string>();
+  for (const row of data ?? []) {
+    map.set(row.id, (row as { id: string; name: string }).name ?? "");
+  }
+  return map;
+}
+
 // ── Generic fetch helper (mirrors client.ts) ──
 
 async function fetchRows<T>(
@@ -64,10 +87,11 @@ export async function fetchSkinPhotos(clinicId: string, patientId?: string): Pro
     description: string | null; image_url: string | null; photo_date: string;
     tags: string[] | null; created_at: string; updated_at: string;
   }>("skin_photos", { eq, order: ["photo_date", { ascending: false }] });
+  const names = await resolvePatientNames(rows.map((r) => r.patient_id));
   return rows.map((r) => ({
     id: r.id,
     patientId: r.patient_id,
-    patientName: "",
+    patientName: names.get(r.patient_id) ?? "",
     doctorId: r.doctor_id,
     bodyRegion: r.body_region,
     description: r.description ?? "",
@@ -111,10 +135,11 @@ export async function fetchSkinConditions(clinicId: string, patientId?: string):
     treatments: { name: string; startDate: string; endDate?: string; notes?: string }[] | null;
     created_at: string; updated_at: string;
   }>("skin_conditions", { eq, order: ["diagnosis_date", { ascending: false }] });
+  const names = await resolvePatientNames(rows.map((r) => r.patient_id));
   return rows.map((r) => ({
     id: r.id,
     patientId: r.patient_id,
-    patientName: "",
+    patientName: names.get(r.patient_id) ?? "",
     conditionName: r.condition_name,
     bodyRegion: r.body_region,
     severity: r.severity ?? "mild",
@@ -172,10 +197,11 @@ export async function fetchECGRecords(clinicId: string, patientId?: string): Pro
     heart_rate: number | null; rhythm: string | null; interpretation: string | null;
     notes: string | null; is_abnormal: boolean; created_at: string;
   }>("ecg_records", { eq, order: ["record_date", { ascending: false }] });
+  const names = await resolvePatientNames(rows.map((r) => r.patient_id));
   return rows.map((r) => ({
     id: r.id,
     patientId: r.patient_id,
-    patientName: "",
+    patientName: names.get(r.patient_id) ?? "",
     recordDate: r.record_date,
     fileUrl: r.file_url ?? "",
     heartRate: r.heart_rate,
@@ -311,10 +337,11 @@ export async function fetchHearingTests(clinicId: string, patientId?: string): P
     interpretation: string | null; hearing_loss_type: string | null;
     hearing_loss_degree: string | null; notes: string | null; created_at: string;
   }>("hearing_tests", { eq, order: ["test_date", { ascending: false }] });
+  const names = await resolvePatientNames(rows.map((r) => r.patient_id));
   return rows.map((r) => ({
     id: r.id,
     patientId: r.patient_id,
-    patientName: "",
+    patientName: names.get(r.patient_id) ?? "",
     testDate: r.test_date,
     testType: r.test_type,
     leftEarData: r.left_ear_data ?? {},
@@ -356,10 +383,11 @@ export async function fetchENTExams(clinicId: string, patientId?: string): Promi
     id: string; clinic_id: string; patient_id: string; doctor_id: string; exam_date: string; template_type: string;
     findings: Record<string, string> | null; diagnosis: string | null; plan: string | null; created_at: string;
   }>("ent_exam_records", { eq, order: ["exam_date", { ascending: false }] });
+  const names = await resolvePatientNames(rows.map((r) => r.patient_id));
   return rows.map((r) => ({
     id: r.id,
     patientId: r.patient_id,
-    patientName: "",
+    patientName: names.get(r.patient_id) ?? "",
     examDate: r.exam_date,
     templateType: r.template_type,
     findings: r.findings ?? {},
@@ -403,10 +431,11 @@ export async function fetchXRayRecords(clinicId: string, patientId?: string): Pr
     image_url: string | null; annotations: { x: number; y: number; label: string }[] | null;
     findings: string | null; diagnosis: string | null; created_at: string;
   }>("xray_records", { eq, order: ["record_date", { ascending: false }] });
+  const names = await resolvePatientNames(rows.map((r) => r.patient_id));
   return rows.map((r) => ({
     id: r.id,
     patientId: r.patient_id,
-    patientName: "",
+    patientName: names.get(r.patient_id) ?? "",
     recordDate: r.record_date,
     bodyPart: r.body_part,
     imageUrl: r.image_url ?? "",
@@ -452,10 +481,11 @@ export async function fetchFractureRecords(clinicId: string, patientId?: string)
     expected_healing_date: string | null; notes: string | null;
     xray_record_id: string | null; created_at: string; updated_at: string;
   }>("fracture_records", { eq, order: ["diagnosis_date", { ascending: false }] });
+  const names = await resolvePatientNames(rows.map((r) => r.patient_id));
   return rows.map((r) => ({
     id: r.id,
     patientId: r.patient_id,
-    patientName: "",
+    patientName: names.get(r.patient_id) ?? "",
     location: r.location,
     fractureType: r.fracture_type,
     severity: r.severity,
@@ -513,10 +543,11 @@ export async function fetchRehabPlans(clinicId: string, patientId?: string): Pro
     milestones: { title: string; targetDate: string; completed: boolean; notes?: string }[] | null;
     notes: string | null; created_at: string; updated_at: string;
   }>("rehab_plans", { eq, order: ["start_date", { ascending: false }] });
+  const names = await resolvePatientNames(rows.map((r) => r.patient_id));
   return rows.map((r) => ({
     id: r.id,
     patientId: r.patient_id,
-    patientName: "",
+    patientName: names.get(r.patient_id) ?? "",
     title: r.title,
     condition: r.condition,
     startDate: r.start_date,
@@ -578,10 +609,11 @@ export async function fetchPsychSessionNotes(clinicId: string, doctorId: string,
     observations: string | null; plan: string | null; is_confidential: boolean;
     access_level: string; created_at: string;
   }>("psych_session_notes", { eq, order: ["session_date", { ascending: false }] });
+  const names = await resolvePatientNames(rows.map((r) => r.patient_id));
   return rows.map((r) => ({
     id: r.id,
     patientId: r.patient_id,
-    patientName: "",
+    patientName: names.get(r.patient_id) ?? "",
     sessionDate: r.session_date,
     sessionNumber: r.session_number,
     sessionType: r.session_type,
@@ -632,10 +664,11 @@ export async function fetchPsychMedications(clinicId: string, patientId?: string
     dosage_history: { date: string; dosage: string; reason?: string }[] | null;
     created_at: string; updated_at: string;
   }>("psych_medications", { eq, order: ["start_date", { ascending: false }] });
+  const names = await resolvePatientNames(rows.map((r) => r.patient_id));
   return rows.map((r) => ({
     id: r.id,
     patientId: r.patient_id,
-    patientName: "",
+    patientName: names.get(r.patient_id) ?? "",
     medicationName: r.medication_name,
     dosage: r.dosage,
     frequency: r.frequency,
@@ -696,10 +729,11 @@ export async function fetchEEGRecords(clinicId: string, patientId?: string): Pro
     duration_minutes: number | null; findings: string | null;
     interpretation: string | null; is_abnormal: boolean; notes: string | null; created_at: string;
   }>("eeg_records", { eq, order: ["record_date", { ascending: false }] });
+  const names = await resolvePatientNames(rows.map((r) => r.patient_id));
   return rows.map((r) => ({
     id: r.id,
     patientId: r.patient_id,
-    patientName: "",
+    patientName: names.get(r.patient_id) ?? "",
     recordDate: r.record_date,
     fileUrl: r.file_url ?? "",
     durationMinutes: r.duration_minutes,
@@ -750,10 +784,11 @@ export async function fetchNeuroExams(clinicId: string, patientId?: string): Pro
     gait: Record<string, string> | null; diagnosis: string | null;
     plan: string | null; notes: string | null; created_at: string;
   }>("neuro_exam_records", { eq, order: ["exam_date", { ascending: false }] });
+  const names = await resolvePatientNames(rows.map((r) => r.patient_id));
   return rows.map((r) => ({
     id: r.id,
     patientId: r.patient_id,
-    patientName: "",
+    patientName: names.get(r.patient_id) ?? "",
     examDate: r.exam_date,
     mentalStatus: r.mental_status ?? {},
     cranialNerves: r.cranial_nerves ?? {},
@@ -807,10 +842,11 @@ export async function fetchUrologyExams(clinicId: string, patientId?: string): P
     findings: Record<string, string> | null; lab_results: Record<string, string> | null;
     diagnosis: string | null; plan: string | null; created_at: string;
   }>("urology_exams", { eq, order: ["exam_date", { ascending: false }] });
+  const names = await resolvePatientNames(rows.map((r) => r.patient_id));
   return rows.map((r) => ({
     id: r.id,
     patientId: r.patient_id,
-    patientName: "",
+    patientName: names.get(r.patient_id) ?? "",
     examDate: r.exam_date,
     templateType: r.template_type,
     findings: r.findings ?? {},
@@ -856,10 +892,11 @@ export async function fetchSpirometryRecords(clinicId: string, patientId?: strin
     pef: number | null; interpretation: string | null;
     test_quality: string; notes: string | null; created_at: string;
   }>("spirometry_records", { eq, order: ["test_date", { ascending: false }] });
+  const names = await resolvePatientNames(rows.map((r) => r.patient_id));
   return rows.map((r) => ({
     id: r.id,
     patientId: r.patient_id,
-    patientName: "",
+    patientName: names.get(r.patient_id) ?? "",
     testDate: r.test_date,
     fvc: r.fvc,
     fev1: r.fev1,
@@ -1036,10 +1073,11 @@ export async function fetchDiabetesManagement(clinicId: string, patientId?: stri
     monitoring_frequency: string; notes: string | null; last_review_date: string | null;
     created_at: string; updated_at: string;
   }>("diabetes_management", { eq, order: ["created_at", { ascending: false }] });
+  const names = await resolvePatientNames(rows.map((r) => r.patient_id));
   return rows.map((r) => ({
     id: r.id,
     patientId: r.patient_id,
-    patientName: "",
+    patientName: names.get(r.patient_id) ?? "",
     diabetesType: r.diabetes_type,
     diagnosisDate: r.diagnosis_date ?? "",
     currentHba1c: r.current_hba1c,
@@ -1106,10 +1144,11 @@ export async function fetchJointAssessments(clinicId: string, patientId?: string
     das28_score: number | null; functional_status: string | null; notes: string | null;
     created_at: string;
   }>("joint_assessments", { eq, order: ["assessment_date", { ascending: false }] });
+  const names = await resolvePatientNames(rows.map((r) => r.patient_id));
   return rows.map((r) => ({
     id: r.id,
     patientId: r.patient_id,
-    patientName: "",
+    patientName: names.get(r.patient_id) ?? "",
     assessmentDate: r.assessment_date,
     jointsData: r.joints_data ?? {},
     vasPainScore: r.vas_pain_score,
