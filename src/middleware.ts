@@ -370,6 +370,11 @@ export async function middleware(request: NextRequest) {
   supabaseResponse.headers.set("Strict-Transport-Security", "max-age=31536000; includeSubDomains; preload");
   supabaseResponse.headers.set("X-Content-Type-Options", "nosniff");
 
+  // Resolved clinic info is stored here so the setAll callback can
+  // re-apply tenant headers whenever it recreates supabaseResponse
+  // (e.g. during token refresh).
+  let resolvedClinic: { id: string; name: string; subdomain: string; type: string; tier: string } | null = null;
+
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
@@ -392,10 +397,23 @@ export async function middleware(request: NextRequest) {
           cookiesToSet.forEach(({ name, value, options }) =>
             supabaseResponse.cookies.set(name, value, options)
           );
+          // Re-apply tenant headers so they survive response recreation
+          if (resolvedClinic) {
+            setTenantHeaders(supabaseResponse, resolvedClinic);
+          }
         },
       },
     }
   );
+
+  // IMPORTANT: Do NOT use getSession() here — it reads from cookies and
+  // can be tampered with. Use getUser() which validates with Supabase.
+  // Called BEFORE subdomain resolution so that any token refresh happens
+  // first — otherwise an expired JWT can cause the clinic lookup to fail
+  // due to RLS, which would incorrectly redirect to the root domain.
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
   // --- Resolve clinic from subdomain (with in-memory cache) ---
   if (subdomain) {
@@ -427,21 +445,16 @@ export async function middleware(request: NextRequest) {
       return secureRedirect(rootUrl);
     }
 
-    // Attach tenant info to all responses so pages can read it
-    setTenantHeaders(supabaseResponse, {
+    // Store resolved clinic for setAll callback and apply tenant headers
+    resolvedClinic = {
       id: clinic.id,
       name: clinic.name,
       subdomain: clinic.subdomain,
       type: clinic.type,
       tier: clinic.tier,
-    });
+    };
+    setTenantHeaders(supabaseResponse, resolvedClinic);
   }
-
-  // IMPORTANT: Do NOT use getSession() here — it reads from cookies and
-  // can be tampered with. Use getUser() which validates with Supabase.
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
 
   // Single profile query for authenticated users, reused for both
   // login-redirect and role-enforcement (avoids duplicate DB calls).
