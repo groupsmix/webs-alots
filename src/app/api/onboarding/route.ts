@@ -128,6 +128,11 @@ export const POST = withAuth(async (request, { supabase, user }) => {
             phone: body.phone,
             email: body.email ?? null,
           },
+          // Also set direct columns so public branding queries work
+          phone: body.phone || null,
+          owner_email: body.email ?? null,
+          owner_name: body.owner_name || null,
+          city: body.city ?? null,
         })
         .select("id")
         .single();

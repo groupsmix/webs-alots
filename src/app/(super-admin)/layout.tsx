@@ -188,15 +188,15 @@ export default function SuperAdminLayout({
 
           {/* Notifications */}
           <DropdownMenu>
-            <DropdownMenuTrigger>
-              <Button variant="ghost" size="sm" className="relative">
+            <DropdownMenuTrigger asChild>
+              <button type="button" className="relative inline-flex items-center justify-center rounded-md p-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground">
                 <Bell className="h-4 w-4" />
                 {unreadCount > 0 && (
                   <span className="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[10px] text-white">
                     {unreadCount}
                   </span>
                 )}
-              </Button>
+              </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent className="w-80">
               <DropdownMenuLabel>Notifications</DropdownMenuLabel>
@@ -216,14 +216,14 @@ export default function SuperAdminLayout({
 
           {/* User Menu */}
           <DropdownMenu>
-            <DropdownMenuTrigger>
-              <Button variant="ghost" size="sm" className="flex items-center gap-2">
+            <DropdownMenuTrigger asChild>
+              <button type="button" className="inline-flex items-center gap-2 rounded-md p-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground">
                 <Avatar className="h-7 w-7">
                   <AvatarFallback className="text-xs">SA</AvatarFallback>
                 </Avatar>
                 <span className="hidden sm:inline text-sm">Super Admin</span>
                 <ChevronDown className="h-3 w-3" />
-              </Button>
+              </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent>
               <DropdownMenuLabel>My Account</DropdownMenuLabel>

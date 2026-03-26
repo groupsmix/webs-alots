@@ -223,6 +223,31 @@ export async function createUser(input: CreateUserInput): Promise<UserRow> {
     }
   }
 
+  // If we resolved an existing auth_id, check whether a public.users row
+  // already references it.  The users.auth_id column has a UNIQUE constraint,
+  // so blindly inserting would fail with a duplicate-key error.  In that
+  // scenario we create the new staff row without linking auth_id — the
+  // email still allows the user to be identified, and onboarding doesn't
+  // break.
+  if (authId) {
+    const { data: existingRow } = await supabase
+      .from("users")
+      .select("id")
+      .eq("auth_id", authId)
+      .maybeSingle();
+
+    if (existingRow) {
+      // auth_id is already taken by another users row — don't link it
+      logger.warn("auth_id already linked to another users row — creating staff without auth link", {
+        context: "super-admin-actions",
+        email: input.email,
+        authId,
+        existingUserId: existingRow.id,
+      });
+      authId = null;
+    }
+  }
+
   const { data, error } = await supabase
     .from("users")
     .insert({
