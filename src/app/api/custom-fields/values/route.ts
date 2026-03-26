@@ -66,40 +66,50 @@ export const POST = withAuth(async (request, { supabase, profile }) => {
       );
     }
 
-    const { data: definitions } = await supabase
-      .from("custom_field_definitions")
-      .select("field_key, field_type")
-      .eq("clinic_id", clinic_id)
-      .eq("entity_type", entity_type);
+    // Look up the clinic's type key so we query definitions by the correct column
+    const { data: clinicRow } = await supabase
+      .from("clinics")
+      .select("clinic_type_key")
+      .eq("id", clinic_id)
+      .single();
+    const clinicTypeKey = clinicRow?.clinic_type_key;
 
-    if (definitions && definitions.length > 0) {
-      const defMap = new Map(
-        (definitions as { field_key: string; field_type: string }[]).map((d) => [d.field_key, d.field_type]),
-      );
-      const unknownKeys = Object.keys(field_values).filter((k) => !defMap.has(k));
-      if (unknownKeys.length > 0) {
-        return NextResponse.json(
-          { error: `Unknown custom field keys: ${unknownKeys.join(", ")}` },
-          { status: 400 },
+    if (clinicTypeKey) {
+      const { data: definitions } = await supabase
+        .from("custom_field_definitions")
+        .select("field_key, field_type")
+        .eq("clinic_type_key", clinicTypeKey)
+        .eq("entity_type", entity_type);
+
+      if (definitions && definitions.length > 0) {
+        const defMap = new Map(
+          (definitions as { field_key: string; field_type: string }[]).map((d) => [d.field_key, d.field_type]),
         );
-      }
-
-      // Type-check values against declared field types
-      for (const [key, value] of Object.entries(field_values as Record<string, unknown>)) {
-        const expectedType = defMap.get(key);
-        if (!expectedType) continue;
-        const valid =
-          (expectedType === "text" && typeof value === "string") ||
-          (expectedType === "number" && typeof value === "number" && Number.isFinite(value)) ||
-          (expectedType === "boolean" && typeof value === "boolean") ||
-          (expectedType === "date" && typeof value === "string" && /^\d{4}-\d{2}-\d{2}/.test(value)) ||
-          (expectedType === "select" && typeof value === "string") ||
-          (expectedType === "multiselect" && Array.isArray(value));
-        if (!valid) {
+        const unknownKeys = Object.keys(field_values).filter((k) => !defMap.has(k));
+        if (unknownKeys.length > 0) {
           return NextResponse.json(
-            { error: `Field "${key}" expects type "${expectedType}"` },
+            { error: `Unknown custom field keys: ${unknownKeys.join(", ")}` },
             { status: 400 },
           );
+        }
+
+        // Type-check values against declared field types
+        for (const [key, value] of Object.entries(field_values as Record<string, unknown>)) {
+          const expectedType = defMap.get(key);
+          if (!expectedType) continue;
+          const valid =
+            (expectedType === "text" && typeof value === "string") ||
+            (expectedType === "number" && typeof value === "number" && Number.isFinite(value)) ||
+            (expectedType === "boolean" && typeof value === "boolean") ||
+            (expectedType === "date" && typeof value === "string" && /^\d{4}-\d{2}-\d{2}/.test(value)) ||
+            (expectedType === "select" && typeof value === "string") ||
+            (expectedType === "multiselect" && Array.isArray(value));
+          if (!valid) {
+            return NextResponse.json(
+              { error: `Field "${key}" expects type "${expectedType}"` },
+              { status: 400 },
+            );
+          }
         }
       }
     }
@@ -162,39 +172,49 @@ export const PATCH = withAuth(async (request, { supabase, profile }) => {
       );
     }
 
-    const { data: definitions } = await supabase
-      .from("custom_field_definitions")
-      .select("field_key, field_type")
-      .eq("clinic_id", clinic_id)
-      .eq("entity_type", entity_type);
+    // Look up the clinic's type key so we query definitions by the correct column
+    const { data: clinicRow } = await supabase
+      .from("clinics")
+      .select("clinic_type_key")
+      .eq("id", clinic_id)
+      .single();
+    const clinicTypeKey = clinicRow?.clinic_type_key;
 
-    if (definitions && definitions.length > 0) {
-      const defMap = new Map(
-        (definitions as { field_key: string; field_type: string }[]).map((d) => [d.field_key, d.field_type]),
-      );
-      const unknownKeys = Object.keys(field_values).filter((k) => !defMap.has(k));
-      if (unknownKeys.length > 0) {
-        return NextResponse.json(
-          { error: `Unknown custom field keys: ${unknownKeys.join(", ")}` },
-          { status: 400 },
+    if (clinicTypeKey) {
+      const { data: definitions } = await supabase
+        .from("custom_field_definitions")
+        .select("field_key, field_type")
+        .eq("clinic_type_key", clinicTypeKey)
+        .eq("entity_type", entity_type);
+
+      if (definitions && definitions.length > 0) {
+        const defMap = new Map(
+          (definitions as { field_key: string; field_type: string }[]).map((d) => [d.field_key, d.field_type]),
         );
-      }
-
-      for (const [key, value] of Object.entries(field_values as Record<string, unknown>)) {
-        const expectedType = defMap.get(key);
-        if (!expectedType) continue;
-        const valid =
-          (expectedType === "text" && typeof value === "string") ||
-          (expectedType === "number" && typeof value === "number" && Number.isFinite(value)) ||
-          (expectedType === "boolean" && typeof value === "boolean") ||
-          (expectedType === "date" && typeof value === "string" && /^\d{4}-\d{2}-\d{2}/.test(value)) ||
-          (expectedType === "select" && typeof value === "string") ||
-          (expectedType === "multiselect" && Array.isArray(value));
-        if (!valid) {
+        const unknownKeys = Object.keys(field_values).filter((k) => !defMap.has(k));
+        if (unknownKeys.length > 0) {
           return NextResponse.json(
-            { error: `Field "${key}" expects type "${expectedType}"` },
+            { error: `Unknown custom field keys: ${unknownKeys.join(", ")}` },
             { status: 400 },
           );
+        }
+
+        for (const [key, value] of Object.entries(field_values as Record<string, unknown>)) {
+          const expectedType = defMap.get(key);
+          if (!expectedType) continue;
+          const valid =
+            (expectedType === "text" && typeof value === "string") ||
+            (expectedType === "number" && typeof value === "number" && Number.isFinite(value)) ||
+            (expectedType === "boolean" && typeof value === "boolean") ||
+            (expectedType === "date" && typeof value === "string" && /^\d{4}-\d{2}-\d{2}/.test(value)) ||
+            (expectedType === "select" && typeof value === "string") ||
+            (expectedType === "multiselect" && Array.isArray(value));
+          if (!valid) {
+            return NextResponse.json(
+              { error: `Field "${key}" expects type "${expectedType}"` },
+              { status: 400 },
+            );
+          }
         }
       }
     }

@@ -12,12 +12,16 @@
 import { createClient } from "@/lib/supabase-server";
 import type { Database } from "@/lib/types/database";
 import { logger } from "@/lib/logger";
+import { getLocalDateStr } from "@/lib/utils";
 
 type TableName = keyof Database["public"]["Tables"];
 
 // ────────────────────────────────────────────
 // Helpers
 // ────────────────────────────────────────────
+
+/** Default upper-bound limit for list queries to prevent unbounded result sets. */
+const DEFAULT_QUERY_LIMIT = 1000;
 
 async function query<T>(
   table: TableName,
@@ -44,13 +48,13 @@ async function query<T>(
   if (opts?.order) {
     q = q.order(opts.order[0], opts.order[1]);
   }
-  if (opts?.limit) {
-    q = q.limit(opts.limit);
-  }
+  // Always apply an upper-bound limit to prevent unbounded result sets.
+  // Callers can override with a smaller value via opts.limit.
+  q = q.limit(opts?.limit ?? DEFAULT_QUERY_LIMIT);
 
   const { data, error } = await q;
   if (error) {
-    logger.warn("Query failed", { context: "data/server", error });
+    logger.error("Query failed", { context: "data/server", table, error });
     return [];
   }
   return (data ?? []) as T[];
@@ -313,7 +317,7 @@ export async function getAppointmentsByPatient(clinicId: string, patientId: stri
 
 export async function getTodayAppointments(clinicId: string, doctorId?: string): Promise<AppointmentRow[]> {
   const supabase = await createClient();
-  const today = new Date().toISOString().split("T")[0];
+  const today = getLocalDateStr();
   const todayStart = `${today}T00:00:00`;
   const todayEnd = `${today}T23:59:59`;
 
@@ -323,7 +327,8 @@ export async function getTodayAppointments(clinicId: string, doctorId?: string):
     .eq("clinic_id", clinicId)
     .gte("slot_start", todayStart)
     .lte("slot_start", todayEnd)
-    .order("slot_start", { ascending: true });
+    .order("slot_start", { ascending: true })
+    .limit(DEFAULT_QUERY_LIMIT);
 
   if (doctorId) {
     q = q.eq("doctor_id", doctorId);
@@ -488,7 +493,8 @@ export async function getPrescriptions(clinicId: string, doctorId?: string): Pro
     .from("prescriptions")
     .select("*")
     .eq("clinic_id", clinicId)
-    .order("created_at", { ascending: false });
+    .order("created_at", { ascending: false })
+    .limit(DEFAULT_QUERY_LIMIT);
 
   if (doctorId) {
     q = q.eq("doctor_id", doctorId);
@@ -985,7 +991,7 @@ export async function createAppointment(data: {
   const endDate = new Date(data.slot_end);
   const enriched = {
     ...data,
-    appointment_date: startDate.toISOString().split("T")[0],
+    appointment_date: getLocalDateStr(startDate),
     start_time: startDate.toISOString().split("T")[1]?.slice(0, 5),
     end_time: endDate.toISOString().split("T")[1]?.slice(0, 5),
   };

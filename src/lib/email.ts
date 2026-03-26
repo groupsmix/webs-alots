@@ -72,6 +72,7 @@ async function sendViaResend(payload: EmailPayload): Promise<EmailSendResult> {
         html: payload.html,
         reply_to: payload.replyTo,
       }),
+      signal: AbortSignal.timeout(10_000),
     });
 
     const data = await response.json();
@@ -135,6 +136,7 @@ async function sendViaHttpRelay(payload: EmailPayload): Promise<EmailSendResult>
         subject: payload.subject,
         html: payload.html,
       }),
+      signal: AbortSignal.timeout(10_000),
     });
 
     if (response.ok) {
