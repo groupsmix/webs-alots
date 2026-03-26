@@ -16,6 +16,7 @@ import { downloadPrescriptionPDF } from "@/lib/prescription-pdf";
 import { PageLoader } from "@/components/ui/page-loader";
 
 interface Medication {
+  _id: string;
   name: string;
   dosage: string;
   frequency: string;
@@ -33,7 +34,7 @@ export function PrescriptionWriter() {
   const [patients, setPatients] = useState<PatientView[]>([]);
   const [selectedPatient, setSelectedPatient] = useState("");
   const [medications, setMedications] = useState<Medication[]>([
-    { name: "", dosage: "", frequency: "", duration: "", instructions: "" },
+    { _id: crypto.randomUUID(), name: "", dosage: "", frequency: "", duration: "", instructions: "" },
   ]);
   const [notes, setNotes] = useState("");
   const [diagnosis, setDiagnosis] = useState("");
@@ -79,7 +80,7 @@ export function PrescriptionWriter() {
   const addMedication = () => {
     setMedications([
       ...medications,
-      { name: "", dosage: "", frequency: "", duration: "", instructions: "" },
+      { _id: crypto.randomUUID(), name: "", dosage: "", frequency: "", duration: "", instructions: "" },
     ]);
   };
 
@@ -144,7 +145,7 @@ export function PrescriptionWriter() {
         <CardContent>
           <div className="space-y-4">
             {medications.map((med, index) => (
-              <div key={index} className="border rounded-lg p-4 space-y-3">
+              <div key={med._id} className="border rounded-lg p-4 space-y-3">
                 <div className="flex items-center justify-between">
                   <Badge variant="outline">Medication {index + 1}</Badge>
                   {medications.length > 1 && (

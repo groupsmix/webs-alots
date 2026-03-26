@@ -122,9 +122,9 @@ export function InsuranceCalculator({
 }: InsuranceCalculatorProps) {
   const [provider, setProvider] = useState<InsuranceProvider>("cnss");
   const [items, setItems] = useState(
-    initialItems ?? [
+    (initialItems ?? [
       { name: "Consultation", amount: 200, category: "consultation" },
-    ],
+    ]).map((item) => ({ ...item, _id: crypto.randomUUID() })),
   );
 
   const result = useMemo<CalculatorResult>(() => {
@@ -153,7 +153,7 @@ export function InsuranceCalculator({
   const addItem = () => {
     setItems([
       ...items,
-      { name: "", amount: 0, category: "consultation" },
+      { _id: crypto.randomUUID(), name: "", amount: 0, category: "consultation" },
     ]);
   };
 
@@ -234,7 +234,7 @@ export function InsuranceCalculator({
           </div>
           <div className="space-y-2">
             {items.map((item, index) => (
-              <div key={index} className="flex gap-2 items-center">
+              <div key={item._id} className="flex gap-2 items-center">
                 <input
                   value={item.name}
                   onChange={(e) => updateItem(index, "name", e.target.value)}

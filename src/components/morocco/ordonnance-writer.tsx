@@ -12,6 +12,7 @@ import { escapeHtml } from "@/lib/escape-html";
 // ---- Types ----
 
 interface OrdonnanceMedication {
+  _id: string;
   /** DCI (Dénomination Commune Internationale) - generic name */
   dci: string;
   /** Brand name (optional) */
@@ -106,7 +107,7 @@ export function OrdonnanceWriter({
   const [diagnosis, setDiagnosis] = useState("");
   const [notes, setNotes] = useState("");
   const [medications, setMedications] = useState<OrdonnanceMedication[]>([
-    { dci: "", forme: "Comprimé", dosage: "", posologie: "", duree: "" },
+    { _id: crypto.randomUUID(), dci: "", forme: "Comprimé", dosage: "", posologie: "", duree: "" },
   ]);
 
   const patient = patients.find((p) => p.id === selectedPatient);
@@ -114,7 +115,7 @@ export function OrdonnanceWriter({
   const addMedication = () => {
     setMedications([
       ...medications,
-      { dci: "", forme: "Comprimé", dosage: "", posologie: "", duree: "" },
+      { _id: crypto.randomUUID(), dci: "", forme: "Comprimé", dosage: "", posologie: "", duree: "" },
     ]);
   };
 
@@ -217,7 +218,7 @@ export function OrdonnanceWriter({
         <CardContent>
           <div className="space-y-4">
             {medications.map((med, index) => (
-              <div key={index} className="border rounded-lg p-4 space-y-3">
+              <div key={med._id} className="border rounded-lg p-4 space-y-3">
                 <div className="flex items-center justify-between">
                   <Badge variant="outline">Rp/ {index + 1}</Badge>
                   {medications.length > 1 && (
