@@ -215,6 +215,16 @@ export default function OnboardingPage() {
       setError("Subdomain is required — the clinic needs a URL to be accessible");
       return;
     }
+    // Validate subdomain format
+    if (!/^[a-z0-9]([a-z0-9-]*[a-z0-9])?$/.test(clinicForm.subdomain)) {
+      setError("Subdomain must contain only lowercase letters, numbers, and hyphens (cannot start or end with a hyphen)");
+      return;
+    }
+    // Validate email format if provided
+    if (clinicForm.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(clinicForm.email)) {
+      setError("Please enter a valid email address");
+      return;
+    }
 
     setLoading(true);
     setError(null);
@@ -254,6 +264,21 @@ export default function OnboardingPage() {
     }
     if (!createdClinicId) {
       setError("No clinic created yet. Go back to Step 1.");
+      return;
+    }
+
+    // Validate email format for users who provided an email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    for (const u of validUsers) {
+      if (u.email && !emailRegex.test(u.email)) {
+        setError(`Invalid email for "${u.name}": ${u.email}. Please enter a valid email address or leave it empty.`);
+        return;
+      }
+    }
+
+    // Require at least one clinic_admin
+    if (!validUsers.some((u) => u.role === "clinic_admin")) {
+      setError("At least one staff member must have the Clinic Admin (Owner) role");
       return;
     }
 

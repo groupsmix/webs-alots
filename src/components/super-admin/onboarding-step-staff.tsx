@@ -125,6 +125,9 @@ export function OnboardingStepStaff({
                     onUpdateUser(index, "email", e.target.value)
                   }
                 />
+                <p className="text-[11px] text-muted-foreground">
+                  A login account will be created automatically if a valid email is provided.
+                </p>
               </div>
             </div>
           </div>
