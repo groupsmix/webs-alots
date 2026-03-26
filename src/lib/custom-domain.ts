@@ -70,6 +70,7 @@ export async function addSubdomainRecord(
           proxied: true,
           ttl: 1, // Auto TTL when proxied
         }),
+        signal: AbortSignal.timeout(10_000),
       },
     );
 
@@ -122,6 +123,7 @@ export async function setupCustomDomain(
           proxied: true,
           ttl: 1,
         }),
+        signal: AbortSignal.timeout(10_000),
       },
     );
 
@@ -163,6 +165,7 @@ export async function removeDnsRecord(
       {
         method: "DELETE",
         headers: getHeaders(),
+        signal: AbortSignal.timeout(10_000),
       },
     );
 
@@ -196,6 +199,7 @@ export async function listDnsRecords(): Promise<CloudflareDnsRecord[]> {
       `${CF_API_BASE}/zones/${zoneId}/dns_records?per_page=100&page=${page}`,
       {
         headers: getHeaders(),
+        signal: AbortSignal.timeout(10_000),
       },
     );
 

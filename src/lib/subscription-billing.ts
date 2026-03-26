@@ -414,6 +414,7 @@ async function chargeViaStripe(
       confirm: "true",
       automatic_payment_methods: JSON.stringify({ enabled: true, allow_redirects: "never" }),
     }).toString(),
+    signal: AbortSignal.timeout(15_000),
   });
 
   const data = await response.json();
