@@ -125,7 +125,7 @@ async function getClinicId(): Promise<string | null> {
     const { data } = await supabase
       .from("clinics")
       .select("id")
-      .eq("is_active", true)
+      .eq("status", "active")
       .order("created_at", { ascending: true })
       .limit(1)
       .single();
@@ -168,7 +168,7 @@ export async function getPublicBranding(): Promise<ClinicBranding> {
 
   const { data, error } = await supabase
     .from("clinics")
-    .select("name, logo_url, favicon_url, primary_color, secondary_color, heading_font, body_font, hero_image_url, tagline, cover_photo_url, template_id, section_visibility, phone, address, owner_email")
+    .select("name, logo_url, favicon_url, primary_color, secondary_color, heading_font, body_font, hero_image_url, tagline, cover_photo_url, template_id, section_visibility, phone, address, owner_email, config")
     .eq("id", clinicId)
     .single();
 
@@ -192,6 +192,9 @@ export async function getPublicBranding(): Promise<ClinicBranding> {
     };
   }
 
+  // Fallback to config JSONB for phone/address/email when direct columns are null
+  const cfg = (data.config as Record<string, unknown> | null) ?? {};
+
   return {
     logoUrl: data.logo_url ?? null,
     faviconUrl: data.favicon_url ?? null,
@@ -205,9 +208,9 @@ export async function getPublicBranding(): Promise<ClinicBranding> {
     coverPhotoUrl: (data.cover_photo_url as string | null) ?? null,
     templateId: (data.template_id as string | null) ?? "modern",
     sectionVisibility: (data.section_visibility as Record<string, boolean> | null) ?? {},
-    phone: (data.phone as string | null) ?? null,
-    address: (data.address as string | null) ?? null,
-    email: (data.owner_email as string | null) ?? null,
+    phone: (data.phone as string | null) ?? (cfg.phone as string | null) ?? null,
+    address: (data.address as string | null) ?? (cfg.address as string | null) ?? null,
+    email: (data.owner_email as string | null) ?? (cfg.email as string | null) ?? null,
   };
 }
 

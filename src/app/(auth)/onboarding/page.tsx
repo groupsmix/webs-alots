@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, ArrowRight, Check, Building2 } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, Building2, CheckCircle2, ExternalLink } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -46,6 +46,8 @@ export default function OnboardingPage() {
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [completed, setCompleted] = useState(false);
+  const [createdSubdomain, setCreatedSubdomain] = useState<string | null>(null);
 
   const currentCategory = selectedCategory
     ? CLINIC_CATEGORIES.find((c) => c.key === selectedCategory)
@@ -105,7 +107,9 @@ export default function OnboardingPage() {
         throw new Error(data?.error ?? "Registration failed");
       }
 
-      router.push("/login");
+      const result = await res.json().catch(() => null);
+      setCreatedSubdomain(result?.subdomain ?? null);
+      setCompleted(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : "An error occurred");
     } finally {
@@ -120,6 +124,46 @@ export default function OnboardingPage() {
     { key: "details", label: "Détails" },
   ];
   const stepIndex = steps.findIndex((s) => s.key === step);
+
+  if (completed) {
+    const clinicUrl = createdSubdomain ? `https://${createdSubdomain}.oltigo.com` : null;
+    return (
+      <div className="w-full max-w-md mx-auto">
+        <Card>
+          <CardContent className="p-8 text-center">
+            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-green-100 mx-auto mb-4">
+              <CheckCircle2 className="h-8 w-8 text-green-600" />
+            </div>
+            <h2 className="text-2xl font-bold mb-2">Établissement créé !</h2>
+            <p className="text-muted-foreground mb-6">
+              <strong>{details.clinicName}</strong> est maintenant en ligne.
+            </p>
+            {clinicUrl && (
+              <div className="bg-muted/50 rounded-lg p-4 text-left text-sm mb-6">
+                <p className="font-semibold mb-2">Votre site est accessible :</p>
+                <a
+                  href={clinicUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-primary underline font-mono flex items-center gap-1"
+                >
+                  {createdSubdomain}.oltigo.com
+                  <ExternalLink className="h-3 w-3" />
+                </a>
+                <p className="text-muted-foreground mt-2">
+                  Votre site est automatiquement accessible — aucune action supplémentaire requise.
+                </p>
+              </div>
+            )}
+            <Button className="w-full" size="lg" onClick={() => router.push("/login")}>
+              Se connecter
+              <ArrowRight className="h-4 w-4 ml-1" />
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full max-w-2xl mx-auto">
