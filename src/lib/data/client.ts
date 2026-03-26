@@ -11,7 +11,7 @@
  *   useEffect(() => { fetchX(clinicId).then(setData); }, [clinicId]);
  */
 
-import { createClient } from "@/lib/supabase-client";
+import { createClient, createTenantClient } from "@/lib/supabase-client";
 import { logger } from "@/lib/logger";
 import type { Database } from "@/lib/types/database";
 
@@ -87,9 +87,13 @@ async function fetchRows<T>(
     gte?: [string, unknown];
     lte?: [string, unknown];
     inFilter?: [string, unknown[]];
+    /** When set, the x-clinic-id header is sent so anonymous RLS policies can resolve the tenant. */
+    tenantClinicId?: string;
   },
 ): Promise<T[]> {
-  const supabase = createClient();
+  const supabase = opts?.tenantClinicId
+    ? createTenantClient(opts.tenantClinicId)
+    : createClient();
   let q = supabase.from(table).select(opts?.select ?? "*");
   if (opts?.eq) {
     for (const [col, val] of opts.eq) {
@@ -351,6 +355,7 @@ export async function fetchDoctors(clinicId: string): Promise<DoctorView[]> {
   const rows = await fetchRows<UserRaw>("users", {
     eq: [["clinic_id", clinicId], ["role", "doctor"]],
     order: ["name", { ascending: true }],
+    tenantClinicId: clinicId,
   });
   return rows.map(mapDoctor);
 }
@@ -415,6 +420,7 @@ function mapService(raw: ServiceRaw): ServiceView {
 export async function fetchServices(clinicId: string): Promise<ServiceView[]> {
   const rows = await fetchRows<ServiceRaw>("services", {
     eq: [["clinic_id", clinicId]],
+    tenantClinicId: clinicId,
   });
   return rows.map(mapService);
 }
