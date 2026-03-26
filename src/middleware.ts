@@ -80,6 +80,16 @@ const PROTECTED_PREFIXES = [
   "/receptionist",
   "/admin",
   "/super-admin",
+  "/pharmacist",
+  "/nutritionist",
+  "/optician",
+  "/parapharmacy",
+  "/physiotherapist",
+  "/psychologist",
+  "/radiology",
+  "/speech-therapist",
+  "/equipment",
+  "/lab-panel",
 ];
 
 function isPublicRoute(pathname: string): boolean {
@@ -389,6 +399,10 @@ export async function middleware(request: NextRequest) {
           supabaseResponse.headers.set("x-nonce", nonce);
           supabaseResponse.headers.set("Strict-Transport-Security", "max-age=31536000; includeSubDomains; preload");
           supabaseResponse.headers.set("X-Content-Type-Options", "nosniff");
+          // Re-apply tenant headers so they survive token-refresh responses
+          if (resolvedClinic) {
+            setTenantHeaders(supabaseResponse, resolvedClinic);
+          }
           cookiesToSet.forEach(({ name, value, options }) =>
             supabaseResponse.cookies.set(name, value, options)
           );
@@ -398,13 +412,33 @@ export async function middleware(request: NextRequest) {
   );
 
   // --- Resolve clinic from subdomain (with in-memory cache) ---
+  // Track resolved clinic so tenant headers can be re-applied if setAll
+  // recreates supabaseResponse during token refresh.
+  let resolvedClinic: CachedClinic | undefined;
   if (subdomain) {
     let clinic: CachedClinic | undefined;
     const cached = subdomainCache.get(subdomain);
     if (cached && Date.now() - cached.cachedAt < SUBDOMAIN_CACHE_TTL_MS) {
       clinic = cached;
     } else {
-      const { data } = await supabase
+      // Use a separate anon-only Supabase client (no user session cookies)
+      // for subdomain resolution. The RLS policy on `clinics` allows
+      // unauthenticated reads (auth.uid() IS NULL) for active clinics,
+      // but blocks authenticated users whose clinic_id doesn't match.
+      // By omitting cookies, the query always runs as unauthenticated,
+      // ensuring subdomain resolution works for all users.
+      const anonSupabase = createServerClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+        {
+          cookies: {
+            getAll() { return []; },
+            setAll() { /* no-op */ },
+          },
+        }
+      );
+
+      const { data } = await anonSupabase
         .from("clinics")
         .select("id, name, type, tier, subdomain")
         .eq("subdomain", subdomain)
@@ -426,6 +460,8 @@ export async function middleware(request: NextRequest) {
         : request.nextUrl.origin;
       return secureRedirect(rootUrl);
     }
+
+    resolvedClinic = clinic;
 
     // Attach tenant info to all responses so pages can read it
     setTenantHeaders(supabaseResponse, {
