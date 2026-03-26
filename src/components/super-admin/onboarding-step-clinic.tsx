@@ -20,6 +20,7 @@ export interface ClinicFormData {
   email: string;
   address: string;
   specialty: string;
+  subdomain: string;
   domain: string;
 }
 
@@ -129,7 +130,33 @@ export function OnboardingStepClinic({
             />
           </div>
           <div className="space-y-2">
-            <Label>Domain (optional)</Label>
+            <Label>
+              Subdomain <span className="text-destructive">*</span>
+            </Label>
+            <div className="flex items-center gap-1">
+              <Input
+                placeholder="e.g. dr-sara"
+                value={clinicForm.subdomain}
+                onChange={(e) => {
+                  const value = e.target.value
+                    .toLowerCase()
+                    .replace(/[^a-z0-9-]/g, "-")
+                    .replace(/--+/g, "-")
+                    .replace(/^-/, "");
+                  onUpdateField("subdomain", value);
+                }}
+              />
+              <span className="text-sm text-muted-foreground whitespace-nowrap">.oltigo.com</span>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              The clinic will be accessible at <strong>{clinicForm.subdomain || "___"}.oltigo.com</strong>
+            </p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label>Custom Domain (optional)</Label>
             <Input
               placeholder="e.g. dr-sara.ma"
               value={clinicForm.domain}
