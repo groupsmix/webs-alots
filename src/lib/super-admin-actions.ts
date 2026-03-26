@@ -13,6 +13,7 @@
 import { createClient, createAdminClient } from "@/lib/supabase-server";
 import { requireRole } from "@/lib/auth";
 import { logger } from "@/lib/logger";
+import { STAFF_DEFAULT_PASSWORD } from "@/lib/constants";
 import type {
   ClinicType,
   ClinicTier,
@@ -89,8 +90,6 @@ export interface CreateUserInput {
   email?: string;
 }
 
-/** Default password assigned to staff accounts created during onboarding. */
-export const STAFF_DEFAULT_PASSWORD = "Oltigo-Staff-2026!";
 
 export interface CreateServiceInput {
   clinic_id: string;

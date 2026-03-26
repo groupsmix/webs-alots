@@ -20,10 +20,10 @@ import {
   createUser,
   createService,
   createTimeSlotsForDoctor,
-  STAFF_DEFAULT_PASSWORD,
   type CreateUserInput,
   type CreateServiceInput,
 } from "@/lib/super-admin-actions";
+import { STAFF_DEFAULT_PASSWORD } from "@/lib/constants";
 import {
   OnboardingStepClinic,
   type ClinicFormData,
