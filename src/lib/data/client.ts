@@ -14,6 +14,7 @@
 import { createClient, createTenantClient } from "@/lib/supabase-client";
 import { logger } from "@/lib/logger";
 import type { Database } from "@/lib/types/database";
+import { getLocalDateStr } from "@/lib/utils";
 
 /**
  * Booking configuration that callers must provide from the tenant's DB
@@ -111,7 +112,7 @@ async function fetchRows<T>(
   q = q.limit(opts?.limit ?? 1000);
   const { data, error } = await q;
   if (error) {
-    logger.warn("Query failed", { context: "data/client", error });
+    logger.error("Query failed", { context: "data/client", table, error });
     return [];
   }
   return (data ?? []) as T[];
@@ -232,7 +233,7 @@ function mapAppointment(raw: AppointmentRaw): AppointmentView {
     serviceName: service?.name ?? "Consultation",
     date: raw.appointment_date,
     time: raw.start_time?.slice(0, 5) ?? "",
-    status: raw.status?.replace("_", "-") ?? "scheduled",
+    status: raw.status?.replaceAll("_", "-") ?? "scheduled",
     isFirstVisit: raw.is_first_visit ?? false,
     hasInsurance: raw.insurance_flag ?? false,
     cancelledAt: raw.cancelled_at ?? undefined,
@@ -256,7 +257,7 @@ export async function fetchAppointments(clinicId: string): Promise<AppointmentVi
 
 export async function fetchTodayAppointments(clinicId: string, doctorId?: string): Promise<AppointmentView[]> {
   await ensureLookups(clinicId);
-  const today = new Date().toISOString().split("T")[0];
+  const today = getLocalDateStr();
   const eq: [string, unknown][] = [["clinic_id", clinicId], ["appointment_date", today]];
   if (doctorId) eq.push(["doctor_id", doctorId]);
   const rows = await fetchRows<AppointmentRaw>("appointments", {
@@ -920,7 +921,7 @@ export async function fetchDashboardStats(clinicId: string): Promise<DashboardSt
     supabase.from("users").select("id", { count: "exact", head: true }).eq("clinic_id", clinicId).eq("role", "patient"),
     supabase.from("appointments").select("id", { count: "exact", head: true }).eq("clinic_id", clinicId),
     supabase.from("appointments").select("id", { count: "exact", head: true }).eq("clinic_id", clinicId).eq("status", "completed"),
-    supabase.from("appointments").select("id", { count: "exact", head: true }).eq("clinic_id", clinicId).in("status", ["no_show", "no-show"]),
+    supabase.from("appointments").select("id", { count: "exact", head: true }).eq("clinic_id", clinicId).eq("status", "no_show"),
     supabase.from("payments").select("amount").eq("clinic_id", clinicId).eq("status", "completed"),
     supabase.from("reviews").select("stars").eq("clinic_id", clinicId),
     supabase.from("users").select("id", { count: "exact", head: true }).eq("clinic_id", clinicId).eq("role", "doctor"),
@@ -2395,7 +2396,7 @@ export async function fetchAnalytics(clinicId: string): Promise<AnalyticsData> {
   for (let i = 19; i >= 0; i--) {
     const d = new Date(now);
     d.setDate(d.getDate() - i);
-    const dateStr = d.toISOString().split("T")[0];
+    const dateStr = getLocalDateStr(d);
     dailyMap.set(dateStr, { date: dateStr, patientCount: 0, revenue: 0, appointments: 0, noShows: 0, walkIns: 0, onlineBookings: 0 });
   }
   for (const a of appts) {
@@ -2403,8 +2404,8 @@ export async function fetchAnalytics(clinicId: string): Promise<AnalyticsData> {
     if (!day) continue;
     day.appointments++;
     day.patientCount++;
-    if (a.status === "no_show" || a.status === "no-show") day.noShows++;
-    if (a.booking_source === "walk-in" || a.booking_source === "walk_in") day.walkIns++;
+    if (a.status === "no_show") day.noShows++;
+    if (a.booking_source === "walk_in") day.walkIns++;
     if (a.booking_source === "online" || a.booking_source === "website") day.onlineBookings++;
   }
   for (const p of payments) {
@@ -2910,8 +2911,8 @@ export async function fetchClinicSubscription(clinicId: string): Promise<ClinicS
       : "cancelled";
 
   const now = new Date();
-  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split("T")[0];
-  const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split("T")[0];
+  const monthStart = getLocalDateStr(new Date(now.getFullYear(), now.getMonth(), 1));
+  const monthEnd = getLocalDateStr(new Date(now.getFullYear(), now.getMonth() + 1, 0));
 
   const latestPayment = payments[0];
   const amount = latestPayment?.amount ?? 0;
@@ -3473,7 +3474,7 @@ export async function createParapharmacySale(data: {
       patient_name: data.patient_name,
       payment_method: data.payment_method,
       total,
-      date: now.toISOString().split("T")[0],
+      date: getLocalDateStr(now),
       time: now.toTimeString().slice(0, 5),
       items: data.items,
       is_parapharmacy: true,
@@ -4959,7 +4960,7 @@ export async function fetchLabDashboardKPIs(clinicId: string): Promise<LabDashbo
   });
 
   const now = new Date();
-  const todayStr = now.toISOString().split("T")[0];
+  const todayStr = getLocalDateStr(now);
   const weekAgo = new Date(now);
   weekAgo.setDate(weekAgo.getDate() - 7);
   const weekAgoStr = weekAgo.toISOString();
@@ -5077,7 +5078,7 @@ export async function fetchClinicCenterDashboardKPIs(clinicId: string): Promise<
   const admissions = (admissionRes.data ?? []) as AdmissionRaw[];
   const payments = (paymentsRes.data ?? []) as { id: string; amount: number; created_at: string; appointment_id: string | null }[];
 
-  const todayStr = new Date().toISOString().split("T")[0];
+  const todayStr = getLocalDateStr();
 
   const totalBeds = beds.length;
   const occupiedBeds = beds.filter((b) => b.status === "occupied").length;

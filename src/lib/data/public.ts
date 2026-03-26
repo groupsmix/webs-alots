@@ -11,6 +11,7 @@ import { createClient, createTenantClient } from "@/lib/supabase-server";
 import { APPOINTMENT_STATUS } from "@/lib/types/database";
 import { getTenant, getClinicConfig } from "@/lib/tenant";
 import { clinicConfig } from "@/config/clinic.config";
+import { getLocalDateStr } from "@/lib/utils";
 
 // ── Types (match existing UI shapes) ──
 
@@ -104,6 +105,8 @@ async function createPublicTenantClient() {
 
 /** Cached default clinic ID for root-domain fallback (avoids repeated DB queries). */
 let _defaultClinicId: string | null | undefined;
+let _defaultClinicIdFetchedAt = 0;
+const DEFAULT_CLINIC_CACHE_TTL_MS = 5 * 60 * 1000;
 
 /**
  * Get the current clinic ID from tenant context, or fall back to the
@@ -117,8 +120,10 @@ async function getClinicId(): Promise<string | null> {
   const tenant = await getTenantInfo();
   if (tenant?.clinicId) return tenant.clinicId;
 
-  // Root domain fallback: resolve the first active clinic
-  if (_defaultClinicId !== undefined) return _defaultClinicId;
+  // Root domain fallback: resolve the first active clinic (with TTL)
+  if (_defaultClinicId !== undefined && Date.now() - _defaultClinicIdFetchedAt < DEFAULT_CLINIC_CACHE_TTL_MS) {
+    return _defaultClinicId;
+  }
 
   try {
     const supabase = await createClient();
@@ -133,6 +138,7 @@ async function getClinicId(): Promise<string | null> {
   } catch {
     _defaultClinicId = null;
   }
+  _defaultClinicIdFetchedAt = Date.now();
 
   return _defaultClinicId;
 }
@@ -469,7 +475,7 @@ export async function getPublicSlotBookingCounts(
   // Use next-day boundary to avoid missing the last second of the day
   const nextDay = new Date(`${date}T00:00:00Z`);
   nextDay.setUTCDate(nextDay.getUTCDate() + 1);
-  const dayEnd = nextDay.toISOString().split("T")[0] + "T00:00:00";
+  const dayEnd = getLocalDateStr(nextDay) + "T00:00:00";
 
   const { data, error } = await supabase
     .from("appointments")
@@ -681,7 +687,7 @@ export async function getPublicOnDutySchedule(): Promise<PublicOnDutySchedule[]>
 export async function isPublicCurrentlyOnDuty(): Promise<boolean> {
   const schedule = await getPublicOnDutySchedule();
   const now = new Date();
-  const todayStr = now.toISOString().split("T")[0];
+  const todayStr = getLocalDateStr(now);
   return schedule.some((d) => {
     if (!d.isOnDuty || d.date !== todayStr) return false;
     const [sh, sm] = d.startTime.split(":").map(Number);

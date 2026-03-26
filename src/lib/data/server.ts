@@ -12,6 +12,7 @@
 import { createClient } from "@/lib/supabase-server";
 import type { Database } from "@/lib/types/database";
 import { logger } from "@/lib/logger";
+import { getLocalDateStr } from "@/lib/utils";
 
 type TableName = keyof Database["public"]["Tables"];
 
@@ -53,7 +54,7 @@ async function query<T>(
 
   const { data, error } = await q;
   if (error) {
-    logger.warn("Query failed", { context: "data/server", error });
+    logger.error("Query failed", { context: "data/server", table, error });
     return [];
   }
   return (data ?? []) as T[];
@@ -316,7 +317,7 @@ export async function getAppointmentsByPatient(clinicId: string, patientId: stri
 
 export async function getTodayAppointments(clinicId: string, doctorId?: string): Promise<AppointmentRow[]> {
   const supabase = await createClient();
-  const today = new Date().toISOString().split("T")[0];
+  const today = getLocalDateStr();
   const todayStart = `${today}T00:00:00`;
   const todayEnd = `${today}T23:59:59`;
 
@@ -990,7 +991,7 @@ export async function createAppointment(data: {
   const endDate = new Date(data.slot_end);
   const enriched = {
     ...data,
-    appointment_date: startDate.toISOString().split("T")[0],
+    appointment_date: getLocalDateStr(startDate),
     start_time: startDate.toISOString().split("T")[1]?.slice(0, 5),
     end_time: endDate.toISOString().split("T")[1]?.slice(0, 5),
   };
