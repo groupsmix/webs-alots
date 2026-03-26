@@ -19,6 +19,9 @@ type TableName = keyof Database["public"]["Tables"];
 // Helpers
 // ────────────────────────────────────────────
 
+/** Default upper-bound limit for list queries to prevent unbounded result sets. */
+const DEFAULT_QUERY_LIMIT = 1000;
+
 async function query<T>(
   table: TableName,
   opts?: {
@@ -44,9 +47,9 @@ async function query<T>(
   if (opts?.order) {
     q = q.order(opts.order[0], opts.order[1]);
   }
-  if (opts?.limit) {
-    q = q.limit(opts.limit);
-  }
+  // Always apply an upper-bound limit to prevent unbounded result sets.
+  // Callers can override with a smaller value via opts.limit.
+  q = q.limit(opts?.limit ?? DEFAULT_QUERY_LIMIT);
 
   const { data, error } = await q;
   if (error) {
@@ -323,7 +326,8 @@ export async function getTodayAppointments(clinicId: string, doctorId?: string):
     .eq("clinic_id", clinicId)
     .gte("slot_start", todayStart)
     .lte("slot_start", todayEnd)
-    .order("slot_start", { ascending: true });
+    .order("slot_start", { ascending: true })
+    .limit(DEFAULT_QUERY_LIMIT);
 
   if (doctorId) {
     q = q.eq("doctor_id", doctorId);
@@ -488,7 +492,8 @@ export async function getPrescriptions(clinicId: string, doctorId?: string): Pro
     .from("prescriptions")
     .select("*")
     .eq("clinic_id", clinicId)
-    .order("created_at", { ascending: false });
+    .order("created_at", { ascending: false })
+    .limit(DEFAULT_QUERY_LIMIT);
 
   if (doctorId) {
     q = q.eq("doctor_id", doctorId);

@@ -90,6 +90,7 @@ async function sendViaMeta(
         type: "text",
         text: { body },
       }),
+      signal: AbortSignal.timeout(10_000),
     },
   );
 
@@ -141,6 +142,7 @@ async function sendTemplateViaMeta(
               : undefined,
         },
       }),
+      signal: AbortSignal.timeout(10_000),
     },
   );
 
@@ -181,6 +183,7 @@ async function sendViaTwilio(
       "Content-Type": "application/x-www-form-urlencoded",
     },
     body: formData.toString(),
+    signal: AbortSignal.timeout(10_000),
   });
 
   const data = await response.json();

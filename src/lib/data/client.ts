@@ -171,43 +171,57 @@ interface AppointmentRaw {
   updated_at: string;
 }
 
-// lookup maps built lazily
-let _userMap: Map<string, { name: string; phone: string; email: string }> | null = null;
-let _serviceMap: Map<string, { name: string; price: number }> | null = null;
-let _lookupsBuiltAt = 0;
+// lookup maps keyed by clinicId to prevent cross-tenant stale data
+interface LookupCache {
+  userMap: Map<string, { name: string; phone: string; email: string }>;
+  serviceMap: Map<string, { name: string; price: number }>;
+  builtAt: number;
+}
+let _lookupCache: Map<string, LookupCache> = new Map();
+
+/** Expose the current user map for internal mappers (read-only). */
+let _activeUserMap: Map<string, { name: string; phone: string; email: string }> | null = null;
+let _activeServiceMap: Map<string, { name: string; price: number }> | null = null;
 
 async function ensureLookups(clinicId: string) {
-  if (_userMap && _serviceMap && Date.now() - _lookupsBuiltAt < CACHE_TTL_MS) return;
+  const existing = _lookupCache.get(clinicId);
+  if (existing && Date.now() - existing.builtAt < CACHE_TTL_MS) {
+    _activeUserMap = existing.userMap;
+    _activeServiceMap = existing.serviceMap;
+    return;
+  }
   const supabase = createClient();
   const [usersRes, servicesRes] = await Promise.all([
   supabase.from("users").select("id, name, phone, email").eq("clinic_id", clinicId),
   supabase.from("services").select("id, name, price").eq("clinic_id", clinicId),
   ]);
-  _userMap = new Map(
+  const userMap = new Map(
     ((usersRes.data ?? []) as { id: string; name: string; phone: string; email: string }[]).map((u) => [
       u.id,
       u,
     ]),
   );
-  _serviceMap = new Map(
+  const serviceMap = new Map(
     ((servicesRes.data ?? []) as { id: string; name: string; price: number }[]).map((s) => [
       s.id,
       s,
     ]),
   );
-  _lookupsBuiltAt = Date.now();
+  _lookupCache.set(clinicId, { userMap, serviceMap, builtAt: Date.now() });
+  _activeUserMap = userMap;
+  _activeServiceMap = serviceMap;
 }
 
 export function clearLookupCache() {
-  _userMap = null;
-  _serviceMap = null;
-  _lookupsBuiltAt = 0;
+  _lookupCache = new Map();
+  _activeUserMap = null;
+  _activeServiceMap = null;
 }
 
 function mapAppointment(raw: AppointmentRaw): AppointmentView {
-  const patient = _userMap?.get(raw.patient_id);
-  const doctor = _userMap?.get(raw.doctor_id);
-  const service = raw.service_id ? _serviceMap?.get(raw.service_id) : null;
+  const patient = _activeUserMap?.get(raw.patient_id);
+  const doctor = _activeUserMap?.get(raw.doctor_id);
+  const service = raw.service_id ? _activeServiceMap?.get(raw.service_id) : null;
   return {
     id: raw.id,
     patientId: raw.patient_id,
@@ -463,8 +477,8 @@ export async function fetchReviews(clinicId: string): Promise<ReviewView[]> {
   return rows.map((r) => ({
     id: r.id,
     patientId: r.patient_id,
-    patientName: _userMap?.get(r.patient_id)?.name ?? "Patient",
-    doctorName: r.doctor_id ? (_userMap?.get(r.doctor_id)?.name ?? "Doctor") : "General",
+    patientName: _activeUserMap?.get(r.patient_id)?.name ?? "Patient",
+    doctorName: r.doctor_id ? (_activeUserMap?.get(r.doctor_id)?.name ?? "Doctor") : "General",
     rating: r.stars,
     comment: r.comment ?? "",
     date: r.created_at?.split("T")[0] ?? "",
@@ -511,8 +525,8 @@ export async function fetchPrescriptions(clinicId: string, doctorId?: string): P
   return rows.map((r) => ({
     id: r.id,
     patientId: r.patient_id,
-    patientName: _userMap?.get(r.patient_id)?.name ?? "Patient",
-    doctorName: _userMap?.get(r.doctor_id)?.name ?? "Doctor",
+    patientName: _activeUserMap?.get(r.patient_id)?.name ?? "Patient",
+    doctorName: _activeUserMap?.get(r.doctor_id)?.name ?? "Doctor",
     date: r.created_at?.split("T")[0] ?? "",
     medications: r.items ?? [],
     notes: r.notes ?? undefined,
@@ -528,8 +542,8 @@ export async function fetchPatientPrescriptions(clinicId: string, patientId: str
   return rows.map((r) => ({
     id: r.id,
     patientId: r.patient_id,
-    patientName: _userMap?.get(r.patient_id)?.name ?? "Patient",
-    doctorName: _userMap?.get(r.doctor_id)?.name ?? "Doctor",
+    patientName: _activeUserMap?.get(r.patient_id)?.name ?? "Patient",
+    doctorName: _activeUserMap?.get(r.doctor_id)?.name ?? "Doctor",
     date: r.created_at?.split("T")[0] ?? "",
     medications: r.items ?? [],
     notes: r.notes ?? undefined,
@@ -574,7 +588,7 @@ export async function fetchInvoices(clinicId: string): Promise<InvoiceView[]> {
   });
   return rows.map((r) => ({
     id: r.id,
-    patientName: _userMap?.get(r.patient_id)?.name ?? "Patient",
+    patientName: _activeUserMap?.get(r.patient_id)?.name ?? "Patient",
     appointmentId: r.appointment_id ?? undefined,
     amount: r.amount,
     currency: "MAD",
@@ -624,13 +638,13 @@ export async function fetchWaitingList(clinicId: string): Promise<WaitingListVie
   return rows.map((r) => ({
     id: r.id,
     patientId: r.patient_id,
-    patientName: _userMap?.get(r.patient_id)?.name ?? "Patient",
+    patientName: _activeUserMap?.get(r.patient_id)?.name ?? "Patient",
     doctorId: r.doctor_id,
-    doctorName: _userMap?.get(r.doctor_id)?.name ?? "Doctor",
+    doctorName: _activeUserMap?.get(r.doctor_id)?.name ?? "Doctor",
     preferredDate: r.preferred_date ?? "",
     preferredTime: r.preferred_time ?? undefined,
     serviceId: r.service_id ?? undefined,
-    serviceName: r.service_id ? _serviceMap?.get(r.service_id)?.name : undefined,
+    serviceName: r.service_id ? _activeServiceMap?.get(r.service_id)?.name : undefined,
     status: r.status,
     createdAt: r.created_at,
   }));
@@ -685,8 +699,8 @@ export async function fetchConsultationNotes(clinicId: string, doctorId?: string
     id: r.id,
     appointmentId: r.appointment_id,
     patientId: r.patient_id,
-    patientName: _userMap?.get(r.patient_id)?.name ?? "Patient",
-    doctorName: _userMap?.get(r.doctor_id)?.name ?? "Doctor",
+    patientName: _activeUserMap?.get(r.patient_id)?.name ?? "Patient",
+    doctorName: _activeUserMap?.get(r.doctor_id)?.name ?? "Doctor",
     date: r.created_at?.split("T")[0] ?? "",
     diagnosis: r.diagnosis ?? "",
     notes: r.notes ?? "",
@@ -735,7 +749,7 @@ export async function fetchTimeSlots(clinicId: string, doctorId?: string): Promi
   return rows.map((r) => ({
     id: r.id,
     doctorId: r.doctor_id,
-    doctorName: _userMap?.get(r.doctor_id)?.name ?? "Doctor",
+    doctorName: _activeUserMap?.get(r.doctor_id)?.name ?? "Doctor",
     dayOfWeek: r.day_of_week,
     startTime: r.start_time,
     endTime: r.end_time,
@@ -1337,9 +1351,9 @@ export async function fetchMedicalCertificates(
   return rows.map((r) => ({
     id: r.id,
     patientId: r.patient_id,
-    patientName: _userMap?.get(r.patient_id)?.name ?? "Patient",
+    patientName: _activeUserMap?.get(r.patient_id)?.name ?? "Patient",
     doctorId: r.doctor_id,
-    doctorName: _userMap?.get(r.doctor_id)?.name ?? "Doctor",
+    doctorName: _activeUserMap?.get(r.doctor_id)?.name ?? "Doctor",
     type: r.type as MedicalCertificateView["type"],
     content: r.content ?? {},
     pdfUrl: r.pdf_url ?? undefined,
@@ -1453,9 +1467,9 @@ export async function fetchTreatmentPlans(clinicId: string, doctorId?: string): 
   return rows.map((r) => ({
     id: r.id,
     patientId: r.patient_id,
-    patientName: _userMap?.get(r.patient_id)?.name ?? "Patient",
+    patientName: _activeUserMap?.get(r.patient_id)?.name ?? "Patient",
     doctorId: r.doctor_id,
-    doctorName: _userMap?.get(r.doctor_id)?.name ?? "Doctor",
+    doctorName: _activeUserMap?.get(r.doctor_id)?.name ?? "Doctor",
     title: r.title,
     steps: (r.steps ?? []).map((s) => ({ ...s, status: s.status as "pending" | "in_progress" | "completed", cost: s.cost ?? 0, toothNumbers: s.toothNumbers })),
     totalCost: r.total_cost ?? 0,
@@ -1505,9 +1519,9 @@ export async function fetchLabOrders(clinicId: string): Promise<LabOrderView[]> 
   return rows.map((r) => ({
     id: r.id,
     patientId: r.patient_id,
-    patientName: _userMap?.get(r.patient_id)?.name ?? "Patient",
+    patientName: _activeUserMap?.get(r.patient_id)?.name ?? "Patient",
     doctorId: r.doctor_id,
-    doctorName: _userMap?.get(r.doctor_id)?.name ?? "Doctor",
+    doctorName: _activeUserMap?.get(r.doctor_id)?.name ?? "Doctor",
     labName: r.lab_name ?? "",
     description: r.description,
     status: r.status,
@@ -1620,7 +1634,7 @@ export async function fetchInstallments(clinicId: string): Promise<InstallmentVi
     id: r.id,
     treatmentPlanId: r.treatment_plan_id,
     patientId: r.patient_id,
-    patientName: _userMap?.get(r.patient_id)?.name ?? "Patient",
+    patientName: _activeUserMap?.get(r.patient_id)?.name ?? "Patient",
     amount: r.amount,
     dueDate: r.due_date,
     paidDate: r.paid_date ?? undefined,
@@ -1662,7 +1676,7 @@ export async function fetchBeforeAfterPhotos(clinicId: string, patientId?: strin
   return rows.map((r) => ({
     id: r.id,
     patientId: r.patient_id,
-    patientName: _userMap?.get(r.patient_id)?.name ?? "Patient",
+    patientName: _activeUserMap?.get(r.patient_id)?.name ?? "Patient",
     treatmentPlanId: r.treatment_plan_id ?? "",
     description: r.description ?? "",
     beforeDate: r.before_date ?? "",
@@ -1910,7 +1924,7 @@ export async function fetchPrescriptionRequests(clinicId: string): Promise<Pharm
     order: ["created_at", { ascending: false }],
   });
   return rows.map((r) => {
-    const patient = _userMap?.get(r.patient_id);
+    const patient = _activeUserMap?.get(r.patient_id);
     return {
       id: r.id,
       patientId: r.patient_id,
@@ -1985,7 +1999,7 @@ export async function fetchLoyaltyMembers(clinicId: string): Promise<LoyaltyMemb
     eq: [["clinic_id", clinicId]],
   });
   return rows.map((r) => {
-    const patient = _userMap?.get(r.patient_id);
+    const patient = _activeUserMap?.get(r.patient_id);
     const totalPts = r.points ?? 0;
     const redeemed = r.redeemed_points ?? 0;
     const available = r.available_points ?? (totalPts - redeemed);
@@ -2266,7 +2280,7 @@ export async function fetchInstallmentPlans(clinicId: string): Promise<Installme
     return {
       id: p.id,
       patientId: p.patient_id,
-      patientName: _userMap?.get(p.patient_id)?.name ?? "Patient",
+      patientName: _activeUserMap?.get(p.patient_id)?.name ?? "Patient",
       treatmentPlanId: p.treatment_plan_id,
       treatmentTitle: tpMap.get(p.treatment_plan_id) ?? "Treatment Plan",
       totalAmount: p.total_amount,
@@ -2433,11 +2447,11 @@ export async function fetchAnalytics(clinicId: string): Promise<AnalyticsData> {
   // Service popularity
   const serviceCount = new Map<string, { count: number; revenue: number }>();
   for (const a of appts) {
-    const svcName = a.service_id ? (_serviceMap?.get(a.service_id)?.name ?? "Other") : "Consultation";
+    const svcName = a.service_id ? (_activeServiceMap?.get(a.service_id)?.name ?? "Other") : "Consultation";
     const entry = serviceCount.get(svcName) ?? { count: 0, revenue: 0 };
     entry.count++;
     if (a.service_id) {
-      entry.revenue += _serviceMap?.get(a.service_id)?.price ?? 0;
+      entry.revenue += _activeServiceMap?.get(a.service_id)?.price ?? 0;
     }
     serviceCount.set(svcName, entry);
   }
@@ -2746,7 +2760,7 @@ export async function fetchDailySales(clinicId: string): Promise<DailySaleView[]
       id: r.id,
       date: dt.split("T")[0] ?? "",
       time: dt.split("T")[1]?.slice(0, 5) ?? "",
-      patientName: r.patient_id ? (_userMap?.get(r.patient_id)?.name ?? "Patient") : "Walk-in",
+      patientName: r.patient_id ? (_activeUserMap?.get(r.patient_id)?.name ?? "Patient") : "Walk-in",
       items: r.items ?? [],
       total: r.total ?? 0,
       currency: "MAD",
@@ -3072,9 +3086,9 @@ export async function fetchLabTestOrders(clinicId: string): Promise<LabTestOrder
   return rows.map((r) => ({
     id: r.id,
     patientId: r.patient_id,
-    patientName: _userMap?.get(r.patient_id)?.name ?? "Patient",
-    orderingDoctorName: r.ordering_doctor_id ? (_userMap?.get(r.ordering_doctor_id)?.name ?? undefined) : undefined,
-    assignedTechnicianName: r.assigned_technician_id ? (_userMap?.get(r.assigned_technician_id)?.name ?? undefined) : undefined,
+    patientName: _activeUserMap?.get(r.patient_id)?.name ?? "Patient",
+    orderingDoctorName: r.ordering_doctor_id ? (_activeUserMap?.get(r.ordering_doctor_id)?.name ?? undefined) : undefined,
+    assignedTechnicianName: r.assigned_technician_id ? (_activeUserMap?.get(r.assigned_technician_id)?.name ?? undefined) : undefined,
     orderNumber: r.order_number,
     status: r.status,
     priority: r.priority,
@@ -3118,9 +3132,9 @@ export async function fetchPatientLabOrders(clinicId: string, patientId: string)
   return rows.map((r) => ({
     id: r.id,
     patientId: r.patient_id,
-    patientName: _userMap?.get(r.patient_id)?.name ?? "Patient",
-    orderingDoctorName: r.ordering_doctor_id ? (_userMap?.get(r.ordering_doctor_id)?.name ?? undefined) : undefined,
-    assignedTechnicianName: r.assigned_technician_id ? (_userMap?.get(r.assigned_technician_id)?.name ?? undefined) : undefined,
+    patientName: _activeUserMap?.get(r.patient_id)?.name ?? "Patient",
+    orderingDoctorName: r.ordering_doctor_id ? (_activeUserMap?.get(r.ordering_doctor_id)?.name ?? undefined) : undefined,
+    assignedTechnicianName: r.assigned_technician_id ? (_activeUserMap?.get(r.assigned_technician_id)?.name ?? undefined) : undefined,
     orderNumber: r.order_number,
     status: r.status,
     priority: r.priority,
@@ -3629,9 +3643,9 @@ export async function fetchRadiologyOrders(clinicId: string): Promise<RadiologyO
   return rows.map((r) => ({
     id: r.id,
     patientId: r.patient_id,
-    patientName: _userMap?.get(r.patient_id)?.name ?? "Patient",
-    orderingDoctorName: r.ordering_doctor_id ? (_userMap?.get(r.ordering_doctor_id)?.name ?? undefined) : undefined,
-    radiologistName: r.radiologist_id ? (_userMap?.get(r.radiologist_id)?.name ?? undefined) : undefined,
+    patientName: _activeUserMap?.get(r.patient_id)?.name ?? "Patient",
+    orderingDoctorName: r.ordering_doctor_id ? (_activeUserMap?.get(r.ordering_doctor_id)?.name ?? undefined) : undefined,
+    radiologistName: r.radiologist_id ? (_activeUserMap?.get(r.radiologist_id)?.name ?? undefined) : undefined,
     orderNumber: r.order_number,
     modality: r.modality,
     bodyPart: r.body_part ?? undefined,
@@ -4307,7 +4321,7 @@ export async function fetchGrowthMeasurements(clinicId: string, patientId?: stri
   return rows.map((r) => ({
     id: r.id,
     patientId: r.patient_id,
-    patientName: _userMap?.get(r.patient_id)?.name ?? "Patient",
+    patientName: _activeUserMap?.get(r.patient_id)?.name ?? "Patient",
     doctorId: r.doctor_id,
     measuredAt: r.measured_at,
     ageMonths: r.age_months,
@@ -4386,7 +4400,7 @@ export async function fetchVaccinations(clinicId: string, patientId?: string): P
   return rows.map((r) => ({
     id: r.id,
     patientId: r.patient_id,
-    patientName: _userMap?.get(r.patient_id)?.name ?? "Patient",
+    patientName: _activeUserMap?.get(r.patient_id)?.name ?? "Patient",
     doctorId: r.doctor_id ?? "",
     vaccineName: r.vaccine_name,
     doseNumber: r.dose_number,
@@ -4468,7 +4482,7 @@ export async function fetchMilestones(clinicId: string, patientId?: string): Pro
   return rows.map((r) => ({
     id: r.id,
     patientId: r.patient_id,
-    patientName: _userMap?.get(r.patient_id)?.name ?? "Patient",
+    patientName: _activeUserMap?.get(r.patient_id)?.name ?? "Patient",
     category: r.category as MilestoneView["category"],
     milestone: r.milestone,
     expectedAgeMonths: r.expected_age_months,
@@ -4579,7 +4593,7 @@ export async function fetchPregnancies(clinicId: string, patientId?: string): Pr
     return {
       id: r.id,
       patientId: r.patient_id,
-      patientName: _userMap?.get(r.patient_id)?.name ?? "Patient",
+      patientName: _activeUserMap?.get(r.patient_id)?.name ?? "Patient",
       doctorId: r.doctor_id,
       lmpDate: r.lmp_date,
       eddDate: r.edd_date,
@@ -4681,7 +4695,7 @@ export async function fetchUltrasounds(clinicId: string, pregnancyId?: string): 
     id: r.id,
     pregnancyId: r.pregnancy_id,
     patientId: r.patient_id,
-    patientName: _userMap?.get(r.patient_id)?.name ?? "Patient",
+    patientName: _activeUserMap?.get(r.patient_id)?.name ?? "Patient",
     doctorId: r.doctor_id,
     scanDate: r.scan_date,
     trimester: r.trimester,
@@ -4772,7 +4786,7 @@ export async function fetchVisionTests(clinicId: string, patientId?: string): Pr
   return rows.map((r) => ({
     id: r.id,
     patientId: r.patient_id,
-    patientName: _userMap?.get(r.patient_id)?.name ?? "Patient",
+    patientName: _activeUserMap?.get(r.patient_id)?.name ?? "Patient",
     doctorId: r.doctor_id,
     testDate: r.test_date,
     odAcuity: r.od_acuity ?? "",
@@ -4857,7 +4871,7 @@ export async function fetchIopMeasurements(clinicId: string, patientId?: string)
   return rows.map((r) => ({
     id: r.id,
     patientId: r.patient_id,
-    patientName: _userMap?.get(r.patient_id)?.name ?? "Patient",
+    patientName: _activeUserMap?.get(r.patient_id)?.name ?? "Patient",
     doctorId: r.doctor_id,
     measuredAt: r.measured_at,
     odPressure: r.od_pressure,
@@ -4968,8 +4982,8 @@ export async function fetchLabDashboardKPIs(clinicId: string): Promise<LabDashbo
 
   const recentTests: LabDashboardTestView[] = rows.slice(0, 10).map((r) => ({
     id: r.id,
-    patientName: _userMap?.get(r.patient_id)?.name ?? "Patient",
-    doctorName: _userMap?.get(r.doctor_id)?.name ?? "Doctor",
+    patientName: _activeUserMap?.get(r.patient_id)?.name ?? "Patient",
+    doctorName: _activeUserMap?.get(r.doctor_id)?.name ?? "Doctor",
     testName: r.test_name,
     testCategory: r.test_category ?? "General",
     status: r.status,

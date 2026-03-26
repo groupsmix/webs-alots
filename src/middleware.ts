@@ -94,6 +94,20 @@ function isProtectedRoute(pathname: string): boolean {
   return PROTECTED_PREFIXES.some((prefix) => pathname.startsWith(prefix));
 }
 
+// ── Subdomain → clinic resolution cache ──────────────────────────
+// Avoids a DB query on every request for the same subdomain.
+// Entries expire after 5 minutes to pick up new clinics/renames.
+interface CachedClinic {
+  id: string;
+  name: string;
+  subdomain: string;
+  type: string;
+  tier: string;
+  cachedAt: number;
+}
+const SUBDOMAIN_CACHE_TTL_MS = 5 * 60 * 1000;
+const subdomainCache = new Map<string, CachedClinic>();
+
 /**
  * Set tenant headers on a response so downstream Server Components
  * and API routes can read them via getTenant().
@@ -383,13 +397,27 @@ export async function middleware(request: NextRequest) {
     }
   );
 
-  // --- Resolve clinic from subdomain ---
+  // --- Resolve clinic from subdomain (with in-memory cache) ---
   if (subdomain) {
-    const { data: clinic } = await supabase
-      .from("clinics")
-      .select("id, name, type, tier, subdomain")
-      .eq("subdomain", subdomain)
-      .single();
+    let clinic: CachedClinic | undefined;
+    const cached = subdomainCache.get(subdomain);
+    if (cached && Date.now() - cached.cachedAt < SUBDOMAIN_CACHE_TTL_MS) {
+      clinic = cached;
+    } else {
+      const { data } = await supabase
+        .from("clinics")
+        .select("id, name, type, tier, subdomain")
+        .eq("subdomain", subdomain)
+        .single();
+
+      if (data) {
+        clinic = { ...data, subdomain: data.subdomain ?? subdomain, cachedAt: Date.now() };
+        subdomainCache.set(subdomain, clinic);
+      } else {
+        // Evict stale entry if the subdomain was previously valid
+        subdomainCache.delete(subdomain);
+      }
+    }
 
     if (!clinic) {
       // Unknown subdomain → redirect to root domain
@@ -403,7 +431,7 @@ export async function middleware(request: NextRequest) {
     setTenantHeaders(supabaseResponse, {
       id: clinic.id,
       name: clinic.name,
-      subdomain: clinic.subdomain ?? subdomain,
+      subdomain: clinic.subdomain,
       type: clinic.type,
       tier: clinic.tier,
     });
