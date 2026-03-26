@@ -282,6 +282,13 @@ export default function OnboardingPage() {
       return;
     }
 
+    // Require email for all clinic_admin users — they need login credentials
+    const adminsWithoutEmail = validUsers.filter((u) => u.role === "clinic_admin" && !u.email?.trim());
+    if (adminsWithoutEmail.length > 0) {
+      setError(`Email is required for Clinic Admin "${adminsWithoutEmail[0].name || "(unnamed)"}" — they need an email to log in.`);
+      return;
+    }
+
     setLoading(true);
     setError(null);
     try {
@@ -420,36 +427,49 @@ export default function OnboardingPage() {
             </div>
             <Separator className="my-6" />
             {/* Staff Login Credentials */}
-            {createdUsers.filter((u) => u.email).length > 0 && (
-              <div className="bg-muted/50 rounded-lg p-4 text-left text-sm mb-6">
-                <h3 className="font-semibold mb-3">Staff Login Credentials:</h3>
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="border-b">
-                        <th className="text-left py-2 pr-4 font-medium">Role</th>
-                        <th className="text-left py-2 pr-4 font-medium">Name</th>
-                        <th className="text-left py-2 pr-4 font-medium">Email</th>
-                        <th className="text-left py-2 font-medium">Password</th>
+            <div className="bg-muted/50 rounded-lg p-4 text-left text-sm mb-6">
+              <h3 className="font-semibold mb-3">Staff Login Credentials:</h3>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b">
+                      <th className="text-left py-2 pr-4 font-medium">Role</th>
+                      <th className="text-left py-2 pr-4 font-medium">Name</th>
+                      <th className="text-left py-2 pr-4 font-medium">Email (Login)</th>
+                      <th className="text-left py-2 font-medium">Password</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {createdUsers.map((u) => (
+                      <tr key={u.id} className="border-b last:border-0">
+                        <td className="py-2 pr-4 capitalize">{u.role.replace("_", " ")}</td>
+                        <td className="py-2 pr-4">{u.name}</td>
+                        <td className="py-2 pr-4 font-mono text-xs">
+                          {u.email ? (
+                            u.email
+                          ) : (
+                            <span className="text-amber-600 italic">No email — cannot log in</span>
+                          )}
+                        </td>
+                        <td className="py-2 font-mono text-xs">
+                          {u.email ? STAFF_DEFAULT_PASSWORD : <span className="text-muted-foreground">—</span>}
+                        </td>
                       </tr>
-                    </thead>
-                    <tbody>
-                      {createdUsers.filter((u) => u.email).map((u) => (
-                        <tr key={u.id} className="border-b last:border-0">
-                          <td className="py-2 pr-4 capitalize">{u.role.replace("_", " ")}</td>
-                          <td className="py-2 pr-4">{u.name}</td>
-                          <td className="py-2 pr-4 font-mono text-xs">{u.email}</td>
-                          <td className="py-2 font-mono text-xs">{STAFF_DEFAULT_PASSWORD}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-                <p className="text-xs text-amber-600 mt-3">
-                  Please change the passwords after first login.
-                </p>
+                    ))}
+                  </tbody>
+                </table>
               </div>
-            )}
+              {createdUsers.some((u) => u.email) && (
+                <p className="text-xs text-amber-600 mt-3 font-medium">
+                  Important: Please change the default passwords after first login.
+                </p>
+              )}
+              {createdUsers.some((u) => !u.email) && (
+                <p className="text-xs text-destructive mt-2">
+                  Staff without email cannot log in. Edit their profile in Admin to add an email and enable access.
+                </p>
+              )}
+            </div>
             <div className="bg-muted/50 rounded-lg p-4 text-left text-sm mb-6">
               <h3 className="font-semibold mb-2">Clinic is Live:</h3>
               <div className="space-y-2 text-muted-foreground">

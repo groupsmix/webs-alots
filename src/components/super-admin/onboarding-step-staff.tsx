@@ -116,7 +116,9 @@ export function OnboardingStepStaff({
                 />
               </div>
               <div className="space-y-2">
-                <Label>Email</Label>
+                <Label>
+                  Email{user.role === "clinic_admin" ? <span className="text-destructive"> *</span> : null}
+                </Label>
                 <Input
                   type="email"
                   placeholder="sara@clinic.ma"
@@ -124,9 +126,12 @@ export function OnboardingStepStaff({
                   onChange={(e) =>
                     onUpdateUser(index, "email", e.target.value)
                   }
+                  required={user.role === "clinic_admin"}
                 />
                 <p className="text-[11px] text-muted-foreground">
-                  A login account will be created automatically if a valid email is provided.
+                  {user.role === "clinic_admin"
+                    ? "Required — a login account will be created with a default password."
+                    : "A login account will be created automatically if a valid email is provided."}
                 </p>
               </div>
             </div>

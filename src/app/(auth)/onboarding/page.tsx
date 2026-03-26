@@ -155,8 +155,8 @@ export default function OnboardingPage() {
                 </p>
               </div>
             )}
-            <Button className="w-full" size="lg" onClick={() => router.push("/login")}>
-              Se connecter
+            <Button className="w-full" size="lg" onClick={() => router.push("/admin/dashboard")}>
+              Accéder au tableau de bord
               <ArrowRight className="h-4 w-4 ml-1" />
             </Button>
           </CardContent>
