@@ -83,6 +83,14 @@ export const POST = withAuth(async (request, { supabase, user }) => {
       .limit(1)
       .maybeSingle();
 
+    // Auto-generate subdomain from clinic name (lowercase, alphanumeric + hyphens)
+    const subdomain = body.clinic_name
+      .toLowerCase()
+      .replace(/[^a-z0-9\s-]/g, "")
+      .trim()
+      .replace(/\s+/g, "-")
+      .replace(/--+/g, "-");
+
     let clinicId: string;
 
     if (orphanedClinic) {
@@ -114,6 +122,7 @@ export const POST = withAuth(async (request, { supabase, user }) => {
           clinic_type_key: body.clinic_type_key,
           tier: "pro",
           status: "active",
+          subdomain: subdomain || null,
           config: {
             city: body.city ?? null,
             phone: body.phone,
@@ -176,6 +185,7 @@ export const POST = withAuth(async (request, { supabase, user }) => {
       status: "created",
       message: "Clinic registered successfully",
       clinic_id: clinicId,
+      subdomain: subdomain || null,
     });
   } catch (err) {
     logger.warn("Operation failed", { context: "onboarding/route", error: err });
