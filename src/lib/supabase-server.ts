@@ -1,4 +1,5 @@
 import { createServerClient } from "@supabase/ssr";
+import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/types/database";
 import { setTenantContext, isValidClinicId } from "@/lib/tenant-context";
 import { logger } from "@/lib/logger";
@@ -108,4 +109,23 @@ export async function createTenantClient(clinicId: string) {
   }
 
   return client;
+}
+
+/**
+ * Create a Supabase admin client using the service role key.
+ *
+ * This client bypasses RLS and can perform admin operations such as
+ * creating auth users via `supabase.auth.admin.createUser()`.
+ *
+ * Only use this for privileged server-side operations (e.g. super-admin
+ * onboarding staff accounts). Never expose this client to the browser.
+ *
+ * @throws Error if SUPABASE_SERVICE_ROLE_KEY is not configured
+ */
+export function createAdminClient() {
+  return createSupabaseClient<Database>(
+    requireEnv("NEXT_PUBLIC_SUPABASE_URL"),
+    requireEnv("SUPABASE_SERVICE_ROLE_KEY"),
+    { auth: { autoRefreshToken: false, persistSession: false } },
+  );
 }
