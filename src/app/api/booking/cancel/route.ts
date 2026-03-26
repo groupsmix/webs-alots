@@ -6,6 +6,8 @@ import { logAuditEvent } from "@/lib/audit-log";
 import { clinicDateTime } from "@/lib/timezone";
 import { logger } from "@/lib/logger";
 import { bookingCancelSchema, safeParse } from "@/lib/validations";
+import { dispatchNotification } from "@/lib/notifications";
+import type { TemplateVariables } from "@/lib/notifications";
 import { STAFF_ROLES } from "@/lib/auth-roles";
 import type { UserRole } from "@/lib/types/database";
 
@@ -30,7 +32,7 @@ export const POST = withAuth(async (request, { supabase, profile }) => {
     // Fetch the appointment (include patient_id for ownership check)
     const { data: appt, error: fetchError } = await supabase
       .from("appointments")
-      .select("id, patient_id, doctor_id, appointment_date, start_time, status")
+      .select("id, patient_id, doctor_id, service_id, appointment_date, start_time, status")
       .eq("id", body.appointmentId)
       .eq("clinic_id", clinicId)
       .single();
@@ -113,6 +115,39 @@ export const POST = withAuth(async (request, { supabase, profile }) => {
       clinicId: profile.clinic_id ?? clinicId,
       description: `Appointment ${body.appointmentId} cancelled. Reason: ${body.reason ?? "Cancelled by patient"}`,
     });
+
+    // ── Dispatch cancellation notifications (fire-and-forget) ──────
+    // Notification failure must NOT affect the cancellation outcome.
+    try {
+      // Fetch doctor and service names for notification variables
+      const [doctorResult, serviceResult, patientResult] = await Promise.all([
+        supabase.from("users").select("name").eq("id", appt.doctor_id).single(),
+        appt.service_id
+          ? supabase.from("services").select("name").eq("id", appt.service_id).single()
+          : Promise.resolve({ data: null }),
+        supabase.from("users").select("name").eq("id", appt.patient_id).single(),
+      ]);
+
+      const notifVars: TemplateVariables = {
+        patient_name: patientResult.data?.name ?? "Patient",
+        doctor_name: doctorResult.data?.name ?? "Doctor",
+        clinic_name: tenant.clinicName,
+        service_name: serviceResult.data?.name ?? "Consultation",
+        date: appt.appointment_date ?? "",
+        time: appt.start_time ?? "",
+        cancellation_reason: body.reason ?? "Cancelled by patient",
+      };
+
+      // cancellation → patient, doctor, receptionist
+      Promise.allSettled([
+        dispatchNotification("cancellation", notifVars, appt.patient_id, ["in_app", "email", "whatsapp"]),
+        dispatchNotification("cancellation", notifVars, appt.doctor_id, ["in_app"]),
+      ]).catch((err) => {
+        logger.warn("Cancellation notification dispatch failed", { context: "booking/cancel", error: err });
+      });
+    } catch (err) {
+      logger.warn("Failed to prepare cancellation notifications", { context: "booking/cancel", error: err });
+    }
 
     return NextResponse.json({ status: APPOINTMENT_STATUS.CANCELLED, message: "Appointment cancelled successfully" });
   } catch (err) {

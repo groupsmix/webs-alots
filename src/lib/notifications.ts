@@ -282,6 +282,19 @@ export const defaultNotificationTemplates: NotificationTemplate[] = [
     priority: "low",
     recipientRoles: ["receptionist", "clinic_admin"],
   },
+  {
+    id: "tpl_rescheduled",
+    trigger: "rescheduled",
+    name: "rescheduled",
+    label: "Appointment Rescheduled",
+    channels: ["whatsapp", "in_app", "email"],
+    subject: "Appointment Rescheduled",
+    body: "Your appointment with {{doctor_name}} has been rescheduled to {{date}} at {{time}}. Service: {{service_name}}. {{clinic_name}}",
+    whatsappBody: "Hello {{patient_name}}, your appointment with {{doctor_name}} has been rescheduled to {{date}} at {{time}}. Contact us at {{clinic_phone}} if you have questions. {{clinic_name}}",
+    enabled: true,
+    priority: "high",
+    recipientRoles: ["patient", "doctor", "receptionist"],
+  },
 ];
 
 // ---- Trigger Metadata ----

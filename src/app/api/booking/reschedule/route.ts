@@ -7,6 +7,8 @@ import { logAuditEvent } from "@/lib/audit-log";
 import { computeEndTime } from "@/lib/timezone";
 import { logger } from "@/lib/logger";
 import { rescheduleSchema, safeParse } from "@/lib/validations";
+import { dispatchNotification } from "@/lib/notifications";
+import type { TemplateVariables } from "@/lib/notifications";
 import { STAFF_ROLES } from "@/lib/auth-roles";
 import type { UserRole } from "@/lib/types/database";
 
@@ -180,6 +182,38 @@ export const POST = withAuth(async (request, { supabase, profile }) => {
       clinicId: profile.clinic_id ?? clinicId,
       description: `Appointment ${body.appointmentId} rescheduled to ${body.newDate} ${body.newTime}`,
     });
+
+    // ── Dispatch reschedule notifications (fire-and-forget) ──────────
+    // Notification failure must NOT affect the reschedule outcome.
+    try {
+      // Fetch names for notification variables
+      const [doctorResult, serviceResult, patientResult] = await Promise.all([
+        supabase.from("users").select("name").eq("id", existing.doctor_id).single(),
+        existing.service_id
+          ? supabase.from("services").select("name").eq("id", existing.service_id).single()
+          : Promise.resolve({ data: null }),
+        supabase.from("users").select("name").eq("id", existing.patient_id).single(),
+      ]);
+
+      const notifVars: TemplateVariables = {
+        patient_name: patientResult.data?.name ?? "Patient",
+        doctor_name: doctorResult.data?.name ?? "Doctor",
+        clinic_name: tenant.clinicName,
+        service_name: serviceResult.data?.name ?? "Consultation",
+        date: body.newDate,
+        time: body.newTime,
+      };
+
+      // rescheduled → patient, doctor
+      Promise.allSettled([
+        dispatchNotification("rescheduled", notifVars, existing.patient_id, ["in_app", "email", "whatsapp"]),
+        dispatchNotification("rescheduled", notifVars, existing.doctor_id, ["in_app"]),
+      ]).catch((err) => {
+        logger.warn("Reschedule notification dispatch failed", { context: "booking/reschedule", error: err });
+      });
+    } catch (err) {
+      logger.warn("Failed to prepare reschedule notifications", { context: "booking/reschedule", error: err });
+    }
 
     return NextResponse.json({
       status: APPOINTMENT_STATUS.RESCHEDULED,
