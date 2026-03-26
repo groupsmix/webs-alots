@@ -172,8 +172,17 @@ export async function POST(request: NextRequest) {
             message: { role: "assistant" as const, content },
           });
         }
+      } else {
+        // Log non-OK responses (including 429 rate-limit / quota exhaustion)
+        logger.warn("Cloudflare AI request failed", {
+          context: "chat/cloudflare-ai",
+          status: cfResponse.status,
+          clinicId,
+          statusText: cfResponse.statusText,
+        });
       }
 
+      // Fallback to basic keyword matching when AI is unavailable
       const reply = getBasicResponse(lastMessage.content, ctx);
       return NextResponse.json({
         message: { role: "assistant" as const, content: reply },
