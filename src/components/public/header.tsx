@@ -37,7 +37,7 @@ export function PublicHeader({ logoUrl, clinicName }: PublicHeaderProps) {
         </Link>
 
         {/* Desktop navigation */}
-        <nav className="hidden items-center gap-6 md:flex">
+        <nav aria-label="Navigation principale" className="hidden items-center gap-6 md:flex">
           {navLinks.map((link) => (
             <Link
               key={link.href}
@@ -56,7 +56,9 @@ export function PublicHeader({ logoUrl, clinicName }: PublicHeaderProps) {
         <button
           className="md:hidden"
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          aria-label="Toggle menu"
+          aria-label={mobileMenuOpen ? "Fermer le menu" : "Ouvrir le menu"}
+          aria-expanded={mobileMenuOpen}
+          aria-controls="clinic-mobile-nav"
         >
           {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
         </button>
@@ -64,7 +66,7 @@ export function PublicHeader({ logoUrl, clinicName }: PublicHeaderProps) {
 
       {/* Mobile navigation */}
       {mobileMenuOpen && (
-        <nav className="border-t px-4 py-4 md:hidden">
+        <nav id="clinic-mobile-nav" aria-label="Navigation mobile" className="border-t px-4 py-4 md:hidden">
           <div className="flex flex-col gap-3">
             {navLinks.map((link) => (
               <Link

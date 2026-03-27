@@ -24,7 +24,7 @@ export function LandingHeader() {
         </Link>
 
         {/* Desktop nav */}
-        <nav className="hidden items-center gap-8 md:flex">
+        <nav aria-label="Navigation principale" className="hidden items-center gap-8 md:flex">
           {navLinks.map(({ label, href }) => (
             <a
               key={href}
@@ -56,6 +56,8 @@ export function LandingHeader() {
             className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-gray-600 transition-colors hover:bg-gray-100 md:hidden"
             onClick={() => setMobileOpen(!mobileOpen)}
             aria-label={mobileOpen ? "Fermer le menu" : "Ouvrir le menu"}
+            aria-expanded={mobileOpen}
+            aria-controls="mobile-nav"
           >
             {mobileOpen ? (
               <X className="h-5 w-5" />
@@ -68,7 +70,7 @@ export function LandingHeader() {
 
       {/* Mobile nav */}
       {mobileOpen && (
-        <nav className="border-t border-gray-100 bg-white px-4 pb-4 pt-2 md:hidden">
+        <nav id="mobile-nav" aria-label="Navigation mobile" className="border-t border-gray-100 bg-white px-4 pb-4 pt-2 md:hidden">
           {navLinks.map(({ label, href }) => (
             <a
               key={href}
