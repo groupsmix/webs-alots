@@ -35,11 +35,15 @@ export default function LoginPage() {
     try {
       const result = await signInWithPassword(email, password);
       if (result.error) {
-        setError(result.error);
+        setError(
+          result.error === "Invalid login credentials"
+            ? "Identifiants de connexion invalides."
+            : result.error,
+        );
         setLoading(false);
       }
     } catch {
-      setError("An unexpected error occurred. Please try again.");
+      setError("Une erreur inattendue s'est produite. Veuillez r\u00e9essayer.");
       setLoading(false);
     }
   }
@@ -62,7 +66,7 @@ export default function LoginPage() {
       setStep("otp");
       setLoading(false);
     } catch {
-      setError("An unexpected error occurred. Please try again.");
+      setError("Une erreur inattendue s'est produite. Veuillez r\u00e9essayer.");
       setLoading(false);
     }
   }
@@ -79,7 +83,7 @@ export default function LoginPage() {
         setLoading(false);
       }
     } catch {
-      setError("An unexpected error occurred. Please try again.");
+      setError("Une erreur inattendue s'est produite. Veuillez r\u00e9essayer.");
       setLoading(false);
     }
   }
@@ -194,6 +198,14 @@ export default function LoginPage() {
                   required
                   className="text-base"
                 />
+              </div>
+              <div className="flex justify-end">
+                <Link
+                  href="/forgot-password"
+                  className="text-xs text-primary hover:underline"
+                >
+                  Mot de passe oubli\u00e9 ?
+                </Link>
               </div>
               <Button type="submit" className="w-full" disabled={loading}>
                 {loading ? "Connexion..." : "Se connecter"}

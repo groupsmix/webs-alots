@@ -79,7 +79,7 @@ export default async function ReviewsPage() {
           <div>
             <StarRating rating={Math.round(avgRating)} />
             <p className="text-sm text-muted-foreground mt-1">
-              Based on {reviews.length} reviews
+              Basé sur {reviews.length} {reviews.length <= 1 ? "avis" : "avis"}
             </p>
           </div>
         </div>

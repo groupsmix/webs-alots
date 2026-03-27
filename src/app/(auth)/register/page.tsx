@@ -67,7 +67,7 @@ export default function RegisterPage() {
       setStep("otp");
       setLoading(false);
     } catch {
-      setError("An unexpected error occurred. Please try again.");
+      setError("Une erreur inattendue s'est produite. Veuillez réessayer.");
       setLoading(false);
     }
   }
@@ -84,7 +84,7 @@ export default function RegisterPage() {
         setLoading(false);
       }
     } catch {
-      setError("An unexpected error occurred. Please try again.");
+      setError("Une erreur inattendue s'est produite. Veuillez réessayer.");
       setLoading(false);
     }
   }

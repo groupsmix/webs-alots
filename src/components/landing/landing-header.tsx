@@ -44,10 +44,10 @@ export function LandingHeader() {
             Connexion
           </Link>
           <Link
-            href="/register"
+            href="/contact"
             className="inline-flex h-9 items-center rounded-lg bg-gray-900 px-4 text-sm font-medium text-white transition-colors hover:bg-gray-800"
           >
-            Commencer
+            Nous contacter
           </Link>
 
           {/* Mobile menu toggle */}

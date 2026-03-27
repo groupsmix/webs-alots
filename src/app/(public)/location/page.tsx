@@ -31,7 +31,7 @@ export default function LocationPage() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <MapPin className="h-5 w-5 text-primary" />
-                Our Address
+                Notre adresse
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -44,7 +44,7 @@ export default function LocationPage() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Clock className="h-5 w-5 text-primary" />
-                Working Hours
+                Horaires d&apos;ouverture
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -52,7 +52,7 @@ export default function LocationPage() {
                 {cfg.workingHours.map((wh) => (
                   <div key={wh.day} className="flex justify-between text-sm">
                     <span className="text-muted-foreground">{wh.day}</span>
-                    <span className={`font-medium ${wh.hours === "Closed" ? "text-destructive" : ""}`}>
+                    <span className={`font-medium ${wh.hours === "Closed" || wh.hours === "Fermé" ? "text-destructive" : ""}`}>
                       {wh.hours}
                     </span>
                   </div>
@@ -79,8 +79,8 @@ export default function LocationPage() {
               <div className="h-[450px] bg-muted flex items-center justify-center">
                 <div className="text-center text-muted-foreground">
                   <MapPin className="h-8 w-8 mx-auto mb-2" />
-                  <p className="text-sm">Google Maps embed</p>
-                  <p className="text-xs mt-1">Set the embed URL in Website Editor</p>
+                  <p className="text-sm">Carte Google Maps</p>
+                  <p className="text-xs mt-1">L&apos;emplacement sera affich&eacute; prochainement</p>
                 </div>
               </div>
             )}

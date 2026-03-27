@@ -86,7 +86,7 @@ export default async function ServicesPage() {
                   href="/book"
                   className={buttonVariants({ variant: "outline", size: "sm" })}
                 >
-                  Book Now
+                  Prendre rendez-vous
                 </Link>
               </CardFooter>
             </Card>
