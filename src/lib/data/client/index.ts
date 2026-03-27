@@ -33,3 +33,4 @@ export * from "./pediatrician";
 export * from "./gynecologist";
 export * from "./ophthalmologist";
 export * from "./kpis";
+export * from "./onboarding";
