@@ -1,5 +1,6 @@
 import type { MetadataRoute } from "next";
 import { createClient } from "@/lib/supabase-server";
+import { getAllPosts } from "@/lib/blog";
 
 /**
  * Dynamic sitemap for public-facing pages.
@@ -34,6 +35,17 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     changeFrequency: page.changeFrequency,
     priority: page.priority,
   }));
+
+  // Static blog post pages
+  const blogPosts = getAllPosts();
+  for (const post of blogPosts) {
+    entries.push({
+      url: `${baseUrl}/blog/${post.slug}`,
+      lastModified: new Date(post.updatedAt ?? post.publishedAt),
+      changeFrequency: "monthly",
+      priority: 0.6,
+    });
+  }
 
   // Dynamic clinic subdomain pages
   try {
