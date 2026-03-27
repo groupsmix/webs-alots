@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireTenantWithConfig } from "@/lib/tenant";
+import { clinicConfig } from "@/config/clinic.config";
 import {
   getPublicGeneratedSlots,
   getPublicAvailableSlots,
@@ -363,13 +364,20 @@ export async function POST(request: NextRequest) {
 
     // ── Dispatch notifications (fire-and-forget) ──────────────────
     // Notification failure must NOT affect the booking outcome.
+    // Build the manage/cancel URL so the patient can self-service
+    const siteOrigin = request.headers.get("origin") ?? request.nextUrl.origin;
+    const manageUrl = `${siteOrigin}/book?manage=${appointment.id}`;
+
     const notifVars: TemplateVariables = {
       patient_name: body.patient.name,
       doctor_name: doctor?.name ?? "Doctor",
       clinic_name: tenant.clinicName,
+      clinic_address: clinicConfig.contact?.address ?? "",
+      clinic_phone: clinicConfig.contact?.phone ?? "",
       service_name: service?.name ?? "Consultation",
       date: body.date,
       time: body.time,
+      manage_url: manageUrl,
     };
 
     // booking_confirmation → patient, new_booking → staff
