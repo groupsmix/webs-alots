@@ -24,10 +24,10 @@ export default function AdminError({
           <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-destructive/10">
             <AlertTriangle className="h-7 w-7 text-destructive" />
           </div>
-          <h2 className="mb-2 text-lg font-semibold">Something went wrong</h2>
+          <h2 className="mb-2 text-lg font-semibold">Une erreur est survenue</h2>
           <p className="mb-6 text-sm text-muted-foreground">
-            An error occurred in the admin panel. Please try again or contact
-            support if the problem persists.
+            Une erreur s&apos;est produite dans le panneau d&apos;administration. Veuillez
+            réessayer ou contacter le support si le problème persiste.
           </p>
           {error.digest && (
             <p className="mb-4 text-xs text-muted-foreground">
@@ -36,7 +36,7 @@ export default function AdminError({
           )}
           <Button onClick={reset} size="lg">
             <RefreshCw className="mr-2 h-4 w-4" />
-            Try Again
+            Réessayer
           </Button>
         </CardContent>
       </Card>
