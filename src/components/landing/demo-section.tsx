@@ -1,24 +1,29 @@
+"use client";
+
 import { ExternalLink, Lock } from "lucide-react";
+import { useLandingLocale } from "./landing-locale-provider";
 
 export function DemoSection() {
+  const { t } = useLandingLocale();
+
   return (
     <section id="demo" className="bg-white py-20 sm:py-28">
       <div className="mx-auto max-w-6xl px-4 sm:px-6">
         <div className="mx-auto max-w-2xl text-center">
           <p className="mb-3 text-sm font-semibold uppercase tracking-widest text-blue-600">
-            Exemple en direct
+            {t("landing.demoLabel")}
           </p>
           <h2 className="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">
-            Voyez le r&eacute;sultat
+            {t("landing.demoTitle")}
           </h2>
           <p className="mt-4 text-lg text-gray-600">
-            D&eacute;couvrez &agrave; quoi ressemble un site de cabinet cr&eacute;&eacute; avec Oltigo.
+            {t("landing.demoSubtitle")}
           </p>
         </div>
 
         <div className="mt-12 flex justify-center">
           <a
-            href="https://dr-ahmed.oltigo.com"
+            href="https://demo.oltigo.com"
             target="_blank"
             rel="noopener noreferrer"
             className="group w-full max-w-2xl"
@@ -33,7 +38,7 @@ export function DemoSection() {
                 </div>
                 <div className="mx-auto flex items-center gap-2 rounded-lg bg-gray-50 px-4 py-1.5 text-sm text-gray-500">
                   <Lock className="h-3 w-3 text-green-500" />
-                  <span>dr-ahmed.oltigo.com</span>
+                  <span>demo.oltigo.com</span>
                   <ExternalLink className="h-3 w-3" />
                 </div>
               </div>
@@ -43,24 +48,28 @@ export function DemoSection() {
                 <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-blue-100">
                   <span className="text-lg font-bold text-blue-600">Dr</span>
                 </div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-1">Dr. Ahmed - Cabinet M&eacute;dical</h3>
-                <p className="text-sm text-gray-500 mb-8">M&eacute;decine G&eacute;n&eacute;rale &bull; Casablanca</p>
+                <h3 className="text-lg font-semibold text-gray-900 mb-1">
+                  {t("landing.demoClinic")}
+                </h3>
+                <p className="text-sm text-gray-500 mb-8">
+                  {t("landing.demoSpecialty")} &bull; {t("landing.demoCity")}
+                </p>
                 <div className="mx-auto grid max-w-sm grid-cols-3 gap-3">
                   <div className="h-20 rounded-xl bg-white shadow-sm ring-1 ring-gray-100 flex flex-col items-center justify-center p-2">
-                    <span className="text-xs font-medium text-gray-700">Services</span>
-                    <span className="text-[10px] text-gray-400 mt-1">5 disponibles</span>
+                    <span className="text-xs font-medium text-gray-700">{t("landing.demoServices")}</span>
+                    <span className="text-[10px] text-gray-400 mt-1">{t("landing.demoServicesCount")}</span>
                   </div>
                   <div className="h-20 rounded-xl bg-white shadow-sm ring-1 ring-gray-100 flex flex-col items-center justify-center p-2">
-                    <span className="text-xs font-medium text-gray-700">Rendez-vous</span>
-                    <span className="text-[10px] text-gray-400 mt-1">En ligne 24/7</span>
+                    <span className="text-xs font-medium text-gray-700">{t("landing.demoAppointments")}</span>
+                    <span className="text-[10px] text-gray-400 mt-1">{t("landing.demoAppointmentsAvail")}</span>
                   </div>
                   <div className="h-20 rounded-xl bg-white shadow-sm ring-1 ring-gray-100 flex flex-col items-center justify-center p-2">
-                    <span className="text-xs font-medium text-gray-700">Avis</span>
-                    <span className="text-[10px] text-gray-400 mt-1">Patients v&eacute;rifi&eacute;s</span>
+                    <span className="text-xs font-medium text-gray-700">{t("landing.demoReviews")}</span>
+                    <span className="text-[10px] text-gray-400 mt-1">{t("landing.demoReviewsLabel")}</span>
                   </div>
                 </div>
                 <p className="mt-8 inline-flex items-center gap-2 text-sm font-medium text-blue-600 transition-colors group-hover:text-blue-700">
-                  Voir le site en direct
+                  {t("landing.demoViewSite")}
                   <ExternalLink className="h-3.5 w-3.5" />
                 </p>
               </div>

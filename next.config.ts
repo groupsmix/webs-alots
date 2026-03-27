@@ -79,4 +79,16 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default withAnalyzer(nextConfig);
+// Sentry wraps the Next.js config for source-map upload and error tunneling.
+// The NEXT_PUBLIC_SENTRY_DSN env var activates it; without the DSN the wrapper
+// is a transparent pass-through.
+import { withSentryConfig } from "@sentry/nextjs";
+
+export default withSentryConfig(withAnalyzer(nextConfig), {
+  // Suppress noisy source-map upload logs in CI.
+  silent: true,
+
+  // Upload source maps only when a Sentry auth token is available.
+  org: process.env.SENTRY_ORG,
+  project: process.env.SENTRY_PROJECT,
+});

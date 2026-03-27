@@ -3,16 +3,20 @@
 import Link from "next/link";
 import { useState } from "react";
 import { Menu, X } from "lucide-react";
+import { LocaleSwitcher } from "@/components/locale-switcher";
+import { useLandingLocale } from "./landing-locale-provider";
+import type { TranslationKey } from "@/lib/i18n";
 
-const navLinks = [
-  { label: "Fonctionnalit\u00e9s", href: "/#fonctionnalites" },
-  { label: "Comment \u00e7a marche", href: "/#comment-ca-marche" },
-  { label: "D\u00e9mo", href: "/#demo" },
-  { label: "Tarifs", href: "/pricing" },
-] as const;
+const navLinks: readonly { key: TranslationKey; href: string }[] = [
+  { key: "landing.navFeatures", href: "/#fonctionnalites" },
+  { key: "landing.navHow", href: "/#comment-ca-marche" },
+  { key: "landing.navDemo", href: "/#demo" },
+  { key: "landing.navPricing", href: "/pricing" },
+];
 
 export function LandingHeader() {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const { t } = useLandingLocale();
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-gray-100 bg-white/80 backdrop-blur-lg">
@@ -26,35 +30,36 @@ export function LandingHeader() {
 
         {/* Desktop nav */}
         <nav aria-label="Navigation principale" className="hidden items-center gap-8 md:flex">
-          {navLinks.map(({ label, href }) => (
+          {navLinks.map(({ key, href }) => (
             <a
               key={href}
               href={href}
               className="text-sm text-gray-600 transition-colors hover:text-gray-900"
             >
-              {label}
+              {t(key)}
             </a>
           ))}
         </nav>
 
         <div className="flex items-center gap-3">
+          <LocaleSwitcher className="hidden sm:block" />
           <Link
             href="/login"
             className="hidden text-sm font-medium text-gray-600 transition-colors hover:text-gray-900 sm:inline-flex"
           >
-            Connexion
+            {t("nav.login")}
           </Link>
           <Link
             href="/register"
             className="hidden h-9 items-center rounded-lg bg-blue-600 px-4 text-sm font-medium text-white transition-colors hover:bg-blue-700 sm:inline-flex"
           >
-            Commencer gratuitement
+            {t("landing.ctaPrimary")}
           </Link>
           <Link
             href="/contact"
             className="inline-flex h-9 items-center rounded-lg bg-gray-900 px-4 text-sm font-medium text-white transition-colors hover:bg-gray-800 sm:hidden"
           >
-            Nous contacter
+            {t("nav.contact")}
           </Link>
 
           {/* Mobile menu toggle */}
@@ -62,7 +67,7 @@ export function LandingHeader() {
             type="button"
             className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-gray-600 transition-colors hover:bg-gray-100 md:hidden"
             onClick={() => setMobileOpen(!mobileOpen)}
-            aria-label={mobileOpen ? "Fermer le menu" : "Ouvrir le menu"}
+            aria-label={mobileOpen ? t("landing.menuClose") : t("landing.menuOpen")}
             aria-expanded={mobileOpen}
             aria-controls="mobile-nav"
           >
@@ -78,14 +83,14 @@ export function LandingHeader() {
       {/* Mobile nav */}
       {mobileOpen && (
         <nav id="mobile-nav" aria-label="Navigation mobile" className="border-t border-gray-100 bg-white px-4 pb-4 pt-2 md:hidden">
-          {navLinks.map(({ label, href }) => (
+          {navLinks.map(({ key, href }) => (
             <a
               key={href}
               href={href}
               className="block rounded-lg px-3 py-2.5 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-50 hover:text-gray-900"
               onClick={() => setMobileOpen(false)}
             >
-              {label}
+              {t(key)}
             </a>
           ))}
           <Link
@@ -93,8 +98,11 @@ export function LandingHeader() {
             className="block rounded-lg px-3 py-2.5 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-50 hover:text-gray-900 sm:hidden"
             onClick={() => setMobileOpen(false)}
           >
-            Connexion
+            {t("nav.login")}
           </Link>
+          <div className="mt-2 px-3 sm:hidden">
+            <LocaleSwitcher />
+          </div>
         </nav>
       )}
     </header>

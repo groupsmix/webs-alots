@@ -1,3 +1,6 @@
+"use client";
+
+import { LandingLocaleProvider } from "./landing-locale-provider";
 import { LandingHeader } from "./landing-header";
 import { HeroSection } from "./hero-section";
 import { TrustSection } from "./trust-section";
@@ -15,17 +18,19 @@ import { LandingFooter } from "./landing-footer";
  */
 export function LandingPage() {
   return (
-    <div className="flex min-h-screen flex-col bg-white">
-      <LandingHeader />
-      <main className="flex-1">
-        <HeroSection />
-        <TrustSection />
-        <FeaturesSection />
-        <HowItWorksSection />
-        <DemoSection />
-        <CtaSection />
-      </main>
-      <LandingFooter />
-    </div>
+    <LandingLocaleProvider>
+      <div className="flex min-h-screen flex-col bg-white">
+        <LandingHeader />
+        <main className="flex-1">
+          <HeroSection />
+          <TrustSection />
+          <FeaturesSection />
+          <HowItWorksSection />
+          <DemoSection />
+          <CtaSection />
+        </main>
+        <LandingFooter />
+      </div>
+    </LandingLocaleProvider>
   );
 }
