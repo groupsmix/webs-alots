@@ -8,6 +8,7 @@ import {
 import { SignOutButton } from "@/components/sign-out-button";
 import { useClinicFeatures } from "@/lib/hooks/use-clinic-features";
 import type { ClinicFeatureKey } from "@/lib/features";
+import { FeatureGate } from "@/components/feature-gate";
 
 interface NavItem {
   href: string;
@@ -62,7 +63,11 @@ export default function PsychologistLayout({
           <SignOutButton />
         </div>
       </aside>
-      <main className="flex-1 p-6">{children}</main>
+      <main className="flex-1 p-6">
+        <FeatureGate featureKey="therapy_notes" moduleName="Psychology">
+          {children}
+        </FeatureGate>
+      </main>
     </div>
   );
 }

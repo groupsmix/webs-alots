@@ -8,6 +8,7 @@ import {
   History, Menu, X, TestTubes,
 } from "lucide-react";
 import { SignOutButton } from "@/components/sign-out-button";
+import { FeatureGate } from "@/components/feature-gate";
 
 const navItems = [
   { href: "/lab-panel/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -109,7 +110,11 @@ export default function LabLayout({
         <SidebarContent pathname={pathname} />
       </aside>
 
-      <main className="flex-1 p-6 pt-16 md:pt-6">{children}</main>
+      <main className="flex-1 p-6 pt-16 md:pt-6">
+          <FeatureGate featureKey="lab_tests" moduleName="Analysis Lab">
+            {children}
+          </FeatureGate>
+        </main>
     </div>
   );
 }

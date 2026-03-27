@@ -14,14 +14,33 @@ import { createClient, createAdminClient } from "@/lib/supabase-server";
 import { requireRole } from "@/lib/auth";
 import { logger } from "@/lib/logger";
 import { STAFF_DEFAULT_PASSWORD } from "@/lib/constants";
+import { sendEmail } from "@/lib/email";
+import { staffWelcomeEmail, clinicSuspendedEmail, clinicActivatedEmail } from "@/lib/email-templates";
 import type {
   ClinicType,
   ClinicTier,
   Json,
 } from "@/lib/types/database";
 
-/** Server-side Supabase client that verifies the caller is super_admin
- *  before returning a cookie-based auth session client. */
+/**
+ * Server-side Supabase client scoped to super_admin operations.
+ *
+ * **SECURITY NOTE — RLS bypass considerations:**
+ * This function returns a cookie-based Supabase client whose queries
+ * run under the authenticated user's session. It does NOT bypass RLS
+ * by itself. However, some callers (e.g. `createUser`) also use
+ * `createAdminClient()` which creates a service-role client that
+ * **does bypass all Row Level Security policies**.
+ *
+ * Any function in this file that uses `createAdminClient()` must:
+ *   1. Validate all inputs before passing them to the admin client.
+ *   2. Be restricted to super_admin callers (enforced by `requireRole`).
+ *   3. Log the operation for audit purposes (see `activity_logs` table).
+ *   4. Never expose the service-role key or admin client to the browser.
+ *
+ * Audit this file whenever RLS policies change or new admin operations
+ * are added. A bug in any exported function is a potential data breach.
+ */
 async function rawClient() {
   await requireRole("super_admin");
   return createClient();
@@ -154,6 +173,14 @@ export async function updateClinicStatus(
   status: "active" | "inactive" | "suspended",
 ): Promise<void> {
   const supabase = await rawClient();
+
+  // Fetch clinic details for audit log and email notification
+  const { data: clinic } = await supabase
+    .from("clinics")
+    .select("id, name, owner_email, owner_name")
+    .eq("id", clinicId)
+    .single();
+
   const { error } = await supabase
     .from("clinics")
     .update({ status })
@@ -161,6 +188,42 @@ export async function updateClinicStatus(
 
   if (error)
     throw new Error(`Failed to update clinic status: ${error.message}`);
+
+  // Audit log the status change
+  try {
+    await supabase.from("activity_logs").insert({
+      action: status === "suspended" ? "clinic_suspended" : "clinic_activated",
+      description: `Clinic "${clinic?.name ?? clinicId}" status changed to ${status}`,
+      clinic_id: clinicId,
+      clinic_name: clinic?.name ?? null,
+      type: "admin",
+      timestamp: new Date().toISOString(),
+    });
+  } catch {
+    // Non-blocking audit log
+  }
+
+  // Send email notification to clinic admin
+  if (clinic?.owner_email) {
+    try {
+      const template = status === "suspended"
+        ? clinicSuspendedEmail({
+            clinicName: clinic.name ?? "Your Clinic",
+            adminName: clinic.owner_name ?? "Admin",
+          })
+        : clinicActivatedEmail({
+            clinicName: clinic.name ?? "Your Clinic",
+            adminName: clinic.owner_name ?? "Admin",
+          });
+      await sendEmail({ to: clinic.owner_email, ...template });
+    } catch (emailErr) {
+      logger.warn("Failed to send clinic status email", {
+        context: "super-admin-actions",
+        clinicId,
+        error: emailErr,
+      });
+    }
+  }
 }
 
 // ---------- User CRUD ----------
@@ -248,6 +311,35 @@ export async function createUser(input: CreateUserInput): Promise<UserRow> {
     }
   }
 
+  // If the auth trigger already created a row for this auth_id (race condition),
+  // update it with the correct role and clinic_id instead of failing.
+  if (authId) {
+    const { data: triggerRow } = await supabase
+      .from("users")
+      .select("id")
+      .eq("auth_id", authId)
+      .maybeSingle();
+
+    if (triggerRow) {
+      // The trigger already inserted a row — update it with correct values
+      const { data: updated, error: updateError } = await supabase
+        .from("users")
+        .update({
+          clinic_id: input.clinic_id,
+          role: input.role,
+          name: input.name,
+          phone: input.phone ?? null,
+          email: input.email ?? null,
+        })
+        .eq("auth_id", authId)
+        .select()
+        .single();
+
+      if (updateError) throw new Error(`Failed to update user: ${updateError.message}`);
+      return updated as UserRow;
+    }
+  }
+
   const { data, error } = await supabase
     .from("users")
     .insert({
@@ -262,6 +354,29 @@ export async function createUser(input: CreateUserInput): Promise<UserRow> {
     .single();
 
   if (error) throw new Error(`Failed to create user: ${error.message}`);
+
+  // Send welcome/password-reset email so staff can set their own password
+  if (input.email) {
+    try {
+      const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://oltigo.com";
+      const loginUrl = `${siteUrl}/login`;
+      const template = staffWelcomeEmail({
+        staffName: input.name,
+        clinicName: input.clinic_id,
+        email: input.email,
+        loginUrl,
+        role: input.role,
+      });
+      await sendEmail({ to: input.email, ...template });
+    } catch (emailErr) {
+      logger.warn("Failed to send welcome email to staff", {
+        context: "super-admin-actions",
+        email: input.email,
+        error: emailErr,
+      });
+    }
+  }
+
   return data as UserRow;
 }
 

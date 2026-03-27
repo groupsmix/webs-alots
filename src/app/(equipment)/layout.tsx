@@ -8,6 +8,7 @@ import {
   Menu, X, Stethoscope, Languages,
 } from "lucide-react";
 import { SignOutButton } from "@/components/sign-out-button";
+import { FeatureGate } from "@/components/feature-gate";
 
 export type EquipmentLocale = "fr" | "ar";
 
@@ -162,7 +163,11 @@ export default function EquipmentLayout({
           <SidebarContent pathname={pathname} locale={locale} />
         </aside>
 
-        <main className="flex-1 p-6 pt-16 md:pt-6">{children}</main>
+        <main className="flex-1 p-6 pt-16 md:pt-6">
+          <FeatureGate featureKey="equipment_rentals" moduleName="Medical Equipment">
+            {children}
+          </FeatureGate>
+        </main>
       </div>
     </EquipmentI18nContext.Provider>
   );

@@ -8,6 +8,7 @@ import {
   Menu, X, Sparkles,
 } from "lucide-react";
 import { SignOutButton } from "@/components/sign-out-button";
+import { FeatureGate } from "@/components/feature-gate";
 
 const navItems = [
   { href: "/parapharmacy/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -98,7 +99,11 @@ export default function ParapharmacyLayout({
         <SidebarContent pathname={pathname} />
       </aside>
 
-      <main className="flex-1 p-6 pt-16 md:pt-6">{children}</main>
+      <main className="flex-1 p-6 pt-16 md:pt-6">
+          <FeatureGate featureKey="parapharmacy" moduleName="Parapharmacy">
+            {children}
+          </FeatureGate>
+        </main>
     </div>
   );
 }
