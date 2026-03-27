@@ -19,11 +19,11 @@ export function LandingHeader() {
   const { t } = useLandingLocale();
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-gray-100 bg-white/80 backdrop-blur-lg">
+    <header className="sticky top-0 z-50 w-full border-b border-gray-100 dark:border-gray-800 bg-white/80 dark:bg-gray-950/80 backdrop-blur-lg">
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
         <Link
           href="/"
-          className="text-xl font-bold tracking-tight text-gray-900"
+          className="text-xl font-bold tracking-tight text-gray-900 dark:text-gray-50"
         >
           Oltigo
         </Link>
@@ -34,7 +34,7 @@ export function LandingHeader() {
             <a
               key={href}
               href={href}
-              className="text-sm text-gray-600 transition-colors hover:text-gray-900"
+              className="text-sm text-gray-600 dark:text-gray-400 transition-colors hover:text-gray-900 dark:hover:text-gray-50"
             >
               {t(key)}
             </a>
@@ -45,7 +45,7 @@ export function LandingHeader() {
           <LocaleSwitcher className="hidden sm:block" />
           <Link
             href="/login"
-            className="hidden text-sm font-medium text-gray-600 transition-colors hover:text-gray-900 sm:inline-flex"
+            className="hidden text-sm font-medium text-gray-600 dark:text-gray-400 transition-colors hover:text-gray-900 dark:hover:text-gray-50 sm:inline-flex"
           >
             {t("nav.login")}
           </Link>
@@ -65,7 +65,7 @@ export function LandingHeader() {
           {/* Mobile menu toggle */}
           <button
             type="button"
-            className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-gray-600 transition-colors hover:bg-gray-100 md:hidden"
+            className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-gray-600 dark:text-gray-400 transition-colors hover:bg-gray-100 dark:hover:bg-gray-800 md:hidden"
             onClick={() => setMobileOpen(!mobileOpen)}
             aria-label={mobileOpen ? t("landing.menuClose") : t("landing.menuOpen")}
             aria-expanded={mobileOpen}
@@ -82,12 +82,12 @@ export function LandingHeader() {
 
       {/* Mobile nav */}
       {mobileOpen && (
-        <nav id="mobile-nav" aria-label="Navigation mobile" className="border-t border-gray-100 bg-white px-4 pb-4 pt-2 md:hidden">
+        <nav id="mobile-nav" aria-label="Navigation mobile" className="border-t border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-950 px-4 pb-4 pt-2 md:hidden">
           {navLinks.map(({ key, href }) => (
             <a
               key={href}
               href={href}
-              className="block rounded-lg px-3 py-2.5 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-50 hover:text-gray-900"
+              className="block rounded-lg px-3 py-2.5 text-sm font-medium text-gray-600 dark:text-gray-400 transition-colors hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-gray-50"
               onClick={() => setMobileOpen(false)}
             >
               {t(key)}
@@ -95,7 +95,7 @@ export function LandingHeader() {
           ))}
           <Link
             href="/login"
-            className="block rounded-lg px-3 py-2.5 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-50 hover:text-gray-900 sm:hidden"
+            className="block rounded-lg px-3 py-2.5 text-sm font-medium text-gray-600 dark:text-gray-400 transition-colors hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-gray-50 sm:hidden"
             onClick={() => setMobileOpen(false)}
           >
             {t("nav.login")}

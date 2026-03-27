@@ -6,6 +6,7 @@
  */
 
 import { NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { createTenantClient } from "@/lib/supabase-server";
 import { getTenant, requireTenant } from "@/lib/tenant";
 import {
@@ -178,6 +179,9 @@ export const PUT = withAuth(async (request, { supabase }) => {
     );
   }
 
+  // Invalidate branding cache so public pages pick up the change
+  revalidatePath("/", "layout");
+
   return NextResponse.json({ ok: true });
 }, ADMIN_ROLES);
 
@@ -260,6 +264,9 @@ export const POST = withAuth(async (request, { supabase }) => {
       { status: 500 },
     );
   }
+
+  // Invalidate branding cache so public pages pick up the new image
+  revalidatePath("/", "layout");
 
   return NextResponse.json({ url, key });
 }, ADMIN_ROLES);

@@ -207,7 +207,7 @@ async function fetchBrandingFromDb(clinicId: string, fallbackName: string): Prom
 const getCachedBranding = unstable_cache(
   fetchBrandingFromDb,
   ["clinic-branding"],
-  { revalidate: 300 }, // 5-minute TTL
+  { revalidate: 300, tags: ["clinic-branding"] }, // 5-minute TTL
 );
 
 export async function getPublicBranding(): Promise<ClinicBranding> {
@@ -231,12 +231,9 @@ export async function getPublicBranding(): Promise<ClinicBranding> {
 
 // ── Reviews ──
 
-export async function getPublicReviews(): Promise<PublicReview[]> {
-  const ctx = await createPublicTenantClient();
-  if (!ctx) return [];
-  const { supabase, clinicId } = ctx;
+async function fetchReviewsFromDb(clinicId: string): Promise<PublicReview[]> {
+  const supabase = await createTenantClient(clinicId);
 
-  // Fetch reviews with patient names via Supabase join (single query)
   const { data: reviews, error } = await supabase
     .from("reviews")
     .select("id, stars, comment, response, created_at, patients:patient_id(name)")
@@ -259,10 +256,20 @@ export async function getPublicReviews(): Promise<PublicReview[]> {
   });
 }
 
-export async function getPublicAverageRating(): Promise<number> {
-  const ctx = await createPublicTenantClient();
-  if (!ctx) return 0;
-  const { supabase, clinicId } = ctx;
+const getCachedReviews = unstable_cache(
+  fetchReviewsFromDb,
+  ["clinic-reviews"],
+  { revalidate: 120, tags: ["clinic-reviews"] }, // 2-minute TTL
+);
+
+export async function getPublicReviews(): Promise<PublicReview[]> {
+  const clinicId = await getClinicId();
+  if (!clinicId) return [];
+  return getCachedReviews(clinicId);
+}
+
+async function fetchAverageRatingFromDb(clinicId: string): Promise<number> {
+  const supabase = await createTenantClient(clinicId);
 
   // Try DB-level AVG via Supabase RPC first (single row returned,
   // no data transferred).  Falls back to application-level computation
@@ -301,6 +308,18 @@ export async function getPublicAverageRating(): Promise<number> {
   if (!data || data.length === 0) return 0;
   const sum = data.reduce((s, r) => s + r.stars, 0);
   return Math.round((sum / count) * 10) / 10;
+}
+
+const getCachedAverageRating = unstable_cache(
+  fetchAverageRatingFromDb,
+  ["clinic-avg-rating"],
+  { revalidate: 120, tags: ["clinic-reviews"] }, // 2-minute TTL, same tag as reviews
+);
+
+export async function getPublicAverageRating(): Promise<number> {
+  const clinicId = await getClinicId();
+  if (!clinicId) return 0;
+  return getCachedAverageRating(clinicId);
 }
 
 // ── Services ──
