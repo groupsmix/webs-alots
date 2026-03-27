@@ -19,13 +19,19 @@ export function CtaSection() {
             Rejoignez les professionnels de sant&eacute; qui simplifient la gestion de
             leur cabinet avec Oltigo.
           </p>
-          <div className="mt-10">
+          <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
             <Link
-              href="/contact"
+              href="/register"
               className="group inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-white px-8 text-sm font-semibold text-gray-900 shadow-lg transition-all hover:bg-gray-100"
             >
-              Demander une démonstration
+              Commencer gratuitement
               <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+            </Link>
+            <Link
+              href="/pricing"
+              className="inline-flex h-12 items-center justify-center gap-2 rounded-xl border border-white/20 px-8 text-sm font-semibold text-white transition-all hover:bg-white/10"
+            >
+              Voir les tarifs
             </Link>
           </div>
         </div>

@@ -5,9 +5,10 @@ import { useState } from "react";
 import { Menu, X } from "lucide-react";
 
 const navLinks = [
-  { label: "Fonctionnalit\u00e9s", href: "#fonctionnalites" },
-  { label: "Comment \u00e7a marche", href: "#comment-ca-marche" },
-  { label: "D\u00e9mo", href: "#demo" },
+  { label: "Fonctionnalit\u00e9s", href: "/#fonctionnalites" },
+  { label: "Comment \u00e7a marche", href: "/#comment-ca-marche" },
+  { label: "D\u00e9mo", href: "/#demo" },
+  { label: "Tarifs", href: "/pricing" },
 ] as const;
 
 export function LandingHeader() {
@@ -44,8 +45,14 @@ export function LandingHeader() {
             Connexion
           </Link>
           <Link
+            href="/register"
+            className="hidden h-9 items-center rounded-lg bg-blue-600 px-4 text-sm font-medium text-white transition-colors hover:bg-blue-700 sm:inline-flex"
+          >
+            Commencer gratuitement
+          </Link>
+          <Link
             href="/contact"
-            className="inline-flex h-9 items-center rounded-lg bg-gray-900 px-4 text-sm font-medium text-white transition-colors hover:bg-gray-800"
+            className="inline-flex h-9 items-center rounded-lg bg-gray-900 px-4 text-sm font-medium text-white transition-colors hover:bg-gray-800 sm:hidden"
           >
             Nous contacter
           </Link>
