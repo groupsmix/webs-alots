@@ -13,6 +13,7 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { extractSubdomain } from "@/lib/subdomain";
 import { TENANT_HEADERS } from "@/lib/tenant";
+import { generateTraceId, TRACE_ID_HEADER } from "@/lib/logger";
 import {
   buildCsp,
   withSecurityHeaders,
@@ -80,6 +81,9 @@ export async function middleware(request: NextRequest) {
   const nonce = Buffer.from(crypto.randomUUID()).toString("base64");
   const cspHeaderValue = buildCsp(nonce);
 
+  // --- Generate a per-request trace ID for structured logging ---
+  const traceId = generateTraceId();
+
   // --- Global body size limit ---
   const contentLength = request.headers.get("content-length");
   if (contentLength && Number(contentLength) > MAX_BODY_BYTES) {
@@ -97,6 +101,7 @@ export async function middleware(request: NextRequest) {
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set("x-nonce", nonce);
   requestHeaders.set("Content-Security-Policy", cspHeaderValue);
+  requestHeaders.set(TRACE_ID_HEADER, traceId);
 
   // --- SECURITY: Strip all tenant headers from the incoming request ---
   // Tenant context MUST only come from subdomain resolution (server-side).

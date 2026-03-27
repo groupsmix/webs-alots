@@ -29,7 +29,7 @@ import {
 import { withAuth } from "@/lib/with-auth";
 import { logger } from "@/lib/logger";
 
-const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
+const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2 MB
 
 const ALLOWED_TYPES = new Set([
   "image/jpeg",
@@ -86,7 +86,7 @@ export const POST = withAuth(async (request, { profile }) => {
 
   if (file.size > MAX_FILE_SIZE) {
     return NextResponse.json(
-      { error: "File too large (max 10 MB)" },
+      { error: "File too large (max 2 MB)" },
       { status: 400 },
     );
   }

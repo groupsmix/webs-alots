@@ -239,3 +239,53 @@ export function buildUploadKey(
   const safeFilename = filename.replace(/[^a-zA-Z0-9._-]/g, "_");
   return `clinics/${safeClinicId}/${safeCategory}/${timestamp}-${rand}-${safeFilename}`;
 }
+
+// ── Image Resizing Utilities ──
+
+/** Standard thumbnail widths for responsive images. */
+export const IMAGE_WIDTHS = [100, 300, 800] as const;
+
+/**
+ * Build a Cloudflare Image Resizing URL for a given source image.
+ *
+ * Cloudflare Image Resizing transforms images on the fly at the CDN edge
+ * (no server-side processing or extra storage needed). It works with any
+ * image served through Cloudflare — including R2 public URLs.
+ *
+ * @param srcUrl   Original image URL (must be proxied through Cloudflare)
+ * @param width    Desired width in pixels
+ * @param options  Additional Image Resizing options
+ * @returns Transformed image URL, or original URL if not an http(s) URL
+ *
+ * @see https://developers.cloudflare.com/images/transform-images/transform-via-url/
+ */
+export function getResizedImageUrl(
+  srcUrl: string,
+  width: number,
+  options: { quality?: number; fit?: "scale-down" | "contain" | "cover" | "crop" | "pad"; format?: "auto" | "webp" | "avif" } = {},
+): string {
+  if (!srcUrl.startsWith("http")) return srcUrl;
+
+  const { quality = 80, fit = "cover", format = "auto" } = options;
+
+  try {
+    const url = new URL(srcUrl);
+    // Cloudflare Image Resizing URL format: /cdn-cgi/image/{options}/{path}
+    const optionsPart = `width=${width},quality=${quality},fit=${fit},format=${format}`;
+    return `${url.origin}/cdn-cgi/image/${optionsPart}${url.pathname}`;
+  } catch {
+    return srcUrl;
+  }
+}
+
+/**
+ * Generate a `sizes` attribute and srcSet-like map for responsive images.
+ * Returns thumbnail URLs for the standard widths (100, 300, 800px).
+ */
+export function getResponsiveImageUrls(srcUrl: string): Record<number, string> {
+  const urls: Record<number, string> = {};
+  for (const w of IMAGE_WIDTHS) {
+    urls[w] = getResizedImageUrl(srcUrl, w);
+  }
+  return urls;
+}

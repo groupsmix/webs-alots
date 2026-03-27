@@ -41,16 +41,16 @@ export function HowItWorksSection() {
   const { t } = useLandingLocale();
 
   return (
-    <section id="comment-ca-marche" className="bg-gray-50 py-20 sm:py-28">
+    <section id="comment-ca-marche" className="bg-gray-50 dark:bg-gray-900 py-20 sm:py-28">
       <div className="mx-auto max-w-6xl px-4 sm:px-6">
         <div className="mx-auto max-w-2xl text-center">
           <p className="mb-3 text-sm font-semibold uppercase tracking-widest text-blue-600">
             {t("landing.howLabel")}
           </p>
-          <h2 className="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">
+          <h2 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-gray-50 sm:text-4xl">
             {t("landing.howTitle")}
           </h2>
-          <p className="mt-4 text-lg text-gray-600">
+          <p className="mt-4 text-lg text-gray-600 dark:text-gray-400">
             {t("landing.howSubtitle")}
           </p>
         </div>
@@ -63,14 +63,14 @@ export function HowItWorksSection() {
                 <div className="pointer-events-none absolute -left-4 top-7 hidden h-px w-8 bg-gray-200 lg:block" />
               )}
 
-              <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-white shadow-md ring-1 ring-gray-100">
+              <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-white dark:bg-gray-800 shadow-md ring-1 ring-gray-100 dark:ring-gray-700">
                 <Icon className="h-6 w-6 text-blue-600" />
               </div>
               <div className="mb-2 text-xs font-bold uppercase tracking-widest text-blue-600">
                 {t("landing.howStep")} {number}
               </div>
-              <h3 className="text-lg font-semibold text-gray-900">{t(titleKey)}</h3>
-              <p className="mt-2 text-sm leading-relaxed text-gray-600">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-50">{t(titleKey)}</h3>
+              <p className="mt-2 text-sm leading-relaxed text-gray-600 dark:text-gray-400">
                 {t(descKey)}
               </p>
             </div>

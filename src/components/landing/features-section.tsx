@@ -36,16 +36,16 @@ export function FeaturesSection() {
   const { t } = useLandingLocale();
 
   return (
-    <section id="fonctionnalites" className="bg-white py-20 sm:py-28">
+    <section id="fonctionnalites" className="bg-white dark:bg-gray-950 py-20 sm:py-28">
       <div className="mx-auto max-w-6xl px-4 sm:px-6">
         <div className="mx-auto max-w-2xl text-center">
           <p className="mb-3 text-sm font-semibold uppercase tracking-widest text-blue-600">
             {t("landing.featuresLabel")}
           </p>
-          <h2 className="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">
+          <h2 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-gray-50 sm:text-4xl">
             {t("landing.featuresTitle")}
           </h2>
-          <p className="mt-4 text-lg text-gray-600">
+          <p className="mt-4 text-lg text-gray-600 dark:text-gray-400">
             {t("landing.featuresSubtitle")}
           </p>
         </div>
@@ -54,13 +54,13 @@ export function FeaturesSection() {
           {features.map(({ icon: Icon, titleKey, descKey }) => (
             <div
               key={titleKey}
-              className="group rounded-2xl border border-gray-100 bg-white p-8 transition-all hover:border-gray-200 hover:shadow-lg hover:shadow-gray-100/50"
+              className="group rounded-2xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 p-8 transition-all hover:border-gray-200 dark:hover:border-gray-700 hover:shadow-lg hover:shadow-gray-100/50 dark:hover:shadow-gray-900/50"
             >
               <div className="mb-5 flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-600/20">
                 <Icon className="h-5 w-5" />
               </div>
-              <h3 className="text-lg font-semibold text-gray-900">{t(titleKey)}</h3>
-              <p className="mt-2 text-sm leading-relaxed text-gray-600">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-50">{t(titleKey)}</h3>
+              <p className="mt-2 text-sm leading-relaxed text-gray-600 dark:text-gray-400">
                 {t(descKey)}
               </p>
             </div>
