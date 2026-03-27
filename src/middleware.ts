@@ -149,6 +149,7 @@ function withSecurityHeaders(
   response.headers.set("Content-Security-Policy", cspHeaderValue);
   response.headers.set("Strict-Transport-Security", "max-age=31536000; includeSubDomains; preload");
   response.headers.set("X-Content-Type-Options", "nosniff");
+  response.headers.set("X-Frame-Options", "DENY");
   return response;
 }
 
@@ -160,6 +161,7 @@ function secureRedirect(url: string | URL, init?: number | ResponseInit): NextRe
   const response = NextResponse.redirect(url, init);
   response.headers.set("Strict-Transport-Security", "max-age=31536000; includeSubDomains; preload");
   response.headers.set("X-Content-Type-Options", "nosniff");
+  response.headers.set("X-Frame-Options", "DENY");
   return response;
 }
 
@@ -194,6 +196,8 @@ function buildCsp(nonce: string): string {
     "form-action 'self'",
     // Base URI: self only
     "base-uri 'self'",
+    // MEDIUM 3.3: Prevent clickjacking via CSP frame-ancestors
+    "frame-ancestors 'none'",
     // Upgrade HTTP to HTTPS automatically
     ...(isDev ? [] : ["upgrade-insecure-requests"]),
   ].join("; ");
@@ -324,6 +328,7 @@ export async function middleware(request: NextRequest) {
     lightResponse.headers.set("x-nonce", nonce);
     lightResponse.headers.set("Strict-Transport-Security", "max-age=31536000; includeSubDomains; preload");
     lightResponse.headers.set("X-Content-Type-Options", "nosniff");
+    lightResponse.headers.set("X-Frame-Options", "DENY");
     return lightResponse;
   }
 
@@ -369,6 +374,7 @@ export async function middleware(request: NextRequest) {
     noSupabaseResponse.headers.set("x-nonce", nonce);
     noSupabaseResponse.headers.set("Strict-Transport-Security", "max-age=31536000; includeSubDomains; preload");
     noSupabaseResponse.headers.set("X-Content-Type-Options", "nosniff");
+    noSupabaseResponse.headers.set("X-Frame-Options", "DENY");
     return noSupabaseResponse;
   }
 
@@ -379,6 +385,7 @@ export async function middleware(request: NextRequest) {
   supabaseResponse.headers.set("x-nonce", nonce);
   supabaseResponse.headers.set("Strict-Transport-Security", "max-age=31536000; includeSubDomains; preload");
   supabaseResponse.headers.set("X-Content-Type-Options", "nosniff");
+  supabaseResponse.headers.set("X-Frame-Options", "DENY");
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -399,6 +406,7 @@ export async function middleware(request: NextRequest) {
           supabaseResponse.headers.set("x-nonce", nonce);
           supabaseResponse.headers.set("Strict-Transport-Security", "max-age=31536000; includeSubDomains; preload");
           supabaseResponse.headers.set("X-Content-Type-Options", "nosniff");
+          supabaseResponse.headers.set("X-Frame-Options", "DENY");
           // Re-apply tenant headers so they survive token-refresh responses
           if (resolvedClinic) {
             setTenantHeaders(supabaseResponse, resolvedClinic);

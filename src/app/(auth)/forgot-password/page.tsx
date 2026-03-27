@@ -14,7 +14,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { createClient } from "@/lib/supabase-client";
+import { resetPassword } from "@/lib/auth";
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
@@ -28,20 +28,21 @@ export default function ForgotPasswordPage() {
     setLoading(true);
 
     try {
-      const supabase = createClient();
-      const { error: resetError } = await supabase.auth.resetPasswordForEmail(
+      // MEDIUM 3.1: Use server action instead of client-side Supabase client.
+      // This ensures rate limiting and logging are applied server-side.
+      const result = await resetPassword(
         email,
-        {
-          redirectTo: `${window.location.origin}/login`,
-        },
+        `${window.location.origin}/login`,
       );
 
-      if (resetError) {
-        setError(resetError.message);
+      if (result.error) {
+        setError(result.error);
         setLoading(false);
         return;
       }
 
+      // HIGH 2.4: Always show generic success message regardless of
+      // whether the email exists, preventing username enumeration.
       setSent(true);
       setLoading(false);
     } catch {
