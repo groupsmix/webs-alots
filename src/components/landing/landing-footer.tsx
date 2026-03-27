@@ -26,7 +26,7 @@ export function LandingFooter() {
             Oltigo
           </Link>
 
-          <nav className="flex flex-wrap items-center justify-center gap-6">
+          <nav role="navigation" aria-label="Liens du pied de page" className="flex flex-wrap items-center justify-center gap-6">
             {links.map(({ key, href }) => (
               <Link
                 key={href}

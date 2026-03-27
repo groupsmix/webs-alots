@@ -46,7 +46,7 @@ export function ContactForm() {
 
   if (submitted) {
     return (
-      <Card>
+      <Card role="status" aria-live="polite">
         <CardContent className="py-12 text-center">
           <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-green-100">
             <Check className="h-8 w-8 text-green-600" />
