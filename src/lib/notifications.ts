@@ -42,6 +42,7 @@ export interface TemplateVariables {
   amount?: string;
   currency?: string;
   booking_url?: string;
+  manage_url?: string;
   cancellation_reason?: string;
   prescription_id?: string;
   review_stars?: string;
@@ -173,7 +174,7 @@ export const defaultNotificationTemplates: NotificationTemplate[] = [
     channels: ["whatsapp", "in_app"],
     subject: "Appointment Confirmed",
     body: "Your appointment with {{doctor_name}} is confirmed for {{date}} at {{time}}. Service: {{service_name}}. {{clinic_name}}",
-    whatsappBody: "Hello {{patient_name}}, your appointment with {{doctor_name}} is confirmed for {{date}} at {{time}}. Reply CANCEL to cancel. {{clinic_name}}",
+    whatsappBody: "Hello {{patient_name}}, your appointment with Dr. {{doctor_name}} is confirmed.\n\nDate: {{date}}\nTime: {{time}}\nService: {{service_name}}\nAddress: {{clinic_address}}\n\nManage/cancel: {{manage_url}}\n\n{{clinic_name}}",
     enabled: true,
     priority: "high",
     recipientRoles: ["patient"],
