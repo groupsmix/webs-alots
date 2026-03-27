@@ -46,6 +46,12 @@ export function PublicFooter({ clinicName }: PublicFooterProps) {
               >
                 Contact
               </Link>
+              <Link
+                href="/privacy"
+                className="text-sm text-muted-foreground hover:text-foreground"
+              >
+                Confidentialité
+              </Link>
             </nav>
           </div>
 
