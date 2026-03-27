@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Phone, ShieldCheck, ArrowLeft, Heart, Mail, Lock } from "lucide-react";
 import {
   Card,
@@ -26,6 +26,18 @@ export default function LoginPage() {
   const [otp, setOtp] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  // MEDIUM 3.4: OTP resend cooldown (60 seconds)
+  const [otpCooldown, setOtpCooldown] = useState(0);
+
+  useEffect(() => {
+    if (otpCooldown <= 0) return;
+    const timer = setTimeout(() => setOtpCooldown((c) => c - 1), 1000);
+    return () => clearTimeout(timer);
+  }, [otpCooldown]);
+
+  const startOtpCooldown = useCallback(() => {
+    setOtpCooldown(60);
+  }, []);
   async function handleEmailLogin(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
@@ -33,12 +45,18 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      const result = await signInWithPassword(email, password);
+      const result = await signInWithPassword(email.trim(), password);
       if (result.error) {
+        // HIGH 2.4: Normalize all login error messages to a single generic
+        // message to prevent username enumeration. Supabase returns different
+        // messages for valid vs. invalid accounts which could leak information.
+        // Rate-limit messages are passed through since they don't leak user info.
+        const isRateLimitError = result.error.startsWith("Trop de tentatives") ||
+          result.error.startsWith("Ce compte est temporairement");
         setError(
-          result.error === "Invalid login credentials"
-            ? "Identifiants de connexion invalides."
-            : result.error,
+          isRateLimitError
+            ? result.error
+            : "Identifiants de connexion invalides.",
         );
         setLoading(false);
       }
@@ -64,6 +82,7 @@ export default function LoginPage() {
       }
 
       setStep("otp");
+      startOtpCooldown();
       setLoading(false);
     } catch {
       setError("Une erreur inattendue s'est produite. Veuillez r\u00e9essayer.");
@@ -149,10 +168,11 @@ export default function LoginPage() {
                   Vous n&apos;avez pas reçu le code ?{" "}
                   <button
                     type="button"
-                    className="text-primary hover:underline"
+                    className={`text-primary hover:underline ${otpCooldown > 0 ? "opacity-50 cursor-not-allowed" : ""}`}
                     onClick={() => handleSendOTP()}
+                    disabled={otpCooldown > 0}
                   >
-                    Renvoyer
+                    {otpCooldown > 0 ? `Renvoyer (${otpCooldown}s)` : "Renvoyer"}
                   </button>
                 </p>
               </div>

@@ -23,21 +23,7 @@ export const POST = withAuth(async (request, { supabase, user }) => {
     if (!parsed.success) {
       return NextResponse.json({ error: parsed.error }, { status: 400 });
     }
-    const { clinicId, clinicName, password } = parsed.data as {
-      clinicId: string;
-      clinicName?: string;
-      password?: string;
-    };
-
-    // HIGH-03: Require re-authentication before impersonation.
-    // The super_admin must provide their current password to prove
-    // the session has not been hijacked.
-    if (!password) {
-      return NextResponse.json(
-        { error: "Password is required to start impersonation" },
-        { status: 400 },
-      );
-    }
+    const { clinicId, clinicName, password } = parsed.data;
 
     const reauthClient = await createClient();
     const { error: reauthError } = await reauthClient.auth.signInWithPassword({

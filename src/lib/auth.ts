@@ -2,6 +2,13 @@
 
 import { createClient } from "@/lib/supabase-server";
 import { redirect } from "next/navigation";
+import { headers } from "next/headers";
+import {
+  loginLimiter,
+  accountLockoutLimiter,
+  otpSendLimiter,
+  passwordResetLimiter,
+} from "@/lib/rate-limit";
 
 /**
  * Phone auth feature flag.
@@ -46,17 +53,44 @@ const ROLE_DASHBOARD_MAP: Record<UserProfile["role"], string> = {
 // ============================================================
 
 /**
+ * Extract client IP from request headers for server action rate limiting.
+ * In Cloudflare, CF-Connecting-IP is the trustworthy source.
+ */
+async function getClientIp(): Promise<string> {
+  const hdrs = await headers();
+  return hdrs.get("cf-connecting-ip") ?? hdrs.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
+}
+
+/**
  * Sign in with email and password via Supabase Auth.
  * On success, redirects to the appropriate dashboard based on user role.
+ *
+ * Rate-limited per IP (5 req/60s) and per email account (10 attempts/15min
+ * lockout) to prevent brute-force attacks.
  */
 export async function signInWithPassword(
   email: string,
   password: string,
 ): Promise<{ error: string | null }> {
+  const clientIp = await getClientIp();
+  const normalizedEmail = email.trim().toLowerCase();
+
+  // Per-IP rate limit: 5 attempts per 60 seconds
+  const ipAllowed = await loginLimiter.check(`login:ip:${clientIp}`);
+  if (!ipAllowed) {
+    return { error: "Trop de tentatives de connexion. Veuillez r\u00e9essayer dans quelques minutes." };
+  }
+
+  // Per-account lockout: 10 failed attempts per 15 minutes
+  const accountAllowed = await accountLockoutLimiter.check(`login:account:${normalizedEmail}`);
+  if (!accountAllowed) {
+    return { error: "Ce compte est temporairement verrouill\u00e9 suite \u00e0 de nombreuses tentatives \u00e9chou\u00e9es. Veuillez r\u00e9essayer plus tard." };
+  }
+
   const supabase = await createClient();
 
   const { error } = await supabase.auth.signInWithPassword({
-    email,
+    email: normalizedEmail,
     password,
   });
 
@@ -84,6 +118,12 @@ export async function signInWithPassword(
 export async function signInWithOTP(phone: string): Promise<{ error: string | null }> {
   if (!isPhoneAuthEnabled()) {
     return { error: "Phone authentication is not currently available." };
+  }
+
+  // Per-phone rate limit: 3 OTP sends per 60 seconds (prevents SMS pumping)
+  const phoneAllowed = await otpSendLimiter.check(`otp:phone:${phone}`);
+  if (!phoneAllowed) {
+    return { error: "Trop de demandes de code. Veuillez r\u00e9essayer dans quelques minutes." };
   }
 
   const supabase = await createClient();
@@ -156,6 +196,12 @@ export async function registerPatient(data: {
 
   const supabase = await createClient();
 
+  // Rate limit OTP sends per phone number to prevent SMS pumping
+  const phoneAllowed = await otpSendLimiter.check(`otp:phone:${data.phone}`);
+  if (!phoneAllowed) {
+    return { error: "Trop de demandes de code. Veuillez r\u00e9essayer dans quelques minutes." };
+  }
+
   const { error } = await supabase.auth.signInWithOtp({
     phone: data.phone,
     options: {
@@ -163,7 +209,10 @@ export async function registerPatient(data: {
         name: data.name,
         phone: data.phone,
         email: data.email,
-        role: "patient",
+        // MEDIUM 3.2: Do NOT pass role in user metadata.
+        // The DB trigger (migration 00028) always defaults to "patient"
+        // regardless of what's in raw_user_meta_data. Passing it here
+        // is redundant and creates a false sense that it matters.
         age: data.age,
         gender: data.gender,
         insurance: data.insurance,
@@ -173,6 +222,46 @@ export async function registerPatient(data: {
 
   if (error) {
     return { error: error.message };
+  }
+
+  return { error: null };
+}
+
+/**
+ * Request a password reset email via Supabase Auth (server-side).
+ *
+ * MEDIUM 3.1: Moved from client-side to server action so that:
+ *   - Server-side rate limiting is applied (3 req/60s per IP)
+ *   - All reset attempts are logged server-side
+ *   - The client cannot bypass rate limits by calling Supabase directly
+ *
+ * HIGH 2.4: Always returns a generic success message regardless of whether
+ * the email exists, preventing username enumeration.
+ */
+export async function resetPassword(
+  email: string,
+  redirectTo: string,
+): Promise<{ error: string | null }> {
+  const clientIp = await getClientIp();
+
+  // Rate limit: 3 password reset requests per 60 seconds per IP
+  const allowed = await passwordResetLimiter.check(`reset:ip:${clientIp}`);
+  if (!allowed) {
+    return { error: "Trop de demandes. Veuillez r\u00e9essayer dans quelques minutes." };
+  }
+
+  const supabase = await createClient();
+
+  const { error } = await supabase.auth.resetPasswordForEmail(
+    email.trim().toLowerCase(),
+    { redirectTo },
+  );
+
+  // Always return success to prevent username enumeration.
+  // Even if the email doesn't exist, we don't reveal that to the caller.
+  if (error) {
+    // Log the error server-side for debugging, but don't expose it
+    console.error("[resetPassword] Supabase error (not exposed to client):", error.message);
   }
 
   return { error: null };

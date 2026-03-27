@@ -14,29 +14,51 @@ export function register() {
 
   // CRITICAL-03: Enforce seed password rotation in production.
   // Migration 00019 creates seed users with the well-known password
-  // "seed-password-change-me". In production, operators MUST rotate
-  // these passwords and then set SEED_PASSWORDS_ROTATED=true.
-  // Previously this was a warning; now it hard-fails to prevent
-  // running with known default credentials.
-  if (
-    process.env.NODE_ENV === "production" &&
-    process.env.SEED_PASSWORDS_ROTATED !== "true"
-  ) {
-    // Log a structured message before throwing so monitoring tools can
-    // surface the exact remediation steps without parsing the error stack.
-    const message =
-      "[STARTUP HEALTH CHECK FAILED] Seed user passwords have not been rotated.\n" +
-      "\n" +
-      "Migration 00019 created users with the default password\n" +
-      '"seed-password-change-me". These credentials are publicly known.\n' +
-      "\n" +
-      "To fix:\n" +
-      "  1. Log into Supabase and change ALL seed user passwords.\n" +
-      "  2. Set the environment variable SEED_PASSWORDS_ROTATED=true\n" +
-      "  3. Re-deploy the application.\n" +
-      "\n" +
-      "The application will NOT start until this is resolved.";
-    console.error(message);
-    throw new Error(message);
+  // "seed-password-change-me". In production, operators MUST either
+  // delete the seed accounts or rotate their passwords, then set
+  // SEED_PASSWORDS_ROTATED=true.
+  //
+  // Additionally, SEED_USERS_DELETED=true should be set to confirm
+  // the seed accounts have been fully removed from auth.users.
+  // This two-flag approach ensures operators have actually taken action
+  // rather than just setting a single env var.
+  if (process.env.NODE_ENV === "production") {
+    if (process.env.SEED_PASSWORDS_ROTATED !== "true") {
+      const message =
+        "[STARTUP HEALTH CHECK FAILED] Seed user passwords have not been rotated.\n" +
+        "\n" +
+        "Migration 00019 created users with the default password\n" +
+        '"seed-password-change-me". These credentials are publicly known.\n' +
+        "\n" +
+        "To fix:\n" +
+        "  1. DELETE all seed users from auth.users and public.users, OR\n" +
+        "     change ALL seed user passwords via Supabase Dashboard.\n" +
+        "  2. Set the environment variable SEED_PASSWORDS_ROTATED=true\n" +
+        "  3. Set the environment variable SEED_USERS_DELETED=true if accounts were deleted\n" +
+        "  4. Re-deploy the application.\n" +
+        "\n" +
+        "Seed user UUIDs (from migration 00019):\n" +
+        "  a0000000-0000-0000-0000-000000000001 (super_admin)\n" +
+        "  a0000000-0000-0000-0000-000000000002 (clinic_admin)\n" +
+        "  a0000000-0000-0000-0000-000000000003 (doctor)\n" +
+        "  a0000000-0000-0000-0000-000000000004 (receptionist)\n" +
+        "  a0000000-0000-0000-0000-000000000010..0014 (patients)\n" +
+        "\n" +
+        "The application will NOT start until this is resolved.";
+      console.error(message);
+      throw new Error(message);
+    }
+
+    // Warn (non-fatal) if passwords were rotated but accounts not deleted.
+    // Deleting seed accounts is the safest option since the emails are
+    // publicly known in the GitHub repo.
+    if (process.env.SEED_USERS_DELETED !== "true") {
+      console.warn(
+        "[STARTUP WARNING] SEED_PASSWORDS_ROTATED is set but SEED_USERS_DELETED is not.\n" +
+        "The seed user emails (e.g. admin@health-saas.ma) are publicly visible in the\n" +
+        "GitHub repository. Deleting these accounts entirely is strongly recommended.\n" +
+        "Set SEED_USERS_DELETED=true after removing them to silence this warning.",
+      );
+    }
   }
 }

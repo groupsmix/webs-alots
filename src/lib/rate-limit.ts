@@ -74,10 +74,62 @@ function shouldUseSupabase(): boolean {
   return !!(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY);
 }
 
+// ── Circuit breaker for Supabase rate limiter ──
+// After CIRCUIT_BREAKER_THRESHOLD consecutive failures, the Supabase
+// backend "trips" and falls back to an in-memory limiter for
+// CIRCUIT_BREAKER_RESET_MS. This prevents failing completely open
+// during sustained infrastructure outages.
+const CIRCUIT_BREAKER_THRESHOLD = 3;
+const CIRCUIT_BREAKER_RESET_MS = 60_000;
+
+interface CircuitBreakerState {
+  consecutiveFailures: number;
+  trippedAt: number | null;
+  fallback: RateLimiter | null;
+}
+
+function createCircuitBreaker(_options: RateLimiterOptions): CircuitBreakerState {
+  return {
+    consecutiveFailures: 0,
+    trippedAt: null,
+    fallback: null,
+  };
+}
+
+function isCircuitOpen(state: CircuitBreakerState): boolean {
+  if (!state.trippedAt) return false;
+  if (Date.now() - state.trippedAt > CIRCUIT_BREAKER_RESET_MS) {
+    // Reset circuit breaker — try Supabase again
+    state.trippedAt = null;
+    state.consecutiveFailures = 0;
+    return false;
+  }
+  return true;
+}
+
+function recordFailure(state: CircuitBreakerState, options: RateLimiterOptions): void {
+  state.consecutiveFailures++;
+  if (state.consecutiveFailures >= CIRCUIT_BREAKER_THRESHOLD) {
+    state.trippedAt = Date.now();
+    if (!state.fallback) {
+      state.fallback = createMemoryRateLimiter(options);
+    }
+    logger.warn(
+      `Rate limiter circuit breaker tripped after ${state.consecutiveFailures} failures — falling back to in-memory limiter`,
+      { context: "rate-limit" },
+    );
+  }
+}
+
+function recordSuccess(state: CircuitBreakerState): void {
+  state.consecutiveFailures = 0;
+}
+
 // ── Supabase-backed distributed rate limiter ──
 
 function createSupabaseRateLimiter(options: RateLimiterOptions): RateLimiter {
   const { windowMs, max } = options;
+  const circuitBreaker = createCircuitBreaker(options);
 
   // SECURITY NOTE: Service role key intentionally used here.
   // rate_limit_entries is a global infrastructure table (not tenant-scoped)
@@ -96,6 +148,12 @@ function createSupabaseRateLimiter(options: RateLimiterOptions): RateLimiter {
 
   return {
     async check(key: string): Promise<boolean> {
+      // If circuit breaker is tripped, use the in-memory fallback
+      // instead of failing open.
+      if (isCircuitOpen(circuitBreaker)) {
+        return circuitBreaker.fallback!.check(key);
+      }
+
       const now = Date.now();
       const windowStart = now - windowMs;
 
@@ -119,6 +177,7 @@ function createSupabaseRateLimiter(options: RateLimiterOptions): RateLimiter {
 
         if (!rpcError && rpcResult != null) {
           // RPC succeeded — rpcResult is the new count
+          recordSuccess(circuitBreaker);
           return (rpcResult as number) <= max;
         }
 
@@ -136,11 +195,14 @@ function createSupabaseRateLimiter(options: RateLimiterOptions): RateLimiter {
           .maybeSingle();
 
         if (error) {
-          // Fail OPEN: allow the request through when the rate-limit
-          // infrastructure is unavailable (e.g. table missing, network
-          // error). Blocking all traffic because of an infra outage is
-          // worse than temporarily losing rate-limit protection.
-          logger.error("Rate limiter query failed — failing open", { context: "rate-limit", error });
+          // Record failure for circuit breaker. After N consecutive
+          // failures, the circuit trips and we use an in-memory fallback
+          // instead of failing completely open.
+          logger.error("Rate limiter query failed", { context: "rate-limit", error });
+          recordFailure(circuitBreaker, options);
+          if (circuitBreaker.fallback) {
+            return circuitBreaker.fallback.check(key);
+          }
           return true;
         }
 
@@ -154,9 +216,14 @@ function createSupabaseRateLimiter(options: RateLimiterOptions): RateLimiter {
             );
 
           if (upsertError) {
-            logger.error("Rate limiter upsert failed — failing open", { context: "rate-limit", error: upsertError });
+            logger.error("Rate limiter upsert failed", { context: "rate-limit", error: upsertError });
+            recordFailure(circuitBreaker, options);
+            if (circuitBreaker.fallback) {
+              return circuitBreaker.fallback.check(key);
+            }
             return true;
           }
+          recordSuccess(circuitBreaker);
           return true;
         }
 
@@ -173,9 +240,14 @@ function createSupabaseRateLimiter(options: RateLimiterOptions): RateLimiter {
           .maybeSingle();
 
         if (updateError) {
-          logger.error("Rate limiter update failed — failing open", { context: "rate-limit", error: updateError });
+          logger.error("Rate limiter update failed", { context: "rate-limit", error: updateError });
+          recordFailure(circuitBreaker, options);
+          if (circuitBreaker.fallback) {
+            return circuitBreaker.fallback.check(key);
+          }
           return true;
         }
+        recordSuccess(circuitBreaker);
 
         // If no row was updated, another request incremented concurrently.
         // Re-read the current count to get the accurate value.
@@ -190,11 +262,14 @@ function createSupabaseRateLimiter(options: RateLimiterOptions): RateLimiter {
 
         return newCount <= max;
       } catch (err) {
-        // Network/transient failure — fail OPEN to prevent blocking
-        // all legitimate traffic during infrastructure outages.
-        // The trade-off (briefly losing rate-limit protection) is
-        // preferable to returning 429 to every user.
-        logger.error("Rate limiter network failure — failing open", { context: "rate-limit", error: err });
+        // Network/transient failure — record for circuit breaker.
+        // After N consecutive failures, fall back to in-memory limiter
+        // instead of failing completely open.
+        logger.error("Rate limiter network failure", { context: "rate-limit", error: err });
+        recordFailure(circuitBreaker, options);
+        if (circuitBreaker.fallback) {
+          return circuitBreaker.fallback.check(key);
+        }
         return true;
       }
     },
@@ -270,6 +345,41 @@ export function createRateLimiter(options: RateLimiterOptions): RateLimiter {
  * within the same Worker isolate.
  */
 
+/** Login attempts: 5 req / 60s per key (applied per-email and per-IP) */
+export const loginLimiter = createRateLimiter({
+  windowMs: 60_000,
+  max: 5,
+});
+
+/**
+ * Account lockout: 10 failed attempts / 15 min per email.
+ * After exceeding this, the account is locked for the remainder of the window.
+ * This is stricter than loginLimiter and prevents sustained brute-force attacks
+ * even from distributed IPs.
+ */
+export const accountLockoutLimiter = createRateLimiter({
+  windowMs: 15 * 60_000,
+  max: 10,
+});
+
+/** OTP send rate limiter: 3 req / 60s per phone number (prevents SMS pumping) */
+export const otpSendLimiter = createRateLimiter({
+  windowMs: 60_000,
+  max: 3,
+});
+
+/** Password reset rate limiter: 3 req / 60s per IP (prevents email spam) */
+export const passwordResetLimiter = createRateLimiter({
+  windowMs: 60_000,
+  max: 3,
+});
+
+/** Branding GET: 20 req / 60s per IP (public endpoint, prevents clinic enumeration) */
+export const brandingLimiter = createRateLimiter({
+  windowMs: 60_000,
+  max: 20,
+});
+
 /** General API mutations: 30 req / 60s per IP */
 export const apiMutationLimiter = createRateLimiter({
   windowMs: 60_000,
@@ -315,6 +425,7 @@ export const rateLimitRules: RateLimitRule[] = [
   { prefix: "/api/onboarding", limiter: onboardingLimiter },
   { prefix: "/api/chat", limiter: chatLimiter },
   { prefix: "/api/webhooks", limiter: webhookLimiter },
+  { prefix: "/api/branding", limiter: brandingLimiter },
   { prefix: "/api/notifications", limiter: apiMutationLimiter },
   // Catch-all for other API mutations (applied in middleware only to POST/PUT/PATCH/DELETE)
   { prefix: "/api/", limiter: apiMutationLimiter },
