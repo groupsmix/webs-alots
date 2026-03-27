@@ -35,11 +35,20 @@ export const metadata: Metadata = {
     "SaaS santé Maroc",
     "dossier patient électronique",
     "plateforme médicale",
+    "إدارة العيادات الطبية",
+    "حجز موعد طبي",
   ],
   authors: [{ name: "Oltigo" }],
+  alternates: {
+    languages: {
+      "fr": "https://oltigo.com",
+      "ar": "https://oltigo.com?lang=ar",
+    },
+  },
   openGraph: {
     type: "website",
     locale: "fr_MA",
+    alternateLocale: ["ar_MA"],
     siteName: "Oltigo",
     title: "Oltigo — Gestion Médicale en Ligne",
     description:
