@@ -3,7 +3,8 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { getTenant } from "@/lib/tenant";
 import { TenantProvider } from "@/components/tenant-provider";
-import { Chatbot } from "@/components/chatbot";
+import { ThemeProvider } from "@/components/theme-provider";
+import { ServiceWorkerRegister } from "@/components/sw-register";
 import { safeJsonLdStringify } from "@/lib/json-ld";
 
 const geistSans = Geist({
@@ -85,10 +86,12 @@ export default async function RootLayout({
             }),
           }}
         />
-        <TenantProvider tenant={tenant}>
-          {children}
-          <Chatbot />
-        </TenantProvider>
+        <ThemeProvider>
+          <TenantProvider tenant={tenant}>
+            {children}
+          </TenantProvider>
+        </ThemeProvider>
+        <ServiceWorkerRegister />
       </body>
     </html>
   );

@@ -12,6 +12,7 @@ import { APPOINTMENT_STATUS } from "@/lib/types/database";
 import { getTenant, getClinicConfig } from "@/lib/tenant";
 import { clinicConfig } from "@/config/clinic.config";
 import { getLocalDateStr } from "@/lib/utils";
+import { unstable_cache } from "next/cache";
 
 // ── Types (match existing UI shapes) ──
 
@@ -145,32 +146,31 @@ async function getClinicId(): Promise<string | null> {
 
 // ── Clinic Branding ──
 
-export async function getPublicBranding(): Promise<ClinicBranding> {
-  const tenant = await getTenantInfo();
-  const ctx = await createPublicTenantClient();
+const DEFAULT_BRANDING: ClinicBranding = {
+  logoUrl: null,
+  faviconUrl: null,
+  primaryColor: "#1E4DA1",
+  secondaryColor: "#0F6E56",
+  headingFont: "Geist",
+  bodyFont: "Geist",
+  heroImageUrl: null,
+  clinicName: "Oltigo",
+  tagline: null,
+  coverPhotoUrl: null,
+  templateId: "modern",
+  sectionVisibility: {},
+  phone: null,
+  address: null,
+  email: null,
+};
 
-  // No tenant resolved (root domain) — return static defaults
-  if (!ctx) {
-    return {
-      logoUrl: null,
-      faviconUrl: null,
-      primaryColor: "#1E4DA1",
-      secondaryColor: "#0F6E56",
-      headingFont: "Geist",
-      bodyFont: "Geist",
-      heroImageUrl: null,
-      clinicName: clinicConfig.name || "Oltigo",
-      tagline: null,
-      coverPhotoUrl: null,
-      templateId: "modern",
-      sectionVisibility: {},
-      phone: clinicConfig.contact.phone ?? null,
-      address: clinicConfig.contact.address ?? null,
-      email: clinicConfig.contact.email ?? null,
-    };
-  }
-
-  const { supabase, clinicId } = ctx;
+/**
+ * Fetch branding from DB for a specific clinic.
+ * Wrapped with unstable_cache for a 5-minute TTL to avoid
+ * hitting the DB on every page load (branding rarely changes).
+ */
+async function fetchBrandingFromDb(clinicId: string, fallbackName: string): Promise<ClinicBranding> {
+  const supabase = await createTenantClient(clinicId);
 
   const { data, error } = await supabase
     .from("clinics")
@@ -179,23 +179,7 @@ export async function getPublicBranding(): Promise<ClinicBranding> {
     .single();
 
   if (error || !data) {
-    return {
-      logoUrl: null,
-      faviconUrl: null,
-      primaryColor: "#1E4DA1",
-      secondaryColor: "#0F6E56",
-      headingFont: "Geist",
-      bodyFont: "Geist",
-      heroImageUrl: null,
-      clinicName: tenant?.clinicName || clinicConfig.name || "Oltigo",
-      tagline: null,
-      coverPhotoUrl: null,
-      templateId: "modern",
-      sectionVisibility: {},
-      phone: null,
-      address: null,
-      email: null,
-    };
+    return { ...DEFAULT_BRANDING, clinicName: fallbackName };
   }
 
   // Fallback to config JSONB for phone/address/email when direct columns are null
@@ -209,7 +193,7 @@ export async function getPublicBranding(): Promise<ClinicBranding> {
     headingFont: data.heading_font ?? "Geist",
     bodyFont: data.body_font ?? "Geist",
     heroImageUrl: data.hero_image_url ?? null,
-    clinicName: data.name ?? (tenant?.clinicName || clinicConfig.name),
+    clinicName: data.name ?? fallbackName,
     tagline: (data.tagline as string | null) ?? null,
     coverPhotoUrl: (data.cover_photo_url as string | null) ?? null,
     templateId: (data.template_id as string | null) ?? "modern",
@@ -218,6 +202,31 @@ export async function getPublicBranding(): Promise<ClinicBranding> {
     address: (data.address as string | null) ?? (cfg.address as string | null) ?? null,
     email: (data.owner_email as string | null) ?? (cfg.email as string | null) ?? null,
   };
+}
+
+const getCachedBranding = unstable_cache(
+  fetchBrandingFromDb,
+  ["clinic-branding"],
+  { revalidate: 300 }, // 5-minute TTL
+);
+
+export async function getPublicBranding(): Promise<ClinicBranding> {
+  const tenant = await getTenantInfo();
+  const clinicId = await getClinicId();
+
+  // No tenant resolved (root domain) — return static defaults
+  if (!clinicId) {
+    return {
+      ...DEFAULT_BRANDING,
+      clinicName: clinicConfig.name || "Oltigo",
+      phone: clinicConfig.contact.phone ?? null,
+      address: clinicConfig.contact.address ?? null,
+      email: clinicConfig.contact.email ?? null,
+    };
+  }
+
+  const fallbackName = tenant?.clinicName || clinicConfig.name || "Oltigo";
+  return getCachedBranding(clinicId, fallbackName);
 }
 
 // ── Reviews ──
