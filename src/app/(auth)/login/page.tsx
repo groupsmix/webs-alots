@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useCallback } from "react";
+import { useState } from "react";
 import { Phone, ShieldCheck, ArrowLeft, Heart, Mail, Lock } from "lucide-react";
 import {
   Card,
@@ -15,9 +15,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { signInWithOTP, verifyOTP, signInWithPassword } from "@/lib/auth";
-import { Turnstile } from "@/components/turnstile";
-
-const TURNSTILE_SITE_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ?? "";
 const PHONE_AUTH_ENABLED = process.env.NEXT_PUBLIC_PHONE_AUTH_ENABLED === "true";
 
 export default function LoginPage() {
@@ -29,29 +26,14 @@ export default function LoginPage() {
   const [otp, setOtp] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
-
-  const handleCaptchaVerify = useCallback((token: string) => {
-    setCaptchaToken(token);
-  }, []);
-
-  const handleCaptchaExpire = useCallback(() => {
-    setCaptchaToken(null);
-  }, []);
-
   async function handleEmailLogin(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
 
-    if (TURNSTILE_SITE_KEY && !captchaToken) {
-      setError("Veuillez compl\u00e9ter la v\u00e9rification de s\u00e9curit\u00e9.");
-      return;
-    }
-
     setLoading(true);
 
     try {
-      const result = await signInWithPassword(email, password, captchaToken ?? undefined);
+      const result = await signInWithPassword(email, password);
       if (result.error) {
         setError(result.error);
         setLoading(false);
@@ -66,15 +48,10 @@ export default function LoginPage() {
     if (e) e.preventDefault();
     setError(null);
 
-    if (TURNSTILE_SITE_KEY && !captchaToken) {
-      setError("Veuillez compl\u00e9ter la v\u00e9rification de s\u00e9curit\u00e9.");
-      return;
-    }
-
     setLoading(true);
 
     try {
-      const result = await signInWithOTP(phone, captchaToken ?? undefined);
+      const result = await signInWithOTP(phone);
 
       if (result.error) {
         setError(result.error);
@@ -96,7 +73,7 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      const result = await verifyOTP(phone, otp, captchaToken ?? undefined);
+      const result = await verifyOTP(phone, otp);
       if (result.error) {
         setError(result.error);
         setLoading(false);
@@ -218,13 +195,6 @@ export default function LoginPage() {
                   className="text-base"
                 />
               </div>
-              {TURNSTILE_SITE_KEY && (
-                <Turnstile
-                  siteKey={TURNSTILE_SITE_KEY}
-                  onVerify={handleCaptchaVerify}
-                  onExpire={handleCaptchaExpire}
-                />
-              )}
               <Button type="submit" className="w-full" disabled={loading}>
                 {loading ? "Connexion..." : "Se connecter"}
               </Button>
@@ -270,13 +240,6 @@ export default function LoginPage() {
                   Nous vous enverrons un code de vérification unique par SMS.
                 </p>
               </div>
-              {TURNSTILE_SITE_KEY && (
-                <Turnstile
-                  siteKey={TURNSTILE_SITE_KEY}
-                  onVerify={handleCaptchaVerify}
-                  onExpire={handleCaptchaExpire}
-                />
-              )}
               <Button type="submit" className="w-full" disabled={loading}>
                 {loading ? "Envoi du code..." : "Envoyer le code de vérification"}
               </Button>

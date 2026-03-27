@@ -52,14 +52,12 @@ const ROLE_DASHBOARD_MAP: Record<UserProfile["role"], string> = {
 export async function signInWithPassword(
   email: string,
   password: string,
-  captchaToken?: string
 ): Promise<{ error: string | null }> {
   const supabase = await createClient();
 
   const { error } = await supabase.auth.signInWithPassword({
     email,
     password,
-    options: captchaToken ? { captchaToken } : undefined,
   });
 
   if (error) {
@@ -83,7 +81,7 @@ export async function signInWithPassword(
  * Gated by `NEXT_PUBLIC_PHONE_AUTH_ENABLED`. When the flag is not
  * `"true"`, this action rejects immediately without calling Supabase.
  */
-export async function signInWithOTP(phone: string, captchaToken?: string): Promise<{ error: string | null }> {
+export async function signInWithOTP(phone: string): Promise<{ error: string | null }> {
   if (!isPhoneAuthEnabled()) {
     return { error: "Phone authentication is not currently available." };
   }
@@ -92,7 +90,6 @@ export async function signInWithOTP(phone: string, captchaToken?: string): Promi
 
   const { error } = await supabase.auth.signInWithOtp({
     phone,
-    options: captchaToken ? { captchaToken } : undefined,
   });
 
   if (error) {
@@ -111,7 +108,6 @@ export async function signInWithOTP(phone: string, captchaToken?: string): Promi
 export async function verifyOTP(
   phone: string,
   token: string,
-  captchaToken?: string
 ): Promise<{ error: string | null }> {
   if (!isPhoneAuthEnabled()) {
     return { error: "Phone authentication is not currently available." };
@@ -123,7 +119,6 @@ export async function verifyOTP(
     phone,
     token,
     type: "sms",
-    options: captchaToken ? { captchaToken } : undefined,
   });
 
   if (error) {
@@ -154,7 +149,6 @@ export async function registerPatient(data: {
   age?: number;
   gender?: string;
   insurance?: string;
-  captchaToken?: string;
 }): Promise<{ error: string | null }> {
   if (!isPhoneAuthEnabled()) {
     return { error: "Phone registration is not currently available." };
@@ -165,7 +159,6 @@ export async function registerPatient(data: {
   const { error } = await supabase.auth.signInWithOtp({
     phone: data.phone,
     options: {
-      captchaToken: data.captchaToken,
       data: {
         name: data.name,
         phone: data.phone,
