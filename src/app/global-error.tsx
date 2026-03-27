@@ -40,10 +40,10 @@ export default function GlobalError({
             </svg>
           </div>
           <h1 className="text-xl font-semibold mb-2">
-            Something went wrong
+            Une erreur est survenue
           </h1>
           <p className="text-sm text-gray-500 mb-6">
-            A critical error occurred. Please try refreshing the page.
+            Une erreur critique s&apos;est produite. Veuillez rafraîchir la page.
           </p>
           {error.digest && (
             <p className="text-xs text-gray-400 mb-4">
@@ -68,7 +68,7 @@ export default function GlobalError({
                 d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
               />
             </svg>
-            Try Again
+            Réessayer
           </button>
         </div>
       </body>
