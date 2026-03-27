@@ -33,6 +33,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { SignOutButton } from "@/components/sign-out-button";
+import { LocaleSwitcher } from "@/components/locale-switcher";
+import { ImpersonationBanner } from "@/components/impersonation-banner";
 import { createClient } from "@/lib/supabase-client";
 
 const navItems = [
@@ -151,7 +153,11 @@ export default function SuperAdminLayout({
   const unreadCount = notifications.filter((n) => n.unread).length;
 
   return (
-    <div className="flex min-h-screen">
+    <div className="flex flex-col min-h-screen">
+      {/* Impersonation Banner */}
+      <ImpersonationBanner />
+
+      <div className="flex flex-1">
       {/* Desktop Sidebar */}
       <aside className="hidden w-64 border-r bg-card p-4 md:flex md:flex-col">
         <div className="flex items-center gap-2 mb-6">
@@ -185,6 +191,9 @@ export default function SuperAdminLayout({
           </Button>
 
           <div className="flex-1" />
+
+          {/* Language Switcher */}
+          <LocaleSwitcher />
 
           {/* Notifications */}
           <DropdownMenu>
@@ -263,6 +272,7 @@ export default function SuperAdminLayout({
           </div>
         </SheetContent>
       </Sheet>
+      </div>
     </div>
   );
 }

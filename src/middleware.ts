@@ -1,108 +1,33 @@
+/**
+ * Next.js Middleware
+ *
+ * Refactored from a monolithic 557-line file into composable modules:
+ *   - @/lib/middleware/security-headers — CSP, HSTS, nonce generation
+ *   - @/lib/middleware/csrf             — Origin-based CSRF validation
+ *   - @/lib/middleware/rate-limiting    — Per-IP rate limiting for API routes
+ *   - @/lib/middleware/routes           — Route classification helpers
+ *
+ * This file orchestrates the modules and handles Supabase auth + subdomain resolution.
+ */
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { extractSubdomain } from "@/lib/subdomain";
 import { TENANT_HEADERS } from "@/lib/tenant";
-import { rateLimitRules, extractClientIp } from "@/lib/rate-limit";
-
-// Role to allowed route prefix mapping
-const ROLE_ROUTE_MAP: Record<string, string> = {
-  super_admin: "/super-admin",
-  clinic_admin: "/admin",
-  receptionist: "/receptionist",
-  doctor: "/doctor",
-  patient: "/patient",
-};
-
-// Role to dashboard path mapping
-const ROLE_DASHBOARD_MAP: Record<string, string> = {
-  super_admin: "/super-admin/dashboard",
-  clinic_admin: "/admin/dashboard",
-  receptionist: "/receptionist/dashboard",
-  doctor: "/doctor/dashboard",
-  patient: "/patient/dashboard",
-};
-
-// HTTP methods that mutate state and need CSRF protection
-const MUTATION_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
-
-// API routes that receive legitimate external requests (webhooks, callbacks)
-// and must be exempt from Origin checks.
-const CSRF_EXEMPT_PREFIXES = [
-  "/api/webhooks",
-  "/api/payments/webhook",
-  "/api/payments/cmi/callback",
-  "/api/cron/reminders",
-  "/api/cron/billing",
-];
-
-// Lightweight API routes that should skip rate limiting AND the heavy
-// Supabase auth/subdomain path in the middleware.  These are hit by
-// load-balancers, monitoring tools, and uptime probes — they must
-// never be rate-limited or fail because of cookie/auth issues.
-const LIGHTWEIGHT_API_PATHS = new Set([
-  "/api/health",
-]);
-
-function isCsrfExempt(pathname: string): boolean {
-  return CSRF_EXEMPT_PREFIXES.some((prefix) => pathname.startsWith(prefix));
-}
-
-// Routes that don't require authentication
-const PUBLIC_ROUTES = [
-  "/",
-  "/about",
-  "/services",
-  "/contact",
-  "/blog",
-  "/book",
-  "/reviews",
-  "/login",
-  "/register",
-  "/auth/callback",
-  "/how-to-book",
-  "/location",
-  "/testimonials",
-  "/doctor-profile",
-  "/doctor-services",
-];
-
-// Public route prefixes (no auth required)
-const PUBLIC_PREFIXES = [
-  "/pharmacy",
-  "/dentist",
-  "/lab",
-];
-
-// Protected route prefixes (require authentication)
-const PROTECTED_PREFIXES = [
-  "/patient",
-  "/doctor",
-  "/receptionist",
-  "/admin",
-  "/super-admin",
-  "/pharmacist",
-  "/nutritionist",
-  "/optician",
-  "/parapharmacy",
-  "/physiotherapist",
-  "/psychologist",
-  "/radiology",
-  "/speech-therapist",
-  "/equipment",
-  "/lab-panel",
-];
-
-function isPublicRoute(pathname: string): boolean {
-  return (
-    PUBLIC_ROUTES.includes(pathname) ||
-    pathname.startsWith("/api/") ||
-    PUBLIC_PREFIXES.some((prefix) => pathname.startsWith(prefix))
-  );
-}
-
-function isProtectedRoute(pathname: string): boolean {
-  return PROTECTED_PREFIXES.some((prefix) => pathname.startsWith(prefix));
-}
+import {
+  buildCsp,
+  withSecurityHeaders,
+  secureRedirect,
+  applyAllSecurityHeaders,
+} from "@/lib/middleware/security-headers";
+import { validateCsrf } from "@/lib/middleware/csrf";
+import { applyRateLimit } from "@/lib/middleware/rate-limiting";
+import {
+  isPublicRoute,
+  isProtectedRoute,
+  LIGHTWEIGHT_API_PATHS,
+  ROLE_ROUTE_MAP,
+  ROLE_DASHBOARD_MAP,
+} from "@/lib/middleware/routes";
 
 // ── Subdomain → clinic resolution cache ──────────────────────────
 // Avoids a DB query on every request for the same subdomain.
@@ -137,71 +62,6 @@ function setTenantHeaders(
  *  rejected before any route handler runs, preventing memory exhaustion. */
 const MAX_BODY_BYTES = 25 * 1024 * 1024;
 
-/**
- * Apply defense-in-depth security headers to early-return error responses
- * (CSRF rejection, rate limiting, payload-too-large) that bypass the normal
- * response flow where headers are set on the forwarded `supabaseResponse`.
- */
-function withSecurityHeaders(
-  response: NextResponse,
-  cspHeaderValue: string,
-): NextResponse {
-  response.headers.set("Content-Security-Policy", cspHeaderValue);
-  response.headers.set("Strict-Transport-Security", "max-age=31536000; includeSubDomains; preload");
-  response.headers.set("X-Content-Type-Options", "nosniff");
-  response.headers.set("X-Frame-Options", "DENY");
-  return response;
-}
-
-/**
- * Apply security headers to redirect responses.  Redirects have no body
- * so CSP is omitted, but HSTS and X-Content-Type-Options still apply.
- */
-function secureRedirect(url: string | URL, init?: number | ResponseInit): NextResponse {
-  const response = NextResponse.redirect(url, init);
-  response.headers.set("Strict-Transport-Security", "max-age=31536000; includeSubDomains; preload");
-  response.headers.set("X-Content-Type-Options", "nosniff");
-  response.headers.set("X-Frame-Options", "DENY");
-  return response;
-}
-
-/**
- * Build the Content-Security-Policy header value with a per-request nonce
- * for script-src (replaces 'unsafe-inline').
- *
- * ACCEPTED RISK: style-src retains 'unsafe-inline' because Tailwind CSS
- * and shadcn/ui inject inline styles that cannot be nonce-gated without
- * significant architectural changes (CSS-in-JS or build-time extraction).
- *
- * ACCEPTED RISK: img-src allows 'data:' and 'blob:' for avatar placeholders,
- * dynamic chart rendering (recharts), and QR code generation. User-uploaded
- * images are served from R2/Supabase with Content-Disposition: attachment.
- */
-function buildCsp(nonce: string): string {
-  const isDev = process.env.NODE_ENV === "development";
-  return [
-    "default-src 'self'",
-    `script-src 'self' 'nonce-${nonce}' https://static.cloudflareinsights.com${isDev ? " 'unsafe-eval'" : ""}`,
-    // Styles: self + inline (Tailwind, shadcn) — see ACCEPTED RISK above
-    "style-src 'self' 'unsafe-inline'",
-    // Images: self + R2 storage + Supabase storage + data URIs + blobs
-    "img-src 'self' data: blob: *.supabase.co *.r2.cloudflarestorage.com *.r2.dev",
-    // Fonts: self + common CDNs
-    "font-src 'self' data:",
-    // API connections: self + Supabase + WhatsApp + Cloudflare + Google
-    "connect-src 'self' *.supabase.co wss://*.supabase.co graph.facebook.com api.twilio.com api.cloudflare.com *.googleapis.com https://cloudflareinsights.com https://static.cloudflareinsights.com",
-    // Frames: Google Maps embeds
-    "frame-src 'self' www.google.com",
-    // Form actions: self only
-    "form-action 'self'",
-    // Base URI: self only
-    "base-uri 'self'",
-    // MEDIUM 3.3: Prevent clickjacking via CSP frame-ancestors
-    "frame-ancestors 'none'",
-    // Upgrade HTTP to HTTPS automatically
-    ...(isDev ? [] : ["upgrade-insecure-requests"]),
-  ].join("; ");
-}
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -250,109 +110,22 @@ export async function middleware(request: NextRequest) {
   // --- Subdomain resolution ---
   const subdomain = extractSubdomain(hostname, rootDomain);
 
-  // --- CSRF protection for mutation requests to API routes ---
-  // Verify that the Origin header matches our known host to prevent
-  // cross-site request forgery on cookie-authenticated endpoints.
-  if (
-    pathname.startsWith("/api/") &&
-    MUTATION_METHODS.has(request.method) &&
-    !isCsrfExempt(pathname)
-  ) {
-    const origin = request.headers.get("origin");
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL;
-
-    // Build set of allowed origins from configured values only.
-    // IMPORTANT: Do NOT trust the Host header — it is attacker-controlled
-    // and would allow an attacker to set Host to match their Origin,
-    // bypassing the CSRF check entirely.
-    const allowedOrigins = new Set<string>();
-    // Allow configured site URL (production domain)
-    if (siteUrl) {
-      allowedOrigins.add(siteUrl.replace(/\/$/, ""));
-    }
-    // Allow root domain if configured
-    if (rootDomain) {
-      const protocol = request.nextUrl.protocol;
-      allowedOrigins.add(`${protocol}//${rootDomain}`);
-    }
-    // Allow valid subdomain origins (e.g. clinic1.example.com)
-    if (origin && rootDomain) {
-      try {
-        const originHost = new URL(origin).hostname;
-        const rootHost = rootDomain.split(":")[0];
-        if (
-          originHost.endsWith(`.${rootHost}`) &&
-          !originHost.slice(0, -(rootHost.length + 1)).includes(".")
-        ) {
-          allowedOrigins.add(origin);
-        }
-      } catch {
-        /* malformed origin — will be rejected below */
-      }
-    }
-    // Allow localhost origins in development
-    if (process.env.NODE_ENV !== "production") {
-      allowedOrigins.add(`${request.nextUrl.protocol}//${hostname}`);
-    }
-
-    if (!origin) {
-      return withSecurityHeaders(
-        NextResponse.json(
-          { error: "CSRF validation failed: missing origin header" },
-          { status: 403 },
-        ),
-        cspHeaderValue,
-      );
-    }
-
-    if (!allowedOrigins.has(origin)) {
-      return withSecurityHeaders(
-        NextResponse.json(
-          { error: "CSRF validation failed: origin not allowed" },
-          { status: 403 },
-        ),
-        cspHeaderValue,
-      );
-    }
-  }
+  // --- CSRF protection (delegated to composable module) ---
+  const csrfResult = validateCsrf(request, hostname, cspHeaderValue, withSecurityHeaders);
+  if (csrfResult) return csrfResult;
 
   // --- Fast path for lightweight API routes (health checks, etc.) ---
-  // These endpoints must respond quickly and reliably for load-balancers
-  // and monitoring probes.  They skip rate limiting, Supabase auth, and
-  // subdomain resolution — none of which are needed for their function.
   if (LIGHTWEIGHT_API_PATHS.has(pathname)) {
     const lightResponse = NextResponse.next({
       request: { headers: requestHeaders },
     });
-    lightResponse.headers.set("Content-Security-Policy", cspHeaderValue);
-    lightResponse.headers.set("x-nonce", nonce);
-    lightResponse.headers.set("Strict-Transport-Security", "max-age=31536000; includeSubDomains; preload");
-    lightResponse.headers.set("X-Content-Type-Options", "nosniff");
-    lightResponse.headers.set("X-Frame-Options", "DENY");
+    applyAllSecurityHeaders(lightResponse, cspHeaderValue, nonce);
     return lightResponse;
   }
 
-  // --- Rate limiting for API requests ---
-  // S1: Apply rate limiting to ALL HTTP methods (not just mutations).
-  // GET endpoints like /api/v1/*, /api/chat can be abused for data
-  // scraping or resource exhaustion.
-  if (pathname.startsWith("/api/")) {
-    const rateLimitKey = extractClientIp(request);
-
-    const rule = rateLimitRules.find((r) => pathname.startsWith(r.prefix));
-    if (rule) {
-      const allowed = await rule.limiter.check(rateLimitKey);
-      if (!allowed) {
-        return withSecurityHeaders(
-          NextResponse.json(
-            { error: "Too many requests. Please try again later." },
-            { status: 429 },
-          ),
-          cspHeaderValue,
-        );
-      }
-    }
-  }
+  // --- Rate limiting (delegated to composable module) ---
+  const rateLimitResult = await applyRateLimit(request, cspHeaderValue, withSecurityHeaders);
+  if (rateLimitResult) return rateLimitResult;
 
   // If Supabase is not configured, allow all requests through
   // so the site renders with demo data instead of crashing
@@ -370,22 +143,14 @@ export async function middleware(request: NextRequest) {
     const noSupabaseResponse = NextResponse.next({
       request: { headers: requestHeaders },
     });
-    noSupabaseResponse.headers.set("Content-Security-Policy", cspHeaderValue);
-    noSupabaseResponse.headers.set("x-nonce", nonce);
-    noSupabaseResponse.headers.set("Strict-Transport-Security", "max-age=31536000; includeSubDomains; preload");
-    noSupabaseResponse.headers.set("X-Content-Type-Options", "nosniff");
-    noSupabaseResponse.headers.set("X-Frame-Options", "DENY");
+    applyAllSecurityHeaders(noSupabaseResponse, cspHeaderValue, nonce);
     return noSupabaseResponse;
   }
 
   let supabaseResponse = NextResponse.next({
     request: { headers: requestHeaders },
   });
-  supabaseResponse.headers.set("Content-Security-Policy", cspHeaderValue);
-  supabaseResponse.headers.set("x-nonce", nonce);
-  supabaseResponse.headers.set("Strict-Transport-Security", "max-age=31536000; includeSubDomains; preload");
-  supabaseResponse.headers.set("X-Content-Type-Options", "nosniff");
-  supabaseResponse.headers.set("X-Frame-Options", "DENY");
+  applyAllSecurityHeaders(supabaseResponse, cspHeaderValue, nonce);
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -402,11 +167,7 @@ export async function middleware(request: NextRequest) {
           supabaseResponse = NextResponse.next({
             request: { headers: requestHeaders },
           });
-          supabaseResponse.headers.set("Content-Security-Policy", cspHeaderValue);
-          supabaseResponse.headers.set("x-nonce", nonce);
-          supabaseResponse.headers.set("Strict-Transport-Security", "max-age=31536000; includeSubDomains; preload");
-          supabaseResponse.headers.set("X-Content-Type-Options", "nosniff");
-          supabaseResponse.headers.set("X-Frame-Options", "DENY");
+          applyAllSecurityHeaders(supabaseResponse, cspHeaderValue, nonce);
           // Re-apply tenant headers so they survive token-refresh responses
           if (resolvedClinic) {
             setTenantHeaders(supabaseResponse, resolvedClinic);

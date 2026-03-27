@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import {
   LogIn, Search, Ban, CheckCircle, Eye, Filter,
   Building2, Mail, Phone, MapPin, Calendar, Users, TrendingUp,
-  Loader2, UserPlus,
+  Loader2, UserPlus, ChevronLeft, ChevronRight, Download,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -17,6 +17,8 @@ import {
 } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
 import { fetchClinics, updateClinicStatus, fetchClinicUsers } from "@/lib/super-admin-actions";
+import { exportToCSV } from "@/lib/export-data";
+import { LoadingWithTimeout } from "@/components/loading-with-timeout";
 import { logger } from "@/lib/logger";
 
 interface ClinicDetail {
@@ -55,6 +57,9 @@ export default function AllClinicsPage() {
   const [list, setList] = useState<ClinicDetail[]>([]);
   const [loadingData, setLoadingData] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const [confirmName, setConfirmName] = useState("");
 
   const loadClinics = useCallback(async () => {
     try {
@@ -112,6 +117,34 @@ export default function AllClinicsPage() {
     return matchSearch && (typeFilter === "all" || c.type === typeFilter) && (statusFilter === "all" || c.status === statusFilter);
   });
 
+  // Pagination
+  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+  const paginatedList = filtered.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+
+  // Reset to page 1 when filters change
+  useEffect(() => { setCurrentPage(1); }, [search, typeFilter, statusFilter]);
+
+  // Export clinics to CSV
+  function handleExportCSV() {
+    exportToCSV(
+      filtered,
+      [
+        { key: "name", label: "Clinic Name" },
+        { key: "type", label: "Type" },
+        { key: "ownerName", label: "Owner" },
+        { key: "ownerEmail", label: "Email" },
+        { key: "ownerPhone", label: "Phone" },
+        { key: "city", label: "City" },
+        { key: "plan", label: "Plan" },
+        { key: "status", label: "Status" },
+        { key: "patientsCount", label: "Patients" },
+        { key: "doctorsCount", label: "Doctors" },
+        { key: "createdAt", label: "Created" },
+      ],
+      `clinics-export-${new Date().toISOString().split("T")[0]}.csv`,
+    );
+  }
+
   async function toggleStatus(clinic: ClinicDetail) {
     setActionLoading(true);
     try {
@@ -139,12 +172,18 @@ export default function AllClinicsPage() {
             Manage all {list.length} registered clinics
           </p>
         </div>
-        <Link href="/super-admin/onboarding">
-          <Button>
-            <UserPlus className="h-4 w-4 mr-1" />
-            New Client Setup
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={handleExportCSV} disabled={filtered.length === 0}>
+            <Download className="h-4 w-4 mr-1" />
+            Export CSV
           </Button>
-        </Link>
+          <Link href="/super-admin/onboarding">
+            <Button>
+              <UserPlus className="h-4 w-4 mr-1" />
+              New Client Setup
+            </Button>
+          </Link>
+        </div>
       </div>
 
       <div className="flex flex-col sm:flex-row gap-3 mb-6">
@@ -172,12 +211,7 @@ export default function AllClinicsPage() {
       </div>
 
       {loadingData ? (
-        <Card>
-          <CardContent className="p-8 text-center">
-            <Loader2 className="h-6 w-6 animate-spin mx-auto mb-2 text-muted-foreground" />
-            <p className="text-sm text-muted-foreground">Loading clinics...</p>
-          </CardContent>
-        </Card>
+        <LoadingWithTimeout message="Loading clinics..." onRetry={() => { setLoadingData(true); loadClinics(); }} />
       ) : (
       <Card>
         <CardContent className="p-0">
@@ -197,7 +231,7 @@ export default function AllClinicsPage() {
                 </tr>
               </thead>
               <tbody>
-                {filtered.map((clinic) => (
+                {paginatedList.map((clinic) => (
                   <tr key={clinic.id} className="border-b last:border-0 hover:bg-muted/50">
                     <td className="py-3 px-4">
                       <p className="font-medium">{clinic.name}</p>
@@ -234,6 +268,34 @@ export default function AllClinicsPage() {
           </div>
         </CardContent>
       </Card>
+      )}
+
+      {/* Pagination Controls */}
+      {filtered.length > pageSize && (
+        <div className="flex items-center justify-between mt-4">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <span>Show</span>
+            <select
+              value={pageSize}
+              onChange={(e) => { setPageSize(Number(e.target.value)); setCurrentPage(1); }}
+              className="border rounded px-2 py-1 text-sm bg-background"
+            >
+              {[10, 25, 50, 100].map((s) => (
+                <option key={s} value={s}>{s}</option>
+              ))}
+            </select>
+            <span>per page &middot; {filtered.length} total</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <Button variant="outline" size="sm" disabled={currentPage <= 1} onClick={() => setCurrentPage((p) => p - 1)}>
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <span className="px-3 text-sm">Page {currentPage} of {totalPages}</span>
+            <Button variant="outline" size="sm" disabled={currentPage >= totalPages} onClick={() => setCurrentPage((p) => p + 1)}>
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
       )}
 
       {/* Detail Dialog */}
@@ -348,9 +410,23 @@ export default function AllClinicsPage() {
               <p className="text-sm font-medium">{suspendClinic.name}</p>
               <p className="text-xs text-muted-foreground">{suspendClinic.patientsCount} patients &middot; {suspendClinic.monthlyRevenue.toLocaleString()} MAD/mo</p>
             </div>
+            {suspendClinic.status !== "suspended" && (
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Type the clinic name to confirm:</label>
+                <Input
+                  placeholder={suspendClinic.name}
+                  value={confirmName}
+                  onChange={(e) => setConfirmName(e.target.value)}
+                />
+              </div>
+            )}
             <DialogFooter>
-              <Button variant="outline" onClick={() => setSuspendOpen(false)}>Cancel</Button>
-              <Button variant={suspendClinic.status === "suspended" ? "default" : "destructive"} onClick={() => toggleStatus(suspendClinic)} disabled={actionLoading}>
+              <Button variant="outline" onClick={() => { setSuspendOpen(false); setConfirmName(""); }}>Cancel</Button>
+              <Button
+                variant={suspendClinic.status === "suspended" ? "default" : "destructive"}
+                onClick={() => { toggleStatus(suspendClinic); setConfirmName(""); }}
+                disabled={actionLoading || (suspendClinic.status !== "suspended" && confirmName !== suspendClinic.name)}
+              >
                 {actionLoading && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}
                 {suspendClinic.status === "suspended" ? <><CheckCircle className="h-4 w-4 mr-1" />Activate</> : <><Ban className="h-4 w-4 mr-1" />Suspend</>}
               </Button>
