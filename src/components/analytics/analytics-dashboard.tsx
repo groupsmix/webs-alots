@@ -18,6 +18,7 @@ import {
   getCurrentUser,
   fetchAnalytics,
   type AnalyticsData,
+  type AnalyticsPeriod,
 } from "@/lib/data/client";
 import { exportToCSV } from "@/lib/export-data";
 import { PageLoader } from "@/components/ui/page-loader";
@@ -27,8 +28,31 @@ const COLORS = [
   "#16a34a", "#0891b2", "#ca8a04", "#dc2626", "#4f46e5",
 ];
 
+const PERIOD_LABELS: Record<AnalyticsPeriod, string> = {
+  week: "This Week",
+  month: "This Month",
+  quarter: "This Quarter",
+  year: "This Year",
+};
+
+function ChangeIndicator({ value, inverted = false }: { value: number; inverted?: boolean }) {
+  const isPositive = inverted ? value < 0 : value > 0;
+  const isNegative = inverted ? value > 0 : value < 0;
+  return (
+    <Badge
+      variant="outline"
+      className={`text-xs ${
+        isPositive ? "text-green-600 border-green-200" : isNegative ? "text-red-600 border-red-200" : ""
+      }`}
+    >
+      {value > 0 ? "+" : ""}{value}%
+    </Badge>
+  );
+}
+
 export function AnalyticsDashboard({ role = "admin" }: { role?: "admin" | "doctor" }) {
   const [revenuePeriod, setRevenuePeriod] = useState<"daily" | "weekly" | "monthly">("daily");
+  const [timePeriod, setTimePeriod] = useState<AnalyticsPeriod>("month");
   const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
@@ -36,10 +60,11 @@ export function AnalyticsDashboard({ role = "admin" }: { role?: "admin" | "docto
   useEffect(() => {
     const controller = new AbortController();
     async function load() {
+    setLoading(true);
     const user = await getCurrentUser();
       if (controller.signal.aborted) return;
     if (!user?.clinic_id) { setLoading(false); return; }
-    const data = await fetchAnalytics(user.clinic_id);
+    const data = await fetchAnalytics(user.clinic_id, timePeriod);
       if (controller.signal.aborted) return;
     setAnalytics(data);
     setLoading(false);
@@ -51,7 +76,7 @@ export function AnalyticsDashboard({ role = "admin" }: { role?: "admin" | "docto
       }
     });
     return () => { controller.abort(); };
-  }, []);
+  }, [timePeriod]);
 
   if (loading) {
     return <PageLoader message="Loading analytics..." />;
@@ -82,8 +107,9 @@ export function AnalyticsDashboard({ role = "admin" }: { role?: "admin" | "docto
     hourlyHeatmap,
     reviewTrends,
     patientRetention,
-    totalPatients,
+    totalPatients: _totalPatients,
     totalAppointments,
+    periodComparison,
   } = analytics;
 
   const noShowAppts = dailyAnalytics.reduce((sum, d) => sum + d.noShows, 0);
@@ -98,7 +124,7 @@ export function AnalyticsDashboard({ role = "admin" }: { role?: "admin" | "docto
     { name: "Walk-in", value: walkInBookings, percentage: Math.round((walkInBookings / totalBookings) * 100) },
   ];
 
-  const latestRetention = patientRetention[patientRetention.length - 1];
+  const _latestRetention = patientRetention[patientRetention.length - 1];
 
   const revenueData =
     revenuePeriod === "daily"
@@ -107,16 +133,30 @@ export function AnalyticsDashboard({ role = "admin" }: { role?: "admin" | "docto
       ? weeklyRevenue.map((w) => ({ name: w.week, revenue: w.revenue, patients: w.patients }))
       : monthlyRevenue.map((m) => ({ name: m.month, revenue: m.revenue, patients: m.patients }));
 
-  const totalDailyRevenue = dailyAnalytics.reduce((sum, d) => sum + d.revenue, 0);
-  const totalDailyPatients = dailyAnalytics.reduce((sum, d) => sum + d.patientCount, 0);
+  const _totalDailyRevenue = dailyAnalytics.reduce((sum, d) => sum + d.revenue, 0);
+  const _totalDailyPatients = dailyAnalytics.reduce((sum, d) => sum + d.patientCount, 0);
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-3">
         <h1 className="text-2xl font-bold">
           {role === "admin" ? "Analytics & Reports" : "My Analytics"}
         </h1>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
+          {/* Time period selector */}
+          <div className="flex gap-1 border rounded-lg p-0.5">
+            {(["week", "month", "quarter", "year"] as const).map((p) => (
+              <Button
+                key={p}
+                variant={timePeriod === p ? "default" : "ghost"}
+                size="sm"
+                onClick={() => setTimePeriod(p)}
+                className="text-xs h-7 px-2.5"
+              >
+                {PERIOD_LABELS[p]}
+              </Button>
+            ))}
+          </div>
           <Button variant="outline" size="sm" onClick={() => {
             exportToCSV(
               dailyAnalytics.map((d) => ({
@@ -148,46 +188,50 @@ export function AnalyticsDashboard({ role = "admin" }: { role?: "admin" | "docto
         </div>
       </div>
 
-      {/* KPI Cards */}
+      {/* KPI Cards with period comparison */}
       <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center justify-between mb-2">
               <Users className="h-5 w-5 text-blue-600" />
-              <Badge variant="outline" className="text-xs text-green-600">+{latestRetention.newPatients}</Badge>
+              <ChangeIndicator value={periodComparison.patientChange} />
             </div>
-            <p className="text-2xl font-bold">{totalPatients}</p>
-            <p className="text-xs text-muted-foreground">Total Patients</p>
+            <p className="text-2xl font-bold">{periodComparison.currentPatients}</p>
+            <p className="text-xs text-muted-foreground">Patients ({PERIOD_LABELS[timePeriod]})</p>
+            <p className="text-[10px] text-muted-foreground mt-0.5">vs prev: {periodComparison.previousPatients}</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center justify-between mb-2">
               <TrendingUp className="h-5 w-5 text-green-600" />
-              <Badge variant="outline" className="text-xs text-green-600">+8.7%</Badge>
+              <ChangeIndicator value={periodComparison.revenueChange} />
             </div>
-            <p className="text-2xl font-bold">{totalDailyRevenue.toLocaleString()} MAD</p>
-            <p className="text-xs text-muted-foreground">Revenue (MTD)</p>
+            <p className="text-2xl font-bold">{periodComparison.currentRevenue.toLocaleString()} MAD</p>
+            <p className="text-xs text-muted-foreground">Revenue ({PERIOD_LABELS[timePeriod]})</p>
+            <p className="text-[10px] text-muted-foreground mt-0.5">vs prev: {periodComparison.previousRevenue.toLocaleString()} MAD</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center justify-between mb-2">
               <XCircle className="h-5 w-5 text-red-500" />
-              <Badge variant={noShowRate > 10 ? "destructive" : "outline"} className="text-xs">{noShowRate > 10 ? "High" : "Normal"}</Badge>
+              <ChangeIndicator value={periodComparison.noShowChange} inverted />
             </div>
             <p className="text-2xl font-bold">{noShowRate}%</p>
             <p className="text-xs text-muted-foreground">No-show Rate</p>
+            <p className="text-[10px] text-muted-foreground mt-0.5">{periodComparison.currentNoShows} no-shows ({PERIOD_LABELS[timePeriod]})</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center justify-between mb-2">
               <Footprints className="h-5 w-5 text-purple-600" />
-              <Badge variant="outline" className="text-xs">{latestRetention.retentionRate}%</Badge>
+              <ChangeIndicator value={periodComparison.appointmentChange} />
             </div>
-            <p className="text-2xl font-bold">{totalDailyPatients}</p>
-            <p className="text-xs text-muted-foreground">Patients This Month</p>
+            <p className="text-2xl font-bold">{periodComparison.currentAppointments}</p>
+            <p className="text-xs text-muted-foreground">Appointments ({PERIOD_LABELS[timePeriod]})</p>
+            <p className="text-[10px] text-muted-foreground mt-0.5">vs prev: {periodComparison.previousAppointments}</p>
           </CardContent>
         </Card>
       </div>
