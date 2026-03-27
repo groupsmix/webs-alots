@@ -16,9 +16,9 @@ import { PaymentStep } from "./payment-step";
 import { logger } from "@/lib/logger";
 
 function getSteps() {
-  const s = ["Specialty", "Doctor", "Service", "Date & Time", "Your Info"];
-  if (clinicConfig.features.onlinePayment) s.push("Payment");
-  s.push("Confirm");
+  const s = ["Spécialité", "Médecin", "Service", "Date & Heure", "Vos Infos"];
+  if (clinicConfig.features.onlinePayment) s.push("Paiement");
+  s.push("Confirmation");
   return s;
 }
 
@@ -105,6 +105,8 @@ export function BookingForm() {
   const [isFirstVisit, setIsFirstVisit] = useState(true);
   const [patientInfo, setPatientInfo] = useState({ name: "", phone: "", email: "", reason: "" });
   const [submitted, setSubmitted] = useState(false);
+  // Honeypot field for basic bot protection (invisible to real users)
+  const [honeypot, setHoneypot] = useState("");
   const [isRecurring, setIsRecurring] = useState(false);
   const [recurrencePattern, setRecurrencePattern] = useState<"weekly" | "biweekly" | "monthly">("weekly");
   const [recurrenceCount, setRecurrenceCount] = useState(4);
@@ -197,7 +199,7 @@ export function BookingForm() {
 
   const handleJoinWaitingList = async (slot: string) => {
     if (!patientInfo.name) {
-      setWaitingListMessage("Please complete your info first (step 5) to join a waiting list.");
+      setWaitingListMessage("Veuillez d'abord compléter vos informations (étape 5) pour rejoindre la liste d'attente.");
       return;
     }
     try {
@@ -215,12 +217,12 @@ export function BookingForm() {
       });
       const data = await res.json();
       if (res.ok) {
-        setWaitingListMessage(`You've been added to the waiting list for ${selectedDate} at ${slot}.`);
+        setWaitingListMessage(`Vous avez été ajouté(e) à la liste d'attente pour le ${selectedDate} à ${slot}.`);
       } else {
-        setWaitingListMessage(data.error ?? "Could not join waiting list.");
+        setWaitingListMessage(data.error ?? "Impossible de rejoindre la liste d'attente.");
       }
     } catch {
-      setWaitingListMessage("Could not join waiting list.");
+      setWaitingListMessage("Impossible de rejoindre la liste d'attente.");
     }
   };
 
@@ -228,6 +230,11 @@ export function BookingForm() {
 
   const handleConfirm = async () => {
     if (isSubmitting) return;
+    // Honeypot check: if the hidden field was filled, silently reject
+    if (honeypot) {
+      setSubmitted(true);
+      return;
+    }
     setIsSubmitting(true);
     try {
       if (isRecurring && clinicConfig.features.recurringBookings) {
@@ -292,20 +299,20 @@ export function BookingForm() {
           <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-green-100">
             <Check className="h-8 w-8 text-green-600" />
           </div>
-          <h2 className="text-2xl font-bold mb-2">Booking Confirmed!</h2>
+          <h2 className="text-2xl font-bold mb-2">Rendez-vous confirmé !</h2>
           <p className="text-muted-foreground mb-4">
-            Your appointment has been scheduled. You will receive a WhatsApp confirmation shortly.
+            Votre rendez-vous a été enregistré. Vous recevrez une confirmation par WhatsApp sous peu.
           </p>
           <div className="rounded-lg border p-4 max-w-sm mx-auto text-left text-sm space-y-1">
-            <p><span className="text-muted-foreground">Specialty:</span> {specialty?.name}</p>
-            <p><span className="text-muted-foreground">Doctor:</span> {doctor?.name}</p>
-            <p><span className="text-muted-foreground">Service:</span> {service?.name}</p>
-            <p><span className="text-muted-foreground">Date:</span> {selectedDate}</p>
-            <p><span className="text-muted-foreground">Time:</span> {selectedTime}</p>
-            <p><span className="text-muted-foreground">Duration:</span> {service?.duration} min</p>
-            <p><span className="text-muted-foreground">Price:</span> {service?.price} {service?.currency}</p>
-            {isInsurance && <p><span className="text-muted-foreground">Insurance:</span> Yes</p>}
-            <p><span className="text-muted-foreground">Visit Type:</span> {isFirstVisit ? "First Visit" : "Return Visit"}</p>
+            <p><span className="text-muted-foreground">Spécialité :</span> {specialty?.name}</p>
+            <p><span className="text-muted-foreground">Médecin :</span> {doctor?.name}</p>
+            <p><span className="text-muted-foreground">Service :</span> {service?.name}</p>
+            <p><span className="text-muted-foreground">Date :</span> {selectedDate}</p>
+            <p><span className="text-muted-foreground">Heure :</span> {selectedTime}</p>
+            <p><span className="text-muted-foreground">Durée :</span> {service?.duration} min</p>
+            <p><span className="text-muted-foreground">Prix :</span> {service?.price} {service?.currency}</p>
+            {isInsurance && <p><span className="text-muted-foreground">Assurance :</span> Oui</p>}
+            <p><span className="text-muted-foreground">Type de visite :</span> {isFirstVisit ? "Première visite" : "Visite de suivi"}</p>
           </div>
           <Button className="mt-6" onClick={() => {
             setSubmitted(false);
@@ -324,7 +331,7 @@ export function BookingForm() {
             setBookingId(null);
             setWaitingListMessage(null);
           }}>
-            Book Another Appointment
+            Prendre un autre rendez-vous
           </Button>
         </CardContent>
       </Card>
@@ -334,7 +341,7 @@ export function BookingForm() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Book an Appointment</CardTitle>
+        <CardTitle>Prendre un rendez-vous</CardTitle>
         {/* Step indicator */}
         <div className="flex items-center gap-1 mt-4">
           {steps.map((s, i) => (
@@ -354,13 +361,13 @@ export function BookingForm() {
             </div>
           ))}
         </div>
-        <p className="text-sm text-muted-foreground mt-2">Step {step + 1}: {steps[step]}</p>
+        <p className="text-sm text-muted-foreground mt-2">Étape {step + 1} : {steps[step]}</p>
       </CardHeader>
       <CardContent>
         {/* Step 0: Select Specialty */}
         {step === 0 && (
           <div className="grid gap-3">
-            <p className="text-sm text-muted-foreground mb-2">Choose the medical specialty for your visit:</p>
+            <p className="text-sm text-muted-foreground mb-2">Choisissez la spécialité médicale pour votre visite :</p>
             {specialties.map((sp) => (
               <button
                 key={sp.id}
@@ -387,7 +394,7 @@ export function BookingForm() {
         {step === 1 && (
           <div className="grid gap-3">
             <p className="text-sm text-muted-foreground mb-2">
-              Select your preferred doctor{specialty ? ` in ${specialty.name}` : ""}:
+              Sélectionnez votre médecin{specialty ? ` en ${specialty.name}` : ""} :
             </p>
             {filteredDoctors.map((d) => (
               <button
@@ -416,7 +423,7 @@ export function BookingForm() {
         {/* Step 2: Select Service */}
         {step === 2 && (
           <div className="grid gap-3">
-            <p className="text-sm text-muted-foreground mb-2">Choose the service you need:</p>
+            <p className="text-sm text-muted-foreground mb-2">Choisissez le service dont vous avez besoin :</p>
             {services.filter((s) => s.active).map((s) => (
               <button
                 key={s.id}
@@ -441,7 +448,7 @@ export function BookingForm() {
         {step === 3 && (
           <div className="space-y-6">
             <div>
-              <p className="text-sm text-muted-foreground mb-3">Select an available date (unavailable days are greyed out):</p>
+              <p className="text-sm text-muted-foreground mb-3">Sélectionnez une date disponible (les jours indisponibles sont grisés) :</p>
               <BookingCalendar
                 selectedDate={selectedDate}
                 onSelectDate={(date) => { setSelectedDate(date); setSelectedTime(""); }}
@@ -449,7 +456,7 @@ export function BookingForm() {
             </div>
             {selectedDate && (
               <div>
-                <p className="text-sm text-muted-foreground mb-3">Choose an available time slot:</p>
+                <p className="text-sm text-muted-foreground mb-3">Choisissez un créneau horaire disponible :</p>
                 <TimeSlotPicker
                   slots={availableSlots}
                   allSlots={allSlots}
@@ -474,8 +481,8 @@ export function BookingForm() {
                     <Repeat className={`h-5 w-5 ${isRecurring ? "text-primary" : "text-muted-foreground"}`} />
                   </div>
                   <div className="flex-1">
-                    <p className="text-sm font-medium">Recurring Appointment</p>
-                    <p className="text-xs text-muted-foreground">Book this same slot on a regular basis</p>
+                    <p className="text-sm font-medium">Rendez-vous récurrent</p>
+                    <p className="text-xs text-muted-foreground">Réserver ce même créneau de manière régulière</p>
                   </div>
                   <input
                     type="checkbox"
@@ -487,19 +494,19 @@ export function BookingForm() {
                 {isRecurring && (
                   <div className="grid grid-cols-2 gap-3 pt-2">
                     <div className="space-y-1">
-                      <Label className="text-xs">Pattern</Label>
+                      <Label className="text-xs">Fréquence</Label>
                       <select
                         value={recurrencePattern}
                         onChange={(e) => setRecurrencePattern(e.target.value as "weekly" | "biweekly" | "monthly")}
                         className="w-full rounded-lg border p-2 text-sm bg-background"
                       >
-                        <option value="weekly">Weekly</option>
-                        <option value="biweekly">Bi-weekly</option>
-                        <option value="monthly">Monthly</option>
+                        <option value="weekly">Hebdomadaire</option>
+                        <option value="biweekly">Bi-hebdomadaire</option>
+                        <option value="monthly">Mensuel</option>
                       </select>
                     </div>
                     <div className="space-y-1">
-                      <Label className="text-xs">Occurrences</Label>
+                      <Label className="text-xs">Nombre de séances</Label>
                       <Input
                         type="number"
                         min={2}
@@ -519,17 +526,17 @@ export function BookingForm() {
         {step === 4 && (
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="b-name">Full Name *</Label>
+              <Label htmlFor="b-name">Nom complet *</Label>
               <Input
                 id="b-name"
                 value={patientInfo.name}
                 onChange={(e) => setPatientInfo({ ...patientInfo, name: e.target.value })}
-                placeholder="Your full name"
+                placeholder="Votre nom complet"
                 required
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="b-phone">Phone Number *</Label>
+              <Label htmlFor="b-phone">Numéro de téléphone *</Label>
               <Input
                 id="b-phone"
                 value={patientInfo.phone}
@@ -539,7 +546,20 @@ export function BookingForm() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="b-email">Email (optional)</Label>
+              {/* Honeypot field - hidden from real users, catches bots */}
+              <div className="absolute -left-[9999px]" aria-hidden="true">
+                <label htmlFor="b-website">Website</label>
+                <input
+                  id="b-website"
+                  name="website"
+                  type="text"
+                  tabIndex={-1}
+                  autoComplete="off"
+                  value={honeypot}
+                  onChange={(e) => setHoneypot(e.target.value)}
+                />
+              </div>
+              <Label htmlFor="b-email">Email (optionnel)</Label>
               <Input
                 id="b-email"
                 value={patientInfo.email}
@@ -549,30 +569,30 @@ export function BookingForm() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="b-reason">Reason for Visit</Label>
+              <Label htmlFor="b-reason">Motif de la visite</Label>
               <Input
                 id="b-reason"
                 value={patientInfo.reason}
                 onChange={(e) => setPatientInfo({ ...patientInfo, reason: e.target.value })}
-                placeholder="Brief description of your concern"
+                placeholder="Brève description de votre motif"
               />
             </div>
             <div className="rounded-lg border p-4 space-y-3">
-              <p className="text-sm font-medium">Visit Type</p>
+              <p className="text-sm font-medium">Type de visite</p>
               <div className="grid grid-cols-2 gap-3">
                 <button
                   onClick={() => setIsFirstVisit(true)}
                   className={`rounded-lg border p-3 text-center text-sm transition-colors ${isFirstVisit ? "border-primary bg-primary/5 font-medium" : "hover:bg-muted/50"}`}
                 >
                   <User className="h-5 w-5 mx-auto mb-1 text-primary" />
-                  First Visit
+                  Première visite
                 </button>
                 <button
                   onClick={() => setIsFirstVisit(false)}
                   className={`rounded-lg border p-3 text-center text-sm transition-colors ${!isFirstVisit ? "border-primary bg-primary/5 font-medium" : "hover:bg-muted/50"}`}
                 >
                   <Check className="h-5 w-5 mx-auto mb-1 text-primary" />
-                  Return Visit
+                  Visite de suivi
                 </button>
               </div>
             </div>
@@ -582,8 +602,8 @@ export function BookingForm() {
                   <ShieldCheck className={`h-5 w-5 ${isInsurance ? "text-green-600" : "text-muted-foreground"}`} />
                 </div>
                 <div className="flex-1">
-                  <p className="text-sm font-medium">Insurance Coverage</p>
-                  <p className="text-xs text-muted-foreground">Check if you will use insurance (CNSS, CNOPS, etc.)</p>
+                  <p className="text-sm font-medium">Couverture d&apos;assurance</p>
+                  <p className="text-xs text-muted-foreground">Cochez si vous utilisez une assurance (CNSS, CNOPS, etc.)</p>
                 </div>
                 <input
                   type="checkbox"
@@ -600,8 +620,8 @@ export function BookingForm() {
                 <div className="flex items-center gap-2">
                   <Users className="h-5 w-5 text-primary" />
                   <div>
-                    <p className="text-sm font-medium">Additional Doctors (Optional)</p>
-                    <p className="text-xs text-muted-foreground">Select additional doctors for a multi-doctor appointment</p>
+                    <p className="text-sm font-medium">Médecins supplémentaires (optionnel)</p>
+                    <p className="text-xs text-muted-foreground">Sélectionnez des médecins supplémentaires pour un rendez-vous multi-praticien</p>
                   </div>
                 </div>
                 <div className="space-y-2">
@@ -650,40 +670,40 @@ export function BookingForm() {
         {/* Confirmation Step */}
         {step === confirmStepIndex && (
           <div className="rounded-lg border p-6 space-y-3 text-sm">
-            <h3 className="font-semibold text-base mb-4">Review Your Booking</h3>
+            <h3 className="font-semibold text-base mb-4">Récapitulatif de votre rendez-vous</h3>
             <div className="grid gap-2">
-              <div className="flex justify-between"><span className="text-muted-foreground">Specialty</span><span className="font-medium">{specialty?.name}</span></div>
-              <div className="flex justify-between"><span className="text-muted-foreground">Doctor</span><span className="font-medium">{doctor?.name}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Spécialité</span><span className="font-medium">{specialty?.name}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Médecin</span><span className="font-medium">{doctor?.name}</span></div>
               <div className="flex justify-between"><span className="text-muted-foreground">Service</span><span className="font-medium">{service?.name}</span></div>
               <div className="flex justify-between"><span className="text-muted-foreground">Date</span><span className="font-medium">{selectedDate}</span></div>
               <div className="flex justify-between"><span className="text-muted-foreground">Time</span><span className="font-medium">{selectedTime}</span></div>
-              <div className="flex justify-between"><span className="text-muted-foreground">Duration</span><span className="font-medium">{service?.duration} min</span></div>
-              <div className="flex justify-between"><span className="text-muted-foreground">Buffer Time</span><span className="font-medium">{clinicConfig.booking.bufferTime} min</span></div>
-              <div className="flex justify-between"><span className="text-muted-foreground">Price</span><span className="font-medium">{service?.price} {service?.currency}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Durée</span><span className="font-medium">{service?.duration} min</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Temps tampon</span><span className="font-medium">{clinicConfig.booking.bufferTime} min</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Prix</span><span className="font-medium">{service?.price} {service?.currency}</span></div>
               <hr />
-              <div className="flex justify-between"><span className="text-muted-foreground">Patient</span><span className="font-medium">{patientInfo.name}</span></div>
-              <div className="flex justify-between"><span className="text-muted-foreground">Phone</span><span className="font-medium">{patientInfo.phone}</span></div>
-              {patientInfo.email && <div className="flex justify-between"><span className="text-muted-foreground">Email</span><span className="font-medium">{patientInfo.email}</span></div>}
-              {patientInfo.reason && <div className="flex justify-between"><span className="text-muted-foreground">Reason</span><span className="font-medium">{patientInfo.reason}</span></div>}
-              <div className="flex justify-between"><span className="text-muted-foreground">Visit Type</span><Badge variant={isFirstVisit ? "default" : "secondary"}>{isFirstVisit ? "First Visit" : "Return Visit"}</Badge></div>
-              {isInsurance && <div className="flex justify-between"><span className="text-muted-foreground">Insurance</span><Badge variant="secondary">Covered</Badge></div>}
+              <div className="flex justify-between"><span className="text-muted-foreground">Patient(e)</span><span className="font-medium">{patientInfo.name}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Téléphone</span><span className="font-medium">{patientInfo.phone}</span></div>
+              {patientInfo.email && <div className="flex justify-between"><span className="text-muted-foreground">E-mail</span><span className="font-medium">{patientInfo.email}</span></div>}
+              {patientInfo.reason && <div className="flex justify-between"><span className="text-muted-foreground">Motif</span><span className="font-medium">{patientInfo.reason}</span></div>}
+              <div className="flex justify-between"><span className="text-muted-foreground">Type de visite</span><Badge variant={isFirstVisit ? "default" : "secondary"}>{isFirstVisit ? "Première visite" : "Visite de suivi"}</Badge></div>
+              {isInsurance && <div className="flex justify-between"><span className="text-muted-foreground">Assurance</span><Badge variant="secondary">Couverte</Badge></div>}
               {isRecurring && (
                 <>
                   <hr />
-                  <div className="flex justify-between"><span className="text-muted-foreground">Recurring</span><Badge variant="outline">{recurrencePattern}</Badge></div>
-                  <div className="flex justify-between"><span className="text-muted-foreground">Occurrences</span><span className="font-medium">{recurrenceCount}</span></div>
+                  <div className="flex justify-between"><span className="text-muted-foreground">Récurrence</span><Badge variant="outline">{recurrencePattern}</Badge></div>
+                  <div className="flex justify-between"><span className="text-muted-foreground">Nombre de séances</span><span className="font-medium">{recurrenceCount}</span></div>
                 </>
               )}
               {selectedDoctors.length > 0 && (
                 <>
                   <hr />
-                  <div className="flex justify-between"><span className="text-muted-foreground">Additional Doctors</span><span className="font-medium">{selectedDoctors.map((id) => doctors.find((d) => d.id === id)?.name).join(", ")}</span></div>
+                  <div className="flex justify-between"><span className="text-muted-foreground">Médecins supplémentaires</span><span className="font-medium">{selectedDoctors.map((id) => doctors.find((d) => d.id === id)?.name).join(", ")}</span></div>
                 </>
               )}
               {paymentCompleted && (
                 <>
                   <hr />
-                  <div className="flex justify-between"><span className="text-muted-foreground">Payment</span><Badge variant="secondary">Paid</Badge></div>
+                  <div className="flex justify-between"><span className="text-muted-foreground">Paiement</span><Badge variant="secondary">Payé</Badge></div>
                 </>
               )}
             </div>
@@ -698,24 +718,24 @@ export function BookingForm() {
             disabled={step === 0}
           >
             <ChevronLeft className="h-4 w-4 mr-1" />
-            Back
+            Retour
           </Button>
           {step < confirmStepIndex ? (
             <Button
               onClick={() => setStep(step + 1)}
               disabled={!canNext()}
             >
-              Next
+              Suivant
               <ChevronRight className="h-4 w-4 ml-1" />
             </Button>
           ) : (
             <Button onClick={handleConfirm} disabled={isSubmitting}>
               {isSubmitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
               {isSubmitting
-                ? "Submitting…"
+                ? "Envoi en cours…"
                 : isRecurring
-                  ? "Confirm Recurring Booking"
-                  : "Confirm Booking"}
+                  ? "Confirmer la réservation récurrente"
+                  : "Confirmer le rendez-vous"}
             </Button>
           )}
         </div>

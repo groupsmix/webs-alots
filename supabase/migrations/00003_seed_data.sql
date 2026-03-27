@@ -266,8 +266,8 @@ INSERT INTO reviews (id, patient_id, clinic_id, stars, comment, response) VALUES
    'u0000000-0000-0000-0000-000000000010',
    'c1000000-0000-0000-0000-000000000001',
    5,
-   'Excellent doctor, very professional and caring.',
-   'Thank you for your kind words, Fatima!');
+   'Excellent médecin, très professionnel et attentionné.',
+   'Merci pour vos aimables mots, Fatima !');
 
 -- ============================================================
 -- NOTIFICATIONS (sample)

@@ -43,15 +43,14 @@ export function HeroSection() {
                 className="rounded-2xl shadow-xl max-h-96 object-cover"
               />
             ) : (
-              <div className="flex h-80 w-full max-w-md items-center justify-center rounded-2xl border-2 border-dashed border-primary/20 bg-primary/5">
+              <div className="flex h-80 w-full max-w-md items-center justify-center rounded-2xl bg-primary/5">
                 <div className="text-center text-muted-foreground">
-                  <div className="mx-auto mb-3 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
-                    <svg className="h-8 w-8 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <div className="mx-auto mb-3 flex h-20 w-20 items-center justify-center rounded-full bg-primary/10">
+                    <svg className="h-10 w-10 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                     </svg>
                   </div>
-                  <p className="text-sm font-medium">Photo du médecin</p>
-                  <p className="text-xs mt-1">Configurable via l&apos;éditeur</p>
+                  <p className="text-sm font-medium">{clinicConfig.name}</p>
                 </div>
               </div>
             )}

@@ -90,16 +90,16 @@ export const defaultWebsiteConfig: WebsiteConfig = {
   },
 
   about: {
-    doctorName: "",
-    specialty: "",
-    bio: "",
+    doctorName: "Dr. Ahmed",
+    specialty: "Médecine Générale",
+    bio: "Médecin dévoué avec plusieurs années d'expérience, offrant des soins personnalisés et attentionnés à chaque patient.",
     photoUrl: undefined,
-    education: "",
-    specialization: "",
-    experience: "",
-    languages: "",
-    practiceDescription: "",
-    practiceDetails: "",
+    education: "Faculté de Médecine et de Pharmacie",
+    specialization: "Médecine Générale",
+    experience: "Plus de 10 ans d'expérience",
+    languages: "Français, Arabe, Anglais",
+    practiceDescription: "Notre cabinet offre des soins médicaux complets dans un environnement moderne et accueillant.",
+    practiceDetails: "Nous nous engageons à fournir des soins de qualité, en utilisant les dernières technologies médicales et en maintenant une approche centrée sur le patient.",
   },
 
   howToBook: {
@@ -134,8 +134,8 @@ export const defaultWebsiteConfig: WebsiteConfig = {
     title: "Localisation & Horaires",
     subtitle:
       "Rendez-nous visite dans notre cabinet. Nous serons ravis de vous accueillir.",
-    address: "",
-    city: "",
+    address: "Adresse du cabinet médical",
+    city: "Ville",
     googleMapsEmbedUrl: "",
     workingHours: [
       { day: "Lundi", hours: "09:00 - 17:00" },
@@ -152,10 +152,10 @@ export const defaultWebsiteConfig: WebsiteConfig = {
     title: "Contactez-nous",
     subtitle:
       "Vous avez une question ou souhaitez nous contacter ? Nous sommes là pour vous aider. Utilisez l'un des moyens ci-dessous ou envoyez-nous un message.",
-    phone: "",
-    whatsapp: "",
-    email: "",
-    address: "",
+    phone: "+212 5XX-XXXXXX",
+    whatsapp: "+212 6XX-XXXXXX",
+    email: "contact@exemple.com",
+    address: "Adresse du cabinet médical",
     whatsappMessage: "Bonjour, je souhaite prendre rendez-vous.",
   },
 

@@ -1,13 +1,10 @@
 import type { Metadata } from "next";
 import { Phone, Mail, MapPin, MessageCircle } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
-import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import { defaultWebsiteConfig } from "@/lib/website-config";
 import { safeJsonLdStringify } from "@/lib/json-ld";
 import Link from "next/link";
+import { ContactForm } from "@/components/public/contact-form";
 
 export const metadata: Metadata = {
   title: "Contact — Nous Joindre",
@@ -106,40 +103,7 @@ export default function ContactPage() {
           </Card>
         </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Envoyez-nous un message</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <form className="space-y-4">
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div className="space-y-2">
-                  <Label htmlFor="name">Nom complet</Label>
-                  <Input id="name" placeholder="Votre nom" />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="phone">Téléphone</Label>
-                  <Input id="phone" placeholder="+212 6XX XX XX XX" />
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input id="email" type="email" placeholder="your@email.com" />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="subject">Objet</Label>
-                <Input id="subject" placeholder="Comment pouvons-nous vous aider ?" />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="message">Message</Label>
-                <Textarea id="message" placeholder="Votre message..." rows={4} />
-              </div>
-              <Button type="button" className="w-full">
-                Envoyer le message
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
+        <ContactForm />
       </div>
     </div>
   );

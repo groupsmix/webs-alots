@@ -111,20 +111,23 @@ export async function POST(request: NextRequest) {
     // Determine intelligence level
     const intelligence = ctx.chatbotConfig?.intelligence ?? "basic";
 
-    // SEC-01: Require authentication for all intelligence tiers.
-    // Basic and smart tiers were previously unauthenticated, enabling
-    // bot-driven abuse of the chatbot and Cloudflare Workers AI quota.
+    // --- BASIC: keyword matching, no AI ---
+    // Basic tier is allowed without authentication since it uses no AI
+    // API and is purely keyword-based. This allows public visitors to
+    // interact with the chatbot quick-reply buttons.
+    if (intelligence === "basic") {
+      const reply = getBasicResponse(lastMessage.content, ctx);
+      return NextResponse.json({
+        message: { role: "assistant" as const, content: reply },
+      });
+    }
+
+    // SEC-01: Require authentication for AI-powered tiers (smart / advanced)
+    // to prevent bot-driven abuse of Cloudflare Workers AI quota and OpenAI API.
     const supabaseForAuth = await createClient();
     const { data: { user: chatUser } } = await supabaseForAuth.auth.getUser();
     if (!chatUser) {
-      return NextResponse.json(
-        { error: "Authentication required to use the chatbot" },
-        { status: 401 },
-      );
-    }
-
-    // --- BASIC: keyword matching, no AI ---
-    if (intelligence === "basic") {
+      // Fall back to basic keyword matching for unauthenticated users
       const reply = getBasicResponse(lastMessage.content, ctx);
       return NextResponse.json({
         message: { role: "assistant" as const, content: reply },

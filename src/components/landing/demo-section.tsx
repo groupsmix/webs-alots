@@ -38,17 +38,26 @@ export function DemoSection() {
                 </div>
               </div>
 
-              {/* Placeholder site content */}
+              {/* Demo site preview */}
               <div className="bg-gradient-to-b from-blue-50/50 to-white px-8 py-12 text-center">
                 <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-blue-100">
                   <span className="text-lg font-bold text-blue-600">Dr</span>
                 </div>
-                <div className="mx-auto mb-2 h-5 w-52 rounded-full bg-gray-200" />
-                <div className="mx-auto mb-8 h-4 w-72 rounded-full bg-gray-100" />
+                <h3 className="text-lg font-semibold text-gray-900 mb-1">Dr. Ahmed - Cabinet M&eacute;dical</h3>
+                <p className="text-sm text-gray-500 mb-8">M&eacute;decine G&eacute;n&eacute;rale &bull; Casablanca</p>
                 <div className="mx-auto grid max-w-sm grid-cols-3 gap-3">
-                  <div className="h-20 rounded-xl bg-white shadow-sm ring-1 ring-gray-100" />
-                  <div className="h-20 rounded-xl bg-white shadow-sm ring-1 ring-gray-100" />
-                  <div className="h-20 rounded-xl bg-white shadow-sm ring-1 ring-gray-100" />
+                  <div className="h-20 rounded-xl bg-white shadow-sm ring-1 ring-gray-100 flex flex-col items-center justify-center p-2">
+                    <span className="text-xs font-medium text-gray-700">Services</span>
+                    <span className="text-[10px] text-gray-400 mt-1">5 disponibles</span>
+                  </div>
+                  <div className="h-20 rounded-xl bg-white shadow-sm ring-1 ring-gray-100 flex flex-col items-center justify-center p-2">
+                    <span className="text-xs font-medium text-gray-700">Rendez-vous</span>
+                    <span className="text-[10px] text-gray-400 mt-1">En ligne 24/7</span>
+                  </div>
+                  <div className="h-20 rounded-xl bg-white shadow-sm ring-1 ring-gray-100 flex flex-col items-center justify-center p-2">
+                    <span className="text-xs font-medium text-gray-700">Avis</span>
+                    <span className="text-[10px] text-gray-400 mt-1">Patients v&eacute;rifi&eacute;s</span>
+                  </div>
                 </div>
                 <p className="mt-8 inline-flex items-center gap-2 text-sm font-medium text-blue-600 transition-colors group-hover:text-blue-700">
                   Voir le site en direct
