@@ -43,14 +43,30 @@ export async function generateMetadata(): Promise<Metadata> {
     };
   }
 
+  // Pull clinic branding for SEO-rich meta tags
+  const branding = await getPublicBranding();
+  const clinicName = branding.clinicName || tenant.clinicName || "Cabinet Médical";
+  const rootDomain = process.env.ROOT_DOMAIN ?? "oltigo.com";
+  const canonicalUrl = `https://${tenant.subdomain}.${rootDomain}`;
+
+  const title = `${clinicName} | Prenez rendez-vous en ligne`;
+  const description = branding.tagline
+    ? `${clinicName} — ${branding.tagline}. Prenez rendez-vous en ligne.`
+    : `${clinicName} — Prenez rendez-vous en ligne, consultez nos services et découvrez notre équipe médicale.`;
+
   return {
-    title: "Accueil — Cabinet Médical",
-    description:
-      "Bienvenue dans notre cabinet médical. Prenez rendez-vous en ligne, consultez nos services et découvrez notre équipe médicale.",
+    title,
+    description,
+    alternates: {
+      canonical: canonicalUrl,
+    },
     openGraph: {
-      title: "Accueil — Cabinet Médical",
-      description:
-        "Bienvenue dans notre cabinet médical. Prenez rendez-vous en ligne, consultez nos services.",
+      title,
+      description,
+      type: "website",
+      locale: "fr_MA",
+      siteName: clinicName,
+      url: canonicalUrl,
     },
   };
 }
