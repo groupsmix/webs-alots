@@ -374,6 +374,12 @@ export const passwordResetLimiter = createRateLimiter({
   max: 3,
 });
 
+/** Branding GET: 20 req / 60s per IP (public endpoint, prevents clinic enumeration) */
+export const brandingLimiter = createRateLimiter({
+  windowMs: 60_000,
+  max: 20,
+});
+
 /** General API mutations: 30 req / 60s per IP */
 export const apiMutationLimiter = createRateLimiter({
   windowMs: 60_000,
@@ -419,6 +425,7 @@ export const rateLimitRules: RateLimitRule[] = [
   { prefix: "/api/onboarding", limiter: onboardingLimiter },
   { prefix: "/api/chat", limiter: chatLimiter },
   { prefix: "/api/webhooks", limiter: webhookLimiter },
+  { prefix: "/api/branding", limiter: brandingLimiter },
   { prefix: "/api/notifications", limiter: apiMutationLimiter },
   // Catch-all for other API mutations (applied in middleware only to POST/PUT/PATCH/DELETE)
   { prefix: "/api/", limiter: apiMutationLimiter },
