@@ -41,6 +41,7 @@ function triggerToType(trigger: string): NotificationType {
     case "new_booking":
     case "booking_confirmation":
     case "reminder_24h":
+    case "reminder_1h":
     case "reminder_2h":
     case "rescheduled":
     case "doctor_assigned":

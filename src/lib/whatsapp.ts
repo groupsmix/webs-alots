@@ -37,11 +37,34 @@ interface WhatsAppMessagePayload {
   parameters?: string[];
 }
 
+interface QuickReplyButton {
+  id: string;
+  title: string;
+}
+
+interface WhatsAppInteractivePayload {
+  to: string;
+  body: string;
+  buttons: QuickReplyButton[];
+  header?: string;
+  footer?: string;
+}
+
 interface WhatsAppSendResult {
   success: boolean;
   messageId?: string;
   error?: string;
   provider: WhatsAppProvider;
+}
+
+export type WhatsAppMessageStatus = "sent" | "delivered" | "read" | "failed";
+
+export interface WhatsAppStatusUpdate {
+  messageId: string;
+  status: WhatsAppMessageStatus;
+  timestamp: string;
+  recipientPhone: string;
+  errors?: Array<{ code: number; title: string }>;
 }
 
 const META_API_URL = "https://graph.facebook.com/v21.0";
@@ -201,7 +224,84 @@ async function sendViaTwilio(
   };
 }
 
+// ---- Interactive Messages (Quick Replies) ----
+
+async function sendInteractiveViaMeta(
+  config: WhatsAppConfig,
+  payload: WhatsAppInteractivePayload,
+): Promise<WhatsAppSendResult> {
+  const response = await fetch(
+    `${META_API_URL}/${config.metaPhoneNumberId}/messages`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${config.metaAccessToken}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        messaging_product: "whatsapp",
+        to: payload.to,
+        type: "interactive",
+        interactive: {
+          type: "button",
+          ...(payload.header
+            ? { header: { type: "text", text: payload.header } }
+            : {}),
+          body: { text: payload.body },
+          ...(payload.footer ? { footer: { text: payload.footer } } : {}),
+          action: {
+            buttons: payload.buttons.map((btn) => ({
+              type: "reply",
+              reply: { id: btn.id, title: btn.title },
+            })),
+          },
+        },
+      }),
+      signal: AbortSignal.timeout(10_000),
+    },
+  );
+
+  const data = await response.json();
+  if (response.ok) {
+    return {
+      success: true,
+      messageId: data.messages?.[0]?.id,
+      provider: "meta",
+    };
+  }
+  return {
+    success: false,
+    error: data.error?.message || "Failed to send interactive message via Meta API",
+    provider: "meta",
+  };
+}
+
 // ---- Public API ----
+
+/**
+ * Send a WhatsApp interactive message with quick reply buttons.
+ * Falls back to plain text with button labels appended for Twilio.
+ */
+export async function sendInteractiveMessage(
+  payload: WhatsAppInteractivePayload,
+): Promise<WhatsAppSendResult> {
+  const config = getWhatsAppConfig();
+
+  if (!isConfigured(config)) {
+    return { success: false, error: "Not configured", provider: config.provider };
+  }
+
+  if (config.provider === "twilio") {
+    // Twilio doesn't support interactive buttons — append button labels as text
+    const buttonText = payload.buttons
+      .map((btn) => `Reply ${btn.title} to ${btn.title.toLowerCase()}`)
+      .join("\n");
+    const body = `${payload.body}\n\n${buttonText}`;
+    return sendViaTwilio(config, payload.to, body);
+  }
+
+  return sendInteractiveViaMeta(config, payload);
+}
 
 /**
  * Send a WhatsApp template message using the configured provider.
