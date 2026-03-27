@@ -5,6 +5,7 @@ import { getTenant } from "@/lib/tenant";
 import { TenantProvider } from "@/components/tenant-provider";
 import { ThemeProvider } from "@/components/theme-provider";
 import { ServiceWorkerRegister } from "@/components/sw-register";
+import { PlausibleScript } from "@/components/plausible-script";
 import { safeJsonLdStringify } from "@/lib/json-ld";
 
 const geistSans = Geist({
@@ -92,6 +93,7 @@ export default async function RootLayout({
           </TenantProvider>
         </ThemeProvider>
         <ServiceWorkerRegister />
+        <PlausibleScript />
       </body>
     </html>
   );
