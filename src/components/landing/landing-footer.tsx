@@ -10,6 +10,7 @@ const links: readonly { key: TranslationKey; href: string }[] = [
   { key: "landing.footerContact", href: "/contact" },
   { key: "landing.footerLogin", href: "/login" },
   { key: "landing.footerPrivacy", href: "/privacy" },
+  { key: "landing.footerTerms", href: "/terms" },
 ];
 
 export function LandingFooter() {

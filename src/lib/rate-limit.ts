@@ -410,6 +410,18 @@ export const webhookLimiter = createRateLimiter({
   max: 100,
 });
 
+/** Booking submissions: 10 req / 60s per IP (prevent spam bookings) */
+export const bookingLimiter = createRateLimiter({
+  windowMs: 60_000,
+  max: 10,
+});
+
+/** Email verification: 5 req / 60s per IP (prevent OTP/link abuse) */
+export const emailVerificationLimiter = createRateLimiter({
+  windowMs: 60_000,
+  max: 5,
+});
+
 export interface RateLimitRule {
   /** URL prefix to match */
   prefix: string;
@@ -421,6 +433,8 @@ export interface RateLimitRule {
  * Ordered list of rate-limit rules. First matching prefix wins.
  */
 export const rateLimitRules: RateLimitRule[] = [
+  { prefix: "/api/book", limiter: bookingLimiter },
+  { prefix: "/api/verify-email", limiter: emailVerificationLimiter },
   { prefix: "/api/upload", limiter: uploadLimiter },
   { prefix: "/api/onboarding", limiter: onboardingLimiter },
   { prefix: "/api/chat", limiter: chatLimiter },

@@ -5,6 +5,7 @@ import { getTenant } from "@/lib/tenant";
 import { AnalyticsScript } from "@/components/analytics-script";
 import { CookieConsent } from "@/components/cookie-consent";
 import { Chatbot } from "@/components/chatbot";
+import { DemoBanner } from "@/components/demo-banner";
 
 export default async function PublicLayout({
   children,
@@ -27,6 +28,8 @@ export default async function PublicLayout({
   const gaId = (brandingRecord.gaId as string | undefined) ?? null;
   const gtmId = (brandingRecord.gtmId as string | undefined) ?? null;
 
+  const isDemo = tenant.subdomain === "demo";
+
   return (
     <div
       style={
@@ -38,6 +41,7 @@ export default async function PublicLayout({
         } as React.CSSProperties
       }
     >
+      {isDemo && <DemoBanner />}
       <AnalyticsScript gaId={gaId} gtmId={gtmId} />
       <a
         href="#main-content"

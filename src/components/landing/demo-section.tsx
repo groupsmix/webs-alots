@@ -76,6 +76,22 @@ export function DemoSection() {
             </div>
           </a>
         </div>
+
+        {/* Try Demo CTA */}
+        <div className="mt-8 text-center">
+          <a
+            href="https://demo.oltigo.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 rounded-full bg-blue-600 px-8 py-3 text-sm font-semibold text-white shadow-md transition-all hover:bg-blue-700 hover:shadow-lg"
+          >
+            {t("landing.tryDemo")}
+            <ExternalLink className="h-4 w-4" />
+          </a>
+          <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+            {t("landing.tryDemoSubtitle")}
+          </p>
+        </div>
       </div>
     </section>
   );

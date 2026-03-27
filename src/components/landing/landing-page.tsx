@@ -9,6 +9,7 @@ import { HowItWorksSection } from "./how-it-works-section";
 import { DemoSection } from "./demo-section";
 import { CtaSection } from "./cta-section";
 import { LandingFooter } from "./landing-footer";
+import { CookieConsent } from "@/components/cookie-consent";
 
 /**
  * SaaS landing page shown on the root domain (oltigo.com).
@@ -36,6 +37,7 @@ export function LandingPage() {
           <CtaSection />
         </main>
         <LandingFooter />
+        <CookieConsent />
       </div>
     </LandingLocaleProvider>
   );
