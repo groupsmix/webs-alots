@@ -55,11 +55,15 @@ const ROLE_DASHBOARD_MAP: Record<UserProfile["role"], string> = {
 
 /**
  * Extract client IP from request headers for server action rate limiting.
- * In Cloudflare, CF-Connecting-IP is the trustworthy source.
+ *
+ * Only CF-Connecting-IP is used — it is set by Cloudflare's edge and cannot
+ * be spoofed by the client. X-Forwarded-For is intentionally NOT used because
+ * it is attacker-controlled when the request does not pass through a trusted
+ * proxy that overwrites it.
  */
 async function getClientIp(): Promise<string> {
   const hdrs = await headers();
-  return hdrs.get("cf-connecting-ip") ?? hdrs.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
+  return hdrs.get("cf-connecting-ip") ?? "unknown";
 }
 
 /**
@@ -262,7 +266,7 @@ export async function resetPassword(
   // Even if the email doesn't exist, we don't reveal that to the caller.
   if (error) {
     // Log the error server-side for debugging, but don't expose it
-    logger.warn("Password reset failed (not exposed to client)", { context: "auth", error: error.message });
+    logger.warn("Password reset request failed", { context: "auth/resetPassword", error });
   }
 
   return { error: null };
@@ -270,10 +274,16 @@ export async function resetPassword(
 
 /**
  * Sign out the current user and redirect to home page.
+ * Always redirects even if the sign-out API call fails — the user
+ * should never get stuck on a broken session.
  */
 export async function signOut(): Promise<void> {
-  const supabase = await createClient();
-  await supabase.auth.signOut();
+  try {
+    const supabase = await createClient();
+    await supabase.auth.signOut();
+  } catch (err) {
+    logger.error("Sign-out failed", { context: "auth/signOut", error: err });
+  }
   redirect("/");
 }
 
@@ -296,7 +306,7 @@ export async function getUserProfile(): Promise<UserProfile | null> {
 
   const { data: profile } = await supabase
     .from("users")
-    .select("*")
+    .select("id, auth_id, clinic_id, role, name, phone, email, avatar_url, is_active, metadata")
     .eq("auth_id", user.id)
     .single();
 
