@@ -9,6 +9,7 @@ import {
 } from "react";
 import type { FeaturesConfig, ClinicFeatureKey } from "@/lib/features";
 import { isFeatureEnabled } from "@/lib/features";
+import { logger } from "@/lib/logger";
 
 /**
  * Specialty to feature mapping
@@ -267,8 +268,8 @@ export function ClinicFeaturesProvider({
           setConfig(data.features_config);
           setLoaded(true);
         }
-      } catch {
-        // On error, enable all features so nothing is hidden
+      } catch (err) {
+        logger.warn("Failed to fetch clinic features, enabling all", { context: "clinic-features", error: err });
         if (!cancelled) {
           setConfig(null);
           setLoaded(true);

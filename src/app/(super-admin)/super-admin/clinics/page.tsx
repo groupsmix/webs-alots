@@ -72,8 +72,8 @@ export default function AllClinicsPage() {
             const users = await fetchClinicUsers(c.id);
             patientsCount = users.filter((u) => u.role === "patient").length;
             doctorsCount = users.filter((u) => u.role === "doctor" || u.role === "clinic_admin").length;
-          } catch {
-            // ignore
+          } catch (err) {
+            logger.warn("Failed to fetch clinic users", { context: "super-admin-clinics", clinicId: c.id, error: err });
           }
           const config = (c.config ?? {}) as Record<string, unknown>;
           return {

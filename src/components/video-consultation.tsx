@@ -394,6 +394,7 @@ export function VideoConsultation({
               : "bg-red-500 hover:bg-red-600 text-white"
           }`}
           title={isAudioOn ? "Mute" : "Unmute"}
+          aria-label={isAudioOn ? "Mute microphone" : "Unmute microphone"}
         >
           {isAudioOn ? (
             <Mic className="h-5 w-5" />
@@ -410,6 +411,7 @@ export function VideoConsultation({
               : "bg-red-500 hover:bg-red-600 text-white"
           }`}
           title={isVideoOn ? "Turn off camera" : "Turn on camera"}
+          aria-label={isVideoOn ? "Turn off camera" : "Turn on camera"}
         >
           {isVideoOn ? (
             <Video className="h-5 w-5" />
@@ -426,6 +428,7 @@ export function VideoConsultation({
               : "bg-gray-700 hover:bg-gray-600 text-white"
           }`}
           title={isScreenSharing ? "Stop sharing" : "Share screen"}
+          aria-label={isScreenSharing ? "Stop screen sharing" : "Share screen"}
         >
           <Monitor className="h-5 w-5" />
         </button>
@@ -438,6 +441,7 @@ export function VideoConsultation({
               : "bg-gray-700 hover:bg-gray-600 text-white"
           }`}
           title="Toggle chat"
+          aria-label={showChat ? "Close chat" : "Open chat"}
         >
           <MessageSquare className="h-5 w-5" />
         </button>
@@ -446,6 +450,7 @@ export function VideoConsultation({
           onClick={toggleFullscreen}
           className="p-3 rounded-full bg-gray-700 hover:bg-gray-600 text-white transition-colors"
           title={isFullscreen ? "Exit fullscreen" : "Fullscreen"}
+          aria-label={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
         >
           {isFullscreen ? (
             <Minimize2 className="h-5 w-5" />
@@ -458,6 +463,7 @@ export function VideoConsultation({
           onClick={endCall}
           className="p-3 px-6 rounded-full bg-red-500 hover:bg-red-600 text-white transition-colors"
           title="End call"
+          aria-label="End call"
         >
           <PhoneOff className="h-5 w-5" />
         </button>

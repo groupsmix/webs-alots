@@ -25,6 +25,7 @@ import {
   type InvoiceView,
 } from "@/lib/data/client";
 import { PageLoader } from "@/components/ui/page-loader";
+import { logger } from "@/lib/logger";
 
 // ── Date helpers ──
 
@@ -181,7 +182,8 @@ export default function DoctorDashboardPage() {
       setAppointmentList((prev) =>
         prev.map((a) => (a.id === appointmentId ? { ...a, status: "completed" } : a))
       );
-    } catch {
+    } catch (err) {
+      logger.warn("Failed to mark appointment done", { context: "doctor-dashboard", error: err });
       setError(new Error("Failed to update appointment status. Please try again."));
     }
   };
@@ -193,7 +195,8 @@ export default function DoctorDashboardPage() {
       setAppointmentList((prev) =>
         prev.map((a) => (a.id === appointmentId ? { ...a, status: "no-show" } : a))
       );
-    } catch {
+    } catch (err) {
+      logger.warn("Failed to mark appointment no-show", { context: "doctor-dashboard", error: err });
       setError(new Error("Failed to update appointment status. Please try again."));
     }
   };
@@ -205,7 +208,8 @@ export default function DoctorDashboardPage() {
       setAppointmentList((prev) =>
         prev.map((a) => (a.id === appointmentId ? { ...a, status: "in-progress" } : a))
       );
-    } catch {
+    } catch (err) {
+      logger.warn("Failed to start consultation", { context: "doctor-dashboard", error: err });
       setError(new Error("Failed to update appointment status. Please try again."));
     }
   };

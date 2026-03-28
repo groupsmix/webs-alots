@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import {
   Award, Languages, GraduationCap, Briefcase, Stethoscope,
   MapPin, Phone, Mail, Calendar,
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
-/* eslint-disable @next/next/no-img-element */
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { buttonVariants } from "@/components/ui/button-variants";
@@ -47,9 +47,11 @@ export default async function DoctorProfilePage() {
                 {/* Photo / Avatar */}
                 <div className="md:w-64 flex-shrink-0 bg-gradient-to-br from-primary/5 to-primary/10 flex items-center justify-center p-8">
                   {doctor.avatar ? (
-                    <img
+                    <Image
                       src={doctor.avatar}
                       alt={doctor.name}
+                      width={160}
+                      height={160}
                       className="h-40 w-40 rounded-full object-cover shadow-lg"
                     />
                   ) : (

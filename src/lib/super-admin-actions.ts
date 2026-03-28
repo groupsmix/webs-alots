@@ -199,8 +199,8 @@ export async function updateClinicStatus(
       type: "admin",
       timestamp: new Date().toISOString(),
     });
-  } catch {
-    // Non-blocking audit log
+  } catch (err) {
+    logger.warn("Non-blocking audit log failed", { context: "super-admin-actions", clinicId, error: err });
   }
 
   // Send email notification to clinic admin

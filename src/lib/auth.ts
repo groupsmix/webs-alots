@@ -265,7 +265,8 @@ export async function resetPassword(
   // Always return success to prevent username enumeration.
   // Even if the email doesn't exist, we don't reveal that to the caller.
   if (error) {
-    logger.error("Password reset request failed", { context: "auth/resetPassword", error });
+    // Log the error server-side for debugging, but don't expose it
+    logger.warn("Password reset request failed", { context: "auth/resetPassword", error });
   }
 
   return { error: null };

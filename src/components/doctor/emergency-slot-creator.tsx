@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import type { EmergencySlotView as EmergencySlot } from "@/lib/data/client";
+import { logger } from "@/lib/logger";
 
 interface EmergencySlotCreatorProps {
   doctorId: string;
@@ -61,7 +62,8 @@ export function EmergencySlotCreator({ doctorId }: EmergencySlotCreatorProps) {
 
       setShowForm(false);
       setReason("");
-    } catch {
+    } catch (err) {
+      logger.warn("Emergency slot creation failed", { context: "emergency-slot", error: err });
       setError("An error occurred");
     } finally {
       setIsSubmitting(false);

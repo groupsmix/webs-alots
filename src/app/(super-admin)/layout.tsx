@@ -36,6 +36,7 @@ import { SignOutButton } from "@/components/sign-out-button";
 import { LocaleSwitcher } from "@/components/locale-switcher";
 import { ImpersonationBanner } from "@/components/impersonation-banner";
 import { createClient } from "@/lib/supabase-client";
+import { logger } from "@/lib/logger";
 
 const navItems = [
   { href: "/super-admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -137,8 +138,8 @@ export default function SuperAdminLayout({
             }),
           );
         }
-      } catch {
-        // Notifications are non-critical; fail silently
+      } catch (err) {
+        logger.warn("Failed to load notifications", { context: "super-admin-layout", error: err });
       }
     }
 

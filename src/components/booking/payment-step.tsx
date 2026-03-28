@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { clinicConfig } from "@/config/clinic.config";
+import { logger } from "@/lib/logger";
 import { type MoroccanPaymentMethod } from "@/lib/morocco";
 
 interface PaymentStepProps {
@@ -86,7 +87,8 @@ export function PaymentStep({
 
       setPaymentSuccess(true);
       onPaymentComplete(initData.paymentId);
-    } catch {
+    } catch (err) {
+      logger.warn("Payment processing failed", { context: "payment-step", error: err });
       setError("An error occurred during payment");
     } finally {
       setIsProcessing(false);
