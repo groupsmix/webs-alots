@@ -18,6 +18,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { logger } from "@/lib/logger";
+import { Breadcrumb } from "@/components/ui/breadcrumb";
 import {
   fetchDashboardStats,
   fetchAnnouncements,
@@ -32,7 +33,6 @@ interface ClinicDetail {
   type: "doctor" | "dentist" | "pharmacy";
   plan: string;
   city: string;
-  patientsCount: number;
   monthlyRevenue: number;
   status: "active" | "suspended" | "trial";
 }
@@ -81,7 +81,6 @@ export default function SuperAdminDashboardPage() {
           type: c.type as "doctor" | "dentist" | "pharmacy",
           plan: (c.tier as string) ?? "pro",
           city: (config.city as string) ?? "",
-          patientsCount: 0,
           monthlyRevenue: 0,
           status: (c.status === "inactive" ? "suspended" : c.status ?? "active") as "active" | "suspended" | "trial",
         };
@@ -124,9 +123,9 @@ export default function SuperAdminDashboardPage() {
     },
     {
       icon: Users,
-      label: "Total Patients",
-      value: totalPatients.toLocaleString(),
-      change: "across all clinics",
+      label: "Platform Users",
+      value: totalPatients > 0 ? `${totalPatients.toLocaleString()}+` : "0",
+      change: "registered accounts",
       color: "text-purple-600",
       bg: "bg-purple-50",
     },
@@ -148,6 +147,10 @@ export default function SuperAdminDashboardPage() {
 
   return (
     <div>
+      <Breadcrumb items={[
+        { label: "Super Admin" },
+        { label: "Dashboard" },
+      ]} />
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold">Super Admin Dashboard</h1>
@@ -238,7 +241,7 @@ export default function SuperAdminDashboardPage() {
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-medium truncate">{clinic.name}</p>
                     <p className="text-xs text-muted-foreground">
-                      {clinic.type} &middot; {clinic.city} &middot; {clinic.patientsCount} patients
+                      {clinic.type} &middot; {clinic.city}
                     </p>
                   </div>
                   <div className="flex items-center gap-2 ml-2">
