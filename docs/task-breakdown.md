@@ -117,3 +117,38 @@
 - **Type:** Architecture Planning
 - Cloudflare Workers already edge-deployed
 - As expansion beyond Morocco (Tunisia, Algeria, Senegal) approaches, evaluate Supabase region or read replicas
+
+### Task 13.11: Documentation Suite
+- **Effort:** L
+- Create: (1) API reference (OpenAPI — covered in Task 11.4), (2) Clinic admin user guide, (3) Patient FAQ
+- Essential for reducing support load
+
+---
+
+## Dependency Graph
+
+```
+Phase 0 (DONE)
+  └──→ Phase 1 (Immediate)
+         ├── Task 1.1 (Sentry) — standalone
+         ├── Task 1.2 (i18n) — standalone
+         │     └──→ Phase 6 (Arabic RTL) — depends on i18n wiring
+         ├── Task 1.3 (CI tests) — standalone
+         ├── Task 1.4 (Error page) — standalone (or after i18n)
+         ├── Task 1.5 (ARIA) — standalone
+         └── Task 1.6 (Chatbot scope) — standalone
+
+Phase 2 (SEO) — can start in parallel with Phase 1
+Phase 3 (Accessibility) — can start in parallel with Phase 1
+Phase 4 (Performance) — can start in parallel with Phase 2
+Phase 5 (Privacy) — can start after Phase 1
+Phase 7 (Growth) — depends on Phase 1 completion
+  ├── Task 7.2 (Onboarding) → Task 7.3 (Tour)
+  └── Task 7.4 (Analytics Dashboard) — standalone
+Phase 8 (PWA/WhatsApp) — can run in parallel with Phase 7
+Phase 9 (Testing) — can run in parallel with all phases
+Phase 10 (Blog) — can start anytime
+Phase 11 (Infrastructure) — can run in parallel with Phase 7+
+Phase 12 (UX Enhancements) — depends on core features stable
+Phase 13 (Strategy) — non-code, start immediately
+```
