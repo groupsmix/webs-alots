@@ -41,12 +41,55 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
+  // Enable static generation for better performance
+  trailingSlash: true,
+
   async headers() {
     return [
       {
         // Apply security headers to all routes
         source: "/(.*)",
         headers: securityHeaders,
+      },
+      {
+        // Report CSP violations for monitoring (doesn't block, just reports)
+        source: "/(.*)",
+        headers: [
+          {
+            key: "Content-Security-Policy-Report-Only",
+            value: "default-src 'self'; report-uri https://oltigo.com/api/csp-report",
+          },
+        ],
+      },
+      {
+        // Cache static assets for 1 year
+        source: "/:path*.(ico|png|jpg|jpeg|svg|webp|avif|woff|woff2|ttf|eot)",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "public, max-age=31536000, immutable",
+          },
+        ],
+      },
+      {
+        // Cache JS/CSS for 1 hour (with hashing, these are immutable)
+        source: "/:path*.(js|css)",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "public, max-age=3600, must-revalidate",
+          },
+        ],
+      },
+      {
+        // Cache API responses for 5 minutes
+        source: "/api/:path*",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "public, max-age=300, s-maxage=300",
+          },
+        ],
       },
     ];
   },
