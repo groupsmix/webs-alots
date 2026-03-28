@@ -85,9 +85,9 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // In production, send the code via email (Resend, SendGrid, etc.)
-  // For now, we log it (the email sending service should be configured separately)
-  console.log(`[EMAIL_VERIFICATION] Code for ${email}: ${code}`);
+  // Send the code via email (Resend, SendGrid, etc.)
+  // The email sending service should be configured separately.
+  // SECURITY: Never log verification codes — they are sensitive credentials.
 
   // TODO: Integrate with email service (Resend/SendGrid)
   // await sendVerificationEmail(email, code);

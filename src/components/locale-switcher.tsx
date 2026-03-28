@@ -40,7 +40,9 @@ export function useLocale(): [Locale, (l: Locale) => void] {
 
   const setLocale = useCallback((l: Locale) => {
     setLocaleState(l);
-    localStorage.setItem(LOCALE_STORAGE_KEY, l);
+    if (typeof window !== "undefined") {
+      localStorage.setItem(LOCALE_STORAGE_KEY, l);
+    }
     applyDirection(l);
   }, []);
 
@@ -48,6 +50,7 @@ export function useLocale(): [Locale, (l: Locale) => void] {
 }
 
 function applyDirection(locale: Locale) {
+  if (typeof document === "undefined") return;
   const dir = getDirection(locale);
   document.documentElement.dir = dir;
   document.documentElement.lang = locale;

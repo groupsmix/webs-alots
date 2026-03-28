@@ -11,6 +11,7 @@ export function CookieConsent() {
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
+    if (typeof window === "undefined") return;
     const consent = localStorage.getItem("cookie-consent");
     if (!consent) {
       setVisible(true);
@@ -18,12 +19,16 @@ export function CookieConsent() {
   }, []);
 
   function accept() {
-    localStorage.setItem("cookie-consent", "accepted");
+    if (typeof window !== "undefined") {
+      localStorage.setItem("cookie-consent", "accepted");
+    }
     setVisible(false);
   }
 
   function decline() {
-    localStorage.setItem("cookie-consent", "declined");
+    if (typeof window !== "undefined") {
+      localStorage.setItem("cookie-consent", "declined");
+    }
     setVisible(false);
   }
 

@@ -109,7 +109,7 @@ export async function getActiveR2Url(): Promise<string> {
       }
       recordPrimaryFailure();
     } catch {
-      // Primary bucket unreachable
+      // Primary bucket unreachable (timeout or network error)
       recordPrimaryFailure();
     }
   }

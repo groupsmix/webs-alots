@@ -164,8 +164,8 @@ export function VideoConsultation({
           setIsScreenSharing(false);
         };
         setIsScreenSharing(true);
-      } catch {
-        // User cancelled screen share
+      } catch (err) {
+        logger.warn("Screen share cancelled or failed", { context: "video-consultation", error: err });
       }
     }
   }, [isScreenSharing]);

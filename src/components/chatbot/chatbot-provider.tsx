@@ -6,6 +6,8 @@ import {
   useContext,
   useState,
   useCallback,
+  useRef,
+  useEffect,
   type ReactNode,
 } from "react";
 
@@ -45,6 +47,14 @@ export function ChatbotProvider({
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const abortControllerRef = useRef<AbortController | null>(null);
+
+  // Cleanup: abort any in-flight stream when the component unmounts
+  useEffect(() => {
+    return () => {
+      abortControllerRef.current?.abort();
+    };
+  }, []);
 
   const sendMessage = useCallback(async (content: string) => {
     const trimmed = content.trim();
@@ -61,6 +71,11 @@ export function ChatbotProvider({
     setIsLoading(true);
 
     try {
+      // Abort any previous in-flight request before starting a new one
+      abortControllerRef.current?.abort();
+      const controller = new AbortController();
+      abortControllerRef.current = controller;
+
       const apiMessages = [
         ...messages.map((m) => ({ role: m.role, content: m.content })),
         { role: "user" as const, content: trimmed },
@@ -70,6 +85,7 @@ export function ChatbotProvider({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ messages: apiMessages, clinicId }),
+        signal: controller.signal,
       });
 
       if (!response.ok) {
@@ -122,8 +138,8 @@ export function ChatbotProvider({
                     )
                   );
                 }
-              } catch {
-                // Skip malformed chunks
+              } catch (parseErr) {
+                logger.warn("Malformed SSE chunk skipped", { context: "chatbot-provider", error: parseErr });
               }
             }
           }

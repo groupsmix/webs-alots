@@ -118,8 +118,9 @@ export function AppointmentList({ patientId }: { patientId?: string }) {
       }
 
       setRefreshKey((k) => k + 1);
-    } catch {
-      setCancelError("An error occurred");
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "An error occurred";
+      setCancelError(message);
     } finally {
       setCancellingId(null);
     }
