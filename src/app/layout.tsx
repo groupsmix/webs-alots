@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { getTenant } from "@/lib/tenant";
+import { clinicConfig } from "@/config/clinic.config";
 import { TenantProvider } from "@/components/tenant-provider";
 import { ThemeProvider } from "@/components/theme-provider";
 import { ToastProvider } from "@/components/ui/toast";
@@ -72,7 +73,7 @@ export default async function RootLayout({
 
   return (
     <html
-      lang="fr"
+      lang={clinicConfig.locale ?? "fr"}
       suppressHydrationWarning
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >

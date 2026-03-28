@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { logger } from "@/lib/logger";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -35,9 +36,10 @@ export function ContactForm() {
       if (!res.ok) {
         throw new Error("Failed to send message");
       }
-    } catch {
+    } catch (err) {
       // Even if the API endpoint doesn't exist yet, show success
       // so users know their submission was acknowledged.
+      logger.warn("Contact form submission failed", { context: "contact-form", error: err });
     }
 
     setLoading(false);

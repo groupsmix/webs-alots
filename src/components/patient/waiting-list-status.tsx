@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { logger } from "@/lib/logger";
 import { Clock, X, Bell } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -34,8 +35,8 @@ export function WaitingListStatus({ patientId }: WaitingListStatusProps) {
       const res = await fetch(`/api/booking/waiting-list?patientId=${patientId}`);
       const data = await res.json();
       setEntries(data.entries ?? []);
-    } catch {
-      // Silently handle fetch errors
+    } catch (err) {
+      logger.warn("Failed to fetch waiting list entries", { context: "waiting-list-status", error: err });
     } finally {
       setLoading(false);
     }
@@ -53,8 +54,8 @@ export function WaitingListStatus({ patientId }: WaitingListStatusProps) {
         body: JSON.stringify({ entryId }),
       });
       setEntries((prev) => prev.filter((e) => e.id !== entryId));
-    } catch {
-      // Silently handle errors
+    } catch (err) {
+      logger.warn("Failed to remove waiting list entry", { context: "waiting-list-status", error: err });
     }
   };
 

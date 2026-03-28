@@ -269,8 +269,8 @@ export async function POST(request: NextRequest) {
                       encoder.encode(`data: ${JSON.stringify({ content })}\n\n`),
                     );
                   }
-                } catch {
-                  // Skip malformed JSON chunks
+                } catch (parseErr) {
+                  logger.warn("Skipping malformed SSE chunk", { context: "chat", error: parseErr });
                 }
               }
             }
