@@ -18,6 +18,22 @@ binding = "ASSETS"
 binding = "R2_BUCKET"
 bucket_name = "webs-alots-uploads"
 
+# ---- Rate Limiting KV Namespace ----
+# Persistent rate limiting using Cloudflare KV
+# Enables rate limit counters to survive Worker restarts
+[[kv_namespaces]]
+binding = "RATE_LIMIT_KV"
+id = "YOUR_KV_NAMESPACE_ID"  # Replace with actual KV namespace ID after creation
+preview_id = "YOUR_PREVIEW_KV_NAMESPACE_ID"  # For local dev
+
+# ---- Feature Flags KV Namespace ----
+# Runtime feature flags using Cloudflare KV
+# Enables per-clinic feature overrides without redeployment
+[[kv_namespaces]]
+binding = "FEATURE_FLAGS_KV"
+id = "YOUR_FEATURE_FLAGS_KV_ID"  # Replace with actual KV namespace ID after creation
+preview_id = "YOUR_FEATURE_FLAGS_PREVIEW_ID"  # For local dev
+
 # ---- Non-Sensitive Environment Variables ----
 [vars]
 ROOT_DOMAIN = "oltigo.com"
