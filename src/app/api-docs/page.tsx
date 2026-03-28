@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import dynamic from "next/dynamic";
 
 // Dynamically import SwaggerUI to avoid SSR issues
@@ -19,7 +19,7 @@ import "swagger-ui-react/swagger-ui.css";
 
 /**
  * Swagger UI documentation page
- * Accessible at /api/docs
+ * Accessible at /api-docs
  * Displays OpenAPI spec from /api/docs/route.ts
  */
 export default function ApiDocsPage() {
