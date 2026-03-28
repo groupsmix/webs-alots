@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { ChevronLeft, ChevronRight, Check, Stethoscope, User, Clock, Phone, Loader2, MessageCircle } from "lucide-react";
 import { fetchDoctors, fetchServices, type DoctorView, type ServiceView } from "@/lib/data/client";
 import { clinicConfig } from "@/config/clinic.config";
@@ -187,6 +187,10 @@ export function BookingForm() {
     }
   };
 
+  // Idempotency key to prevent duplicate bookings from double-clicks or
+  // network retries. Generated once per confirm attempt.
+  const idempotencyKeyRef = useRef<string | null>(null);
+
   const handleConfirm = async () => {
     if (isSubmitting) return;
     // Honeypot check: if the hidden field was filled, silently reject
@@ -196,6 +200,11 @@ export function BookingForm() {
     }
     setIsSubmitting(true);
     setBookingError(null);
+
+    // Generate a unique idempotency key for this submission attempt
+    idempotencyKeyRef.current = crypto.randomUUID();
+    const idempotencyKey = idempotencyKeyRef.current;
+
     try {
       // Step 1: Get booking token (phone verification)
       const verifyRes = await fetch("/api/booking/verify", {
@@ -210,7 +219,7 @@ export function BookingForm() {
       }
       const bookingToken = verifyData.token as string;
 
-      // Step 2: Create booking with the token
+      // Step 2: Create booking with the token + idempotency key
       const specialtyId = doctor?.specialtyId ?? "";
 
       const res = await fetch("/api/booking", {
@@ -218,6 +227,7 @@ export function BookingForm() {
         headers: {
           "Content-Type": "application/json",
           "x-booking-token": bookingToken,
+          "x-idempotency-key": idempotencyKey,
         },
         body: JSON.stringify({
           specialtyId,

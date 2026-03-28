@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { logger } from "@/lib/logger";
+import { clinicDateTime } from "@/lib/timezone";
 import { Calendar, Clock, User, MapPin, X, RefreshCw, AlertTriangle } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -32,12 +33,13 @@ function canCancelAppointment(
   if (appt.status === "cancelled" || appt.status === "completed" || appt.status === "rescheduled") {
     return { canCancel: false, reason: "Appointment cannot be cancelled in its current state" };
   }
-  // Normalize time to "HH:MM:00" and use a full ISO-8601 format with UTC
-  // offset to avoid ambiguous date parsing across browsers/timezones.
+  // Use clinic-aware timezone conversion to avoid ambiguous date parsing
+  // across browsers/timezones. Morocco's DST rules are complex (suspended
+  // during Ramadan), so clinicDateTime handles the two-pass offset calculation.
   const normalizedTime = String(appt.time).length === 5
-    ? `${appt.time}:00`
-    : appt.time;
-  const appointmentDateTime = new Date(`${appt.date}T${normalizedTime}`);
+    ? appt.time
+    : appt.time.slice(0, 5);
+  const appointmentDateTime = clinicDateTime(appt.date, normalizedTime);
   const hoursUntil = (appointmentDateTime.getTime() - Date.now()) / (1000 * 60 * 60);
   if (hoursUntil < CANCELLATION_WINDOW_HOURS) {
     return {
