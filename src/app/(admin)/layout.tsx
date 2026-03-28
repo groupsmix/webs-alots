@@ -123,6 +123,13 @@ export default function AdminLayout({
   return (
     <OnboardingProvider>
     <div className="flex min-h-screen">
+      {/* Skip to content link for keyboard accessibility */}
+      <a
+        href="#admin-main-content"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[100] focus:rounded-lg focus:bg-primary focus:px-4 focus:py-2 focus:text-primary-foreground focus:text-sm focus:font-medium"
+      >
+        Aller au contenu principal
+      </a>
       {/* Mobile header bar */}
       <div className="fixed top-0 left-0 right-0 z-40 flex items-center gap-3 border-b bg-card px-4 py-3 md:hidden">
         <button
@@ -164,7 +171,7 @@ export default function AdminLayout({
         <SidebarContent pathname={pathname} />
       </aside>
 
-      <main className="flex-1 p-6 pt-16 md:pt-6">{children}</main>
+      <main id="admin-main-content" className="flex-1 p-6 pt-16 md:pt-6">{children}</main>
       <OnboardingTourOverlay />
     </div>
     </OnboardingProvider>

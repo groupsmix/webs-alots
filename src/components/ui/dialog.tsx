@@ -38,10 +38,66 @@ function DialogContent({
   onClose,
   ...props
 }: React.ComponentProps<"div"> & { onClose?: () => void }) {
+  const contentRef = React.useRef<HTMLDivElement>(null)
+
+  // Focus management: trap focus inside modal and restore on close
+  React.useEffect(() => {
+    const el = contentRef.current
+    if (!el) return
+
+    // Store previously focused element to restore on close
+    const previouslyFocused = document.activeElement as HTMLElement | null
+
+    // Focus first focusable element inside the dialog
+    const focusable = el.querySelectorAll<HTMLElement>(
+      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+    )
+    if (focusable.length > 0) {
+      focusable[0].focus()
+    } else {
+      el.focus()
+    }
+
+    // Trap focus within dialog
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        onClose?.()
+        return
+      }
+      if (e.key !== "Tab" || focusable.length === 0) return
+
+      const first = focusable[0]
+      const last = focusable[focusable.length - 1]
+
+      if (e.shiftKey) {
+        if (document.activeElement === first) {
+          e.preventDefault()
+          last.focus()
+        }
+      } else {
+        if (document.activeElement === last) {
+          e.preventDefault()
+          first.focus()
+        }
+      }
+    }
+
+    document.addEventListener("keydown", handleKeyDown)
+
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown)
+      previouslyFocused?.focus()
+    }
+  }, [onClose])
+
   return (
     <>
       <DialogOverlay onClick={onClose} />
       <div
+        ref={contentRef}
+        role="dialog"
+        aria-modal="true"
+        tabIndex={-1}
         className={cn(
           "fixed left-1/2 top-1/2 z-50 w-full max-w-lg -translate-x-1/2 -translate-y-1/2 border bg-background p-6 shadow-lg rounded-lg",
           className
@@ -54,9 +110,10 @@ function DialogContent({
             type="button"
             className="absolute right-4 top-4 rounded-sm opacity-70 transition-opacity hover:opacity-100"
             onClick={onClose}
+            aria-label="Fermer"
           >
             <X className="h-4 w-4" />
-            <span className="sr-only">Close</span>
+            <span className="sr-only">Fermer</span>
           </button>
         )}
       </div>

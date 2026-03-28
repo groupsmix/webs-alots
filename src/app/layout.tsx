@@ -4,6 +4,9 @@ import "./globals.css";
 import { getTenant } from "@/lib/tenant";
 import { TenantProvider } from "@/components/tenant-provider";
 import { ThemeProvider } from "@/components/theme-provider";
+import { ToastProvider } from "@/components/ui/toast";
+import { OfflineIndicator } from "@/components/offline-indicator";
+import { PerformanceMonitor } from "@/components/performance-monitor";
 import { ServiceWorkerRegister } from "@/components/sw-register";
 import { PlausibleScript } from "@/components/plausible-script";
 import { safeJsonLdStringify } from "@/lib/json-ld";
@@ -98,9 +101,13 @@ export default async function RootLayout({
           }}
         />
         <ThemeProvider>
-          <TenantProvider tenant={tenant}>
-            {children}
-          </TenantProvider>
+          <ToastProvider>
+            <TenantProvider tenant={tenant}>
+              {children}
+            </TenantProvider>
+            <OfflineIndicator />
+            <PerformanceMonitor />
+          </ToastProvider>
         </ThemeProvider>
         <ServiceWorkerRegister />
         <PlausibleScript />
