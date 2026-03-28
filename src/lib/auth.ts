@@ -9,6 +9,7 @@ import {
   otpSendLimiter,
   passwordResetLimiter,
 } from "@/lib/rate-limit";
+import { logger } from "@/lib/logger";
 
 /**
  * Phone auth feature flag.
@@ -261,7 +262,7 @@ export async function resetPassword(
   // Even if the email doesn't exist, we don't reveal that to the caller.
   if (error) {
     // Log the error server-side for debugging, but don't expose it
-    console.error("[resetPassword] Supabase error (not exposed to client):", error.message);
+    logger.warn("Password reset failed (not exposed to client)", { context: "auth", error: error.message });
   }
 
   return { error: null };

@@ -13,6 +13,7 @@ import { getTenant, getClinicConfig } from "@/lib/tenant";
 import { clinicConfig } from "@/config/clinic.config";
 import { getLocalDateStr } from "@/lib/utils";
 import { unstable_cache } from "next/cache";
+import { logger } from "@/lib/logger";
 
 // ── Types (match existing UI shapes) ──
 
@@ -136,7 +137,8 @@ async function getClinicId(): Promise<string | null> {
       .limit(1)
       .single();
     _defaultClinicId = data?.id ?? null;
-  } catch {
+  } catch (err) {
+    logger.warn("Failed to resolve default clinic ID", { context: "public-data", error: err });
     _defaultClinicId = null;
   }
   _defaultClinicIdFetchedAt = Date.now();
@@ -287,8 +289,8 @@ async function fetchAverageRatingFromDb(clinicId: string): Promise<number> {
         return Math.round(avg * 10) / 10;
       }
     }
-  } catch {
-    // RPC function may not exist yet — fall through to in-app computation
+  } catch (err) {
+    logger.warn("avg_clinic_rating RPC unavailable, using fallback", { context: "public-data", clinicId, error: err });
   }
 
   // Fallback: use head: true with count to get total, then fetch only

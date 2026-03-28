@@ -14,6 +14,7 @@ import {
 } from "@/lib/data/client";
 import { RescheduleDialog } from "@/components/patient/reschedule-dialog";
 import { PageLoader } from "@/components/ui/page-loader";
+import { logger } from "@/lib/logger";
 
 const statusColors: Record<string, string> = {
   scheduled: "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300",
@@ -97,7 +98,8 @@ export default function PatientAppointmentsPage() {
 
       setCancelSuccess("Appointment cancelled successfully.");
       setRefreshKey((k) => k + 1);
-    } catch {
+    } catch (err) {
+      logger.warn("Appointment cancellation failed", { context: "patient-appointments", error: err });
       setCancelError("An error occurred while cancelling.");
     } finally {
       setCancellingId(null);

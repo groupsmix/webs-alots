@@ -10,6 +10,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { extractClientIp } from "@/lib/rate-limit";
+import { logger } from "@/lib/logger";
 
 const VALID_CONSENT_TYPES = [
   "cookies_accepted",
@@ -102,7 +103,7 @@ export async function POST(request: NextRequest) {
 
   if (error) {
     // Table may not exist yet — log but don't fail the user experience
-    console.error("Failed to log consent:", error.message);
+    logger.warn("Failed to log consent", { context: "consent", error: error.message });
     return NextResponse.json({ ok: true, logged: false });
   }
 

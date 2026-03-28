@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Download, Trash2, ShieldCheck, AlertTriangle } from "lucide-react";
+import { logger } from "@/lib/logger";
 
 export default function PatientSettingsPage() {
   const [exportLoading, setExportLoading] = useState(false);
@@ -33,7 +34,8 @@ export default function PatientSettingsPage() {
       URL.revokeObjectURL(url);
 
       setMessage({ type: "success", text: "Vos données ont été téléchargées." });
-    } catch {
+    } catch (err) {
+      logger.warn("Data export failed", { context: "patient-settings", error: err });
       setMessage({ type: "error", text: "Erreur lors de l'export." });
     } finally {
       setExportLoading(false);
@@ -60,7 +62,8 @@ export default function PatientSettingsPage() {
       } else {
         setMessage({ type: "error", text: data.error ?? "Échec de la demande." });
       }
-    } catch {
+    } catch (err) {
+      logger.warn("Account deletion request failed", { context: "patient-settings", error: err });
       setMessage({ type: "error", text: "Erreur de connexion." });
     } finally {
       setDeleteLoading(false);
@@ -80,7 +83,8 @@ export default function PatientSettingsPage() {
       } else {
         setMessage({ type: "error", text: data.error ?? "Échec de l'annulation." });
       }
-    } catch {
+    } catch (err) {
+      logger.warn("Cancel deletion failed", { context: "patient-settings", error: err });
       setMessage({ type: "error", text: "Erreur de connexion." });
     } finally {
       setDeleteLoading(false);

@@ -5,6 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { logger } from "@/lib/logger";
 import { Badge } from "@/components/ui/badge";
 import {
   Select,
@@ -65,8 +66,8 @@ export default function CustomFieldsAdminPage() {
         if (res.ok) {
           // Fallback: we'll use a hardcoded list based on known types
         }
-      } catch {
-        // Ignore
+      } catch (err) {
+        logger.warn("Failed to load clinic types", { context: "custom-fields", error: err });
       }
       // Use known clinic types from the system
       setClinicTypes([
@@ -97,8 +98,8 @@ export default function CustomFieldsAdminPage() {
       const res = await fetch(url);
       const data = await res.json();
       setDefinitions(data.definitions ?? []);
-    } catch {
-      void 0;
+    } catch (err) {
+      logger.warn("Failed to load custom field definitions", { context: "custom-fields", error: err });
     } finally {
       setLoading(false);
     }
@@ -115,8 +116,8 @@ export default function CustomFieldsAdminPage() {
     try {
       await fetch(`/api/custom-fields?id=${id}`, { method: "DELETE" });
       loadDefinitions();
-    } catch {
-      void 0;
+    } catch (err) {
+      logger.warn("Failed to delete custom field", { context: "custom-fields", error: err });
     }
   };
 

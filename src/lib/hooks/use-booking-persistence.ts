@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useCallback } from "react";
+import { logger } from "@/lib/logger";
 
 const STORAGE_KEY = "booking-progress";
 const EXPIRY_MS = 30 * 60 * 1000; // 30 minutes
@@ -25,8 +26,8 @@ export function useBookingPersistence() {
     try {
       const entry: BookingProgress = { ...data, savedAt: Date.now() };
       localStorage.setItem(STORAGE_KEY, JSON.stringify(entry));
-    } catch {
-      // Storage unavailable or full; silently ignore
+    } catch (err) {
+      logger.warn("Failed to save booking progress", { context: "booking-persistence", error: err });
     }
   }, []);
 
@@ -41,7 +42,8 @@ export function useBookingPersistence() {
       }
       const { savedAt: _, ...data } = entry;
       return data;
-    } catch {
+    } catch (err) {
+      logger.warn("Failed to load booking progress", { context: "booking-persistence", error: err });
       return null;
     }
   }, []);
@@ -49,8 +51,8 @@ export function useBookingPersistence() {
   const clear = useCallback(() => {
     try {
       localStorage.removeItem(STORAGE_KEY);
-    } catch {
-      // ignore
+    } catch (err) {
+      logger.warn("Failed to clear booking progress", { context: "booking-persistence", error: err });
     }
   }, []);
 
