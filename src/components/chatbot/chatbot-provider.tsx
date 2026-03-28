@@ -48,6 +48,10 @@ export function ChatbotProvider({
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const abortControllerRef = useRef<AbortController | null>(null);
+  // Keep a ref to the latest messages so sendMessage doesn't recreate on
+  // every message change (avoids stale closure & unnecessary re-renders).
+  const messagesRef = useRef<ChatMessage[]>(messages);
+  messagesRef.current = messages;
 
   // Cleanup: abort any in-flight stream when the component unmounts
   useEffect(() => {
@@ -77,7 +81,7 @@ export function ChatbotProvider({
       abortControllerRef.current = controller;
 
       const apiMessages = [
-        ...messages.map((m) => ({ role: m.role, content: m.content })),
+        ...messagesRef.current.map((m) => ({ role: m.role, content: m.content })),
         { role: "user" as const, content: trimmed },
       ];
 
@@ -168,7 +172,7 @@ export function ChatbotProvider({
       abortControllerRef.current = null;
       setIsLoading(false);
     }
-  }, [messages, clinicId]);
+  }, [clinicId]);
 
   const clearMessages = useCallback(() => {
     setMessages([]);
