@@ -9,6 +9,7 @@
  */
 
 import { useState, useEffect } from "react";
+import { logger } from "@/lib/logger";
 import { AlertTriangle, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -34,7 +35,8 @@ export function ImpersonationBanner() {
     try {
       await fetch("/api/impersonate", { method: "DELETE" });
       window.location.href = "/super-admin/clinics";
-    } catch {
+    } catch (err) {
+      logger.warn("Failed to end impersonation session", { context: "impersonation-banner", error: err });
       setEnding(false);
     }
   }

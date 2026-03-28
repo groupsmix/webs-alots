@@ -165,6 +165,7 @@ export function ChatbotProvider({
       };
       setMessages((prev) => [...prev, errorMsg]);
     } finally {
+      abortControllerRef.current = null;
       setIsLoading(false);
     }
   }, [messages, clinicId]);

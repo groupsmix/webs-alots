@@ -9,6 +9,7 @@
  */
 
 import { useState, useMemo, useCallback, useRef } from "react";
+import { logger } from "@/lib/logger";
 import { Download, Printer, Copy, Check, QrCode } from "lucide-react";
 import QRCodeLib from "qrcode";
 import { escapeHtml } from "@/lib/escape-html";
@@ -52,8 +53,8 @@ export function QrCodeGenerator({
       await navigator.clipboard.writeText(url);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
-    } catch {
-      // Clipboard not available
+    } catch (err) {
+      logger.warn("Clipboard write failed", { context: "qr-code-generator", error: err });
     }
   }, [url]);
 

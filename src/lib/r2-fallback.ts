@@ -13,6 +13,8 @@
  *   R2_REPLICA_PUBLIC_URL  — Replica bucket public URL (different region)
  */
 
+import { logger } from "@/lib/logger";
+
 interface R2FallbackConfig {
   primaryUrl: string;
   replicaUrl: string | null;
@@ -108,8 +110,9 @@ export async function getActiveR2Url(): Promise<string> {
         return config.primaryUrl;
       }
       recordPrimaryFailure();
-    } catch {
+    } catch (err) {
       // Primary bucket unreachable (timeout or network error)
+      logger.warn("Primary R2 bucket unreachable", { context: "r2-fallback", error: err });
       recordPrimaryFailure();
     }
   }
@@ -134,8 +137,8 @@ export async function getActiveR2Url(): Promise<string> {
         _lastCheck = now;
         return config.replicaUrl;
       }
-    } catch {
-      // Replica bucket also unreachable
+    } catch (err) {
+      logger.warn("Replica R2 bucket also unreachable", { context: "r2-fallback", error: err });
     }
   }
 

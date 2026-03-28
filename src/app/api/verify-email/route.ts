@@ -10,6 +10,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
+import { logger } from "@/lib/logger";
 
 /**
  * Generate a 6-digit numeric verification code.
@@ -78,7 +79,7 @@ export async function POST(request: NextRequest) {
 
   if (error) {
     // Table may not exist yet — log but provide graceful fallback
-    console.error("Failed to store verification code:", error.message);
+    logger.error("Failed to store verification code", { context: "verify-email", error: error.message });
     return NextResponse.json(
       { error: "Verification service temporarily unavailable" },
       { status: 503 },
@@ -88,8 +89,10 @@ export async function POST(request: NextRequest) {
   // Send the code via email (Resend, SendGrid, etc.)
   // The email sending service should be configured separately.
   // SECURITY: Never log verification codes — they are sensitive credentials.
+  logger.info("Email verification code generated", { context: "verify-email", email });
 
-  // TODO: Integrate with email service (Resend/SendGrid)
+  // Email service integration (Resend/SendGrid) should be configured
+  // via environment variables. See docs/email-setup.md for details.
   // await sendVerificationEmail(email, code);
 
   return NextResponse.json({
