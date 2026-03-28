@@ -40,7 +40,9 @@ export function useLocale(): [Locale, (l: Locale) => void] {
 
   const setLocale = useCallback((l: Locale) => {
     setLocaleState(l);
-    localStorage.setItem(LOCALE_STORAGE_KEY, l);
+    if (typeof window !== "undefined") {
+      localStorage.setItem(LOCALE_STORAGE_KEY, l);
+    }
     applyDirection(l);
   }, []);
 

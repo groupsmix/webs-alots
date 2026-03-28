@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { logger } from "@/lib/logger";
 import { Calendar, Clock, User, MapPin, X, RefreshCw, AlertTriangle } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -118,7 +119,8 @@ export function AppointmentList({ patientId }: { patientId?: string }) {
       }
 
       setRefreshKey((k) => k + 1);
-    } catch {
+    } catch (err) {
+      logger.warn("Failed to cancel appointment", { context: "appointment-list", error: err });
       setCancelError("An error occurred");
     } finally {
       setCancellingId(null);

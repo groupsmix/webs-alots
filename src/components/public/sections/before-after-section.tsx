@@ -4,7 +4,6 @@
  * when no data is available, avoiding placeholder content in production.
  */
 export function BeforeAfterSection() {
-  // TODO: fetch before/after cases from the database once the feature is built.
-  // For now, return null to avoid showing placeholder content on production.
+  // Feature not yet implemented — returns null to avoid placeholder content.
   return null;
 }

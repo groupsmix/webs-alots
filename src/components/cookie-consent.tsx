@@ -18,12 +18,16 @@ export function CookieConsent() {
   }, []);
 
   function accept() {
-    localStorage.setItem("cookie-consent", "accepted");
+    if (typeof window !== "undefined") {
+      localStorage.setItem("cookie-consent", "accepted");
+    }
     setVisible(false);
   }
 
   function decline() {
-    localStorage.setItem("cookie-consent", "declined");
+    if (typeof window !== "undefined") {
+      localStorage.setItem("cookie-consent", "declined");
+    }
     setVisible(false);
   }
 

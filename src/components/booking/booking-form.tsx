@@ -181,7 +181,8 @@ export function BookingForm() {
       } else {
         setWaitingListMessage(data.error ?? "Impossible de rejoindre la liste d'attente.");
       }
-    } catch {
+    } catch (err) {
+      logger.warn("Failed to join waiting list", { context: "booking-form", error: err });
       setWaitingListMessage("Impossible de rejoindre la liste d'attente.");
     }
   };
@@ -243,7 +244,8 @@ export function BookingForm() {
         setBookingId(data.appointment.id);
       }
       setSubmitted(true);
-    } catch {
+    } catch (err) {
+      logger.warn("Booking confirmation failed", { context: "booking-form", error: err });
       setBookingError("Erreur de connexion. Veuillez r\u00e9essayer.");
     } finally {
       setIsSubmitting(false);

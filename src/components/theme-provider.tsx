@@ -64,7 +64,9 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
   const setTheme = useCallback((t: Theme) => {
     setThemeState(t);
-    localStorage.setItem("theme", t);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("theme", t);
+    }
   }, []);
 
   return (

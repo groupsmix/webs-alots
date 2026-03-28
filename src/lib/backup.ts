@@ -151,7 +151,8 @@ export function validateBackup(
     }
 
     return { valid: true, manifest: parsed.manifest, parsed };
-  } catch {
+  } catch (err) {
+    logger.warn("Backup validation failed: invalid JSON", { context: "backup", error: err });
     return { valid: false, error: "Invalid JSON format" };
   }
 }
