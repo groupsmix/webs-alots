@@ -50,6 +50,7 @@ export function useLocale(): [Locale, (l: Locale) => void] {
 }
 
 function applyDirection(locale: Locale) {
+  if (typeof document === "undefined") return;
   const dir = getDirection(locale);
   document.documentElement.dir = dir;
   document.documentElement.lang = locale;

@@ -111,6 +111,7 @@ export async function getActiveR2Url(): Promise<string> {
       }
       recordPrimaryFailure();
     } catch (err) {
+      // Primary bucket unreachable (timeout or network error)
       logger.warn("Primary R2 bucket unreachable", { context: "r2-fallback", error: err });
       recordPrimaryFailure();
     }

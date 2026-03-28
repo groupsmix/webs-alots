@@ -269,12 +269,12 @@ export function BookingForm() {
           </p>
 
           <div className="rounded-lg border p-4 max-w-sm mx-auto text-left text-sm space-y-1">
-            <p><span className="text-muted-foreground">Service :</span> {service?.name}</p>
-            <p><span className="text-muted-foreground">M\u00e9decin :</span> {doctor?.name}</p>
+            <p><span className="text-muted-foreground">Service :</span> {service?.name ?? "—"}</p>
+            <p><span className="text-muted-foreground">M\u00e9decin :</span> {doctor?.name ?? "—"}</p>
             <p><span className="text-muted-foreground">Date :</span> {selectedDate}</p>
             <p><span className="text-muted-foreground">Heure :</span> {selectedTime}</p>
-            <p><span className="text-muted-foreground">Dur\u00e9e :</span> {service?.duration} min</p>
-            <p><span className="text-muted-foreground">Prix :</span> {service?.price} {service?.currency}</p>
+            <p><span className="text-muted-foreground">Dur\u00e9e :</span> {service?.duration ?? "—"} min</p>
+            <p><span className="text-muted-foreground">Prix :</span> {service?.price ?? "—"} {service?.currency ?? ""}</p>
           </div>
 
           {manageUrl && (
@@ -452,8 +452,8 @@ export function BookingForm() {
             {selectedDate && selectedTime && (
               <div className="rounded-lg bg-muted/50 p-3 text-sm space-y-1">
                 <p className="font-medium text-xs text-muted-foreground uppercase tracking-wide">R\u00e9sum\u00e9</p>
-                <p>{service?.name} avec {doctor?.name}</p>
-                <p>{selectedDate} \u00e0 {selectedTime} \u00b7 {service?.duration} min</p>
+                <p>{service?.name ?? "—"} avec {doctor?.name ?? "—"}</p>
+                <p>{selectedDate} \u00e0 {selectedTime} \u00b7 {service?.duration ?? "—"} min</p>
               </div>
             )}
           </div>
@@ -466,14 +466,14 @@ export function BookingForm() {
             <div className="rounded-lg border p-4 space-y-2 text-sm">
               <h3 className="font-semibold text-base mb-3">R\u00e9capitulatif</h3>
               <div className="grid gap-1.5">
-                <div className="flex justify-between"><span className="text-muted-foreground">Service</span><span className="font-medium">{service?.name}</span></div>
-                <div className="flex justify-between"><span className="text-muted-foreground">M\u00e9decin</span><span className="font-medium">{doctor?.name}</span></div>
-                <div className="flex justify-between"><span className="text-muted-foreground">Sp\u00e9cialit\u00e9</span><span className="font-medium">{doctor?.specialty}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Service</span><span className="font-medium">{service?.name ?? "—"}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">M\u00e9decin</span><span className="font-medium">{doctor?.name ?? "—"}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Sp\u00e9cialit\u00e9</span><span className="font-medium">{doctor?.specialty ?? "—"}</span></div>
                 <div className="flex justify-between"><span className="text-muted-foreground">Date</span><span className="font-medium">{selectedDate}</span></div>
                 <div className="flex justify-between"><span className="text-muted-foreground">Heure</span><span className="font-medium">{selectedTime}</span></div>
-                <div className="flex justify-between"><span className="text-muted-foreground">Dur\u00e9e</span><span className="font-medium">{service?.duration} min</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Dur\u00e9e</span><span className="font-medium">{service?.duration ?? "—"} min</span></div>
                 <hr />
-                <div className="flex justify-between font-medium"><span>Prix</span><span>{service?.price} {service?.currency}</span></div>
+                <div className="flex justify-between font-medium"><span>Prix</span><span>{service?.price ?? "—"} {service?.currency ?? ""}</span></div>
               </div>
             </div>
 

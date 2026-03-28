@@ -41,7 +41,7 @@ interface CachedClinic {
   tier: string;
   cachedAt: number;
 }
-const SUBDOMAIN_CACHE_TTL_MS = 5 * 60 * 1000;
+const SUBDOMAIN_CACHE_TTL_MS = 60 * 1000; // 1 minute — reduced from 5 min to limit stale routing after subdomain changes
 const subdomainCache = new Map<string, CachedClinic>();
 
 /**

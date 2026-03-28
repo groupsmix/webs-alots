@@ -38,7 +38,7 @@ export async function authenticateApiKey(
     .select("clinic_id, active, key_hash")
     .eq("key_prefix", keyPrefix)
     .eq("active", true)
-    .limit(10);
+    .limit(50);
 
   if (!candidates || candidates.length === 0) return null;
 

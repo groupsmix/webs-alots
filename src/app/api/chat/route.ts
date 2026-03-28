@@ -270,7 +270,7 @@ export async function POST(request: NextRequest) {
                     );
                   }
                 } catch (parseErr) {
-                  logger.warn("Skipping malformed SSE chunk", { context: "chat", error: parseErr });
+                  logger.warn("Malformed SSE chunk skipped", { context: "chat/stream", error: parseErr });
                 }
               }
             }

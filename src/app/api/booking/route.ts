@@ -17,6 +17,7 @@ import { logAuditEvent } from "@/lib/audit-log";
 // (SECURITY DEFINER function that bypasses users-table RLS).
 import { computeEndTime } from "@/lib/timezone";
 import { logger } from "@/lib/logger";
+import { bookingLimiter, extractClientIp } from "@/lib/rate-limit";
 import { safeParse } from "@/lib/validations";
 import { dispatchNotification } from "@/lib/notifications";
 import type { TemplateVariables } from "@/lib/notifications";
@@ -176,6 +177,18 @@ async function validateBookingRequest(
  */
 export async function POST(request: NextRequest) {
   try {
+    // Defence-in-depth: per-IP rate limit for the booking endpoint.
+    // The middleware also applies bookingLimiter, but checking here guards
+    // against deployment configs that skip the middleware layer.
+    const clientIp = extractClientIp(request);
+    const allowed = await bookingLimiter.check(`booking:${clientIp}`);
+    if (!allowed) {
+      return NextResponse.json(
+        { error: "Too many booking requests. Please try again later." },
+        { status: 429 },
+      );
+    }
+
     // CRITICAL-02: Require a booking verification token.
     // The token is issued after phone/email OTP verification via
     // POST /api/booking/verify. Without it, bots can flood the

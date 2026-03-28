@@ -86,8 +86,9 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // In production, send the code via email (Resend, SendGrid, etc.)
+  // Send the code via email (Resend, SendGrid, etc.)
   // The email sending service should be configured separately.
+  // SECURITY: Never log verification codes — they are sensitive credentials.
   logger.info("Email verification code generated", { context: "verify-email", email });
 
   // Email service integration (Resend/SendGrid) should be configured

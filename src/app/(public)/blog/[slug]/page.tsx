@@ -5,6 +5,7 @@ import { ArrowLeft, Clock, Calendar, Tag, User } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { getAllPosts, getPostBySlug, BLOG_CATEGORIES } from "@/lib/blog";
 import { safeJsonLdStringify } from "@/lib/json-ld";
+import { sanitizeHtml } from "@/lib/sanitize-html";
 
 interface BlogPostPageProps {
   params: Promise<{ slug: string }>;
@@ -129,7 +130,7 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
       {/* Post content */}
       <div
         className="blog-content"
-        dangerouslySetInnerHTML={{ __html: post.content }}
+        dangerouslySetInnerHTML={{ __html: sanitizeHtml(post.content) }}
       />
 
       {/* Tags */}

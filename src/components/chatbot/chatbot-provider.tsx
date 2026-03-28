@@ -7,6 +7,7 @@ import {
   useState,
   useCallback,
   useRef,
+  useEffect,
   type ReactNode,
 } from "react";
 
@@ -46,7 +47,14 @@ export function ChatbotProvider({
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const abortRef = useRef<AbortController | null>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
+
+  // Cleanup: abort any in-flight stream when the component unmounts
+  useEffect(() => {
+    return () => {
+      abortControllerRef.current?.abort();
+    };
+  }, []);
 
   const sendMessage = useCallback(async (content: string) => {
     const trimmed = content.trim();
@@ -63,15 +71,15 @@ export function ChatbotProvider({
     setIsLoading(true);
 
     try {
+      // Abort any previous in-flight request before starting a new one
+      abortControllerRef.current?.abort();
+      const controller = new AbortController();
+      abortControllerRef.current = controller;
+
       const apiMessages = [
         ...messages.map((m) => ({ role: m.role, content: m.content })),
         { role: "user" as const, content: trimmed },
       ];
-
-      // Abort any previous in-flight request
-      abortRef.current?.abort();
-      const controller = new AbortController();
-      abortRef.current = controller;
 
       const response = await fetch("/api/chat", {
         method: "POST",
@@ -130,8 +138,8 @@ export function ChatbotProvider({
                     )
                   );
                 }
-              } catch (err) {
-                logger.warn("Skipping malformed SSE chunk", { context: "chatbot-provider", error: err });
+              } catch (parseErr) {
+                logger.warn("Malformed SSE chunk skipped", { context: "chatbot-provider", error: parseErr });
               }
             }
           }
@@ -157,7 +165,7 @@ export function ChatbotProvider({
       };
       setMessages((prev) => [...prev, errorMsg]);
     } finally {
-      abortRef.current = null;
+      abortControllerRef.current = null;
       setIsLoading(false);
     }
   }, [messages, clinicId]);

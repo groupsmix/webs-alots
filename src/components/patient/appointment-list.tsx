@@ -121,7 +121,8 @@ export function AppointmentList({ patientId }: { patientId?: string }) {
       setRefreshKey((k) => k + 1);
     } catch (err) {
       logger.warn("Failed to cancel appointment", { context: "appointment-list", error: err });
-      setCancelError("An error occurred");
+      const message = err instanceof Error ? err.message : "An error occurred";
+      setCancelError(message);
     } finally {
       setCancellingId(null);
     }
