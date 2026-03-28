@@ -129,8 +129,16 @@ export async function middleware(request: NextRequest) {
   }
 
   // --- Rate limiting (delegated to composable module) ---
-  const rateLimitResult = await applyRateLimit(request, cspHeaderValue, withSecurityHeaders);
-  if (rateLimitResult) return rateLimitResult;
+  const { response: rateLimitResponse, rateLimitInfo } = await applyRateLimit(request, cspHeaderValue, withSecurityHeaders);
+  if (rateLimitResponse) {
+    // Add rate limit headers to the response
+    if (rateLimitInfo) {
+      rateLimitResponse.headers.set("X-RateLimit-Limit", rateLimitInfo.limit.toString());
+      rateLimitResponse.headers.set("X-RateLimit-Remaining", rateLimitInfo.remaining.toString());
+      rateLimitResponse.headers.set("X-RateLimit-Reset", rateLimitInfo.reset.toString());
+    }
+    return rateLimitResponse;
+  }
 
   // If Supabase is not configured, allow all requests through
   // so the site renders with demo data instead of crashing
@@ -156,6 +164,12 @@ export async function middleware(request: NextRequest) {
     request: { headers: requestHeaders },
   });
   applyAllSecurityHeaders(supabaseResponse, cspHeaderValue, nonce);
+
+  // Add default rate limit headers to successful responses
+  supabaseResponse.headers.set("X-RateLimit-Limit", "30");
+  supabaseResponse.headers.set("X-RateLimit-Remaining", "29");
+  const resetTime = Math.ceil(Date.now() / 1000) + 60;
+  supabaseResponse.headers.set("X-RateLimit-Reset", resetTime.toString());
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL,
