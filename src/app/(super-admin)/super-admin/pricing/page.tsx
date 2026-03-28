@@ -20,6 +20,7 @@ import {
   type TierSlug,
 } from "@/lib/config/pricing";
 import { logger } from "@/lib/logger";
+import { Breadcrumb } from "@/components/ui/breadcrumb";
 import {
   fetchClientSubscriptions,
   fetchPricingTiers,
@@ -137,6 +138,10 @@ export default function PricingPage() {
 
   return (
     <div>
+      <Breadcrumb items={[
+        { label: "Super Admin", href: "/super-admin/dashboard" },
+        { label: "Pricing & Tiers" },
+      ]} />
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
           <h1 className="text-2xl font-bold">Pricing & Tiers</h1>

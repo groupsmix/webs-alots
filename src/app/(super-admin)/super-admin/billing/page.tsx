@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
 import { logger } from "@/lib/logger";
+import { Breadcrumb } from "@/components/ui/breadcrumb";
 import {
   fetchBillingRecords,
   type BillingRecord,
@@ -87,6 +88,10 @@ export default function BillingPage() {
 
   return (
     <div>
+      <Breadcrumb items={[
+        { label: "Super Admin", href: "/super-admin/dashboard" },
+        { label: "Billing" },
+      ]} />
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold">Billing Management</h1>

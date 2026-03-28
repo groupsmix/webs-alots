@@ -21,6 +21,7 @@ import {
   statusColors,
 } from "@/lib/config/pricing";
 import { logger } from "@/lib/logger";
+import { Breadcrumb } from "@/components/ui/breadcrumb";
 import {
   fetchClientSubscriptions,
   type ClientSubscription,
@@ -117,6 +118,10 @@ export default function SubscriptionsPage() {
 
   return (
     <div>
+      <Breadcrumb items={[
+        { label: "Super Admin", href: "/super-admin/dashboard" },
+        { label: "Subscriptions" },
+      ]} />
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
           <h1 className="text-2xl font-bold">Gestion des abonnements</h1>

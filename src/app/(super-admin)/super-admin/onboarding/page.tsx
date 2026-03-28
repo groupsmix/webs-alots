@@ -15,6 +15,7 @@ import {
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+import { Breadcrumb } from "@/components/ui/breadcrumb";
 import {
   createClinic,
   createUser,
@@ -521,6 +522,10 @@ export default function OnboardingPage() {
 
   return (
     <div className="max-w-4xl mx-auto">
+      <Breadcrumb items={[
+        { label: "Super Admin", href: "/super-admin/dashboard" },
+        { label: "Onboarding" },
+      ]} />
       <div className="mb-6">
         <h1 className="text-2xl font-bold">Client Onboarding</h1>
         <p className="text-sm text-muted-foreground mt-1">

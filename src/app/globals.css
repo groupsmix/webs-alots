@@ -309,6 +309,31 @@
   }
 }
 
+/* ── Mobile table scroll indicator ── */
+.table-mobile-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  position: relative;
+}
+
+.table-mobile-scroll::-webkit-scrollbar {
+  height: 4px;
+}
+
+.table-mobile-scroll::-webkit-scrollbar-thumb {
+  background-color: var(--muted-foreground);
+  border-radius: 2px;
+}
+
+@media (max-width: 768px) {
+  .table-mobile-scroll {
+    margin-left: -1rem;
+    margin-right: -1rem;
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+}
+
 /* ── Micro-interactions and hover states ── */
 @layer base {
   /* Interactive cards with subtle lift on hover */

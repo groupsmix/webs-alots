@@ -14,6 +14,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
+import { Breadcrumb } from "@/components/ui/breadcrumb";
 
 interface Template {
   id: string;
@@ -151,6 +152,10 @@ export default function TemplateManagerPage() {
 
   return (
     <div>
+      <Breadcrumb items={[
+        { label: "Super Admin", href: "/super-admin/dashboard" },
+        { label: "Templates" },
+      ]} />
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold">Template Manager</h1>
