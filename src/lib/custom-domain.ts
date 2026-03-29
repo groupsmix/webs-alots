@@ -9,6 +9,8 @@
  *   CLOUDFLARE_ZONE_ID — Zone ID for the root domain
  */
 
+import { logger } from "@/lib/logger";
+
 // ---- Types ----
 
 export interface DomainSetupResult {
@@ -243,7 +245,8 @@ export async function verifyDomain(
       verified: record.content === expectedTarget,
       currentTarget: record.content,
     };
-  } catch {
+  } catch (err) {
+    logger.warn("Failed to verify domain DNS", { context: "custom-domain", domain, error: err });
     return { verified: false };
   }
 }

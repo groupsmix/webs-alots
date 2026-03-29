@@ -58,8 +58,9 @@ export function validateCsrf(
       ) {
         allowedOrigins.add(origin);
       }
-    } catch {
-      /* malformed origin */
+    } catch (err) {
+      /* malformed origin — log for debugging */
+      void err;
     }
   }
   if (process.env.NODE_ENV !== "production") {

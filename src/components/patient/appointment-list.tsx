@@ -53,7 +53,8 @@ async function checkCanCancel(
     }
     const data = await res.json();
     return { canCancel: data.canCancel, reason: data.reason };
-  } catch {
+  } catch (err) {
+    logger.warn("Failed to check cancellation eligibility", { context: "appointment-list", appointmentId, error: err });
     return { canCancel: false, reason: "Unable to verify cancellation eligibility" };
   }
 }

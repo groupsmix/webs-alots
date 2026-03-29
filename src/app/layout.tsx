@@ -11,6 +11,7 @@ import { PerformanceMonitor } from "@/components/performance-monitor";
 import { ServiceWorkerRegister } from "@/components/sw-register";
 import { PlausibleScript } from "@/components/plausible-script";
 import { safeJsonLdStringify } from "@/lib/json-ld";
+import { getDirection, type Locale } from "@/lib/i18n";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -70,10 +71,13 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   const tenant = await getTenant();
+  const locale: Locale = (clinicConfig.locale as Locale) ?? "fr";
+  const dir = getDirection(locale);
 
   return (
     <html
-      lang={clinicConfig.locale ?? "fr"}
+      lang={locale}
+      dir={dir}
       suppressHydrationWarning
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
