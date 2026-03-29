@@ -6,15 +6,21 @@ import { cn } from "@/lib/utils";
 
 type ToastType = "success" | "error" | "warning" | "info";
 
+interface ToastAction {
+  label: string;
+  onClick: () => void;
+}
+
 interface Toast {
   id: string;
   message: string;
   type: ToastType;
   duration?: number;
+  action?: ToastAction;
 }
 
 interface ToastContextValue {
-  addToast: (message: string, type?: ToastType, duration?: number) => void;
+  addToast: (message: string, type?: ToastType, duration?: number, action?: ToastAction) => void;
   removeToast: (id: string) => void;
 }
 
@@ -70,7 +76,21 @@ function ToastItem({ toast, onRemove }: { toast: Toast; onRemove: (id: string) =
       )}
     >
       <Icon className={cn("h-5 w-5 shrink-0 mt-0.5", iconStyles[toast.type])} />
-      <p className="flex-1 text-sm font-medium">{toast.message}</p>
+      <div className="flex-1">
+        <p className="text-sm font-medium">{toast.message}</p>
+        {toast.action && (
+          <button
+            type="button"
+            className="mt-1 text-xs font-semibold underline hover:no-underline"
+            onClick={() => {
+              toast.action!.onClick();
+              onRemove(toast.id);
+            }}
+          >
+            {toast.action.label}
+          </button>
+        )}
+      </div>
       <button
         onClick={() => onRemove(toast.id)}
         className="shrink-0 rounded-md p-0.5 opacity-70 hover:opacity-100 transition-opacity"
@@ -89,9 +109,9 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     setToasts((prev) => prev.filter((t) => t.id !== id));
   }, []);
 
-  const addToast = useCallback((message: string, type: ToastType = "info", duration = 5000) => {
+  const addToast = useCallback((message: string, type: ToastType = "info", duration = 5000, action?: ToastAction) => {
     const id = `toast-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
-    setToasts((prev) => [...prev, { id, message, type, duration }]);
+    setToasts((prev) => [...prev, { id, message, type, duration, action }]);
   }, []);
 
   return (

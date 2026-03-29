@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import {
   Calendar, Clock, CheckCircle, XCircle, Activity,
   TrendingUp, BarChart3, Search, ArrowRight,
@@ -16,6 +16,15 @@ import { updateAppointmentStatus } from "@/lib/data/client";
 import { PageLoader } from "@/components/ui/page-loader";
 import { logger } from "@/lib/logger";
 import { getLocalDateStr } from "@/lib/utils";
+import { useToast } from "@/components/ui/toast";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogFooter,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import { useLocale } from "@/components/locale-switcher";
 import { t } from "@/lib/i18n";
 import type {
@@ -70,6 +79,12 @@ export function DoctorDashboardView({
   const [appointmentList, setAppointmentList] = useState(initialAppointments);
   const [searchQuery, setSearchQuery] = useState("");
   const [error, setError] = useState<Error | null>(null);
+  const { addToast } = useToast();
+  const [confirmAction, setConfirmAction] = useState<{
+    appointmentId: string;
+    patientName: string;
+    type: "no-show" | "completed";
+  } | null>(null);
 
   // ── Derived KPIs ──
 
@@ -149,39 +164,60 @@ export function DoctorDashboardView({
     { icon: CalendarClock, label: t(locale, "dashboard.upcomingFollowUps"), value: upcomingFollowUps.length.toString(), color: "text-purple-600" },
   ];
 
-  if (error) {
-    return (
-      <div className="p-8 text-center">
-        <p className="text-red-600 font-medium">{t(locale, "error.loadFailed")}</p>
-        {error.message && <p className="text-sm text-muted-foreground mt-2">{error.message}</p>}
-      </div>
-    );
-  }
-
-  const handleMarkDone = async (appointmentId: string) => {
+  const applyStatusChange = useCallback(async (
+    appointmentId: string,
+    newStatus: string,
+    previousStatus: string,
+  ) => {
     try {
-      const result = await updateAppointmentStatus(appointmentId, "completed");
-      if (!result.success) throw new Error(result.error?.message ?? "Failed to mark appointment as done");
+      const result = await updateAppointmentStatus(appointmentId, newStatus);
+      if (!result.success) throw new Error(result.error?.message ?? "Failed to update status");
       setAppointmentList((prev) =>
-        prev.map((a) => (a.id === appointmentId ? { ...a, status: "completed" } : a))
+        prev.map((a) => (a.id === appointmentId ? { ...a, status: newStatus } : a))
+      );
+      addToast(
+        t(locale, "dashboard.statusChanged"),
+        "success",
+        10_000,
+        {
+          label: t(locale, "dashboard.undo"),
+          onClick: () => {
+            void (async () => {
+              try {
+                const undo = await updateAppointmentStatus(appointmentId, previousStatus);
+                if (!undo.success) throw new Error(undo.error?.message ?? "Undo failed");
+                setAppointmentList((prev) =>
+                  prev.map((a) => (a.id === appointmentId ? { ...a, status: previousStatus } : a))
+                );
+                addToast(t(locale, "dashboard.undone"), "info");
+              } catch (err) {
+                logger.warn("Undo failed", { context: "doctor-dashboard", error: err });
+                addToast(t(locale, "error.updateFailed"), "error");
+              }
+            })();
+          },
+        },
       );
     } catch (err) {
-      logger.warn("Failed to mark appointment done", { context: "doctor-dashboard", error: err });
+      logger.warn("Failed to update appointment status", { context: "doctor-dashboard", error: err });
       setError(new Error(t(locale, "error.updateFailed")));
     }
+  }, [addToast, locale]);
+
+  const handleConfirmAction = useCallback(async () => {
+    if (!confirmAction) return;
+    const apt = appointmentList.find((a) => a.id === confirmAction.appointmentId);
+    const previousStatus = apt?.status ?? "scheduled";
+    setConfirmAction(null);
+    await applyStatusChange(confirmAction.appointmentId, confirmAction.type, previousStatus);
+  }, [confirmAction, appointmentList, applyStatusChange]);
+
+  const handleMarkDone = (appointmentId: string, patientName: string) => {
+    setConfirmAction({ appointmentId, patientName, type: "completed" });
   };
 
-  const handleNoShow = async (appointmentId: string) => {
-    try {
-      const result = await updateAppointmentStatus(appointmentId, "no-show");
-      if (!result.success) throw new Error(result.error?.message ?? "Failed to mark appointment as no-show");
-      setAppointmentList((prev) =>
-        prev.map((a) => (a.id === appointmentId ? { ...a, status: "no-show" } : a))
-      );
-    } catch (err) {
-      logger.warn("Failed to mark appointment no-show", { context: "doctor-dashboard", error: err });
-      setError(new Error(t(locale, "error.updateFailed")));
-    }
+  const handleNoShow = (appointmentId: string, patientName: string) => {
+    setConfirmAction({ appointmentId, patientName, type: "no-show" });
   };
 
   const handleStartConsultation = async (appointmentId: string) => {
@@ -204,6 +240,15 @@ export function DoctorDashboardView({
           p.phone.includes(searchQuery)
       )
     : [];
+
+  if (error) {
+    return (
+      <div className="p-8 text-center">
+        <p className="text-red-600 font-medium">{t(locale, "error.loadFailed")}</p>
+        {error.message && <p className="text-sm text-muted-foreground mt-2">{error.message}</p>}
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -276,7 +321,7 @@ export function DoctorDashboardView({
                           variant="ghost"
                           size="sm"
                           title={t(locale, "dashboard.markDone")}
-                          onClick={() => handleMarkDone(apt.id)}
+                          onClick={() => handleMarkDone(apt.id, apt.patientName)}
                         >
                           <CheckCircle className="h-4 w-4 text-green-600" />
                         </Button>
@@ -286,7 +331,7 @@ export function DoctorDashboardView({
                           variant="ghost"
                           size="sm"
                           title={t(locale, "dashboard.noShow")}
-                          onClick={() => handleNoShow(apt.id)}
+                          onClick={() => handleNoShow(apt.id, apt.patientName)}
                         >
                           <XCircle className="h-4 w-4 text-red-500" />
                         </Button>
@@ -529,6 +574,36 @@ export function DoctorDashboardView({
           </TabsContent>
         </Tabs>
       </div>
+      {/* Confirmation Dialog */}
+      <Dialog open={!!confirmAction}>
+        <DialogContent onClose={() => setConfirmAction(null)}>
+          <DialogHeader>
+            <DialogTitle>
+              {confirmAction?.type === "no-show"
+                ? t(locale, "dashboard.confirmNoShowTitle")
+                : t(locale, "dashboard.confirmDoneTitle")}
+            </DialogTitle>
+            <DialogDescription>
+              <strong>{confirmAction?.patientName}</strong>
+              {" — "}
+              {confirmAction?.type === "no-show"
+                ? t(locale, "dashboard.confirmNoShowDesc")
+                : t(locale, "dashboard.confirmDoneDesc")}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setConfirmAction(null)}>
+              {t(locale, "action.cancel")}
+            </Button>
+            <Button
+              variant={confirmAction?.type === "no-show" ? "destructive" : "default"}
+              onClick={() => void handleConfirmAction()}
+            >
+              {t(locale, "action.confirm")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

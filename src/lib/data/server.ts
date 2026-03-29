@@ -1552,6 +1552,7 @@ export async function getPatientDashboardData(clinicId: string, userId: string, 
     supabase.from("payments")
       .select("id, amount, status, created_at")
       .eq("clinic_id", clinicId)
+      .eq("patient_id", userId)
       .order("created_at", { ascending: false })
       .limit(DEFAULT_QUERY_LIMIT),
     supabase.from("notifications")

@@ -456,6 +456,13 @@ export const translations = {
     "dashboard.completedStat": "Terminés",
     "dashboard.noShows": "Absents",
     "dashboard.revenue": "Revenus",
+    "dashboard.confirmNoShowTitle": "Marquer comme absent ?",
+    "dashboard.confirmNoShowDesc": "Cette action sera enregistrée dans le dossier du patient. Vous pourrez annuler pendant 10 secondes.",
+    "dashboard.confirmDoneTitle": "Marquer comme terminé ?",
+    "dashboard.confirmDoneDesc": "La consultation sera marquée comme terminée. Vous pourrez annuler pendant 10 secondes.",
+    "dashboard.statusChanged": "Statut mis à jour.",
+    "dashboard.undo": "Annuler",
+    "dashboard.undone": "Action annulée.",
 
     // Doctor nav sidebar
     "doctorNav.title": "Portail Médecin",
@@ -997,6 +1004,13 @@ export const translations = {
     "dashboard.uniquePatients": "المرضى الفريدون",
     "dashboard.completedStat": "مكتمل",
     "dashboard.noShows": "غائبون",
+    "dashboard.confirmNoShowTitle": "تسجيل غياب؟",
+    "dashboard.confirmNoShowDesc": "سيتم تسجيل هذا الإجراء في ملف المريض. يمكنك التراجع خلال 10 ثوانٍ.",
+    "dashboard.confirmDoneTitle": "تسجيل إتمام؟",
+    "dashboard.confirmDoneDesc": "سيتم تسجيل الاستشارة كمكتملة. يمكنك التراجع خلال 10 ثوانٍ.",
+    "dashboard.statusChanged": "تم تحديث الحالة.",
+    "dashboard.undo": "تراجع",
+    "dashboard.undone": "تم التراجع.",
     "dashboard.revenue": "الإيرادات",
 
     // Doctor nav sidebar
@@ -1539,6 +1553,13 @@ export const translations = {
     "dashboard.uniquePatients": "Unique Patients",
     "dashboard.completedStat": "Completed",
     "dashboard.noShows": "No Shows",
+    "dashboard.confirmNoShowTitle": "Mark as no-show?",
+    "dashboard.confirmNoShowDesc": "This will be recorded in the patient's file. You can undo within 10 seconds.",
+    "dashboard.confirmDoneTitle": "Mark as completed?",
+    "dashboard.confirmDoneDesc": "The consultation will be marked as completed. You can undo within 10 seconds.",
+    "dashboard.statusChanged": "Status updated.",
+    "dashboard.undo": "Undo",
+    "dashboard.undone": "Action undone.",
     "dashboard.revenue": "Revenue",
 
     // Doctor nav sidebar
