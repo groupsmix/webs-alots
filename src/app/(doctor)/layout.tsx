@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useState, useCallback, useEffect } from "react";
 import {
   LayoutDashboard, Users, Calendar, Pill, FileEdit, Clock,
   MessageCircle, CalendarClock, BarChart3, ClipboardList,
@@ -10,17 +10,20 @@ import {
   Building2, FileCheck, Sparkles, HeartHandshake, Droplets, Monitor, Boxes, FileText,
   Heart, Ear, Bone, Brain, Activity, Wind, Target,
   Ruler, Syringe, Baby, Image, Eye,
-  Menu, X, ChevronDown, Search, Stethoscope,
+  Menu, X, ChevronDown, Search, Stethoscope, Pin,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { SignOutButton } from "@/components/sign-out-button";
 import { useClinicFeatures, SPECIALTY_FEATURES } from "@/lib/hooks/use-clinic-features";
+import { useLocale } from "@/components/locale-switcher";
+import { t } from "@/lib/i18n";
+import type { TranslationKey } from "@/lib/i18n";
 import type { ClinicFeatureKey } from "@/lib/features";
 
 interface NavItem {
   href: string;
-  label: string;
+  labelKey: TranslationKey;
   icon: React.ComponentType<{ className?: string }>;
   requiredFeature?: ClinicFeatureKey;
   section?: string;
@@ -28,75 +31,104 @@ interface NavItem {
 
 const navItems: NavItem[] = [
   // General
-  { href: "/doctor/dashboard", label: "Dashboard", icon: LayoutDashboard, section: "General" },
-  { href: "/doctor/patients", label: "My Patients", icon: Users, section: "General" },
-  { href: "/doctor/chat", label: "Chat", icon: MessageCircle, section: "General" },
-  { href: "/doctor/analytics", label: "Analytics", icon: BarChart3, section: "General" },
+  { href: "/doctor/dashboard", labelKey: "doctorNav.dashboard", icon: LayoutDashboard, section: "General" },
+  { href: "/doctor/patients", labelKey: "doctorNav.myPatients", icon: Users, section: "General" },
+  { href: "/doctor/chat", labelKey: "doctorNav.chat", icon: MessageCircle, section: "General" },
+  { href: "/doctor/analytics", labelKey: "doctorNav.analytics", icon: BarChart3, section: "General" },
   // Appointments
-  { href: "/doctor/schedule", label: "Schedule", icon: Calendar, requiredFeature: "appointments", section: "Appointments" },
-  { href: "/doctor/waiting-room", label: "Waiting Room", icon: Clock, requiredFeature: "appointments", section: "Appointments" },
-  { href: "/doctor/slots", label: "Available Slots", icon: CalendarClock, requiredFeature: "appointments", section: "Appointments" },
+  { href: "/doctor/schedule", labelKey: "doctorNav.schedule", icon: Calendar, requiredFeature: "appointments", section: "Appointments" },
+  { href: "/doctor/waiting-room", labelKey: "doctorNav.waitingRoom", icon: Clock, requiredFeature: "appointments", section: "Appointments" },
+  { href: "/doctor/slots", labelKey: "doctorNav.availableSlots", icon: CalendarClock, requiredFeature: "appointments", section: "Appointments" },
   // Clinical
-  { href: "/doctor/prescriptions", label: "Prescriptions", icon: Pill, requiredFeature: "prescriptions", section: "Clinical" },
-  { href: "/doctor/consultation", label: "Consultation Notes", icon: FileEdit, requiredFeature: "consultations", section: "Clinical" },
-  { href: "/doctor/lab-orders", label: "Lab Orders", icon: FlaskConical, requiredFeature: "lab_results", section: "Clinical" },
-  { href: "/doctor/certificates", label: "Certificates", icon: Award, requiredFeature: "certificates", section: "Clinical" },
-  { href: "/doctor/consent-forms", label: "Consent Forms", icon: FileCheck, requiredFeature: "consent_forms", section: "Clinical" },
+  { href: "/doctor/prescriptions", labelKey: "doctorNav.prescriptions", icon: Pill, requiredFeature: "prescriptions", section: "Clinical" },
+  { href: "/doctor/consultation", labelKey: "doctorNav.consultationNotes", icon: FileEdit, requiredFeature: "consultations", section: "Clinical" },
+  { href: "/doctor/lab-orders", labelKey: "doctorNav.labOrders", icon: FlaskConical, requiredFeature: "lab_results", section: "Clinical" },
+  { href: "/doctor/certificates", labelKey: "doctorNav.certificates", icon: Award, requiredFeature: "certificates", section: "Clinical" },
+  { href: "/doctor/consent-forms", labelKey: "doctorNav.consentForms", icon: FileCheck, requiredFeature: "consent_forms", section: "Clinical" },
   // Dental
-  { href: "/doctor/odontogram", label: "Odontogram", icon: ClipboardList, requiredFeature: "odontogram", section: "Dental" },
-  { href: "/doctor/treatment-plans", label: "Treatment Plans", icon: ClipboardList, requiredFeature: "odontogram", section: "Dental" },
-  { href: "/doctor/prosthetic-orders", label: "Prosthetic Orders", icon: Package, requiredFeature: "prosthetic_orders", section: "Dental" },
-  { href: "/doctor/sterilization", label: "Sterilization Log", icon: ShieldCheck, requiredFeature: "sterilization_log", section: "Dental" },
+  { href: "/doctor/odontogram", labelKey: "doctorNav.odontogram", icon: ClipboardList, requiredFeature: "odontogram", section: "Dental" },
+  { href: "/doctor/treatment-plans", labelKey: "doctorNav.treatmentPlans", icon: ClipboardList, requiredFeature: "odontogram", section: "Dental" },
+  { href: "/doctor/prosthetic-orders", labelKey: "doctorNav.prostheticOrders", icon: Package, requiredFeature: "prosthetic_orders", section: "Dental" },
+  { href: "/doctor/sterilization", labelKey: "doctorNav.sterilizationLog", icon: ShieldCheck, requiredFeature: "sterilization_log", section: "Dental" },
   // Media & Photos
-  { href: "/doctor/before-after", label: "Before/After", icon: Camera, requiredFeature: "before_after_photos", section: "Media" },
-  { href: "/doctor/consultation-photos", label: "Consultation Photos", icon: Camera, requiredFeature: "consultation_photos", section: "Media" },
+  { href: "/doctor/before-after", labelKey: "doctorNav.beforeAfter", icon: Camera, requiredFeature: "before_after_photos", section: "Media" },
+  { href: "/doctor/consultation-photos", labelKey: "doctorNav.consultationPhotos", icon: Camera, requiredFeature: "consultation_photos", section: "Media" },
   // Finance
-  { href: "/doctor/stock", label: "Material Stock", icon: Package, requiredFeature: "stock", section: "Finance" },
-  { href: "/doctor/installments", label: "Installments", icon: CreditCard, requiredFeature: "installments", section: "Finance" },
-  { href: "/doctor/lab-materials", label: "Lab Materials", icon: Boxes, requiredFeature: "lab_materials", section: "Finance" },
-  { href: "/doctor/lab-invoices", label: "Lab Invoices", icon: FileText, requiredFeature: "lab_invoices", section: "Finance" },
+  { href: "/doctor/stock", labelKey: "doctorNav.materialStock", icon: Package, requiredFeature: "stock", section: "Finance" },
+  { href: "/doctor/installments", labelKey: "doctorNav.installments", icon: CreditCard, requiredFeature: "installments", section: "Finance" },
+  { href: "/doctor/lab-materials", labelKey: "doctorNav.labMaterials", icon: Boxes, requiredFeature: "lab_materials", section: "Finance" },
+  { href: "/doctor/lab-invoices", labelKey: "doctorNav.labInvoices", icon: FileText, requiredFeature: "lab_invoices", section: "Finance" },
   // Clinics & Centers
-  { href: "/doctor/departments", label: "Departments", icon: Building2, requiredFeature: "departments", section: "Clinic" },
-  { href: "/doctor/treatment-packages", label: "Treatment Packages", icon: Sparkles, requiredFeature: "treatment_packages", section: "Clinic" },
+  { href: "/doctor/departments", labelKey: "doctorNav.departments", icon: Building2, requiredFeature: "departments", section: "Clinic" },
+  { href: "/doctor/treatment-packages", labelKey: "doctorNav.treatmentPackages", icon: Sparkles, requiredFeature: "treatment_packages", section: "Clinic" },
   // Specialty: IVF
-  { href: "/doctor/ivf-cycles", label: "IVF Cycles", icon: HeartHandshake, requiredFeature: "ivf_cycles", section: "Specialty" },
-  { href: "/doctor/ivf-protocols", label: "IVF Protocols", icon: ClipboardList, requiredFeature: "ivf_protocols", section: "Specialty" },
+  { href: "/doctor/ivf-cycles", labelKey: "doctorNav.ivfCycles", icon: HeartHandshake, requiredFeature: "ivf_cycles", section: "Specialty" },
+  { href: "/doctor/ivf-protocols", labelKey: "doctorNav.ivfProtocols", icon: ClipboardList, requiredFeature: "ivf_protocols", section: "Specialty" },
   // Specialty: Dialysis
-  { href: "/doctor/dialysis-sessions", label: "Dialysis Sessions", icon: Droplets, requiredFeature: "dialysis_sessions", section: "Specialty" },
-  { href: "/doctor/dialysis-machines", label: "Dialysis Machines", icon: Monitor, requiredFeature: "dialysis_machines", section: "Specialty" },
+  { href: "/doctor/dialysis-sessions", labelKey: "doctorNav.dialysisSessions", icon: Droplets, requiredFeature: "dialysis_sessions", section: "Specialty" },
+  { href: "/doctor/dialysis-machines", labelKey: "doctorNav.dialysisMachines", icon: Monitor, requiredFeature: "dialysis_machines", section: "Specialty" },
   // Specialty: Medical Specialties
-  { href: "/doctor/dermatology", label: "Dermatology", icon: Camera, requiredFeature: "dermatology", section: "Specialty" },
-  { href: "/doctor/cardiology", label: "Cardiology", icon: Heart, requiredFeature: "cardiology", section: "Specialty" },
-  { href: "/doctor/ent", label: "ENT", icon: Ear, requiredFeature: "ent", section: "Specialty" },
-  { href: "/doctor/orthopedics", label: "Orthopedics", icon: Bone, requiredFeature: "orthopedics", section: "Specialty" },
-  { href: "/doctor/psychiatry", label: "Psychiatry", icon: Brain, requiredFeature: "psychiatry", section: "Specialty" },
-  { href: "/doctor/neurology", label: "Neurology", icon: Activity, requiredFeature: "neurology", section: "Specialty" },
-  { href: "/doctor/urology", label: "Urology", icon: ClipboardList, requiredFeature: "urology", section: "Specialty" },
-  { href: "/doctor/pulmonology", label: "Pulmonology", icon: Wind, requiredFeature: "pulmonology", section: "Specialty" },
-  { href: "/doctor/endocrinology", label: "Endocrinology", icon: Droplets, requiredFeature: "endocrinology", section: "Specialty" },
-  { href: "/doctor/rheumatology", label: "Rheumatology", icon: Target, requiredFeature: "rheumatology", section: "Specialty" },
+  { href: "/doctor/dermatology", labelKey: "doctorNav.dermatology", icon: Camera, requiredFeature: "dermatology", section: "Specialty" },
+  { href: "/doctor/cardiology", labelKey: "doctorNav.cardiology", icon: Heart, requiredFeature: "cardiology", section: "Specialty" },
+  { href: "/doctor/ent", labelKey: "doctorNav.ent", icon: Ear, requiredFeature: "ent", section: "Specialty" },
+  { href: "/doctor/orthopedics", labelKey: "doctorNav.orthopedics", icon: Bone, requiredFeature: "orthopedics", section: "Specialty" },
+  { href: "/doctor/psychiatry", labelKey: "doctorNav.psychiatry", icon: Brain, requiredFeature: "psychiatry", section: "Specialty" },
+  { href: "/doctor/neurology", labelKey: "doctorNav.neurology", icon: Activity, requiredFeature: "neurology", section: "Specialty" },
+  { href: "/doctor/urology", labelKey: "doctorNav.urology", icon: ClipboardList, requiredFeature: "urology", section: "Specialty" },
+  { href: "/doctor/pulmonology", labelKey: "doctorNav.pulmonology", icon: Wind, requiredFeature: "pulmonology", section: "Specialty" },
+  { href: "/doctor/endocrinology", labelKey: "doctorNav.endocrinology", icon: Droplets, requiredFeature: "endocrinology", section: "Specialty" },
+  { href: "/doctor/rheumatology", labelKey: "doctorNav.rheumatology", icon: Target, requiredFeature: "rheumatology", section: "Specialty" },
   // Pediatrician
-  { href: "/doctor/growth-charts", label: "Growth Charts", icon: Ruler, requiredFeature: "growth_charts", section: "Specialty" },
-  { href: "/doctor/vaccinations", label: "Vaccinations", icon: Syringe, requiredFeature: "vaccination", section: "Specialty" },
-  { href: "/doctor/child-info", label: "Child Development", icon: Baby, requiredFeature: "growth_charts", section: "Specialty" },
+  { href: "/doctor/growth-charts", labelKey: "doctorNav.growthCharts", icon: Ruler, requiredFeature: "growth_charts", section: "Specialty" },
+  { href: "/doctor/vaccinations", labelKey: "doctorNav.vaccinations", icon: Syringe, requiredFeature: "vaccination", section: "Specialty" },
+  { href: "/doctor/child-info", labelKey: "doctorNav.childDevelopment", icon: Baby, requiredFeature: "growth_charts", section: "Specialty" },
   // Gynecologist
-  { href: "/doctor/pregnancies", label: "Pregnancy Tracking", icon: Heart, requiredFeature: "pregnancy_tracking", section: "Specialty" },
-  { href: "/doctor/ultrasounds", label: "Ultrasound Records", icon: Image, requiredFeature: "ultrasound_records", section: "Specialty" },
+  { href: "/doctor/pregnancies", labelKey: "doctorNav.pregnancyTracking", icon: Heart, requiredFeature: "pregnancy_tracking", section: "Specialty" },
+  { href: "/doctor/ultrasounds", labelKey: "doctorNav.ultrasoundRecords", icon: Image, requiredFeature: "ultrasound_records", section: "Specialty" },
   // Ophthalmologist
-  { href: "/doctor/vision-tests", label: "Vision Tests", icon: Eye, requiredFeature: "vision_tests", section: "Specialty" },
-  { href: "/doctor/iop-tracking", label: "IOP Tracking", icon: Activity, requiredFeature: "iop_tracking", section: "Specialty" },
+  { href: "/doctor/vision-tests", labelKey: "doctorNav.visionTests", icon: Eye, requiredFeature: "vision_tests", section: "Specialty" },
+  { href: "/doctor/iop-tracking", labelKey: "doctorNav.iopTracking", icon: Activity, requiredFeature: "iop_tracking", section: "Specialty" },
 ];
 
-const NAV_SECTIONS: { key: string; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
-  { key: "General", label: "General", icon: LayoutDashboard },
-  { key: "Appointments", label: "Appointments", icon: Calendar },
-  { key: "Clinical", label: "Clinical", icon: FileEdit },
-  { key: "Dental", label: "Dental", icon: ClipboardList },
-  { key: "Media", label: "Media & Photos", icon: Camera },
-  { key: "Finance", label: "Finance & Stock", icon: CreditCard },
-  { key: "Clinic", label: "Clinics & Centers", icon: Building2 },
-  { key: "Specialty", label: "Specialty Tools", icon: Stethoscope },
+/** Section label i18n key mapping */
+const SECTION_LABEL_KEYS: Record<string, TranslationKey> = {
+  General: "doctorNav.general",
+  Appointments: "doctorNav.appointments",
+  Clinical: "doctorNav.clinical",
+  Dental: "doctorNav.dental",
+  Media: "doctorNav.media",
+  Finance: "doctorNav.finance",
+  Clinic: "doctorNav.clinic",
+  Specialty: "doctorNav.specialty",
+};
+
+const NAV_SECTIONS: { key: string; icon: React.ComponentType<{ className?: string }> }[] = [
+  { key: "General", icon: LayoutDashboard },
+  { key: "Appointments", icon: Calendar },
+  { key: "Clinical", icon: FileEdit },
+  { key: "Dental", icon: ClipboardList },
+  { key: "Media", icon: Camera },
+  { key: "Finance", icon: CreditCard },
+  { key: "Clinic", icon: Building2 },
+  { key: "Specialty", icon: Stethoscope },
 ];
+
+/** Read pinned nav hrefs from localStorage */
+function getPinnedItems(): string[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = localStorage.getItem("doctor-pinned-nav");
+    return raw ? (JSON.parse(raw) as string[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+/** Persist pinned nav hrefs to localStorage */
+function setPinnedItems(hrefs: string[]): void {
+  if (typeof window === "undefined") return;
+  localStorage.setItem("doctor-pinned-nav", JSON.stringify(hrefs));
+}
 
 function SidebarContent({
   pathname,
@@ -111,12 +143,29 @@ function SidebarContent({
   selectedSpecialty: string | null;
   onSpecialtyChange: (v: string | null) => void;
 }) {
+  const [locale] = useLocale();
   const [expandedSections, setExpandedSections] = useState<Set<string>>(() => {
     // Default: expand the section containing the active route
     const activeItem = visibleItems.find((item) => pathname === item.href);
     return new Set(activeItem?.section ? [activeItem.section, "General"] : ["General"]);
   });
   const [searchQuery, setSearchQuery] = useState("");
+  const [pinnedHrefs, setPinnedHrefs] = useState<string[]>([]);
+
+  // Load pinned items from localStorage on mount
+  useEffect(() => {
+    setPinnedHrefs(getPinnedItems());
+  }, []);
+
+  const togglePin = useCallback((href: string) => {
+    setPinnedHrefs((prev) => {
+      const next = prev.includes(href)
+        ? prev.filter((h) => h !== href)
+        : [...prev, href];
+      setPinnedItems(next);
+      return next;
+    });
+  }, []);
 
   const toggleSection = (section: string) => {
     setExpandedSections((prev) => {
@@ -136,12 +185,48 @@ function SidebarContent({
     else grouped.set(section, [item]);
   }
 
-  // Filter by search
+  // Pinned items (only visible ones)
+  const pinnedItems = visibleItems.filter((item) => pinnedHrefs.includes(item.href));
+
+  // Filter by search — match translated label
   const filteredItems = searchQuery.trim()
     ? visibleItems.filter((item) =>
-        item.label.toLowerCase().includes(searchQuery.toLowerCase())
+        t(locale, item.labelKey).toLowerCase().includes(searchQuery.toLowerCase())
       )
     : null;
+
+  /** Render a single nav link with optional pin button */
+  const renderNavLink = (item: NavItem, compact = false) => {
+    const isActive = pathname === item.href;
+    const isPinned = pinnedHrefs.includes(item.href);
+    return (
+      <div key={item.href} className="group flex items-center">
+        <Link
+          href={item.href}
+          onClick={onNavClick}
+          className={`flex flex-1 items-center gap-3 rounded-lg px-3 ${compact ? "py-1.5" : "py-2"} text-sm transition-colors ${
+            isActive
+              ? "bg-primary/10 text-primary font-medium"
+              : "text-muted-foreground hover:bg-muted hover:text-foreground"
+          }`}
+        >
+          <item.icon className={compact ? "h-3.5 w-3.5" : "h-4 w-4"} />
+          {t(locale, item.labelKey)}
+        </Link>
+        <button
+          onClick={() => togglePin(item.href)}
+          title={isPinned ? t(locale, "doctorNav.unpin") : t(locale, "doctorNav.pin")}
+          className={`p-1 rounded transition-opacity ${
+            isPinned
+              ? "text-primary opacity-100"
+              : "text-muted-foreground opacity-0 group-hover:opacity-100"
+          }`}
+        >
+          <Pin className="h-3 w-3" />
+        </button>
+      </div>
+    );
+  };
 
   return (
     <>
@@ -149,7 +234,7 @@ function SidebarContent({
       <div className="relative mb-3">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
         <Input
-          placeholder="Search navigation..."
+          placeholder={t(locale, "doctorNav.searchNav")}
           className="pl-9 h-8 text-sm"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
@@ -163,7 +248,7 @@ function SidebarContent({
           value={selectedSpecialty ?? ""}
           onChange={(e) => onSpecialtyChange(e.target.value || null)}
         >
-          <option value="">All Features</option>
+          <option value="">{t(locale, "doctorNav.allFeatures")}</option>
           <option value="gp">General Practitioner</option>
           <option value="dentist">Dentist</option>
           <option value="pediatrician">Pediatrician</option>
@@ -186,31 +271,24 @@ function SidebarContent({
       {filteredItems ? (
         <nav className="space-y-1 overflow-y-auto flex-1">
           {filteredItems.length === 0 ? (
-            <p className="text-xs text-muted-foreground px-3 py-2">No results found</p>
+            <p className="text-xs text-muted-foreground px-3 py-2">{t(locale, "doctorNav.noResults")}</p>
           ) : (
-            filteredItems.map((item) => {
-              const isActive = pathname === item.href;
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  onClick={onNavClick}
-                  className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors ${
-                    isActive
-                      ? "bg-primary/10 text-primary font-medium"
-                      : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                  }`}
-                >
-                  <item.icon className="h-4 w-4" />
-                  {item.label}
-                </Link>
-              );
-            })
+            filteredItems.map((item) => renderNavLink(item))
           )}
         </nav>
       ) : (
-        /* Collapsible sections */
+        /* Pinned + Collapsible sections */
         <nav className="space-y-1 overflow-y-auto flex-1">
+          {/* Pinned Items Section */}
+          {pinnedItems.length > 0 && (
+            <div className="mb-2 pb-2 border-b">
+              <p className="px-3 py-1 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                {t(locale, "doctorNav.pinned")}
+              </p>
+              {pinnedItems.map((item) => renderNavLink(item))}
+            </div>
+          )}
+
           {NAV_SECTIONS.map((section) => {
             const items = grouped.get(section.key);
             if (!items || items.length === 0) return null;
@@ -225,31 +303,14 @@ function SidebarContent({
                   }`}
                 >
                   <section.icon className="h-4 w-4" />
-                  <span className="flex-1 text-left">{section.label}</span>
+                  <span className="flex-1 text-left">{t(locale, SECTION_LABEL_KEYS[section.key] ?? section.key)}</span>
                   <ChevronDown
                     className={`h-3.5 w-3.5 transition-transform ${isExpanded ? "" : "-rotate-90"}`}
                   />
                 </button>
                 {isExpanded && (
                   <div className="ml-4 space-y-0.5">
-                    {items.map((item) => {
-                      const isActive = pathname === item.href;
-                      return (
-                        <Link
-                          key={item.href}
-                          href={item.href}
-                          onClick={onNavClick}
-                          className={`flex items-center gap-3 rounded-lg px-3 py-1.5 text-sm transition-colors ${
-                            isActive
-                              ? "bg-primary/10 text-primary font-medium"
-                              : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                          }`}
-                        >
-                          <item.icon className="h-3.5 w-3.5" />
-                          {item.label}
-                        </Link>
-                      );
-                    })}
+                    {items.map((item) => renderNavLink(item, true))}
                   </div>
                 )}
               </div>
@@ -267,6 +328,7 @@ export default function DoctorLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const [locale] = useLocale();
   const { hasFeature } = useClinicFeatures();
   const [selectedSpecialty, setSelectedSpecialty] = useState<string | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -287,7 +349,7 @@ export default function DoctorLayout({
     <div className="flex min-h-screen">
       {/* Desktop sidebar */}
       <aside className="hidden w-64 border-r bg-card p-4 md:flex flex-col">
-        <h2 className="text-lg font-semibold mb-4">Doctor Dashboard</h2>
+        <h2 className="text-lg font-semibold mb-4">{t(locale, "doctorNav.title")}</h2>
         <SidebarContent
           pathname={pathname}
           visibleItems={visibleItems}
@@ -306,7 +368,7 @@ export default function DoctorLayout({
             <div className="h-7 w-7 rounded-lg bg-primary flex items-center justify-center">
               <Stethoscope className="h-3.5 w-3.5 text-primary-foreground" />
             </div>
-            <span className="font-semibold text-sm">Doctor Portal</span>
+            <span className="font-semibold text-sm">{t(locale, "doctorNav.title")}</span>
           </div>
           <Button
             variant="ghost"
@@ -327,7 +389,7 @@ export default function DoctorLayout({
                   <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
                     <Stethoscope className="h-4 w-4 text-primary-foreground" />
                   </div>
-                  <h2 className="text-lg font-semibold">Doctor Portal</h2>
+                  <h2 className="text-lg font-semibold">{t(locale, "doctorNav.title")}</h2>
                 </div>
                 <Button variant="ghost" size="sm" onClick={() => setMobileMenuOpen(false)}>
                   <X className="h-5 w-5" />
