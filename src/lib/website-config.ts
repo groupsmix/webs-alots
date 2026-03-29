@@ -134,8 +134,8 @@ export const defaultWebsiteConfig: WebsiteConfig = {
     title: "Localisation & Horaires",
     subtitle:
       "Rendez-nous visite dans notre cabinet. Nous serons ravis de vous accueillir.",
-    address: "Adresse du cabinet médical",
-    city: "Ville",
+    address: "Casablanca, Maroc",
+    city: "Casablanca",
     googleMapsEmbedUrl: "",
     workingHours: [
       { day: "Lundi", hours: "09:00 - 17:00" },
@@ -152,11 +152,11 @@ export const defaultWebsiteConfig: WebsiteConfig = {
     title: "Contactez-nous",
     subtitle:
       "Vous avez une question ou souhaitez nous contacter ? Nous sommes là pour vous aider. Utilisez l'un des moyens ci-dessous ou envoyez-nous un message.",
-    phone: "+212 5XX-XXXXXX",
-    whatsapp: "+212 6XX-XXXXXX",
-    email: "contact@exemple.com",
-    address: "Adresse du cabinet médical",
-    whatsappMessage: "Bonjour, je souhaite prendre rendez-vous.",
+    phone: "+212 522-000000",
+    whatsapp: "+212 661-000000",
+    email: "contact@oltigo.com",
+    address: "Casablanca, Maroc",
+    whatsappMessage: "Bonjour, je souhaite en savoir plus sur Oltigo.",
   },
 
   reviews: {
