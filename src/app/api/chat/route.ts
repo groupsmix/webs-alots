@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { fetchChatbotContext, buildSystemPrompt, getBasicResponse } from "@/lib/chatbot-data";
 import { requireTenant } from "@/lib/tenant";
 import { createClient } from "@/lib/supabase-server";
@@ -6,6 +6,7 @@ import { chatLimiter, extractClientIp } from "@/lib/rate-limit";
 import { logger } from "@/lib/logger";
 import { chatRequestSchema } from "@/lib/validations";
 import { withValidation } from "@/lib/api-validate";
+import { apiSuccess, apiError, apiRateLimited } from "@/lib/api-response";
 /**
  * POST /api/chat
  *
@@ -62,10 +63,7 @@ export const POST = withValidation(chatRequestSchema, async (body, request: Next
     const clientIp = extractClientIp(request);
     const allowed = await chatLimiter.check(`chat:${clientIp}`);
     if (!allowed) {
-      return NextResponse.json(
-        { error: "Too many requests. Please try again later." },
-        { status: 429 },
-      );
+      return apiRateLimited();
     }
 
     // Resolve clinic ID strictly from tenant context (middleware headers)
@@ -74,10 +72,7 @@ export const POST = withValidation(chatRequestSchema, async (body, request: Next
 
     const lastMessage = body.messages[body.messages.length - 1];
     if (!lastMessage || lastMessage.role !== "user" || !lastMessage.content.trim()) {
-      return NextResponse.json(
-        { error: "Last message must be a non-empty user message" },
-        { status: 400 },
-      );
+      return apiError("Last message must be a non-empty user message");
     }
 
     // Sanitize and truncate user messages; limit conversation history length
@@ -96,10 +91,7 @@ export const POST = withValidation(chatRequestSchema, async (body, request: Next
 
     // Check if chatbot is enabled for this clinic
     if (ctx.chatbotConfig && !ctx.chatbotConfig.enabled) {
-      return NextResponse.json(
-        { error: "Chatbot is not enabled for this clinic" },
-        { status: 403 },
-      );
+      return apiError("Chatbot is not enabled for this clinic", 403, "FORBIDDEN");
     }
 
     // Determine intelligence level
@@ -111,7 +103,7 @@ export const POST = withValidation(chatRequestSchema, async (body, request: Next
     // interact with the chatbot quick-reply buttons.
     if (intelligence === "basic") {
       const reply = getBasicResponse(lastMessage.content, ctx);
-      return NextResponse.json({
+      return apiSuccess({
         message: { role: "assistant" as const, content: reply },
       });
     }
@@ -123,7 +115,7 @@ export const POST = withValidation(chatRequestSchema, async (body, request: Next
     if (!chatUser) {
       // Fall back to basic keyword matching for unauthenticated users
       const reply = getBasicResponse(lastMessage.content, ctx);
-      return NextResponse.json({
+      return apiSuccess({
         message: { role: "assistant" as const, content: reply },
       });
     }
@@ -135,7 +127,7 @@ export const POST = withValidation(chatRequestSchema, async (body, request: Next
 
       if (!cfAccountId || !cfApiToken) {
         const reply = getBasicResponse(lastMessage.content, ctx);
-        return NextResponse.json({
+        return apiSuccess({
           message: { role: "assistant" as const, content: reply },
         });
       }
@@ -166,7 +158,7 @@ export const POST = withValidation(chatRequestSchema, async (body, request: Next
         const cfData = (await cfResponse.json()) as { result?: { response?: string } };
         const content = cfData.result?.response;
         if (content) {
-          return NextResponse.json({
+          return apiSuccess({
             message: { role: "assistant" as const, content },
           });
         }
@@ -182,7 +174,7 @@ export const POST = withValidation(chatRequestSchema, async (body, request: Next
 
       // Fallback to basic keyword matching when AI is unavailable
       const reply = getBasicResponse(lastMessage.content, ctx);
-      return NextResponse.json({
+      return apiSuccess({
         message: { role: "assistant" as const, content: reply },
       });
     }
@@ -195,7 +187,7 @@ export const POST = withValidation(chatRequestSchema, async (body, request: Next
 
     if (!apiKey) {
       const reply = getBasicResponse(lastMessage.content, ctx);
-      return NextResponse.json({
+      return apiSuccess({
         message: { role: "assistant" as const, content: reply },
       });
     }
@@ -224,7 +216,7 @@ export const POST = withValidation(chatRequestSchema, async (body, request: Next
 
     if (!apiResponse.ok) {
       const reply = getBasicResponse(lastMessage.content, ctx);
-      return NextResponse.json({
+      return apiSuccess({
         message: { role: "assistant" as const, content: reply },
       });
     }

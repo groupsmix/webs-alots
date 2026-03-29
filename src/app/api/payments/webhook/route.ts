@@ -1,10 +1,11 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase-server";
 import { hmacSha256Hex, timingSafeEqual } from "@/lib/crypto-utils";
 import { APPOINTMENT_STATUS, PAYMENT_STATUS } from "@/lib/types/database";
 import { logger } from "@/lib/logger";
 import { assertClinicId } from "@/lib/assert-tenant";
 import { setTenantContext, logTenantContext } from "@/lib/tenant-context";
+import { apiError, apiSuccess, apiInternalError } from "@/lib/api-response";
 
 /**
  * POST /api/payments/webhook
@@ -25,7 +26,7 @@ export async function POST(request: NextRequest) {
   const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
   if (!stripeSecretKey) {
-    return NextResponse.json({ error: "Stripe not configured" }, { status: 503 });
+    return apiError("Stripe not configured", 503);
   }
 
   try {
@@ -34,25 +35,16 @@ export async function POST(request: NextRequest) {
 
     // Verify webhook signature — webhook secret MUST be configured
     if (!webhookSecret) {
-      // STRIPE_WEBHOOK_SECRET not configured
-      return NextResponse.json(
-        { error: "Webhook signature verification not configured" },
-        { status: 503 },
-      );
+      return apiError("Webhook signature verification not configured", 503);
     }
 
     if (!signature) {
-      // Missing stripe-signature header
-      return NextResponse.json(
-        { error: "Missing stripe-signature header" },
-        { status: 400 },
-      );
+      return apiError("Missing stripe-signature header");
     }
 
     const isValid = await verifyStripeSignature(rawBody, signature, webhookSecret);
     if (!isValid) {
-      // Invalid webhook signature
-      return NextResponse.json({ error: "Invalid signature" }, { status: 400 });
+      return apiError("Invalid signature");
     }
 
     const event = JSON.parse(rawBody) as {
@@ -163,10 +155,10 @@ export async function POST(request: NextRequest) {
         // Unhandled event type — acknowledged without processing
     }
 
-    return NextResponse.json({ received: true });
+    return apiSuccess({ received: true });
   } catch (err) {
     logger.warn("Operation failed", { context: "payments/webhook", error: err });
-    return NextResponse.json({ error: "Failed to process webhook" }, { status: 500 });
+    return apiInternalError("Failed to process webhook");
   }
 }
 

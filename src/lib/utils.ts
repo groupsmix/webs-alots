@@ -1,6 +1,7 @@
 import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
 import { formatInTimeZone } from "date-fns-tz"
+import { DEFAULT_TIMEZONE } from "@/lib/constants"
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
@@ -16,7 +17,7 @@ export function cn(...inputs: ClassValue[]) {
  */
 export function getLocalDateStr(
   date: Date = new Date(),
-  timezone = "Africa/Casablanca",
+  timezone = DEFAULT_TIMEZONE,
 ): string {
   return formatInTimeZone(date, timezone, "yyyy-MM-dd");
 }

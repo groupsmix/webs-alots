@@ -4,6 +4,7 @@ import { verifyCmiCallback } from "@/lib/cmi";
 import { APPOINTMENT_STATUS, PAYMENT_STATUS } from "@/lib/types/database";
 import { logger } from "@/lib/logger";
 import { setTenantContext, logTenantContext } from "@/lib/tenant-context";
+import { apiError, apiInternalError } from "@/lib/api-response";
 
 /**
  * POST /api/payments/cmi/callback
@@ -24,8 +25,7 @@ export async function POST(request: NextRequest) {
     const callbackData = await verifyCmiCallback(params);
 
     if (!callbackData) {
-      // Invalid hash or missing callback data
-      return NextResponse.json({ error: "Invalid callback" }, { status: 400 });
+      return apiError("Invalid callback");
     }
 
     const supabase = await createClient();
@@ -117,6 +117,6 @@ export async function POST(request: NextRequest) {
     });
   } catch (err) {
     logger.warn("Operation failed", { context: "payments/cmi/callback", error: err });
-    return NextResponse.json({ error: "Failed to process payment callback" }, { status: 500 });
+    return apiInternalError("Failed to process payment callback");
   }
 }

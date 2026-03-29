@@ -7,7 +7,7 @@
  * Authentication: Bearer token via API key stored in clinic settings.
  */
 
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { createTenantClient } from "@/lib/supabase-server";
 import { authenticateApiKey } from "@/lib/api-auth";
 import { getCorsHeaders, handlePreflight } from "@/lib/cors";
@@ -16,6 +16,7 @@ import type { TablesInsert } from "@/lib/types/database";
 import { v1PatientCreateSchema } from "@/lib/validations";
 import { logTenantContext } from "@/lib/tenant-context";
 import { withValidation } from "@/lib/api-validate";
+import { apiSuccess, apiError, apiInternalError } from "@/lib/api-response";
 
 /** Handle CORS preflight requests. */
 export function OPTIONS(request: NextRequest) {
@@ -23,12 +24,10 @@ export function OPTIONS(request: NextRequest) {
 }
 
 export async function GET(request: NextRequest) {
+  const cors = getCorsHeaders(request);
   const auth = await authenticateApiKey(request);
   if (!auth) {
-    return NextResponse.json(
-      { error: "Unauthorized. Provide a valid API key as Bearer token." },
-      { status: 401, headers: getCorsHeaders(request) },
-    );
+    return apiError("Unauthorized. Provide a valid API key as Bearer token.", 401, "UNAUTHORIZED", cors);
   }
 
   logTenantContext(auth.clinicId, "v1/patients:GET");
@@ -59,22 +58,17 @@ export async function GET(request: NextRequest) {
 
   if (error) {
     logger.warn("Operation failed", { context: "v1/patients", error });
-    return NextResponse.json({ error: "Failed to fetch patients" }, { status: 500, headers: getCorsHeaders(request) });
+    return apiInternalError("Failed to fetch patients");
   }
 
-  return NextResponse.json({
-    data,
-    pagination: { total: count, limit, offset },
-  }, { headers: getCorsHeaders(request) });
+  return apiSuccess({ data, pagination: { total: count, limit, offset } }, 200, cors);
 }
 
 export const POST = withValidation(v1PatientCreateSchema, async (body, request: NextRequest) => {
+  const cors = getCorsHeaders(request);
   const auth = await authenticateApiKey(request);
   if (!auth) {
-    return NextResponse.json(
-      { error: "Unauthorized. Provide a valid API key as Bearer token." },
-      { status: 401, headers: getCorsHeaders(request) },
-    );
+    return apiError("Unauthorized. Provide a valid API key as Bearer token.", 401, "UNAUTHORIZED", cors);
   }
 
     logTenantContext(auth.clinicId, "v1/patients:POST");
@@ -101,8 +95,8 @@ export const POST = withValidation(v1PatientCreateSchema, async (body, request: 
 
     if (error) {
       logger.warn("Operation failed", { context: "v1/patients", error });
-      return NextResponse.json({ error: "Failed to create patient" }, { status: 500, headers: getCorsHeaders(request) });
+      return apiInternalError("Failed to create patient");
     }
 
-    return NextResponse.json({ data }, { status: 201, headers: getCorsHeaders(request) });
+    return apiSuccess({ data }, 201, cors);
 });

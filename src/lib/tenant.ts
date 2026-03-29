@@ -12,6 +12,7 @@
 import { headers } from "next/headers";
 import { clinicConfig } from "@/config/clinic.config";
 import { logTenantContext } from "@/lib/tenant-context";
+import { DEFAULT_TIMEZONE } from "@/lib/constants";
 
 /** Minimal tenant info passed via request headers from middleware. */
 export interface TenantInfo {
@@ -115,7 +116,7 @@ export async function getClinicConfig(clinicId: string): Promise<TenantClinicCon
 
   // Merge DB config with static defaults (DB takes precedence)
   return {
-    timezone: (dbConfig.timezone as string) ?? clinicConfig.timezone ?? "Africa/Casablanca",
+    timezone: (dbConfig.timezone as string) ?? clinicConfig.timezone ?? DEFAULT_TIMEZONE,
     currency: (dbConfig.currency as string) ?? clinicConfig.currency ?? "MAD",
     workingHours: (dbConfig.workingHours as TenantClinicConfig["workingHours"])
       ?? clinicConfig.workingHours,

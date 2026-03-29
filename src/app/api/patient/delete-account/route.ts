@@ -8,69 +8,44 @@
  * DELETE /api/patient/delete-account — Cancel pending deletion
  */
 
-import { NextRequest } from "next/server";
-import { createServerClient } from "@supabase/ssr";
+import { withAuth } from "@/lib/with-auth";
 import { logger } from "@/lib/logger";
-import { apiError, apiForbidden, apiInternalError, apiNotFound, apiSuccess, apiUnauthorized } from "@/lib/api-response";
+import { apiForbidden, apiInternalError, apiSuccess } from "@/lib/api-response";
 
-export async function POST(request: NextRequest) {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-  if (!supabaseUrl || !supabaseAnonKey) {
-    return apiError("Service unavailable", 503);
-  }
-
-  const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
-    cookies: {
-      getAll() {
-        return request.cookies.getAll();
-      },
-      setAll() {
-        /* read-only */
-      },
-    },
-  });
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    return apiUnauthorized();
-  }
-
-  // Fetch user profile
-  const { data: profile } = await supabase
+export const POST = withAuth(async (_request, { supabase, profile }) => {
+  // Fetch deletion status
+  // NOTE: deletion_requested_at is not yet in the generated Supabase types
+  // but exists in the DB schema (added via migration). Cast to access it.
+  const { data: userRow } = await (supabase
     .from("users")
     .select("id, role, deletion_requested_at")
-    .eq("auth_id", user.id)
-    .maybeSingle();
+    .eq("id", profile.id)
+    .maybeSingle() as unknown as Promise<{ data: { id: string; role: string; deletion_requested_at: string | null } | null }>);
 
-  if (!profile) {
-    return apiNotFound("Profile not found");
+  if (!userRow) {
+    return apiInternalError("Profile lookup failed");
   }
 
-  if (profile.role !== "patient") {
+  if (userRow.role !== "patient") {
     return apiForbidden("Only patient accounts can request self-deletion. Contact support for other roles.");
   }
 
-  if (profile.deletion_requested_at) {
+  if (userRow.deletion_requested_at) {
     return apiSuccess({
       message: "Deletion already requested",
-      deletionRequestedAt: profile.deletion_requested_at,
+      deletionRequestedAt: userRow.deletion_requested_at,
       permanentDeletionAt: new Date(
-        new Date(profile.deletion_requested_at).getTime() + 30 * 24 * 60 * 60 * 1000,
+        new Date(userRow.deletion_requested_at).getTime() + 30 * 24 * 60 * 60 * 1000,
       ).toISOString(),
     });
   }
 
   // Soft-delete: set deletion_requested_at timestamp
   const now = new Date().toISOString();
-  const { error } = await supabase
+  const { error } = await (supabase
     .from("users")
-    .update({ deletion_requested_at: now })
-    .eq("id", profile.id);
+    .update({ deletion_requested_at: now } as Record<string, unknown>)
+    .eq("id", profile.id) as unknown as Promise<{ error: { message: string } | null }>);
 
   if (error) {
     return apiInternalError("Failed to request deletion");
@@ -99,54 +74,28 @@ export async function POST(request: NextRequest) {
     deletionRequestedAt: now,
     permanentDeletionAt,
   });
-}
+}, ["patient"]);
 
-export async function DELETE(request: NextRequest) {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-  if (!supabaseUrl || !supabaseAnonKey) {
-    return apiError("Service unavailable", 503);
-  }
-
-  const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
-    cookies: {
-      getAll() {
-        return request.cookies.getAll();
-      },
-      setAll() {
-        /* read-only */
-      },
-    },
-  });
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    return apiUnauthorized();
-  }
-
-  const { data: profile } = await supabase
+export const DELETE = withAuth(async (_request, { supabase, profile }) => {
+  const { data: userRow } = await (supabase
     .from("users")
     .select("id, deletion_requested_at")
-    .eq("auth_id", user.id)
-    .maybeSingle();
+    .eq("id", profile.id)
+    .maybeSingle() as unknown as Promise<{ data: { id: string; deletion_requested_at: string | null } | null }>);
 
-  if (!profile) {
-    return apiNotFound("Profile not found");
+  if (!userRow) {
+    return apiInternalError("Profile lookup failed");
   }
 
-  if (!profile.deletion_requested_at) {
+  if (!userRow.deletion_requested_at) {
     return apiSuccess({ message: "No pending deletion request" });
   }
 
   // Cancel deletion
-  const { error } = await supabase
+  const { error } = await (supabase
     .from("users")
-    .update({ deletion_requested_at: null })
-    .eq("id", profile.id);
+    .update({ deletion_requested_at: null } as Record<string, unknown>)
+    .eq("id", profile.id) as unknown as Promise<{ error: { message: string } | null }>);
 
   if (error) {
     return apiInternalError("Failed to cancel deletion");
@@ -167,4 +116,4 @@ export async function DELETE(request: NextRequest) {
   }
 
   return apiSuccess({ message: "Account deletion cancelled successfully." });
-}
+}, ["patient"]);

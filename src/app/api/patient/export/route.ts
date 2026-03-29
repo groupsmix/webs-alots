@@ -8,9 +8,9 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { createServerClient } from "@supabase/ssr";
+import { withAuth } from "@/lib/with-auth";
 import { logger } from "@/lib/logger";
-import { apiError, apiNotFound, apiUnauthorized } from "@/lib/api-response";
+import { apiError, apiNotFound } from "@/lib/api-response";
 
 /** Characters that trigger formula execution in Excel/Google Sheets. */
 const FORMULA_PREFIXES = new Set(["=", "+", "-", "@", "\t", "\r"]);
@@ -37,48 +37,21 @@ function toCSV(rows: Record<string, unknown>[], columns: string[]): string {
   return [header, ...body].join("\n");
 }
 
-export async function GET(request: NextRequest) {
+export const GET = withAuth(async (request: NextRequest, { supabase, profile }) => {
   const format = request.nextUrl.searchParams.get("format") ?? "json";
 
   if (format !== "json" && format !== "csv") {
     return apiError("Invalid format. Use 'json' or 'csv'.");
   }
 
-  // Authenticate via Supabase session cookies
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-  if (!supabaseUrl || !supabaseAnonKey) {
-    return apiError("Service unavailable", 503);
-  }
-
-  const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
-    cookies: {
-      getAll() {
-        return request.cookies.getAll();
-      },
-      setAll() {
-        /* read-only */
-      },
-    },
-  });
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    return apiUnauthorized();
-  }
-
-  // Fetch user profile — select only needed columns
-  const { data: profile } = await supabase
+  // Fetch full user profile for export — select only needed columns
+  const { data: fullProfile } = await supabase
     .from("users")
     .select("id, name, email, phone, role, created_at")
-    .eq("auth_id", user.id)
+    .eq("id", profile.id)
     .maybeSingle();
 
-  if (!profile) {
+  if (!fullProfile) {
     return apiNotFound("Profile not found");
   }
 
@@ -94,11 +67,13 @@ export async function GET(request: NextRequest) {
       .select("id, slot_start, slot_end, status, notes, source, is_first_visit, insurance_flag, created_at")
       .eq("patient_id", profile.id)
       .order("slot_start", { ascending: false }),
-    supabase
+    // NOTE: medication/dosage/duration/instructions are not in generated Supabase types
+    // but exist in the DB schema. Cast the query result.
+    (supabase
       .from("prescriptions")
       .select("id, medication, dosage, duration, instructions, created_at")
       .eq("patient_id", profile.id)
-      .order("created_at", { ascending: false }),
+      .order("created_at", { ascending: false }) as unknown as Promise<{ data: { id: string; medication: string; dosage: string; duration: string; instructions: string; created_at: string }[] | null }>),
     supabase
       .from("payments")
       .select("id, amount, method, status, ref, created_at")
@@ -114,11 +89,11 @@ export async function GET(request: NextRequest) {
   const exportData = {
     exportDate: new Date().toISOString(),
     personalInfo: {
-      name: profile.name,
-      email: profile.email,
-      phone: profile.phone,
-      role: profile.role,
-      createdAt: profile.created_at,
+      name: fullProfile.name,
+      email: fullProfile.email,
+      phone: fullProfile.phone,
+      role: fullProfile.role,
+      createdAt: fullProfile.created_at,
     },
     appointments: appointments ?? [],
     prescriptions: prescriptions ?? [],
@@ -187,4 +162,4 @@ export async function GET(request: NextRequest) {
       "Content-Disposition": `attachment; filename="my-data-${new Date().toISOString().split("T")[0]}.csv"`,
     },
   });
-}
+}, ["patient"]);

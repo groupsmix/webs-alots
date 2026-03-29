@@ -10,6 +10,9 @@
  *   GOOGLE_CALENDAR_REDIRECT_URI
  */
 
+import { DEFAULT_TIMEZONE } from "@/lib/constants";
+import { logger } from "@/lib/logger";
+
 // ---- Types ----
 
 export interface CalendarEvent {
@@ -259,7 +262,10 @@ export function appointmentToCalendarEvent(appointment: {
   clinicAddress?: string;
   timeZone?: string;
 }): CalendarEvent {
-  const timeZone = appointment.timeZone ?? "Africa/Casablanca";
+  const timeZone = appointment.timeZone ?? DEFAULT_TIMEZONE;
+  if (!appointment.timeZone) {
+    logger.warn("appointmentToCalendarEvent called without timeZone — using DEFAULT_TIMEZONE fallback", { context: "google-calendar" });
+  }
 
   return {
     summary: `${appointment.type} - ${appointment.patientName}`,
