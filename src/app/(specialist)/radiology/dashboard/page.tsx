@@ -24,11 +24,11 @@ export default function RadiologyDashboardPage() {
     fetchRadiologyOrders(tenant?.clinicId ?? "")
       .then((d) => { if (!controller.signal.aborted) setOrders(d); })
       .catch((err) => {
-      if (!controller.signal.aborted) {
-        setError(err instanceof Error ? err : new Error(String(err)));
-      }
-    })
-    .finally(() => { if (!controller.signal.aborted) setLoading(false); });
+        if (!controller.signal.aborted) {
+          setError(err instanceof Error ? err : new Error(String(err)));
+        }
+      })
+      .finally(() => { if (!controller.signal.aborted) setLoading(false); });
     return () => { controller.abort(); };
   }, [tenant?.clinicId]);
 

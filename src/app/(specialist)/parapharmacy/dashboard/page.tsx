@@ -33,16 +33,16 @@ export default function ParapharmacyDashboardPage() {
       fetchParapharmacyCategories(cId),
     ])
       .then(([p, c]) => {
-      if (controller.signal.aborted) return;
+        if (controller.signal.aborted) return;
         setProducts(p);
         setCategories(c);
       })
       .catch((err) => {
-      if (!controller.signal.aborted) {
-        setError(err instanceof Error ? err : new Error(String(err)));
-      }
-    })
-    .finally(() => { if (!controller.signal.aborted) setLoading(false); });
+        if (!controller.signal.aborted) {
+          setError(err instanceof Error ? err : new Error(String(err)));
+        }
+      })
+      .finally(() => { if (!controller.signal.aborted) setLoading(false); });
     return () => { controller.abort(); };
   }, [tenant?.clinicId]);
 

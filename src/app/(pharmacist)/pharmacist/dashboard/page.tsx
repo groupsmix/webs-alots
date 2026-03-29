@@ -77,7 +77,7 @@ export default function PharmacistDashboardPage() {
       fetchLoyaltyMembers(cId),
     ])
       .then(([p, rx, s, o, l]) => {
-      if (controller.signal.aborted) return;
+        if (controller.signal.aborted) return;
         setProducts(p);
         setPrescriptions(rx);
         setSales(s);
@@ -85,11 +85,11 @@ export default function PharmacistDashboardPage() {
         setMembers(l);
       })
       .catch((err) => {
-      if (!controller.signal.aborted) {
-        setError(err instanceof Error ? err : new Error(String(err)));
-      }
-    })
-    .finally(() => { if (!controller.signal.aborted) setLoading(false); });
+        if (!controller.signal.aborted) {
+          setError(err instanceof Error ? err : new Error(String(err)));
+        }
+      })
+      .finally(() => { if (!controller.signal.aborted) setLoading(false); });
     return () => { controller.abort(); };
   }, [tenant?.clinicId]);
 

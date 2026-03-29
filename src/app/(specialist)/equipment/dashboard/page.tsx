@@ -34,17 +34,17 @@ export default function EquipmentDashboardPage() {
       fetchEquipmentMaintenance(cId),
     ])
       .then(([inv, rent, maint]) => {
-      if (controller.signal.aborted) return;
+        if (controller.signal.aborted) return;
         setInventory(inv);
         setRentals(rent);
         setMaintenance(maint);
       })
       .catch((err) => {
-      if (!controller.signal.aborted) {
-        setError(err instanceof Error ? err : new Error(String(err)));
-      }
-    })
-    .finally(() => { if (!controller.signal.aborted) setLoading(false); });
+        if (!controller.signal.aborted) {
+          setError(err instanceof Error ? err : new Error(String(err)));
+        }
+      })
+      .finally(() => { if (!controller.signal.aborted) setLoading(false); });
     return () => { controller.abort(); };
   }, [tenant?.clinicId]);
 

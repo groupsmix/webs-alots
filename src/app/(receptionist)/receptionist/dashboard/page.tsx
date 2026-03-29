@@ -41,7 +41,10 @@ export default function ReceptionistDashboardPage() {
     async function load() {
       const user = await getCurrentUser();
       if (controller.signal.aborted) return;
-      if (!user?.clinic_id) { setLoading(false); return; }
+      if (!user?.clinic_id) {
+        setLoading(false);
+        return;
+      }
       const [appts, invoices, patients] = await Promise.all([
         fetchTodayAppointments(user.clinic_id),
         fetchInvoices(user.clinic_id),
