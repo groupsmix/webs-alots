@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { logger } from "@/lib/logger";
 import { t } from "@/lib/i18n";
+import { clinicConfig } from "@/config/clinic.config";
 
 /**
  * Global error boundary — catches errors thrown inside the root layout
@@ -21,7 +22,7 @@ export default function GlobalError({
   }, [error]);
 
   return (
-    <html lang="fr">
+    <html lang={clinicConfig.locale ?? "fr"}>
       <body className="min-h-screen flex items-center justify-center bg-white text-gray-900">
         <div className="max-w-md w-full text-center px-6 py-12">
           <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-red-100">

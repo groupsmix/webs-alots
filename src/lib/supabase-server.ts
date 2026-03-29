@@ -38,9 +38,8 @@ export async function createClient() {
             cookiesToSet.forEach(({ name, value, options }) =>
               cookieStore.set(name, value, options),
             );
-          } catch {
-            // The `setAll` method was called from a Server Component.
-            // This can be ignored if you have middleware refreshing sessions.
+          } catch (err) {
+            logger.warn("Cookie setAll called from Server Component", { context: "supabase-server", error: err });
           }
         },
       },
@@ -84,8 +83,8 @@ export async function createTenantClient(clinicId: string) {
             cookiesToSet.forEach(({ name, value, options }) =>
               cookieStore.set(name, value, options),
             );
-          } catch {
-            // Server Component context — safe to ignore
+          } catch (err) {
+            logger.warn("Cookie setAll called from Server Component", { context: "supabase-server/tenant", error: err });
           }
         },
       },

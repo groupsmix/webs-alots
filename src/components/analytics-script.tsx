@@ -1,6 +1,14 @@
 import Script from "next/script";
 
 /**
+ * Sanitize a tracking ID to prevent script injection.
+ * Only allows alphanumeric characters, hyphens, and underscores.
+ */
+function sanitizeTrackingId(id: string): string {
+  return id.replace(/[^a-zA-Z0-9_-]/g, "");
+}
+
+/**
  * Inject Google Analytics (GA4) or Google Tag Manager per clinic.
  *
  * The tracking ID is stored in the clinic's branding/config in Supabase.
@@ -23,7 +31,7 @@ export function AnalyticsScript({
 new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
 j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
-})(window,document,'script','dataLayer','${gtmId}');`,
+})(window,document,'script','dataLayer','${sanitizeTrackingId(gtmId)}');`,
         }}
       />
     );
@@ -33,14 +41,14 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
     return (
       <>
         <Script
-          src={`https://www.googletagmanager.com/gtag/js?id=${gaId}`}
+          src={`https://www.googletagmanager.com/gtag/js?id=${sanitizeTrackingId(gaId)}`}
           strategy="afterInteractive"
         />
         <Script
           id="ga4-config"
           strategy="afterInteractive"
           dangerouslySetInnerHTML={{
-            __html: `window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','${gaId}');`,
+            __html: `window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','${sanitizeTrackingId(gaId)}');`,
           }}
         />
       </>

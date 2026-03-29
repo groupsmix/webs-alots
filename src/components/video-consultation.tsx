@@ -185,10 +185,10 @@ export function VideoConsultation({
   const toggleFullscreen = useCallback(() => {
     if (!containerRef.current) return;
     if (!document.fullscreenElement) {
-      containerRef.current.requestFullscreen().catch(() => {});
+      containerRef.current.requestFullscreen().catch((err) => { logger.warn("Fullscreen request failed", { context: "video-consultation", error: err }); });
       setIsFullscreen(true);
     } else {
-      document.exitFullscreen().catch(() => {});
+      document.exitFullscreen().catch((err) => { logger.warn("Exit fullscreen failed", { context: "video-consultation", error: err }); });
       setIsFullscreen(false);
     }
   }, []);

@@ -146,8 +146,8 @@ export default function SuperAdminLayout({
           onSelect: () => router.push(`/super-admin/clinics`),
         });
       });
-    } catch {
-      // non-blocking — clinics just won't appear in search
+    } catch (err) {
+      logger.warn("Failed to load clinics for command palette", { context: "super-admin-layout", error: err });
     }
 
     setCmdItems(items);
