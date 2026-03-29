@@ -1212,3 +1212,335 @@ export async function updateLabOrderPdfUrl(
   }
   return true;
 }
+
+// ────────────────────────────────────────────
+// Dashboard Stats (server-side)
+// ────────────────────────────────────────────
+
+export interface DashboardStats {
+  totalPatients: number;
+  totalAppointments: number;
+  completedAppointments: number;
+  noShowCount: number;
+  totalRevenue: number;
+  averageRating: number;
+  doctorCount: number;
+  insurancePatients: number;
+}
+
+export async function getDashboardStats(clinicId: string): Promise<DashboardStats> {
+  const supabase = await createClient();
+  const [
+    patientCountRes,
+    appointmentCountRes,
+    completedCountRes,
+    noShowCountRes,
+    paymentsRes,
+    reviewsRes,
+    doctorCountRes,
+    insurancePatientsRes,
+  ] = await Promise.all([
+    supabase.from("users").select("id", { count: "exact", head: true }).eq("clinic_id", clinicId).eq("role", "patient"),
+    supabase.from("appointments").select("id", { count: "exact", head: true }).eq("clinic_id", clinicId),
+    supabase.from("appointments").select("id", { count: "exact", head: true }).eq("clinic_id", clinicId).eq("status", "completed"),
+    supabase.from("appointments").select("id", { count: "exact", head: true }).eq("clinic_id", clinicId).eq("status", "no_show"),
+    supabase.from("payments").select("amount").eq("clinic_id", clinicId).eq("status", "completed"),
+    supabase.from("reviews").select("stars").eq("clinic_id", clinicId),
+    supabase.from("users").select("id", { count: "exact", head: true }).eq("clinic_id", clinicId).eq("role", "doctor"),
+    supabase.from("users").select("id, metadata").eq("clinic_id", clinicId).eq("role", "patient"),
+  ]);
+  const payments = (paymentsRes.data ?? []) as { amount: number }[];
+  const reviews = (reviewsRes.data ?? []) as { stars: number }[];
+  const insurancePatients = (insurancePatientsRes.data ?? []) as { id: string; metadata: Record<string, unknown> | null }[];
+
+  const totalRevenue = payments.reduce((s, p) => s + (p.amount ?? 0), 0);
+  const avgRating = reviews.length > 0 ? reviews.reduce((s, r) => s + r.stars, 0) / reviews.length : 0;
+  const insuranceCount = insurancePatients.filter((p) => p.metadata && (p.metadata as Record<string, unknown>).insurance).length;
+
+  return {
+    totalPatients: patientCountRes.count ?? 0,
+    totalAppointments: appointmentCountRes.count ?? 0,
+    completedAppointments: completedCountRes.count ?? 0,
+    noShowCount: noShowCountRes.count ?? 0,
+    totalRevenue,
+    averageRating: avgRating,
+    doctorCount: doctorCountRes.count ?? 0,
+    insurancePatients: insuranceCount,
+  };
+}
+
+// ────────────────────────────────────────────
+// Doctor Dashboard Data (server-side)
+// ────────────────────────────────────────────
+
+export interface DoctorAppointmentView {
+  id: string;
+  patientId: string;
+  patientName: string;
+  doctorId: string;
+  doctorName: string;
+  serviceId: string;
+  serviceName: string;
+  date: string;
+  time: string;
+  status: string;
+  isFirstVisit: boolean;
+  hasInsurance: boolean;
+  isEmergency: boolean;
+  notes?: string;
+  recurrenceGroupId?: string;
+  recurrencePattern?: string;
+}
+
+export interface DoctorPatientView {
+  id: string;
+  name: string;
+  phone: string;
+}
+
+export interface DoctorWaitingRoomEntry {
+  id: string;
+  patientName: string;
+  scheduledTime: string;
+  serviceName: string;
+  status: string;
+  priority: string;
+}
+
+export interface DoctorInvoiceView {
+  id: string;
+  appointmentId?: string;
+  amount: number;
+  status: string;
+  date: string;
+}
+
+export interface DoctorDashboardData {
+  appointments: DoctorAppointmentView[];
+  patients: DoctorPatientView[];
+  waitingRoom: DoctorWaitingRoomEntry[];
+  invoices: DoctorInvoiceView[];
+}
+
+export async function getDoctorDashboardData(clinicId: string, doctorId: string): Promise<DoctorDashboardData> {
+  const supabase = await createClient();
+
+  // Fetch lookup maps for names
+  const [usersRes, servicesRes] = await Promise.all([
+    supabase.from("users").select("id, name, phone, email").eq("clinic_id", clinicId),
+    supabase.from("services").select("id, name, price").eq("clinic_id", clinicId),
+  ]);
+  const userMap = new Map(
+    ((usersRes.data ?? []) as { id: string; name: string; phone: string; email: string }[]).map((u) => [
+      u.id,
+      { name: u.name, phone: u.phone ?? "", email: u.email ?? "" },
+    ]),
+  );
+  const serviceMap = new Map(
+    ((servicesRes.data ?? []) as { id: string; name: string; price: number }[]).map((s) => [
+      s.id,
+      { name: s.name, price: s.price },
+    ]),
+  );
+
+  // Fetch doctor's appointments, patients, waiting room, invoices in parallel
+  const today = getLocalDateStr();
+  const [apptsRes, patientsRes, waitingRes, invoicesRes] = await Promise.all([
+    supabase.from("appointments")
+      .select("id, clinic_id, patient_id, doctor_id, service_id, appointment_date, start_time, status, is_first_visit, insurance_flag, is_emergency, notes, recurrence_group_id, recurrence_pattern")
+      .eq("clinic_id", clinicId)
+      .eq("doctor_id", doctorId)
+      .order("appointment_date", { ascending: true })
+      .limit(DEFAULT_QUERY_LIMIT),
+    supabase.from("users")
+      .select("id, name, phone")
+      .eq("clinic_id", clinicId)
+      .eq("role", "patient")
+      .order("name", { ascending: true })
+      .limit(DEFAULT_QUERY_LIMIT),
+    supabase.from("appointments")
+      .select("id, patient_id, service_id, start_time, status, is_emergency")
+      .eq("clinic_id", clinicId)
+      .eq("appointment_date", today)
+      .in("status", ["confirmed", "checked_in", "checked-in"])
+      .order("start_time", { ascending: true })
+      .limit(DEFAULT_QUERY_LIMIT),
+    supabase.from("payments")
+      .select("id, appointment_id, amount, status, created_at")
+      .eq("clinic_id", clinicId)
+      .order("created_at", { ascending: false })
+      .limit(DEFAULT_QUERY_LIMIT),
+  ]);
+
+  type ApptRaw = {
+    id: string; patient_id: string; doctor_id: string; service_id: string | null;
+    appointment_date: string; start_time: string; status: string;
+    is_first_visit: boolean; insurance_flag: boolean; is_emergency: boolean;
+    notes: string | null; recurrence_group_id: string | null; recurrence_pattern: string | null;
+  };
+
+  const appointments: DoctorAppointmentView[] = ((apptsRes.data ?? []) as ApptRaw[]).map((raw) => ({
+    id: raw.id,
+    patientId: raw.patient_id,
+    patientName: userMap.get(raw.patient_id)?.name ?? "Unknown",
+    doctorId: raw.doctor_id,
+    doctorName: userMap.get(raw.doctor_id)?.name ?? "Unknown",
+    serviceId: raw.service_id ?? "",
+    serviceName: raw.service_id ? (serviceMap.get(raw.service_id)?.name ?? "Consultation") : "Consultation",
+    date: raw.appointment_date,
+    time: raw.start_time?.slice(0, 5) ?? "",
+    status: raw.status?.replaceAll("_", "-") ?? "scheduled",
+    isFirstVisit: raw.is_first_visit ?? false,
+    hasInsurance: raw.insurance_flag ?? false,
+    isEmergency: raw.is_emergency ?? false,
+    notes: raw.notes ?? undefined,
+    recurrenceGroupId: raw.recurrence_group_id ?? undefined,
+    recurrencePattern: raw.recurrence_pattern ?? undefined,
+  }));
+
+  const patients: DoctorPatientView[] = ((patientsRes.data ?? []) as { id: string; name: string; phone: string | null }[]).map((p) => ({
+    id: p.id,
+    name: p.name,
+    phone: p.phone ?? "",
+  }));
+
+  type WaitRaw = { id: string; patient_id: string; service_id: string | null; start_time: string; status: string; is_emergency: boolean };
+  const waitingRoom: DoctorWaitingRoomEntry[] = ((waitingRes.data ?? []) as WaitRaw[]).map((r) => ({
+    id: r.id,
+    patientName: userMap.get(r.patient_id)?.name ?? "Patient",
+    scheduledTime: r.start_time?.slice(0, 5) ?? "",
+    serviceName: r.service_id ? (serviceMap.get(r.service_id)?.name ?? "Consultation") : "Consultation",
+    status: "waiting",
+    priority: r.is_emergency ? "urgent" : "normal",
+  }));
+
+  type InvRaw = { id: string; appointment_id: string | null; amount: number; status: string; created_at: string };
+  const invoices: DoctorInvoiceView[] = ((invoicesRes.data ?? []) as InvRaw[]).map((r) => ({
+    id: r.id,
+    appointmentId: r.appointment_id ?? undefined,
+    amount: r.amount,
+    status: r.status === "completed" ? "paid" : r.status,
+    date: r.created_at?.split("T")[0] ?? "",
+  }));
+
+  return { appointments, patients, waitingRoom, invoices };
+}
+
+// ────────────────────────────────────────────
+// Patient Dashboard Data (server-side)
+// ────────────────────────────────────────────
+
+export interface PatientAppointmentView {
+  id: string;
+  serviceName: string;
+  doctorName: string;
+  date: string;
+  time: string;
+  status: string;
+}
+
+export interface PatientPrescriptionView {
+  id: string;
+  patientId: string;
+  doctorName: string;
+  date: string;
+  medications: { name: string; dosage: string; duration: string }[];
+}
+
+export interface PatientInvoiceView {
+  id: string;
+  amount: number;
+  currency: string;
+  status: string;
+  date: string;
+}
+
+export interface PatientNotificationView {
+  id: string;
+  read: boolean;
+}
+
+export interface PatientDashboardData {
+  userName: string;
+  appointments: PatientAppointmentView[];
+  prescriptions: PatientPrescriptionView[];
+  invoices: PatientInvoiceView[];
+  notifications: PatientNotificationView[];
+}
+
+export async function getPatientDashboardData(clinicId: string, userId: string, userName: string): Promise<PatientDashboardData> {
+  const supabase = await createClient();
+
+  // Fetch lookup maps
+  const [usersRes, servicesRes] = await Promise.all([
+    supabase.from("users").select("id, name").eq("clinic_id", clinicId),
+    supabase.from("services").select("id, name").eq("clinic_id", clinicId),
+  ]);
+  const userMap = new Map(
+    ((usersRes.data ?? []) as { id: string; name: string }[]).map((u) => [u.id, u.name]),
+  );
+  const serviceMap = new Map(
+    ((servicesRes.data ?? []) as { id: string; name: string }[]).map((s) => [s.id, s.name]),
+  );
+
+  const [apptsRes, rxRes, invoicesRes, notifsRes] = await Promise.all([
+    supabase.from("appointments")
+      .select("id, doctor_id, service_id, appointment_date, start_time, status")
+      .eq("clinic_id", clinicId)
+      .eq("patient_id", userId)
+      .order("appointment_date", { ascending: true })
+      .limit(DEFAULT_QUERY_LIMIT),
+    supabase.from("prescriptions")
+      .select("id, patient_id, doctor_id, items, created_at")
+      .eq("clinic_id", clinicId)
+      .eq("patient_id", userId)
+      .order("created_at", { ascending: false })
+      .limit(DEFAULT_QUERY_LIMIT),
+    supabase.from("payments")
+      .select("id, amount, status, created_at")
+      .eq("clinic_id", clinicId)
+      .order("created_at", { ascending: false })
+      .limit(DEFAULT_QUERY_LIMIT),
+    supabase.from("notifications")
+      .select("id, is_read")
+      .eq("user_id", userId)
+      .order("sent_at", { ascending: false })
+      .limit(DEFAULT_QUERY_LIMIT),
+  ]);
+
+  type ApptRaw = { id: string; doctor_id: string; service_id: string | null; appointment_date: string; start_time: string; status: string };
+  const appointments: PatientAppointmentView[] = ((apptsRes.data ?? []) as ApptRaw[]).map((r) => ({
+    id: r.id,
+    serviceName: r.service_id ? (serviceMap.get(r.service_id) ?? "Consultation") : "Consultation",
+    doctorName: userMap.get(r.doctor_id) ?? "Doctor",
+    date: r.appointment_date,
+    time: r.start_time?.slice(0, 5) ?? "",
+    status: r.status?.replaceAll("_", "-") ?? "scheduled",
+  }));
+
+  type RxRaw = { id: string; patient_id: string; doctor_id: string; items: { name: string; dosage: string; duration: string }[] | null; created_at: string };
+  const prescriptions: PatientPrescriptionView[] = ((rxRes.data ?? []) as RxRaw[]).map((r) => ({
+    id: r.id,
+    patientId: r.patient_id,
+    doctorName: userMap.get(r.doctor_id) ?? "Doctor",
+    date: r.created_at?.split("T")[0] ?? "",
+    medications: Array.isArray(r.items) ? r.items : [],
+  }));
+
+  type InvRaw = { id: string; amount: number; status: string; created_at: string };
+  const invoices: PatientInvoiceView[] = ((invoicesRes.data ?? []) as InvRaw[]).map((r) => ({
+    id: r.id,
+    amount: r.amount,
+    currency: "MAD",
+    status: r.status === "completed" ? "paid" : r.status,
+    date: r.created_at?.split("T")[0] ?? "",
+  }));
+
+  type NotifRaw = { id: string; is_read: boolean };
+  const notifications: PatientNotificationView[] = ((notifsRes.data ?? []) as NotifRaw[]).map((r) => ({
+    id: r.id,
+    read: r.is_read ?? false,
+  }));
+
+  return { userName, appointments, prescriptions, invoices, notifications };
+}
