@@ -1,11 +1,10 @@
-import { NextResponse } from "next/server";
 import { withAuth } from "@/lib/with-auth";
 import { logger } from "@/lib/logger";
 import { impersonateSchema } from "@/lib/validations";
 import { withAuthValidation } from "@/lib/api-validate";
 import { createClient } from "@/lib/supabase-server";
 import { logSecurityEvent } from "@/lib/audit-log";
-import { apiInternalError, apiNotFound, apiUnauthorized } from "@/lib/api-response";
+import { apiSuccess, apiInternalError, apiNotFound, apiUnauthorized } from "@/lib/api-response";
 
 /**
  * POST /api/impersonate
@@ -55,7 +54,7 @@ export const POST = withAuthValidation(impersonateSchema, async (body, request, 
     });
 
     // Set impersonation cookie
-    const response = NextResponse.json({
+    const response = apiSuccess({
       success: true,
       clinicId,
       clinicName: clinicName || clinic.name,
@@ -103,7 +102,7 @@ export const DELETE = withAuth(async (_request, { supabase, user }) => {
       });
     }
 
-    const response = NextResponse.json({ success: true });
+    const response = apiSuccess({ success: true });
 
     response.cookies.set("sa_impersonate_clinic_id", "", {
       httpOnly: true,

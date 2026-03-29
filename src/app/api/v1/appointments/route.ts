@@ -7,7 +7,7 @@
  * Authentication: Bearer token via API key stored in clinic settings.
  */
 
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { createTenantClient } from "@/lib/supabase-server";
 import { authenticateApiKey } from "@/lib/api-auth";
 import { APPOINTMENT_STATUS } from "@/lib/types/database";
@@ -16,6 +16,7 @@ import { logger } from "@/lib/logger";
 import { v1AppointmentCreateSchema } from "@/lib/validations";
 import { logTenantContext } from "@/lib/tenant-context";
 import { withValidation } from "@/lib/api-validate";
+import { apiSuccess, apiError, apiInternalError } from "@/lib/api-response";
 
 /** Handle CORS preflight requests. */
 export function OPTIONS(request: NextRequest) {
@@ -23,12 +24,10 @@ export function OPTIONS(request: NextRequest) {
 }
 
 export async function GET(request: NextRequest) {
+  const cors = getCorsHeaders(request);
   const auth = await authenticateApiKey(request);
   if (!auth) {
-    return NextResponse.json(
-      { error: "Unauthorized. Provide a valid API key as Bearer token." },
-      { status: 401, headers: getCorsHeaders(request) },
-    );
+    return apiError("Unauthorized. Provide a valid API key as Bearer token.", 401, "UNAUTHORIZED", cors);
   }
 
   logTenantContext(auth.clinicId, "v1/appointments:GET");
@@ -57,22 +56,17 @@ export async function GET(request: NextRequest) {
 
   if (error) {
     logger.warn("Operation failed", { context: "v1/appointments", error });
-    return NextResponse.json({ error: "Failed to fetch appointments" }, { status: 500, headers: getCorsHeaders(request) });
+    return apiInternalError("Failed to fetch appointments");
   }
 
-  return NextResponse.json({
-    data,
-    pagination: { total: count, limit, offset },
-  }, { headers: getCorsHeaders(request) });
+  return apiSuccess({ data, pagination: { total: count, limit, offset } }, 200, cors);
 }
 
 export const POST = withValidation(v1AppointmentCreateSchema, async (body, request: NextRequest) => {
+  const cors = getCorsHeaders(request);
   const auth = await authenticateApiKey(request);
   if (!auth) {
-    return NextResponse.json(
-      { error: "Unauthorized. Provide a valid API key as Bearer token." },
-      { status: 401, headers: getCorsHeaders(request) },
-    );
+    return apiError("Unauthorized. Provide a valid API key as Bearer token.", 401, "UNAUTHORIZED", cors);
   }
 
     // Build slot_start / slot_end from appointment_date + start_time / end_time.
@@ -105,8 +99,8 @@ export const POST = withValidation(v1AppointmentCreateSchema, async (body, reque
 
     if (error) {
       logger.warn("Operation failed", { context: "v1/appointments", error });
-      return NextResponse.json({ error: "Failed to create appointment" }, { status: 500, headers: getCorsHeaders(request) });
+      return apiInternalError("Failed to create appointment");
     }
 
-    return NextResponse.json({ data }, { status: 201, headers: getCorsHeaders(request) });
+    return apiSuccess({ data }, 201, cors);
 });

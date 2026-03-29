@@ -36,8 +36,8 @@ interface ApiErrorBody {
 /**
  * Return a success JSON response with standard shape.
  */
-export function apiSuccess<T>(data: T, status = 200): NextResponse<ApiSuccessBody<T>> {
-  return NextResponse.json({ ok: true as const, data }, { status });
+export function apiSuccess<T>(data: T, status = 200, headers?: HeadersInit): NextResponse<ApiSuccessBody<T>> {
+  return NextResponse.json({ ok: true as const, data }, { status, headers });
 }
 
 /**
@@ -47,10 +47,11 @@ export function apiError(
   error: string,
   status = 400,
   code?: string,
+  headers?: HeadersInit,
 ): NextResponse<ApiErrorBody> {
   const body: ApiErrorBody = { ok: false, error };
   if (code) body.code = code;
-  return NextResponse.json(body, { status });
+  return NextResponse.json(body, { status, headers });
 }
 
 /**

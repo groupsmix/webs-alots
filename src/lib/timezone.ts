@@ -10,6 +10,9 @@
  * is critical.
  */
 
+import { DEFAULT_TIMEZONE } from "@/lib/constants";
+import { logger } from "@/lib/logger";
+
 /**
  * Build a timezone-aware Date for a date + time string using the clinic's timezone.
  *
@@ -23,7 +26,10 @@
  *                 from the tenant's DB config — never from static clinicConfig.
  */
 export function clinicDateTime(dateStr: string, timeStr: string, timezone?: string): Date {
-  const tz = timezone ?? "Africa/Casablanca";
+  const tz = timezone ?? DEFAULT_TIMEZONE;
+  if (!timezone) {
+    logger.warn("clinicDateTime called without timezone — using DEFAULT_TIMEZONE fallback", { context: "timezone" });
+  }
   const [year, month, day] = dateStr.split("-").map(Number);
   const [hour, minute] = timeStr.split(":").map(Number);
 
