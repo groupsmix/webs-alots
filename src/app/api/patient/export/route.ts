@@ -8,12 +8,20 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
 import { createServerClient } from "@supabase/ssr";
+import { logger } from "@/lib/logger";
+
+/** Characters that trigger formula execution in Excel/Google Sheets. */
+const FORMULA_PREFIXES = new Set(["=", "+", "-", "@", "\t", "\r"]);
 
 function escapeCSV(value: unknown): string {
   if (value === null || value === undefined) return "";
-  const str = String(value);
+  let str = String(value);
+  // Neutralise formula injection: prefix with a single quote so the value
+  // is treated as plain text by spreadsheet applications.
+  if (str.length > 0 && FORMULA_PREFIXES.has(str[0])) {
+    str = `'${str}`;
+  }
   if (str.includes(",") || str.includes('"') || str.includes("\n")) {
     return `"${str.replace(/"/g, '""')}"`;
   }
@@ -68,10 +76,10 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  // Fetch user profile
+  // Fetch user profile — select only needed columns
   const { data: profile } = await supabase
     .from("users")
-    .select("*")
+    .select("id, name, email, phone, role, created_at")
     .eq("auth_id", user.id)
     .maybeSingle();
 
@@ -122,6 +130,20 @@ export async function GET(request: NextRequest) {
     payments: payments ?? [],
     documents: documents ?? [],
   };
+
+  // Log the export for GDPR/Loi 09-08 audit trail
+  try {
+    await supabase.from("activity_logs").insert({
+      action: "patient_data_exported",
+      type: "patient",
+      actor: profile.id,
+      clinic_id: null,
+      description: `Patient exported personal data in ${format} format`,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (err) {
+    logger.warn("Failed to log data export audit event", { context: "patient/export", error: err });
+  }
 
   if (format === "json") {
     return new NextResponse(JSON.stringify(exportData, null, 2), {

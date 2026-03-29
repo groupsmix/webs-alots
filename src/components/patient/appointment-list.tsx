@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import { logger } from "@/lib/logger";
-import { clinicDateTime } from "@/lib/timezone";
 import { Calendar, Clock, User, MapPin, X, RefreshCw, AlertTriangle } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -15,8 +14,6 @@ import {
 import { RescheduleDialog } from "./reschedule-dialog";
 import { PageLoader } from "@/components/ui/page-loader";
 
-const CANCELLATION_WINDOW_HOURS = 24;
-
 const statusVariant: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
   scheduled: "default",
   confirmed: "default",
@@ -27,27 +24,38 @@ const statusVariant: Record<string, "default" | "secondary" | "destructive" | "o
   "in-progress": "default",
 };
 
-function canCancelAppointment(
-  appt: AppointmentView,
-): { canCancel: boolean; reason?: string } {
-  if (appt.status === "cancelled" || appt.status === "completed" || appt.status === "rescheduled") {
-    return { canCancel: false, reason: "Appointment cannot be cancelled in its current state" };
+/**
+ * Quick client-side check for whether an appointment is in a cancellable
+ * state. This is a UI convenience only — the server performs the
+ * authoritative timezone-aware cancellation window check via
+ * `GET /api/booking/cancel?appointmentId=...`.
+ */
+function isCancellableStatus(appt: AppointmentView): boolean {
+  return appt.status !== "cancelled" && appt.status !== "completed" && appt.status !== "rescheduled";
+}
+
+/**
+ * Server-validated cancellation check.
+ *
+ * Delegates to the server endpoint which uses the clinic's configured
+ * timezone (from the DB) to compute the cancellation window. This avoids
+ * the bug where the client's local timezone or a hardcoded default
+ * timezone produces incorrect results for clinics outside Africa/Casablanca
+ * or during Morocco's complex DST transitions.
+ */
+async function checkCanCancel(
+  appointmentId: string,
+): Promise<{ canCancel: boolean; reason?: string }> {
+  try {
+    const res = await fetch(`/api/booking/cancel?appointmentId=${encodeURIComponent(appointmentId)}`);
+    if (!res.ok) {
+      return { canCancel: false, reason: "Unable to verify cancellation eligibility" };
+    }
+    const data = await res.json();
+    return { canCancel: data.canCancel, reason: data.reason };
+  } catch {
+    return { canCancel: false, reason: "Unable to verify cancellation eligibility" };
   }
-  // Use clinic-aware timezone conversion to avoid ambiguous date parsing
-  // across browsers/timezones. Morocco's DST rules are complex (suspended
-  // during Ramadan), so clinicDateTime handles the two-pass offset calculation.
-  const normalizedTime = String(appt.time).length === 5
-    ? appt.time
-    : appt.time.slice(0, 5);
-  const appointmentDateTime = clinicDateTime(appt.date, normalizedTime);
-  const hoursUntil = (appointmentDateTime.getTime() - Date.now()) / (1000 * 60 * 60);
-  if (hoursUntil < CANCELLATION_WINDOW_HOURS) {
-    return {
-      canCancel: false,
-      reason: `Cancellations must be made at least ${CANCELLATION_WINDOW_HOURS} hours before the appointment`,
-    };
-  }
-  return { canCancel: true };
 }
 
 /**
@@ -100,7 +108,13 @@ export function AppointmentList({ patientId }: { patientId?: string }) {
       setCancelError("Appointment not found");
       return;
     }
-    const check = canCancelAppointment(appt);
+    // Quick client-side status check (no network call)
+    if (!isCancellableStatus(appt)) {
+      setCancelError("Appointment cannot be cancelled in its current state");
+      return;
+    }
+    // Server-validated timezone-aware cancellation window check
+    const check = await checkCanCancel(appointmentId);
     if (!check.canCancel) {
       setCancelError(check.reason ?? "Cannot cancel this appointment");
       return;
