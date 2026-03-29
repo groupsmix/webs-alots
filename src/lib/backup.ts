@@ -49,6 +49,9 @@ const BACKUP_TABLES = [
 /** Maximum rows per table to prevent OOM on large clinics (HIGH-04). */
 const MAX_ROWS_PER_TABLE = 10_000;
 
+/** Maximum size of incoming backup JSON for restore (10 MB). */
+const MAX_RESTORE_SIZE_BYTES = 10 * 1024 * 1024;
+
 /**
  * Explicit foreign key mapping per table (HIGH-02).
  * Only these columns will be remapped during restore — no naming-convention guessing.
@@ -177,6 +180,16 @@ export async function restoreBackup(
   // Authorization: only clinic_admin or super_admin may restore backups
   if (callerRole !== "clinic_admin" && callerRole !== "super_admin") {
     return { success: false, restored: [], errors: ["Unauthorized: only clinic admins can restore backups"], warnings: [] };
+  }
+
+  // S4: Enforce request body size limit on restore to prevent DoS
+  if (new TextEncoder().encode(json).byteLength > MAX_RESTORE_SIZE_BYTES) {
+    return {
+      success: false,
+      restored: [],
+      errors: [`Backup file exceeds maximum allowed size of ${MAX_RESTORE_SIZE_BYTES / (1024 * 1024)} MB`],
+      warnings: [],
+    };
   }
 
   const validation = validateBackup(json);

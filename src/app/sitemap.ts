@@ -83,8 +83,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         }
       }
     }
-  } catch {
+  } catch (err) {
     // If DB is unavailable, return static entries only
+    console.error("[sitemap] Failed to fetch clinic subdomains:", err);
   }
 
   return entries;

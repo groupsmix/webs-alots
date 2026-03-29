@@ -246,20 +246,24 @@ export async function deleteCalendarEvent(
 /**
  * Convert an appointment to a Google Calendar event.
  */
-export function appointmentToCalendarEvent(appointment: {
-  id: string;
-  patientName: string;
-  doctorName: string;
-  date: string;
-  startTime: string;
-  endTime: string;
-  type: string;
-  notes?: string;
-  clinicName?: string;
-  clinicAddress?: string;
-  timeZone?: string;
-}): CalendarEvent {
-  const timeZone = appointment.timeZone ?? "Africa/Casablanca";
+export function appointmentToCalendarEvent(
+  appointment: {
+    id: string;
+    patientName: string;
+    doctorName: string;
+    date: string;
+    startTime: string;
+    endTime: string;
+    type: string;
+    notes?: string;
+    clinicName?: string;
+    clinicAddress?: string;
+    timeZone?: string;
+  },
+  /** Tenant-configured timezone from clinicConfig — used as fallback when appointment.timeZone is not set. */
+  tenantTimezone?: string,
+): CalendarEvent {
+  const timeZone = appointment.timeZone ?? tenantTimezone ?? "Africa/Casablanca";
 
   return {
     summary: `${appointment.type} - ${appointment.patientName}`,
