@@ -14,6 +14,7 @@ const PUBLIC_ROUTES = [
   "/login",
   "/register",
   "/auth/callback",
+  "/pricing",
   "/how-to-book",
   "/location",
   "/testimonials",
