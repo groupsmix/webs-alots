@@ -171,8 +171,8 @@ export function downloadPrescriptionPDF(data: PrescriptionData): void {
     iframe.onload = () => {
       try {
         iframe.contentWindow?.print();
-      } catch {
-        // Fallback: open in new window
+      } catch (err) {
+        console.warn("[prescription-pdf] iframe print failed, using fallback", err);
         fallbackPrint(html);
       }
       // Clean up iframe after a delay to allow print dialog
@@ -182,7 +182,8 @@ export function downloadPrescriptionPDF(data: PrescriptionData): void {
     if (iframeDoc.readyState === "complete") {
       try {
         iframe.contentWindow?.print();
-      } catch {
+      } catch (err) {
+        console.warn("[prescription-pdf] iframe print failed, using fallback", err);
         fallbackPrint(html);
       }
       setTimeout(() => document.body.removeChild(iframe), 1000);

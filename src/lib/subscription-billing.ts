@@ -260,7 +260,8 @@ export async function processRenewal(
   // to prevent cross-tenant operations in the billing pipeline.
   try {
     assertClinicId(clinicId, "subscription-billing:processRenewal");
-  } catch {
+  } catch (err) {
+    logger.warn("clinic_id assertion failed in processRenewal", { context: "subscription-billing", clinicId, error: err });
     return { success: false, error: "Missing or invalid clinic_id — blocked for tenant safety" };
   }
 

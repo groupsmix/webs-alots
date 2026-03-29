@@ -22,6 +22,7 @@ import {
   type PutObjectCommandInput,
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import { logger } from "@/lib/logger";
 
 function getR2Config() {
   const accountId = process.env.R2_ACCOUNT_ID;
@@ -210,7 +211,8 @@ export async function readR2ObjectHead(
       chunks.push(chunk as Uint8Array);
     }
     return Buffer.concat(chunks);
-  } catch {
+  } catch (err) {
+    logger.warn("Failed to read R2 object head", { context: "r2", key, error: err });
     return null;
   }
 }
@@ -273,7 +275,8 @@ export function getResizedImageUrl(
     // Cloudflare Image Resizing URL format: /cdn-cgi/image/{options}/{path}
     const optionsPart = `width=${width},quality=${quality},fit=${fit},format=${format}`;
     return `${url.origin}/cdn-cgi/image/${optionsPart}${url.pathname}`;
-  } catch {
+  } catch (err) {
+    logger.warn("Failed to build resized image URL", { context: "r2", srcUrl, error: err });
     return srcUrl;
   }
 }

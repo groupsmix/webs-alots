@@ -49,6 +49,9 @@ const BACKUP_TABLES = [
 /** Maximum rows per table to prevent OOM on large clinics (HIGH-04). */
 const MAX_ROWS_PER_TABLE = 10_000;
 
+/** Maximum allowed size (in bytes) for a restore payload to prevent OOM. */
+const MAX_RESTORE_PAYLOAD_BYTES = 50 * 1024 * 1024; // 50 MB
+
 /**
  * Explicit foreign key mapping per table (HIGH-02).
  * Only these columns will be remapped during restore — no naming-convention guessing.
@@ -177,6 +180,16 @@ export async function restoreBackup(
   // Authorization: only clinic_admin or super_admin may restore backups
   if (callerRole !== "clinic_admin" && callerRole !== "super_admin") {
     return { success: false, restored: [], errors: ["Unauthorized: only clinic admins can restore backups"], warnings: [] };
+  }
+
+  // Guard against excessively large payloads that could cause OOM
+  if (json.length > MAX_RESTORE_PAYLOAD_BYTES) {
+    return {
+      success: false,
+      restored: [],
+      errors: [`Backup payload too large (${(json.length / 1024 / 1024).toFixed(1)} MB). Maximum allowed: ${MAX_RESTORE_PAYLOAD_BYTES / 1024 / 1024} MB.`],
+      warnings: [],
+    };
   }
 
   const validation = validateBackup(json);
