@@ -2,12 +2,12 @@
 
 import ClinicErrorBoundary from "@/components/error-boundaries/clinic-error-boundary";
 
-export default function DentistPublicError({
+export default function ClinicPublicError({
   error,
   reset,
 }: {
   error: Error & { digest?: string };
   reset: () => void;
 }) {
-  return <ClinicErrorBoundary error={error} reset={reset} context="dentist-public" />;
+  return <ClinicErrorBoundary error={error} reset={reset} context="clinic-public" />;
 }

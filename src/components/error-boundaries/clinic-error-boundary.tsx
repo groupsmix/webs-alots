@@ -10,8 +10,8 @@ import { t } from "@/lib/i18n";
 /**
  * Shared error boundary for clinic-type route groups.
  *
- * Used by (dentist-public), (lab-public), (pharmacy-public), and other
- * clinic-type route groups to provide consistent error handling with i18n.
+ * Used by (clinic-public), (specialist), and other clinic-type route
+ * groups to provide consistent error handling with i18n.
  */
 export default function ClinicErrorBoundary({
   error,
