@@ -11,7 +11,6 @@ import {
   Activity,
   CreditCard,
   Clock,
-  Loader2,
   UserPlus,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -19,6 +18,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { logger } from "@/lib/logger";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
+import { CardSkeleton } from "@/components/ui/loading-skeleton";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   fetchDashboardStats,
   fetchAnnouncements,
@@ -176,11 +177,52 @@ export default function SuperAdminDashboardPage() {
 
       {/* KPI Cards */}
       {loading && (
-        <div className="flex items-center gap-2 mb-4 text-sm text-muted-foreground">
-          <Loader2 className="h-4 w-4 animate-spin" />
-          Loading live data from Supabase...
-        </div>
+        <>
+          <CardSkeleton count={4} className="mb-6" />
+          <CardSkeleton count={3} className="mb-6 lg:grid-cols-3" />
+          <div className="grid gap-6 lg:grid-cols-2">
+            <div className="rounded-xl border p-4 space-y-3">
+              <Skeleton className="h-5 w-1/3" />
+              {Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="flex items-center justify-between rounded-lg border p-3">
+                  <div className="space-y-1 flex-1">
+                    <Skeleton className="h-4 w-2/3" />
+                    <Skeleton className="h-3 w-1/3" />
+                  </div>
+                  <div className="flex gap-2">
+                    <Skeleton className="h-5 w-14 rounded-full" />
+                    <Skeleton className="h-5 w-14 rounded-full" />
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="space-y-6">
+              <div className="rounded-xl border p-4 space-y-3">
+                <Skeleton className="h-5 w-1/3" />
+                {Array.from({ length: 3 }).map((_, i) => (
+                  <div key={i} className="rounded-lg border p-3 space-y-2">
+                    <Skeleton className="h-4 w-2/3" />
+                    <Skeleton className="h-3 w-full" />
+                  </div>
+                ))}
+              </div>
+              <div className="rounded-xl border p-4 space-y-3">
+                <Skeleton className="h-5 w-1/3" />
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <div key={i} className="flex items-start gap-3">
+                    <Skeleton className="h-2 w-2 rounded-full mt-1" />
+                    <div className="flex-1 space-y-1">
+                      <Skeleton className="h-4 w-2/3" />
+                      <Skeleton className="h-3 w-full" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </>
       )}
+      {!loading && <>
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-6">
         {stats.map((stat) => (
           <Card key={stat.label}>
@@ -353,6 +395,7 @@ export default function SuperAdminDashboardPage() {
           </Card>
         </div>
       </div>
+      </>}
     </div>
   );
 }

@@ -22,6 +22,7 @@ import {
 } from "@/lib/config/pricing";
 import { logger } from "@/lib/logger";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
+import { CardSkeleton, TableSkeleton } from "@/components/ui/loading-skeleton";
 import {
   fetchClientSubscriptions,
   type ClientSubscription,
@@ -110,8 +111,17 @@ export default function SubscriptionsPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-20">
-        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      <div>
+        <Breadcrumb items={[
+          { label: "Super Admin", href: "/super-admin/dashboard" },
+          { label: "Subscriptions" },
+        ]} />
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold">Gestion des abonnements</h1>
+          <p className="text-sm text-muted-foreground mt-1">Suivi des abonnements clients, facturation et paiements</p>
+        </div>
+        <CardSkeleton count={4} className="mb-6" />
+        <TableSkeleton rows={6} columns={7} className="mt-4" />
       </div>
     );
   }
@@ -211,7 +221,7 @@ export default function SubscriptionsPage() {
           </CardTitle>
         </CardHeader>
         <CardContent className="p-0">
-          <div className="overflow-x-auto">
+          <div className="table-mobile-scroll">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b text-muted-foreground">

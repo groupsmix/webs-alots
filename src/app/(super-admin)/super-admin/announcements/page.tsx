@@ -16,6 +16,7 @@ import {
 import { Loader2 } from "lucide-react";
 import { logger } from "@/lib/logger";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
+import { useToast } from "@/components/ui/toast";
 import {
   fetchAnnouncements,
   type Announcement,
@@ -24,6 +25,7 @@ import {
 type TypeFilter = "all" | "info" | "warning" | "critical";
 
 export default function AnnouncementsPage() {
+  const { addToast } = useToast();
   const [list, setList] = useState<Announcement[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -123,11 +125,13 @@ export default function AnnouncementsPage() {
       setList((prev) => [newItem, ...prev]);
     }
     setEditOpen(false);
+    addToast(editItem ? "Announcement updated" : "Announcement published", "success");
   }
 
   function handleDelete() {
     if (deleteItem) {
       setList((prev) => prev.filter((a) => a.id !== deleteItem.id));
+      addToast("Announcement deleted", "success");
     }
     setDeleteOpen(false);
     setDeleteItem(null);
@@ -135,6 +139,7 @@ export default function AnnouncementsPage() {
 
   function toggleActive(item: Announcement) {
     setList((prev) => prev.map((a) => a.id === item.id ? { ...a, active: !a.active } : a));
+    addToast(item.active ? "Announcement deactivated" : "Announcement activated", "success");
   }
 
   if (loading) {

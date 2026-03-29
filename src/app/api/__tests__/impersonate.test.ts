@@ -25,6 +25,7 @@ describe("Impersonate API — validation", () => {
     const result = impersonateSchema.safeParse({
       clinicId: "clinic-123",
       password: "admin-password",
+      reason: "Investigating billing issue",
     });
     expect(result.success).toBe(true);
   });
@@ -33,6 +34,7 @@ describe("Impersonate API — validation", () => {
     const { impersonateSchema } = await import("@/lib/validations");
     const result = impersonateSchema.safeParse({
       password: "admin-password",
+      reason: "Investigating billing issue",
     });
     expect(result.success).toBe(false);
   });
@@ -41,6 +43,7 @@ describe("Impersonate API — validation", () => {
     const { impersonateSchema } = await import("@/lib/validations");
     const result = impersonateSchema.safeParse({
       clinicId: "clinic-123",
+      reason: "Investigating billing issue",
     });
     expect(result.success).toBe(false);
   });
@@ -50,6 +53,7 @@ describe("Impersonate API — validation", () => {
     const result = impersonateSchema.safeParse({
       clinicId: "",
       password: "admin-password",
+      reason: "Investigating billing issue",
     });
     expect(result.success).toBe(false);
   });
@@ -59,6 +63,26 @@ describe("Impersonate API — validation", () => {
     const result = impersonateSchema.safeParse({
       clinicId: "clinic-123",
       password: "",
+      reason: "Investigating billing issue",
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects impersonation without reason", async () => {
+    const { impersonateSchema } = await import("@/lib/validations");
+    const result = impersonateSchema.safeParse({
+      clinicId: "clinic-123",
+      password: "admin-password",
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects reason shorter than 3 characters", async () => {
+    const { impersonateSchema } = await import("@/lib/validations");
+    const result = impersonateSchema.safeParse({
+      clinicId: "clinic-123",
+      password: "admin-password",
+      reason: "ab",
     });
     expect(result.success).toBe(false);
   });
@@ -71,17 +95,17 @@ describe("Impersonate API — cookie behavior", () => {
       httpOnly: true,
       secure: true,
       sameSite: "strict" as const,
-      maxAge: 4 * 60 * 60, // 4 hours
+      maxAge: 30 * 60, // 30 minutes
     };
 
     expect(cookieSettings.httpOnly).toBe(true);
     expect(cookieSettings.secure).toBe(true);
     expect(cookieSettings.sameSite).toBe("strict");
-    expect(cookieSettings.maxAge).toBe(14400);
+    expect(cookieSettings.maxAge).toBe(1800);
   });
 
   it("impersonation cookie names are properly scoped", () => {
-    const cookieNames = ["sa_impersonate_clinic_id", "sa_impersonate_clinic_name"];
+    const cookieNames = ["sa_impersonate_clinic_id", "sa_impersonate_clinic_name", "sa_impersonate_reason"];
     for (const name of cookieNames) {
       expect(name).toMatch(/^sa_impersonate_/);
     }

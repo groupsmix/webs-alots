@@ -25,6 +25,7 @@ import {
   type CreateServiceInput,
 } from "@/lib/super-admin-actions";
 import { STAFF_DEFAULT_PASSWORD } from "@/lib/constants";
+import { useToast } from "@/components/ui/toast";
 import {
   OnboardingStepClinic,
   type ClinicFormData,
@@ -63,6 +64,7 @@ const DEFAULT_SLOT: TimeSlotFormData = {
 // ---------- Component ----------
 
 export default function OnboardingPage() {
+  const { addToast } = useToast();
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -247,11 +249,12 @@ export default function OnboardingPage() {
         },
       });
       setCreatedClinicId(clinic.id);
+      addToast(`Clinic "${clinicForm.name}" created successfully`, "success");
       setStep(2);
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Failed to create clinic",
-      );
+      const msg = err instanceof Error ? err.message : "Failed to create clinic";
+      setError(msg);
+      addToast(msg, "error");
     } finally {
       setLoading(false);
     }
@@ -306,6 +309,7 @@ export default function OnboardingPage() {
         created.push({ id: user.id, name: user.name, role: user.role, email: user.email ?? undefined });
       }
       setCreatedUsers(created);
+      addToast(`${created.length} staff member(s) created`, "success");
 
       // Pre-populate doctor time slots for step 4
       const doctors = created.filter((u) => u.role === "doctor" || u.role === "clinic_admin");
@@ -330,7 +334,9 @@ export default function OnboardingPage() {
 
       setStep(3);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to create users");
+      const msg = err instanceof Error ? err.message : "Failed to create users";
+      setError(msg);
+      addToast(msg, "error");
     } finally {
       setLoading(false);
     }
@@ -360,11 +366,12 @@ export default function OnboardingPage() {
         };
         await createService(input);
       }
+      addToast(`${validServices.length} service(s) added`, "success");
       setStep(4);
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Failed to create services",
-      );
+      const msg = err instanceof Error ? err.message : "Failed to create services";
+      setError(msg);
+      addToast(msg, "error");
     } finally {
       setLoading(false);
     }
@@ -393,11 +400,12 @@ export default function OnboardingPage() {
           })),
         );
       }
+      addToast("Time slots configured successfully", "success");
       setCompleted(true);
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Failed to create time slots",
-      );
+      const msg = err instanceof Error ? err.message : "Failed to create time slots";
+      setError(msg);
+      addToast(msg, "error");
     } finally {
       setLoading(false);
     }
