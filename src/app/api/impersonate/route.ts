@@ -3,6 +3,7 @@ import { withAuth } from "@/lib/with-auth";
 import { logger } from "@/lib/logger";
 import { impersonateSchema, safeParse } from "@/lib/validations";
 import { createClient } from "@/lib/supabase-server";
+import { logSecurityEvent } from "@/lib/audit-log";
 
 /**
  * POST /api/impersonate
@@ -50,18 +51,15 @@ export const POST = withAuth(async (request, { supabase, user }) => {
     }
 
     // Log the impersonation for security audit
-    try {
-      await supabase.from("activity_logs").insert({
-        action: "impersonate_start",
-        description: `Super admin started impersonating clinic: ${clinicName || clinic.name}. Reason: ${reason}`,
-        clinic_id: clinicId,
-        clinic_name: clinicName || clinic.name,
-        actor: user.email || user.id,
-        type: "auth",
-      });
-    } catch {
-      // Activity log insert may fail if table doesn't exist — non-blocking
-    }
+    await logSecurityEvent({
+      supabase,
+      action: "impersonate.start",
+      actor: user.email || user.id,
+      clinicId,
+      clinicName: clinicName || clinic.name,
+      description: `Super admin started impersonating clinic: ${clinicName || clinic.name}. Reason: ${reason}`,
+      metadata: { reason, targetClinicId: clinicId },
+    });
 
     // Set impersonation cookie
     const response = NextResponse.json({
@@ -107,16 +105,13 @@ export const DELETE = withAuth(async (_request, { supabase, user }) => {
   try {
     // Log the end of impersonation
     if (user) {
-      try {
-        await supabase.from("activity_logs").insert({
-          action: "impersonate_end",
-          description: "Super admin ended impersonation session",
-          actor: user.email || user.id,
-          type: "auth",
-        });
-      } catch {
-        // non-blocking
-      }
+      await logSecurityEvent({
+        supabase,
+        action: "impersonate.end",
+        actor: user.email || user.id,
+        clinicId: "system",
+        description: "Super admin ended impersonation session",
+      });
     }
 
     const response = NextResponse.json({ success: true });
