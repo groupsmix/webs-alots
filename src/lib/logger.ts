@@ -94,6 +94,64 @@ function emit(level: LogLevel, message: string, meta?: LogMeta): void {
   }
 }
 
+// ---- Sentry log transport (auto-registered when @sentry/nextjs is available) ----
+
+function registerSentryTransport(): void {
+  try {
+    // Dynamic import so the logger module remains usable even if Sentry is
+    // not installed or configured (e.g. in tests, local dev without DSN).
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const Sentry = require("@sentry/nextjs") as typeof import("@sentry/nextjs");
+    if (!Sentry) return;
+
+    transports.push((payload) => {
+      const level = payload.level as string;
+      const message = payload.message as string;
+
+      // Only forward warn/error level logs to Sentry to avoid noise
+      if (level === "error") {
+        const errorData = payload.error as Record<string, unknown> | undefined;
+        if (errorData?.message) {
+          Sentry.captureException(
+            new Error(String(errorData.message)),
+            {
+              extra: payload,
+              tags: {
+                context: String(payload.context ?? ""),
+                clinicId: String(payload.clinicId ?? ""),
+              },
+            },
+          );
+        } else {
+          Sentry.captureMessage(message, {
+            level: "error",
+            extra: payload,
+            tags: {
+              context: String(payload.context ?? ""),
+              clinicId: String(payload.clinicId ?? ""),
+            },
+          });
+        }
+      } else if (level === "warn") {
+        Sentry.captureMessage(message, {
+          level: "warning",
+          extra: payload,
+          tags: {
+            context: String(payload.context ?? ""),
+          },
+        });
+      }
+    });
+  } catch {
+    // Sentry not available — no-op
+  }
+}
+
+// Auto-register Sentry transport on module load (server-side only)
+if (typeof process !== "undefined" && process.env.NEXT_PUBLIC_SENTRY_DSN) {
+  registerSentryTransport();
+}
+
 export const logger = {
   debug(message: string, meta?: LogMeta): void {
     if (process.env.NODE_ENV === "production") return;

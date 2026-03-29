@@ -14,10 +14,15 @@ import { logger } from "@/lib/logger";
 import { verifyEmailSendSchema, verifyEmailConfirmSchema, safeParse } from "@/lib/validations";
 
 /**
- * Generate a 6-digit numeric verification code.
+ * Generate a 6-digit numeric verification code using cryptographically
+ * secure randomness (Web Crypto API) instead of Math.random().
  */
 function generateCode(): string {
-  return String(Math.floor(100000 + Math.random() * 900000));
+  const array = new Uint32Array(1);
+  crypto.getRandomValues(array);
+  // Map to 100000–999999 range
+  const code = 100000 + (array[0] % 900000);
+  return String(code);
 }
 
 /**
