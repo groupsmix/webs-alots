@@ -5,10 +5,10 @@ import {
   type NotificationTrigger,
   type TemplateVariables,
 } from "@/lib/notifications";
-import { withAuth } from "@/lib/with-auth";
 import { STAFF_ROLES } from "@/lib/auth-roles";
 import { logger } from "@/lib/logger";
-import { notificationTriggerSchema, safeParse } from "@/lib/validations";
+import { notificationTriggerSchema } from "@/lib/validations";
+import { withAuthValidation } from "@/lib/api-validate";
 /**
  * POST /api/notifications/trigger
  *
@@ -34,14 +34,8 @@ import { notificationTriggerSchema, safeParse } from "@/lib/validations";
  * - payment_received: When a payment is confirmed
  * - new_patient_registered: When a new patient registers
  */
-export const POST = withAuth(async (request, { supabase, profile }) => {
-  try {
-    const raw = await request.json();
-    const parsed = safeParse(notificationTriggerSchema, raw);
-    if (!parsed.success) {
-      return NextResponse.json({ error: parsed.error }, { status: 400 });
-    }
-    const { trigger, variables, recipients } = parsed.data as {
+export const POST = withAuthValidation(notificationTriggerSchema, async (body, request, { supabase, profile }) => {
+    const { trigger, variables, recipients } = body as {
       trigger: NotificationTrigger;
       variables: TemplateVariables;
       recipients: Array<{ id: string; channels: ("whatsapp" | "in_app")[] }>;
@@ -104,11 +98,4 @@ export const POST = withAuth(async (request, { supabase, profile }) => {
       template: template.name,
       dispatched: allResults,
     });
-  } catch (err) {
-    logger.warn("Operation failed", { context: "notifications/trigger", error: err });
-    return NextResponse.json(
-      { error: "Failed to trigger notification" },
-      { status: 500 },
-    );
-  }
 }, STAFF_ROLES);

@@ -11,11 +11,11 @@
 import { NextResponse } from "next/server";
 import { uploadToR2, isR2Configured, buildUploadKey } from "@/lib/r2";
 import { updateLabOrderPdfUrl } from "@/lib/data/server";
-import { withAuth } from "@/lib/with-auth";
 import { STAFF_ROLES } from "@/lib/auth-roles";
 import { logger } from "@/lib/logger";
 import { escapeHtml } from "@/lib/escape-html";
-import { labReportSchema, safeParse } from "@/lib/validations";
+import { labReportSchema } from "@/lib/validations";
+import { withAuthValidation } from "@/lib/api-validate";
 
 interface LabResultItem {
   testName: string;
@@ -116,14 +116,8 @@ function generateLabReportHtml(data: {
 </html>`;
 }
 
-export const POST = withAuth(async (request, { profile }) => {
-  try {
-    const raw = await request.json();
-    const parsed = safeParse(labReportSchema, raw);
-    if (!parsed.success) {
-      return NextResponse.json({ error: parsed.error }, { status: 400 });
-    }
-    const { orderId, patientName, orderNumber, results } = parsed.data;
+export const POST = withAuthValidation(labReportSchema, async (body, request, { profile }) => {
+    const { orderId, patientName, orderNumber, results } = body;
     // Derive clinic_id from the authenticated user's profile — never from the request body
     const clinicId = profile.clinic_id;
     if (!clinicId) {
@@ -166,8 +160,4 @@ export const POST = withAuth(async (request, { profile }) => {
     await updateLabOrderPdfUrl(orderId, url);
 
     return NextResponse.json({ pdfUrl: url });
-  } catch (err) {
-    logger.warn("Operation failed", { context: "lab/report-html", error: err });
-    return NextResponse.json({ error: "Failed to generate lab report" }, { status: 500 });
-  }
 }, STAFF_ROLES);

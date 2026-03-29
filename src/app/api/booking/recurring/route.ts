@@ -1,14 +1,14 @@
 import { NextResponse } from "next/server";
 import { requireTenantWithConfig } from "@/lib/tenant";
 import { getPublicServices } from "@/lib/data/public";
-import { withAuth } from "@/lib/with-auth";
 import { findOrCreatePatient } from "@/lib/find-or-create-patient";
 import { APPOINTMENT_STATUS, BOOKING_SOURCE } from "@/lib/types/database";
 import type { TablesInsert } from "@/lib/types/database";
 import { computeEndTime } from "@/lib/timezone";
 import { STAFF_ROLES } from "@/lib/auth-roles";
 import { logger } from "@/lib/logger";
-import { recurringSchema, safeParse } from "@/lib/validations";
+import { recurringSchema } from "@/lib/validations";
+import { withAuthValidation } from "@/lib/api-validate";
 function addInterval(date: Date, pattern: "weekly" | "biweekly" | "monthly"): Date {
   const next = new Date(date);
   if (pattern === "weekly") {
@@ -33,14 +33,7 @@ function addInterval(date: Date, pattern: "weekly" | "biweekly" | "monthly"): Da
  *
  * Create a recurring booking series or cancel one.
  */
-export const POST = withAuth(async (request, { supabase }) => {
-  try {
-    const raw = await request.json();
-    const parsed = safeParse(recurringSchema, raw);
-    if (!parsed.success) {
-      return NextResponse.json({ error: parsed.error }, { status: 400 });
-    }
-    const body = parsed.data;
+export const POST = withAuthValidation(recurringSchema, async (body, request, { supabase }) => {
 
     const { tenant, config: tenantConfig } = await requireTenantWithConfig();
     const clinicId = tenant.clinicId;
@@ -235,8 +228,4 @@ export const POST = withAuth(async (request, { supabase }) => {
     }
 
     return NextResponse.json({ error: "action must be 'create' or 'cancel'" }, { status: 400 });
-  } catch (err) {
-    logger.warn("Operation failed", { context: "booking/recurring", error: err });
-    return NextResponse.json({ error: "Failed to process recurring booking" }, { status: 500 });
-  }
 }, STAFF_ROLES);

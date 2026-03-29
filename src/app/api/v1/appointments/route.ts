@@ -13,8 +13,9 @@ import { authenticateApiKey } from "@/lib/api-auth";
 import { APPOINTMENT_STATUS } from "@/lib/types/database";
 import { getCorsHeaders, handlePreflight } from "@/lib/cors";
 import { logger } from "@/lib/logger";
-import { v1AppointmentCreateSchema, safeParse } from "@/lib/validations";
+import { v1AppointmentCreateSchema } from "@/lib/validations";
 import { logTenantContext } from "@/lib/tenant-context";
+import { withValidation } from "@/lib/api-validate";
 
 /** Handle CORS preflight requests. */
 export function OPTIONS(request: NextRequest) {
@@ -65,7 +66,7 @@ export async function GET(request: NextRequest) {
   }, { headers: getCorsHeaders(request) });
 }
 
-export async function POST(request: NextRequest) {
+export const POST = withValidation(v1AppointmentCreateSchema, async (body, request: NextRequest) => {
   const auth = await authenticateApiKey(request);
   if (!auth) {
     return NextResponse.json(
@@ -73,17 +74,6 @@ export async function POST(request: NextRequest) {
       { status: 401, headers: getCorsHeaders(request) },
     );
   }
-
-  try {
-    const raw = await request.json();
-    const parsed = safeParse(v1AppointmentCreateSchema, raw);
-    if (!parsed.success) {
-      return NextResponse.json(
-        { error: parsed.error },
-        { status: 400, headers: getCorsHeaders(request) },
-      );
-    }
-    const body = parsed.data;
 
     // Build slot_start / slot_end from appointment_date + start_time / end_time.
     // These are required NOT NULL columns in the appointments table.
@@ -119,8 +109,4 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json({ data }, { status: 201, headers: getCorsHeaders(request) });
-  } catch (err) {
-    logger.warn("Operation failed", { context: "v1/appointments", error: err });
-    return NextResponse.json({ error: "Invalid request body" }, { status: 400, headers: getCorsHeaders(request) });
-  }
-}
+});

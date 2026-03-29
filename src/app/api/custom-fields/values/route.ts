@@ -2,7 +2,8 @@ import { NextResponse } from "next/server";
 import { withAuth } from "@/lib/with-auth";
 import { STAFF_ROLES } from "@/lib/auth-roles";
 import { logger } from "@/lib/logger";
-import { customFieldValuesSchema, safeParse } from "@/lib/validations";
+import { customFieldValuesSchema } from "@/lib/validations";
+import { withAuthValidation } from "@/lib/api-validate";
 import type { Json } from "@/lib/types/database";
 /**
  * GET /api/custom-fields/values?entity_type=...&entity_id=...
@@ -49,14 +50,8 @@ export const GET = withAuth(async (request, { supabase, profile }) => {
  *
  * Save (upsert) custom field values for a specific entity instance.
  */
-export const POST = withAuth(async (request, { supabase, profile }) => {
-  try {
-    const raw = await request.json();
-    const parsed = safeParse(customFieldValuesSchema, raw);
-    if (!parsed.success) {
-      return NextResponse.json({ error: parsed.error }, { status: 400 });
-    }
-    const { entity_type, entity_id, field_values } = parsed.data;
+export const POST = withAuthValidation(customFieldValuesSchema, async (body, request, { supabase, profile }) => {
+    const { entity_type, entity_id, field_values } = body;
     // Always derive clinic_id from the authenticated user's profile
     const clinic_id = profile.clinic_id;
     if (!clinic_id) {
@@ -141,13 +136,6 @@ export const POST = withAuth(async (request, { supabase, profile }) => {
     }
 
     return NextResponse.json({ values: data });
-  } catch (err) {
-    logger.warn("Operation failed", { context: "custom-fields/values", error: err });
-    return NextResponse.json(
-      { error: "Invalid request body" },
-      { status: 400 },
-    );
-  }
 }, STAFF_ROLES);
 
 /**
@@ -155,14 +143,8 @@ export const POST = withAuth(async (request, { supabase, profile }) => {
  *
  * Partially update custom field values (merge with existing).
  */
-export const PATCH = withAuth(async (request, { supabase, profile }) => {
-  try {
-    const raw = await request.json();
-    const parsed = safeParse(customFieldValuesSchema, raw);
-    if (!parsed.success) {
-      return NextResponse.json({ error: parsed.error }, { status: 400 });
-    }
-    const { entity_type, entity_id, field_values } = parsed.data;
+export const PATCH = withAuthValidation(customFieldValuesSchema, async (body, request, { supabase, profile }) => {
+    const { entity_type, entity_id, field_values } = body;
     // Always derive clinic_id from the authenticated user's profile
     const clinic_id = profile.clinic_id;
     if (!clinic_id) {
@@ -259,11 +241,4 @@ export const PATCH = withAuth(async (request, { supabase, profile }) => {
     }
 
     return NextResponse.json({ values: data });
-  } catch (err) {
-    logger.warn("Operation failed", { context: "custom-fields/values", error: err });
-    return NextResponse.json(
-      { error: "Invalid request body" },
-      { status: 400 },
-    );
-  }
 }, STAFF_ROLES);

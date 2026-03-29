@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server";
-import { withAuth } from "@/lib/with-auth";
 import { logger } from "@/lib/logger";
 import { z } from "zod";
-import { safeParse } from "@/lib/validations";
+import { withAuthValidation } from "@/lib/api-validate";
 import { sendTextMessage } from "@/lib/whatsapp";
 import { invalidateAllSubdomainCaches } from "@/lib/subdomain-cache";
 
@@ -46,14 +45,7 @@ const wizardSchema = z.object({
 // welcome message when go_live is true.
 // ---------------------------------------------------------------------------
 
-export const POST = withAuth(async (request, { supabase, profile }) => {
-  try {
-    const raw = await request.json();
-    const parsed = safeParse(wizardSchema, raw);
-    if (!parsed.success) {
-      return NextResponse.json({ error: parsed.error }, { status: 400 });
-    }
-    const body = parsed.data;
+export const POST = withAuthValidation(wizardSchema, async (body, request, { supabase, profile }) => {
 
     // Verify the authenticated user owns the clinic
     if (profile.clinic_id !== body.clinic_id) {
@@ -189,14 +181,4 @@ export const POST = withAuth(async (request, { supabase, profile }) => {
         ? "Clinic is live — congratulations!"
         : "Wizard data saved",
     });
-  } catch (err) {
-    logger.warn("Operation failed", {
-      context: "onboarding/wizard",
-      error: err,
-    });
-    return NextResponse.json(
-      { error: "Failed to save wizard data" },
-      { status: 500 },
-    );
-  }
 }, null);

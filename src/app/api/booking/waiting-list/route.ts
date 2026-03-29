@@ -5,7 +5,8 @@ import { findOrCreatePatient } from "@/lib/find-or-create-patient";
 import { logAuditEvent } from "@/lib/audit-log";
 import { WAITING_LIST_STATUS } from "@/lib/types/database";
 import { logger } from "@/lib/logger";
-import { waitingListSchema, safeParse } from "@/lib/validations";
+import { waitingListSchema } from "@/lib/validations";
+import { withAuthValidation } from "@/lib/api-validate";
 import { STAFF_ROLES } from "@/lib/auth-roles";
 import type { UserRole } from "@/lib/types/database";
 
@@ -15,14 +16,7 @@ const WAITING_LIST_ROLES: UserRole[] = [...STAFF_ROLES, "patient"];
  *
  * Add a patient to the waiting list.
  */
-export const POST = withAuth(async (request, { supabase }) => {
-  try {
-    const raw = await request.json();
-    const parsed = safeParse(waitingListSchema, raw);
-    if (!parsed.success) {
-      return NextResponse.json({ error: parsed.error }, { status: 400 });
-    }
-    const body = parsed.data;
+export const POST = withAuthValidation(waitingListSchema, async (body, request, { supabase }) => {
 
     // Find or create patient (prefer phone-based lookup to avoid name collisions)
     const tenant = await requireTenant();
@@ -69,10 +63,6 @@ export const POST = withAuth(async (request, { supabase }) => {
       message: "Added to waiting list",
       entryId: entry.id,
     });
-  } catch (err) {
-    logger.warn("Operation failed", { context: "booking/waiting-list", error: err });
-    return NextResponse.json({ error: "Failed to add to waiting list" }, { status: 500 });
-  }
 }, WAITING_LIST_ROLES);
 
 /**

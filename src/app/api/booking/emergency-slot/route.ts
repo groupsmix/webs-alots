@@ -7,20 +7,14 @@ import { logAuditEvent } from "@/lib/audit-log";
 import { computeEndTime } from "@/lib/timezone";
 import { STAFF_ROLES } from "@/lib/auth-roles";
 import { logger } from "@/lib/logger";
-import { emergencySlotSchema, safeParse } from "@/lib/validations";
+import { emergencySlotSchema } from "@/lib/validations";
+import { withAuthValidation } from "@/lib/api-validate";
 /**
  * POST /api/booking/emergency-slot
  *
  * Create an emergency slot (doctor only) or book an existing one.
  */
-export const POST = withAuth(async (request, { supabase }) => {
-  try {
-    const raw = await request.json();
-    const parsed = safeParse(emergencySlotSchema, raw);
-    if (!parsed.success) {
-      return NextResponse.json({ error: parsed.error }, { status: 400 });
-    }
-    const body = parsed.data;
+export const POST = withAuthValidation(emergencySlotSchema, async (body, request, { supabase }) => {
 
     const tenant = await requireTenant();
     const clinicId = tenant.clinicId;
@@ -176,10 +170,6 @@ export const POST = withAuth(async (request, { supabase }) => {
     }
 
     return NextResponse.json({ error: "action must be 'create' or 'book'" }, { status: 400 });
-  } catch (err) {
-    logger.warn("Operation failed", { context: "booking/emergency-slot", error: err });
-    return NextResponse.json({ error: "Failed to process emergency slot request" }, { status: 500 });
-  }
 }, STAFF_ROLES);
 
 /**

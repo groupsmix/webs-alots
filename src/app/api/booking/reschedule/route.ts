@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
-import { withAuth } from "@/lib/with-auth";
 import { requireTenantWithConfig } from "@/lib/tenant";
 import { getPublicAvailableSlots } from "@/lib/data/public";
 import { APPOINTMENT_STATUS } from "@/lib/types/database";
 import { logAuditEvent } from "@/lib/audit-log";
 import { computeEndTime } from "@/lib/timezone";
 import { logger } from "@/lib/logger";
-import { rescheduleSchema, safeParse } from "@/lib/validations";
+import { rescheduleSchema } from "@/lib/validations";
+import { withAuthValidation } from "@/lib/api-validate";
 import { dispatchNotification } from "@/lib/notifications";
 import type { TemplateVariables } from "@/lib/notifications";
 import { STAFF_ROLES } from "@/lib/auth-roles";
@@ -20,14 +20,7 @@ const RESCHEDULE_ROLES: UserRole[] = [...STAFF_ROLES, "patient"];
  * Validates working hours, slot availability, and prevents
  * rescheduling to past dates or double-booking conflicts.
  */
-export const POST = withAuth(async (request, { supabase, profile }) => {
-  try {
-    const raw = await request.json();
-    const parsed = safeParse(rescheduleSchema, raw);
-    if (!parsed.success) {
-      return NextResponse.json({ error: parsed.error }, { status: 400 });
-    }
-    const body = parsed.data;
+export const POST = withAuthValidation(rescheduleSchema, async (body, request, { supabase, profile }) => {
 
     const { tenant, config: tenantConfig } = await requireTenantWithConfig();
     const clinicId = tenant.clinicId;
@@ -220,8 +213,4 @@ export const POST = withAuth(async (request, { supabase, profile }) => {
       message: "Appointment rescheduled successfully",
       newAppointmentId: body.appointmentId,
     });
-  } catch (err) {
-    logger.warn("Operation failed", { context: "booking/reschedule", error: err });
-    return NextResponse.json({ error: "Failed to reschedule appointment" }, { status: 500 });
-  }
 }, RESCHEDULE_ROLES);

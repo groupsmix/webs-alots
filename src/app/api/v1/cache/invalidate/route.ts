@@ -10,10 +10,9 @@
  */
 
 import { NextRequest } from "next/server";
-import { withAuth } from "@/lib/with-auth";
-import { apiSuccess, apiError, apiValidationError } from "@/lib/api-response";
+import { apiSuccess } from "@/lib/api-response";
 import { invalidateSubdomainCache } from "@/lib/subdomain-cache";
-import { safeParse } from "@/lib/validations";
+import { withAuthValidation } from "@/lib/api-validate";
 import { z } from "zod";
 import { logger } from "@/lib/logger";
 
@@ -21,24 +20,13 @@ const cacheInvalidateSchema = z.object({
   subdomain: z.string().min(1).max(100),
 });
 
-export const POST = withAuth(async (request: NextRequest) => {
-  try {
-    const raw = await request.json();
-    const parsed = safeParse(cacheInvalidateSchema, raw);
-    if (!parsed.success) {
-      return apiValidationError(parsed.error);
-    }
-
-    invalidateSubdomainCache(parsed.data.subdomain);
+export const POST = withAuthValidation(cacheInvalidateSchema, async (data, _request: NextRequest) => {
+    invalidateSubdomainCache(data.subdomain);
 
     logger.info("Subdomain cache invalidated", {
       context: "cache/invalidate",
-      subdomain: parsed.data.subdomain,
+      subdomain: data.subdomain,
     });
 
-    return apiSuccess({ invalidated: parsed.data.subdomain });
-  } catch (err) {
-    logger.error("Cache invalidation failed", { context: "cache/invalidate", error: err });
-    return apiError("Failed to invalidate cache", 500, "INTERNAL_ERROR");
-  }
+    return apiSuccess({ invalidated: data.subdomain });
 }, ["clinic_admin", "super_admin"]);

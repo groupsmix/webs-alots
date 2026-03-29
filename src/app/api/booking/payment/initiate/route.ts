@@ -2,23 +2,16 @@ import { NextResponse } from "next/server";
 import { logAuditEvent } from "@/lib/audit-log";
 import { requireTenant } from "@/lib/tenant";
 import { findOrCreatePatient } from "@/lib/find-or-create-patient";
-import { withAuth } from "@/lib/with-auth";
 import { STAFF_ROLES } from "@/lib/auth-roles";
 import { logger } from "@/lib/logger";
-import { paymentInitiateSchema, safeParse } from "@/lib/validations";
+import { paymentInitiateSchema } from "@/lib/validations";
+import { withAuthValidation } from "@/lib/api-validate";
 /**
  * POST /api/booking/payment/initiate
  *
  * Initiate a payment for an appointment.
  */
-export const POST = withAuth(async (request, { supabase }) => {
-  try {
-    const raw = await request.json();
-    const parsed = safeParse(paymentInitiateSchema, raw);
-    if (!parsed.success) {
-      return NextResponse.json({ error: parsed.error }, { status: 400 });
-    }
-    const body = parsed.data;
+export const POST = withAuthValidation(paymentInitiateSchema, async (body, request, { supabase }) => {
 
     const tenant = await requireTenant();
     const clinicId = tenant.clinicId;
@@ -103,8 +96,4 @@ export const POST = withAuth(async (request, { supabase }) => {
       paymentId: payment.id,
       gatewaySessionId,
     });
-  } catch (err) {
-    logger.warn("Operation failed", { context: "booking/payment/initiate", error: err });
-    return NextResponse.json({ error: "Failed to initiate payment" }, { status: 500 });
-  }
 }, STAFF_ROLES);

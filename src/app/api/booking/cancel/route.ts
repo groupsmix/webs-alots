@@ -5,7 +5,8 @@ import { APPOINTMENT_STATUS, WAITING_LIST_STATUS } from "@/lib/types/database";
 import { logAuditEvent } from "@/lib/audit-log";
 import { clinicDateTime } from "@/lib/timezone";
 import { logger } from "@/lib/logger";
-import { bookingCancelSchema, safeParse } from "@/lib/validations";
+import { bookingCancelSchema } from "@/lib/validations";
+import { withAuthValidation } from "@/lib/api-validate";
 import { dispatchNotification } from "@/lib/notifications";
 import type { TemplateVariables } from "@/lib/notifications";
 import { STAFF_ROLES } from "@/lib/auth-roles";
@@ -17,14 +18,7 @@ const CANCEL_ROLES: UserRole[] = [...STAFF_ROLES, "patient"];
  *
  * Cancel an appointment if within the cancellation window.
  */
-export const POST = withAuth(async (request, { supabase, profile }) => {
-  try {
-    const raw = await request.json();
-    const parsed = safeParse(bookingCancelSchema, raw);
-    if (!parsed.success) {
-      return NextResponse.json({ error: parsed.error }, { status: 400 });
-    }
-    const body = parsed.data;
+export const POST = withAuthValidation(bookingCancelSchema, async (body, request, { supabase, profile }) => {
 
     const { tenant, config: tenantConfig } = await requireTenantWithConfig();
     const clinicId = tenant.clinicId;
@@ -150,10 +144,6 @@ export const POST = withAuth(async (request, { supabase, profile }) => {
     }
 
     return NextResponse.json({ status: APPOINTMENT_STATUS.CANCELLED, message: "Appointment cancelled successfully" });
-  } catch (err) {
-    logger.warn("Operation failed", { context: "booking/cancel", error: err });
-    return NextResponse.json({ error: "Failed to cancel appointment" }, { status: 500 });
-  }
 }, CANCEL_ROLES);
 
 /**

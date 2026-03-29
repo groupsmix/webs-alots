@@ -11,9 +11,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { extractClientIp } from "@/lib/rate-limit";
 import { logger } from "@/lib/logger";
-import { consentSchema, safeParse } from "@/lib/validations";
+import { consentSchema } from "@/lib/validations";
+import { withValidation } from "@/lib/api-validate";
 
-export async function POST(request: NextRequest) {
+export const POST = withValidation(consentSchema, async (data, request: NextRequest) => {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
@@ -24,25 +25,7 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  let body: unknown;
-  try {
-    body = await request.json();
-  } catch {
-    return NextResponse.json(
-      { error: "Invalid JSON body" },
-      { status: 400 },
-    );
-  }
-
-  const parsed = safeParse(consentSchema, body);
-  if (!parsed.success) {
-    return NextResponse.json(
-      { error: parsed.error },
-      { status: 400 },
-    );
-  }
-
-  const { consentType, granted } = parsed.data;
+  const { consentType, granted } = data;
 
   const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
     cookies: {
@@ -87,4 +70,4 @@ export async function POST(request: NextRequest) {
   }
 
   return NextResponse.json({ ok: true, logged: true });
-}
+});

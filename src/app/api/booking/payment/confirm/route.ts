@@ -2,23 +2,16 @@ import { NextResponse } from "next/server";
 import { logAuditEvent } from "@/lib/audit-log";
 import { requireTenant } from "@/lib/tenant";
 import { APPOINTMENT_STATUS } from "@/lib/types/database";
-import { withAuth } from "@/lib/with-auth";
 import { STAFF_ROLES } from "@/lib/auth-roles";
 import { logger } from "@/lib/logger";
-import { paymentConfirmSchema, safeParse } from "@/lib/validations";
+import { paymentConfirmSchema } from "@/lib/validations";
+import { withAuthValidation } from "@/lib/api-validate";
 /**
  * POST /api/booking/payment/confirm
  *
  * Confirm a pending payment.
  */
-export const POST = withAuth(async (request, { supabase }) => {
-  try {
-    const raw = await request.json();
-    const parsed = safeParse(paymentConfirmSchema, raw);
-    if (!parsed.success) {
-      return NextResponse.json({ error: parsed.error }, { status: 400 });
-    }
-    const body = parsed.data;
+export const POST = withAuthValidation(paymentConfirmSchema, async (body, request, { supabase }) => {
 
     const tenant = await requireTenant();
     const clinicId = tenant.clinicId;
@@ -68,8 +61,4 @@ export const POST = withAuth(async (request, { supabase }) => {
     });
 
     return NextResponse.json({ status: "confirmed", message: "Payment confirmed" });
-  } catch (err) {
-    logger.warn("Operation failed", { context: "booking/payment/confirm", error: err });
-    return NextResponse.json({ error: "Failed to confirm payment" }, { status: 500 });
-  }
 }, STAFF_ROLES);
