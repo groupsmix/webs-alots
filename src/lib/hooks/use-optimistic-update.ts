@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
+import { useLocale } from "@/components/locale-switcher";
 import { t } from "@/lib/i18n";
 
 type Status = "idle" | "pending" | "success" | "error";
@@ -29,6 +30,7 @@ interface OptimisticState<T> {
  * ```
  */
 export function useOptimisticUpdate<T>(initialData: T) {
+  const [locale] = useLocale();
   const [state, setState] = useState<OptimisticState<T>>({
     data: initialData,
     status: "idle",
@@ -58,12 +60,12 @@ export function useOptimisticUpdate<T>(initialData: T) {
       } catch (err) {
         // Roll back to previous data on failure
         const message =
-          err instanceof Error ? err.message : t("fr", "auth.genericError");
+          err instanceof Error ? err.message : t(locale, "auth.genericError");
         setState({ data: previousData, status: "error", error: message });
         options?.onError?.(message);
       }
     },
-    [state.data]
+    [state.data, locale]
   );
 
   const reset = useCallback(() => {

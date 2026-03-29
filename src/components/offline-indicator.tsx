@@ -3,13 +3,16 @@
 import { useState, useEffect } from "react";
 import { WifiOff } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useLocale } from "@/components/locale-switcher";
+import { t } from "@/lib/i18n";
 
 export function OfflineIndicator() {
-  const [isOffline, setIsOffline] = useState(() =>
-    typeof navigator !== "undefined" ? !navigator.onLine : false
-  );
+  const [locale] = useLocale();
+  const [isOffline, setIsOffline] = useState(false);
 
   useEffect(() => {
+    setIsOffline(!navigator.onLine);
+
     const handleOffline = () => setIsOffline(true);
     const handleOnline = () => setIsOffline(false);
 
@@ -35,7 +38,7 @@ export function OfflineIndicator() {
     >
       <WifiOff className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
       <span className="text-sm font-medium text-yellow-800 dark:text-yellow-200">
-        Vous &ecirc;tes hors ligne
+        {t(locale, "offline.message")}
       </span>
     </div>
   );

@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { logger } from "@/lib/logger";
 import { t } from "@/lib/i18n";
+import { useLocale } from "@/components/locale-switcher";
 
 /**
  * Shared error boundary for clinic-type route groups.
@@ -22,6 +23,8 @@ export default function ClinicErrorBoundary({
   reset: () => void;
   context?: string;
 }) {
+  const [locale] = useLocale();
+
   useEffect(() => {
     logger.warn("Operation failed", { context: `${context}-error`, error });
   }, [error, context]);
@@ -34,10 +37,10 @@ export default function ClinicErrorBoundary({
             <AlertTriangle className="h-7 w-7 text-destructive" />
           </div>
           <h2 className="mb-2 text-lg font-semibold">
-            {t("fr", "error.sectionTitle")}
+            {t(locale, "error.sectionTitle")}
           </h2>
           <p className="mb-6 text-sm text-muted-foreground">
-            {t("fr", "error.sectionDescription")}
+            {t(locale, "error.sectionDescription")}
           </p>
           {error.digest && (
             <p className="mb-4 text-xs text-muted-foreground">
@@ -46,7 +49,7 @@ export default function ClinicErrorBoundary({
           )}
           <Button onClick={reset} size="lg">
             <RefreshCw className="mr-2 h-4 w-4" />
-            {t("fr", "error.retry")}
+            {t(locale, "error.retry")}
           </Button>
         </CardContent>
       </Card>

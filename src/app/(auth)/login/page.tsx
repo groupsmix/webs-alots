@@ -16,10 +16,12 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { signInWithOTP, verifyOTP, signInWithPassword } from "@/lib/auth";
 import { logger } from "@/lib/logger";
-import { t } from "@/lib/i18n";
+import { t, type TranslationKey } from "@/lib/i18n";
+import { useLocale } from "@/components/locale-switcher";
 const PHONE_AUTH_ENABLED = process.env.NEXT_PUBLIC_PHONE_AUTH_ENABLED === "true";
 
 export default function LoginPage() {
+  const [locale] = useLocale();
   const [method, setMethod] = useState<"email" | "phone">("email");
   const [step, setStep] = useState<"credentials" | "otp">("credentials");
   const [phone, setPhone] = useState("");
@@ -53,18 +55,18 @@ export default function LoginPage() {
         // message to prevent username enumeration. Supabase returns different
         // messages for valid vs. invalid accounts which could leak information.
         // Rate-limit messages are passed through since they don't leak user info.
-        const isRateLimitError = result.error.startsWith(t("fr", "auth.rateLimitLogin").slice(0, 20)) ||
-          result.error.startsWith(t("fr", "auth.accountLocked").slice(0, 20));
+        const rateLimitKeys = ["auth.rateLimitLogin", "auth.accountLocked"];
+        const isRateLimitError = rateLimitKeys.includes(result.error);
         setError(
           isRateLimitError
-            ? result.error
-            : t("fr", "auth.invalidCredentials"),
+            ? t(locale, result.error as TranslationKey)
+            : t(locale, "auth.invalidCredentials"),
         );
         setLoading(false);
       }
     } catch (err) {
       logger.warn("Email login failed", { context: "login", error: err });
-      setError(t("fr", "error.unexpected"));
+      setError(t(locale, "error.unexpected"));
       setLoading(false);
     }
   }
@@ -79,7 +81,7 @@ export default function LoginPage() {
       const result = await signInWithOTP(phone);
 
       if (result.error) {
-        setError(result.error);
+        setError(t(locale, result.error as TranslationKey));
         setLoading(false);
         return;
       }
@@ -89,7 +91,7 @@ export default function LoginPage() {
       setLoading(false);
     } catch (err) {
       logger.warn("OTP send failed", { context: "login", error: err });
-      setError(t("fr", "error.unexpected"));
+      setError(t(locale, "error.unexpected"));
       setLoading(false);
     }
   }
@@ -102,12 +104,12 @@ export default function LoginPage() {
     try {
       const result = await verifyOTP(phone, otp);
       if (result.error) {
-        setError(result.error);
+        setError(t(locale, result.error as TranslationKey));
         setLoading(false);
       }
     } catch (err) {
       logger.warn("OTP verification failed", { context: "login", error: err });
-      setError(t("fr", "error.unexpected"));
+      setError(t(locale, "error.unexpected"));
       setLoading(false);
     }
   }
@@ -120,8 +122,8 @@ export default function LoginPage() {
             <Heart className="h-5 w-5 text-primary-foreground" />
           </div>
         </div>
-        <h1 className="text-xl font-bold">Portail Santé</h1>
-        <p className="text-sm text-muted-foreground">Connectez-vous pour gérer votre santé</p>
+        <h1 className="text-xl font-bold">{t(locale, "auth.portalTitle")}</h1>
+        <p className="text-sm text-muted-foreground">{t(locale, "auth.loginSubtitle")}</p>
       </div>
 
       <Card>
@@ -137,15 +139,15 @@ export default function LoginPage() {
           </div>
           <CardTitle className="text-xl">
             {step === "otp"
-              ? "Vérifiez votre numéro"
-              : "Connexion"}
+              ? t(locale, "auth.verifyNumber")
+              : t(locale, "auth.login")}
           </CardTitle>
           <CardDescription>
             {step === "otp"
-              ? `Nous avons envoyé un code à 6 chiffres au ${phone}`
+              ? `${t(locale, "auth.otpSent")} ${phone}`
               : method === "email"
-                ? "Entrez votre e-mail et mot de passe pour vous connecter."
-                : "Entrez votre numéro de téléphone pour recevoir un code de vérification."}
+                ? t(locale, "auth.emailLoginDesc")
+                : t(locale, "auth.phoneLoginDesc")}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -158,7 +160,7 @@ export default function LoginPage() {
           {step === "otp" && PHONE_AUTH_ENABLED ? (
             <form className="space-y-4" onSubmit={handleVerifyOTP}>
               <div className="space-y-2">
-                <Label htmlFor="otp">Code de vérification</Label>
+                <Label htmlFor="otp">{t(locale, "auth.otpLabel")}</Label>
                 <Input
                   id="otp"
                   placeholder="000000"
@@ -170,19 +172,19 @@ export default function LoginPage() {
                   autoFocus
                 />
                 <p className="text-xs text-muted-foreground text-center">
-                  Vous n&apos;avez pas reçu le code ?{" "}
+                  {t(locale, "auth.otpNotReceived")}{" "}
                   <button
                     type="button"
                     className={`text-primary hover:underline ${otpCooldown > 0 ? "opacity-50 cursor-not-allowed" : ""}`}
                     onClick={() => handleSendOTP()}
                     disabled={otpCooldown > 0}
                   >
-                    {otpCooldown > 0 ? `Renvoyer (${otpCooldown}s)` : "Renvoyer"}
+                    {otpCooldown > 0 ? `${t(locale, "auth.resendCountdown")} (${otpCooldown}s)` : t(locale, "auth.resend")}
                   </button>
                 </p>
               </div>
               <Button type="submit" className="w-full" disabled={loading}>
-                {loading ? "Vérification..." : "Vérifier et se connecter"}
+                {loading ? t(locale, "auth.verifying") : t(locale, "auth.verifyAndLogin")}
               </Button>
               <Button
                 type="button"
@@ -195,17 +197,17 @@ export default function LoginPage() {
                 }}
               >
                 <ArrowLeft className="h-4 w-4 mr-1" />
-                Utiliser un autre numéro
+                {t(locale, "auth.useAnotherNumber")}
               </Button>
             </form>
           ) : method === "email" ? (
             <form className="space-y-4" onSubmit={handleEmailLogin}>
               <div className="space-y-2">
-                <Label htmlFor="email">E-mail</Label>
+                <Label htmlFor="email">{t(locale, "auth.email")}</Label>
                 <Input
                   id="email"
                   type="email"
-                  placeholder="votre@email.com"
+                  placeholder={t(locale, "auth.emailPlaceholder")}
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
@@ -213,11 +215,11 @@ export default function LoginPage() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="password">Mot de passe</Label>
+                <Label htmlFor="password">{t(locale, "auth.password")}</Label>
                 <Input
                   id="password"
                   type="password"
-                  placeholder="Votre mot de passe"
+                  placeholder={t(locale, "auth.passwordPlaceholder")}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
@@ -229,11 +231,11 @@ export default function LoginPage() {
                   href="/forgot-password"
                   className="text-xs text-primary hover:underline"
                 >
-                  Mot de passe oubli\u00e9 ?
+                  {t(locale, "auth.forgotPassword")}
                 </Link>
               </div>
               <Button type="submit" className="w-full" disabled={loading}>
-                {loading ? "Connexion..." : "Se connecter"}
+                {loading ? t(locale, "auth.signingIn") : t(locale, "auth.signIn")}
               </Button>
               {PHONE_AUTH_ENABLED && (
                 <>
@@ -242,7 +244,7 @@ export default function LoginPage() {
                       <span className="w-full border-t" />
                     </div>
                     <div className="relative flex justify-center text-xs uppercase">
-                      <span className="bg-card px-2 text-muted-foreground">ou</span>
+                      <span className="bg-card px-2 text-muted-foreground">{t(locale, "auth.or")}</span>
                     </div>
                   </div>
                   <Button
@@ -255,7 +257,7 @@ export default function LoginPage() {
                     }}
                   >
                     <Phone className="h-4 w-4 mr-2" />
-                    Se connecter avec téléphone
+                    {t(locale, "auth.signInWithPhone")}
                   </Button>
                 </>
               )}
@@ -263,29 +265,29 @@ export default function LoginPage() {
           ) : PHONE_AUTH_ENABLED ? (
             <form className="space-y-4" onSubmit={handleSendOTP}>
               <div className="space-y-2">
-                <Label htmlFor="phone">Numéro de téléphone</Label>
+                <Label htmlFor="phone">{t(locale, "auth.phoneLabel")}</Label>
                 <Input
                   id="phone"
                   type="tel"
-                  placeholder="+212 6XX XX XX XX"
+                  placeholder={t(locale, "auth.phonePlaceholder")}
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
                   required
                   className="text-base"
                 />
                 <p className="text-xs text-muted-foreground">
-                  Nous vous enverrons un code de vérification unique par SMS.
+                  {t(locale, "auth.phoneHint")}
                 </p>
               </div>
               <Button type="submit" className="w-full" disabled={loading}>
-                {loading ? "Envoi du code..." : "Envoyer le code de vérification"}
+                {loading ? t(locale, "auth.sendingCode") : t(locale, "auth.sendCode")}
               </Button>
               <div className="relative my-2">
                 <div className="absolute inset-0 flex items-center">
                   <span className="w-full border-t" />
                 </div>
                 <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-card px-2 text-muted-foreground">ou</span>
+                  <span className="bg-card px-2 text-muted-foreground">{t(locale, "auth.or")}</span>
                 </div>
               </div>
               <Button
@@ -298,19 +300,19 @@ export default function LoginPage() {
                 }}
               >
                 <Lock className="h-4 w-4 mr-2" />
-                Se connecter avec e-mail
+                {t(locale, "auth.signInWithEmail")}
               </Button>
             </form>
           ) : null}
         </CardContent>
         <CardFooter className="justify-center border-t pt-4">
           <p className="text-sm text-muted-foreground">
-            Vous n&apos;avez pas de compte ?{" "}
+            {t(locale, "auth.noAccount")}{" "}
             <Link
               href="/register"
               className="text-primary hover:underline font-medium"
             >
-              S&apos;inscrire
+              {t(locale, "auth.register")}
             </Link>
           </p>
         </CardFooter>

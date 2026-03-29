@@ -99,7 +99,7 @@ describe("signInWithPassword", () => {
 
     const result = await signInWithPassword("test@example.com", "password");
 
-    expect(result.error).toContain("Trop de tentatives");
+    expect(result.error).toBe("auth.rateLimitLogin");
   });
 
   it("returns error when account lockout is triggered", async () => {
@@ -108,7 +108,7 @@ describe("signInWithPassword", () => {
 
     const result = await signInWithPassword("test@example.com", "password");
 
-    expect(result.error).toContain("temporairement verrouill");
+    expect(result.error).toBe("auth.accountLocked");
   });
 
   it("returns error when Supabase auth fails", async () => {

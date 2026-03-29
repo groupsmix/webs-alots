@@ -26,6 +26,8 @@ import {
 } from "@/lib/data/client";
 import { PageLoader } from "@/components/ui/page-loader";
 import { logger } from "@/lib/logger";
+import { useLocale } from "@/components/locale-switcher";
+import { t } from "@/lib/i18n";
 
 // ── Date helpers ──
 
@@ -56,6 +58,7 @@ const statusVariant: Record<string, "default" | "success" | "warning" | "destruc
 };
 
 export default function DoctorDashboardPage() {
+  const [locale] = useLocale();
   const [appointmentList, setAppointmentList] = useState<AppointmentView[]>([]);
   const [patients, setPatients] = useState<PatientView[]>([]);
   const [waitingRoomEntries, setWaitingRoomEntries] = useState<WaitingRoomEntry[]>([]);
@@ -156,20 +159,20 @@ export default function DoctorDashboardPage() {
   };
 
   const stats = [
-    { icon: Calendar, label: "Today's Appointments", value: todayAppts.length.toString(), color: "text-blue-600" },
-    { icon: Stethoscope, label: "Consultations (Week)", value: weekConsultations.length.toString(), color: "text-indigo-600" },
-    { icon: DollarSign, label: "Revenue (Month)", value: `${monthRevenue.toLocaleString()} MAD`, color: "text-emerald-600" },
-    { icon: CalendarClock, label: "Upcoming Follow-ups", value: upcomingFollowUps.length.toString(), color: "text-purple-600" },
+    { icon: Calendar, label: t(locale, "dashboard.todayAppointments"), value: todayAppts.length.toString(), color: "text-blue-600" },
+    { icon: Stethoscope, label: t(locale, "dashboard.consultationsWeek"), value: weekConsultations.length.toString(), color: "text-indigo-600" },
+    { icon: DollarSign, label: t(locale, "dashboard.revenueMonth"), value: `${monthRevenue.toLocaleString()} MAD`, color: "text-emerald-600" },
+    { icon: CalendarClock, label: t(locale, "dashboard.upcomingFollowUps"), value: upcomingFollowUps.length.toString(), color: "text-purple-600" },
   ];
 
   if (loading) {
-    return <PageLoader message="Loading dashboard..." />;
+    return <PageLoader message={t(locale, "dashboard.loading")} />;
   }
 
   if (error) {
     return (
       <div className="p-8 text-center">
-        <p className="text-red-600 font-medium">Failed to load data. Please try refreshing the page.</p>
+        <p className="text-red-600 font-medium">{t(locale, "error.loadFailed")}</p>
         {error.message && <p className="text-sm text-muted-foreground mt-2">{error.message}</p>}
       </div>
     );
@@ -184,7 +187,7 @@ export default function DoctorDashboardPage() {
       );
     } catch (err) {
       logger.warn("Failed to mark appointment done", { context: "doctor-dashboard", error: err });
-      setError(new Error("Failed to update appointment status. Please try again."));
+      setError(new Error(t(locale, "error.updateFailed")));
     }
   };
 
@@ -197,7 +200,7 @@ export default function DoctorDashboardPage() {
       );
     } catch (err) {
       logger.warn("Failed to mark appointment no-show", { context: "doctor-dashboard", error: err });
-      setError(new Error("Failed to update appointment status. Please try again."));
+      setError(new Error(t(locale, "error.updateFailed")));
     }
   };
 
@@ -210,7 +213,7 @@ export default function DoctorDashboardPage() {
       );
     } catch (err) {
       logger.warn("Failed to start consultation", { context: "doctor-dashboard", error: err });
-      setError(new Error("Failed to update appointment status. Please try again."));
+      setError(new Error(t(locale, "error.updateFailed")));
     }
   };
 
@@ -224,7 +227,7 @@ export default function DoctorDashboardPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold mb-6">Doctor Dashboard</h1>
+      <h1 className="text-2xl font-bold mb-6">{t(locale, "dashboard.doctor")}</h1>
 
       {/* Stats Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-8">
@@ -249,15 +252,15 @@ export default function DoctorDashboardPage() {
           <CardHeader>
             <CardTitle className="text-base flex items-center gap-2">
               <Activity className="h-4 w-4" />
-              Today&apos;s Schedule
+              {t(locale, "dashboard.todaySchedule")}
               <Badge variant="outline" className="ml-auto text-xs">
-                {completedToday}/{todayAppts.length} completed
+                {completedToday}/{todayAppts.length} {t(locale, "dashboard.completed")}
               </Badge>
             </CardTitle>
           </CardHeader>
           <CardContent>
             {todayAppts.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No appointments today.</p>
+              <p className="text-sm text-muted-foreground">{t(locale, "dashboard.noAppointmentsToday")}</p>
             ) : (
               <div className="space-y-3">
                 {todayAppts.map((apt) => (
@@ -282,7 +285,7 @@ export default function DoctorDashboardPage() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          title="Start consultation"
+                          title={t(locale, "dashboard.startConsultation")}
                           onClick={() => handleStartConsultation(apt.id)}
                         >
                           <ArrowRight className="h-4 w-4 text-blue-600" />
@@ -292,7 +295,7 @@ export default function DoctorDashboardPage() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          title="Mark as done"
+                          title={t(locale, "dashboard.markDone")}
                           onClick={() => handleMarkDone(apt.id)}
                         >
                           <CheckCircle className="h-4 w-4 text-green-600" />
@@ -302,7 +305,7 @@ export default function DoctorDashboardPage() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          title="No show"
+                          title={t(locale, "dashboard.noShow")}
                           onClick={() => handleNoShow(apt.id)}
                         >
                           <XCircle className="h-4 w-4 text-red-500" />
@@ -333,7 +336,7 @@ export default function DoctorDashboardPage() {
             </CardHeader>
             <CardContent>
               {waitingRoomEntries.length === 0 ? (
-                <p className="text-sm text-muted-foreground">No patients waiting.</p>
+                <p className="text-sm text-muted-foreground">{t(locale, "dashboard.noPatientsWaiting")}</p>
               ) : (
                 <div className="space-y-3">
                   {waitingRoomEntries.map((wr) => (
@@ -350,7 +353,7 @@ export default function DoctorDashboardPage() {
                         </p>
                       </div>
                       {wr.priority === "urgent" && (
-                        <Badge variant="destructive" className="text-[10px]">Urgent</Badge>
+                        <Badge variant="destructive" className="text-[10px]">{t(locale, "dashboard.urgent")}</Badge>
                       )}
                     </div>
                   ))}
@@ -374,7 +377,7 @@ export default function DoctorDashboardPage() {
             </CardHeader>
             <CardContent>
               {upcomingFollowUps.length === 0 ? (
-                <p className="text-sm text-muted-foreground">No upcoming follow-ups.</p>
+                <p className="text-sm text-muted-foreground">{t(locale, "dashboard.noFollowUps")}</p>
               ) : (
                 <div className="space-y-3">
                   {upcomingFollowUps.slice(0, 5).map((apt) => (
@@ -404,14 +407,14 @@ export default function DoctorDashboardPage() {
             <CardHeader>
               <CardTitle className="text-base flex items-center gap-2">
                 <Search className="h-4 w-4" />
-                Quick Patient Search
+                {t(locale, "dashboard.quickSearch")}
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="relative mb-3">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder="Name or phone..."
+                  placeholder={t(locale, "dashboard.searchPlaceholder")}
                   className="pl-10"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
@@ -420,7 +423,7 @@ export default function DoctorDashboardPage() {
               {searchQuery.trim() && (
                 <div className="space-y-2 max-h-48 overflow-auto">
                   {filteredPatients.length === 0 ? (
-                    <p className="text-sm text-muted-foreground">No patients found.</p>
+                    <p className="text-sm text-muted-foreground">{t(locale, "dashboard.noPatientsFound")}</p>
                   ) : (
                     filteredPatients.slice(0, 5).map((p) => (
                       <div key={p.id} className="flex items-center gap-2 rounded border p-2 text-sm">
@@ -449,11 +452,11 @@ export default function DoctorDashboardPage() {
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold flex items-center gap-2">
               <BarChart3 className="h-5 w-5" />
-              Statistics
+              {t(locale, "dashboard.statistics")}
             </h2>
             <TabsList>
-              <TabsTrigger value="week">This Week</TabsTrigger>
-              <TabsTrigger value="month">This Month</TabsTrigger>
+              <TabsTrigger value="week">{t(locale, "dashboard.thisWeek")}</TabsTrigger>
+              <TabsTrigger value="month">{t(locale, "dashboard.thisMonth")}</TabsTrigger>
             </TabsList>
           </div>
 
@@ -461,38 +464,38 @@ export default function DoctorDashboardPage() {
             <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-6">
               <Card>
                 <CardContent className="p-4">
-                  <p className="text-xs text-muted-foreground">Appointments</p>
+                  <p className="text-xs text-muted-foreground">{t(locale, "dashboard.appointments")}</p>
                   <p className="text-2xl font-bold">{weekStats.totalAppointments}</p>
                 </CardContent>
               </Card>
               <Card>
                 <CardContent className="p-4">
-                  <p className="text-xs text-muted-foreground">Consultations</p>
+                  <p className="text-xs text-muted-foreground">{t(locale, "dashboard.consultations")}</p>
                   <p className="text-2xl font-bold text-indigo-600">{weekStats.consultations}</p>
                 </CardContent>
               </Card>
               <Card>
                 <CardContent className="p-4">
-                  <p className="text-xs text-muted-foreground">Unique Patients</p>
+                  <p className="text-xs text-muted-foreground">{t(locale, "dashboard.uniquePatients")}</p>
                   <p className="text-2xl font-bold">{weekStats.uniquePatients}</p>
                 </CardContent>
               </Card>
               <Card>
                 <CardContent className="p-4">
-                  <p className="text-xs text-muted-foreground">Completed</p>
+                  <p className="text-xs text-muted-foreground">{t(locale, "dashboard.completedStat")}</p>
                   <p className="text-2xl font-bold text-green-600">{weekStats.completed}</p>
                 </CardContent>
               </Card>
               <Card>
                 <CardContent className="p-4">
-                  <p className="text-xs text-muted-foreground">No Shows</p>
+                  <p className="text-xs text-muted-foreground">{t(locale, "dashboard.noShows")}</p>
                   <p className="text-2xl font-bold text-red-500">{weekStats.noShows}</p>
                 </CardContent>
               </Card>
               <Card>
                 <CardContent className="p-4 flex items-center gap-2">
                   <div>
-                    <p className="text-xs text-muted-foreground">Revenue</p>
+                    <p className="text-xs text-muted-foreground">{t(locale, "dashboard.revenue")}</p>
                     <p className="text-2xl font-bold">{weekStats.revenue.toLocaleString()} MAD</p>
                   </div>
                   <TrendingUp className="h-5 w-5 text-green-500" />
@@ -505,38 +508,38 @@ export default function DoctorDashboardPage() {
             <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-6">
               <Card>
                 <CardContent className="p-4">
-                  <p className="text-xs text-muted-foreground">Appointments</p>
+                  <p className="text-xs text-muted-foreground">{t(locale, "dashboard.appointments")}</p>
                   <p className="text-2xl font-bold">{monthStats.totalAppointments}</p>
                 </CardContent>
               </Card>
               <Card>
                 <CardContent className="p-4">
-                  <p className="text-xs text-muted-foreground">Consultations</p>
+                  <p className="text-xs text-muted-foreground">{t(locale, "dashboard.consultations")}</p>
                   <p className="text-2xl font-bold text-indigo-600">{monthStats.consultations}</p>
                 </CardContent>
               </Card>
               <Card>
                 <CardContent className="p-4">
-                  <p className="text-xs text-muted-foreground">Unique Patients</p>
+                  <p className="text-xs text-muted-foreground">{t(locale, "dashboard.uniquePatients")}</p>
                   <p className="text-2xl font-bold">{monthStats.uniquePatients}</p>
                 </CardContent>
               </Card>
               <Card>
                 <CardContent className="p-4">
-                  <p className="text-xs text-muted-foreground">Completed</p>
+                  <p className="text-xs text-muted-foreground">{t(locale, "dashboard.completedStat")}</p>
                   <p className="text-2xl font-bold text-green-600">{monthStats.completed}</p>
                 </CardContent>
               </Card>
               <Card>
                 <CardContent className="p-4">
-                  <p className="text-xs text-muted-foreground">No Shows</p>
+                  <p className="text-xs text-muted-foreground">{t(locale, "dashboard.noShows")}</p>
                   <p className="text-2xl font-bold text-red-500">{monthStats.noShows}</p>
                 </CardContent>
               </Card>
               <Card>
                 <CardContent className="p-4 flex items-center gap-2">
                   <div>
-                    <p className="text-xs text-muted-foreground">Revenue</p>
+                    <p className="text-xs text-muted-foreground">{t(locale, "dashboard.revenue")}</p>
                     <p className="text-2xl font-bold">{monthStats.revenue.toLocaleString()} MAD</p>
                   </div>
                   <TrendingUp className="h-5 w-5 text-green-500" />
