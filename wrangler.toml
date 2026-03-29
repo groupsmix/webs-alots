@@ -53,7 +53,7 @@ routes = [
 # Appointment reminders: every 30 minutes
 # Subscription renewal check: daily at 2am UTC
 [triggers]
-crons = ["*/30 * * * *", "0 2 * * *"]
+crons = ["*/30 * * * *", "*/5 * * * *", "0 2 * * *"]
 
 # ---- Staging Environment ----
 # Deploy with: wrangler deploy --env staging
@@ -85,4 +85,4 @@ SEED_PASSWORDS_ROTATED = "true"
 # ---- Staging Cron Triggers ----
 # Same schedule as production
 [env.staging.triggers]
-crons = ["*/30 * * * *", "0 2 * * *"]
+crons = ["*/30 * * * *", "*/5 * * * *", "0 2 * * *"]
