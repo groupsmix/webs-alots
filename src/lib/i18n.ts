@@ -246,6 +246,33 @@ export const translations = {
     "pricing.faq3A": "La facturation est mensuelle ou annuelle, au choix. Les plans annuels bénéficient d'une réduction d'environ 17%.",
     "pricing.faq4Q": "Quels moyens de paiement acceptez-vous ?",
     "pricing.faq4A": "Nous acceptons les cartes bancaires (CMI) et les virements bancaires pour les plans annuels.",
+
+    // Auth / rate-limit errors
+    "auth.rateLimitLogin": "Trop de tentatives de connexion. Veuillez réessayer dans quelques minutes.",
+    "auth.accountLocked": "Ce compte est temporairement verrouillé suite à de nombreuses tentatives échouées. Veuillez réessayer plus tard.",
+    "auth.rateLimitOtp": "Trop de demandes de code. Veuillez réessayer dans quelques minutes.",
+    "auth.rateLimitGeneric": "Trop de demandes. Veuillez réessayer dans quelques minutes.",
+    "auth.genericError": "Une erreur est survenue",
+
+    // Contact form
+    "contact.title": "Envoyez-nous un message",
+    "contact.name": "Nom complet",
+    "contact.namePlaceholder": "Votre nom",
+    "contact.phone": "Téléphone",
+    "contact.email": "Email",
+    "contact.subject": "Objet",
+    "contact.subjectPlaceholder": "Comment pouvons-nous vous aider ?",
+    "contact.message": "Message",
+    "contact.messagePlaceholder": "Votre message...",
+    "contact.submit": "Envoyer le message",
+    "contact.submitting": "Envoi en cours...",
+    "contact.successTitle": "Message envoyé",
+    "contact.successMessage": "Merci pour votre message. Nous vous répondrons dans les plus brefs délais.",
+    "contact.sendAnother": "Envoyer un autre message",
+
+    // Booking form
+    "booking.submitting": "Envoi en cours…",
+    "booking.next": "Suivant",
   },
 
   ar: {
@@ -482,6 +509,33 @@ export const translations = {
     "pricing.faq3A": "الفوترة شهرية أو سنوية حسب اختيارك. الخطط السنوية توفر حوالي 17%.",
     "pricing.faq4Q": "ما هي وسائل الدفع المقبولة؟",
     "pricing.faq4A": "نقبل البطاقات البنكية (CMI) والتحويلات البنكية للخطط السنوية.",
+
+    // Auth / rate-limit errors
+    "auth.rateLimitLogin": "محاولات تسجيل دخول كثيرة. يرجى المحاولة بعد بضع دقائق.",
+    "auth.accountLocked": "تم قفل هذا الحساب مؤقتا بسبب محاولات فاشلة متعددة. يرجى المحاولة لاحقا.",
+    "auth.rateLimitOtp": "طلبات كثيرة للرمز. يرجى المحاولة بعد بضع دقائق.",
+    "auth.rateLimitGeneric": "طلبات كثيرة. يرجى المحاولة بعد بضع دقائق.",
+    "auth.genericError": "حدث خطأ",
+
+    // Contact form
+    "contact.title": "أرسل لنا رسالة",
+    "contact.name": "الاسم الكامل",
+    "contact.namePlaceholder": "اسمك",
+    "contact.phone": "الهاتف",
+    "contact.email": "البريد الإلكتروني",
+    "contact.subject": "الموضوع",
+    "contact.subjectPlaceholder": "كيف يمكننا مساعدتك؟",
+    "contact.message": "الرسالة",
+    "contact.messagePlaceholder": "رسالتك...",
+    "contact.submit": "إرسال الرسالة",
+    "contact.submitting": "جاري الإرسال...",
+    "contact.successTitle": "تم إرسال الرسالة",
+    "contact.successMessage": "شكرا لرسالتك. سنرد عليك في أقرب وقت.",
+    "contact.sendAnother": "إرسال رسالة أخرى",
+
+    // Booking form
+    "booking.submitting": "جاري الإرسال…",
+    "booking.next": "التالي",
   },
 
   en: {
@@ -718,6 +772,33 @@ export const translations = {
     "pricing.faq3A": "Billing is monthly or yearly, your choice. Yearly plans save approximately 17%.",
     "pricing.faq4Q": "What payment methods do you accept?",
     "pricing.faq4A": "We accept bank cards (CMI) and bank transfers for yearly plans.",
+
+    // Auth / rate-limit errors
+    "auth.rateLimitLogin": "Too many login attempts. Please try again in a few minutes.",
+    "auth.accountLocked": "This account is temporarily locked due to multiple failed attempts. Please try again later.",
+    "auth.rateLimitOtp": "Too many code requests. Please try again in a few minutes.",
+    "auth.rateLimitGeneric": "Too many requests. Please try again in a few minutes.",
+    "auth.genericError": "An error occurred",
+
+    // Contact form
+    "contact.title": "Send us a message",
+    "contact.name": "Full name",
+    "contact.namePlaceholder": "Your name",
+    "contact.phone": "Phone",
+    "contact.email": "Email",
+    "contact.subject": "Subject",
+    "contact.subjectPlaceholder": "How can we help you?",
+    "contact.message": "Message",
+    "contact.messagePlaceholder": "Your message...",
+    "contact.submit": "Send message",
+    "contact.submitting": "Sending...",
+    "contact.successTitle": "Message sent",
+    "contact.successMessage": "Thank you for your message. We will get back to you shortly.",
+    "contact.sendAnother": "Send another message",
+
+    // Booking form
+    "booking.submitting": "Sending…",
+    "booking.next": "Next",
   },
 } as const;
 

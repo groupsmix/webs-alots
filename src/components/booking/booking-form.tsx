@@ -13,6 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { BookingCalendar } from "./calendar";
 import { TimeSlotPicker } from "./time-slots";
 import { logger } from "@/lib/logger";
+import { t } from "@/lib/i18n";
 
 // Simplified 3-step booking flow
 // Step 1: Select Service (with doctor)
@@ -560,20 +561,20 @@ export function BookingForm() {
             disabled={step === 0}
           >
             <ChevronLeft className="h-4 w-4 mr-1" />
-            Retour
+            {t("fr", "action.back")}
           </Button>
           {step < 2 ? (
             <Button
               onClick={() => setStep(step + 1)}
               disabled={!canNext()}
             >
-              Suivant
+              {t("fr", "booking.next")}
               <ChevronRight className="h-4 w-4 ml-1" />
             </Button>
           ) : (
             <Button onClick={handleConfirm} disabled={isSubmitting || !canNext()}>
               {isSubmitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-              {isSubmitting ? "Envoi en cours\u2026" : "Confirmer le rendez-vous"}
+              {isSubmitting ? t("fr", "booking.submitting") : t("fr", "booking.confirm")}
             </Button>
           )}
         </div>

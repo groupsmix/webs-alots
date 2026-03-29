@@ -19,7 +19,6 @@ import {
   ContactFormSection,
   InsuranceSection,
   FaqSection,
-  BeforeAfterSection,
   BlogSection,
   LocationSection,
 } from "@/components/public/sections";
@@ -225,9 +224,6 @@ export default async function HomePage() {
 
       {/* Blog */}
       {sections.blog && <BlogSection />}
-
-      {/* Before / After */}
-      {sections.beforeAfter && <BeforeAfterSection />}
 
       {/* Location */}
       {sections.location && <LocationSection />}

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
+import { t } from "@/lib/i18n";
 
 type Status = "idle" | "pending" | "success" | "error";
 
@@ -57,7 +58,7 @@ export function useOptimisticUpdate<T>(initialData: T) {
       } catch (err) {
         // Roll back to previous data on failure
         const message =
-          err instanceof Error ? err.message : "Une erreur est survenue";
+          err instanceof Error ? err.message : t("fr", "auth.genericError");
         setState({ data: previousData, status: "error", error: message });
         options?.onError?.(message);
       }
