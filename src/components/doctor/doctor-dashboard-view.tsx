@@ -297,7 +297,7 @@ export function DoctorDashboardView({
             <CardHeader>
               <CardTitle className="text-base flex items-center gap-2">
                 <Clock className="h-4 w-4" />
-                Waiting Room
+                {t(locale, "dashboard.waitingRoom")}
                 {waitingRoomEntries.length > 0 && (
                   <Badge variant="destructive" className="ml-auto text-xs">
                     {waitingRoomEntries.length}
@@ -338,7 +338,7 @@ export function DoctorDashboardView({
             <CardHeader>
               <CardTitle className="text-base flex items-center gap-2">
                 <CalendarClock className="h-4 w-4" />
-                Upcoming Follow-ups
+                {t(locale, "dashboard.upcomingFollowUps")}
                 {upcomingFollowUps.length > 0 && (
                   <Badge variant="secondary" className="ml-auto text-xs">
                     {upcomingFollowUps.length}
