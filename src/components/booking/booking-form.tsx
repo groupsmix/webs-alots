@@ -22,6 +22,16 @@ import { t } from "@/lib/i18n";
 
 const STEPS = ["Service", "Date & Heure", "Confirmation"];
 
+/**
+ * Validate Moroccan phone numbers.
+ * Accepted formats: +212 6XXXXXXXX, +212 7XXXXXXXX, 06XXXXXXXX, 07XXXXXXXX
+ * (with or without spaces/dashes).
+ */
+function isValidMoroccanPhone(phone: string): boolean {
+  const digits = phone.replace(/[\s\-().]/g, "");
+  return /^(?:\+212|0)[67]\d{8}$/.test(digits);
+}
+
 interface Doctor {
   id: string;
   name: string;
@@ -86,6 +96,7 @@ export function BookingForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [bookingId, setBookingId] = useState<string | null>(null);
   const [bookingError, setBookingError] = useState<string | null>(null);
+  const [phoneError, setPhoneError] = useState<string | null>(null);
   // Honeypot field for basic bot protection (invisible to real users)
   const [honeypot, setHoneypot] = useState("");
   const [waitingListMessage, setWaitingListMessage] = useState<string | null>(null);
@@ -158,7 +169,7 @@ export function BookingForm() {
   const canNext = () => {
     if (step === 0) return !!selectedService && !!selectedDoctor;
     if (step === 1) return !!selectedDate && !!selectedTime;
-    if (step === 2) return !!patientPhone.trim() && patientPhone.trim().length >= 6;
+    if (step === 2) return !!patientPhone.trim() && isValidMoroccanPhone(patientPhone);
     return true;
   };
 
@@ -498,15 +509,30 @@ export function BookingForm() {
                 <Input
                   id="b-phone"
                   value={patientPhone}
-                  onChange={(e) => setPatientPhone(e.target.value)}
+                  onChange={(e) => {
+                    setPatientPhone(e.target.value);
+                    if (phoneError) setPhoneError(null);
+                  }}
+                  onBlur={() => {
+                    if (patientPhone.trim() && !isValidMoroccanPhone(patientPhone)) {
+                      setPhoneError(t("fr", "booking.invalidPhone"));
+                    }
+                  }}
                   placeholder="+212 6XX XX XX XX"
                   type="tel"
                   required
                   autoFocus
+                  className={phoneError ? "border-destructive" : ""}
+                  aria-invalid={!!phoneError}
+                  aria-describedby={phoneError ? "phone-error" : undefined}
                 />
-                <p className="text-xs text-muted-foreground">
-                  Vous recevrez la confirmation par WhatsApp. Aucun compte requis.
-                </p>
+                {phoneError ? (
+                  <p id="phone-error" className="text-xs text-destructive">{phoneError}</p>
+                ) : (
+                  <p className="text-xs text-muted-foreground">
+                    Vous recevrez la confirmation par WhatsApp. Aucun compte requis.
+                  </p>
+                )}
               </div>
 
               {/* Optional name */}

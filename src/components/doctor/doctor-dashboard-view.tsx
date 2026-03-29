@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import {
   Calendar, Clock, CheckCircle, XCircle, Activity,
   TrendingUp, BarChart3, Search, ArrowRight,
@@ -15,6 +15,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { updateAppointmentStatus } from "@/lib/data/client";
 import { PageLoader } from "@/components/ui/page-loader";
 import { logger } from "@/lib/logger";
+import { getLocalDateStr } from "@/lib/utils";
 import { useLocale } from "@/components/locale-switcher";
 import { t } from "@/lib/i18n";
 import type {
@@ -40,7 +41,7 @@ function startOfMonth(d: Date): Date {
 }
 
 function toDateStr(d: Date): string {
-  return d.toISOString().split("T")[0];
+  return getLocalDateStr(d);
 }
 
 const statusVariant: Record<string, "default" | "success" | "warning" | "destructive" | "secondary" | "outline"> = {
@@ -72,7 +73,15 @@ export function DoctorDashboardView({
 
   // ── Derived KPIs ──
 
-  const now = useMemo(() => new Date(), []);
+  const [now, setNow] = useState(() => new Date());
+
+  useEffect(() => {
+    const todayEnd = new Date(now);
+    todayEnd.setHours(23, 59, 59, 999);
+    const msUntilMidnight = todayEnd.getTime() - now.getTime() + 1;
+    const timer = setTimeout(() => setNow(new Date()), msUntilMidnight);
+    return () => clearTimeout(timer);
+  }, [now]);
   const todayStr = toDateStr(now);
   const weekStart = toDateStr(startOfWeek(now));
   const monthStart = toDateStr(startOfMonth(now));

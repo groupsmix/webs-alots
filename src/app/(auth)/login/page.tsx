@@ -29,6 +29,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [otp, setOtp] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<{ email?: string; password?: string }>({});
   const [loading, setLoading] = useState(false);
   // MEDIUM 3.4: OTP resend cooldown (60 seconds)
   const [otpCooldown, setOtpCooldown] = useState(0);
@@ -42,9 +43,25 @@ export default function LoginPage() {
   const startOtpCooldown = useCallback(() => {
     setOtpCooldown(60);
   }, []);
+  function validateEmailForm(): boolean {
+    const errors: { email?: string; password?: string } = {};
+    const trimmedEmail = email.trim();
+    if (!trimmedEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
+      errors.email = t(locale, "auth.invalidEmail");
+    }
+    if (password.length < 6) {
+      errors.password = t(locale, "auth.passwordTooShort");
+    }
+    setFieldErrors(errors);
+    return Object.keys(errors).length === 0;
+  }
+
   async function handleEmailLogin(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+    setFieldErrors({});
+
+    if (!validateEmailForm()) return;
 
     setLoading(true);
 
@@ -209,10 +226,18 @@ export default function LoginPage() {
                   type="email"
                   placeholder={t(locale, "auth.emailPlaceholder")}
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  onChange={(e) => {
+                    setEmail(e.target.value);
+                    if (fieldErrors.email) setFieldErrors((prev) => ({ ...prev, email: undefined }));
+                  }}
                   required
-                  className="text-base"
+                  className={`text-base ${fieldErrors.email ? "border-destructive" : ""}`}
+                  aria-invalid={!!fieldErrors.email}
+                  aria-describedby={fieldErrors.email ? "email-error" : undefined}
                 />
+                {fieldErrors.email && (
+                  <p id="email-error" className="text-xs text-destructive">{fieldErrors.email}</p>
+                )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="password">{t(locale, "auth.password")}</Label>
@@ -221,10 +246,18 @@ export default function LoginPage() {
                   type="password"
                   placeholder={t(locale, "auth.passwordPlaceholder")}
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  onChange={(e) => {
+                    setPassword(e.target.value);
+                    if (fieldErrors.password) setFieldErrors((prev) => ({ ...prev, password: undefined }));
+                  }}
                   required
-                  className="text-base"
+                  className={`text-base ${fieldErrors.password ? "border-destructive" : ""}`}
+                  aria-invalid={!!fieldErrors.password}
+                  aria-describedby={fieldErrors.password ? "password-error" : undefined}
                 />
+                {fieldErrors.password && (
+                  <p id="password-error" className="text-xs text-destructive">{fieldErrors.password}</p>
+                )}
               </div>
               <div className="flex justify-end">
                 <Link
