@@ -1217,6 +1217,12 @@ export async function updateLabOrderPdfUrl(
 // Dashboard Stats (server-side)
 // ────────────────────────────────────────────
 
+export interface RecentActivityItem {
+  type: string;
+  message: string;
+  time: string;
+}
+
 export interface DashboardStats {
   totalPatients: number;
   totalAppointments: number;
@@ -1226,6 +1232,7 @@ export interface DashboardStats {
   averageRating: number;
   doctorCount: number;
   insurancePatients: number;
+  recentActivity: RecentActivityItem[];
 }
 
 export async function getDashboardStats(clinicId: string): Promise<DashboardStats> {
@@ -1257,6 +1264,9 @@ export async function getDashboardStats(clinicId: string): Promise<DashboardStat
   const avgRating = reviews.length > 0 ? reviews.reduce((s, r) => s + r.stars, 0) / reviews.length : 0;
   const insuranceCount = insurancePatients.filter((p) => p.metadata && (p.metadata as Record<string, unknown>).insurance).length;
 
+  // Fetch recent activity from the audit trail
+  const recentActivity = await getRecentActivity(supabase, clinicId);
+
   return {
     totalPatients: patientCountRes.count ?? 0,
     totalAppointments: appointmentCountRes.count ?? 0,
@@ -1266,7 +1276,50 @@ export async function getDashboardStats(clinicId: string): Promise<DashboardStat
     averageRating: avgRating,
     doctorCount: doctorCountRes.count ?? 0,
     insurancePatients: insuranceCount,
+    recentActivity,
   };
+}
+
+/**
+ * Map an audit event type to a UI-friendly activity type used by the
+ * dashboard badge (see `activityVariant` in admin-dashboard-view).
+ */
+function auditTypeToActivityType(type: string, action: string): string {
+  if (type === "booking" || action.startsWith("appointment.")) return "booking";
+  if (type === "payment" || action.startsWith("payment.")) return "payment";
+  if (action.includes("cancel")) return "cancel";
+  if (type === "admin" || type === "config") return "admin";
+  if (type === "auth") return "auth";
+  if (type === "security") return "security";
+  return type;
+}
+
+/**
+ * Fetch the most recent activity log entries for a clinic.
+ * Reads from the `activity_logs` table populated by `logAuditEvent()`.
+ */
+async function getRecentActivity(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  clinicId: string,
+  limit = 10,
+): Promise<RecentActivityItem[]> {
+  const { data, error } = await supabase
+    .from("activity_logs")
+    .select("action, type, description, timestamp")
+    .eq("clinic_id", clinicId)
+    .order("timestamp", { ascending: false })
+    .limit(limit);
+
+  if (error || !data) {
+    logger.warn("Failed to fetch recent activity", { context: "data/server", error });
+    return [];
+  }
+
+  return data.map((row) => ({
+    type: auditTypeToActivityType(row.type, row.action),
+    message: row.description ?? row.action,
+    time: row.timestamp ?? "",
+  }));
 }
 
 // ────────────────────────────────────────────

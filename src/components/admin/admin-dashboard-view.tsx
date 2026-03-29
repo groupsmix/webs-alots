@@ -8,14 +8,35 @@ import { ClinicCenterDashboardKPIsComponent } from "@/components/admin/clinic-ce
 import { ErrorBoundary } from "@/components/ui/error-boundary";
 import { useLocale } from "@/components/locale-switcher";
 import { t } from "@/lib/i18n";
-import type { DashboardStats } from "@/lib/data/server";
+import type { DashboardStats, RecentActivityItem } from "@/lib/data/server";
 
 const activityVariant: Record<string, "default" | "success" | "warning" | "destructive"> = {
   booking: "default",
   payment: "success",
   review: "warning",
   cancel: "destructive",
+  admin: "default",
+  auth: "default",
+  security: "destructive",
+  patient: "default",
+  config: "warning",
 };
+
+/** Format an ISO timestamp into a short relative or absolute label. */
+function formatActivityTime(iso: string): string {
+  if (!iso) return "";
+  const date = new Date(iso);
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffMin = Math.floor(diffMs / 60_000);
+  if (diffMin < 1) return "just now";
+  if (diffMin < 60) return `${diffMin}m ago`;
+  const diffHr = Math.floor(diffMin / 60);
+  if (diffHr < 24) return `${diffHr}h ago`;
+  const diffDay = Math.floor(diffHr / 24);
+  if (diffDay < 7) return `${diffDay}d ago`;
+  return date.toLocaleDateString();
+}
 
 interface AdminDashboardViewProps {
   stats: DashboardStats;
@@ -40,7 +61,7 @@ export function AdminDashboardView({ stats }: AdminDashboardViewProps) {
     { icon: Star, label: t(locale, "admin.averageRating"), value: avgRating.toFixed(1), color: "text-yellow-600" },
   ];
 
-  const recentActivity: { type: string; message: string; time: string }[] = [];
+  const recentActivity: RecentActivityItem[] = stats.recentActivity;
 
   return (
     <div>
@@ -79,7 +100,7 @@ export function AdminDashboardView({ stats }: AdminDashboardViewProps) {
                       {activity.type}
                     </Badge>
                     <p className="flex-1 text-sm">{activity.message}</p>
-                    <span className="text-xs text-muted-foreground whitespace-nowrap">{activity.time}</span>
+                    <span className="text-xs text-muted-foreground whitespace-nowrap">{formatActivityTime(activity.time)}</span>
                   </div>
                 ))}
               </div>
