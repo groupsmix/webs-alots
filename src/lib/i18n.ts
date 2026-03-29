@@ -253,6 +253,8 @@ export const translations = {
     "auth.rateLimitOtp": "Trop de demandes de code. Veuillez réessayer dans quelques minutes.",
     "auth.rateLimitGeneric": "Trop de demandes. Veuillez réessayer dans quelques minutes.",
     "auth.genericError": "Une erreur est survenue",
+    "auth.invalidCredentials": "Identifiants de connexion invalides.",
+    "auth.phoneDisabled": "L'inscription par téléphone est temporairement désactivée. Veuillez réessayer plus tard.",
 
     // Chatbot
     "chatbot.error": "Désolé, une erreur est survenue. Veuillez réessayer.",
@@ -530,6 +532,8 @@ export const translations = {
     "auth.rateLimitOtp": "طلبات كثيرة للرمز. يرجى المحاولة بعد بضع دقائق.",
     "auth.rateLimitGeneric": "طلبات كثيرة. يرجى المحاولة بعد بضع دقائق.",
     "auth.genericError": "حدث خطأ",
+    "auth.invalidCredentials": "بيانات تسجيل الدخول غير صحيحة.",
+    "auth.phoneDisabled": "التسجيل عبر الهاتف معطّل مؤقتاً. يرجى المحاولة لاحقاً.",
 
     // Chatbot
     "chatbot.error": "عذراً، حدث خطأ. يرجى المحاولة مرة أخرى.",
@@ -807,6 +811,8 @@ export const translations = {
     "auth.rateLimitOtp": "Too many code requests. Please try again in a few minutes.",
     "auth.rateLimitGeneric": "Too many requests. Please try again in a few minutes.",
     "auth.genericError": "An error occurred",
+    "auth.invalidCredentials": "Invalid login credentials.",
+    "auth.phoneDisabled": "Phone registration is temporarily disabled. Please try again later.",
 
     // Chatbot
     "chatbot.error": "Sorry, an error occurred. Please try again.",
