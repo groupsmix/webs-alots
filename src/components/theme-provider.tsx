@@ -30,6 +30,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   const [theme, setThemeState] = useState<Theme>("system");
 
   useEffect(() => {
+    if (typeof window === "undefined") return;
     const stored = localStorage.getItem("theme") as Theme | null;
     if (stored === "dark" || stored === "light") {
       setThemeState(stored);
@@ -64,7 +65,9 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
   const setTheme = useCallback((t: Theme) => {
     setThemeState(t);
-    localStorage.setItem("theme", t);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("theme", t);
+    }
   }, []);
 
   return (

@@ -2,9 +2,14 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { getTenant } from "@/lib/tenant";
+import { clinicConfig } from "@/config/clinic.config";
 import { TenantProvider } from "@/components/tenant-provider";
 import { ThemeProvider } from "@/components/theme-provider";
+import { ToastProvider } from "@/components/ui/toast";
+import { OfflineIndicator } from "@/components/offline-indicator";
+import { PerformanceMonitor } from "@/components/performance-monitor";
 import { ServiceWorkerRegister } from "@/components/sw-register";
+import { PlausibleScript } from "@/components/plausible-script";
 import { safeJsonLdStringify } from "@/lib/json-ld";
 
 const geistSans = Geist({
@@ -34,11 +39,20 @@ export const metadata: Metadata = {
     "SaaS santé Maroc",
     "dossier patient électronique",
     "plateforme médicale",
+    "إدارة العيادات الطبية",
+    "حجز موعد طبي",
   ],
   authors: [{ name: "Oltigo" }],
+  alternates: {
+    languages: {
+      "fr": "https://oltigo.com",
+      "ar": "https://oltigo.com?lang=ar",
+    },
+  },
   openGraph: {
     type: "website",
     locale: "fr_MA",
+    alternateLocale: ["ar_MA"],
     siteName: "Oltigo",
     title: "Oltigo — Gestion Médicale en Ligne",
     description:
@@ -59,7 +73,8 @@ export default async function RootLayout({
 
   return (
     <html
-      lang="fr"
+      lang={clinicConfig.locale ?? "fr"}
+      suppressHydrationWarning
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
@@ -87,11 +102,16 @@ export default async function RootLayout({
           }}
         />
         <ThemeProvider>
-          <TenantProvider tenant={tenant}>
-            {children}
-          </TenantProvider>
+          <ToastProvider>
+            <TenantProvider tenant={tenant}>
+              {children}
+            </TenantProvider>
+            <OfflineIndicator />
+            <PerformanceMonitor />
+          </ToastProvider>
         </ThemeProvider>
         <ServiceWorkerRegister />
+        <PlausibleScript />
       </body>
     </html>
   );

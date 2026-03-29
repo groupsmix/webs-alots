@@ -9,6 +9,9 @@ import {
   otpSendLimiter,
   passwordResetLimiter,
 } from "@/lib/rate-limit";
+import { logger } from "@/lib/logger";
+import { logAuthEvent } from "@/lib/audit-log";
+import { t } from "@/lib/i18n";
 
 /**
  * Phone auth feature flag.
@@ -54,11 +57,15 @@ const ROLE_DASHBOARD_MAP: Record<UserProfile["role"], string> = {
 
 /**
  * Extract client IP from request headers for server action rate limiting.
- * In Cloudflare, CF-Connecting-IP is the trustworthy source.
+ *
+ * Only CF-Connecting-IP is used — it is set by Cloudflare's edge and cannot
+ * be spoofed by the client. X-Forwarded-For is intentionally NOT used because
+ * it is attacker-controlled when the request does not pass through a trusted
+ * proxy that overwrites it.
  */
 async function getClientIp(): Promise<string> {
   const hdrs = await headers();
-  return hdrs.get("cf-connecting-ip") ?? hdrs.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
+  return hdrs.get("cf-connecting-ip") ?? "unknown";
 }
 
 /**
@@ -78,13 +85,13 @@ export async function signInWithPassword(
   // Per-IP rate limit: 5 attempts per 60 seconds
   const ipAllowed = await loginLimiter.check(`login:ip:${clientIp}`);
   if (!ipAllowed) {
-    return { error: "Trop de tentatives de connexion. Veuillez r\u00e9essayer dans quelques minutes." };
+    return { error: t("fr", "auth.rateLimitLogin") };
   }
 
   // Per-account lockout: 10 failed attempts per 15 minutes
   const accountAllowed = await accountLockoutLimiter.check(`login:account:${normalizedEmail}`);
   if (!accountAllowed) {
-    return { error: "Ce compte est temporairement verrouill\u00e9 suite \u00e0 de nombreuses tentatives \u00e9chou\u00e9es. Veuillez r\u00e9essayer plus tard." };
+    return { error: t("fr", "auth.accountLocked") };
   }
 
   const supabase = await createClient();
@@ -95,11 +102,32 @@ export async function signInWithPassword(
   });
 
   if (error) {
+    // Log failed login attempt for security audit
+    logAuthEvent({
+      supabase,
+      action: "login.failed",
+      actor: normalizedEmail,
+      description: `Failed login attempt from IP ${clientIp}`,
+      ipAddress: clientIp,
+      success: false,
+    }).catch(() => {});
     return { error: error.message };
   }
 
   // Fetch user profile to determine redirect
   const profile = await getUserProfile();
+
+  // Log successful login for security audit
+  logAuthEvent({
+    supabase,
+    action: "login.success",
+    actor: normalizedEmail,
+    clinicId: profile?.clinic_id ?? undefined,
+    description: `Successful login from IP ${clientIp}`,
+    ipAddress: clientIp,
+    success: true,
+  }).catch(() => {});
+
   if (profile) {
     redirect(ROLE_DASHBOARD_MAP[profile.role]);
   }
@@ -123,7 +151,7 @@ export async function signInWithOTP(phone: string): Promise<{ error: string | nu
   // Per-phone rate limit: 3 OTP sends per 60 seconds (prevents SMS pumping)
   const phoneAllowed = await otpSendLimiter.check(`otp:phone:${phone}`);
   if (!phoneAllowed) {
-    return { error: "Trop de demandes de code. Veuillez r\u00e9essayer dans quelques minutes." };
+    return { error: t("fr", "auth.rateLimitOtp") };
   }
 
   const supabase = await createClient();
@@ -199,7 +227,7 @@ export async function registerPatient(data: {
   // Rate limit OTP sends per phone number to prevent SMS pumping
   const phoneAllowed = await otpSendLimiter.check(`otp:phone:${data.phone}`);
   if (!phoneAllowed) {
-    return { error: "Trop de demandes de code. Veuillez r\u00e9essayer dans quelques minutes." };
+    return { error: t("fr", "auth.rateLimitOtp") };
   }
 
   const { error } = await supabase.auth.signInWithOtp({
@@ -247,7 +275,7 @@ export async function resetPassword(
   // Rate limit: 3 password reset requests per 60 seconds per IP
   const allowed = await passwordResetLimiter.check(`reset:ip:${clientIp}`);
   if (!allowed) {
-    return { error: "Trop de demandes. Veuillez r\u00e9essayer dans quelques minutes." };
+    return { error: t("fr", "auth.rateLimitGeneric") };
   }
 
   const supabase = await createClient();
@@ -261,18 +289,33 @@ export async function resetPassword(
   // Even if the email doesn't exist, we don't reveal that to the caller.
   if (error) {
     // Log the error server-side for debugging, but don't expose it
-    console.error("[resetPassword] Supabase error (not exposed to client):", error.message);
+    logger.warn("Password reset request failed", { context: "auth/resetPassword", error });
   }
+
+  // Log password reset request for security audit
+  logAuthEvent({
+    supabase,
+    action: "password_reset.requested",
+    actor: email.trim().toLowerCase(),
+    description: `Password reset requested from IP ${clientIp}`,
+    ipAddress: clientIp,
+  }).catch(() => {});
 
   return { error: null };
 }
 
 /**
  * Sign out the current user and redirect to home page.
+ * Always redirects even if the sign-out API call fails — the user
+ * should never get stuck on a broken session.
  */
 export async function signOut(): Promise<void> {
-  const supabase = await createClient();
-  await supabase.auth.signOut();
+  try {
+    const supabase = await createClient();
+    await supabase.auth.signOut();
+  } catch (err) {
+    logger.error("Sign-out failed", { context: "auth/signOut", error: err });
+  }
   redirect("/");
 }
 
@@ -295,7 +338,7 @@ export async function getUserProfile(): Promise<UserProfile | null> {
 
   const { data: profile } = await supabase
     .from("users")
-    .select("*")
+    .select("id, auth_id, clinic_id, role, name, phone, email, avatar_url, is_active, metadata")
     .eq("auth_id", user.id)
     .single();
 

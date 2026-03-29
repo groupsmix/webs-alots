@@ -7,6 +7,9 @@ import { LayoutDashboard, UserCog, Stethoscope, Settings, BarChart3, Star, Users
 import { SignOutButton } from "@/components/sign-out-button";
 import { useClinicFeatures } from "@/lib/hooks/use-clinic-features";
 import type { ClinicFeatureKey } from "@/lib/features";
+import { OnboardingProvider, useOnboarding } from "@/components/onboarding/onboarding-provider";
+import { GettingStartedChecklist } from "@/components/onboarding/getting-started-checklist";
+import { OnboardingTour } from "@/components/onboarding/onboarding-tour";
 
 interface NavItem {
   href: string;
@@ -41,6 +44,37 @@ const navItems: NavItem[] = [
   { href: "/admin/lab-invoices", label: "Lab Invoices", icon: FileText, requiredFeature: "lab_invoices" },
 ];
 
+function OnboardingChecklistSidebar() {
+  const { state, loading, dismiss, reshow } = useOnboarding();
+
+  if (loading || !state) return null;
+
+  return (
+    <div className="mb-4">
+      <GettingStartedChecklist
+        completedSteps={state.completedSteps}
+        dismissed={state.tourDismissed}
+        onDismiss={dismiss}
+        onReshow={reshow}
+      />
+    </div>
+  );
+}
+
+function OnboardingTourOverlay() {
+  const { state, showTour, dismiss, markComplete } = useOnboarding();
+
+  if (!showTour || !state) return null;
+
+  return (
+    <OnboardingTour
+      completedSteps={state.completedSteps}
+      onDismiss={dismiss}
+      onStepComplete={markComplete}
+    />
+  );
+}
+
 function SidebarContent({ pathname, onNavClick }: { pathname: string; onNavClick?: () => void }) {
   const { hasFeature } = useClinicFeatures();
 
@@ -50,6 +84,7 @@ function SidebarContent({ pathname, onNavClick }: { pathname: string; onNavClick
 
   return (
     <>
+      <OnboardingChecklistSidebar />
       <nav className="space-y-1 flex-1">
         {visibleItems.map((item) => {
           const isActive = pathname === item.href;
@@ -86,7 +121,15 @@ export default function AdminLayout({
   const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
+    <OnboardingProvider>
     <div className="flex min-h-screen">
+      {/* Skip to content link for keyboard accessibility */}
+      <a
+        href="#admin-main-content"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[100] focus:rounded-lg focus:bg-primary focus:px-4 focus:py-2 focus:text-primary-foreground focus:text-sm focus:font-medium"
+      >
+        Aller au contenu principal
+      </a>
       {/* Mobile header bar */}
       <div className="fixed top-0 left-0 right-0 z-40 flex items-center gap-3 border-b bg-card px-4 py-3 md:hidden">
         <button
@@ -128,7 +171,9 @@ export default function AdminLayout({
         <SidebarContent pathname={pathname} />
       </aside>
 
-      <main className="flex-1 p-6 pt-16 md:pt-6">{children}</main>
+      <main id="admin-main-content" className="flex-1 p-6 pt-16 md:pt-6">{children}</main>
+      <OnboardingTourOverlay />
     </div>
+    </OnboardingProvider>
   );
 }

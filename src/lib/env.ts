@@ -143,7 +143,7 @@ export function enforceEnvValidation(): void {
       `[STARTUP HEALTH CHECK FAILED] Required environment variables are missing:\n${lines.join("\n")}\n\n` +
       "The application cannot start without these variables.\n" +
       "Set them in your .env.local (development) or deployment environment (production).";
-    console.error(message);
+    logger.error(message, { context: "env-validation" });
     throw new Error(message);
   }
 }

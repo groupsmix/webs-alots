@@ -20,6 +20,9 @@ import {
   type TierSlug,
 } from "@/lib/config/pricing";
 import { logger } from "@/lib/logger";
+import { Breadcrumb } from "@/components/ui/breadcrumb";
+import { CardSkeleton } from "@/components/ui/loading-skeleton";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   fetchClientSubscriptions,
   fetchPricingTiers,
@@ -129,14 +132,37 @@ export default function PricingPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-20">
-        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      <div>
+        <Breadcrumb items={[
+          { label: "Super Admin", href: "/super-admin/dashboard" },
+          { label: "Pricing & Tiers" },
+        ]} />
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold">Pricing & Tiers</h1>
+          <p className="text-sm text-muted-foreground mt-1">Manage subscription tiers, pricing, and feature toggles for all system types</p>
+        </div>
+        <CardSkeleton count={4} className="mb-6" />
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <div key={i} className="rounded-xl border p-4 space-y-3">
+              <Skeleton className="h-5 w-16 rounded-full" />
+              <Skeleton className="h-8 w-2/3" />
+              <Skeleton className="h-3 w-full" />
+              <Skeleton className="h-3 w-3/4" />
+              <Skeleton className="h-3 w-1/2" />
+            </div>
+          ))}
+        </div>
       </div>
     );
   }
 
   return (
     <div>
+      <Breadcrumb items={[
+        { label: "Super Admin", href: "/super-admin/dashboard" },
+        { label: "Pricing & Tiers" },
+      ]} />
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
           <h1 className="text-2xl font-bold">Pricing & Tiers</h1>
@@ -336,7 +362,7 @@ export default function PricingPage() {
               </CardTitle>
             </CardHeader>
             <CardContent className="p-0">
-              <div className="overflow-x-auto">
+              <div className="table-mobile-scroll">
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b text-muted-foreground">
@@ -428,7 +454,7 @@ export default function PricingPage() {
               <CardTitle className="text-base">Matrice des fonctionnalités ({filteredToggles.length})</CardTitle>
             </CardHeader>
             <CardContent className="p-0">
-              <div className="overflow-x-auto">
+              <div className="table-mobile-scroll">
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b text-muted-foreground">

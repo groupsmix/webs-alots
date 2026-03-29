@@ -15,6 +15,9 @@ import {
 } from "@/components/ui/dialog";
 import { Loader2 } from "lucide-react";
 import { logger } from "@/lib/logger";
+import { Breadcrumb } from "@/components/ui/breadcrumb";
+import { useToast } from "@/components/ui/toast";
+import { CardSkeleton, TableSkeleton } from "@/components/ui/loading-skeleton";
 import {
   fetchFeatureDefinitions,
   fetchClinics,
@@ -26,6 +29,7 @@ type CategoryFilter = "all" | "core" | "communication" | "integration" | "advanc
 const tiers = ["basic", "standard", "premium"];
 
 export default function FeatureTogglesPage() {
+  const { addToast } = useToast();
   const [features, setFeatures] = useState<FeatureDefinition[]>([]);
   const [totalClinicsCount, setTotalClinicsCount] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -73,9 +77,11 @@ export default function FeatureTogglesPage() {
   };
 
   function toggleGlobal(featureId: string) {
+    const feature = features.find((f) => f.id === featureId);
     setFeatures((prev) =>
       prev.map((f) => f.id === featureId ? { ...f, globalEnabled: !f.globalEnabled } : f)
     );
+    addToast(`${feature?.name ?? "Feature"} ${feature?.globalEnabled ? "disabled" : "enabled"} globally`, "success");
   }
 
   function toggleTier(featureId: string, tier: string) {
@@ -104,6 +110,7 @@ export default function FeatureTogglesPage() {
       })
     );
     setBulkOpen(false);
+    addToast(`All features ${bulkAction === "enable" ? "enabled" : "disabled"} for ${bulkTier} tier`, "success");
   }
 
   const enabledCount = features.filter((f) => f.globalEnabled).length;
@@ -111,14 +118,27 @@ export default function FeatureTogglesPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-20">
-        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      <div>
+        <Breadcrumb items={[
+          { label: "Super Admin", href: "/super-admin/dashboard" },
+          { label: "Feature Toggles" },
+        ]} />
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold">Feature Toggles</h1>
+          <p className="text-sm text-muted-foreground mt-1">Control feature availability per tier and globally</p>
+        </div>
+        <CardSkeleton count={4} className="mb-6" />
+        <TableSkeleton rows={8} columns={6} className="mt-4" />
       </div>
     );
   }
 
   return (
     <div>
+      <Breadcrumb items={[
+        { label: "Super Admin", href: "/super-admin/dashboard" },
+        { label: "Feature Toggles" },
+      ]} />
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold">Feature Toggles</h1>
@@ -159,7 +179,7 @@ export default function FeatureTogglesPage() {
           <CardTitle className="text-base">Feature Matrix</CardTitle>
         </CardHeader>
         <CardContent className="p-0">
-          <div className="overflow-x-auto">
+          <div className="table-mobile-scroll">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b text-muted-foreground">

@@ -28,8 +28,9 @@ import {
 } from "@/lib/r2";
 import { withAuth } from "@/lib/with-auth";
 import { logger } from "@/lib/logger";
+import { uploadConfirmSchema, safeParse } from "@/lib/validations";
 
-const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
+const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2 MB
 
 const ALLOWED_TYPES = new Set([
   "image/jpeg",
@@ -86,7 +87,7 @@ export const POST = withAuth(async (request, { profile }) => {
 
   if (file.size > MAX_FILE_SIZE) {
     return NextResponse.json(
-      { error: "File too large (max 10 MB)" },
+      { error: "File too large (max 2 MB)" },
       { status: 400 },
     );
   }
@@ -140,15 +141,16 @@ export const PUT = withAuth(async (request, { profile }) => {
     );
   }
 
-  const body = await request.json() as { key?: string; contentType?: string };
-  const { key, contentType } = body;
-
-  if (!key || !contentType) {
+  const raw = await request.json();
+  const parsed = safeParse(uploadConfirmSchema, raw);
+  if (!parsed.success) {
     return NextResponse.json(
-      { error: "key and contentType are required" },
+      { error: parsed.error },
       { status: 400 },
     );
   }
+
+  const { key, contentType } = parsed.data;
 
   // Tenant isolation: verify the R2 key belongs to this user's clinic.
   // Keys follow the pattern: {clinicId}/{category}/{filename}

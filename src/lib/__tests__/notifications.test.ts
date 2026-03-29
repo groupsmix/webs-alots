@@ -104,10 +104,10 @@ describe("defaultNotificationTemplates", () => {
 describe("triggerMetadata", () => {
   it("has metadata for all notification triggers", () => {
     const expectedTriggers = [
-      "new_booking", "booking_confirmation", "reminder_24h", "reminder_2h",
-      "cancellation", "no_show", "prescription_ready", "new_review",
-      "payment_received", "new_patient_registered", "rescheduled",
-      "doctor_assigned", "follow_up",
+      "new_booking", "booking_confirmation", "reminder_24h", "reminder_1h",
+      "reminder_2h", "cancellation", "no_show", "prescription_ready",
+      "new_review", "payment_received", "new_patient_registered",
+      "rescheduled", "doctor_assigned", "follow_up",
     ];
     for (const trigger of expectedTriggers) {
       expect(triggerMetadata[trigger as keyof typeof triggerMetadata]).toBeDefined();

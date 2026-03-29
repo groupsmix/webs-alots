@@ -19,10 +19,10 @@ import {
   ContactFormSection,
   InsuranceSection,
   FaqSection,
-  BeforeAfterSection,
   BlogSection,
   LocationSection,
 } from "@/components/public/sections";
+import { safeJsonLdStringify } from "@/lib/json-ld";
 
 export async function generateMetadata(): Promise<Metadata> {
   const tenant = await getTenant();
@@ -59,14 +59,26 @@ export async function generateMetadata(): Promise<Metadata> {
     description,
     alternates: {
       canonical: canonicalUrl,
+      languages: {
+        "fr": canonicalUrl,
+        "ar": `${canonicalUrl}?lang=ar`,
+        "en": `${canonicalUrl}?lang=en`,
+        "x-default": canonicalUrl,
+      },
     },
     openGraph: {
       title,
       description,
       type: "website",
       locale: "fr_MA",
+      alternateLocale: ["ar_MA", "en_US"],
       siteName: clinicName,
       url: canonicalUrl,
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
     },
   };
 }
@@ -95,8 +107,51 @@ export default async function HomePage() {
 
   const topReviews = reviews.filter((r) => r.rating >= 4).slice(0, 3);
 
+  // Build LocalBusiness + MedicalOrganization structured data
+  const rootDomain = process.env.ROOT_DOMAIN ?? "oltigo.com";
+  const canonicalUrl = `https://${tenant.subdomain}.${rootDomain}`;
+  const clinicSchema = {
+    "@context": "https://schema.org",
+    "@type": ["LocalBusiness", "MedicalOrganization"],
+    "@id": `${canonicalUrl}/#organization`,
+    name: branding.clinicName || tenant.clinicName,
+    url: canonicalUrl,
+    ...(branding.phone ? { telephone: branding.phone } : {}),
+    ...(branding.email ? { email: branding.email } : {}),
+    ...(branding.address
+      ? {
+          address: {
+            "@type": "PostalAddress",
+            streetAddress: branding.address,
+            addressCountry: "MA",
+          },
+        }
+      : {}),
+    ...(branding.logoUrl ? { logo: branding.logoUrl } : {}),
+    ...(avgRating > 0 && reviews.length > 0
+      ? {
+          aggregateRating: {
+            "@type": "AggregateRating",
+            ratingValue: avgRating,
+            reviewCount: reviews.length,
+            bestRating: 5,
+            worstRating: 1,
+          },
+        }
+      : {}),
+    potentialAction: {
+      "@type": "ReserveAction",
+      target: `${canonicalUrl}/book`,
+      name: "Prendre rendez-vous en ligne",
+    },
+  };
+
   return (
     <div className={template.wrapperClass} dir={template.rtl ? "rtl" : "ltr"}>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: safeJsonLdStringify(clinicSchema) }}
+      />
       {/* Hero — always visible */}
       {sections.hero && <HeroSection />}
 
@@ -169,9 +224,6 @@ export default async function HomePage() {
 
       {/* Blog */}
       {sections.blog && <BlogSection />}
-
-      {/* Before / After */}
-      {sections.beforeAfter && <BeforeAfterSection />}
 
       {/* Location */}
       {sections.location && <LocationSection />}

@@ -4,13 +4,30 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 
 /**
+ * Log consent event to the server for GDPR/Loi 09-08 compliance.
+ * Fire-and-forget — never blocks the UI or shows errors to the user.
+ */
+function logConsentToServer(consentType: string, granted: boolean): void {
+  fetch("/api/consent", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ consentType, granted }),
+  }).catch(() => {
+    // Consent logging is best-effort — never block the user experience
+  });
+}
+
+/**
  * GDPR / Loi 09-08 cookie consent banner.
- * Stores consent in localStorage so it only shows once.
+ *
+ * Stores consent in localStorage so it only shows once, and logs the
+ * consent event to the server API for audit trail compliance.
  */
 export function CookieConsent() {
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
+    if (typeof window === "undefined") return;
     const consent = localStorage.getItem("cookie-consent");
     if (!consent) {
       setVisible(true);
@@ -18,12 +35,18 @@ export function CookieConsent() {
   }, []);
 
   function accept() {
-    localStorage.setItem("cookie-consent", "accepted");
+    if (typeof window !== "undefined") {
+      localStorage.setItem("cookie-consent", "accepted");
+    }
+    logConsentToServer("cookies_accepted", true);
     setVisible(false);
   }
 
   function decline() {
-    localStorage.setItem("cookie-consent", "declined");
+    if (typeof window !== "undefined") {
+      localStorage.setItem("cookie-consent", "declined");
+    }
+    logConsentToServer("cookies_declined", false);
     setVisible(false);
   }
 

@@ -13,6 +13,8 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { extractSubdomain } from "@/lib/subdomain";
 import { TENANT_HEADERS } from "@/lib/tenant";
+import { generateTraceId, TRACE_ID_HEADER } from "@/lib/logger";
+import { subdomainCache, SUBDOMAIN_CACHE_TTL_MS } from "@/lib/subdomain-cache";
 import {
   buildCsp,
   withSecurityHeaders,
@@ -30,8 +32,8 @@ import {
 } from "@/lib/middleware/routes";
 
 // ── Subdomain → clinic resolution cache ──────────────────────────
-// Avoids a DB query on every request for the same subdomain.
-// Entries expire after 5 minutes to pick up new clinics/renames.
+// Cache is now shared via @/lib/subdomain-cache so API routes can
+// invalidate entries when a clinic's subdomain changes.
 interface CachedClinic {
   id: string;
   name: string;
@@ -40,8 +42,6 @@ interface CachedClinic {
   tier: string;
   cachedAt: number;
 }
-const SUBDOMAIN_CACHE_TTL_MS = 5 * 60 * 1000;
-const subdomainCache = new Map<string, CachedClinic>();
 
 /**
  * Set tenant headers on a response so downstream Server Components
@@ -80,6 +80,9 @@ export async function middleware(request: NextRequest) {
   const nonce = Buffer.from(crypto.randomUUID()).toString("base64");
   const cspHeaderValue = buildCsp(nonce);
 
+  // --- Generate a per-request trace ID for structured logging ---
+  const traceId = generateTraceId();
+
   // --- Global body size limit ---
   const contentLength = request.headers.get("content-length");
   if (contentLength && Number(contentLength) > MAX_BODY_BYTES) {
@@ -97,6 +100,7 @@ export async function middleware(request: NextRequest) {
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set("x-nonce", nonce);
   requestHeaders.set("Content-Security-Policy", cspHeaderValue);
+  requestHeaders.set(TRACE_ID_HEADER, traceId);
 
   // --- SECURITY: Strip all tenant headers from the incoming request ---
   // Tenant context MUST only come from subdomain resolution (server-side).
@@ -124,8 +128,16 @@ export async function middleware(request: NextRequest) {
   }
 
   // --- Rate limiting (delegated to composable module) ---
-  const rateLimitResult = await applyRateLimit(request, cspHeaderValue, withSecurityHeaders);
-  if (rateLimitResult) return rateLimitResult;
+  const { response: rateLimitResponse, rateLimitInfo } = await applyRateLimit(request, cspHeaderValue, withSecurityHeaders);
+  if (rateLimitResponse) {
+    // Add rate limit headers to the response
+    if (rateLimitInfo) {
+      rateLimitResponse.headers.set("X-RateLimit-Limit", rateLimitInfo.limit.toString());
+      rateLimitResponse.headers.set("X-RateLimit-Remaining", rateLimitInfo.remaining.toString());
+      rateLimitResponse.headers.set("X-RateLimit-Reset", rateLimitInfo.reset.toString());
+    }
+    return rateLimitResponse;
+  }
 
   // If Supabase is not configured, allow all requests through
   // so the site renders with demo data instead of crashing
@@ -151,6 +163,12 @@ export async function middleware(request: NextRequest) {
     request: { headers: requestHeaders },
   });
   applyAllSecurityHeaders(supabaseResponse, cspHeaderValue, nonce);
+
+  // Add default rate limit headers to successful responses
+  supabaseResponse.headers.set("X-RateLimit-Limit", "30");
+  supabaseResponse.headers.set("X-RateLimit-Remaining", "29");
+  const resetTime = Math.ceil(Date.now() / 1000) + 60;
+  supabaseResponse.headers.set("X-RateLimit-Reset", resetTime.toString());
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL,

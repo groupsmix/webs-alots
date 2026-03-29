@@ -1,11 +1,13 @@
 import { NextResponse } from "next/server";
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import { logger } from "@/lib/logger";
+import { isR2Configured } from "@/lib/r2";
 /**
  * GET /api/health
  *
  * Health check endpoint for monitoring and load balancer probes.
- * Returns service status, uptime, and database connectivity.
+ * Returns service status, uptime, database connectivity, and
+ * component-level health for R2, WhatsApp, and rate limiter.
  *
  * Uses a direct Supabase client (anon key, no cookies) instead of the
  * cookie-based `createClient()` from `supabase-server.ts`.  Health
@@ -43,6 +45,30 @@ export async function GET() {
       error: "Database unreachable",
     };
   }
+
+  // R2 storage availability check
+  checks.r2 = isR2Configured()
+    ? { status: "ok" }
+    : { status: "degraded", error: "R2 storage not configured" };
+
+  // WhatsApp API availability check
+  const whatsappConfigured = !!(
+    process.env.WHATSAPP_PHONE_NUMBER_ID && process.env.WHATSAPP_ACCESS_TOKEN
+  ) || !!(
+    process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN
+  );
+  checks.whatsapp = whatsappConfigured
+    ? { status: "ok" }
+    : { status: "degraded", error: "WhatsApp API not configured" };
+
+  // Rate limiter backend check
+  const rateLimitBackend = process.env.RATE_LIMIT_BACKEND || "auto";
+  const hasKV = rateLimitBackend === "kv";
+  const hasSupabase = !!(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY);
+  checks.rateLimiter = {
+    status: hasKV || hasSupabase ? "ok" : "degraded",
+    error: !hasKV && !hasSupabase ? "Using in-memory fallback (not shared across isolates)" : undefined,
+  };
 
   const overallStatus = Object.values(checks).every((c) => c.status === "ok")
     ? "ok"

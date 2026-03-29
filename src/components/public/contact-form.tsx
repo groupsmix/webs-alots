@@ -1,12 +1,14 @@
 "use client";
 
 import { useState } from "react";
+import { logger } from "@/lib/logger";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Check } from "lucide-react";
+import { t } from "@/lib/i18n";
 
 export function ContactForm() {
   const [submitted, setSubmitted] = useState(false);
@@ -35,9 +37,10 @@ export function ContactForm() {
       if (!res.ok) {
         throw new Error("Failed to send message");
       }
-    } catch {
+    } catch (err) {
       // Even if the API endpoint doesn't exist yet, show success
       // so users know their submission was acknowledged.
+      logger.warn("Contact form submission failed", { context: "contact-form", error: err });
     }
 
     setLoading(false);
@@ -46,22 +49,21 @@ export function ContactForm() {
 
   if (submitted) {
     return (
-      <Card>
+      <Card role="status" aria-live="polite">
         <CardContent className="py-12 text-center">
           <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-green-100">
             <Check className="h-8 w-8 text-green-600" />
           </div>
-          <h3 className="text-lg font-semibold mb-2">Message envoyé</h3>
+          <h3 className="text-lg font-semibold mb-2">{t("fr", "contact.successTitle")}</h3>
           <p className="text-sm text-muted-foreground">
-            Merci pour votre message. Nous vous répondrons dans les plus brefs
-            délais.
+            {t("fr", "contact.successMessage")}
           </p>
           <Button
             variant="outline"
             className="mt-6"
             onClick={() => setSubmitted(false)}
           >
-            Envoyer un autre message
+            {t("fr", "contact.sendAnother")}
           </Button>
         </CardContent>
       </Card>
@@ -71,17 +73,17 @@ export function ContactForm() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Envoyez-nous un message</CardTitle>
+        <CardTitle>{t("fr", "contact.title")}</CardTitle>
       </CardHeader>
       <CardContent>
         <form className="space-y-4" onSubmit={handleSubmit}>
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="name">Nom complet</Label>
-              <Input id="name" name="name" placeholder="Votre nom" required />
+              <Label htmlFor="name">{t("fr", "contact.name")}</Label>
+              <Input id="name" name="name" placeholder={t("fr", "contact.namePlaceholder")} required />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="phone">Téléphone</Label>
+              <Label htmlFor="phone">{t("fr", "contact.phone")}</Label>
               <Input
                 id="phone"
                 name="phone"
@@ -90,7 +92,7 @@ export function ContactForm() {
             </div>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
+            <Label htmlFor="email">{t("fr", "contact.email")}</Label>
             <Input
               id="email"
               name="email"
@@ -99,25 +101,25 @@ export function ContactForm() {
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="subject">Objet</Label>
+            <Label htmlFor="subject">{t("fr", "contact.subject")}</Label>
             <Input
               id="subject"
               name="subject"
-              placeholder="Comment pouvons-nous vous aider ?"
+              placeholder={t("fr", "contact.subjectPlaceholder")}
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="message">Message</Label>
+            <Label htmlFor="message">{t("fr", "contact.message")}</Label>
             <Textarea
               id="message"
               name="message"
-              placeholder="Votre message..."
+              placeholder={t("fr", "contact.messagePlaceholder")}
               rows={4}
               required
             />
           </div>
           <Button type="submit" className="w-full" disabled={loading}>
-            {loading ? "Envoi en cours..." : "Envoyer le message"}
+            {loading ? t("fr", "contact.submitting") : t("fr", "contact.submit")}
           </Button>
         </form>
       </CardContent>

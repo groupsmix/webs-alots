@@ -152,11 +152,11 @@ export const defaultWebsiteConfig: WebsiteConfig = {
     title: "Contactez-nous",
     subtitle:
       "Vous avez une question ou souhaitez nous contacter ? Nous sommes là pour vous aider. Utilisez l'un des moyens ci-dessous ou envoyez-nous un message.",
-    phone: "+212 522-000000",
-    whatsapp: "+212 661-000000",
+    phone: "+212 520-000000",
+    whatsapp: "+212 600-000000",
     email: "contact@oltigo.com",
     address: "Casablanca, Maroc",
-    whatsappMessage: "Bonjour, je souhaite en savoir plus sur Oltigo.",
+    whatsappMessage: "Bonjour, je souhaite prendre rendez-vous.",
   },
 
   reviews: {

@@ -14,6 +14,8 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
+import { Breadcrumb } from "@/components/ui/breadcrumb";
+import { useToast } from "@/components/ui/toast";
 
 interface Template {
   id: string;
@@ -43,6 +45,7 @@ type TypeFilter = "all" | "prescription" | "invoice" | "report" | "certificate" 
 type ClinicTypeFilter = "all" | "doctor" | "dentist" | "pharmacy";
 
 export default function TemplateManagerPage() {
+  const { addToast } = useToast();
   const [templates, setTemplates] = useState<Template[]>(initialTemplates);
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState<TypeFilter>("all");
@@ -123,6 +126,7 @@ export default function TemplateManagerPage() {
       setTemplates((prev) => [newTemplate, ...prev]);
     }
     setEditOpen(false);
+    addToast(editItem ? "Template updated" : "Template created", "success");
   }
 
   function handleDuplicate(item: Template) {
@@ -135,11 +139,13 @@ export default function TemplateManagerPage() {
       usageCount: 0,
     };
     setTemplates((prev) => [dup, ...prev]);
+    addToast(`"${item.name}" duplicated`, "success");
   }
 
   function handleDelete() {
     if (deleteItem) {
       setTemplates((prev) => prev.filter((t) => t.id !== deleteItem.id));
+      addToast("Template deleted", "success");
     }
     setDeleteOpen(false);
     setDeleteItem(null);
@@ -147,10 +153,15 @@ export default function TemplateManagerPage() {
 
   function toggleActive(item: Template) {
     setTemplates((prev) => prev.map((t) => t.id === item.id ? { ...t, active: !t.active } : t));
+    addToast(item.active ? "Template deactivated" : "Template activated", "success");
   }
 
   return (
     <div>
+      <Breadcrumb items={[
+        { label: "Super Admin", href: "/super-admin/dashboard" },
+        { label: "Templates" },
+      ]} />
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold">Template Manager</h1>

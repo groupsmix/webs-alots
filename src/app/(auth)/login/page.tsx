@@ -15,6 +15,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { signInWithOTP, verifyOTP, signInWithPassword } from "@/lib/auth";
+import { logger } from "@/lib/logger";
 const PHONE_AUTH_ENABLED = process.env.NEXT_PUBLIC_PHONE_AUTH_ENABLED === "true";
 
 export default function LoginPage() {
@@ -60,7 +61,8 @@ export default function LoginPage() {
         );
         setLoading(false);
       }
-    } catch {
+    } catch (err) {
+      logger.warn("Email login failed", { context: "login", error: err });
       setError("Une erreur inattendue s'est produite. Veuillez r\u00e9essayer.");
       setLoading(false);
     }
@@ -84,7 +86,8 @@ export default function LoginPage() {
       setStep("otp");
       startOtpCooldown();
       setLoading(false);
-    } catch {
+    } catch (err) {
+      logger.warn("OTP send failed", { context: "login", error: err });
       setError("Une erreur inattendue s'est produite. Veuillez r\u00e9essayer.");
       setLoading(false);
     }
@@ -101,7 +104,8 @@ export default function LoginPage() {
         setError(result.error);
         setLoading(false);
       }
-    } catch {
+    } catch (err) {
+      logger.warn("OTP verification failed", { context: "login", error: err });
       setError("Une erreur inattendue s'est produite. Veuillez r\u00e9essayer.");
       setLoading(false);
     }

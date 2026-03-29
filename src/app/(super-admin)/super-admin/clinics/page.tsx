@@ -16,10 +16,21 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
-import { fetchClinics, updateClinicStatus, fetchClinicUsers } from "@/lib/super-admin-actions";
+import { fetchClinics, updateClinicStatus } from "@/lib/super-admin-actions";
 import { exportToCSV } from "@/lib/export-data";
-import { LoadingWithTimeout } from "@/components/loading-with-timeout";
 import { logger } from "@/lib/logger";
+import { useToast } from "@/components/ui/toast";
+import { Breadcrumb } from "@/components/ui/breadcrumb";
+
+/** Anonymized user count range — avoids exposing exact patient numbers. */
+type UserCountRange = "0" | "1-50" | "51-200" | "200+";
+
+function toUserCountRange(count: number): UserCountRange {
+  if (count === 0) return "0";
+  if (count <= 50) return "1-50";
+  if (count <= 200) return "51-200";
+  return "200+";
+}
 
 interface ClinicDetail {
   id: string;
@@ -27,7 +38,8 @@ interface ClinicDetail {
   type: "doctor" | "dentist" | "pharmacy";
   plan: string;
   city: string;
-  patientsCount: number;
+  /** Anonymized range instead of exact count for privacy compliance. */
+  userCountRange: UserCountRange;
   monthlyRevenue: number;
   status: "active" | "suspended" | "trial";
   ownerName: string;
@@ -44,8 +56,50 @@ interface ClinicDetail {
 type FilterType = "all" | "doctor" | "dentist" | "pharmacy";
 type FilterStatus = "all" | "active" | "suspended" | "trial";
 
+function ClinicsTableSkeleton() {
+  return (
+    <Card>
+      <CardContent className="p-0">
+        <div className="table-mobile-scroll">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b text-muted-foreground">
+                <th className="text-left font-medium py-3 px-4">Clinic</th>
+                <th className="text-left font-medium py-3 px-4 hidden md:table-cell">Owner</th>
+                <th className="text-left font-medium py-3 px-4">Type</th>
+                <th className="text-left font-medium py-3 px-4 hidden lg:table-cell">City</th>
+                <th className="text-left font-medium py-3 px-4">Users</th>
+                <th className="text-left font-medium py-3 px-4 hidden lg:table-cell">Revenue</th>
+                <th className="text-left font-medium py-3 px-4">Plan</th>
+                <th className="text-left font-medium py-3 px-4">Status</th>
+                <th className="text-right font-medium py-3 px-4">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {[...Array(5)].map((_, i) => (
+                <tr key={i} className="border-b last:border-0">
+                  <td className="py-3 px-4"><div className="h-4 w-32 bg-muted animate-pulse rounded" /></td>
+                  <td className="py-3 px-4 hidden md:table-cell"><div className="h-4 w-28 bg-muted animate-pulse rounded" /></td>
+                  <td className="py-3 px-4"><div className="h-4 w-16 bg-muted animate-pulse rounded" /></td>
+                  <td className="py-3 px-4 hidden lg:table-cell"><div className="h-4 w-20 bg-muted animate-pulse rounded" /></td>
+                  <td className="py-3 px-4"><div className="h-4 w-12 bg-muted animate-pulse rounded" /></td>
+                  <td className="py-3 px-4 hidden lg:table-cell"><div className="h-4 w-20 bg-muted animate-pulse rounded" /></td>
+                  <td className="py-3 px-4"><div className="h-5 w-14 bg-muted animate-pulse rounded-full" /></td>
+                  <td className="py-3 px-4"><div className="h-5 w-14 bg-muted animate-pulse rounded-full" /></td>
+                  <td className="py-3 px-4 text-right"><div className="h-6 w-20 bg-muted animate-pulse rounded ml-auto" /></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 export default function AllClinicsPage() {
   const router = useRouter();
+  const { addToast } = useToast();
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState<FilterType>("all");
   const [statusFilter, setStatusFilter] = useState<FilterStatus>("all");
@@ -60,44 +114,35 @@ export default function AllClinicsPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [confirmName, setConfirmName] = useState("");
+  const [impersonateReason, setImpersonateReason] = useState("");
+  const [impersonatePassword, setImpersonatePassword] = useState("");
 
   const loadClinics = useCallback(async () => {
     try {
       const clinics = await fetchClinics();
-      const enriched: ClinicDetail[] = await Promise.all(
-        clinics.map(async (c) => {
-          let patientsCount = 0;
-          let doctorsCount = 0;
-          try {
-            const users = await fetchClinicUsers(c.id);
-            patientsCount = users.filter((u) => u.role === "patient").length;
-            doctorsCount = users.filter((u) => u.role === "doctor" || u.role === "clinic_admin").length;
-          } catch {
-            // ignore
-          }
-          const config = (c.config ?? {}) as Record<string, unknown>;
-          return {
-            id: c.id,
-            name: c.name,
-            type: c.type as "doctor" | "dentist" | "pharmacy",
-            plan: c.tier ?? "pro",
-            city: (config.city as string) ?? "",
-            patientsCount,
-            monthlyRevenue: 0,
-            status: (c.status === "inactive" ? "suspended" : c.status ?? "active") as "active" | "suspended" | "trial",
-            ownerName: (config.ownerName as string) ?? "",
-            ownerEmail: (config.email as string) ?? "",
-            ownerPhone: (config.phone as string) ?? "",
-            createdAt: c.created_at ?? "",
-            doctorsCount,
-            appointmentsThisMonth: 0,
-            domain: (config.domain as string) ?? undefined,
-            lastLoginAt: "",
-            features: {},
-          };
-        }),
-      );
-      setList(enriched);
+      const mapped: ClinicDetail[] = clinics.map((c) => {
+        const config = (c.config ?? {}) as Record<string, unknown>;
+        return {
+          id: c.id,
+          name: c.name,
+          type: c.type as "doctor" | "dentist" | "pharmacy",
+          plan: c.tier ?? "pro",
+          city: (config.city as string) ?? "",
+          userCountRange: "0" as UserCountRange,
+          monthlyRevenue: 0,
+          status: (c.status === "inactive" ? "suspended" : c.status ?? "active") as "active" | "suspended" | "trial",
+          ownerName: (config.ownerName as string) ?? "",
+          ownerEmail: (config.email as string) ?? "",
+          ownerPhone: (config.phone as string) ?? "",
+          createdAt: c.created_at ?? "",
+          doctorsCount: 0,
+          appointmentsThisMonth: 0,
+          domain: (config.domain as string) ?? undefined,
+          lastLoginAt: "",
+          features: {},
+        };
+      });
+      setList(mapped);
     } catch (err) {
       logger.warn("Operation failed", { context: "page", error: err });
     } finally {
@@ -137,8 +182,7 @@ export default function AllClinicsPage() {
         { key: "city", label: "City" },
         { key: "plan", label: "Plan" },
         { key: "status", label: "Status" },
-        { key: "patientsCount", label: "Patients" },
-        { key: "doctorsCount", label: "Doctors" },
+        { key: "userCountRange", label: "Users (range)" },
         { key: "createdAt", label: "Created" },
       ],
       `clinics-export-${new Date().toISOString().split("T")[0]}.csv`,
@@ -155,8 +199,15 @@ export default function AllClinicsPage() {
           c.id === clinic.id ? { ...c, status: newStatus as "active" | "suspended" | "trial" } : c,
         ),
       );
+      addToast(
+        newStatus === "active"
+          ? `${clinic.name} has been activated`
+          : `${clinic.name} has been suspended`,
+        "success",
+      );
     } catch (err) {
       logger.warn("Operation failed", { context: "page", error: err });
+      addToast("Failed to update clinic status", "error");
     } finally {
       setActionLoading(false);
     }
@@ -165,6 +216,10 @@ export default function AllClinicsPage() {
 
   return (
     <div>
+      <Breadcrumb items={[
+        { label: "Super Admin", href: "/super-admin/dashboard" },
+        { label: "Clinics" },
+      ]} />
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold">All Clinics</h1>
@@ -211,11 +266,11 @@ export default function AllClinicsPage() {
       </div>
 
       {loadingData ? (
-        <LoadingWithTimeout message="Loading clinics..." onRetry={() => { setLoadingData(true); loadClinics(); }} />
+        <ClinicsTableSkeleton />
       ) : (
       <Card>
         <CardContent className="p-0">
-          <div className="overflow-x-auto">
+          <div className="table-mobile-scroll">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b text-muted-foreground">
@@ -223,7 +278,7 @@ export default function AllClinicsPage() {
                   <th className="text-left font-medium py-3 px-4 hidden md:table-cell">Owner</th>
                   <th className="text-left font-medium py-3 px-4">Type</th>
                   <th className="text-left font-medium py-3 px-4 hidden lg:table-cell">City</th>
-                  <th className="text-left font-medium py-3 px-4">Patients</th>
+                  <th className="text-left font-medium py-3 px-4">Users</th>
                   <th className="text-left font-medium py-3 px-4 hidden lg:table-cell">Revenue</th>
                   <th className="text-left font-medium py-3 px-4">Plan</th>
                   <th className="text-left font-medium py-3 px-4">Status</th>
@@ -243,7 +298,7 @@ export default function AllClinicsPage() {
                     </td>
                     <td className="py-3 px-4 capitalize text-muted-foreground">{clinic.type}</td>
                     <td className="py-3 px-4 text-muted-foreground hidden lg:table-cell">{clinic.city}</td>
-                    <td className="py-3 px-4">{clinic.patientsCount}</td>
+                    <td className="py-3 px-4 text-muted-foreground">{clinic.userCountRange}</td>
                     <td className="py-3 px-4 hidden lg:table-cell">{clinic.monthlyRevenue.toLocaleString()} MAD</td>
                     <td className="py-3 px-4">
                       <Badge variant={clinic.plan === "premium" ? "default" : clinic.plan === "standard" ? "secondary" : "outline"}>{clinic.plan}</Badge>
@@ -308,7 +363,7 @@ export default function AllClinicsPage() {
             </DialogHeader>
             <div className="space-y-4 py-4">
               <div className="grid grid-cols-3 gap-3">
-                <Card><CardContent className="p-3 text-center"><Users className="h-4 w-4 mx-auto mb-1 text-purple-600" /><p className="text-lg font-bold">{detail.patientsCount}</p><p className="text-[10px] text-muted-foreground">Patients</p></CardContent></Card>
+                <Card><CardContent className="p-3 text-center"><Users className="h-4 w-4 mx-auto mb-1 text-purple-600" /><p className="text-lg font-bold">{detail.userCountRange}</p><p className="text-[10px] text-muted-foreground">Users</p></CardContent></Card>
                 <Card><CardContent className="p-3 text-center"><TrendingUp className="h-4 w-4 mx-auto mb-1 text-green-600" /><p className="text-lg font-bold">{detail.monthlyRevenue.toLocaleString()}</p><p className="text-[10px] text-muted-foreground">Revenue (MAD)</p></CardContent></Card>
                 <Card><CardContent className="p-3 text-center"><Calendar className="h-4 w-4 mx-auto mb-1 text-blue-600" /><p className="text-lg font-bold">{detail.appointmentsThisMonth}</p><p className="text-[10px] text-muted-foreground">Appts/Month</p></CardContent></Card>
               </div>
@@ -352,36 +407,56 @@ export default function AllClinicsPage() {
       </Dialog>
 
       {/* Login As Dialog */}
-      <Dialog open={loginOpen} onOpenChange={setLoginOpen}>
+      <Dialog open={loginOpen} onOpenChange={(open) => { setLoginOpen(open); if (!open) { setImpersonateReason(""); setImpersonatePassword(""); } }}>
         {loginClinic && (
-          <DialogContent onClose={() => setLoginOpen(false)}>
+          <DialogContent onClose={() => { setLoginOpen(false); setImpersonateReason(""); setImpersonatePassword(""); }}>
             <DialogHeader>
               <DialogTitle>Login as Client</DialogTitle>
-              <DialogDescription>You are about to impersonate <strong>{loginClinic.name}</strong>. This will be logged for security purposes.</DialogDescription>
+              <DialogDescription>You are about to impersonate <strong>{loginClinic.name}</strong>. This will be logged for security purposes. Session expires after 30 minutes.</DialogDescription>
             </DialogHeader>
             <div className="rounded-lg border p-4 bg-muted/50">
               <p className="text-sm font-medium">{loginClinic.name}</p>
               <p className="text-xs text-muted-foreground">Owner: {loginClinic.ownerName} &middot; {loginClinic.city}</p>
             </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Reason for impersonation <span className="text-red-500">*</span></label>
+              <Input
+                placeholder="e.g. Investigating billing issue reported by clinic"
+                value={impersonateReason}
+                onChange={(e) => setImpersonateReason(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Re-enter your password <span className="text-red-500">*</span></label>
+              <Input
+                type="password"
+                placeholder="Your admin password"
+                value={impersonatePassword}
+                onChange={(e) => setImpersonatePassword(e.target.value)}
+              />
+            </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setLoginOpen(false)}>Cancel</Button>
-              <Button disabled={actionLoading} onClick={async () => {
+              <Button variant="outline" onClick={() => { setLoginOpen(false); setImpersonateReason(""); setImpersonatePassword(""); }}>Cancel</Button>
+              <Button disabled={actionLoading || impersonateReason.length < 3 || !impersonatePassword} onClick={async () => {
                 setActionLoading(true);
                 try {
                   const res = await fetch("/api/impersonate", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ clinicId: loginClinic.id, clinicName: loginClinic.name }),
+                    body: JSON.stringify({ clinicId: loginClinic.id, clinicName: loginClinic.name, reason: impersonateReason, password: impersonatePassword }),
                   });
                   if (res.ok) {
                     setLoginOpen(false);
+                    setImpersonateReason("");
+                    setImpersonatePassword("");
                     router.push("/admin/dashboard");
                   } else {
                     const data = await res.json();
-                    void data.error;
+                    addToast(data.error || "Impersonation failed", "error");
                   }
                 } catch (err) {
                   logger.warn("Operation failed", { context: "page", error: err });
+                  addToast("Failed to start impersonation", "error");
                 } finally {
                   setActionLoading(false);
                 }
@@ -408,7 +483,7 @@ export default function AllClinicsPage() {
             </DialogHeader>
             <div className="rounded-lg border p-4 bg-muted/50">
               <p className="text-sm font-medium">{suspendClinic.name}</p>
-              <p className="text-xs text-muted-foreground">{suspendClinic.patientsCount} patients &middot; {suspendClinic.monthlyRevenue.toLocaleString()} MAD/mo</p>
+              <p className="text-xs text-muted-foreground">{suspendClinic.userCountRange} users &middot; {suspendClinic.monthlyRevenue.toLocaleString()} MAD/mo</p>
             </div>
             {suspendClinic.status !== "suspended" && (
               <div className="space-y-2">
