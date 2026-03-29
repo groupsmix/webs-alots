@@ -23,8 +23,11 @@ export type Database = {
           created_at: string | null
           description: string | null
           id: string
+          ip_address: string | null
+          metadata: Json | null
           timestamp: string | null
           type: string
+          user_agent: string | null
         }
         Insert: {
           action: string
@@ -34,8 +37,11 @@ export type Database = {
           created_at?: string | null
           description?: string | null
           id?: string
+          ip_address?: string | null
+          metadata?: Json | null
           timestamp?: string | null
           type: string
+          user_agent?: string | null
         }
         Update: {
           action?: string
@@ -45,8 +51,11 @@ export type Database = {
           created_at?: string | null
           description?: string | null
           id?: string
+          ip_address?: string | null
+          metadata?: Json | null
           timestamp?: string | null
           type?: string
+          user_agent?: string | null
         }
         Relationships: [
           {
@@ -9035,7 +9044,7 @@ export type PurchaseOrderItem = {
 
 export type AnnouncementType = "info" | "warning" | "critical";
 
-export type ActivityLogType = "clinic" | "billing" | "feature" | "announcement" | "template" | "auth";
+export type ActivityLogType = "clinic" | "billing" | "feature" | "announcement" | "template" | "auth" | "booking" | "patient" | "payment" | "admin" | "config" | "security";
 
 export type PlatformBillingStatus = "paid" | "pending" | "overdue" | "cancelled";
 
@@ -9094,6 +9103,9 @@ export type ActivityLog = {
   timestamp: string;
   actor: string | null;
   type: ActivityLogType;
+  ip_address: string | null;
+  user_agent: string | null;
+  metadata: Json | null;
   created_at: string;
 }
 

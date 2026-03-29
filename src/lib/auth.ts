@@ -10,6 +10,7 @@ import {
   passwordResetLimiter,
 } from "@/lib/rate-limit";
 import { logger } from "@/lib/logger";
+import { logAuthEvent } from "@/lib/audit-log";
 
 /**
  * Phone auth feature flag.
@@ -100,11 +101,32 @@ export async function signInWithPassword(
   });
 
   if (error) {
+    // Log failed login attempt for security audit
+    logAuthEvent({
+      supabase,
+      action: "login.failed",
+      actor: normalizedEmail,
+      description: `Failed login attempt from IP ${clientIp}`,
+      ipAddress: clientIp,
+      success: false,
+    }).catch(() => {});
     return { error: error.message };
   }
 
   // Fetch user profile to determine redirect
   const profile = await getUserProfile();
+
+  // Log successful login for security audit
+  logAuthEvent({
+    supabase,
+    action: "login.success",
+    actor: normalizedEmail,
+    clinicId: profile?.clinic_id ?? undefined,
+    description: `Successful login from IP ${clientIp}`,
+    ipAddress: clientIp,
+    success: true,
+  }).catch(() => {});
+
   if (profile) {
     redirect(ROLE_DASHBOARD_MAP[profile.role]);
   }
@@ -268,6 +290,15 @@ export async function resetPassword(
     // Log the error server-side for debugging, but don't expose it
     logger.warn("Password reset request failed", { context: "auth/resetPassword", error });
   }
+
+  // Log password reset request for security audit
+  logAuthEvent({
+    supabase,
+    action: "password_reset.requested",
+    actor: email.trim().toLowerCase(),
+    description: `Password reset requested from IP ${clientIp}`,
+    ipAddress: clientIp,
+  }).catch(() => {});
 
   return { error: null };
 }
