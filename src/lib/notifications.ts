@@ -454,13 +454,21 @@ export async function dispatchNotification(
             break;
           }
 
-          const { sendTextMessage } = await import("./whatsapp");
-          const waResult = await sendTextMessage(recipientPhone, body);
+          // Enqueue for reliable delivery with retry instead of fire-and-forget
+          const { enqueueNotification } = await import("./notification-queue");
+          const queueId = await enqueueNotification({
+            clinicId: variables.clinic_id ?? "",
+            channel: "whatsapp",
+            recipient: recipientPhone,
+            body,
+            trigger,
+            metadata: { recipient_id: recipientId },
+          });
           results.push({
             channel: "whatsapp",
-            success: waResult.success,
-            messageId: waResult.messageId,
-            error: waResult.error,
+            success: !!queueId,
+            messageId: queueId ?? undefined,
+            error: queueId ? undefined : "Failed to enqueue notification",
           });
           break;
         }
@@ -523,13 +531,21 @@ export async function dispatchNotification(
             break;
           }
 
-          const { sendSms } = await import("./sms");
-          const smsResult = await sendSms(recipientPhone, body);
+          // Enqueue for reliable delivery with retry instead of fire-and-forget
+          const { enqueueNotification: enqueueSms } = await import("./notification-queue");
+          const smsQueueId = await enqueueSms({
+            clinicId: variables.clinic_id ?? "",
+            channel: "sms",
+            recipient: recipientPhone,
+            body,
+            trigger,
+            metadata: { recipient_id: recipientId },
+          });
           results.push({
             channel: "sms",
-            success: smsResult.success,
-            messageId: smsResult.messageId,
-            error: smsResult.error,
+            success: !!smsQueueId,
+            messageId: smsQueueId ?? undefined,
+            error: smsQueueId ? undefined : "Failed to enqueue SMS notification",
           });
           break;
         }

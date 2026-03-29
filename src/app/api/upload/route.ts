@@ -26,6 +26,8 @@ import {
   readR2ObjectHead,
   deleteFromR2,
 } from "@/lib/r2";
+import { encryptAndUpload } from "@/lib/r2-encrypted";
+import { requiresEncryption } from "@/lib/encryption";
 import { withAuth } from "@/lib/with-auth";
 import { logger } from "@/lib/logger";
 import { uploadConfirmSchema, safeParse } from "@/lib/validations";
@@ -111,7 +113,14 @@ export const POST = withAuth(async (request, { profile }) => {
     );
   }
 
-  const url = await uploadToR2(key, buffer, file.type);
+  // PHI compliance (Law 09-08): encrypt patient documents at rest
+  let url: string | null;
+  if (requiresEncryption(category)) {
+    url = await encryptAndUpload(key, buffer, file.type);
+  } else {
+    url = await uploadToR2(key, buffer, file.type);
+  }
+
   if (!url) {
     return NextResponse.json(
       { error: "Upload failed" },
@@ -119,7 +128,7 @@ export const POST = withAuth(async (request, { profile }) => {
     );
   }
 
-  return NextResponse.json({ url, key });
+  return NextResponse.json({ url, key, encrypted: requiresEncryption(category) });
 }, ["super_admin", "clinic_admin", "receptionist", "doctor"]);
 
 /**
