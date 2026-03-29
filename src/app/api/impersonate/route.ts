@@ -10,7 +10,7 @@ import { createClient } from "@/lib/supabase-server";
  * Allows a super_admin to impersonate a clinic by storing the target clinic_id
  * in a secure cookie. The admin dashboard will read this cookie to switch context.
  *
- * Body: { clinicId: string, clinicName: string }
+ * Body: { clinicId: string, clinicName: string, reason: string }
  *
  * DELETE /api/impersonate
  *
@@ -23,7 +23,7 @@ export const POST = withAuth(async (request, { supabase, user }) => {
     if (!parsed.success) {
       return NextResponse.json({ error: parsed.error }, { status: 400 });
     }
-    const { clinicId, clinicName, password } = parsed.data;
+    const { clinicId, clinicName, password, reason } = parsed.data;
 
     const reauthClient = await createClient();
     const { error: reauthError } = await reauthClient.auth.signInWithPassword({
@@ -53,7 +53,7 @@ export const POST = withAuth(async (request, { supabase, user }) => {
     try {
       await supabase.from("activity_logs").insert({
         action: "impersonate_start",
-        description: `Super admin started impersonating clinic: ${clinicName || clinic.name}`,
+        description: `Super admin started impersonating clinic: ${clinicName || clinic.name}. Reason: ${reason}`,
         clinic_id: clinicId,
         clinic_name: clinicName || clinic.name,
         actor: user.email || user.id,
@@ -70,12 +70,14 @@ export const POST = withAuth(async (request, { supabase, user }) => {
       clinicName: clinicName || clinic.name,
     });
 
+    const sessionMaxAge = 60 * 30; // 30 minutes — time-limited for safety
+
     response.cookies.set("sa_impersonate_clinic_id", clinicId, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "strict",
       path: "/",
-      maxAge: 60 * 60 * 4, // 4 hours
+      maxAge: sessionMaxAge,
     });
 
     response.cookies.set("sa_impersonate_clinic_name", encodeURIComponent(clinicName || clinic.name), {
@@ -83,7 +85,15 @@ export const POST = withAuth(async (request, { supabase, user }) => {
       secure: process.env.NODE_ENV === "production",
       sameSite: "strict",
       path: "/",
-      maxAge: 60 * 60 * 4,
+      maxAge: sessionMaxAge,
+    });
+
+    response.cookies.set("sa_impersonate_reason", encodeURIComponent(reason), {
+      httpOnly: false, // readable by banner component
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      path: "/",
+      maxAge: sessionMaxAge,
     });
 
     return response;
@@ -121,6 +131,14 @@ export const DELETE = withAuth(async (_request, { supabase, user }) => {
 
     response.cookies.set("sa_impersonate_clinic_name", "", {
       httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      path: "/",
+      maxAge: 0,
+    });
+
+    response.cookies.set("sa_impersonate_reason", "", {
+      httpOnly: false,
       secure: process.env.NODE_ENV === "production",
       sameSite: "strict",
       path: "/",

@@ -15,6 +15,8 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { logger } from "@/lib/logger";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
+import { useToast } from "@/components/ui/toast";
+import { CardSkeleton, TableSkeleton } from "@/components/ui/loading-skeleton";
 import {
   fetchBillingRecords,
   type BillingRecord,
@@ -23,6 +25,7 @@ import {
 type StatusFilter = "all" | "paid" | "pending" | "overdue" | "cancelled";
 
 export default function BillingPage() {
+  const { addToast } = useToast();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [detailRecord, setDetailRecord] = useState<BillingRecord | null>(null);
@@ -64,6 +67,7 @@ export default function BillingPage() {
   });
 
   function handleSendReminder() {
+    addToast(`Payment reminder sent to ${reminderRecord?.clinicName}`, "success");
     setReminderOpen(false);
     setReminderRecord(null);
   }
@@ -75,6 +79,7 @@ export default function BillingPage() {
       )
     );
     setDetailRecord(null);
+    addToast(`Invoice ${record.id} marked as paid`, "success");
   }
 
   const statusIcon = (status: string) => {
@@ -100,12 +105,13 @@ export default function BillingPage() {
       </div>
 
       {loading && (
-        <div className="flex items-center gap-2 mb-4 text-sm text-muted-foreground">
-          <Loader2 className="h-4 w-4 animate-spin" />
-          Loading billing data...
-        </div>
+        <>
+          <CardSkeleton count={4} className="mb-6" />
+          <TableSkeleton rows={6} columns={7} className="mt-4" />
+        </>
       )}
 
+      {!loading && <>
       {/* KPI Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
         <Card>
@@ -175,7 +181,7 @@ export default function BillingPage() {
           </CardTitle>
         </CardHeader>
         <CardContent className="p-0">
-          <div className="overflow-x-auto">
+          <div className="table-mobile-scroll">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b text-muted-foreground">
@@ -234,6 +240,7 @@ export default function BillingPage() {
           </div>
         </CardContent>
       </Card>
+      </>}
 
       {/* Invoice Detail Dialog */}
       <Dialog open={detailRecord !== null} onOpenChange={() => setDetailRecord(null)}>

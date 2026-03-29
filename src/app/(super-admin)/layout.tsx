@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   LayoutDashboard,
   Building2,
@@ -19,6 +19,8 @@ import {
   DollarSign,
   Receipt,
   UserPlus,
+  Search,
+  Plus,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -35,8 +37,10 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { SignOutButton } from "@/components/sign-out-button";
 import { LocaleSwitcher } from "@/components/locale-switcher";
 import { ImpersonationBanner } from "@/components/impersonation-banner";
+import { CommandPalette, type CommandPaletteItem } from "@/components/command-palette";
 import { createClient } from "@/lib/supabase-client";
 import { logger } from "@/lib/logger";
+import { fetchClinics } from "@/lib/super-admin-actions";
 
 const navItems = [
   { href: "/super-admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -88,9 +92,83 @@ export default function SuperAdminLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const router = useRouter();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [cmdOpen, setCmdOpen] = useState(false);
+  const [cmdItems, setCmdItems] = useState<CommandPaletteItem[]>([]);
   const mountedRef = useRef(true);
+
+  // Build command palette items
+  const buildCommandItems = useCallback(async () => {
+    const items: CommandPaletteItem[] = [];
+
+    // Navigation items
+    navItems.forEach((nav) => {
+      items.push({
+        id: `nav-${nav.href}`,
+        label: nav.label,
+        description: `Go to ${nav.label}`,
+        icon: <nav.icon className="h-4 w-4" />,
+        badge: "Navigate",
+        onSelect: () => router.push(nav.href),
+      });
+    });
+
+    // Quick actions
+    items.push({
+      id: "action-create-clinic",
+      label: "Create New Clinic",
+      description: "Start the clinic onboarding wizard",
+      icon: <Plus className="h-4 w-4" />,
+      badge: "Action",
+      onSelect: () => router.push("/super-admin/onboarding"),
+    });
+    items.push({
+      id: "action-create-announcement",
+      label: "Create Announcement",
+      description: "Publish a new announcement",
+      icon: <Megaphone className="h-4 w-4" />,
+      badge: "Action",
+      onSelect: () => router.push("/super-admin/announcements"),
+    });
+
+    // Fetch clinics for search
+    try {
+      const clinics = await fetchClinics();
+      clinics.forEach((c) => {
+        items.push({
+          id: `clinic-${c.id}`,
+          label: c.name,
+          description: `${c.type} clinic`,
+          icon: <Building2 className="h-4 w-4" />,
+          badge: "Clinic",
+          onSelect: () => router.push(`/super-admin/clinics`),
+        });
+      });
+    } catch {
+      // non-blocking — clinics just won't appear in search
+    }
+
+    setCmdItems(items);
+  }, [router]);
+
+  // Ctrl+K shortcut
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      if ((e.ctrlKey || e.metaKey) && e.key === "k") {
+        e.preventDefault();
+        setCmdOpen((prev) => !prev);
+      }
+    }
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, []);
+
+  // Load command items on mount
+  useEffect(() => {
+    buildCommandItems();
+  }, [buildCommandItems]);
 
   useEffect(() => {
     mountedRef.current = true;
@@ -191,6 +269,17 @@ export default function SuperAdminLayout({
             <Menu className="h-5 w-5" />
           </Button>
 
+          {/* Command Palette Trigger */}
+          <button
+            type="button"
+            onClick={() => setCmdOpen(true)}
+            className="hidden sm:flex items-center gap-2 rounded-md border bg-muted/50 px-3 py-1.5 text-sm text-muted-foreground hover:bg-muted transition-colors"
+          >
+            <Search className="h-3.5 w-3.5" />
+            <span>Search...</span>
+            <kbd className="ml-2 rounded border bg-background px-1.5 py-0.5 font-mono text-[10px]">Ctrl+K</kbd>
+          </button>
+
           <div className="flex-1" />
 
           {/* Language Switcher */}
@@ -274,6 +363,14 @@ export default function SuperAdminLayout({
         </SheetContent>
       </Sheet>
       </div>
+
+      {/* Command Palette */}
+      <CommandPalette
+        open={cmdOpen}
+        onClose={() => setCmdOpen(false)}
+        items={cmdItems}
+        placeholder="Search pages, clinics, or actions..."
+      />
     </div>
   );
 }

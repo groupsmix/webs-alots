@@ -173,6 +173,7 @@ export const impersonateSchema = z.object({
   clinicId: z.string().min(1),
   clinicName: z.string().max(200).optional(),
   password: z.string().min(1, "Password is required for impersonation"),
+  reason: z.string().min(3, "A reason is required for impersonation").max(500),
 });
 
 // ── Custom Fields ───────────────────────────────────────────────────────

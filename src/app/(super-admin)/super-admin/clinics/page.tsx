@@ -60,7 +60,7 @@ function ClinicsTableSkeleton() {
   return (
     <Card>
       <CardContent className="p-0">
-        <div className="overflow-x-auto">
+        <div className="table-mobile-scroll">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b text-muted-foreground">
@@ -114,6 +114,8 @@ export default function AllClinicsPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [confirmName, setConfirmName] = useState("");
+  const [impersonateReason, setImpersonateReason] = useState("");
+  const [impersonatePassword, setImpersonatePassword] = useState("");
 
   const loadClinics = useCallback(async () => {
     try {
@@ -268,7 +270,7 @@ export default function AllClinicsPage() {
       ) : (
       <Card>
         <CardContent className="p-0">
-          <div className="overflow-x-auto">
+          <div className="table-mobile-scroll">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b text-muted-foreground">
@@ -405,36 +407,56 @@ export default function AllClinicsPage() {
       </Dialog>
 
       {/* Login As Dialog */}
-      <Dialog open={loginOpen} onOpenChange={setLoginOpen}>
+      <Dialog open={loginOpen} onOpenChange={(open) => { setLoginOpen(open); if (!open) { setImpersonateReason(""); setImpersonatePassword(""); } }}>
         {loginClinic && (
-          <DialogContent onClose={() => setLoginOpen(false)}>
+          <DialogContent onClose={() => { setLoginOpen(false); setImpersonateReason(""); setImpersonatePassword(""); }}>
             <DialogHeader>
               <DialogTitle>Login as Client</DialogTitle>
-              <DialogDescription>You are about to impersonate <strong>{loginClinic.name}</strong>. This will be logged for security purposes.</DialogDescription>
+              <DialogDescription>You are about to impersonate <strong>{loginClinic.name}</strong>. This will be logged for security purposes. Session expires after 30 minutes.</DialogDescription>
             </DialogHeader>
             <div className="rounded-lg border p-4 bg-muted/50">
               <p className="text-sm font-medium">{loginClinic.name}</p>
               <p className="text-xs text-muted-foreground">Owner: {loginClinic.ownerName} &middot; {loginClinic.city}</p>
             </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Reason for impersonation <span className="text-red-500">*</span></label>
+              <Input
+                placeholder="e.g. Investigating billing issue reported by clinic"
+                value={impersonateReason}
+                onChange={(e) => setImpersonateReason(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Re-enter your password <span className="text-red-500">*</span></label>
+              <Input
+                type="password"
+                placeholder="Your admin password"
+                value={impersonatePassword}
+                onChange={(e) => setImpersonatePassword(e.target.value)}
+              />
+            </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setLoginOpen(false)}>Cancel</Button>
-              <Button disabled={actionLoading} onClick={async () => {
+              <Button variant="outline" onClick={() => { setLoginOpen(false); setImpersonateReason(""); setImpersonatePassword(""); }}>Cancel</Button>
+              <Button disabled={actionLoading || impersonateReason.length < 3 || !impersonatePassword} onClick={async () => {
                 setActionLoading(true);
                 try {
                   const res = await fetch("/api/impersonate", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ clinicId: loginClinic.id, clinicName: loginClinic.name }),
+                    body: JSON.stringify({ clinicId: loginClinic.id, clinicName: loginClinic.name, reason: impersonateReason, password: impersonatePassword }),
                   });
                   if (res.ok) {
                     setLoginOpen(false);
+                    setImpersonateReason("");
+                    setImpersonatePassword("");
                     router.push("/admin/dashboard");
                   } else {
                     const data = await res.json();
-                    void data.error;
+                    addToast(data.error || "Impersonation failed", "error");
                   }
                 } catch (err) {
                   logger.warn("Operation failed", { context: "page", error: err });
+                  addToast("Failed to start impersonation", "error");
                 } finally {
                   setActionLoading(false);
                 }
