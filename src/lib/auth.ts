@@ -11,6 +11,7 @@ import {
 } from "@/lib/rate-limit";
 import { logger } from "@/lib/logger";
 import { logAuthEvent } from "@/lib/audit-log";
+import { t } from "@/lib/i18n";
 
 /**
  * Phone auth feature flag.
@@ -84,13 +85,13 @@ export async function signInWithPassword(
   // Per-IP rate limit: 5 attempts per 60 seconds
   const ipAllowed = await loginLimiter.check(`login:ip:${clientIp}`);
   if (!ipAllowed) {
-    return { error: "Trop de tentatives de connexion. Veuillez r\u00e9essayer dans quelques minutes." };
+    return { error: t("fr", "auth.rateLimitLogin") };
   }
 
   // Per-account lockout: 10 failed attempts per 15 minutes
   const accountAllowed = await accountLockoutLimiter.check(`login:account:${normalizedEmail}`);
   if (!accountAllowed) {
-    return { error: "Ce compte est temporairement verrouill\u00e9 suite \u00e0 de nombreuses tentatives \u00e9chou\u00e9es. Veuillez r\u00e9essayer plus tard." };
+    return { error: t("fr", "auth.accountLocked") };
   }
 
   const supabase = await createClient();
@@ -150,7 +151,7 @@ export async function signInWithOTP(phone: string): Promise<{ error: string | nu
   // Per-phone rate limit: 3 OTP sends per 60 seconds (prevents SMS pumping)
   const phoneAllowed = await otpSendLimiter.check(`otp:phone:${phone}`);
   if (!phoneAllowed) {
-    return { error: "Trop de demandes de code. Veuillez r\u00e9essayer dans quelques minutes." };
+    return { error: t("fr", "auth.rateLimitOtp") };
   }
 
   const supabase = await createClient();
@@ -226,7 +227,7 @@ export async function registerPatient(data: {
   // Rate limit OTP sends per phone number to prevent SMS pumping
   const phoneAllowed = await otpSendLimiter.check(`otp:phone:${data.phone}`);
   if (!phoneAllowed) {
-    return { error: "Trop de demandes de code. Veuillez r\u00e9essayer dans quelques minutes." };
+    return { error: t("fr", "auth.rateLimitOtp") };
   }
 
   const { error } = await supabase.auth.signInWithOtp({
@@ -274,7 +275,7 @@ export async function resetPassword(
   // Rate limit: 3 password reset requests per 60 seconds per IP
   const allowed = await passwordResetLimiter.check(`reset:ip:${clientIp}`);
   if (!allowed) {
-    return { error: "Trop de demandes. Veuillez r\u00e9essayer dans quelques minutes." };
+    return { error: t("fr", "auth.rateLimitGeneric") };
   }
 
   const supabase = await createClient();

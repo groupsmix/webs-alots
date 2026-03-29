@@ -1,0 +1,58 @@
+# Docker Compose for local Oltigo development
+# Usage: docker compose up -d
+#
+# This starts a local Supabase stack (Postgres + Auth + Storage + REST API)
+# so you can develop without needing a remote Supabase project.
+#
+# After starting, update your .env.local:
+#   NEXT_PUBLIC_SUPABASE_URL=http://localhost:54321
+#   NEXT_PUBLIC_SUPABASE_ANON_KEY=<anon key from supabase status>
+#   SUPABASE_SERVICE_ROLE_KEY=<service_role key from supabase status>
+
+version: "3.8"
+
+services:
+  # ---------- Supabase Postgres ----------
+  db:
+    image: supabase/postgres:15.8.1.145
+    ports:
+      - "54322:5432"
+    environment:
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: postgres
+    volumes:
+      - supabase-db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # ---------- Supabase Studio (optional) ----------
+  studio:
+    image: supabase/studio:20240101
+    ports:
+      - "54323:3000"
+    environment:
+      STUDIO_PG_META_URL: http://meta:8080
+      SUPABASE_URL: http://kong:8000
+      SUPABASE_REST_URL: http://kong:8000/rest/v1/
+    depends_on:
+      - db
+
+  # ---------- MinIO (S3-compatible, replaces R2 locally) ----------
+  minio:
+    image: minio/minio:latest
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    command: server /data --console-address ":9001"
+    volumes:
+      - minio-data:/data
+
+volumes:
+  supabase-db:
+  minio-data:
