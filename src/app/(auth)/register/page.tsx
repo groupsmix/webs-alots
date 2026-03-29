@@ -118,6 +118,14 @@ export default function RegisterPage() {
               {t(locale, "register.unavailableDesc")}
             </CardDescription>
           </CardHeader>
+          <CardContent className="flex flex-col gap-3">
+            <Link
+              href="/contact"
+              className="inline-flex items-center justify-center rounded-lg bg-primary text-primary-foreground px-4 py-2.5 text-sm font-medium hover:bg-primary/90 transition-colors w-full"
+            >
+              {t(locale, "nav.contact")}
+            </Link>
+          </CardContent>
           <CardFooter className="justify-center border-t pt-4">
             <p className="text-sm text-muted-foreground">
               {t(locale, "auth.hasAccount")}{" "}

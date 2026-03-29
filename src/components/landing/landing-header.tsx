@@ -1,22 +1,49 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
-import { Menu, X } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Menu, X, Moon, Sun } from "lucide-react";
 import { LocaleSwitcher } from "@/components/locale-switcher";
+import { useTheme } from "@/components/theme-provider";
 import { useLandingLocale } from "./landing-locale-provider";
 import type { TranslationKey } from "@/lib/i18n";
 
-const navLinks: readonly { key: TranslationKey; href: string }[] = [
-  { key: "landing.navFeatures", href: "/#fonctionnalites" },
-  { key: "landing.navHow", href: "/#comment-ca-marche" },
-  { key: "landing.navDemo", href: "/#demo" },
+const navLinks: readonly { key: TranslationKey; href: string; sectionId?: string }[] = [
+  { key: "landing.navFeatures", href: "/#fonctionnalites", sectionId: "fonctionnalites" },
+  { key: "landing.navHow", href: "/#comment-ca-marche", sectionId: "comment-ca-marche" },
+  { key: "landing.navDemo", href: "/#demo", sectionId: "demo" },
   { key: "landing.navPricing", href: "/pricing" },
 ];
 
 export function LandingHeader() {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [activeSection, setActiveSection] = useState("");
   const { t } = useLandingLocale();
+  const { theme, setTheme } = useTheme();
+
+  useEffect(() => {
+    const sectionIds = navLinks
+      .map((link) => link.sectionId)
+      .filter((id): id is string => !!id);
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) {
+            setActiveSection(entry.target.id);
+          }
+        }
+      },
+      { rootMargin: "-20% 0px -60% 0px", threshold: 0 },
+    );
+
+    for (const id of sectionIds) {
+      const el = document.getElementById(id);
+      if (el) observer.observe(el);
+    }
+
+    return () => observer.disconnect();
+  }, []);
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-gray-100 dark:border-gray-800 bg-white/80 dark:bg-gray-950/80 backdrop-blur-lg">
@@ -30,11 +57,15 @@ export function LandingHeader() {
 
         {/* Desktop nav */}
         <nav aria-label="Navigation principale" className="hidden items-center gap-8 md:flex">
-          {navLinks.map(({ key, href }) => (
+          {navLinks.map(({ key, href, sectionId }) => (
             <a
               key={href}
               href={href}
-              className="text-sm text-gray-600 dark:text-gray-400 transition-colors hover:text-gray-900 dark:hover:text-gray-50"
+              className={`text-sm transition-colors hover:text-gray-900 dark:hover:text-gray-50 ${
+                sectionId && activeSection === sectionId
+                  ? "text-blue-600 dark:text-blue-400 font-medium"
+                  : "text-gray-600 dark:text-gray-400"
+              }`}
             >
               {t(key)}
             </a>
@@ -42,6 +73,14 @@ export function LandingHeader() {
         </nav>
 
         <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+            className="hidden h-8 w-8 items-center justify-center rounded-lg text-gray-600 dark:text-gray-400 transition-colors hover:bg-gray-100 dark:hover:bg-gray-800 sm:inline-flex"
+            aria-label={theme === "dark" ? "Passer en mode clair" : "Passer en mode sombre"}
+          >
+            {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+          </button>
           <LocaleSwitcher className="hidden sm:block" />
           <Link
             href="/login"
@@ -100,8 +139,16 @@ export function LandingHeader() {
           >
             {t("nav.login")}
           </Link>
-          <div className="mt-2 px-3 sm:hidden">
+          <div className="mt-2 flex items-center gap-3 px-3 sm:hidden">
             <LocaleSwitcher />
+            <button
+              type="button"
+              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+              className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-gray-600 dark:text-gray-400 transition-colors hover:bg-gray-100 dark:hover:bg-gray-800"
+              aria-label={theme === "dark" ? "Passer en mode clair" : "Passer en mode sombre"}
+            >
+              {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+            </button>
           </div>
         </nav>
       )}

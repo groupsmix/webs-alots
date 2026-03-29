@@ -5,6 +5,8 @@ import { AlertTriangle, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { logger } from "@/lib/logger";
+import { t } from "@/lib/i18n";
+import { useLocale } from "@/components/locale-switcher";
 
 export default function SuperAdminError({
   error,
@@ -13,6 +15,8 @@ export default function SuperAdminError({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
+  const [locale] = useLocale();
+
   useEffect(() => {
     logger.warn("Operation failed", { context: "super-admin-error", error });
   }, [error]);
@@ -24,10 +28,9 @@ export default function SuperAdminError({
           <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-destructive/10">
             <AlertTriangle className="h-7 w-7 text-destructive" />
           </div>
-          <h2 className="mb-2 text-lg font-semibold">Une erreur est survenue</h2>
+          <h2 className="mb-2 text-lg font-semibold">{t(locale, "error.title")}</h2>
           <p className="mb-6 text-sm text-muted-foreground">
-            Une erreur s&apos;est produite dans le panneau d&apos;administration. Veuillez
-            réessayer ou contacter le support si le problème persiste.
+            {t(locale, "error.description")}
           </p>
           {error.digest && (
             <p className="mb-4 text-xs text-muted-foreground">
@@ -36,7 +39,7 @@ export default function SuperAdminError({
           )}
           <Button onClick={reset} size="lg">
             <RefreshCw className="mr-2 h-4 w-4" />
-            Réessayer
+            {t(locale, "error.retry")}
           </Button>
         </CardContent>
       </Card>

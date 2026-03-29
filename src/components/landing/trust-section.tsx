@@ -20,7 +20,7 @@ export function TrustSection() {
   const { t } = useLandingLocale();
 
   return (
-    <section className="border-y border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-900/50 py-16">
+    <section className="border-y border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-900/50 py-10">
       <div className="mx-auto max-w-6xl px-4 sm:px-6">
         <p className="mx-auto max-w-lg text-center text-sm font-medium leading-relaxed text-gray-500 dark:text-gray-400">
           {t("landing.trustText")}

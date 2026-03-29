@@ -87,9 +87,8 @@ function shouldUseKV(): boolean {
   const explicit = process.env.RATE_LIMIT_BACKEND;
   if (explicit === "kv") return true;
   if (explicit === "memory" || explicit === "supabase") return false;
-  // Auto-detect: KV available when RATE_LIMIT_BACKEND env is set to "kv"
-  // or when we're running in Cloudflare Workers with KV binding
-  return process.env.RATE_LIMIT_BACKEND === "kv";
+  // Auto-detect KV binding availability in Cloudflare Workers
+  return !!(globalThis as unknown as { RATE_LIMIT_KV?: unknown }).RATE_LIMIT_KV;
 }
 
 // ── Circuit breaker for Supabase rate limiter ──
