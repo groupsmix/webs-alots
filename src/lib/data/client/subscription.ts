@@ -72,7 +72,7 @@ export async function fetchClinicSubscription(clinicId: string): Promise<ClinicS
   // Fetch pricing tier details
   const { data: tierData } = await supabase
     .from("pricing_tiers")
-    .select("*")
+    .select("id, slug, name, description, features, limits, pricing")
     .eq("slug", tierSlug)
     .single();
 

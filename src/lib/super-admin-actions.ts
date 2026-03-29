@@ -21,6 +21,7 @@ import type {
   ClinicTier,
   Json,
 } from "@/lib/types/database";
+import { invalidateSubdomainCache, invalidateAllSubdomainCaches } from "@/lib/subdomain-cache";
 
 /**
  * Server-side Supabase client scoped to super_admin operations.
@@ -161,7 +162,7 @@ export async function fetchClinics(): Promise<ClinicRow[]> {
   const supabase = await rawClient();
   const { data, error } = await supabase
     .from("clinics")
-    .select("*")
+    .select("id, name, type, config, tier, status, subdomain, created_at")
     .order("created_at", { ascending: false });
 
   if (error) throw new Error(`Failed to fetch clinics: ${error.message}`);
@@ -174,10 +175,10 @@ export async function updateClinicStatus(
 ): Promise<void> {
   const supabase = await rawClient();
 
-  // Fetch clinic details for audit log and email notification
+  // Fetch clinic details for audit log, email notification, and cache invalidation
   const { data: clinic } = await supabase
     .from("clinics")
-    .select("id, name, owner_email, owner_name")
+    .select("id, name, subdomain, owner_email, owner_name")
     .eq("id", clinicId)
     .single();
 
@@ -188,6 +189,11 @@ export async function updateClinicStatus(
 
   if (error)
     throw new Error(`Failed to update clinic status: ${error.message}`);
+
+  // Invalidate subdomain cache so middleware picks up the new status
+  if (clinic?.subdomain) {
+    invalidateSubdomainCache(clinic.subdomain);
+  }
 
   // Audit log the status change
   try {
@@ -384,7 +390,7 @@ export async function fetchClinicUsers(clinicId: string): Promise<UserRow[]> {
   const supabase = await rawClient();
   const { data, error } = await supabase
     .from("users")
-    .select("*")
+    .select("id, auth_id, role, name, phone, email, clinic_id, created_at")
     .eq("clinic_id", clinicId)
     .order("created_at", { ascending: false });
 
@@ -416,7 +422,7 @@ export async function fetchClinicServices(clinicId: string): Promise<ServiceRow[
   const supabase = await rawClient();
   const { data, error } = await supabase
     .from("services")
-    .select("*")
+    .select("id, clinic_id, name, price, duration_minutes, category")
     .eq("clinic_id", clinicId);
 
   if (error) throw new Error(`Failed to fetch services: ${error.message}`);
@@ -619,7 +625,7 @@ export async function fetchAnnouncements(): Promise<Announcement[]> {
   const supabase = await rawClient();
   const { data, error } = await supabase
     .from("announcements")
-    .select("*")
+    .select("id, title, message, type, target, target_label, published_at, expires_at, is_active, created_by, created_at")
     .order("created_at", { ascending: false });
 
   if (error || !data) return [];
@@ -655,7 +661,7 @@ export async function fetchActivityLogs(): Promise<ActivityLog[]> {
   const supabase = await rawClient();
   const { data, error } = await supabase
     .from("activity_logs")
-    .select("*")
+    .select("id, action, description, clinic_id, clinic_name, created_at, actor, type")
     .order("created_at", { ascending: false })
     .limit(20);
 
@@ -689,7 +695,7 @@ export async function fetchFeatureDefinitions(): Promise<FeatureDefinition[]> {
   const supabase = await rawClient();
   const { data, error } = await supabase
     .from("feature_definitions")
-    .select("*")
+    .select("id, name, description, key, category, available_tiers, global_enabled")
     .order("name", { ascending: true });
 
   if (error || !data) return [];
@@ -730,7 +736,7 @@ export async function fetchPricingTiers(): Promise<PricingTierRow[]> {
   const supabase = await rawClient();
   const { data, error } = await supabase
     .from("pricing_tiers")
-    .select("*")
+    .select("id, slug, name, description, is_popular, pricing, features, limits, created_at")
     .order("created_at", { ascending: true });
 
   if (error || !data) return [];
@@ -767,7 +773,7 @@ export async function fetchFeatureToggles(): Promise<FeatureToggleRow[]> {
   const supabase = await rawClient();
   const { data, error } = await supabase
     .from("feature_toggles")
-    .select("*")
+    .select("id, key, label, description, category, system_types, tiers, enabled, created_at")
     .order("created_at", { ascending: true });
 
   if (error || !data) return [];

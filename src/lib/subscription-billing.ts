@@ -271,7 +271,7 @@ export async function processRenewal(
   // Fetch current subscription
   const { data: sub, error: fetchError } = await supabase
     .from("clinic_subscriptions")
-    .select("*")
+    .select("id, clinic_id, plan, status, billing_interval, current_period_start, current_period_end, cancel_at_period_end, stripe_customer_id, stripe_subscription_id, trial_end")
     .eq("clinic_id", clinicId)
     .single();
 

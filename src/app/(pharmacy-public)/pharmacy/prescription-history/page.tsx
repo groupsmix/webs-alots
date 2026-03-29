@@ -42,7 +42,7 @@ async function fetchPrescriptionsClient(clinicId: string): Promise<PharmacyPresc
 
   const { data: requests, error } = await supabase
     .from("prescription_requests")
-    .select("*")
+    .select("id, patient_id, status, image_url, created_at, notes, delivery_requested")
     .eq("clinic_id", clinicId)
     .order("created_at", { ascending: false });
 

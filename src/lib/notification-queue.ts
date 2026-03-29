@@ -149,7 +149,7 @@ export async function processNotificationQueue(): Promise<ProcessResult> {
     // Fetch pending items ready for processing
     const { data: items, error: fetchError } = await supabase
       .from("notification_queue")
-      .select("*")
+      .select("id, clinic_id, channel, recipient, body, trigger_type, status, attempts, max_attempts, next_retry_at, last_error, metadata, created_at, sent_at")
       .in("status", ["pending", "failed"])
       .lte("next_retry_at", new Date().toISOString())
       .order("next_retry_at", { ascending: true })

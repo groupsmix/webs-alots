@@ -12,6 +12,7 @@
 import { createClient } from "@/lib/supabase-server";
 import type { Database } from "@/lib/types/database";
 import { logger } from "@/lib/logger";
+import { invalidateAllSubdomainCaches } from "@/lib/subdomain-cache";
 import { getLocalDateStr } from "@/lib/utils";
 
 type TableName = keyof Database["public"]["Tables"];
@@ -191,6 +192,10 @@ export async function updateClinicBranding(
     logger.warn("Mutation failed", { context: "data/server", error });
     return false;
   }
+
+  // Invalidate subdomain cache so middleware picks up branding changes
+  invalidateAllSubdomainCaches();
+
   return true;
 }
 
@@ -323,7 +328,7 @@ export async function getTodayAppointments(clinicId: string, doctorId?: string):
 
   let q = supabase
     .from("appointments")
-    .select("*")
+    .select("id, clinic_id, patient_id, doctor_id, service_id, slot_start, slot_end, appointment_date, start_time, end_time, status, booking_source, is_first_visit, insurance_flag, notes, cancellation_reason, cancelled_at, source, is_walk_in, is_emergency, rescheduled_from, recurrence_group_id, recurrence_index, recurrence_pattern, updated_at, created_at")
     .eq("clinic_id", clinicId)
     .gte("slot_start", todayStart)
     .lte("slot_start", todayEnd)
@@ -491,7 +496,7 @@ export async function getPrescriptions(clinicId: string, doctorId?: string): Pro
   const supabase = await createClient();
   let q = supabase
     .from("prescriptions")
-    .select("*")
+    .select("id, clinic_id, appointment_id, doctor_id, patient_id, items, notes, pdf_url, created_at")
     .eq("clinic_id", clinicId)
     .order("created_at", { ascending: false })
     .limit(DEFAULT_QUERY_LIMIT);
@@ -926,7 +931,7 @@ export async function getSuperAdminStats(): Promise<SuperAdminStats> {
   const supabase = await createClient();
 
   const [clinicsRes, patientCountRes, appointmentCountRes, revenueRes] = await Promise.all([
-    supabase.from("clinics").select("*").order("created_at", { ascending: false }),
+    supabase.from("clinics").select("id, name, type, config, tier, status, subdomain, created_at").order("created_at", { ascending: false }),
     supabase.from("users").select("id", { count: "exact", head: true }).eq("role", "patient"),
     supabase.from("appointments").select("id", { count: "exact", head: true }),
     supabase.from("payments").select("amount").eq("status", "completed"),
