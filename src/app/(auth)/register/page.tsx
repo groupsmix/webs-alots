@@ -44,7 +44,7 @@ export default function RegisterPage() {
     setError(null);
 
     if (!PHONE_AUTH_ENABLED) {
-      setError("L'inscription par t\u00e9l\u00e9phone est temporairement d\u00e9sactiv\u00e9e. Veuillez r\u00e9essayer plus tard.");
+      setError(t("fr", "auth.phoneDisabled"));
       return;
     }
 

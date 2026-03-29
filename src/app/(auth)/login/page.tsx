@@ -58,7 +58,7 @@ export default function LoginPage() {
         setError(
           isRateLimitError
             ? result.error
-            : "Identifiants de connexion invalides.",
+            : t("fr", "auth.invalidCredentials"),
         );
         setLoading(false);
       }

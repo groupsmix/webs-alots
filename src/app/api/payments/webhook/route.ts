@@ -6,6 +6,8 @@ import { logger } from "@/lib/logger";
 import { assertClinicId } from "@/lib/assert-tenant";
 import { setTenantContext, logTenantContext } from "@/lib/tenant-context";
 import { apiError, apiSuccess, apiInternalError } from "@/lib/api-response";
+import { stripeWebhookEventSchema } from "@/lib/validations";
+import type { StripeWebhookEvent } from "@/lib/validations";
 
 /**
  * POST /api/payments/webhook
@@ -47,19 +49,21 @@ export async function POST(request: NextRequest) {
       return apiError("Invalid signature");
     }
 
-    const event = JSON.parse(rawBody) as {
-      type: string;
-      data: {
-        object: {
-          id: string;
-          metadata?: Record<string, string>;
-          amount_total?: number;
-          currency?: string;
-          payment_status?: string;
-          customer_email?: string;
-        };
-      };
-    };
+    let event: StripeWebhookEvent;
+    try {
+      const parsed = JSON.parse(rawBody);
+      const result = stripeWebhookEventSchema.safeParse(parsed);
+      if (!result.success) {
+        logger.warn("Stripe webhook event failed validation", {
+          context: "payments/webhook",
+          error: result.error.issues,
+        });
+        return apiError("Invalid webhook event payload");
+      }
+      event = result.data;
+    } catch {
+      return apiError("Invalid JSON in webhook body");
+    }
 
     const supabase = await createClient();
 

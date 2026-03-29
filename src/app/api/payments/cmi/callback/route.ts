@@ -5,6 +5,7 @@ import { APPOINTMENT_STATUS, PAYMENT_STATUS } from "@/lib/types/database";
 import { logger } from "@/lib/logger";
 import { setTenantContext, logTenantContext } from "@/lib/tenant-context";
 import { apiError, apiInternalError } from "@/lib/api-response";
+import { cmiCallbackFieldsSchema } from "@/lib/validations";
 
 /**
  * POST /api/payments/cmi/callback
@@ -21,6 +22,16 @@ export async function POST(request: NextRequest) {
     formData.forEach((value, key) => {
       params[key] = String(value);
     });
+
+    // Validate callback fields before HMAC verification
+    const fieldResult = cmiCallbackFieldsSchema.safeParse(params);
+    if (!fieldResult.success) {
+      logger.warn("CMI callback fields failed validation", {
+        context: "payments/cmi/callback",
+        error: fieldResult.error.issues,
+      });
+      return apiError("Invalid callback fields");
+    }
 
     const callbackData = await verifyCmiCallback(params);
 

@@ -111,6 +111,52 @@ export const paymentRefundSchema = z.object({
 
 // ── Payments ────────────────────────────────────────────────────────────
 
+/**
+ * Stripe webhook event schema — validates the parsed JSON body after
+ * signature verification for defense-in-depth on payment events.
+ */
+const stripeWebhookEventObjectSchema = z.object({
+  id: z.string().min(1),
+  metadata: z.record(z.string(), z.string()).optional(),
+  amount_total: z.number().optional(),
+  currency: z.string().optional(),
+  payment_status: z.string().optional(),
+  customer_email: z.string().optional(),
+});
+
+export const stripeWebhookEventSchema = z.object({
+  type: z.string().min(1),
+  data: z.object({
+    object: stripeWebhookEventObjectSchema,
+  }),
+});
+
+export type StripeWebhookEvent = z.infer<typeof stripeWebhookEventSchema>;
+
+/**
+ * CMI callback form data schema — validates the parsed form fields after
+ * HMAC signature verification for defense-in-depth on payment callbacks.
+ */
+export const cmiCallbackFieldsSchema = z.object({
+  oid: z.string().optional(),
+  OID: z.string().optional(),
+  amount: z.string().optional(),
+  AMOUNT: z.string().optional(),
+  ProcReturnCode: z.string().optional(),
+  procreturncode: z.string().optional(),
+  TransId: z.string().optional(),
+  transid: z.string().optional(),
+  AuthCode: z.string().optional(),
+  authcode: z.string().optional(),
+  HASH: z.string().optional(),
+  hash: z.string().optional(),
+}).passthrough().refine(
+  (data) => Boolean(data.HASH || data.hash),
+  { message: "Missing required HASH field" },
+);
+
+export type CmiCallbackFields = z.infer<typeof cmiCallbackFieldsSchema>;
+
 export const cmiPaymentSchema = z.object({
   amount: z.number().positive().finite(),
   description: z.string().max(500).optional(),
