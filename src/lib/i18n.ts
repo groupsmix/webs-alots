@@ -254,6 +254,12 @@ export const translations = {
     "auth.rateLimitGeneric": "Trop de demandes. Veuillez réessayer dans quelques minutes.",
     "auth.genericError": "Une erreur est survenue",
 
+    // Chatbot
+    "chatbot.error": "Désolé, une erreur est survenue. Veuillez réessayer.",
+
+    // Auth pages
+    "error.unexpected": "Une erreur inattendue s'est produite. Veuillez réessayer.",
+
     // Contact form
     "contact.title": "Envoyez-nous un message",
     "contact.name": "Nom complet",
@@ -525,6 +531,12 @@ export const translations = {
     "auth.rateLimitGeneric": "طلبات كثيرة. يرجى المحاولة بعد بضع دقائق.",
     "auth.genericError": "حدث خطأ",
 
+    // Chatbot
+    "chatbot.error": "عذراً، حدث خطأ. يرجى المحاولة مرة أخرى.",
+
+    // Auth pages
+    "error.unexpected": "حدث خطأ غير متوقع. يرجى المحاولة مرة أخرى.",
+
     // Contact form
     "contact.title": "أرسل لنا رسالة",
     "contact.name": "الاسم الكامل",
@@ -795,6 +807,12 @@ export const translations = {
     "auth.rateLimitOtp": "Too many code requests. Please try again in a few minutes.",
     "auth.rateLimitGeneric": "Too many requests. Please try again in a few minutes.",
     "auth.genericError": "An error occurred",
+
+    // Chatbot
+    "chatbot.error": "Sorry, an error occurred. Please try again.",
+
+    // Auth pages
+    "error.unexpected": "An unexpected error occurred. Please try again.",
 
     // Contact form
     "contact.title": "Send us a message",

@@ -16,6 +16,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { registerPatient, verifyOTP } from "@/lib/auth";
 import { logger } from "@/lib/logger";
+import { t } from "@/lib/i18n";
 import {
   Select,
   SelectTrigger,
@@ -69,7 +70,7 @@ export default function RegisterPage() {
       setLoading(false);
     } catch (err) {
       logger.warn("Registration failed", { context: "register", error: err });
-      setError("Une erreur inattendue s'est produite. Veuillez réessayer.");
+      setError(t("fr", "error.unexpected"));
       setLoading(false);
     }
   }
@@ -87,7 +88,7 @@ export default function RegisterPage() {
       }
     } catch (err) {
       logger.warn("OTP verification failed", { context: "register", error: err });
-      setError("Une erreur inattendue s'est produite. Veuillez réessayer.");
+      setError(t("fr", "error.unexpected"));
       setLoading(false);
     }
   }

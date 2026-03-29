@@ -15,6 +15,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { resetPassword } from "@/lib/auth";
+import { t } from "@/lib/i18n";
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
@@ -46,7 +47,7 @@ export default function ForgotPasswordPage() {
       setSent(true);
       setLoading(false);
     } catch {
-      setError("Une erreur inattendue s'est produite. Veuillez réessayer.");
+      setError(t("fr", "error.unexpected"));
       setLoading(false);
     }
   }
