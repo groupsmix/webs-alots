@@ -20,7 +20,7 @@ const eslintConfig = defineConfig([
     },
     rules: {
       "react-hooks/set-state-in-effect": "warn",
-      "react-hooks/rules-of-hooks": "warn",
+      "react-hooks/rules-of-hooks": "error",
       "react-hooks/preserve-manual-memoization": "warn",
       "@typescript-eslint/no-require-imports": "warn",
       "@typescript-eslint/no-unused-vars": ["warn", {

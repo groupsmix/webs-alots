@@ -5,40 +5,9 @@ const withAnalyzer = withBundleAnalyzer({
   enabled: process.env.ANALYZE === "true",
 });
 
-const securityHeaders = [
-  {
-    // Prevent the page from being embedded in iframes (clickjacking protection)
-    key: "X-Frame-Options",
-    value: "DENY",
-  },
-  {
-    // Prevent MIME-type sniffing
-    key: "X-Content-Type-Options",
-    value: "nosniff",
-  },
-  {
-    // Control referrer information sent with requests
-    key: "Referrer-Policy",
-    value: "strict-origin-when-cross-origin",
-  },
-  {
-    // Restrict browser features the app can use
-    key: "Permissions-Policy",
-    value: "camera=(), microphone=(), geolocation=(self), payment=(self)",
-  },
-  {
-    // Enforce HTTPS
-    key: "Strict-Transport-Security",
-    value: "max-age=63072000; includeSubDomains; preload",
-  },
-  {
-    // Control DNS prefetching for performance
-    key: "X-DNS-Prefetch-Control",
-    value: "on",
-  },
-  // Content Security Policy is set dynamically in middleware.ts
-  // with a per-request nonce for script-src (instead of 'unsafe-inline').
-];
+// Security headers (X-Frame-Options, HSTS, X-Content-Type-Options, CSP, etc.)
+// are applied exclusively in middleware.ts to avoid duplication and ensure
+// consistency. See @/lib/middleware/security-headers for the implementation.
 
 const nextConfig: NextConfig = {
   // Enable static generation for better performance
@@ -46,21 +15,6 @@ const nextConfig: NextConfig = {
 
   async headers() {
     return [
-      {
-        // Apply security headers to all routes
-        source: "/(.*)",
-        headers: securityHeaders,
-      },
-      {
-        // Report CSP violations for monitoring (doesn't block, just reports)
-        source: "/(.*)",
-        headers: [
-          {
-            key: "Content-Security-Policy-Report-Only",
-            value: "default-src 'self'; report-uri https://oltigo.com/api/csp-report",
-          },
-        ],
-      },
       {
         // Cache static assets for 1 year
         source: "/:path*.(ico|png|jpg|jpeg|svg|webp|avif|woff|woff2|ttf|eot)",
