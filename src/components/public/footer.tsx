@@ -11,17 +11,17 @@ export function PublicFooter({ clinicName }: PublicFooterProps) {
   const displayName = clinicName || clinicConfig.name || "Oltigo";
 
   return (
-    <footer className="border-t bg-muted/50 py-8">
+    <footer className="border-t bg-muted/50 py-8" role="contentinfo" aria-label="Pied de page">
       <div className="container mx-auto px-4">
         <div className="grid gap-8 md:grid-cols-3">
           <div>
-            <h3 className="font-semibold mb-2">{displayName}</h3>
+            <h2 className="text-base font-semibold mb-2">{displayName}</h2>
             <p className="text-sm text-muted-foreground">{contact.address}</p>
           </div>
 
           <div>
-            <h3 className="font-semibold mb-2">Liens rapides</h3>
-            <nav className="flex flex-col gap-1">
+            <h2 className="text-base font-semibold mb-2">Liens rapides</h2>
+            <nav aria-label="Liens rapides" className="flex flex-col gap-1">
               <Link
                 href="/services"
                 className="text-sm text-muted-foreground hover:text-foreground"
@@ -56,7 +56,7 @@ export function PublicFooter({ clinicName }: PublicFooterProps) {
           </div>
 
           <div>
-            <h3 className="font-semibold mb-2">Contact</h3>
+            <h2 className="text-base font-semibold mb-2">Contact</h2>
             <p className="text-sm text-muted-foreground">{contact.phone}</p>
             <p className="text-sm text-muted-foreground">{contact.email}</p>
           </div>

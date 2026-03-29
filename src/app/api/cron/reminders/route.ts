@@ -5,6 +5,8 @@ import { APPOINTMENT_STATUS } from "@/lib/types/database";
 import { verifyCronSecret } from "@/lib/cron-auth";
 import { logger } from "@/lib/logger";
 import { assertClinicId } from "@/lib/assert-tenant";
+import { sendInteractiveMessage } from "@/lib/whatsapp";
+import { substituteVariables, defaultNotificationTemplates } from "@/lib/notifications";
 
 /**
  * GET /api/cron/reminders
@@ -15,7 +17,7 @@ import { assertClinicId } from "@/lib/assert-tenant";
  *
  * Sends two types of reminders:
  * - reminder_24h: For appointments happening in the next 24 hours
- * - reminder_2h: For appointments happening in the next 2 hours
+ * - reminder_1h: For appointments happening in the next 1 hour
  *
  * Protected by CRON_SECRET via Authorization: Bearer header.
  */
@@ -161,10 +163,10 @@ export async function GET(request: NextRequest) {
       // Determine which reminder to send
       const hoursUntil = (apptDatetime.getTime() - now.getTime()) / (1000 * 60 * 60);
 
-      let trigger: "reminder_24h" | "reminder_2h" | null = null;
+      let trigger: "reminder_24h" | "reminder_1h" | null = null;
 
-      if (hoursUntil > 1.5 && hoursUntil <= 2.5) {
-        trigger = "reminder_2h";
+      if (hoursUntil > 0.5 && hoursUntil <= 1.5) {
+        trigger = "reminder_1h";
       } else if (hoursUntil > 22 && hoursUntil <= 25) {
         trigger = "reminder_24h";
       }
@@ -175,7 +177,6 @@ export async function GET(request: NextRequest) {
       // as the lower bound for 2h reminders above; twentyFourHoursFromNow
       // caps the query window).
       if (apptDatetime.getTime() > twentyFourHoursFromNow.getTime()) continue;
-      if (apptDatetime.getTime() < twoHoursFromNow.getTime() && trigger === "reminder_2h") continue;
 
       // Type-safe access to joined data
       const patientRaw = appt.patients;
@@ -201,23 +202,48 @@ export async function GET(request: NextRequest) {
       const clinic = Array.isArray(clinicRaw) ? clinicRaw[0] : clinicRaw;
       const clinicName = clinic?.name ?? "Clinic";
 
+      const templateVars = {
+        patient_name: patient.name,
+        doctor_name: doctor?.name ?? "Doctor",
+        clinic_name: clinicName,
+        date: displayDate,
+        time: displayTime,
+        service_name: service?.name ?? "Appointment",
+        clinic_address: "",
+      };
+
       dispatchQueue.push({
         apptId: appt.id,
         trigger,
-        fn: () =>
-          dispatchNotification(
+        fn: async () => {
+          // Send interactive WhatsApp message with CONFIRM/CANCEL quick replies
+          if (patient.phone) {
+            const tpl = defaultNotificationTemplates.find(
+              (t) => t.trigger === trigger && t.enabled && t.channels.includes("whatsapp"),
+            );
+            const body = tpl
+              ? substituteVariables(tpl.whatsappBody, templateVars)
+              : `Reminder: Your appointment is ${trigger === "reminder_24h" ? "tomorrow" : "in 1 hour"} at ${displayTime}. ${clinicName}`;
+
+            await sendInteractiveMessage({
+              to: patient.phone,
+              body,
+              buttons: [
+                { id: "CONFIRM", title: "Confirm" },
+                { id: "CANCEL", title: "Cancel" },
+              ],
+              footer: clinicName,
+            });
+          }
+
+          // Also dispatch in-app + SMS notifications
+          return dispatchNotification(
             trigger,
-            {
-              patient_name: patient.name,
-              doctor_name: doctor?.name ?? "Doctor",
-              clinic_name: clinicName,
-              date: displayDate,
-              time: displayTime,
-              service_name: service?.name ?? "Appointment",
-            },
+            templateVars,
             patient.id,
-            ["whatsapp", "sms", "in_app"],
-          ),
+            ["sms", "in_app"],
+          );
+        },
         patient,
         clinicId: (appt.clinic_id as string) ?? "",
       });

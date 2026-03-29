@@ -9,6 +9,7 @@
  */
 
 import { useState, useEffect } from "react";
+import { logger } from "@/lib/logger";
 import { AlertTriangle, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -20,11 +21,14 @@ function getCookie(name: string): string | null {
 
 export function ImpersonationBanner() {
   const [clinicName, setClinicName] = useState<string | null>(null);
+  const [reason, setReason] = useState<string | null>(null);
   const [ending, setEnding] = useState(false);
 
   useEffect(() => {
     const name = getCookie("sa_impersonate_clinic_name");
     if (name) setClinicName(name);
+    const r = getCookie("sa_impersonate_reason");
+    if (r) setReason(r);
   }, []);
 
   if (!clinicName) return null;
@@ -34,7 +38,8 @@ export function ImpersonationBanner() {
     try {
       await fetch("/api/impersonate", { method: "DELETE" });
       window.location.href = "/super-admin/clinics";
-    } catch {
+    } catch (err) {
+      logger.warn("Failed to end impersonation session", { context: "impersonation-banner", error: err });
       setEnding(false);
     }
   }
@@ -44,6 +49,7 @@ export function ImpersonationBanner() {
       <AlertTriangle className="h-4 w-4 shrink-0" />
       <span>
         You are viewing as <strong>{clinicName}</strong> — impersonation session active
+        {reason && <span className="ml-1 text-amber-800">(Reason: {reason})</span>}
       </span>
       <Button
         variant="outline"

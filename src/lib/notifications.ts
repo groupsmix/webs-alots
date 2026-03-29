@@ -11,6 +11,7 @@ export type NotificationTrigger =
   | "new_booking"
   | "booking_confirmation"
   | "reminder_24h"
+  | "reminder_1h"
   | "reminder_2h"
   | "cancellation"
   | "no_show"
@@ -42,6 +43,7 @@ export interface TemplateVariables {
   amount?: string;
   currency?: string;
   booking_url?: string;
+  manage_url?: string;
   cancellation_reason?: string;
   prescription_id?: string;
   review_stars?: string;
@@ -173,7 +175,7 @@ export const defaultNotificationTemplates: NotificationTemplate[] = [
     channels: ["whatsapp", "in_app"],
     subject: "Appointment Confirmed",
     body: "Your appointment with {{doctor_name}} is confirmed for {{date}} at {{time}}. Service: {{service_name}}. {{clinic_name}}",
-    whatsappBody: "Hello {{patient_name}}, your appointment with {{doctor_name}} is confirmed for {{date}} at {{time}}. Reply CANCEL to cancel. {{clinic_name}}",
+    whatsappBody: "Hello {{patient_name}}, your appointment with Dr. {{doctor_name}} is confirmed.\n\nDate: {{date}}\nTime: {{time}}\nService: {{service_name}}\nAddress: {{clinic_address}}\n\nManage/cancel: {{manage_url}}\n\n{{clinic_name}}",
     enabled: true,
     priority: "high",
     recipientRoles: ["patient"],
@@ -189,6 +191,19 @@ export const defaultNotificationTemplates: NotificationTemplate[] = [
     whatsappBody: "Reminder: You have an appointment with {{doctor_name}} tomorrow at {{time}}. {{clinic_name}} — {{clinic_address}}. Reply CONFIRM to confirm or CANCEL to cancel.",
     enabled: true,
     priority: "high",
+    recipientRoles: ["patient"],
+  },
+  {
+    id: "tpl_reminder_1h",
+    trigger: "reminder_1h",
+    name: "reminder_1h",
+    label: "1-Hour Reminder",
+    channels: ["whatsapp", "in_app"],
+    subject: "Appointment in 1 Hour",
+    body: "Your appointment with {{doctor_name}} is in 1 hour at {{time}}. Please arrive 10 minutes early. {{clinic_name}}",
+    whatsappBody: "Your appointment with {{doctor_name}} is in 1 hour at {{time}}. Please arrive 10 minutes early. {{clinic_name}} — {{clinic_address}}",
+    enabled: true,
+    priority: "urgent",
     recipientRoles: ["patient"],
   },
   {
@@ -317,6 +332,11 @@ export const triggerMetadata: Record<
     label: "24-Hour Reminder",
     description: "24 hours before the appointment",
     icon: "Clock",
+  },
+  reminder_1h: {
+    label: "1-Hour Reminder",
+    description: "1 hour before the appointment",
+    icon: "AlarmClock",
   },
   reminder_2h: {
     label: "2-Hour Reminder",

@@ -29,6 +29,7 @@ async function verifyWebhookSignature(
 
 /**
  * Extracts the message text and sender phone from a WhatsApp webhook payload.
+ * Supports both regular text messages and interactive button replies.
  */
 function extractMessageInfo(entry: Record<string, unknown>): { text: string; senderPhone: string } | null {
   const changes = entry.changes as Array<Record<string, unknown>> | undefined;
@@ -39,14 +40,65 @@ function extractMessageInfo(entry: Record<string, unknown>): { text: string; sen
     const messages = value.messages as Array<Record<string, unknown>> | undefined;
     if (!messages) continue;
     for (const msg of messages) {
-      const text = msg.text as Record<string, unknown> | undefined;
       const from = msg.from as string | undefined;
-      if (text && typeof text.body === "string" && from) {
+      if (!from) continue;
+
+      // Handle interactive button replies (quick replies from reminders)
+      const interactive = msg.interactive as Record<string, unknown> | undefined;
+      if (interactive?.type === "button_reply") {
+        const buttonReply = interactive.button_reply as Record<string, unknown> | undefined;
+        if (buttonReply && typeof buttonReply.id === "string") {
+          return { text: buttonReply.id, senderPhone: from };
+        }
+      }
+
+      // Handle regular text messages
+      const text = msg.text as Record<string, unknown> | undefined;
+      if (text && typeof text.body === "string") {
         return { text: text.body, senderPhone: from };
       }
     }
   }
   return null;
+}
+
+/**
+ * Extracts delivery/read status updates from a WhatsApp webhook payload.
+ */
+function extractStatusUpdates(entry: Record<string, unknown>): Array<{
+  messageId: string;
+  status: string;
+  timestamp: string;
+  recipientPhone: string;
+  errors?: Array<{ code: number; title: string }>;
+}> {
+  const results: Array<{
+    messageId: string;
+    status: string;
+    timestamp: string;
+    recipientPhone: string;
+    errors?: Array<{ code: number; title: string }>;
+  }> = [];
+  const changes = entry.changes as Array<Record<string, unknown>> | undefined;
+  if (!changes) return results;
+  for (const change of changes) {
+    const value = change.value as Record<string, unknown> | undefined;
+    if (!value) continue;
+    const statuses = value.statuses as Array<Record<string, unknown>> | undefined;
+    if (!statuses) continue;
+    for (const status of statuses) {
+      if (typeof status.id === "string" && typeof status.status === "string") {
+        results.push({
+          messageId: status.id,
+          status: status.status,
+          timestamp: typeof status.timestamp === "string" ? status.timestamp : new Date().toISOString(),
+          recipientPhone: typeof status.recipient_id === "string" ? status.recipient_id : "",
+          errors: status.errors as Array<{ code: number; title: string }> | undefined,
+        });
+      }
+    }
+  }
+  return results;
 }
 
 /**
@@ -78,6 +130,38 @@ export async function POST(request: NextRequest) {
     const supabase = await createClient();
 
     for (const entry of entries) {
+      // ── Process delivery/read status updates ──────────────────────
+      const statusUpdates = extractStatusUpdates(entry);
+      if (statusUpdates.length > 0) {
+        for (const statusUpdate of statusUpdates) {
+          try {
+            const updateData: Record<string, string> = {
+              status: statusUpdate.status,
+            };
+            if (statusUpdate.status === "delivered") {
+              updateData.delivered_at = new Date(
+                parseInt(statusUpdate.timestamp) * 1000 || Date.now(),
+              ).toISOString();
+            } else if (statusUpdate.status === "read") {
+              updateData.read_at = new Date(
+                parseInt(statusUpdate.timestamp) * 1000 || Date.now(),
+              ).toISOString();
+            }
+
+            await supabase
+              .from("notification_log")
+              .update(updateData)
+              .eq("message_id", statusUpdate.messageId);
+          } catch (err) {
+            logger.warn("Failed to update message status", {
+              context: "webhooks/status",
+              messageId: statusUpdate.messageId,
+              error: err,
+            });
+          }
+        }
+      }
+
       const msgInfo = extractMessageInfo(entry);
       if (!msgInfo) continue;
 
@@ -167,6 +251,13 @@ export async function POST(request: NextRequest) {
             .update({ status: "cancelled", cancellation_reason: "Cancelled via WhatsApp" })
             .eq("id", appt.id)
             .eq("clinic_id", clinicId);
+        } else if (upperText === "RESCHEDULE" && appt) {
+          // Mark appointment as needing reschedule — staff will follow up
+          await supabase
+            .from("appointments")
+            .update({ status: "reschedule_requested" })
+            .eq("id", appt.id)
+            .eq("clinic_id", clinicId);
         }
 
         // Notify the relevant staff member (doctor assigned to the appointment)
@@ -187,6 +278,13 @@ export async function POST(request: NextRequest) {
           await dispatchNotification(
             "cancellation",
             { patient_name: patientName, clinic_name: clinicName } as TemplateVariables,
+            recipientId,
+            ["in_app"],
+          );
+        } else if (upperText === "RESCHEDULE") {
+          await dispatchNotification(
+            "cancellation",
+            { patient_name: patientName, clinic_name: clinicName, reschedule: "true" } as TemplateVariables,
             recipientId,
             ["in_app"],
           );

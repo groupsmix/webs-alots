@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Card, CardContent } from "@/components/ui/card";
 import { getPublicDoctors } from "@/lib/data/public";
@@ -18,10 +19,11 @@ export async function DoctorsSection() {
               <Card key={doctor.id}>
                 <CardContent className="pt-6 text-center">
                   {doctor.avatar ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
+                    <Image
                       src={doctor.avatar}
                       alt={doctor.name}
+                      width={96}
+                      height={96}
                       className="rounded-full h-24 w-24 object-cover mx-auto mb-4"
                     />
                   ) : (

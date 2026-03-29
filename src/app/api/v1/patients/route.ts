@@ -39,7 +39,7 @@ export async function GET(request: NextRequest) {
 
   let query = supabase
     .from("users")
-    .select("id, full_name, email, phone, date_of_birth, gender, insurance_type, created_at", { count: "exact" })
+    .select("id, full_name, email, phone, created_at", { count: "exact" })
     .eq("clinic_id", auth.clinicId)
     .eq("role", "patient")
     .order("created_at", { ascending: false })

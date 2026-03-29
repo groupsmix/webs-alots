@@ -1,9 +1,20 @@
+import * as Sentry from "@sentry/nextjs";
+
 /**
  * Next.js Instrumentation — runs once when the server starts.
  *
  * https://nextjs.org/docs/app/building-your-application/optimizing/instrumentation
  */
 export function register() {
+  // Initialize Sentry for server-side error monitoring.
+  // DSN is provided via NEXT_PUBLIC_SENTRY_DSN env var.
+  if (process.env.NEXT_PUBLIC_SENTRY_DSN) {
+    Sentry.init({
+      dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
+      tracesSampleRate: process.env.NODE_ENV === "production" ? 0.1 : 1.0,
+      enabled: !!process.env.NEXT_PUBLIC_SENTRY_DSN,
+    });
+  }
   // Validate all required environment variables at startup so missing
   // config is surfaced immediately rather than at runtime.
   // Dynamic import avoids pulling logger into the module graph before

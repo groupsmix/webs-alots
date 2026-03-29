@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useState } from "react";
 import {
   LayoutDashboard, Users, Calendar, Pill, FileEdit, Clock,
   MessageCircle, CalendarClock, BarChart3, ClipboardList,
@@ -11,7 +12,7 @@ import {
   Ruler, Syringe, Baby, Image, Eye,
 } from "lucide-react";
 import { SignOutButton } from "@/components/sign-out-button";
-import { useClinicFeatures } from "@/lib/hooks/use-clinic-features";
+import { useClinicFeatures, SPECIALTY_FEATURES } from "@/lib/hooks/use-clinic-features";
 import type { ClinicFeatureKey } from "@/lib/features";
 
 interface NavItem {
@@ -80,15 +81,57 @@ export default function DoctorLayout({
 }) {
   const pathname = usePathname();
   const { hasFeature } = useClinicFeatures();
+  const [selectedSpecialty, setSelectedSpecialty] = useState<string | null>(null);
 
-  const visibleItems = navItems.filter(
-    (item) => !item.requiredFeature || hasFeature(item.requiredFeature),
-  );
+  const visibleItems = navItems.filter((item) => {
+    // If a specialty is selected, filter by specialty
+    if (selectedSpecialty) {
+      const specialtyFeatures = SPECIALTY_FEATURES[selectedSpecialty.toLowerCase()];
+      if (specialtyFeatures && specialtyFeatures.length > 0) {
+        // If the feature is not in the specialty list, don't show it
+        if (item.requiredFeature && !specialtyFeatures.includes(item.requiredFeature)) {
+          return false;
+        }
+      }
+    }
+    // Also check clinic features config
+    return !item.requiredFeature || hasFeature(item.requiredFeature);
+  });
 
   return (
     <div className="flex min-h-screen">
       <aside className="hidden w-64 border-r bg-card p-4 md:block">
-        <h2 className="text-lg font-semibold mb-6">Doctor Dashboard</h2>
+        <h2 className="text-lg font-semibold mb-4">Doctor Dashboard</h2>
+        
+        {/* Specialty Filter */}
+        <div className="mb-4">
+          <label className="text-xs text-muted-foreground mb-1 block">
+            Filter by Specialty
+          </label>
+          <select
+            className="w-full text-sm border rounded-md p-2 bg-background"
+            value={selectedSpecialty ?? ""}
+            onChange={(e) => setSelectedSpecialty(e.target.value || null)}
+          >
+            <option value="">All Features</option>
+            <option value="gp">General Practitioner</option>
+            <option value="dentist">Dentist</option>
+            <option value="pediatrician">Pediatrician</option>
+            <option value="gynecologist">Gynecologist</option>
+            <option value="ophthalmologist">Ophthalmologist</option>
+            <option value="cardiologist">Cardiologist</option>
+            <option value="dermatologist">Dermatologist</option>
+            <option value="orthopedist">Orthopedist</option>
+            <option value="neurologist">Neurologist</option>
+            <option value="psychiatrist">Psychiatrist</option>
+            <option value="physiotherapist">Physiotherapist</option>
+            <option value="radiologist">Radiologist</option>
+            <option value="nutritionist">Nutritionist</option>
+            <option value="ivf_specialist">IVF Specialist</option>
+            <option value="dialysis_specialist">Dialysis Specialist</option>
+          </select>
+        </div>
+        
         <nav className="space-y-1">
           {visibleItems.map((item) => {
             const isActive = pathname === item.href;

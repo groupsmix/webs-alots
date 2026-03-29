@@ -56,6 +56,23 @@ export interface PatientRetentionView {
   retentionRate: number;
 }
 
+export type AnalyticsPeriod = "week" | "month" | "quarter" | "year";
+
+export interface PeriodComparison {
+  currentRevenue: number;
+  previousRevenue: number;
+  revenueChange: number;
+  currentPatients: number;
+  previousPatients: number;
+  patientChange: number;
+  currentAppointments: number;
+  previousAppointments: number;
+  appointmentChange: number;
+  currentNoShows: number;
+  previousNoShows: number;
+  noShowChange: number;
+}
+
 export interface AnalyticsData {
   dailyAnalytics: DailyAnalyticsView[];
   weeklyRevenue: WeeklyRevenueView[];
@@ -66,9 +83,112 @@ export interface AnalyticsData {
   patientRetention: PatientRetentionView[];
   totalPatients: number;
   totalAppointments: number;
+  periodComparison: PeriodComparison;
+  period: AnalyticsPeriod;
 }
 
-export async function fetchAnalytics(clinicId: string): Promise<AnalyticsData> {
+function getPeriodRange(period: AnalyticsPeriod): { start: Date; end: Date; prevStart: Date; prevEnd: Date } {
+  const now = new Date();
+  const end = new Date(now);
+  let start: Date;
+  let prevStart: Date;
+  let prevEnd: Date;
+
+  switch (period) {
+    case "week": {
+      start = new Date(now);
+      start.setDate(start.getDate() - 7);
+      prevEnd = new Date(start);
+      prevStart = new Date(prevEnd);
+      prevStart.setDate(prevStart.getDate() - 7);
+      break;
+    }
+    case "month": {
+      start = new Date(now);
+      start.setMonth(start.getMonth() - 1);
+      prevEnd = new Date(start);
+      prevStart = new Date(prevEnd);
+      prevStart.setMonth(prevStart.getMonth() - 1);
+      break;
+    }
+    case "quarter": {
+      start = new Date(now);
+      start.setMonth(start.getMonth() - 3);
+      prevEnd = new Date(start);
+      prevStart = new Date(prevEnd);
+      prevStart.setMonth(prevStart.getMonth() - 3);
+      break;
+    }
+    case "year": {
+      start = new Date(now);
+      start.setFullYear(start.getFullYear() - 1);
+      prevEnd = new Date(start);
+      prevStart = new Date(prevEnd);
+      prevStart.setFullYear(prevStart.getFullYear() - 1);
+      break;
+    }
+  }
+
+  return { start, end, prevStart, prevEnd };
+}
+
+function computeComparison(
+  appts: ApptRow[],
+  payments: PaymentRow[],
+  period: AnalyticsPeriod,
+): PeriodComparison {
+  const { start, end, prevStart, prevEnd } = getPeriodRange(period);
+  const startStr = getLocalDateStr(start);
+  const endStr = getLocalDateStr(end);
+  const prevStartStr = getLocalDateStr(prevStart);
+  const prevEndStr = getLocalDateStr(prevEnd);
+
+  const currentAppts = appts.filter((a) => a.appointment_date >= startStr && a.appointment_date <= endStr);
+  const prevAppts = appts.filter((a) => a.appointment_date >= prevStartStr && a.appointment_date <= prevEndStr);
+
+  const currentPayments = payments.filter((p) => {
+    const d = p.created_at?.split("T")[0];
+    return d && d >= startStr && d <= endStr;
+  });
+  const prevPayments = payments.filter((p) => {
+    const d = p.created_at?.split("T")[0];
+    return d && d >= prevStartStr && d <= prevEndStr;
+  });
+
+  const currentRevenue = currentPayments.reduce((s, p) => s + p.amount, 0);
+  const previousRevenue = prevPayments.reduce((s, p) => s + p.amount, 0);
+  const currentPatients = new Set(currentAppts.map((a) => a.patient_id)).size;
+  const previousPatients = new Set(prevAppts.map((a) => a.patient_id)).size;
+  const currentNoShows = currentAppts.filter((a) => a.status === "no_show").length;
+  const previousNoShows = prevAppts.filter((a) => a.status === "no_show").length;
+
+  function pctChange(current: number, previous: number): number {
+    if (previous === 0) return current > 0 ? 100 : 0;
+    return Math.round(((current - previous) / previous) * 100);
+  }
+
+  return {
+    currentRevenue,
+    previousRevenue,
+    revenueChange: pctChange(currentRevenue, previousRevenue),
+    currentPatients,
+    previousPatients,
+    patientChange: pctChange(currentPatients, previousPatients),
+    currentAppointments: currentAppts.length,
+    previousAppointments: prevAppts.length,
+    appointmentChange: pctChange(currentAppts.length, prevAppts.length),
+    currentNoShows,
+    previousNoShows,
+    noShowChange: pctChange(currentNoShows, previousNoShows),
+  };
+}
+
+type ApptRow = { id: string; appointment_date: string; start_time: string; status: string; patient_id: string; service_id: string | null; booking_source: string | null };
+type PaymentRow = { id: string; amount: number; created_at: string };
+type ReviewRow = { id: string; stars: number; created_at: string };
+type PatientRow = { id: string; created_at: string };
+
+export async function fetchAnalytics(clinicId: string, period: AnalyticsPeriod = "month"): Promise<AnalyticsData> {
   const supabase = createClient();
 
   const [apptsRes, paymentsRes, reviewsRes, patientsRes] = await Promise.all([
@@ -78,11 +198,6 @@ export async function fetchAnalytics(clinicId: string): Promise<AnalyticsData> {
   supabase.from("users").select("id, created_at").eq("clinic_id", clinicId).eq("role", "patient"),
   ]);
 
-  type ApptRow = { id: string; appointment_date: string; start_time: string; status: string; patient_id: string; service_id: string | null; booking_source: string | null };
-  type PaymentRow = { id: string; amount: number; created_at: string };
-  type ReviewRow = { id: string; stars: number; created_at: string };
-  type PatientRow = { id: string; created_at: string };
-
   const appts = (apptsRes.data ?? []) as ApptRow[];
   const payments = (paymentsRes.data ?? []) as PaymentRow[];
   const reviews = (reviewsRes.data ?? []) as ReviewRow[];
@@ -90,10 +205,14 @@ export async function fetchAnalytics(clinicId: string): Promise<AnalyticsData> {
 
   await ensureLookups(clinicId);
 
-  // Daily analytics (last 20 days)
+  // Period comparison
+  const periodComparison = computeComparison(appts, payments, period);
+
+  // Daily analytics — adjust range based on selected period
+  const periodDays = period === "week" ? 7 : period === "month" ? 30 : period === "quarter" ? 90 : 365;
   const dailyMap = new Map<string, DailyAnalyticsView>();
   const now = new Date();
-  for (let i = 19; i >= 0; i--) {
+  for (let i = Math.min(periodDays, 30) - 1; i >= 0; i--) {
     const d = new Date(now);
     d.setDate(d.getDate() - i);
     const dateStr = getLocalDateStr(d);
@@ -225,6 +344,8 @@ export async function fetchAnalytics(clinicId: string): Promise<AnalyticsData> {
     patientRetention,
     totalPatients: allPatients.length,
     totalAppointments: appts.length,
+    periodComparison,
+    period,
   };
 }
 

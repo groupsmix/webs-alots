@@ -5,9 +5,9 @@ on:
     branches: [main, staging]
 
 jobs:
-  lint:
+  ci:
     runs-on: ubuntu-latest
-    name: Lint & Type Check
+    name: Lint, Type Check & Tests
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -26,3 +26,6 @@ jobs:
 
       - name: Type check
         run: npx tsc --noEmit
+
+      - name: Run unit tests
+        run: npm run test

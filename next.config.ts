@@ -41,12 +41,55 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
+  // Enable static generation for better performance
+  trailingSlash: true,
+
   async headers() {
     return [
       {
         // Apply security headers to all routes
         source: "/(.*)",
         headers: securityHeaders,
+      },
+      {
+        // Report CSP violations for monitoring (doesn't block, just reports)
+        source: "/(.*)",
+        headers: [
+          {
+            key: "Content-Security-Policy-Report-Only",
+            value: "default-src 'self'; report-uri https://oltigo.com/api/csp-report",
+          },
+        ],
+      },
+      {
+        // Cache static assets for 1 year
+        source: "/:path*.(ico|png|jpg|jpeg|svg|webp|avif|woff|woff2|ttf|eot)",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "public, max-age=31536000, immutable",
+          },
+        ],
+      },
+      {
+        // Cache JS/CSS for 1 hour (with hashing, these are immutable)
+        source: "/:path*.(js|css)",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "public, max-age=3600, must-revalidate",
+          },
+        ],
+      },
+      {
+        // Cache API responses for 5 minutes
+        source: "/api/:path*",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "public, max-age=300, s-maxage=300",
+          },
+        ],
       },
     ];
   },
@@ -68,6 +111,12 @@ const nextConfig: NextConfig = {
         hostname: "**.r2.dev",
       },
     ],
+    // Optimize image delivery with modern formats
+    formats: ["image/avif", "image/webp"],
+    // Standardized device sizes for responsive images
+    deviceSizes: [640, 750, 828, 1080, 1200, 1920],
+    // Icon/thumbnail sizes
+    imageSizes: [16, 32, 48, 64, 96, 128, 256],
   },
 
   async redirects() {
@@ -79,4 +128,16 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default withAnalyzer(nextConfig);
+// Sentry wraps the Next.js config for source-map upload and error tunneling.
+// The NEXT_PUBLIC_SENTRY_DSN env var activates it; without the DSN the wrapper
+// is a transparent pass-through.
+import { withSentryConfig } from "@sentry/nextjs";
+
+export default withSentryConfig(withAnalyzer(nextConfig), {
+  // Suppress noisy source-map upload logs in CI.
+  silent: true,
+
+  // Upload source maps only when a Sentry auth token is available.
+  org: process.env.SENTRY_ORG,
+  project: process.env.SENTRY_PROJECT,
+});
