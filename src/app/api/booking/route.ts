@@ -18,7 +18,7 @@ import { logAuditEvent } from "@/lib/audit-log";
 import { computeEndTime } from "@/lib/timezone";
 import { logger } from "@/lib/logger";
 import { bookingLimiter, extractClientIp } from "@/lib/rate-limit";
-import { safeParse } from "@/lib/validations";
+import { withValidation } from "@/lib/api-validate";
 import { dispatchNotification } from "@/lib/notifications";
 import type { TemplateVariables } from "@/lib/notifications";
 import { z } from "zod";
@@ -175,8 +175,7 @@ async function validateBookingRequest(
  * Validates slot availability, enforces max capacity per slot and buffer time,
  * and sends confirmation via WhatsApp.
  */
-export async function POST(request: NextRequest) {
-  try {
+export const POST = withValidation(bookingRequestSchema, async (body, request: NextRequest) => {
     // Defence-in-depth: per-IP rate limit for the booking endpoint.
     // The middleware also applies bookingLimiter, but checking here guards
     // against deployment configs that skip the middleware layer.
@@ -209,13 +208,6 @@ export async function POST(request: NextRequest) {
         { status: 403 },
       );
     }
-
-    const raw = await request.json();
-    const parsed = safeParse(bookingRequestSchema, raw);
-    if (!parsed.success) {
-      return NextResponse.json({ error: parsed.error }, { status: 400 });
-    }
-    const body = parsed.data;
 
     const { tenant, config: tenantConfig } = await requireTenantWithConfig();
     const clinicId = tenant.clinicId;
@@ -417,14 +409,7 @@ export async function POST(request: NextRequest) {
         hasInsurance: body.hasInsurance,
       },
     });
-  } catch (err) {
-    logger.warn("Operation failed", { context: "booking/route", error: err });
-    return NextResponse.json(
-      { error: "Failed to create booking" },
-      { status: 500 },
-    );
-  }
-}
+});
 
 /**
  * GET /api/booking

@@ -11,11 +11,11 @@
 import { NextResponse } from "next/server";
 import { uploadToR2, isR2Configured, buildUploadKey } from "@/lib/r2";
 import { updateRadiologyOrderPdfUrl } from "@/lib/data/server";
-import { withAuth } from "@/lib/with-auth";
 import { STAFF_ROLES } from "@/lib/auth-roles";
 import { logger } from "@/lib/logger";
 import { escapeHtml } from "@/lib/escape-html";
-import { radiologyReportPdfSchema, safeParse } from "@/lib/validations";
+import { radiologyReportPdfSchema } from "@/lib/validations";
+import { withAuthValidation } from "@/lib/api-validate";
 
 function generateReportHtml(data: {
   patientName: string;
@@ -65,13 +65,7 @@ function generateReportHtml(data: {
 </html>`;
 }
 
-export const POST = withAuth(async (request, { profile }) => {
-  try {
-    const raw = await request.json();
-    const parsed = safeParse(radiologyReportPdfSchema, raw);
-    if (!parsed.success) {
-      return NextResponse.json({ error: parsed.error }, { status: 400 });
-    }
+export const POST = withAuthValidation(radiologyReportPdfSchema, async (body, request, { profile }) => {
     const {
       orderId,
       patientName,
@@ -81,7 +75,7 @@ export const POST = withAuth(async (request, { profile }) => {
       impression,
       reportText,
       radiologistName,
-    } = parsed.data;
+    } = body;
     // Derive clinic_id from the authenticated user's profile — never from the request body
     const clinicId = profile.clinic_id;
     if (!clinicId) {
@@ -138,8 +132,4 @@ export const POST = withAuth(async (request, { profile }) => {
     await updateRadiologyOrderPdfUrl(orderId, url);
 
     return NextResponse.json({ pdfUrl: url });
-  } catch (err) {
-    logger.warn("Operation failed", { context: "radiology/report-pdf", error: err });
-    return NextResponse.json({ error: "Failed to generate radiology report" }, { status: 500 });
-  }
 }, STAFF_ROLES);

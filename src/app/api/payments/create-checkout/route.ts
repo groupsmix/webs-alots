@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
-import { withAuth } from "@/lib/with-auth";
 import { STAFF_ROLES } from "@/lib/auth-roles";
 import { logger } from "@/lib/logger";
-import { stripeCheckoutSchema, safeParse } from "@/lib/validations";
+import { stripeCheckoutSchema } from "@/lib/validations";
+import { withAuthValidation } from "@/lib/api-validate";
 
 /**
  * HIGH-03: Validate that a redirect URL is same-origin to prevent open redirects.
@@ -42,7 +42,7 @@ function validateRedirectUrl(
  *
  * Requires: STRIPE_SECRET_KEY env var
  */
-export const POST = withAuth(async (request, { user, profile }) => {
+export const POST = withAuthValidation(stripeCheckoutSchema, async (body, request, { user, profile }) => {
   const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
 
   if (!stripeSecretKey) {
@@ -52,12 +52,6 @@ export const POST = withAuth(async (request, { user, profile }) => {
     );
   }
 
-  try {
-    const raw = await request.json();
-    const parsed = safeParse(stripeCheckoutSchema, raw);
-    if (!parsed.success) {
-      return NextResponse.json({ error: parsed.error }, { status: 400 });
-    }
     const {
       amount,
       currency = "mad",
@@ -67,7 +61,7 @@ export const POST = withAuth(async (request, { user, profile }) => {
       successUrl,
       cancelUrl,
       metadata = {},
-    } = parsed.data;
+    } = body;
 
     const origin = request.nextUrl.origin;
 
@@ -122,8 +116,4 @@ export const POST = withAuth(async (request, { user, profile }) => {
       sessionId: session.id,
       url: session.url,
     });
-  } catch (err) {
-    logger.warn("Operation failed", { context: "payments/create-checkout", error: err });
-    return NextResponse.json({ error: "Failed to process payment" }, { status: 500 });
-  }
 }, STAFF_ROLES);

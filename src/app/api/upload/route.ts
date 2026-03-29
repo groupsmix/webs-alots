@@ -30,7 +30,8 @@ import { encryptAndUpload } from "@/lib/r2-encrypted";
 import { requiresEncryption } from "@/lib/encryption";
 import { withAuth } from "@/lib/with-auth";
 import { logger } from "@/lib/logger";
-import { uploadConfirmSchema, safeParse } from "@/lib/validations";
+import { uploadConfirmSchema } from "@/lib/validations";
+import { withAuthValidation } from "@/lib/api-validate";
 
 const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2 MB
 
@@ -142,7 +143,7 @@ export const POST = withAuth(async (request, { profile }) => {
  * Body: { key: string, contentType: string }
  * Returns: { valid: true } or { error: string } (with 400 status + deletion)
  */
-export const PUT = withAuth(async (request, { profile }) => {
+export const PUT = withAuthValidation(uploadConfirmSchema, async (body, request, { profile }) => {
   if (!isR2Configured()) {
     return NextResponse.json(
       { error: "File storage is not configured" },
@@ -150,16 +151,7 @@ export const PUT = withAuth(async (request, { profile }) => {
     );
   }
 
-  const raw = await request.json();
-  const parsed = safeParse(uploadConfirmSchema, raw);
-  if (!parsed.success) {
-    return NextResponse.json(
-      { error: parsed.error },
-      { status: 400 },
-    );
-  }
-
-  const { key, contentType } = parsed.data;
+  const { key, contentType } = body;
 
   // Tenant isolation: verify the R2 key belongs to this user's clinic.
   // Keys follow the pattern: {clinicId}/{category}/{filename}

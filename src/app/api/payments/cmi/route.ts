@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
 import { createCmiPayment, isCmiConfigured } from "@/lib/cmi";
-import { withAuth } from "@/lib/with-auth";
 import { STAFF_ROLES } from "@/lib/auth-roles";
 import { logger } from "@/lib/logger";
-import { cmiPaymentSchema, safeParse } from "@/lib/validations";
+import { cmiPaymentSchema } from "@/lib/validations";
+import { withAuthValidation } from "@/lib/api-validate";
 
 /**
  * Validate that a redirect URL is same-origin to prevent open redirects.
@@ -41,7 +41,7 @@ function validateRedirectUrl(
  *
  * Requires: CMI_MERCHANT_ID, CMI_SECRET_KEY env vars
  */
-export const POST = withAuth(async (request, { user }) => {
+export const POST = withAuthValidation(cmiPaymentSchema, async (body, request, { user }) => {
   if (!isCmiConfigured()) {
     return NextResponse.json(
       { error: "CMI payment gateway is not configured. Set CMI_MERCHANT_ID and CMI_SECRET_KEY." },
@@ -49,12 +49,6 @@ export const POST = withAuth(async (request, { user }) => {
     );
   }
 
-  try {
-    const raw = await request.json();
-    const parsed = safeParse(cmiPaymentSchema, raw);
-    if (!parsed.success) {
-      return NextResponse.json({ error: parsed.error }, { status: 400 });
-    }
     const {
       amount,
       description = "Paiement",
@@ -62,7 +56,7 @@ export const POST = withAuth(async (request, { user }) => {
       appointmentId,
       successUrl,
       failUrl,
-    } = parsed.data;
+    } = body;
 
     const origin = request.nextUrl.origin;
     const orderId = `ord_${Date.now()}_${crypto.randomUUID().slice(0, 8)}`;
@@ -94,8 +88,4 @@ export const POST = withAuth(async (request, { user }) => {
       formUrl: result.formUrl,
       formFields: result.formFields,
     });
-  } catch (err) {
-    logger.warn("Operation failed", { context: "payments/cmi", error: err });
-    return NextResponse.json({ error: "Failed to create CMI payment" }, { status: 500 });
-  }
 }, STAFF_ROLES);

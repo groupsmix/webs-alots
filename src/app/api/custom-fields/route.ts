@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { withAuth } from "@/lib/with-auth";
 import { logger } from "@/lib/logger";
-import { customFieldCreateSchema, customFieldUpdateSchema, safeParse } from "@/lib/validations";
+import { customFieldCreateSchema, customFieldUpdateSchema } from "@/lib/validations";
+import { withAuthValidation } from "@/lib/api-validate";
 import type { Json } from "@/lib/types/database";
 /**
  * GET /api/custom-fields?clinic_type_key=...&entity_type=...
@@ -57,13 +58,7 @@ export const GET = withAuth(async (request, { supabase }) => {
  * Create a new custom field definition.
  * Only super admins can create definitions.
  */
-export const POST = withAuth(async (request, { supabase }) => {
-  try {
-    const raw = await request.json();
-    const parsed = safeParse(customFieldCreateSchema, raw);
-    if (!parsed.success) {
-      return NextResponse.json({ error: parsed.error }, { status: 400 });
-    }
+export const POST = withAuthValidation(customFieldCreateSchema, async (body, request, { supabase }) => {
     const {
       clinic_type_key,
       entity_type,
@@ -78,7 +73,7 @@ export const POST = withAuth(async (request, { supabase }) => {
       options,
       validation,
       default_value,
-    } = parsed.data;
+    } = body;
 
     const { data, error } = await supabase
       .from("custom_field_definitions")
@@ -110,13 +105,6 @@ export const POST = withAuth(async (request, { supabase }) => {
     }
 
     return NextResponse.json({ definition: data }, { status: 201 });
-  } catch (err) {
-    logger.warn("Operation failed", { context: "custom-fields", error: err });
-    return NextResponse.json(
-      { error: "Invalid request body" },
-      { status: 400 },
-    );
-  }
 }, ["super_admin"]);
 
 /**
@@ -125,14 +113,8 @@ export const POST = withAuth(async (request, { supabase }) => {
  * Update an existing custom field definition.
  * Body must include `id` and any fields to update.
  */
-export const PATCH = withAuth(async (request, { supabase }) => {
-  try {
-    const raw = await request.json();
-    const parsed = safeParse(customFieldUpdateSchema, raw);
-    if (!parsed.success) {
-      return NextResponse.json({ error: parsed.error }, { status: 400 });
-    }
-    const { id, ...updates } = parsed.data;
+export const PATCH = withAuthValidation(customFieldUpdateSchema, async (body, request, { supabase }) => {
+    const { id, ...updates } = body;
 
     // Prevent modifying system field keys
     const allowedUpdates: Record<string, unknown> = {};
@@ -164,13 +146,6 @@ export const PATCH = withAuth(async (request, { supabase }) => {
     }
 
     return NextResponse.json({ definition: data });
-  } catch (err) {
-    logger.warn("Operation failed", { context: "custom-fields", error: err });
-    return NextResponse.json(
-      { error: "Invalid request body" },
-      { status: 400 },
-    );
-  }
 }, ["super_admin"]);
 
 /**

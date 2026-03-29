@@ -14,19 +14,13 @@ import {
   updateRadiologyOrderStatus,
   saveRadiologyReport,
 } from "@/lib/data/server";
-import { withAuth } from "@/lib/with-auth";
 import { STAFF_ROLES } from "@/lib/auth-roles";
 import { logger } from "@/lib/logger";
-import { radiologyOrderCreateSchema, radiologyOrderPatchSchema, safeParse } from "@/lib/validations";
+import { radiologyOrderCreateSchema, radiologyOrderPatchSchema } from "@/lib/validations";
+import { withAuthValidation } from "@/lib/api-validate";
 
-export const POST = withAuth(async (request, { profile }) => {
-  try {
-    const raw = await request.json();
-    const parsed = safeParse(radiologyOrderCreateSchema, raw);
-    if (!parsed.success) {
-      return NextResponse.json({ error: parsed.error }, { status: 400 });
-    }
-    const { patientId, modality, bodyPart, clinicalIndication, priority, scheduledAt, orderingDoctorId } = parsed.data;
+export const POST = withAuthValidation(radiologyOrderCreateSchema, async (body, request, { profile }) => {
+    const { patientId, modality, bodyPart, clinicalIndication, priority, scheduledAt, orderingDoctorId } = body;
     // Derive clinic_id from the authenticated user's profile — never from the request body
     const clinicId = profile.clinic_id;
     if (!clinicId) {
@@ -55,20 +49,9 @@ export const POST = withAuth(async (request, { profile }) => {
     }
 
     return NextResponse.json(result, { status: 201 });
-  } catch (err) {
-    logger.warn("Operation failed", { context: "radiology/orders", error: err });
-    return NextResponse.json({ error: "Failed to create radiology order" }, { status: 500 });
-  }
 }, STAFF_ROLES);
 
-export const PATCH = withAuth(async (request) => {
-  try {
-    const raw = await request.json();
-    const parsed = safeParse(radiologyOrderPatchSchema, raw);
-    if (!parsed.success) {
-      return NextResponse.json({ error: parsed.error }, { status: 400 });
-    }
-    const body = parsed.data;
+export const PATCH = withAuthValidation(radiologyOrderPatchSchema, async (body, request) => {
     const { orderId, action } = body;
 
     if (action === "status") {
@@ -111,8 +94,4 @@ export const PATCH = withAuth(async (request) => {
       { error: `Unknown action: ${action}` },
       { status: 400 },
     );
-  } catch (err) {
-    logger.warn("Operation failed", { context: "radiology/orders", error: err });
-    return NextResponse.json({ error: "Failed to update radiology order" }, { status: 500 });
-  }
 }, STAFF_ROLES);

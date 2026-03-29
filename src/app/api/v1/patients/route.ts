@@ -13,8 +13,9 @@ import { authenticateApiKey } from "@/lib/api-auth";
 import { getCorsHeaders, handlePreflight } from "@/lib/cors";
 import { logger } from "@/lib/logger";
 import type { TablesInsert } from "@/lib/types/database";
-import { v1PatientCreateSchema, safeParse } from "@/lib/validations";
+import { v1PatientCreateSchema } from "@/lib/validations";
 import { logTenantContext } from "@/lib/tenant-context";
+import { withValidation } from "@/lib/api-validate";
 
 /** Handle CORS preflight requests. */
 export function OPTIONS(request: NextRequest) {
@@ -67,7 +68,7 @@ export async function GET(request: NextRequest) {
   }, { headers: getCorsHeaders(request) });
 }
 
-export async function POST(request: NextRequest) {
+export const POST = withValidation(v1PatientCreateSchema, async (body, request: NextRequest) => {
   const auth = await authenticateApiKey(request);
   if (!auth) {
     return NextResponse.json(
@@ -75,17 +76,6 @@ export async function POST(request: NextRequest) {
       { status: 401, headers: getCorsHeaders(request) },
     );
   }
-
-  try {
-    const raw = await request.json();
-    const parsed = safeParse(v1PatientCreateSchema, raw);
-    if (!parsed.success) {
-      return NextResponse.json(
-        { error: parsed.error },
-        { status: 400, headers: getCorsHeaders(request) },
-      );
-    }
-    const body = parsed.data;
 
     logTenantContext(auth.clinicId, "v1/patients:POST");
     const supabase = await createTenantClient(auth.clinicId);
@@ -115,8 +105,4 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json({ data }, { status: 201, headers: getCorsHeaders(request) });
-  } catch (err) {
-    logger.warn("Operation failed", { context: "v1/patients", error: err });
-    return NextResponse.json({ error: "Invalid request body" }, { status: 400, headers: getCorsHeaders(request) });
-  }
-}
+});

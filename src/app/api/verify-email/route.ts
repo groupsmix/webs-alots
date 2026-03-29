@@ -11,7 +11,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { logger } from "@/lib/logger";
-import { verifyEmailSendSchema, verifyEmailConfirmSchema, safeParse } from "@/lib/validations";
+import { verifyEmailSendSchema, verifyEmailConfirmSchema } from "@/lib/validations";
+import { withValidation } from "@/lib/api-validate";
 
 /**
  * Generate a 6-digit numeric verification code.
@@ -23,7 +24,7 @@ function generateCode(): string {
 /**
  * POST — Send a verification code to the provided email.
  */
-export async function POST(request: NextRequest) {
+export const POST = withValidation(verifyEmailSendSchema, async (data, request: NextRequest) => {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
@@ -34,25 +35,7 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  let raw: unknown;
-  try {
-    raw = await request.json();
-  } catch {
-    return NextResponse.json(
-      { error: "Invalid JSON body" },
-      { status: 400 },
-    );
-  }
-
-  const parsed = safeParse(verifyEmailSendSchema, raw);
-  if (!parsed.success) {
-    return NextResponse.json(
-      { error: parsed.error },
-      { status: 400 },
-    );
-  }
-
-  const { email } = parsed.data;
+  const { email } = data;
 
   const code = generateCode();
   const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString(); // 10 min
@@ -102,12 +85,12 @@ export async function POST(request: NextRequest) {
     message: "Verification code sent. Check your email.",
     expiresInMinutes: 10,
   });
-}
+});
 
 /**
  * PUT — Verify a code submitted by the patient.
  */
-export async function PUT(request: NextRequest) {
+export const PUT = withValidation(verifyEmailConfirmSchema, async (data, request: NextRequest) => {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
@@ -118,25 +101,7 @@ export async function PUT(request: NextRequest) {
     );
   }
 
-  let raw: unknown;
-  try {
-    raw = await request.json();
-  } catch {
-    return NextResponse.json(
-      { error: "Invalid JSON body" },
-      { status: 400 },
-    );
-  }
-
-  const parsed = safeParse(verifyEmailConfirmSchema, raw);
-  if (!parsed.success) {
-    return NextResponse.json(
-      { error: parsed.error },
-      { status: 400 },
-    );
-  }
-
-  const { email, code } = parsed.data;
+  const { email, code } = data;
 
   const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
     cookies: {
@@ -190,4 +155,4 @@ export async function PUT(request: NextRequest) {
     ok: true,
     message: "Email verified successfully",
   });
-}
+});

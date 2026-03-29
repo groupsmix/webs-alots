@@ -9,7 +9,8 @@ import type { NotificationChannel as DBNotificationChannel } from "@/lib/types/d
 import { withAuth } from "@/lib/with-auth";
 import { STAFF_ROLES } from "@/lib/auth-roles";
 import { logger } from "@/lib/logger";
-import { notificationDispatchSchema, safeParse } from "@/lib/validations";
+import { notificationDispatchSchema } from "@/lib/validations";
+import { withAuthValidation } from "@/lib/api-validate";
 /**
  * POST /api/notifications
  *
@@ -17,14 +18,8 @@ import { notificationDispatchSchema, safeParse } from "@/lib/validations";
  * Body: { trigger, variables, recipientId, channels }
  */
 
-export const POST = withAuth(async (request, { supabase, profile }) => {
-  try {
-    const raw = await request.json();
-    const parsed = safeParse(notificationDispatchSchema, raw);
-    if (!parsed.success) {
-      return NextResponse.json({ error: parsed.error }, { status: 400 });
-    }
-    const { trigger, variables, recipientId, channels } = parsed.data as {
+export const POST = withAuthValidation(notificationDispatchSchema, async (body, request, { supabase, profile }) => {
+    const { trigger, variables, recipientId, channels } = body as {
       trigger: NotificationTrigger;
       variables: TemplateVariables;
       recipientId: string;
@@ -56,13 +51,6 @@ export const POST = withAuth(async (request, { supabase, profile }) => {
     );
 
     return NextResponse.json({ results });
-  } catch (err) {
-    logger.warn("Operation failed", { context: "notifications", error: err });
-    return NextResponse.json(
-      { error: "Failed to dispatch notification" },
-      { status: 500 },
-    );
-  }
 }, STAFF_ROLES);
 
 /**

@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { withAuth } from "@/lib/with-auth";
 import { logger } from "@/lib/logger";
-import { impersonateSchema, safeParse } from "@/lib/validations";
+import { impersonateSchema } from "@/lib/validations";
+import { withAuthValidation } from "@/lib/api-validate";
 import { createClient } from "@/lib/supabase-server";
 import { logSecurityEvent } from "@/lib/audit-log";
 
@@ -17,14 +18,8 @@ import { logSecurityEvent } from "@/lib/audit-log";
  *
  * Ends the impersonation session by clearing the cookie.
  */
-export const POST = withAuth(async (request, { supabase, user }) => {
-  try {
-    const raw = await request.json();
-    const parsed = safeParse(impersonateSchema, raw);
-    if (!parsed.success) {
-      return NextResponse.json({ error: parsed.error }, { status: 400 });
-    }
-    const { clinicId, clinicName, password, reason } = parsed.data;
+export const POST = withAuthValidation(impersonateSchema, async (body, request, { supabase, user }) => {
+    const { clinicId, clinicName, password, reason } = body;
 
     const reauthClient = await createClient();
     const { error: reauthError } = await reauthClient.auth.signInWithPassword({
@@ -95,10 +90,6 @@ export const POST = withAuth(async (request, { supabase, user }) => {
     });
 
     return response;
-  } catch (err) {
-    logger.warn("Operation failed", { context: "impersonate/route", error: err });
-    return NextResponse.json({ error: "Failed to start impersonation" }, { status: 500 });
-  }
 }, ["super_admin"]);
 
 export const DELETE = withAuth(async (_request, { supabase, user }) => {

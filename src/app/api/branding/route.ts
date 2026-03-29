@@ -17,7 +17,8 @@ import {
 import type { UserRole } from "@/lib/types/database";
 import { withAuth } from "@/lib/with-auth";
 import { logger } from "@/lib/logger";
-import { brandingUpdateSchema, safeParse } from "@/lib/validations";
+import { brandingUpdateSchema } from "@/lib/validations";
+import { withAuthValidation } from "@/lib/api-validate";
 import { invalidateAllSubdomainCaches } from "@/lib/subdomain-cache";
 
 const ADMIN_ROLES: UserRole[] = ["super_admin", "clinic_admin"];
@@ -126,15 +127,9 @@ export async function GET() {
 
 // ── PUT — update text branding fields (colors, fonts) ──
 
-export const PUT = withAuth(async (request, { supabase }) => {
+export const PUT = withAuthValidation(brandingUpdateSchema, async (body, request, { supabase }) => {
   const tenant = await requireTenant();
   const clinicId = tenant.clinicId;
-  const raw = await request.json();
-  const parsed = safeParse(brandingUpdateSchema, raw);
-  if (!parsed.success) {
-    return NextResponse.json({ error: parsed.error }, { status: 400 });
-  }
-  const body = parsed.data;
 
   const updates: Record<string, unknown> = {};
   const stringKeys = [

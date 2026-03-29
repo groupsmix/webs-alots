@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { withAuth } from "@/lib/with-auth";
 import { logger } from "@/lib/logger";
-import { onboardingSchema, safeParse } from "@/lib/validations";
+import { onboardingSchema } from "@/lib/validations";
+import { withAuthValidation } from "@/lib/api-validate";
 /**
  * POST /api/onboarding
  *
@@ -9,8 +10,7 @@ import { onboardingSchema, safeParse } from "@/lib/validations";
  * Inserts a clinic row with the clinic_type_key FK and creates the
  * clinic_admin user record.
  */
-export const POST = withAuth(async (request, { supabase, user }) => {
-  try {
+export const POST = withAuthValidation(onboardingSchema, async (body, request, { supabase, user }) => {
     // Require email verification before allowing clinic creation
     if (!user.email_confirmed_at) {
       return NextResponse.json(
@@ -41,13 +41,6 @@ export const POST = withAuth(async (request, { supabase, user }) => {
         { status: 403 },
       );
     }
-
-    const raw = await request.json();
-    const parsed = safeParse(onboardingSchema, raw);
-    if (!parsed.success) {
-      return NextResponse.json({ error: parsed.error }, { status: 400 });
-    }
-    const body = parsed.data;
 
     // Map category to the legacy clinic type field
     const legacyTypeMap: Record<string, string> = {
@@ -192,11 +185,4 @@ export const POST = withAuth(async (request, { supabase, user }) => {
       clinic_id: clinicId,
       subdomain: subdomain || null,
     });
-  } catch (err) {
-    logger.warn("Operation failed", { context: "onboarding/route", error: err });
-    return NextResponse.json(
-      { error: "Failed to process onboarding" },
-      { status: 500 },
-    );
-  }
 }, null); // null is intentional: new users don't have a profile/role yet during onboarding; the handler performs its own authorization checks (email verification, no existing profile)

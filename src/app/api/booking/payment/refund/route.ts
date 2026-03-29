@@ -2,9 +2,9 @@ import { NextResponse } from "next/server";
 import { logAuditEvent } from "@/lib/audit-log";
 import { requireTenant } from "@/lib/tenant";
 import type { UserRole } from "@/lib/types/database";
-import { withAuth } from "@/lib/with-auth";
 import { logger } from "@/lib/logger";
-import { paymentRefundSchema, safeParse } from "@/lib/validations";
+import { paymentRefundSchema } from "@/lib/validations";
+import { withAuthValidation } from "@/lib/api-validate";
 const ADMIN_ROLES: UserRole[] = ["super_admin", "clinic_admin"];
 
 /**
@@ -12,14 +12,7 @@ const ADMIN_ROLES: UserRole[] = ["super_admin", "clinic_admin"];
  *
  * Refund a completed payment (full or partial).
  */
-export const POST = withAuth(async (request, { supabase }) => {
-  try {
-    const raw = await request.json();
-    const parsed = safeParse(paymentRefundSchema, raw);
-    if (!parsed.success) {
-      return NextResponse.json({ error: parsed.error }, { status: 400 });
-    }
-    const body = parsed.data;
+export const POST = withAuthValidation(paymentRefundSchema, async (body, request, { supabase }) => {
 
     const tenant = await requireTenant();
     const clinicId = tenant.clinicId;
@@ -89,8 +82,4 @@ export const POST = withAuth(async (request, { supabase }) => {
     });
 
     return NextResponse.json({ status: "refunded", message: "Payment refunded" });
-  } catch (err) {
-    logger.warn("Operation failed", { context: "booking/payment/refund", error: err });
-    return NextResponse.json({ error: "Failed to refund payment" }, { status: 500 });
-  }
 }, ADMIN_ROLES);

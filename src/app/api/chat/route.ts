@@ -4,7 +4,8 @@ import { requireTenant } from "@/lib/tenant";
 import { createClient } from "@/lib/supabase-server";
 import { chatLimiter, extractClientIp } from "@/lib/rate-limit";
 import { logger } from "@/lib/logger";
-import { chatRequestSchema, safeParse } from "@/lib/validations";
+import { chatRequestSchema } from "@/lib/validations";
+import { withValidation } from "@/lib/api-validate";
 /**
  * POST /api/chat
  *
@@ -54,8 +55,7 @@ function sanitizeUserInput(text: string): string {
   );
 }
 
-export async function POST(request: NextRequest) {
-  try {
+export const POST = withValidation(chatRequestSchema, async (body, request: NextRequest) => {
     // Defence-in-depth: per-IP rate limit for the chat endpoint.
     // The middleware also applies chatLimiter, but checking here guards
     // against deployment configs that skip the middleware layer.
@@ -71,12 +71,6 @@ export async function POST(request: NextRequest) {
     // Resolve clinic ID strictly from tenant context (middleware headers)
     const tenant = await requireTenant();
     const clinicId = tenant.clinicId;
-    const raw = await request.json();
-    const parsed = safeParse(chatRequestSchema, raw);
-    if (!parsed.success) {
-      return NextResponse.json({ error: parsed.error }, { status: 400 });
-    }
-    const body = parsed.data;
 
     const lastMessage = body.messages[body.messages.length - 1];
     if (!lastMessage || lastMessage.role !== "user" || !lastMessage.content.trim()) {
@@ -289,11 +283,4 @@ export async function POST(request: NextRequest) {
         Connection: "keep-alive",
       },
     });
-  } catch (err) {
-    logger.warn("Operation failed", { context: "chat", error: err });
-    return NextResponse.json(
-      { error: "Failed to process chat message" },
-      { status: 500 },
-    );
-  }
-}
+});
