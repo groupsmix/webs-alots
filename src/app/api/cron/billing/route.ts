@@ -7,12 +7,13 @@
  * Protected by CRON_SECRET to prevent unauthorized access.
  */
 
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase-server";
 import { processRenewal } from "@/lib/subscription-billing";
 import { verifyCronSecret } from "@/lib/cron-auth";
 import { logger } from "@/lib/logger";
 import { assertClinicId } from "@/lib/assert-tenant";
+import { apiInternalError, apiSuccess } from "@/lib/api-response";
 
 export async function GET(request: NextRequest) {
   // DRY: Use shared cron secret verification helper
@@ -30,10 +31,7 @@ export async function GET(request: NextRequest) {
     .lte("current_period_end", today);
 
   if (error) {
-    return NextResponse.json(
-      { error: "Failed to fetch subscriptions" },
-      { status: 500 },
-    );
+    return apiInternalError("Failed to fetch subscriptions");
   }
 
   logger.info("Billing cron started", {
@@ -90,7 +88,7 @@ export async function GET(request: NextRequest) {
   const renewed = results.filter((r) => r.success).length;
   const failed = results.filter((r) => !r.success).length;
 
-  return NextResponse.json({
+  return apiSuccess({
     processed: results.length,
     renewed,
     failed,

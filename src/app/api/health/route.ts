@@ -1,7 +1,7 @@
-import { NextResponse } from "next/server";
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import { logger } from "@/lib/logger";
 import { isR2Configured } from "@/lib/r2";
+import { apiSuccess } from "@/lib/api-response";
 /**
  * GET /api/health
  *
@@ -76,12 +76,12 @@ export async function GET() {
       ? "down"
       : "degraded";
 
-  return NextResponse.json(
+  return apiSuccess(
     {
       status: overallStatus,
       timestamp: new Date().toISOString(),
       checks,
     },
-    { status: overallStatus === "down" ? 503 : 200 },
+    overallStatus === "down" ? 503 : 200,
   );
 }

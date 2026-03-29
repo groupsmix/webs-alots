@@ -1,4 +1,3 @@
-import { NextResponse } from "next/server";
 import { withAuth } from "@/lib/with-auth";
 import { requireTenantWithConfig } from "@/lib/tenant";
 import { APPOINTMENT_STATUS, WAITING_LIST_STATUS } from "@/lib/types/database";
@@ -11,6 +10,7 @@ import { dispatchNotification } from "@/lib/notifications";
 import type { TemplateVariables } from "@/lib/notifications";
 import { STAFF_ROLES } from "@/lib/auth-roles";
 import type { UserRole } from "@/lib/types/database";
+import { apiError, apiForbidden, apiInternalError, apiNotFound, apiSuccess } from "@/lib/api-response";
 
 const CANCEL_ROLES: UserRole[] = [...STAFF_ROLES, "patient"];
 /**
@@ -32,27 +32,21 @@ export const POST = withAuthValidation(bookingCancelSchema, async (body, request
       .single();
 
     if (fetchError || !appt) {
-      return NextResponse.json({ error: "Appointment not found" }, { status: 404 });
+      return apiNotFound("Appointment not found");
     }
 
     // Ownership check: patients can only cancel their OWN appointments
     if (profile.role === "patient" && appt.patient_id !== profile.id) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      return apiForbidden("Forbidden");
     }
 
     if (appt.status === APPOINTMENT_STATUS.CANCELLED || appt.status === APPOINTMENT_STATUS.COMPLETED || appt.status === APPOINTMENT_STATUS.RESCHEDULED) {
-      return NextResponse.json(
-        { error: "Appointment cannot be cancelled in its current state" },
-        { status: 400 },
-      );
+      return apiError("Appointment cannot be cancelled in its current state");
     }
 
     // Check cancellation window (timezone-aware)
     if (!appt.appointment_date || !appt.start_time) {
-      return NextResponse.json(
-        { error: "Appointment is missing date or time information" },
-        { status: 400 },
-      );
+      return apiError("Appointment is missing date or time information");
     }
 
     const appointmentDateTime = clinicDateTime(appt.appointment_date, appt.start_time, tenantConfig.timezone);
@@ -60,12 +54,7 @@ export const POST = withAuthValidation(bookingCancelSchema, async (body, request
     const cancellationWindowHours = tenantConfig.booking.cancellationHours;
 
     if (hoursUntilAppt < cancellationWindowHours) {
-      return NextResponse.json(
-        {
-          error: `Cancellations must be made at least ${cancellationWindowHours} hours before the appointment`,
-        },
-        { status: 400 },
-      );
+      return apiError(`Cancellations must be made at least ${cancellationWindowHours} hours before the appointment`);
     }
 
     // Cancel the appointment
@@ -79,7 +68,7 @@ export const POST = withAuthValidation(bookingCancelSchema, async (body, request
       .eq("id", body.appointmentId);
 
     if (updateError) {
-      return NextResponse.json({ error: "Failed to cancel appointment" }, { status: 500 });
+      return apiInternalError("Failed to cancel appointment");
     }
 
     // Promote the first waiting-list entry for the freed slot
@@ -143,7 +132,7 @@ export const POST = withAuthValidation(bookingCancelSchema, async (body, request
       logger.warn("Failed to prepare cancellation notifications", { context: "booking/cancel", error: err });
     }
 
-    return NextResponse.json({ status: APPOINTMENT_STATUS.CANCELLED, message: "Appointment cancelled successfully" });
+    return apiSuccess({ status: APPOINTMENT_STATUS.CANCELLED, message: "Appointment cancelled successfully" });
 }, CANCEL_ROLES);
 
 /**
@@ -155,7 +144,7 @@ export const GET = withAuth(async (request, { supabase, profile }) => {
   const appointmentId = request.nextUrl.searchParams.get("appointmentId");
 
   if (!appointmentId) {
-    return NextResponse.json({ error: "appointmentId is required" }, { status: 400 });
+    return apiError("appointmentId is required");
   }
 
   const { tenant, config: tenantCfg } = await requireTenantWithConfig();
@@ -168,23 +157,23 @@ export const GET = withAuth(async (request, { supabase, profile }) => {
     .single();
 
   if (error || !appt) {
-    return NextResponse.json({ canCancel: false, reason: "Appointment not found" });
+    return apiSuccess({ canCancel: false, reason: "Appointment not found" });
   }
 
   // Ownership check: patients can only check cancellability of their OWN appointments
   if (profile.role === "patient" && appt.patient_id !== profile.id) {
-    return NextResponse.json({ canCancel: false, reason: "Appointment not found" });
+    return apiSuccess({ canCancel: false, reason: "Appointment not found" });
   }
 
   if (appt.status === APPOINTMENT_STATUS.CANCELLED || appt.status === APPOINTMENT_STATUS.COMPLETED || appt.status === APPOINTMENT_STATUS.RESCHEDULED) {
-    return NextResponse.json({
+    return apiSuccess({
       canCancel: false,
       reason: "Appointment cannot be cancelled in its current state",
     });
   }
 
   if (!appt.appointment_date || !appt.start_time) {
-    return NextResponse.json({
+    return apiSuccess({
       canCancel: false,
       reason: "Appointment is missing date or time information",
     });
@@ -195,12 +184,12 @@ export const GET = withAuth(async (request, { supabase, profile }) => {
   const cancellationWindowHours = tenantCfg.booking.cancellationHours;
 
   if (hoursUntilAppt < cancellationWindowHours) {
-    return NextResponse.json({
+    return apiSuccess({
       canCancel: false,
       reason: `Cancellations must be made at least ${cancellationWindowHours} hours before the appointment`,
       hoursRemaining: Math.max(0, hoursUntilAppt),
     });
   }
 
-  return NextResponse.json({ canCancel: true, hoursRemaining: hoursUntilAppt });
+  return apiSuccess({ canCancel: true, hoursRemaining: hoursUntilAppt });
 }, CANCEL_ROLES);

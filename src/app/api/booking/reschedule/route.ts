@@ -1,4 +1,3 @@
-import { NextResponse } from "next/server";
 import { requireTenantWithConfig } from "@/lib/tenant";
 import { getPublicAvailableSlots } from "@/lib/data/public";
 import { APPOINTMENT_STATUS } from "@/lib/types/database";
@@ -11,6 +10,7 @@ import { dispatchNotification } from "@/lib/notifications";
 import type { TemplateVariables } from "@/lib/notifications";
 import { STAFF_ROLES } from "@/lib/auth-roles";
 import type { UserRole } from "@/lib/types/database";
+import { apiError, apiForbidden, apiInternalError, apiNotFound, apiSuccess } from "@/lib/api-response";
 
 const RESCHEDULE_ROLES: UserRole[] = [...STAFF_ROLES, "patient"];
 /**
@@ -28,10 +28,7 @@ export const POST = withAuthValidation(rescheduleSchema, async (body, request, {
     // Reject past dates
     const todayInTz = new Date().toLocaleDateString("en-CA", { timeZone: tenantConfig.timezone });
     if (body.newDate < todayInTz) {
-      return NextResponse.json(
-        { error: "Cannot reschedule to a date in the past" },
-        { status: 400 },
-      );
+      return apiError("Cannot reschedule to a date in the past");
     }
 
     // Validate working hours for the new date.
@@ -49,10 +46,7 @@ export const POST = withAuthValidation(rescheduleSchema, async (body, request, {
     const dayOfWeek = dayMap[dayFormatter.format(parsedDate)] ?? parsedDate.getDay();
     const hours = tenantConfig.workingHours[dayOfWeek];
     if (!hours?.enabled) {
-      return NextResponse.json(
-        { error: "Selected date is not a working day" },
-        { status: 400 },
-      );
+      return apiError("Selected date is not a working day");
     }
 
     // Get the existing appointment (include patient_id for ownership check)
@@ -64,29 +58,23 @@ export const POST = withAuthValidation(rescheduleSchema, async (body, request, {
       .single();
 
     if (fetchError || !existing) {
-      return NextResponse.json({ error: "Appointment not found" }, { status: 404 });
+      return apiNotFound("Appointment not found");
     }
 
     // Ownership check: patients can only reschedule their OWN appointments
     if (profile.role === "patient" && existing.patient_id !== profile.id) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      return apiForbidden("Forbidden");
     }
 
     // Only allow rescheduling appointments in a valid state
     if (existing.status === APPOINTMENT_STATUS.CANCELLED || existing.status === APPOINTMENT_STATUS.COMPLETED || existing.status === APPOINTMENT_STATUS.RESCHEDULED) {
-      return NextResponse.json(
-        { error: "Appointment cannot be rescheduled in its current state" },
-        { status: 400 },
-      );
+      return apiError("Appointment cannot be rescheduled in its current state");
     }
 
     // Check for double-booking conflicts at the new time
     const availableSlots = await getPublicAvailableSlots(body.newDate, existing.doctor_id);
     if (!availableSlots.includes(body.newTime)) {
-      return NextResponse.json(
-        { error: "Selected time slot is not available or already fully booked" },
-        { status: 409 },
-      );
+      return apiError("Selected time slot is not available or already fully booked", 409);
     }
 
     // Calculate end_time and slot boundaries using shared computeEndTime
@@ -104,10 +92,7 @@ export const POST = withAuthValidation(rescheduleSchema, async (body, request, {
 
     const { endTime, overflows } = computeEndTime(body.newTime, duration);
     if (overflows) {
-      return NextResponse.json(
-        { error: "Appointment would extend past midnight. Please choose an earlier time." },
-        { status: 400 },
-      );
+      return apiError("Appointment would extend past midnight. Please choose an earlier time.");
     }
     const slotStart = `${body.newDate}T${body.newTime}:00`;
     const slotEnd = `${body.newDate}T${endTime}:00`;
@@ -126,7 +111,7 @@ export const POST = withAuthValidation(rescheduleSchema, async (body, request, {
       .eq("id", body.appointmentId);
 
     if (updateError) {
-      return NextResponse.json({ error: "Failed to update appointment" }, { status: 500 });
+      return apiInternalError("Failed to update appointment");
     }
 
     // ── Post-update maxPerSlot enforcement (TOCTOU guard) ──────────────
@@ -161,10 +146,7 @@ export const POST = withAuthValidation(rescheduleSchema, async (body, request, {
         })
         .eq("id", body.appointmentId);
 
-      return NextResponse.json(
-        { error: "This slot has just been fully booked. Please choose another time." },
-        { status: 409 },
-      );
+      return apiError("This slot has just been fully booked. Please choose another time.", 409);
     }
 
     await logAuditEvent({
@@ -208,7 +190,7 @@ export const POST = withAuthValidation(rescheduleSchema, async (body, request, {
       logger.warn("Failed to prepare reschedule notifications", { context: "booking/reschedule", error: err });
     }
 
-    return NextResponse.json({
+    return apiSuccess({
       status: APPOINTMENT_STATUS.RESCHEDULED,
       message: "Appointment rescheduled successfully",
       newAppointmentId: body.appointmentId,

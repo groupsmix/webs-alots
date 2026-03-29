@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase-server";
 import { dispatchNotification } from "@/lib/notifications";
 import { APPOINTMENT_STATUS } from "@/lib/types/database";
@@ -7,6 +7,7 @@ import { logger } from "@/lib/logger";
 import { assertClinicId } from "@/lib/assert-tenant";
 import { sendInteractiveMessage } from "@/lib/whatsapp";
 import { substituteVariables, defaultNotificationTemplates } from "@/lib/notifications";
+import { apiInternalError, apiSuccess } from "@/lib/api-response";
 
 /**
  * GET /api/cron/reminders
@@ -70,11 +71,11 @@ export async function GET(request: NextRequest) {
 
     if (error) {
         logger.warn("Operation failed", { context: "cron/reminders", error });
-        return NextResponse.json({ error: "Failed to query appointments" }, { status: 500 });
+        return apiInternalError("Failed to query appointments");
     }
 
     if (!appointments || appointments.length === 0) {
-      return NextResponse.json({ message: "No upcoming appointments", sent: 0 });
+      return apiSuccess({ message: "No upcoming appointments", sent: 0 });
     }
 
     // --- Batch idempotency check (avoids N+1 queries) ---
@@ -282,13 +283,13 @@ export async function GET(request: NextRequest) {
       await supabase.from("notification_log").insert(pendingLogInserts);
     }
 
-    return NextResponse.json({
+    return apiSuccess({
       message: `Processed ${appointments.length} appointments`,
       sent: results.filter((r) => r.success).length,
       results,
     });
   } catch (err) {
     logger.warn("Operation failed", { context: "cron/reminders", error: err });
-    return NextResponse.json({ error: "Failed to process reminders" }, { status: 500 });
+    return apiInternalError("Failed to process reminders");
   }
 }

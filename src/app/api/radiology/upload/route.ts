@@ -11,11 +11,11 @@
  * Returns: { id, url, key }
  */
 
-import { NextResponse } from "next/server";
 import { uploadToR2, isR2Configured, buildUploadKey } from "@/lib/r2";
 import { createRadiologyImage } from "@/lib/data/server";
 import { withAuth } from "@/lib/with-auth";
 import { STAFF_ROLES } from "@/lib/auth-roles";
+import { apiError, apiInternalError, apiSuccess } from "@/lib/api-response";
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB (aligned with main upload route)
 
 const ALLOWED_TYPES = new Set([
@@ -62,10 +62,7 @@ function validateFileContent(buffer: Buffer, declaredType: string): boolean {
 
 export const POST = withAuth(async (request, { profile }) => {
   if (!isR2Configured()) {
-    return NextResponse.json(
-      { error: "File storage is not configured" },
-      { status: 503 },
-    );
+    return apiError("File storage is not configured", 503);
   }
 
   const formData = await request.formData();
@@ -78,28 +75,19 @@ export const POST = withAuth(async (request, { profile }) => {
   const description = (formData.get("description") as string) || undefined;
 
   if (!file || !(file instanceof File)) {
-    return NextResponse.json({ error: "No file provided" }, { status: 400 });
+    return apiError("No file provided");
   }
 
   if (!orderId || !clinicId) {
-    return NextResponse.json(
-      { error: "orderId is required and user must belong to a clinic" },
-      { status: 400 },
-    );
+    return apiError("orderId is required and user must belong to a clinic");
   }
 
   if (file.size > MAX_FILE_SIZE) {
-    return NextResponse.json(
-      { error: "File too large (max 10 MB)" },
-      { status: 400 },
-    );
+    return apiError("File too large (max 10 MB)");
   }
 
   if (!ALLOWED_TYPES.has(file.type)) {
-    return NextResponse.json(
-      { error: `File type not allowed: ${file.type}` },
-      { status: 400 },
-    );
+    return apiError(`File type not allowed: ${file.type}`);
   }
 
   const isDicom =
@@ -112,15 +100,12 @@ export const POST = withAuth(async (request, { profile }) => {
   // Validate file content matches declared MIME type via magic bytes.
   // Prevents attackers from uploading malicious files with a spoofed Content-Type.
   if (!validateFileContent(buffer, file.type)) {
-    return NextResponse.json(
-      { error: "File content does not match declared type" },
-      { status: 400 },
-    );
+    return apiError("File content does not match declared type");
   }
 
   const url = await uploadToR2(key, buffer, file.type);
   if (!url) {
-    return NextResponse.json({ error: "Upload failed" }, { status: 500 });
+    return apiInternalError("Upload failed");
   }
 
   const imageRecord = await createRadiologyImage({
@@ -136,11 +121,8 @@ export const POST = withAuth(async (request, { profile }) => {
   });
 
   if (!imageRecord) {
-    return NextResponse.json(
-      { error: "Failed to save image record" },
-      { status: 500 },
-    );
+    return apiInternalError("Failed to save image record");
   }
 
-  return NextResponse.json({ id: imageRecord.id, url, key });
+  return apiSuccess({ id: imageRecord.id, url, key });
 }, STAFF_ROLES);

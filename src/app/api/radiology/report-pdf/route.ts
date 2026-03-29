@@ -8,7 +8,6 @@
  * Returns: { pdfUrl }
  */
 
-import { NextResponse } from "next/server";
 import { uploadToR2, isR2Configured, buildUploadKey } from "@/lib/r2";
 import { updateRadiologyOrderPdfUrl } from "@/lib/data/server";
 import { STAFF_ROLES } from "@/lib/auth-roles";
@@ -16,6 +15,7 @@ import { logger } from "@/lib/logger";
 import { escapeHtml } from "@/lib/escape-html";
 import { radiologyReportPdfSchema } from "@/lib/validations";
 import { withAuthValidation } from "@/lib/api-validate";
+import { apiError, apiInternalError, apiSuccess } from "@/lib/api-response";
 
 function generateReportHtml(data: {
   patientName: string;
@@ -79,17 +79,11 @@ export const POST = withAuthValidation(radiologyReportPdfSchema, async (body, re
     // Derive clinic_id from the authenticated user's profile — never from the request body
     const clinicId = profile.clinic_id;
     if (!clinicId) {
-      return NextResponse.json(
-        { error: "User must belong to a clinic" },
-        { status: 400 },
-      );
+      return apiError("User must belong to a clinic");
     }
 
     if (!findings && !impression && !reportText) {
-      return NextResponse.json(
-        { error: "Report content is required (findings, impression, or reportText)" },
-        { status: 400 },
-      );
+      return apiError("Report content is required (findings, impression, or reportText)");
     }
 
     const generatedAt = new Date().toLocaleString("en-US", {
@@ -115,21 +109,18 @@ export const POST = withAuthValidation(radiologyReportPdfSchema, async (body, re
     if (!isR2Configured()) {
       // Return the HTML content as a data URL fallback
       const dataUrl = `data:text/html;base64,${Buffer.from(html).toString("base64")}`;
-      return NextResponse.json({ pdfUrl: dataUrl, fallback: true });
+      return apiSuccess({ pdfUrl: dataUrl, fallback: true });
     }
 
     const buffer = Buffer.from(html, "utf-8");
     const url = await uploadToR2(key, buffer, "text/html");
 
     if (!url) {
-      return NextResponse.json(
-        { error: "Failed to upload report" },
-        { status: 500 },
-      );
+      return apiInternalError("Failed to upload report");
     }
 
     // Update the order's pdf_url
     await updateRadiologyOrderPdfUrl(orderId, url);
 
-    return NextResponse.json({ pdfUrl: url });
+    return apiSuccess({ pdfUrl: url });
 }, STAFF_ROLES);

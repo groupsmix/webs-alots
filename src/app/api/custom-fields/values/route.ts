@@ -1,10 +1,10 @@
-import { NextResponse } from "next/server";
 import { withAuth } from "@/lib/with-auth";
 import { STAFF_ROLES } from "@/lib/auth-roles";
 import { logger } from "@/lib/logger";
 import { customFieldValuesSchema } from "@/lib/validations";
 import { withAuthValidation } from "@/lib/api-validate";
 import type { Json } from "@/lib/types/database";
+import { apiError, apiInternalError, apiSuccess } from "@/lib/api-response";
 /**
  * GET /api/custom-fields/values?entity_type=...&entity_id=...
  *
@@ -17,10 +17,7 @@ export const GET = withAuth(async (request, { supabase, profile }) => {
   const entityId = request.nextUrl.searchParams.get("entity_id");
 
   if (!clinicId || !entityType || !entityId) {
-    return NextResponse.json(
-      { error: "entity_type and entity_id are required, and user must belong to a clinic" },
-      { status: 400 },
-    );
+    return apiError("entity_type and entity_id are required, and user must belong to a clinic");
   }
 
   const { data, error } = await supabase
@@ -33,13 +30,10 @@ export const GET = withAuth(async (request, { supabase, profile }) => {
 
   if (error && error.code !== "PGRST116") {
     logger.warn("Operation failed", { context: "custom-fields/values", error });
-    return NextResponse.json(
-      { error: "Failed to fetch custom field values" },
-      { status: 500 },
-    );
+    return apiInternalError("Failed to fetch custom field values");
   }
 
-  return NextResponse.json({
+  return apiSuccess({
     values: data?.field_values ?? {},
     id: data?.id ?? null,
   });
@@ -55,10 +49,7 @@ export const POST = withAuthValidation(customFieldValuesSchema, async (body, req
     // Always derive clinic_id from the authenticated user's profile
     const clinic_id = profile.clinic_id;
     if (!clinic_id) {
-      return NextResponse.json(
-        { error: "User must belong to a clinic" },
-        { status: 400 },
-      );
+      return apiError("User must belong to a clinic");
     }
 
     // Look up the clinic's type key so we query definitions by the correct column
@@ -82,10 +73,7 @@ export const POST = withAuthValidation(customFieldValuesSchema, async (body, req
         );
         const unknownKeys = Object.keys(field_values).filter((k) => !defMap.has(k));
         if (unknownKeys.length > 0) {
-          return NextResponse.json(
-            { error: `Unknown custom field keys: ${unknownKeys.join(", ")}` },
-            { status: 400 },
-          );
+          return apiError(`Unknown custom field keys: ${unknownKeys.join(", ")}`);
         }
 
         // Type-check values against declared field types
@@ -100,10 +88,7 @@ export const POST = withAuthValidation(customFieldValuesSchema, async (body, req
             (expectedType === "select" && typeof value === "string") ||
             (expectedType === "multiselect" && Array.isArray(value));
           if (!valid) {
-            return NextResponse.json(
-              { error: `Field "${key}" expects type "${expectedType}"` },
-              { status: 400 },
-            );
+            return apiError(`Field "${key}" expects type "${expectedType}"`);
           }
         }
       }
@@ -129,13 +114,10 @@ export const POST = withAuthValidation(customFieldValuesSchema, async (body, req
 
     if (error) {
       logger.warn("Operation failed", { context: "custom-fields/values", error });
-      return NextResponse.json(
-        { error: "Failed to save custom field values" },
-        { status: 500 },
-      );
+      return apiInternalError("Failed to save custom field values");
     }
 
-    return NextResponse.json({ values: data });
+    return apiSuccess({ values: data });
 }, STAFF_ROLES);
 
 /**
@@ -148,10 +130,7 @@ export const PATCH = withAuthValidation(customFieldValuesSchema, async (body, re
     // Always derive clinic_id from the authenticated user's profile
     const clinic_id = profile.clinic_id;
     if (!clinic_id) {
-      return NextResponse.json(
-        { error: "User must belong to a clinic" },
-        { status: 400 },
-      );
+      return apiError("User must belong to a clinic");
     }
 
     // Look up the clinic's type key so we query definitions by the correct column
@@ -175,10 +154,7 @@ export const PATCH = withAuthValidation(customFieldValuesSchema, async (body, re
         );
         const unknownKeys = Object.keys(field_values).filter((k) => !defMap.has(k));
         if (unknownKeys.length > 0) {
-          return NextResponse.json(
-            { error: `Unknown custom field keys: ${unknownKeys.join(", ")}` },
-            { status: 400 },
-          );
+          return apiError(`Unknown custom field keys: ${unknownKeys.join(", ")}`);
         }
 
         for (const [key, value] of Object.entries(field_values as Record<string, unknown>)) {
@@ -192,10 +168,7 @@ export const PATCH = withAuthValidation(customFieldValuesSchema, async (body, re
             (expectedType === "select" && typeof value === "string") ||
             (expectedType === "multiselect" && Array.isArray(value));
           if (!valid) {
-            return NextResponse.json(
-              { error: `Field "${key}" expects type "${expectedType}"` },
-              { status: 400 },
-            );
+            return apiError(`Field "${key}" expects type "${expectedType}"`);
           }
         }
       }
@@ -234,11 +207,8 @@ export const PATCH = withAuthValidation(customFieldValuesSchema, async (body, re
 
     if (error) {
       logger.warn("Operation failed", { context: "custom-fields/values", error });
-      return NextResponse.json(
-        { error: "Failed to update custom field values" },
-        { status: 500 },
-      );
+      return apiInternalError("Failed to update custom field values");
     }
 
-    return NextResponse.json({ values: data });
+    return apiSuccess({ values: data });
 }, STAFF_ROLES);

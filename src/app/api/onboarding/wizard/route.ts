@@ -1,9 +1,9 @@
-import { NextResponse } from "next/server";
 import { logger } from "@/lib/logger";
 import { z } from "zod";
 import { withAuthValidation } from "@/lib/api-validate";
 import { sendTextMessage } from "@/lib/whatsapp";
 import { invalidateAllSubdomainCaches } from "@/lib/subdomain-cache";
+import { apiForbidden, apiSuccess } from "@/lib/api-response";
 
 // ---------------------------------------------------------------------------
 // Validation
@@ -49,10 +49,7 @@ export const POST = withAuthValidation(wizardSchema, async (body, request, { sup
 
     // Verify the authenticated user owns the clinic
     if (profile.clinic_id !== body.clinic_id) {
-      return NextResponse.json(
-        { error: "You are not authorised for this clinic" },
-        { status: 403 },
-      );
+      return apiForbidden("You are not authorised for this clinic");
     }
 
     // ------------------------------------------------------------------
@@ -175,7 +172,7 @@ export const POST = withAuthValidation(wizardSchema, async (body, request, { sup
       }
     }
 
-    return NextResponse.json({
+    return apiSuccess({
       status: "ok",
       message: body.go_live
         ? "Clinic is live — congratulations!"

@@ -17,7 +17,6 @@
  *   Returns: { valid: true } or deletes the object and returns 400
  */
 
-import { NextResponse } from "next/server";
 import {
   uploadToR2,
   isR2Configured,
@@ -32,6 +31,7 @@ import { withAuth } from "@/lib/with-auth";
 import { logger } from "@/lib/logger";
 import { uploadConfirmSchema } from "@/lib/validations";
 import { withAuthValidation } from "@/lib/api-validate";
+import { apiError, apiForbidden, apiInternalError, apiNotFound, apiSuccess } from "@/lib/api-response";
 
 const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2 MB
 
@@ -68,10 +68,7 @@ function validateFileContent(buffer: Buffer, declaredType: string): boolean {
 export const POST = withAuth(async (request, { profile }) => {
   if (!isR2Configured()) {
     logger.warn("Upload attempted but R2 storage is not configured", { context: "upload" });
-    return NextResponse.json(
-      { error: "File storage is not configured. Contact the administrator." },
-      { status: 503 },
-    );
+    return apiError("File storage is not configured. Contact the administrator.", 503);
   }
 
   const formData = await request.formData();
@@ -82,24 +79,15 @@ export const POST = withAuth(async (request, { profile }) => {
   const clinicId = profile.clinic_id ?? (profile.role === "super_admin" ? ((formData.get("clinicId") as string) || "shared") : "shared");
 
   if (!file || !(file instanceof File)) {
-    return NextResponse.json(
-      { error: "No file provided" },
-      { status: 400 },
-    );
+    return apiError("No file provided");
   }
 
   if (file.size > MAX_FILE_SIZE) {
-    return NextResponse.json(
-      { error: "File too large (max 2 MB)" },
-      { status: 400 },
-    );
+    return apiError("File too large (max 2 MB)");
   }
 
   if (!ALLOWED_TYPES.has(file.type)) {
-    return NextResponse.json(
-      { error: `File type not allowed: ${file.type}` },
-      { status: 400 },
-    );
+    return apiError(`File type not allowed: ${file.type}`);
   }
 
   const key = buildUploadKey(clinicId, category, file.name);
@@ -108,10 +96,7 @@ export const POST = withAuth(async (request, { profile }) => {
   // HIGH-05: Validate file content matches declared MIME type via magic bytes.
   // Prevents attackers from uploading malicious HTML/JS with a spoofed Content-Type.
   if (!validateFileContent(buffer, file.type)) {
-    return NextResponse.json(
-      { error: "File content does not match declared type" },
-      { status: 400 },
-    );
+    return apiError("File content does not match declared type");
   }
 
   // PHI compliance (Law 09-08): encrypt patient documents at rest
@@ -123,13 +108,10 @@ export const POST = withAuth(async (request, { profile }) => {
   }
 
   if (!url) {
-    return NextResponse.json(
-      { error: "Upload failed" },
-      { status: 500 },
-    );
+    return apiInternalError("Upload failed");
   }
 
-  return NextResponse.json({ url, key, encrypted: requiresEncryption(category) });
+  return apiSuccess({ url, key, encrypted: requiresEncryption(category) });
 }, ["super_admin", "clinic_admin", "receptionist", "doctor"]);
 
 /**
@@ -145,10 +127,7 @@ export const POST = withAuth(async (request, { profile }) => {
  */
 export const PUT = withAuthValidation(uploadConfirmSchema, async (body, request, { profile }) => {
   if (!isR2Configured()) {
-    return NextResponse.json(
-      { error: "File storage is not configured" },
-      { status: 503 },
-    );
+    return apiError("File storage is not configured", 503);
   }
 
   const { key, contentType } = body;
@@ -157,28 +136,19 @@ export const PUT = withAuthValidation(uploadConfirmSchema, async (body, request,
   // Keys follow the pattern: {clinicId}/{category}/{filename}
   const clinicId = profile.clinic_id ?? (profile.role === "super_admin" ? null : null);
   if (clinicId && !key.startsWith(`${clinicId}/`)) {
-    return NextResponse.json(
-      { error: "Access denied: file does not belong to your clinic" },
-      { status: 403 },
-    );
+    return apiForbidden("Access denied: file does not belong to your clinic");
   }
 
   if (!ALLOWED_TYPES.has(contentType)) {
     // Delete the object — the content type was not in the allowlist
     await deleteFromR2(key);
-    return NextResponse.json(
-      { error: `File type not allowed: ${contentType}` },
-      { status: 400 },
-    );
+    return apiError(`File type not allowed: ${contentType}`);
   }
 
   // Read the first bytes of the uploaded object to validate magic bytes
   const headBuffer = await readR2ObjectHead(key);
   if (!headBuffer) {
-    return NextResponse.json(
-      { error: "Uploaded file not found or unreadable" },
-      { status: 404 },
-    );
+    return apiNotFound("Uploaded file not found or unreadable");
   }
 
   if (!validateFileContent(headBuffer, contentType)) {
@@ -189,21 +159,15 @@ export const PUT = withAuthValidation(uploadConfirmSchema, async (body, request,
       declaredType: contentType,
     });
     await deleteFromR2(key);
-    return NextResponse.json(
-      { error: "File content does not match declared type" },
-      { status: 400 },
-    );
+    return apiError("File content does not match declared type");
   }
 
-  return NextResponse.json({ valid: true });
+  return apiSuccess({ valid: true });
 }, ["super_admin", "clinic_admin", "receptionist", "doctor"]);
 
 export const GET = withAuth(async (request, { profile }) => {
   if (!isR2Configured()) {
-    return NextResponse.json(
-      { error: "File storage is not configured" },
-      { status: 503 },
-    );
+    return apiError("File storage is not configured", 503);
   }
 
   const { searchParams } = new URL(request.url);
@@ -214,32 +178,23 @@ export const GET = withAuth(async (request, { profile }) => {
   const clinicId = profile.clinic_id ?? (profile.role === "super_admin" ? (searchParams.get("clinicId") || "shared") : "shared");
 
   if (!filename || !contentType) {
-    return NextResponse.json(
-      { error: "filename and contentType are required" },
-      { status: 400 },
-    );
+    return apiError("filename and contentType are required");
   }
 
   if (!ALLOWED_TYPES.has(contentType)) {
-    return NextResponse.json(
-      { error: `File type not allowed: ${contentType}` },
-      { status: 400 },
-    );
+    return apiError(`File type not allowed: ${contentType}`);
   }
 
   const key = buildUploadKey(clinicId, category, filename);
   const uploadUrl = await getPresignedUploadUrl(key, contentType);
 
   if (!uploadUrl) {
-    return NextResponse.json(
-      { error: "Failed to generate upload URL" },
-      { status: 500 },
-    );
+    return apiInternalError("Failed to generate upload URL");
   }
 
   const publicUrl = process.env.R2_PUBLIC_URL
     ? `${process.env.R2_PUBLIC_URL.replace(/\/$/, "")}/${key}`
     : null;
 
-  return NextResponse.json({ uploadUrl, publicUrl, key });
+  return apiSuccess({ uploadUrl, publicUrl, key });
 }, ["super_admin", "clinic_admin", "receptionist", "doctor"]);

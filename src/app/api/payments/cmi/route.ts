@@ -1,9 +1,9 @@
-import { NextResponse } from "next/server";
 import { createCmiPayment, isCmiConfigured } from "@/lib/cmi";
 import { STAFF_ROLES } from "@/lib/auth-roles";
 import { logger } from "@/lib/logger";
 import { cmiPaymentSchema } from "@/lib/validations";
 import { withAuthValidation } from "@/lib/api-validate";
+import { apiError, apiInternalError, apiSuccess } from "@/lib/api-response";
 
 /**
  * Validate that a redirect URL is same-origin to prevent open redirects.
@@ -43,10 +43,7 @@ function validateRedirectUrl(
  */
 export const POST = withAuthValidation(cmiPaymentSchema, async (body, request, { user }) => {
   if (!isCmiConfigured()) {
-    return NextResponse.json(
-      { error: "CMI payment gateway is not configured. Set CMI_MERCHANT_ID and CMI_SECRET_KEY." },
-      { status: 503 },
-    );
+    return apiError("CMI payment gateway is not configured. Set CMI_MERCHANT_ID and CMI_SECRET_KEY.", 503);
   }
 
     const {
@@ -77,13 +74,10 @@ export const POST = withAuthValidation(cmiPaymentSchema, async (body, request, {
     });
 
     if (!result.success) {
-      return NextResponse.json(
-        { error: result.error || "Failed to create CMI payment" },
-        { status: 500 },
-      );
+      return apiInternalError(result.error || "Failed to create CMI payment");
     }
 
-    return NextResponse.json({
+    return apiSuccess({
       orderId,
       formUrl: result.formUrl,
       formFields: result.formFields,

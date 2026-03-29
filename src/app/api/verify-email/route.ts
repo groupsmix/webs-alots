@@ -8,11 +8,12 @@
  * PUT  /api/verify-email — Verify the code
  */
 
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { logger } from "@/lib/logger";
 import { verifyEmailSendSchema, verifyEmailConfirmSchema } from "@/lib/validations";
 import { withValidation } from "@/lib/api-validate";
+import { apiError, apiNotFound, apiSuccess } from "@/lib/api-response";
 
 /**
  * Generate a 6-digit numeric verification code.
@@ -29,10 +30,7 @@ export const POST = withValidation(verifyEmailSendSchema, async (data, request: 
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
   if (!supabaseUrl || !supabaseAnonKey) {
-    return NextResponse.json(
-      { error: "Service unavailable" },
-      { status: 503 },
-    );
+    return apiError("Service unavailable", 503);
   }
 
   const { email } = data;
@@ -65,10 +63,7 @@ export const POST = withValidation(verifyEmailSendSchema, async (data, request: 
   if (error) {
     // Table may not exist yet — log but provide graceful fallback
     logger.error("Failed to store verification code", { context: "verify-email", error: error.message });
-    return NextResponse.json(
-      { error: "Verification service temporarily unavailable" },
-      { status: 503 },
-    );
+    return apiError("Verification service temporarily unavailable", 503);
   }
 
   // Send the code via email (Resend, SendGrid, etc.)
@@ -80,7 +75,7 @@ export const POST = withValidation(verifyEmailSendSchema, async (data, request: 
   // via environment variables. See docs/email-setup.md for details.
   // await sendVerificationEmail(email, code);
 
-  return NextResponse.json({
+  return apiSuccess({
     ok: true,
     message: "Verification code sent. Check your email.",
     expiresInMinutes: 10,
@@ -95,10 +90,7 @@ export const PUT = withValidation(verifyEmailConfirmSchema, async (data, request
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
   if (!supabaseUrl || !supabaseAnonKey) {
-    return NextResponse.json(
-      { error: "Service unavailable" },
-      { status: 503 },
-    );
+    return apiError("Service unavailable", 503);
   }
 
   const { email, code } = data;
@@ -121,28 +113,19 @@ export const PUT = withValidation(verifyEmailConfirmSchema, async (data, request
     .maybeSingle();
 
   if (error || !verification) {
-    return NextResponse.json(
-      { error: "No verification found for this email. Request a new code." },
-      { status: 404 },
-    );
+    return apiNotFound("No verification found for this email. Request a new code.");
   }
 
   if (verification.verified) {
-    return NextResponse.json({ ok: true, message: "Email already verified" });
+    return apiSuccess({ ok: true, message: "Email already verified" });
   }
 
   if (new Date(verification.expires_at) < new Date()) {
-    return NextResponse.json(
-      { error: "Verification code expired. Request a new one." },
-      { status: 410 },
-    );
+    return apiError("Verification code expired. Request a new one.", 410);
   }
 
   if (verification.code !== code) {
-    return NextResponse.json(
-      { error: "Invalid verification code" },
-      { status: 400 },
-    );
+    return apiError("Invalid verification code");
   }
 
   // Mark as verified
@@ -151,7 +134,7 @@ export const PUT = withValidation(verifyEmailConfirmSchema, async (data, request
     .update({ verified: true })
     .eq("email", email.toLowerCase().trim());
 
-  return NextResponse.json({
+  return apiSuccess({
     ok: true,
     message: "Email verified successfully",
   });

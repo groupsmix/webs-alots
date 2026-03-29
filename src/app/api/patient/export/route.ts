@@ -10,6 +10,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { logger } from "@/lib/logger";
+import { apiError, apiNotFound, apiUnauthorized } from "@/lib/api-response";
 
 /** Characters that trigger formula execution in Excel/Google Sheets. */
 const FORMULA_PREFIXES = new Set(["=", "+", "-", "@", "\t", "\r"]);
@@ -40,10 +41,7 @@ export async function GET(request: NextRequest) {
   const format = request.nextUrl.searchParams.get("format") ?? "json";
 
   if (format !== "json" && format !== "csv") {
-    return NextResponse.json(
-      { error: "Invalid format. Use 'json' or 'csv'." },
-      { status: 400 },
-    );
+    return apiError("Invalid format. Use 'json' or 'csv'.");
   }
 
   // Authenticate via Supabase session cookies
@@ -51,10 +49,7 @@ export async function GET(request: NextRequest) {
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
   if (!supabaseUrl || !supabaseAnonKey) {
-    return NextResponse.json(
-      { error: "Service unavailable" },
-      { status: 503 },
-    );
+    return apiError("Service unavailable", 503);
   }
 
   const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
@@ -73,7 +68,7 @@ export async function GET(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return apiUnauthorized();
   }
 
   // Fetch user profile — select only needed columns
@@ -84,7 +79,7 @@ export async function GET(request: NextRequest) {
     .maybeSingle();
 
   if (!profile) {
-    return NextResponse.json({ error: "Profile not found" }, { status: 404 });
+    return apiNotFound("Profile not found");
   }
 
   // Fetch patient-related data
