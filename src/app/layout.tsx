@@ -88,17 +88,33 @@ export default async function RootLayout({
             __html: safeJsonLdStringify({
               "@context": "https://schema.org",
               "@type": "MedicalBusiness",
-              name: tenant?.clinicName ?? "Oltigo",
-              description:
-                "Plateforme SaaS multi-tenant pour la gestion de cabinets m\u00e9dicaux, dentaires et pharmacies au Maroc.",
-              url: process.env.NEXT_PUBLIC_SITE_URL ?? "https://example.com",
+              name: tenant?.clinicName || clinicConfig.name || "Oltigo",
+              description: tenant
+                ? `${tenant.clinicName} — Cabinet ${tenant.clinicType || "médical"} professionnel. Prenez rendez-vous en ligne.`
+                : "Plateforme SaaS pour la gestion de cabinets médicaux, dentaires et pharmacies au Maroc.",
+              url: process.env.NEXT_PUBLIC_SITE_URL ?? "https://oltigo.com",
               "@id":
-                (process.env.NEXT_PUBLIC_SITE_URL ?? "https://example.com") +
+                (process.env.NEXT_PUBLIC_SITE_URL ?? "https://oltigo.com") +
                 "/#organization",
+              ...(clinicConfig.contact.phone && {
+                telephone: clinicConfig.contact.phone,
+              }),
+              ...(clinicConfig.contact.email && {
+                email: clinicConfig.contact.email,
+              }),
+              ...(clinicConfig.contact.address && {
+                address: {
+                  "@type": "PostalAddress",
+                  streetAddress: clinicConfig.contact.address,
+                  addressLocality: clinicConfig.contact.city ?? "",
+                  addressCountry: "MA",
+                },
+              }),
+              currenciesAccepted: clinicConfig.currency,
               potentialAction: {
                 "@type": "ReserveAction",
                 target:
-                  (process.env.NEXT_PUBLIC_SITE_URL ?? "https://example.com") +
+                  (process.env.NEXT_PUBLIC_SITE_URL ?? "https://oltigo.com") +
                   "/book",
                 name: "Prendre rendez-vous en ligne",
               },

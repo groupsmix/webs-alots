@@ -105,7 +105,7 @@ interface CircuitBreakerState {
   fallback: RateLimiter | null;
 }
 
-function createCircuitBreaker(_options: RateLimiterOptions): CircuitBreakerState {
+function createCircuitBreaker(): CircuitBreakerState {
   return {
     consecutiveFailures: 0,
     trippedAt: null,
@@ -146,7 +146,7 @@ function recordSuccess(state: CircuitBreakerState): void {
 
 function createSupabaseRateLimiter(options: RateLimiterOptions): RateLimiter {
   const { windowMs, max } = options;
-  const circuitBreaker = createCircuitBreaker(options);
+  const circuitBreaker = createCircuitBreaker();
 
   // SECURITY NOTE: Service role key intentionally used here.
   // rate_limit_entries is a global infrastructure table (not tenant-scoped)
@@ -310,7 +310,7 @@ interface CloudflareKV {
  */
 function createKVRateLimiter(options: RateLimiterOptions): RateLimiter {
   const { windowMs, max } = options;
-  const circuitBreaker = createCircuitBreaker(options);
+  const circuitBreaker = createCircuitBreaker();
 
   return {
     async check(key: string): Promise<boolean> {
