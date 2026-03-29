@@ -11,6 +11,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { logger } from "@/lib/logger";
+import { verifyEmailSendSchema, verifyEmailConfirmSchema, safeParse } from "@/lib/validations";
 
 /**
  * Generate a 6-digit numeric verification code.
@@ -33,9 +34,9 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  let body: { email?: string };
+  let raw: unknown;
   try {
-    body = await request.json();
+    raw = await request.json();
   } catch {
     return NextResponse.json(
       { error: "Invalid JSON body" },
@@ -43,14 +44,15 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const { email } = body;
-
-  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+  const parsed = safeParse(verifyEmailSendSchema, raw);
+  if (!parsed.success) {
     return NextResponse.json(
-      { error: "A valid email address is required" },
+      { error: parsed.error },
       { status: 400 },
     );
   }
+
+  const { email } = parsed.data;
 
   const code = generateCode();
   const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString(); // 10 min
@@ -116,9 +118,9 @@ export async function PUT(request: NextRequest) {
     );
   }
 
-  let body: { email?: string; code?: string };
+  let raw: unknown;
   try {
-    body = await request.json();
+    raw = await request.json();
   } catch {
     return NextResponse.json(
       { error: "Invalid JSON body" },
@@ -126,14 +128,15 @@ export async function PUT(request: NextRequest) {
     );
   }
 
-  const { email, code } = body;
-
-  if (!email || !code) {
+  const parsed = safeParse(verifyEmailConfirmSchema, raw);
+  if (!parsed.success) {
     return NextResponse.json(
-      { error: "Email and code are required" },
+      { error: parsed.error },
       { status: 400 },
     );
   }
+
+  const { email, code } = parsed.data;
 
   const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
     cookies: {

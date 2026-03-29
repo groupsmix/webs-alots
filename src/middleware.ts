@@ -14,6 +14,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { extractSubdomain } from "@/lib/subdomain";
 import { TENANT_HEADERS } from "@/lib/tenant";
 import { generateTraceId, TRACE_ID_HEADER } from "@/lib/logger";
+import { subdomainCache, SUBDOMAIN_CACHE_TTL_MS } from "@/lib/subdomain-cache";
 import {
   buildCsp,
   withSecurityHeaders,
@@ -31,8 +32,8 @@ import {
 } from "@/lib/middleware/routes";
 
 // ── Subdomain → clinic resolution cache ──────────────────────────
-// Avoids a DB query on every request for the same subdomain.
-// Entries expire after 5 minutes to pick up new clinics/renames.
+// Cache is now shared via @/lib/subdomain-cache so API routes can
+// invalidate entries when a clinic's subdomain changes.
 interface CachedClinic {
   id: string;
   name: string;
@@ -41,8 +42,6 @@ interface CachedClinic {
   tier: string;
   cachedAt: number;
 }
-const SUBDOMAIN_CACHE_TTL_MS = 60 * 1000; // 1 minute — reduced from 5 min to limit stale routing after subdomain changes
-const subdomainCache = new Map<string, CachedClinic>();
 
 /**
  * Set tenant headers on a response so downstream Server Components

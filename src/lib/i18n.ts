@@ -273,6 +273,14 @@ export const translations = {
     // Booking form
     "booking.submitting": "Envoi en cours…",
     "booking.next": "Suivant",
+
+    // Error pages
+    "error.title": "Une erreur est survenue",
+    "error.description": "Une erreur inattendue s'est produite. Veuillez réessayer ou contacter le support si le problème persiste.",
+    "error.criticalDescription": "Une erreur critique s'est produite. Veuillez rafraîchir la page.",
+    "error.retry": "Réessayer",
+    "error.sectionTitle": "Une erreur est survenue",
+    "error.sectionDescription": "Cette section a rencontré un problème. Veuillez réessayer.",
   },
 
   ar: {
@@ -536,6 +544,14 @@ export const translations = {
     // Booking form
     "booking.submitting": "جاري الإرسال…",
     "booking.next": "التالي",
+
+    // Error pages
+    "error.title": "حدث خطأ",
+    "error.description": "حدث خطأ غير متوقع. يرجى المحاولة مرة أخرى أو الاتصال بالدعم إذا استمرت المشكلة.",
+    "error.criticalDescription": "حدث خطأ حرج. يرجى تحديث الصفحة.",
+    "error.retry": "إعادة المحاولة",
+    "error.sectionTitle": "حدث خطأ",
+    "error.sectionDescription": "واجه هذا القسم مشكلة. يرجى المحاولة مرة أخرى.",
   },
 
   en: {
@@ -799,6 +815,14 @@ export const translations = {
     // Booking form
     "booking.submitting": "Sending…",
     "booking.next": "Next",
+
+    // Error pages
+    "error.title": "An error occurred",
+    "error.description": "An unexpected error occurred. Please try again or contact support if the problem persists.",
+    "error.criticalDescription": "A critical error occurred. Please refresh the page.",
+    "error.retry": "Retry",
+    "error.sectionTitle": "An error occurred",
+    "error.sectionDescription": "This section encountered a problem. Please try again.",
   },
 } as const;
 

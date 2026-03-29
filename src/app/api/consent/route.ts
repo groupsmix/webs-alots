@@ -11,17 +11,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { extractClientIp } from "@/lib/rate-limit";
 import { logger } from "@/lib/logger";
-
-const VALID_CONSENT_TYPES = [
-  "cookies_accepted",
-  "cookies_declined",
-  "data_processing",
-  "marketing_emails",
-  "terms_accepted",
-  "privacy_policy_accepted",
-] as const;
-
-type ConsentType = (typeof VALID_CONSENT_TYPES)[number];
+import { consentSchema, safeParse } from "@/lib/validations";
 
 export async function POST(request: NextRequest) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -34,7 +24,7 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  let body: { consentType?: string; granted?: boolean };
+  let body: unknown;
   try {
     body = await request.json();
   } catch {
@@ -44,26 +34,15 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const { consentType, granted } = body;
-
-  if (
-    !consentType ||
-    !VALID_CONSENT_TYPES.includes(consentType as ConsentType)
-  ) {
+  const parsed = safeParse(consentSchema, body);
+  if (!parsed.success) {
     return NextResponse.json(
-      {
-        error: `Invalid consent type. Valid types: ${VALID_CONSENT_TYPES.join(", ")}`,
-      },
+      { error: parsed.error },
       { status: 400 },
     );
   }
 
-  if (typeof granted !== "boolean") {
-    return NextResponse.json(
-      { error: "'granted' must be a boolean" },
-      { status: 400 },
-    );
-  }
+  const { consentType, granted } = parsed.data;
 
   const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
     cookies: {
@@ -95,7 +74,7 @@ export async function POST(request: NextRequest) {
 
   const { error } = await supabase.from("consent_logs").insert({
     user_id: userId,
-    consent_type: consentType,
+    consent_type: consentType as string,
     granted,
     ip_address: ip,
     user_agent: request.headers.get("user-agent") ?? null,

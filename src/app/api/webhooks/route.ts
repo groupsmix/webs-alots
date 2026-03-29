@@ -251,6 +251,13 @@ export async function POST(request: NextRequest) {
             .update({ status: "cancelled", cancellation_reason: "Cancelled via WhatsApp" })
             .eq("id", appt.id)
             .eq("clinic_id", clinicId);
+        } else if (upperText === "RESCHEDULE" && appt) {
+          // Mark appointment as needing reschedule — staff will follow up
+          await supabase
+            .from("appointments")
+            .update({ status: "reschedule_requested" })
+            .eq("id", appt.id)
+            .eq("clinic_id", clinicId);
         }
 
         // Notify the relevant staff member (doctor assigned to the appointment)
@@ -271,6 +278,13 @@ export async function POST(request: NextRequest) {
           await dispatchNotification(
             "cancellation",
             { patient_name: patientName, clinic_name: clinicName } as TemplateVariables,
+            recipientId,
+            ["in_app"],
+          );
+        } else if (upperText === "RESCHEDULE") {
+          await dispatchNotification(
+            "cancellation",
+            { patient_name: patientName, clinic_name: clinicName, reschedule: "true" } as TemplateVariables,
             recipientId,
             ["in_app"],
           );

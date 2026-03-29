@@ -337,6 +337,51 @@ export const brandingUpdateSchema = z.object({
   section_visibility: z.record(z.string(), z.boolean()).optional(),
 });
 
+// ── Upload ──────────────────────────────────────────────────────────────
+
+export const uploadPresignedSchema = z.object({
+  filename: z.string().min(1).max(500),
+  contentType: z.string().min(1).max(200),
+  category: z.string().min(1).max(100),
+  clinicId: z.string().optional(),
+});
+
+export const uploadConfirmSchema = z.object({
+  key: z.string().min(1).max(1000),
+  contentType: z.string().min(1).max(200),
+});
+
+// ── Consent ─────────────────────────────────────────────────────────────
+
+export const consentSchema = z.object({
+  consentType: z.enum([
+    "cookies_accepted",
+    "cookies_declined",
+    "data_processing",
+    "marketing_emails",
+    "terms_accepted",
+    "privacy_policy_accepted",
+  ]),
+  granted: z.boolean(),
+});
+
+// ── Clinic Features ─────────────────────────────────────────────────────
+
+export const clinicFeaturesQuerySchema = z.object({
+  type_key: z.string().min(1).max(100),
+});
+
+// ── Verify Email ────────────────────────────────────────────────────────
+
+export const verifyEmailSendSchema = z.object({
+  email: z.string().email().max(254),
+});
+
+export const verifyEmailConfirmSchema = z.object({
+  email: z.string().email().max(254),
+  code: z.string().length(6),
+});
+
 // ── Helper: parse with friendly error response ──────────────────────────
 
 /**
