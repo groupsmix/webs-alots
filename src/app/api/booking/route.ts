@@ -414,14 +414,18 @@ export async function GET(request: NextRequest) {
       getPublicSlotBookingCounts(date, doctorId),
     ]);
 
-    return apiSuccess({
-      slots: availableSlots,
-      allSlots,
-      bookedCounts,
-      maxPerSlot: tenantCfg.booking.maxPerSlot,
-      slotDuration: tenantCfg.booking.slotDuration,
-      bufferTime: tenantCfg.booking.bufferTime,
-    });
+    return apiSuccess(
+      {
+        slots: availableSlots,
+        allSlots,
+        bookedCounts,
+        maxPerSlot: tenantCfg.booking.maxPerSlot,
+        slotDuration: tenantCfg.booking.slotDuration,
+        bufferTime: tenantCfg.booking.bufferTime,
+      },
+      200,
+      { "Cache-Control": "public, max-age=60" },
+    );
   } catch (err) {
     logger.warn("Operation failed", { context: "booking/route", error: err });
     return apiInternalError("Failed to fetch available slots");

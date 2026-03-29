@@ -83,5 +83,6 @@ export async function GET() {
       checks,
     },
     overallStatus === "down" ? 503 : 200,
+    { "Cache-Control": "public, max-age=30" },
   );
 }

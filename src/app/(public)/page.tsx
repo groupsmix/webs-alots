@@ -23,6 +23,24 @@ import {
   LocationSection,
 } from "@/components/public/sections";
 import { safeJsonLdStringify } from "@/lib/json-ld";
+import { logger } from "@/lib/logger";
+import { notFound } from "next/navigation";
+
+/** Default timeout (ms) for Supabase data-fetching on public pages. */
+const DATA_FETCH_TIMEOUT_MS = 10_000;
+
+/**
+ * Race a promise against a timeout. Rejects with a descriptive error
+ * if the promise does not settle within `ms` milliseconds.
+ */
+function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error(`Timeout: ${label} did not respond within ${ms}ms`)), ms),
+    ),
+  ]);
+}
 
 export async function generateMetadata(): Promise<Metadata> {
   const tenant = await getTenant();
@@ -95,11 +113,32 @@ export default async function HomePage() {
   }
 
   // Subdomain → show clinic homepage with tenant data
-  const [branding, reviews, avgRating] = await Promise.all([
-    getPublicBranding(),
-    getPublicReviews(),
-    getPublicAverageRating(),
-  ]);
+  let branding;
+  let reviews;
+  let avgRating;
+
+  try {
+    [branding, reviews, avgRating] = await withTimeout(
+      Promise.all([
+        getPublicBranding(),
+        getPublicReviews(),
+        getPublicAverageRating(),
+      ]),
+      DATA_FETCH_TIMEOUT_MS,
+      "clinic public data",
+    );
+  } catch (err) {
+    logger.error("Failed to fetch public clinic data", {
+      context: "public-page",
+      clinicId: tenant.clinicId,
+      error: err,
+    });
+    throw err;
+  }
+
+  if (!branding) {
+    notFound();
+  }
   const sections = mergeSectionVisibility(
     branding.sectionVisibility as Record<string, boolean>,
   );

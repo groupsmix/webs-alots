@@ -105,7 +105,7 @@ export async function GET() {
     // PII that should only be visible to authenticated users.
     const { phone: _phone, address: _address, ...publicData } = data;
 
-    return apiSuccess(publicData);
+    return apiSuccess(publicData, 200, { "Cache-Control": "public, max-age=300" });
   } catch (err) {
     logger.warn("Operation failed", { context: "branding", error: err });
     return apiInternalError("Failed to fetch branding");

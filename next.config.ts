@@ -82,12 +82,14 @@ const nextConfig: NextConfig = {
         ],
       },
       {
-        // Cache API responses for 5 minutes
+        // Default: prevent caching of API responses (authentication, patient
+        // data, mutations, etc.).  Individual routes that serve truly public
+        // data can override this with their own Cache-Control header.
         source: "/api/:path*",
         headers: [
           {
             key: "Cache-Control",
-            value: "public, max-age=300, s-maxage=300",
+            value: "private, no-store",
           },
         ],
       },
