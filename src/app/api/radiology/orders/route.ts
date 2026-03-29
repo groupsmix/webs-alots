@@ -8,7 +8,6 @@
  * PATCH body (save report): { orderId, action: "report", findings, impression, reportText, templateId?, radiologistId? }
  */
 
-import { NextResponse } from "next/server";
 import {
   createRadiologyOrder,
   updateRadiologyOrderStatus,
@@ -18,16 +17,14 @@ import { STAFF_ROLES } from "@/lib/auth-roles";
 import { logger } from "@/lib/logger";
 import { radiologyOrderCreateSchema, radiologyOrderPatchSchema } from "@/lib/validations";
 import { withAuthValidation } from "@/lib/api-validate";
+import { apiError, apiInternalError, apiSuccess } from "@/lib/api-response";
 
 export const POST = withAuthValidation(radiologyOrderCreateSchema, async (body, request, { profile }) => {
     const { patientId, modality, bodyPart, clinicalIndication, priority, scheduledAt, orderingDoctorId } = body;
     // Derive clinic_id from the authenticated user's profile — never from the request body
     const clinicId = profile.clinic_id;
     if (!clinicId) {
-      return NextResponse.json(
-        { error: "User must belong to a clinic" },
-        { status: 400 },
-      );
+      return apiError("User must belong to a clinic");
     }
 
     const result = await createRadiologyOrder({
@@ -42,13 +39,10 @@ export const POST = withAuthValidation(radiologyOrderCreateSchema, async (body, 
     });
 
     if (!result) {
-      return NextResponse.json(
-        { error: "Failed to create order" },
-        { status: 500 },
-      );
+      return apiInternalError("Failed to create order");
     }
 
-    return NextResponse.json(result, { status: 201 });
+    return apiSuccess(result, 201);
 }, STAFF_ROLES);
 
 export const PATCH = withAuthValidation(radiologyOrderPatchSchema, async (body, request) => {
@@ -58,21 +52,15 @@ export const PATCH = withAuthValidation(radiologyOrderPatchSchema, async (body, 
       const { status } = body;
       const success = await updateRadiologyOrderStatus(orderId, status);
       if (!success) {
-        return NextResponse.json(
-          { error: "Failed to update status" },
-          { status: 500 },
-        );
+        return apiInternalError("Failed to update status");
       }
-      return NextResponse.json({ success: true });
+      return apiSuccess({ success: true });
     }
 
     if (action === "report") {
       const { findings, impression, reportText, templateId, radiologistId } = body;
       if (!findings && !impression && !reportText) {
-        return NextResponse.json(
-          { error: "At least one of findings, impression, or reportText is required" },
-          { status: 400 },
-        );
+        return apiError("At least one of findings, impression, or reportText is required");
       }
       const success = await saveRadiologyReport(orderId, {
         findings: findings ?? "",
@@ -82,16 +70,10 @@ export const PATCH = withAuthValidation(radiologyOrderPatchSchema, async (body, 
         radiologist_id: radiologistId,
       });
       if (!success) {
-        return NextResponse.json(
-          { error: "Failed to save report" },
-          { status: 500 },
-        );
+        return apiInternalError("Failed to save report");
       }
-      return NextResponse.json({ success: true });
+      return apiSuccess({ success: true });
     }
 
-    return NextResponse.json(
-      { error: `Unknown action: ${action}` },
-      { status: 400 },
-    );
+    return apiError(`Unknown action: ${action}`);
 }, STAFF_ROLES);

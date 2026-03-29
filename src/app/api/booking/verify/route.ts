@@ -14,11 +14,12 @@
  * activated, an OTP check should be added before token issuance.
  */
 
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { requireTenantWithConfig } from "@/lib/tenant";
 import { withValidation } from "@/lib/api-validate";
 import { logger } from "@/lib/logger";
 import { z } from "zod";
+import { apiError, apiSuccess } from "@/lib/api-response";
 const bookingVerifySchema = z.object({
   phone: z.string().min(6).max(30),
 });
@@ -38,10 +39,7 @@ export const POST = withValidation(bookingVerifySchema, async (data, request: Ne
       "BOOKING_TOKEN_SECRET is not configured — cannot issue booking tokens",
       { context: "booking/verify" },
     );
-    return NextResponse.json(
-      { error: "Booking verification is not available. Contact the clinic." },
-      { status: 503 },
-    );
+    return apiError("Booking verification is not available. Contact the clinic.", 503);
   }
 
   // Build the token: phone:expiryTimestamp:hmacSignature
@@ -62,7 +60,7 @@ export const POST = withValidation(bookingVerifySchema, async (data, request: Ne
 
   const token = `${phone}:${expiry}:${signature}`;
 
-  return NextResponse.json({
+  return apiSuccess({
     token,
     expiresAt: new Date(expiry).toISOString(),
   });

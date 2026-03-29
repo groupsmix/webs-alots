@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { requireTenantWithConfig } from "@/lib/tenant";
 import { clinicConfig } from "@/config/clinic.config";
 import {
@@ -22,6 +22,7 @@ import { withValidation } from "@/lib/api-validate";
 import { dispatchNotification } from "@/lib/notifications";
 import type { TemplateVariables } from "@/lib/notifications";
 import { z } from "zod";
+import { apiError, apiForbidden, apiInternalError, apiRateLimited, apiSuccess, apiUnauthorized } from "@/lib/api-response";
 
 const bookingRequestSchema = z.object({
   specialtyId: z.string().min(1),
@@ -182,10 +183,7 @@ export const POST = withValidation(bookingRequestSchema, async (body, request: N
     const clientIp = extractClientIp(request);
     const allowed = await bookingLimiter.check(`booking:${clientIp}`);
     if (!allowed) {
-      return NextResponse.json(
-        { error: "Too many booking requests. Please try again later." },
-        { status: 429 },
-      );
+      return apiRateLimited("Too many booking requests. Please try again later.");
     }
 
     // CRITICAL-02: Require a booking verification token.
@@ -194,19 +192,13 @@ export const POST = withValidation(bookingRequestSchema, async (body, request: N
     // system with fake patient records and appointments.
     const bookingToken = request.headers.get("x-booking-token");
     if (!bookingToken) {
-      return NextResponse.json(
-        { error: "Booking verification required. Call POST /api/booking/verify first." },
-        { status: 401 },
-      );
+      return apiUnauthorized("Booking verification required. Call POST /api/booking/verify first.");
     }
 
     // Verify the booking token (HMAC-based, issued after OTP check)
     const isValidToken = await verifyBookingToken(bookingToken);
     if (!isValidToken) {
-      return NextResponse.json(
-        { error: "Invalid or expired booking token" },
-        { status: 403 },
-      );
+      return apiForbidden("Invalid or expired booking token");
     }
 
     const { tenant, config: tenantConfig } = await requireTenantWithConfig();
@@ -215,10 +207,7 @@ export const POST = withValidation(bookingRequestSchema, async (body, request: N
 
     const validation = await validateBookingRequest(body, tenantConfig.timezone, tenantConfig.workingHours);
     if (validation.error) {
-      return NextResponse.json(
-        { error: validation.error },
-        { status: 400 },
-      );
+      return apiError(validation.error);
     }
 
     // Reuse data already fetched during validation (avoids duplicate queries)
@@ -246,11 +235,11 @@ export const POST = withValidation(bookingRequestSchema, async (body, request: N
     ]);
 
     if (!doctorCheck.data) {
-      return NextResponse.json({ error: "Doctor not found in this clinic" }, { status: 400 });
+      return apiError("Doctor not found in this clinic");
     }
 
     if (!serviceCheck.data) {
-      return NextResponse.json({ error: "Service not found in this clinic" }, { status: 400 });
+      return apiError("Service not found in this clinic");
     }
 
     // Find or create a patient record using the SECURITY DEFINER RPC
@@ -267,17 +256,14 @@ export const POST = withValidation(bookingRequestSchema, async (body, request: N
         context: "booking/route",
         error: patientError,
       });
-      return NextResponse.json({ error: "Failed to create patient record" }, { status: 500 });
+      return apiInternalError("Failed to create patient record");
     }
 
     // Calculate end time with midnight overflow guard
     const duration = service?.duration ?? tenantConfig.booking.slotDuration;
     const { endTime, overflows } = computeEndTime(body.time, duration);
     if (overflows) {
-      return NextResponse.json(
-        { error: "Appointment would extend past midnight. Please choose an earlier time." },
-        { status: 400 },
-      );
+      return apiError("Appointment would extend past midnight. Please choose an earlier time.");
     }
 
     // Determine initial status based on clinic payment requirements
@@ -316,13 +302,10 @@ export const POST = withValidation(bookingRequestSchema, async (body, request: N
     if (apptError || !appointment) {
       // Handle unique constraint violation (double-booking race condition)
       if (apptError?.code === "23505") {
-        return NextResponse.json(
-          { error: "This slot has already been booked. Please choose another time." },
-          { status: 409 },
-        );
+        return apiError("This slot has already been booked. Please choose another time.", 409);
       }
       // Production: error logged via audit trail; no console output
-      return NextResponse.json({ error: "Failed to create booking" }, { status: 500 });
+      return apiInternalError("Failed to create booking");
     }
 
     // ── DI-HIGH-02: Post-insert maxPerSlot enforcement ──────────────
@@ -352,10 +335,7 @@ export const POST = withValidation(bookingRequestSchema, async (body, request: N
         .delete()
         .eq("id", appointment.id);
 
-      return NextResponse.json(
-        { error: "This slot has just been fully booked. Please choose another time." },
-        { status: 409 },
-      );
+      return apiError("This slot has just been fully booked. Please choose another time.", 409);
     }
 
     // Audit log for healthcare compliance
@@ -393,7 +373,7 @@ export const POST = withValidation(bookingRequestSchema, async (body, request: N
       logger.warn("Booking notification dispatch failed", { context: "booking/route", error: err });
     });
 
-    return NextResponse.json({
+    return apiSuccess({
       status: "created",
       message: "Appointment booked successfully",
       appointment: {
@@ -423,10 +403,7 @@ export async function GET(request: NextRequest) {
     const date = searchParams.get("date");
 
     if (!doctorId || !date) {
-      return NextResponse.json(
-        { error: "doctorId and date are required" },
-        { status: 400 },
-      );
+      return apiError("doctorId and date are required");
     }
 
     const { config: tenantCfg } = await requireTenantWithConfig();
@@ -437,7 +414,7 @@ export async function GET(request: NextRequest) {
       getPublicSlotBookingCounts(date, doctorId),
     ]);
 
-    return NextResponse.json({
+    return apiSuccess({
       slots: availableSlots,
       allSlots,
       bookedCounts,
@@ -447,9 +424,6 @@ export async function GET(request: NextRequest) {
     });
   } catch (err) {
     logger.warn("Operation failed", { context: "booking/route", error: err });
-    return NextResponse.json(
-      { error: "Failed to fetch available slots" },
-      { status: 500 },
-    );
+    return apiInternalError("Failed to fetch available slots");
   }
 }

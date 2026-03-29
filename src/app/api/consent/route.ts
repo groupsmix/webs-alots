@@ -7,22 +7,20 @@
  * POST /api/consent — Log a consent event
  */
 
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { extractClientIp } from "@/lib/rate-limit";
 import { logger } from "@/lib/logger";
 import { consentSchema } from "@/lib/validations";
 import { withValidation } from "@/lib/api-validate";
+import { apiError, apiSuccess } from "@/lib/api-response";
 
 export const POST = withValidation(consentSchema, async (data, request: NextRequest) => {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
   if (!supabaseUrl || !supabaseAnonKey) {
-    return NextResponse.json(
-      { error: "Service unavailable" },
-      { status: 503 },
-    );
+    return apiError("Service unavailable", 503);
   }
 
   const { consentType, granted } = data;
@@ -66,8 +64,8 @@ export const POST = withValidation(consentSchema, async (data, request: NextRequ
   if (error) {
     // Table may not exist yet — log but don't fail the user experience
     logger.warn("Failed to log consent", { context: "consent", error: error.message });
-    return NextResponse.json({ ok: true, logged: false });
+    return apiSuccess({ logged: false });
   }
 
-  return NextResponse.json({ ok: true, logged: true });
+  return apiSuccess({ logged: true });
 });

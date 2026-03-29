@@ -7,6 +7,7 @@ import {
 import { hmacSha256Hex, timingSafeEqual } from "@/lib/crypto-utils";
 import { logger } from "@/lib/logger";
 import { setTenantContext, logTenantContext } from "@/lib/tenant-context";
+import { apiForbidden, apiInternalError, apiSuccess, apiUnauthorized } from "@/lib/api-response";
 /**
  * Verifies the Meta webhook signature (X-Hub-Signature-256) using HMAC-SHA256.
  * Returns true if the signature is valid, false otherwise.
@@ -118,10 +119,7 @@ export async function POST(request: NextRequest) {
     const signatureHeader = request.headers.get("x-hub-signature-256");
     const isValid = await verifyWebhookSignature(rawBody, signatureHeader);
     if (!isValid) {
-      return NextResponse.json(
-        { error: "Invalid webhook signature" },
-        { status: 401 },
-      );
+      return apiUnauthorized("Invalid webhook signature");
     }
 
     const body = JSON.parse(rawBody) as Record<string, unknown>;
@@ -295,13 +293,10 @@ export async function POST(request: NextRequest) {
       // Other messages are logged for receptionist review
     }
 
-    return NextResponse.json({ status: "ok" });
+    return apiSuccess({ status: "ok" });
   } catch (err) {
     logger.warn("Operation failed", { context: "webhooks", error: err });
-    return NextResponse.json(
-      { error: "Failed to process webhook" },
-      { status: 500 },
-    );
+    return apiInternalError("Failed to process webhook");
   }
 }
 
@@ -321,5 +316,5 @@ export async function GET(request: NextRequest) {
     return new NextResponse(challenge, { status: 200 });
   }
 
-  return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  return apiForbidden("Forbidden");
 }

@@ -1,4 +1,3 @@
-import { NextResponse } from "next/server";
 import { withAuth } from "@/lib/with-auth";
 import { requireTenant } from "@/lib/tenant";
 import { findOrCreatePatient } from "@/lib/find-or-create-patient";
@@ -9,6 +8,7 @@ import { STAFF_ROLES } from "@/lib/auth-roles";
 import { logger } from "@/lib/logger";
 import { emergencySlotSchema } from "@/lib/validations";
 import { withAuthValidation } from "@/lib/api-validate";
+import { apiError, apiInternalError, apiNotFound, apiSuccess } from "@/lib/api-response";
 /**
  * POST /api/booking/emergency-slot
  *
@@ -23,7 +23,7 @@ export const POST = withAuthValidation(emergencySlotSchema, async (body, request
 
       // Input length validation to prevent DoS via oversized payloads
       if (body.reason && body.reason.length > 1000) {
-        return NextResponse.json({ error: "Reason exceeds maximum allowed length" }, { status: 400 });
+        return apiError("Reason exceeds maximum allowed length");
       }
 
       // Verify doctor exists
@@ -36,16 +36,13 @@ export const POST = withAuthValidation(emergencySlotSchema, async (body, request
         .single();
 
       if (!doctor) {
-        return NextResponse.json({ error: "Doctor not found" }, { status: 404 });
+        return apiNotFound("Doctor not found");
       }
 
       // Calculate end time with midnight overflow guard
       const { endTime, overflows } = computeEndTime(body.startTime, body.durationMin);
       if (overflows) {
-        return NextResponse.json(
-          { error: "Emergency slot would extend past midnight. Please choose an earlier time or shorter duration." },
-          { status: 400 },
-        );
+        return apiError("Emergency slot would extend past midnight. Please choose an earlier time or shorter duration.");
       }
 
       const { data: slot, error: insertError } = await supabase
@@ -63,10 +60,10 @@ export const POST = withAuthValidation(emergencySlotSchema, async (body, request
         .single();
 
       if (insertError || !slot) {
-        return NextResponse.json({ error: insertError?.message ?? "Failed to create emergency slot" }, { status: 500 });
+        return apiInternalError(insertError?.message ?? "Failed to create emergency slot");
       }
 
-      return NextResponse.json({
+      return apiSuccess({
         status: "created",
         message: "Emergency slot created",
         slotId: slot.id,
@@ -75,15 +72,12 @@ export const POST = withAuthValidation(emergencySlotSchema, async (body, request
 
     if (body.action === "book") {
       if (!body.slotId || !body.patientId || !body.patientName) {
-        return NextResponse.json(
-          { error: "slotId, patientId, and patientName are required" },
-          { status: 400 },
-        );
+        return apiError("slotId, patientId, and patientName are required");
       }
 
       // Input length validation to prevent DoS via oversized payloads
       if (body.patientName.length > 200 || (body.patientPhone && body.patientPhone.length > 30)) {
-        return NextResponse.json({ error: "Input exceeds maximum allowed length" }, { status: 400 });
+        return apiError("Input exceeds maximum allowed length");
       }
 
       // ATOMIC: Claim the slot only if it is currently unbooked.
@@ -98,10 +92,7 @@ export const POST = withAuthValidation(emergencySlotSchema, async (body, request
         .single();
 
       if (claimError || !claimedSlot) {
-        return NextResponse.json(
-          { error: "Emergency slot is unavailable or already booked" },
-          { status: 409 },
-        );
+        return apiError("Emergency slot is unavailable or already booked", 409);
       }
 
       // Find or create patient (prefer phone-based lookup to avoid name collisions)
@@ -115,7 +106,7 @@ export const POST = withAuthValidation(emergencySlotSchema, async (body, request
           .from("emergency_slots")
           .update({ is_booked: false })
           .eq("id", body.slotId);
-        return NextResponse.json({ error: "Failed to resolve patient" }, { status: 500 });
+        return apiInternalError("Failed to resolve patient");
       }
 
       // Slot is now atomically claimed. Create the appointment.
@@ -150,7 +141,7 @@ export const POST = withAuthValidation(emergencySlotSchema, async (body, request
           .update({ is_booked: false })
           .eq("id", body.slotId);
 
-        return NextResponse.json({ error: "Failed to create appointment" }, { status: 500 });
+        return apiInternalError("Failed to create appointment");
       }
 
       // Audit log for healthcare compliance
@@ -162,14 +153,14 @@ export const POST = withAuthValidation(emergencySlotSchema, async (body, request
         description: `Emergency appointment ${appointment.id} created for patient ${patientId} with doctor ${claimedSlot.doctor_id} on ${claimedSlot.slot_date}`,
       });
 
-      return NextResponse.json({
+      return apiSuccess({
         status: "booked",
         message: "Emergency slot booked",
         appointmentId: appointment.id,
       });
     }
 
-    return NextResponse.json({ error: "action must be 'create' or 'book'" }, { status: 400 });
+    return apiError("action must be 'create' or 'book'");
 }, STAFF_ROLES);
 
 /**
@@ -198,10 +189,10 @@ export const GET = withAuth(async (request, { supabase }) => {
   const { data: slots, error } = await q.order("start_time", { ascending: true });
 
   if (error) {
-    return NextResponse.json({ slots: [] });
+    return apiSuccess({ slots: [] });
   }
 
-  return NextResponse.json({
+  return apiSuccess({
     slots: (slots ?? []).map((s) => ({
       id: s.id,
       doctorId: s.doctor_id,

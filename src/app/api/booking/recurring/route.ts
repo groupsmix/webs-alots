@@ -1,4 +1,3 @@
-import { NextResponse } from "next/server";
 import { requireTenantWithConfig } from "@/lib/tenant";
 import { getPublicServices } from "@/lib/data/public";
 import { findOrCreatePatient } from "@/lib/find-or-create-patient";
@@ -9,6 +8,7 @@ import { STAFF_ROLES } from "@/lib/auth-roles";
 import { logger } from "@/lib/logger";
 import { recurringSchema } from "@/lib/validations";
 import { withAuthValidation } from "@/lib/api-validate";
+import { apiError, apiInternalError, apiNotFound, apiSuccess } from "@/lib/api-response";
 function addInterval(date: Date, pattern: "weekly" | "biweekly" | "monthly"): Date {
   const next = new Date(date);
   if (pattern === "weekly") {
@@ -42,17 +42,14 @@ export const POST = withAuthValidation(recurringSchema, async (body, request, { 
 
       // Input length validation to prevent DoS via oversized payloads
       if (body.patientName.length > 200 || (body.patientPhone && body.patientPhone.length > 30)) {
-        return NextResponse.json({ error: "Input exceeds maximum allowed length" }, { status: 400 });
+        return apiError("Input exceeds maximum allowed length");
       }
 
       // FIX (MED-04): Validate occurrences against clinic config limit
       // to prevent unbounded recurring booking creation.
       const maxOccurrences = tenantConfig.booking.maxRecurringWeeks;
       if (body.occurrences < 1 || body.occurrences > maxOccurrences) {
-        return NextResponse.json(
-          { error: `occurrences must be between 1 and ${maxOccurrences}` },
-          { status: 400 },
-        );
+        return apiError(`occurrences must be between 1 and ${maxOccurrences}`);
       }
 
       const services = await getPublicServices();
@@ -64,7 +61,7 @@ export const POST = withAuthValidation(recurringSchema, async (body, request, { 
         { phone: body.patientPhone },
       );
       if (!patientId) {
-        return NextResponse.json({ error: "Failed to resolve patient" }, { status: 500 });
+        return apiInternalError("Failed to resolve patient");
       }
 
       const groupId = crypto.randomUUID();
@@ -74,10 +71,7 @@ export const POST = withAuthValidation(recurringSchema, async (body, request, { 
       const duration = service?.duration ?? tenantConfig.booking.slotDuration;
       const { endTime, overflows } = computeEndTime(body.time, duration);
       if (overflows) {
-        return NextResponse.json(
-          { error: "Appointment would extend past midnight. Please choose an earlier time or shorter duration." },
-          { status: 400 },
-        );
+        return apiError("Appointment would extend past midnight. Please choose an earlier time or shorter duration.");
       }
 
       // Build all appointment records first, then batch insert in a single query
@@ -124,7 +118,7 @@ export const POST = withAuthValidation(recurringSchema, async (body, request, { 
       }
 
       if (appointmentRows.length === 0) {
-        return NextResponse.json({ error: "No appointments could be created", success: false }, { status: 400 });
+        return apiError("No appointments could be created");
       }
 
       // Check for conflicts with existing appointments before inserting
@@ -161,11 +155,7 @@ export const POST = withAuthValidation(recurringSchema, async (body, request, { 
       }
 
       if (appointmentRows.length === 0) {
-        return NextResponse.json({
-          error: "All dates conflict with existing appointments",
-          success: false,
-          skippedDates,
-        }, { status: 409 });
+        return apiError("All dates conflict with existing appointments", 409);
       }
 
       // Single bulk insert instead of N sequential queries
@@ -175,12 +165,12 @@ export const POST = withAuthValidation(recurringSchema, async (body, request, { 
         .select("id");
 
       if (batchError || !appointments || appointments.length === 0) {
-        return NextResponse.json({ error: "Failed to create recurring appointments" }, { status: 500 });
+        return apiInternalError("Failed to create recurring appointments");
       }
 
       const appointmentIds = appointments.map((a) => a.id);
 
-      return NextResponse.json({
+      return apiSuccess({
         status: "created",
         message: `Recurring booking created (${appointmentIds.length} appointments)`,
         appointmentIds,
@@ -190,7 +180,7 @@ export const POST = withAuthValidation(recurringSchema, async (body, request, { 
 
     if (body.action === "cancel") {
       if (!body.groupId) {
-        return NextResponse.json({ error: "groupId is required" }, { status: 400 });
+        return apiError("groupId is required");
       }
 
       // Find appointments in the group by recurrence_group_id column
@@ -201,7 +191,7 @@ export const POST = withAuthValidation(recurringSchema, async (body, request, { 
         .eq("recurrence_group_id", body.groupId);
 
       if (!groupAppts || groupAppts.length === 0) {
-        return NextResponse.json({ error: "No appointments found for this group" }, { status: 404 });
+        return apiNotFound("No appointments found for this group");
       }
 
       let toCancel = groupAppts;
@@ -220,12 +210,12 @@ export const POST = withAuthValidation(recurringSchema, async (body, request, { 
           .in("id", cancelIds);
       }
 
-      return NextResponse.json({
+      return apiSuccess({
         status: APPOINTMENT_STATUS.CANCELLED,
         message: `${cancelIds.length} appointment(s) cancelled`,
         cancelledCount: cancelIds.length,
       });
     }
 
-    return NextResponse.json({ error: "action must be 'create' or 'cancel'" }, { status: 400 });
+    return apiError("action must be 'create' or 'cancel'");
 }, STAFF_ROLES);

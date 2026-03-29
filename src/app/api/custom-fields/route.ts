@@ -1,9 +1,9 @@
-import { NextResponse } from "next/server";
 import { withAuth } from "@/lib/with-auth";
 import { logger } from "@/lib/logger";
 import { customFieldCreateSchema, customFieldUpdateSchema } from "@/lib/validations";
 import { withAuthValidation } from "@/lib/api-validate";
 import type { Json } from "@/lib/types/database";
+import { apiError, apiForbidden, apiInternalError, apiSuccess } from "@/lib/api-response";
 /**
  * GET /api/custom-fields?clinic_type_key=...&entity_type=...
  *
@@ -16,10 +16,7 @@ export const GET = withAuth(async (request, { supabase }) => {
     const entityType = request.nextUrl.searchParams.get("entity_type");
 
     if (!clinicTypeKey) {
-      return NextResponse.json(
-        { error: "clinic_type_key query parameter is required" },
-        { status: 400 },
-      );
+      return apiError("clinic_type_key query parameter is required");
     }
 
     let query = supabase
@@ -36,19 +33,13 @@ export const GET = withAuth(async (request, { supabase }) => {
     const { data, error } = await query;
 
     if (error) {
-      return NextResponse.json(
-        { error: "Failed to fetch custom field definitions" },
-        { status: 500 },
-      );
+      return apiInternalError("Failed to fetch custom field definitions");
     }
 
-    return NextResponse.json({ definitions: data ?? [] });
+    return apiSuccess({ definitions: data ?? [] });
   } catch (err) {
     logger.warn("Operation failed", { context: "custom-fields", error: err });
-    return NextResponse.json(
-      { error: "Failed to process request" },
-      { status: 500 },
-    );
+    return apiInternalError("Failed to process request");
   }
 }, ["super_admin", "clinic_admin", "receptionist", "doctor", "patient"]);
 
@@ -98,13 +89,10 @@ export const POST = withAuthValidation(customFieldCreateSchema, async (body, req
 
     if (error) {
       logger.warn("Operation failed", { context: "custom-fields", error });
-      return NextResponse.json(
-        { error: "Failed to create custom field definition" },
-        { status: 500 },
-      );
+      return apiInternalError("Failed to create custom field definition");
     }
 
-    return NextResponse.json({ definition: data }, { status: 201 });
+    return apiSuccess({ definition: data }, 201);
 }, ["super_admin"]);
 
 /**
@@ -139,13 +127,10 @@ export const PATCH = withAuthValidation(customFieldUpdateSchema, async (body, re
 
     if (error) {
       logger.warn("Operation failed", { context: "custom-fields", error });
-      return NextResponse.json(
-        { error: "Failed to update custom field definition" },
-        { status: 500 },
-      );
+      return apiInternalError("Failed to update custom field definition");
     }
 
-    return NextResponse.json({ definition: data });
+    return apiSuccess({ definition: data });
 }, ["super_admin"]);
 
 /**
@@ -158,10 +143,7 @@ export const DELETE = withAuth(async (request, { supabase }) => {
   const id = request.nextUrl.searchParams.get("id");
 
   if (!id) {
-    return NextResponse.json(
-      { error: "id query parameter is required" },
-      { status: 400 },
-    );
+    return apiError("id query parameter is required");
   }
 
   // Check if it's a system field
@@ -172,10 +154,7 @@ export const DELETE = withAuth(async (request, { supabase }) => {
     .single();
 
   if (existing?.is_system) {
-    return NextResponse.json(
-      { error: "System fields cannot be deleted" },
-      { status: 403 },
-    );
+    return apiForbidden("System fields cannot be deleted");
   }
 
   const { error } = await supabase
@@ -185,11 +164,8 @@ export const DELETE = withAuth(async (request, { supabase }) => {
 
   if (error) {
     logger.warn("Operation failed", { context: "custom-fields", error });
-    return NextResponse.json(
-      { error: "Failed to delete custom field definition" },
-      { status: 500 },
-    );
+    return apiInternalError("Failed to delete custom field definition");
   }
 
-  return NextResponse.json({ success: true });
+  return apiSuccess({ success: true });
 }, ["super_admin"]);

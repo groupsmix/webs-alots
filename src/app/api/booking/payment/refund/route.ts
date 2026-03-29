@@ -1,10 +1,10 @@
-import { NextResponse } from "next/server";
 import { logAuditEvent } from "@/lib/audit-log";
 import { requireTenant } from "@/lib/tenant";
 import type { UserRole } from "@/lib/types/database";
 import { logger } from "@/lib/logger";
 import { paymentRefundSchema } from "@/lib/validations";
 import { withAuthValidation } from "@/lib/api-validate";
+import { apiError, apiInternalError, apiNotFound, apiSuccess } from "@/lib/api-response";
 const ADMIN_ROLES: UserRole[] = ["super_admin", "clinic_admin"];
 
 /**
@@ -26,11 +26,11 @@ export const POST = withAuthValidation(paymentRefundSchema, async (body, request
       .single();
 
     if (fetchError || !payment) {
-      return NextResponse.json({ error: "Payment not found" }, { status: 404 });
+      return apiNotFound("Payment not found");
     }
 
     if (payment.status !== "completed" && payment.status !== "partially_refunded") {
-      return NextResponse.json({ error: "Only completed or partially refunded payments can be refunded" }, { status: 400 });
+      return apiError("Only completed or partially refunded payments can be refunded");
     }
 
     const refundAmount = body.amount ?? payment.amount;
@@ -41,20 +41,14 @@ export const POST = withAuthValidation(paymentRefundSchema, async (body, request
       !Number.isFinite(refundAmount) ||
       refundAmount <= 0
     ) {
-      return NextResponse.json(
-        { error: "Refund amount must be a positive number" },
-        { status: 400 },
-      );
+      return apiError("Refund amount must be a positive number");
     }
 
     const alreadyRefunded = (payment.refunded_amount as number) ?? 0;
     const remaining = payment.amount - alreadyRefunded;
 
     if (refundAmount > remaining) {
-      return NextResponse.json(
-        { error: `Refund amount (${refundAmount}) exceeds remaining refundable amount (${remaining})` },
-        { status: 400 },
-      );
+      return apiError(`Refund amount (${refundAmount}) exceeds remaining refundable amount (${remaining})`);
     }
 
     const newRefundedTotal = alreadyRefunded + refundAmount;
@@ -70,7 +64,7 @@ export const POST = withAuthValidation(paymentRefundSchema, async (body, request
 
     if (updateError) {
       void updateError;
-      return NextResponse.json({ error: "Failed to refund payment" }, { status: 500 });
+      return apiInternalError("Failed to refund payment");
     }
 
     await logAuditEvent({
@@ -81,5 +75,5 @@ export const POST = withAuthValidation(paymentRefundSchema, async (body, request
       description: `Payment ${body.paymentId} refunded: ${refundAmount} of ${payment.amount}`,
     });
 
-    return NextResponse.json({ status: "refunded", message: "Payment refunded" });
+    return apiSuccess({ status: "refunded", message: "Payment refunded" });
 }, ADMIN_ROLES);

@@ -8,19 +8,17 @@
  * DELETE /api/patient/delete-account — Cancel pending deletion
  */
 
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { logger } from "@/lib/logger";
+import { apiError, apiForbidden, apiInternalError, apiNotFound, apiSuccess, apiUnauthorized } from "@/lib/api-response";
 
 export async function POST(request: NextRequest) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
   if (!supabaseUrl || !supabaseAnonKey) {
-    return NextResponse.json(
-      { error: "Service unavailable" },
-      { status: 503 },
-    );
+    return apiError("Service unavailable", 503);
   }
 
   const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
@@ -39,7 +37,7 @@ export async function POST(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return apiUnauthorized();
   }
 
   // Fetch user profile
@@ -50,27 +48,21 @@ export async function POST(request: NextRequest) {
     .maybeSingle();
 
   if (!profile) {
-    return NextResponse.json({ error: "Profile not found" }, { status: 404 });
+    return apiNotFound("Profile not found");
   }
 
   if (profile.role !== "patient") {
-    return NextResponse.json(
-      { error: "Only patient accounts can request self-deletion. Contact support for other roles." },
-      { status: 403 },
-    );
+    return apiForbidden("Only patient accounts can request self-deletion. Contact support for other roles.");
   }
 
   if (profile.deletion_requested_at) {
-    return NextResponse.json(
-      {
-        message: "Deletion already requested",
-        deletionRequestedAt: profile.deletion_requested_at,
-        permanentDeletionAt: new Date(
-          new Date(profile.deletion_requested_at).getTime() + 30 * 24 * 60 * 60 * 1000,
-        ).toISOString(),
-      },
-      { status: 200 },
-    );
+    return apiSuccess({
+      message: "Deletion already requested",
+      deletionRequestedAt: profile.deletion_requested_at,
+      permanentDeletionAt: new Date(
+        new Date(profile.deletion_requested_at).getTime() + 30 * 24 * 60 * 60 * 1000,
+      ).toISOString(),
+    });
   }
 
   // Soft-delete: set deletion_requested_at timestamp
@@ -81,10 +73,7 @@ export async function POST(request: NextRequest) {
     .eq("id", profile.id);
 
   if (error) {
-    return NextResponse.json(
-      { error: "Failed to request deletion" },
-      { status: 500 },
-    );
+    return apiInternalError("Failed to request deletion");
   }
 
   const permanentDeletionAt = new Date(
@@ -105,7 +94,7 @@ export async function POST(request: NextRequest) {
     logger.warn("Failed to log deletion request audit event", { context: "patient/delete-account", error: err });
   }
 
-  return NextResponse.json({
+  return apiSuccess({
     message: "Account deletion requested. You have 30 days to cancel.",
     deletionRequestedAt: now,
     permanentDeletionAt,
@@ -117,10 +106,7 @@ export async function DELETE(request: NextRequest) {
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
   if (!supabaseUrl || !supabaseAnonKey) {
-    return NextResponse.json(
-      { error: "Service unavailable" },
-      { status: 503 },
-    );
+    return apiError("Service unavailable", 503);
   }
 
   const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
@@ -139,7 +125,7 @@ export async function DELETE(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return apiUnauthorized();
   }
 
   const { data: profile } = await supabase
@@ -149,14 +135,11 @@ export async function DELETE(request: NextRequest) {
     .maybeSingle();
 
   if (!profile) {
-    return NextResponse.json({ error: "Profile not found" }, { status: 404 });
+    return apiNotFound("Profile not found");
   }
 
   if (!profile.deletion_requested_at) {
-    return NextResponse.json(
-      { message: "No pending deletion request" },
-      { status: 200 },
-    );
+    return apiSuccess({ message: "No pending deletion request" });
   }
 
   // Cancel deletion
@@ -166,10 +149,7 @@ export async function DELETE(request: NextRequest) {
     .eq("id", profile.id);
 
   if (error) {
-    return NextResponse.json(
-      { error: "Failed to cancel deletion" },
-      { status: 500 },
-    );
+    return apiInternalError("Failed to cancel deletion");
   }
 
   // Log the cancellation for audit trail
@@ -186,7 +166,5 @@ export async function DELETE(request: NextRequest) {
     logger.warn("Failed to log deletion cancellation audit event", { context: "patient/delete-account", error: err });
   }
 
-  return NextResponse.json({
-    message: "Account deletion cancelled successfully.",
-  });
+  return apiSuccess({ message: "Account deletion cancelled successfully." });
 }

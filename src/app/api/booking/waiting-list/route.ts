@@ -1,4 +1,3 @@
-import { NextResponse } from "next/server";
 import { withAuth } from "@/lib/with-auth";
 import { requireTenant } from "@/lib/tenant";
 import { findOrCreatePatient } from "@/lib/find-or-create-patient";
@@ -9,6 +8,7 @@ import { waitingListSchema } from "@/lib/validations";
 import { withAuthValidation } from "@/lib/api-validate";
 import { STAFF_ROLES } from "@/lib/auth-roles";
 import type { UserRole } from "@/lib/types/database";
+import { apiError, apiForbidden, apiInternalError, apiSuccess } from "@/lib/api-response";
 
 const WAITING_LIST_ROLES: UserRole[] = [...STAFF_ROLES, "patient"];
 /**
@@ -27,7 +27,7 @@ export const POST = withAuthValidation(waitingListSchema, async (body, request, 
       { phone: body.patientPhone },
     );
     if (!patientId) {
-      return NextResponse.json({ error: "Failed to resolve patient" }, { status: 500 });
+      return apiInternalError("Failed to resolve patient");
     }
 
     const { data: entry, error } = await supabase
@@ -46,7 +46,7 @@ export const POST = withAuthValidation(waitingListSchema, async (body, request, 
 
     if (error || !entry) {
       logger.warn("Operation failed", { context: "booking/waiting-list", error });
-      return NextResponse.json({ error: "Failed to add to waiting list" }, { status: 400 });
+      return apiError("Failed to add to waiting list");
     }
 
     // Audit log for healthcare compliance
@@ -58,7 +58,7 @@ export const POST = withAuthValidation(waitingListSchema, async (body, request, 
       description: `Patient ${patientId} added to waiting list (entry ${entry.id}) for doctor ${body.doctorId} on ${body.preferredDate}`,
     });
 
-    return NextResponse.json({
+    return apiSuccess({
       status: "added",
       message: "Added to waiting list",
       entryId: entry.id,
@@ -81,7 +81,7 @@ export const GET = withAuth(async (request, { supabase, profile }) => {
 
   // Ownership check: patients can only view their OWN waiting list entries
   if (profile.role === "patient" && patientId && patientId !== profile.id) {
-    return NextResponse.json({ entries: [] });
+    return apiSuccess({ entries: [] });
   }
 
   if (patientId) {
@@ -92,7 +92,7 @@ export const GET = withAuth(async (request, { supabase, profile }) => {
       .eq("patient_id", patientId)
       .order("created_at", { ascending: false });
 
-    return NextResponse.json({ entries: entries ?? [] });
+    return apiSuccess({ entries: entries ?? [] });
   }
 
   if (doctorId && date) {
@@ -108,13 +108,10 @@ export const GET = withAuth(async (request, { supabase, profile }) => {
     }
 
     const { data: entries } = await q.order("created_at", { ascending: true });
-    return NextResponse.json({ entries: entries ?? [] });
+    return apiSuccess({ entries: entries ?? [] });
   }
 
-  return NextResponse.json(
-    { error: "patientId, or doctorId and date are required" },
-    { status: 400 },
-  );
+  return apiError("patientId, or doctorId and date are required");
 }, WAITING_LIST_ROLES);
 
 /**
@@ -127,7 +124,7 @@ export const DELETE = withAuth(async (request, { supabase, profile }) => {
     const body = (await request.json()) as { entryId: string };
 
     if (!body.entryId) {
-      return NextResponse.json({ error: "entryId is required" }, { status: 400 });
+      return apiError("entryId is required");
     }
 
     const tenant = await requireTenant();
@@ -143,7 +140,7 @@ export const DELETE = withAuth(async (request, { supabase, profile }) => {
         .single();
 
       if (!entry || entry.patient_id !== profile.id) {
-        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+        return apiForbidden("Forbidden");
       }
     }
 
@@ -155,7 +152,7 @@ export const DELETE = withAuth(async (request, { supabase, profile }) => {
 
     if (error) {
       logger.warn("Operation failed", { context: "booking/waiting-list", error });
-      return NextResponse.json({ error: "Failed to remove from waiting list" }, { status: 400 });
+      return apiError("Failed to remove from waiting list");
     }
 
     // Audit log for healthcare compliance
@@ -167,9 +164,9 @@ export const DELETE = withAuth(async (request, { supabase, profile }) => {
       description: `Waiting list entry ${body.entryId} removed`,
     });
 
-    return NextResponse.json({ status: "removed", message: "Removed from waiting list" });
+    return apiSuccess({ status: "removed", message: "Removed from waiting list" });
   } catch (err) {
     logger.warn("Operation failed", { context: "booking/waiting-list", error: err });
-    return NextResponse.json({ error: "Failed to remove from waiting list" }, { status: 500 });
+    return apiInternalError("Failed to remove from waiting list");
   }
 }, WAITING_LIST_ROLES);

@@ -1,4 +1,3 @@
-import { NextResponse } from "next/server";
 import {
   dispatchNotification,
   type NotificationTrigger,
@@ -11,6 +10,7 @@ import { STAFF_ROLES } from "@/lib/auth-roles";
 import { logger } from "@/lib/logger";
 import { notificationDispatchSchema } from "@/lib/validations";
 import { withAuthValidation } from "@/lib/api-validate";
+import { apiForbidden, apiInternalError, apiSuccess } from "@/lib/api-response";
 /**
  * POST /api/notifications
  *
@@ -36,10 +36,7 @@ export const POST = withAuthValidation(notificationDispatchSchema, async (body, 
         .single();
 
       if (!recipient || recipient.clinic_id !== profile.clinic_id) {
-        return NextResponse.json(
-          { error: "Recipient not found in your clinic" },
-          { status: 403 },
-        );
+        return apiForbidden("Recipient not found in your clinic");
       }
     }
 
@@ -50,7 +47,7 @@ export const POST = withAuthValidation(notificationDispatchSchema, async (body, 
       channels,
     );
 
-    return NextResponse.json({ results });
+    return apiSuccess({ results });
 }, STAFF_ROLES);
 
 /**
@@ -78,10 +75,7 @@ export const GET = withAuth(async (request, { supabase, profile }) => {
         .single();
 
       if (!targetUser || targetUser.clinic_id !== profile.clinic_id) {
-        return NextResponse.json(
-          { error: "User not found in your clinic" },
-          { status: 403 },
-        );
+        return apiForbidden("User not found in your clinic");
       }
     }
 
@@ -111,21 +105,15 @@ export const GET = withAuth(async (request, { supabase, profile }) => {
 
     if (error) {
       logger.warn("Operation failed", { context: "notifications", error });
-      return NextResponse.json(
-        { error: "Failed to fetch notifications" },
-        { status: 500 },
-      );
+      return apiInternalError("Failed to fetch notifications");
     }
 
-    return NextResponse.json({
+    return apiSuccess({
       notifications: notifications ?? [],
       total: count ?? 0,
     });
   } catch (err) {
     logger.warn("Operation failed", { context: "notifications", error: err });
-    return NextResponse.json(
-      { error: "Failed to fetch notifications" },
-      { status: 500 },
-    );
+    return apiInternalError("Failed to fetch notifications");
   }
 }, STAFF_ROLES);

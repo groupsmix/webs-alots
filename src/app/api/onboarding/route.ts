@@ -1,8 +1,8 @@
-import { NextResponse } from "next/server";
 import { withAuth } from "@/lib/with-auth";
 import { logger } from "@/lib/logger";
 import { onboardingSchema } from "@/lib/validations";
 import { withAuthValidation } from "@/lib/api-validate";
+import { apiError, apiForbidden, apiInternalError, apiSuccess } from "@/lib/api-response";
 /**
  * POST /api/onboarding
  *
@@ -13,10 +13,7 @@ import { withAuthValidation } from "@/lib/api-validate";
 export const POST = withAuthValidation(onboardingSchema, async (body, request, { supabase, user }) => {
     // Require email verification before allowing clinic creation
     if (!user.email_confirmed_at) {
-      return NextResponse.json(
-        { error: "Email verification required before creating a clinic" },
-        { status: 403 },
-      );
+      return apiForbidden("Email verification required before creating a clinic");
     }
 
     // Only users without an existing profile may onboard.
@@ -30,16 +27,10 @@ export const POST = withAuthValidation(onboardingSchema, async (body, request, {
 
     if (existingProfile) {
       if (existingProfile.clinic_id) {
-        return NextResponse.json(
-          { error: "You have already created a clinic" },
-          { status: 409 },
-        );
+        return apiError("You have already created a clinic", 409);
       }
       // User has a profile (e.g. patient) but no clinic — deny escalation
-      return NextResponse.json(
-        { error: "Existing users cannot create new clinics" },
-        { status: 403 },
-      );
+      return apiForbidden("Existing users cannot create new clinics");
     }
 
     // Map category to the legacy clinic type field
@@ -98,10 +89,7 @@ export const POST = withAuthValidation(onboardingSchema, async (body, request, {
 
       if (existingAdmin) {
         // Clinic already has an admin — this is a genuine duplicate
-        return NextResponse.json(
-          { error: "A clinic with this name already exists" },
-          { status: 409 },
-        );
+        return apiError("A clinic with this name already exists", 409);
       }
 
       // Reuse the orphaned clinic instead of creating another
@@ -132,10 +120,7 @@ export const POST = withAuthValidation(onboardingSchema, async (body, request, {
 
       if (clinicError || !clinic) {
         void clinicError;
-        return NextResponse.json(
-          { error: "Failed to create clinic" },
-          { status: 500 },
-        );
+        return apiInternalError("Failed to create clinic");
       }
       clinicId = clinic.id;
     }
@@ -156,7 +141,7 @@ export const POST = withAuthValidation(onboardingSchema, async (body, request, {
       // If this is a unique constraint violation on auth_id, the user
       // was already created (concurrent retry) — treat as success.
       if (userError.code === "23505") {
-        return NextResponse.json({
+        return apiSuccess({
           status: "created",
           message: "Clinic registered successfully (deduplicated)",
           clinic_id: clinicId,
@@ -173,13 +158,10 @@ export const POST = withAuthValidation(onboardingSchema, async (body, request, {
         void deleteError;
       }
 
-      return NextResponse.json(
-        { error: "Failed to create admin user. Please try again." },
-        { status: 500 },
-      );
+      return apiInternalError("Failed to create admin user. Please try again.");
     }
 
-    return NextResponse.json({
+    return apiSuccess({
       status: "created",
       message: "Clinic registered successfully",
       clinic_id: clinicId,

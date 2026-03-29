@@ -1,4 +1,3 @@
-import { NextResponse } from "next/server";
 import { logAuditEvent } from "@/lib/audit-log";
 import { requireTenant } from "@/lib/tenant";
 import { APPOINTMENT_STATUS } from "@/lib/types/database";
@@ -6,6 +5,7 @@ import { STAFF_ROLES } from "@/lib/auth-roles";
 import { logger } from "@/lib/logger";
 import { paymentConfirmSchema } from "@/lib/validations";
 import { withAuthValidation } from "@/lib/api-validate";
+import { apiError, apiInternalError, apiNotFound, apiSuccess } from "@/lib/api-response";
 /**
  * POST /api/booking/payment/confirm
  *
@@ -25,11 +25,11 @@ export const POST = withAuthValidation(paymentConfirmSchema, async (body, reques
       .single();
 
     if (fetchError || !payment) {
-      return NextResponse.json({ error: "Payment not found" }, { status: 404 });
+      return apiNotFound("Payment not found");
     }
 
     if (payment.status !== "pending") {
-      return NextResponse.json({ error: "Payment is not in pending state" }, { status: 400 });
+      return apiError("Payment is not in pending state");
     }
 
     // Mark payment as completed
@@ -40,7 +40,7 @@ export const POST = withAuthValidation(paymentConfirmSchema, async (body, reques
 
     if (updateError) {
       void updateError;
-      return NextResponse.json({ error: "Failed to confirm payment" }, { status: 500 });
+      return apiInternalError("Failed to confirm payment");
     }
 
     // Also confirm the associated appointment if it is still scheduled
@@ -60,5 +60,5 @@ export const POST = withAuthValidation(paymentConfirmSchema, async (body, reques
       description: `Payment ${body.paymentId} confirmed`,
     });
 
-    return NextResponse.json({ status: "confirmed", message: "Payment confirmed" });
+    return apiSuccess({ status: "confirmed", message: "Payment confirmed" });
 }, STAFF_ROLES);

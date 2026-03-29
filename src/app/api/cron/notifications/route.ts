@@ -1,7 +1,8 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { verifyCronSecret } from "@/lib/cron-auth";
 import { processNotificationQueue } from "@/lib/notification-queue";
 import { logger } from "@/lib/logger";
+import { apiInternalError, apiSuccess } from "@/lib/api-response";
 
 /**
  * GET /api/cron/notifications
@@ -19,7 +20,7 @@ export async function GET(request: NextRequest) {
   try {
     const result = await processNotificationQueue();
 
-    return NextResponse.json({
+    return apiSuccess({
       message: "Notification queue processed",
       ...result,
     });
@@ -28,9 +29,6 @@ export async function GET(request: NextRequest) {
       context: "cron/notifications",
       error: err,
     });
-    return NextResponse.json(
-      { error: "Failed to process notification queue" },
-      { status: 500 },
-    );
+    return apiInternalError("Failed to process notification queue");
   }
 }

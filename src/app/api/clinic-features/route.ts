@@ -1,7 +1,8 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase-server";
 import { withAuth } from "@/lib/with-auth";
 import { logger } from "@/lib/logger";
+import { apiError, apiInternalError, apiNotFound, apiSuccess } from "@/lib/api-response";
 /**
  * GET /api/clinic-features?type_key=general_medicine
  *
@@ -13,10 +14,7 @@ export const GET = withAuth(async (request: NextRequest) => {
     const typeKey = request.nextUrl.searchParams.get("type_key");
 
     if (!typeKey) {
-      return NextResponse.json(
-        { error: "type_key query parameter is required" },
-        { status: 400 },
-      );
+      return apiError("type_key query parameter is required");
     }
 
     const supabase = await createClient();
@@ -29,21 +27,15 @@ export const GET = withAuth(async (request: NextRequest) => {
       .single();
 
     if (error || !data) {
-      return NextResponse.json(
-        { error: "Clinic type not found" },
-        { status: 404 },
-      );
+      return apiNotFound("Clinic type not found");
     }
 
-    return NextResponse.json({
+    return apiSuccess({
       type_key: typeKey,
       features_config: data.features_config,
     });
   } catch (err) {
     logger.warn("Operation failed", { context: "clinic-features", error: err });
-    return NextResponse.json(
-      { error: "Failed to fetch clinic features" },
-      { status: 500 },
-    );
+    return apiInternalError("Failed to fetch clinic features");
   }
 }, null);

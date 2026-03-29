@@ -1,6 +1,7 @@
 "use client";
 
 import { logger } from "@/lib/logger";
+import { t } from "@/lib/i18n";
 import {
   createContext,
   useContext,
@@ -164,7 +165,7 @@ export function ChatbotProvider({
       const errorMsg: ChatMessage = {
         id: `msg-${Date.now()}-error`,
         role: "assistant",
-        content: "Désolé, une erreur est survenue. Veuillez réessayer.",
+        content: t("fr", "chatbot.error"),
         timestamp: new Date(),
       };
       setMessages((prev) => [...prev, errorMsg]);

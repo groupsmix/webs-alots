@@ -16,6 +16,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { signInWithOTP, verifyOTP, signInWithPassword } from "@/lib/auth";
 import { logger } from "@/lib/logger";
+import { t } from "@/lib/i18n";
 const PHONE_AUTH_ENABLED = process.env.NEXT_PUBLIC_PHONE_AUTH_ENABLED === "true";
 
 export default function LoginPage() {
@@ -52,8 +53,8 @@ export default function LoginPage() {
         // message to prevent username enumeration. Supabase returns different
         // messages for valid vs. invalid accounts which could leak information.
         // Rate-limit messages are passed through since they don't leak user info.
-        const isRateLimitError = result.error.startsWith("Trop de tentatives") ||
-          result.error.startsWith("Ce compte est temporairement");
+        const isRateLimitError = result.error.startsWith(t("fr", "auth.rateLimitLogin").slice(0, 20)) ||
+          result.error.startsWith(t("fr", "auth.accountLocked").slice(0, 20));
         setError(
           isRateLimitError
             ? result.error
@@ -63,7 +64,7 @@ export default function LoginPage() {
       }
     } catch (err) {
       logger.warn("Email login failed", { context: "login", error: err });
-      setError("Une erreur inattendue s'est produite. Veuillez r\u00e9essayer.");
+      setError(t("fr", "error.unexpected"));
       setLoading(false);
     }
   }
@@ -88,7 +89,7 @@ export default function LoginPage() {
       setLoading(false);
     } catch (err) {
       logger.warn("OTP send failed", { context: "login", error: err });
-      setError("Une erreur inattendue s'est produite. Veuillez r\u00e9essayer.");
+      setError(t("fr", "error.unexpected"));
       setLoading(false);
     }
   }
@@ -106,7 +107,7 @@ export default function LoginPage() {
       }
     } catch (err) {
       logger.warn("OTP verification failed", { context: "login", error: err });
-      setError("Une erreur inattendue s'est produite. Veuillez r\u00e9essayer.");
+      setError(t("fr", "error.unexpected"));
       setLoading(false);
     }
   }

@@ -5,7 +5,6 @@
  *                              and persist the URL to the clinics table
  */
 
-import { NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 import { createTenantClient } from "@/lib/supabase-server";
 import { getTenant, requireTenant } from "@/lib/tenant";
@@ -20,6 +19,7 @@ import { logger } from "@/lib/logger";
 import { brandingUpdateSchema } from "@/lib/validations";
 import { withAuthValidation } from "@/lib/api-validate";
 import { invalidateAllSubdomainCaches } from "@/lib/subdomain-cache";
+import { apiError, apiInternalError, apiSuccess } from "@/lib/api-response";
 
 const ADMIN_ROLES: UserRole[] = ["super_admin", "clinic_admin"];
 
@@ -65,10 +65,7 @@ export async function GET() {
     const tenant = await getTenant();
 
     if (!tenant?.clinicId) {
-      return NextResponse.json(
-        { error: "No clinic context. This endpoint requires a clinic subdomain." },
-        { status: 400 },
-      );
+      return apiError("No clinic context. This endpoint requires a clinic subdomain.");
     }
 
     const clinicId = tenant.clinicId;
@@ -83,25 +80,22 @@ export async function GET() {
       .single();
 
     if (error || !data) {
-      return NextResponse.json(
-        {
-          name: tenant.clinicName || "Clinic",
-          logo_url: null,
-          favicon_url: null,
-          primary_color: "#1E4DA1",
-          secondary_color: "#0F6E56",
-          heading_font: "Geist",
-          body_font: "Geist",
-          hero_image_url: null,
-          tagline: null,
-          cover_photo_url: null,
-          template_id: "modern",
-          section_visibility: {},
-          phone: null,
-          address: null,
-        },
-        { status: 200 },
-      );
+      return apiSuccess({
+        name: tenant.clinicName || "Clinic",
+        logo_url: null,
+        favicon_url: null,
+        primary_color: "#1E4DA1",
+        secondary_color: "#0F6E56",
+        heading_font: "Geist",
+        body_font: "Geist",
+        hero_image_url: null,
+        tagline: null,
+        cover_photo_url: null,
+        template_id: "modern",
+        section_visibility: {},
+        phone: null,
+        address: null,
+      });
     }
 
     // MED-01: Redact potentially sensitive contact fields from the
@@ -111,17 +105,10 @@ export async function GET() {
     // PII that should only be visible to authenticated users.
     const { phone: _phone, address: _address, ...publicData } = data;
 
-    return NextResponse.json(publicData, {
-      headers: {
-        "Cache-Control": "public, s-maxage=60, stale-while-revalidate=300",
-      },
-    });
+    return apiSuccess(publicData);
   } catch (err) {
     logger.warn("Operation failed", { context: "branding", error: err });
-    return NextResponse.json(
-      { error: "Failed to fetch branding" },
-      { status: 500 },
-    );
+    return apiInternalError("Failed to fetch branding");
   }
 }
 
@@ -156,10 +143,7 @@ export const PUT = withAuthValidation(brandingUpdateSchema, async (body, request
   }
 
   if (Object.keys(updates).length === 0) {
-    return NextResponse.json(
-      { error: "No valid fields to update" },
-      { status: 400 },
-    );
+    return apiError("No valid fields to update");
   }
 
   const { error } = await supabase
@@ -169,10 +153,7 @@ export const PUT = withAuthValidation(brandingUpdateSchema, async (body, request
 
   if (error) {
     logger.warn("Operation failed", { context: "branding", error });
-    return NextResponse.json(
-      { error: "Failed to update branding" },
-      { status: 500 },
-    );
+    return apiInternalError("Failed to update branding");
   }
 
   // Invalidate branding cache so public pages pick up the change
@@ -181,7 +162,7 @@ export const PUT = withAuthValidation(brandingUpdateSchema, async (body, request
   // Invalidate subdomain cache so middleware picks up any name/config changes
   invalidateAllSubdomainCaches();
 
-  return NextResponse.json({ ok: true });
+  return apiSuccess({ ok: true });
 }, ADMIN_ROLES);
 
 // ── POST — upload a branding image and save URL ──
@@ -191,10 +172,7 @@ export const POST = withAuth(async (request, { supabase }) => {
   const clinicId = tenant.clinicId;
 
   if (!isR2Configured()) {
-    return NextResponse.json(
-      { error: "File storage is not configured" },
-      { status: 503 },
-    );
+    return apiError("File storage is not configured", 503);
   }
 
   const formData = await request.formData();
@@ -202,31 +180,19 @@ export const POST = withAuth(async (request, { supabase }) => {
   const field = (formData.get("field") as string) || "";
 
   if (!FIELD_MAP[field]) {
-    return NextResponse.json(
-      { error: "field must be one of: logo, favicon, hero" },
-      { status: 400 },
-    );
+    return apiError("field must be one of: logo, favicon, hero");
   }
 
   if (!file || !(file instanceof File)) {
-    return NextResponse.json(
-      { error: "No file provided" },
-      { status: 400 },
-    );
+    return apiError("No file provided");
   }
 
   if (file.size > MAX_FILE_SIZE) {
-    return NextResponse.json(
-      { error: "File too large (max 5 MB)" },
-      { status: 400 },
-    );
+    return apiError("File too large (max 5 MB)");
   }
 
   if (!ALLOWED_IMAGE_TYPES.has(file.type)) {
-    return NextResponse.json(
-      { error: `File type not allowed: ${file.type}` },
-      { status: 400 },
-    );
+    return apiError(`File type not allowed: ${file.type}`);
   }
 
   const key = buildUploadKey(clinicId, "branding", `${field}-${file.name}`);
@@ -234,19 +200,13 @@ export const POST = withAuth(async (request, { supabase }) => {
 
   // Validate file content matches declared MIME type via magic bytes.
   if (!validateFileContent(buffer, file.type)) {
-    return NextResponse.json(
-      { error: "File content does not match declared type" },
-      { status: 400 },
-    );
+    return apiError("File content does not match declared type");
   }
 
   const url = await uploadToR2(key, buffer, file.type);
 
   if (!url) {
-    return NextResponse.json(
-      { error: "Upload failed" },
-      { status: 500 },
-    );
+    return apiInternalError("Upload failed");
   }
 
   // Persist the URL to the clinics table
@@ -258,10 +218,7 @@ export const POST = withAuth(async (request, { supabase }) => {
 
   if (error) {
     logger.warn("Operation failed", { context: "branding", error });
-    return NextResponse.json(
-      { error: "Upload succeeded but failed to save URL" },
-      { status: 500 },
-    );
+    return apiInternalError("Upload succeeded but failed to save URL");
   }
 
   // Invalidate branding cache so public pages pick up the new image
@@ -270,5 +227,5 @@ export const POST = withAuth(async (request, { supabase }) => {
   // Invalidate subdomain cache so middleware picks up any config changes
   invalidateAllSubdomainCaches();
 
-  return NextResponse.json({ url, key });
+  return apiSuccess({ url, key });
 }, ADMIN_ROLES);

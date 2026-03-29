@@ -5,6 +5,7 @@ import { impersonateSchema } from "@/lib/validations";
 import { withAuthValidation } from "@/lib/api-validate";
 import { createClient } from "@/lib/supabase-server";
 import { logSecurityEvent } from "@/lib/audit-log";
+import { apiInternalError, apiNotFound, apiUnauthorized } from "@/lib/api-response";
 
 /**
  * POST /api/impersonate
@@ -28,10 +29,7 @@ export const POST = withAuthValidation(impersonateSchema, async (body, request, 
     });
 
     if (reauthError) {
-      return NextResponse.json(
-        { error: "Re-authentication failed. Please verify your password." },
-        { status: 401 },
-      );
+      return apiUnauthorized("Re-authentication failed. Please verify your password.");
     }
 
     // Verify the clinic exists
@@ -42,7 +40,7 @@ export const POST = withAuthValidation(impersonateSchema, async (body, request, 
       .single();
 
     if (!clinic) {
-      return NextResponse.json({ error: "Clinic not found" }, { status: 404 });
+      return apiNotFound("Clinic not found");
     }
 
     // Log the impersonation for security audit
@@ -134,6 +132,6 @@ export const DELETE = withAuth(async (_request, { supabase, user }) => {
     return response;
   } catch (err) {
     logger.warn("Operation failed", { context: "impersonate/route", error: err });
-    return NextResponse.json({ error: "Failed to end impersonation" }, { status: 500 });
+    return apiInternalError("Failed to end impersonation");
   }
 }, ["super_admin"]);

@@ -1,4 +1,3 @@
-import { NextResponse } from "next/server";
 import {
   dispatchNotification,
   defaultNotificationTemplates,
@@ -9,6 +8,7 @@ import { STAFF_ROLES } from "@/lib/auth-roles";
 import { logger } from "@/lib/logger";
 import { notificationTriggerSchema } from "@/lib/validations";
 import { withAuthValidation } from "@/lib/api-validate";
+import { apiForbidden, apiNotFound, apiSuccess } from "@/lib/api-response";
 /**
  * POST /api/notifications/trigger
  *
@@ -58,10 +58,7 @@ export const POST = withAuthValidation(notificationTriggerSchema, async (body, r
       );
 
       if (invalidRecipients.length > 0 || missingRecipients.length > 0) {
-        return NextResponse.json(
-          { error: "One or more recipients not found in your clinic" },
-          { status: 403 },
-        );
+        return apiForbidden("One or more recipients not found in your clinic");
       }
     }
 
@@ -71,10 +68,7 @@ export const POST = withAuthValidation(notificationTriggerSchema, async (body, r
     );
 
     if (!template) {
-      return NextResponse.json(
-        { error: `No enabled template found for trigger: ${trigger}` },
-        { status: 404 },
-      );
+      return apiNotFound(`No enabled template found for trigger: ${trigger}`);
     }
 
     // Dispatch to all recipients
@@ -93,7 +87,7 @@ export const POST = withAuthValidation(notificationTriggerSchema, async (body, r
       });
     }
 
-    return NextResponse.json({
+    return apiSuccess({
       trigger,
       template: template.name,
       dispatched: allResults,

@@ -1,8 +1,8 @@
-import { NextResponse } from "next/server";
 import { STAFF_ROLES } from "@/lib/auth-roles";
 import { logger } from "@/lib/logger";
 import { stripeCheckoutSchema } from "@/lib/validations";
 import { withAuthValidation } from "@/lib/api-validate";
+import { apiError, apiSuccess } from "@/lib/api-response";
 
 /**
  * HIGH-03: Validate that a redirect URL is same-origin to prevent open redirects.
@@ -46,10 +46,7 @@ export const POST = withAuthValidation(stripeCheckoutSchema, async (body, reques
   const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
 
   if (!stripeSecretKey) {
-    return NextResponse.json(
-      { error: "Stripe is not configured. Set STRIPE_SECRET_KEY environment variable." },
-      { status: 503 },
-    );
+    return apiError("Stripe is not configured. Set STRIPE_SECRET_KEY environment variable.", 503);
   }
 
     const {
@@ -106,13 +103,10 @@ export const POST = withAuthValidation(stripeCheckoutSchema, async (body, reques
 
     if (!stripeResponse.ok) {
       void session;
-      return NextResponse.json(
-        { error: "Failed to create checkout session" },
-        { status: 400 },
-      );
+      return apiError("Failed to create checkout session");
     }
 
-    return NextResponse.json({
+    return apiSuccess({
       sessionId: session.id,
       url: session.url,
     });

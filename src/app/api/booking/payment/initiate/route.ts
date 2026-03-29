@@ -1,4 +1,3 @@
-import { NextResponse } from "next/server";
 import { logAuditEvent } from "@/lib/audit-log";
 import { requireTenant } from "@/lib/tenant";
 import { findOrCreatePatient } from "@/lib/find-or-create-patient";
@@ -6,6 +5,7 @@ import { STAFF_ROLES } from "@/lib/auth-roles";
 import { logger } from "@/lib/logger";
 import { paymentInitiateSchema } from "@/lib/validations";
 import { withAuthValidation } from "@/lib/api-validate";
+import { apiError, apiInternalError, apiNotFound, apiSuccess } from "@/lib/api-response";
 /**
  * POST /api/booking/payment/initiate
  *
@@ -25,7 +25,7 @@ export const POST = withAuthValidation(paymentInitiateSchema, async (body, reque
       .single();
 
     if (apptError || !appt) {
-      return NextResponse.json({ error: "Appointment not found" }, { status: 404 });
+      return apiNotFound("Appointment not found");
     }
 
     // Check for existing active payment on this appointment
@@ -39,7 +39,7 @@ export const POST = withAuthValidation(paymentInitiateSchema, async (body, reque
       .single();
 
     if (existingPayment) {
-      return NextResponse.json({ error: "A payment already exists for this appointment" }, { status: 400 });
+      return apiError("A payment already exists for this appointment");
     }
 
     // Find or create patient using shared utility (prefers phone-based lookup
@@ -48,7 +48,7 @@ export const POST = withAuthValidation(paymentInitiateSchema, async (body, reque
       supabase, clinicId, body.patientId, body.patientName,
     );
     if (!patientId) {
-      return NextResponse.json({ error: "Failed to resolve patient" }, { status: 500 });
+      return apiInternalError("Failed to resolve patient");
     }
 
     const method = body.method ?? "online";
@@ -73,13 +73,10 @@ export const POST = withAuthValidation(paymentInitiateSchema, async (body, reque
     if (insertError || !payment) {
       // Handle unique constraint violation (duplicate active payment)
       if (insertError?.code === "23505") {
-        return NextResponse.json(
-          { error: "A payment already exists for this appointment" },
-          { status: 409 },
-        );
+        return apiError("A payment already exists for this appointment", 409);
       }
       void insertError;
-      return NextResponse.json({ error: "Failed to initiate payment" }, { status: 500 });
+      return apiInternalError("Failed to initiate payment");
     }
 
     await logAuditEvent({
@@ -90,7 +87,7 @@ export const POST = withAuthValidation(paymentInitiateSchema, async (body, reque
       description: `Payment initiated: ${body.paymentType} ${body.amount} via ${method} for appointment ${body.appointmentId}`,
     });
 
-    return NextResponse.json({
+    return apiSuccess({
       status: "initiated",
       message: "Payment initiated",
       paymentId: payment.id,
