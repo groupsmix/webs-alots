@@ -10,6 +10,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
+import { logger } from "@/lib/logger";
 
 export async function POST(request: NextRequest) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -90,6 +91,20 @@ export async function POST(request: NextRequest) {
     Date.now() + 30 * 24 * 60 * 60 * 1000,
   ).toISOString();
 
+  // Log the deletion request for GDPR/Loi 09-08 audit trail
+  try {
+    await supabase.from("activity_logs").insert({
+      action: "patient_deletion_requested",
+      type: "patient",
+      actor: profile.id,
+      clinic_id: null,
+      description: `Patient requested account deletion. Permanent deletion scheduled for ${permanentDeletionAt}`,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (err) {
+    logger.warn("Failed to log deletion request audit event", { context: "patient/delete-account", error: err });
+  }
+
   return NextResponse.json({
     message: "Account deletion requested. You have 30 days to cancel.",
     deletionRequestedAt: now,
@@ -155,6 +170,20 @@ export async function DELETE(request: NextRequest) {
       { error: "Failed to cancel deletion" },
       { status: 500 },
     );
+  }
+
+  // Log the cancellation for audit trail
+  try {
+    await supabase.from("activity_logs").insert({
+      action: "patient_deletion_cancelled",
+      type: "patient",
+      actor: profile.id,
+      clinic_id: null,
+      description: "Patient cancelled pending account deletion request",
+      timestamp: new Date().toISOString(),
+    });
+  } catch (err) {
+    logger.warn("Failed to log deletion cancellation audit event", { context: "patient/delete-account", error: err });
   }
 
   return NextResponse.json({
