@@ -110,7 +110,7 @@ export async function signInWithPassword(
       description: `Failed login attempt from IP ${clientIp}`,
       ipAddress: clientIp,
       success: false,
-    }).catch(() => {});
+    }).catch((err) => { logger.warn("Failed to log auth event", { context: "auth/signIn", error: err }); });
     return { error: error.message };
   }
 
@@ -126,7 +126,7 @@ export async function signInWithPassword(
     description: `Successful login from IP ${clientIp}`,
     ipAddress: clientIp,
     success: true,
-  }).catch(() => {});
+  }).catch((err) => { logger.warn("Failed to log auth event", { context: "auth/signIn", error: err }); });
 
   if (profile) {
     redirect(ROLE_DASHBOARD_MAP[profile.role]);
@@ -299,7 +299,7 @@ export async function resetPassword(
     actor: email.trim().toLowerCase(),
     description: `Password reset requested from IP ${clientIp}`,
     ipAddress: clientIp,
-  }).catch(() => {});
+  }).catch((err) => { logger.warn("Failed to log auth event", { context: "auth/resetPassword", error: err }); });
 
   return { error: null };
 }

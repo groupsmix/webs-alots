@@ -1,5 +1,6 @@
 import { clinicConfig } from "@/config/clinic.config";
 import { defaultWebsiteConfig } from "@/lib/website-config";
+import { safeJsonLdStringify } from "@/lib/json-ld";
 
 interface MedicalBusinessSchemaProps {
   /** Override clinic name */
@@ -92,7 +93,7 @@ export function SEOStructuredData({
   return (
     <script
       type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
+      dangerouslySetInnerHTML={{ __html: safeJsonLdStringify(schema) }}
     />
   );
 }

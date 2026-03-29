@@ -41,8 +41,8 @@ export function usePerformanceMonitoring() {
       });
       lcpObserver.observe({ type: "largest-contentful-paint", buffered: true });
       observers.push(lcpObserver);
-    } catch {
-      // Not supported
+    } catch (err) {
+      logger.warn("LCP observer not supported", { context: "web-vitals", error: err });
     }
 
     try {
@@ -60,8 +60,8 @@ export function usePerformanceMonitoring() {
       });
       fidObserver.observe({ type: "first-input", buffered: true });
       observers.push(fidObserver);
-    } catch {
-      // Not supported
+    } catch (err) {
+      logger.warn("FID observer not supported", { context: "web-vitals", error: err });
     }
 
     try {
@@ -82,8 +82,8 @@ export function usePerformanceMonitoring() {
       });
       clsObserver.observe({ type: "layout-shift", buffered: true });
       observers.push(clsObserver);
-    } catch {
-      // Not supported
+    } catch (err) {
+      logger.warn("CLS observer not supported", { context: "web-vitals", error: err });
     }
 
     // Navigation Timing (FCP, TTFB)
@@ -103,8 +103,8 @@ export function usePerformanceMonitoring() {
       });
       navObserver.observe({ type: "paint", buffered: true });
       observers.push(navObserver);
-    } catch {
-      // Not supported
+    } catch (err) {
+      logger.warn("Paint observer not supported", { context: "web-vitals", error: err });
     }
 
     return () => {

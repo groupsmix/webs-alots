@@ -18,6 +18,7 @@ import {
   calculateResteACharge,
 } from "./morocco";
 import { escapeHtml } from "./escape-html";
+import { clinicConfig } from "@/config/clinic.config";
 
 // ---- Invoice Types ----
 
@@ -184,7 +185,7 @@ export function generateInvoiceHTML(invoice: InvoiceData): string {
   const title = isProforma ? "DEVIS / Proforma" : "FACTURE";
 
   return `<!DOCTYPE html>
-<html lang="fr" dir="ltr">
+<html lang="${clinicConfig.locale ?? "fr"}" dir="${clinicConfig.locale === "ar" ? "rtl" : "ltr"}">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">

@@ -1,6 +1,7 @@
 import type { MetadataRoute } from "next";
 import { createClient } from "@/lib/supabase-server";
 import { getAllPosts } from "@/lib/blog";
+import { logger } from "@/lib/logger";
 
 /**
  * Dynamic sitemap for public-facing pages.
@@ -83,8 +84,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         }
       }
     }
-  } catch {
-    // If DB is unavailable, return static entries only
+  } catch (err) {
+    logger.warn("Failed to fetch clinic subdomains for sitemap", { context: "sitemap", error: err });
   }
 
   return entries;

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback, useEffect, useRef } from "react";
+import { logger } from "@/lib/logger";
 
 interface DraftMeta {
   savedAt: number;
@@ -56,7 +57,8 @@ export function useOfflineDrafts<T>(
         return null;
       }
       return entry.data;
-    } catch {
+    } catch (err) {
+      logger.warn("Failed to load offline draft", { context: "offline-drafts", error: err });
       return null;
     }
   });
@@ -68,7 +70,8 @@ export function useOfflineDrafts<T>(
       if (!stored) return true;
       const entry: DraftEntry<T> = JSON.parse(stored);
       return entry.meta.synced;
-    } catch {
+    } catch (err) {
+      logger.warn("Failed to read draft sync status", { context: "offline-drafts", error: err });
       return true;
     }
   });
@@ -86,8 +89,8 @@ export function useOfflineDrafts<T>(
           meta: { savedAt: Date.now(), synced: false },
         };
         localStorage.setItem(storageKey, JSON.stringify(entry));
-      } catch {
-        // localStorage full or unavailable — silently fail
+      } catch (err) {
+        logger.warn("Failed to save draft to localStorage", { context: "offline-drafts", error: err });
       }
     },
     [storageKey]
@@ -98,8 +101,8 @@ export function useOfflineDrafts<T>(
     setIsSynced(true);
     try {
       localStorage.removeItem(storageKey);
-    } catch {
-      // ignore
+    } catch (err) {
+      logger.warn("Failed to clear draft from localStorage", { context: "offline-drafts", error: err });
     }
   }, [storageKey]);
 
@@ -118,11 +121,11 @@ export function useOfflineDrafts<T>(
             meta: { savedAt: Date.now(), synced: true },
           };
           localStorage.setItem(storageKey, JSON.stringify(entry));
-        } catch {
-          // ignore
+        } catch (err) {
+          logger.warn("Failed to update draft sync status in localStorage", { context: "offline-drafts", error: err });
         }
-      } catch {
-        // Sync failed — draft remains unsynced for retry
+      } catch (err) {
+        logger.warn("Draft sync failed, will retry", { context: "offline-drafts", error: err });
       }
     },
     [storageKey]
