@@ -5,7 +5,19 @@
  * Each clinic gets its own copy with customized values.
  */
 
-export type ClinicType = "doctor" | "dentist" | "pharmacy";
+export type ClinicType =
+  | "doctor"
+  | "dentist"
+  | "pharmacy"
+  | "lab"
+  | "equipment"
+  | "nutritionist"
+  | "optician"
+  | "parapharmacy"
+  | "physiotherapist"
+  | "psychologist"
+  | "speech-therapist"
+  | "radiology";
 
 export type ClinicTier = "vitrine" | "cabinet" | "pro" | "premium" | "saas";
 

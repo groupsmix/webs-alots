@@ -19,7 +19,7 @@ import {
   deleteEquipmentItem,
 } from "@/lib/data/client";
 import type { EquipmentItemView } from "@/lib/data/client";
-import { useEquipmentLocale } from "../../layout";
+import { useEquipmentLocale } from "../layout";
 import { useEquipmentI18n } from "@/lib/hooks/use-equipment-i18n";
 import { PageLoader } from "@/components/ui/page-loader";
 

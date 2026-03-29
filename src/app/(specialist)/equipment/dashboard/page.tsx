@@ -11,7 +11,7 @@ import Link from "next/link";
 import { useTenant } from "@/components/tenant-provider";
 import { fetchEquipmentInventory, fetchEquipmentRentals, fetchEquipmentMaintenance } from "@/lib/data/client";
 import type { EquipmentItemView, EquipmentRentalView, EquipmentMaintenanceView } from "@/lib/data/client";
-import { useEquipmentLocale } from "../../layout";
+import { useEquipmentLocale } from "../layout";
 import { useEquipmentI18n } from "@/lib/hooks/use-equipment-i18n";
 import { PageLoader } from "@/components/ui/page-loader";
 
