@@ -98,11 +98,9 @@ function emit(level: LogLevel, message: string, meta?: LogMeta): void {
 // Lazily imports @sentry/nextjs to avoid circular dependencies and to
 // keep the logger functional even when Sentry is not configured.
 
-function captureSentryError(message: string, meta?: LogMeta): void {
+async function captureSentryError(message: string, meta?: LogMeta): Promise<void> {
   try {
-    // Dynamic require to avoid bundling Sentry into every module
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const Sentry = require("@sentry/nextjs");
+    const Sentry = await import("@sentry/nextjs");
     if (!Sentry?.captureException) return;
 
     const error = meta?.error instanceof Error ? meta.error : new Error(message);
@@ -110,7 +108,6 @@ function captureSentryError(message: string, meta?: LogMeta): void {
       if (meta?.context) scope.setTag("context", meta.context);
       if (meta?.clinicId) scope.setTag("clinicId", meta.clinicId);
       if (meta?.traceId) scope.setTag("traceId", meta.traceId);
-      // Attach all extra metadata
       const { context: _ctx, clinicId: _cid, traceId: _tid, error: _err, ...extra } = meta ?? {};
       for (const [k, v] of Object.entries(extra)) {
         scope.setExtra(k, v);
@@ -122,16 +119,15 @@ function captureSentryError(message: string, meta?: LogMeta): void {
   }
 }
 
-function captureSentryBreadcrumb(level: string, message: string, meta?: LogMeta): void {
+async function captureSentryBreadcrumb(level: string, message: string, meta?: LogMeta): Promise<void> {
   try {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const Sentry = require("@sentry/nextjs");
+    const Sentry = await import("@sentry/nextjs");
     if (!Sentry?.addBreadcrumb) return;
 
     Sentry.addBreadcrumb({
       category: meta?.context ?? "app",
       message,
-      level,
+      level: level as "debug" | "info" | "warning" | "error" | "fatal",
       data: meta ? { ...meta, error: undefined } : undefined,
     });
   } catch {
@@ -150,12 +146,12 @@ export const logger = {
   warn(message: string, meta?: LogMeta): void {
     emit("warn", message, meta);
     // Forward warnings to Sentry as breadcrumbs for context on future errors
-    captureSentryBreadcrumb("warning", message, meta);
+    void captureSentryBreadcrumb("warning", message, meta);
   },
   error(message: string, meta?: LogMeta): void {
     emit("error", message, meta);
     // Forward errors to Sentry for external monitoring and alerting
-    captureSentryError(message, meta);
+    void captureSentryError(message, meta);
   },
   /**
    * Register an external log transport.

@@ -5,6 +5,22 @@
  * Each clinic gets its own copy with customized values.
  */
 
+/**
+ * Supported clinic types for the static config file.
+ *
+ * These map to `type_key` values in the `CLINIC_TYPES` registry
+ * (see src/lib/config/clinic-types.ts) and to specialty feature sets
+ * in `SPECIALTY_FEATURES` (see src/lib/hooks/use-clinic-features.tsx).
+ *
+ * Types with full specialty UI support in the doctor dashboard:
+ *   doctor, dentist, pediatrician, gynecologist, ophthalmologist,
+ *   cardiologist, dermatologist, orthopedist, neurologist, psychiatrist,
+ *   physiotherapist, radiologist, nutritionist
+ *
+ * Types with basic (non-specialty) support:
+ *   pharmacy, lab, optician, parapharmacy, psychologist, speech-therapist,
+ *   equipment
+ */
 export type ClinicType =
   | "doctor"
   | "dentist"
@@ -17,7 +33,15 @@ export type ClinicType =
   | "physiotherapist"
   | "psychologist"
   | "speech-therapist"
-  | "radiology";
+  | "radiology"
+  | "pediatrician"
+  | "gynecologist"
+  | "ophthalmologist"
+  | "cardiologist"
+  | "dermatologist"
+  | "orthopedist"
+  | "neurologist"
+  | "psychiatrist";
 
 export type ClinicTier = "vitrine" | "cabinet" | "pro" | "premium" | "saas";
 
