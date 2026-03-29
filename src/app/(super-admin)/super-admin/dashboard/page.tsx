@@ -17,6 +17,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { logger } from "@/lib/logger";
+import { useLocale } from "@/components/locale-switcher";
+import { t } from "@/lib/i18n";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { CardSkeleton } from "@/components/ui/loading-skeleton";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -48,6 +50,7 @@ const activityTypeIcons: Record<string, string> = {
 };
 
 export default function SuperAdminDashboardPage() {
+  const [locale] = useLocale();
   const [loading, setLoading] = useState(true);
   const [clinicList, setClinicList] = useState<ClinicDetail[]>([]);
   const [totalClinics, setTotalClinics] = useState(0);
@@ -108,42 +111,42 @@ export default function SuperAdminDashboardPage() {
   const stats = [
     {
       icon: Building2,
-      label: "Total Clinics",
+      label: t(locale, "superAdmin.totalClinics"),
       value: totalClinics.toString(),
-      change: `${activeClinics} active`,
+      change: `${activeClinics} ${t(locale, "superAdmin.active")}`,
       color: "text-blue-600",
       bg: "bg-blue-50",
     },
     {
       icon: Building2,
-      label: "Active Clinics",
+      label: t(locale, "superAdmin.activeClinics"),
       value: activeClinics.toString(),
-      change: `${totalClinics - activeClinics} inactive`,
+      change: `${totalClinics - activeClinics} ${t(locale, "superAdmin.inactive")}`,
       color: "text-green-600",
       bg: "bg-green-50",
     },
     {
       icon: Users,
-      label: "Platform Users",
+      label: t(locale, "superAdmin.platformUsers"),
       value: totalPatients > 0 ? `${totalPatients.toLocaleString()}+` : "0",
-      change: "registered accounts",
+      change: t(locale, "superAdmin.registeredAccounts"),
       color: "text-purple-600",
       bg: "bg-purple-50",
     },
     {
       icon: TrendingUp,
-      label: "Monthly Revenue",
+      label: t(locale, "superAdmin.monthlyRevenue"),
       value: `${totalRevenue.toLocaleString()} MAD`,
-      change: "from completed payments",
+      change: t(locale, "superAdmin.fromPayments"),
       color: "text-orange-600",
       bg: "bg-orange-50",
     },
   ];
 
   const financialStats = [
-    { label: "MRR", value: `${mrr.toLocaleString()} MAD`, icon: CreditCard, color: "text-emerald-600" },
-    { label: "Overdue", value: overdue.toString(), icon: Clock, color: "text-red-500" },
-    { label: "Paid This Month", value: `${activeClinics}`, icon: TrendingUp, color: "text-blue-600" },
+    { label: t(locale, "superAdmin.mrr"), value: `${mrr.toLocaleString()} MAD`, icon: CreditCard, color: "text-emerald-600" },
+    { label: t(locale, "superAdmin.overdue"), value: overdue.toString(), icon: Clock, color: "text-red-500" },
+    { label: t(locale, "superAdmin.paidThisMonth"), value: `${activeClinics}`, icon: TrendingUp, color: "text-blue-600" },
   ];
 
   return (
@@ -154,22 +157,22 @@ export default function SuperAdminDashboardPage() {
       ]} />
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold">Super Admin Dashboard</h1>
+          <h1 className="text-2xl font-bold">{t(locale, "dashboard.superAdmin")}</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Overview of all clinics and system status
+            {t(locale, "dashboard.superAdminDesc")}
           </p>
         </div>
         <div className="flex gap-2">
           <Link href="/super-admin/onboarding">
             <Button size="sm">
               <UserPlus className="h-4 w-4 mr-1" />
-              New Clinic
+              {t(locale, "superAdmin.newClinic")}
             </Button>
           </Link>
           <Link href="/super-admin/announcements">
             <Button variant="outline" size="sm">
               <Megaphone className="h-4 w-4 mr-1" />
-              Announce
+              {t(locale, "superAdmin.announce")}
             </Button>
           </Link>
         </div>
@@ -263,11 +266,11 @@ export default function SuperAdminDashboardPage() {
             <div className="flex items-center justify-between">
               <CardTitle className="text-base flex items-center gap-2">
                 <Building2 className="h-4 w-4" />
-                Clinics Overview
+                {t(locale, "superAdmin.clinicsOverview")}
               </CardTitle>
               <Link href="/super-admin/clinics">
                 <Button variant="ghost" size="sm" className="text-xs">
-                  View All
+                  {t(locale, "superAdmin.viewAll")}
                   <ArrowUpRight className="h-3 w-3 ml-1" />
                 </Button>
               </Link>
@@ -325,11 +328,11 @@ export default function SuperAdminDashboardPage() {
               <div className="flex items-center justify-between">
                 <CardTitle className="text-base flex items-center gap-2">
                   <Megaphone className="h-4 w-4" />
-                  Active Announcements
+                  {t(locale, "superAdmin.activeAnnouncements")}
                 </CardTitle>
                 <Link href="/super-admin/announcements">
                   <Button variant="ghost" size="sm" className="text-xs">
-                    Manage
+                    {t(locale, "superAdmin.manage")}
                     <ArrowUpRight className="h-3 w-3 ml-1" />
                   </Button>
                 </Link>
@@ -370,7 +373,7 @@ export default function SuperAdminDashboardPage() {
             <CardHeader className="pb-3">
               <CardTitle className="text-base flex items-center gap-2">
                 <Activity className="h-4 w-4" />
-                Recent Activity
+                {t(locale, "superAdmin.recentActivity")}
               </CardTitle>
             </CardHeader>
             <CardContent>

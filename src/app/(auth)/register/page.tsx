@@ -16,7 +16,8 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { registerPatient, verifyOTP } from "@/lib/auth";
 import { logger } from "@/lib/logger";
-import { t } from "@/lib/i18n";
+import { t, type TranslationKey } from "@/lib/i18n";
+import { useLocale } from "@/components/locale-switcher";
 import {
   Select,
   SelectTrigger,
@@ -28,6 +29,7 @@ import {
 const PHONE_AUTH_ENABLED = process.env.NEXT_PUBLIC_PHONE_AUTH_ENABLED === "true";
 
 export default function RegisterPage() {
+  const [locale] = useLocale();
   const [step, setStep] = useState<"info" | "otp">("info");
   const [phone, setPhone] = useState("");
   const [firstName, setFirstName] = useState("");
@@ -44,7 +46,7 @@ export default function RegisterPage() {
     setError(null);
 
     if (!PHONE_AUTH_ENABLED) {
-      setError(t("fr", "auth.phoneDisabled"));
+      setError(t(locale, "auth.phoneDisabled"));
       return;
     }
 
@@ -61,7 +63,7 @@ export default function RegisterPage() {
       });
 
       if (result.error) {
-        setError(result.error);
+        setError(t(locale, result.error as TranslationKey));
         setLoading(false);
         return;
       }
@@ -70,7 +72,7 @@ export default function RegisterPage() {
       setLoading(false);
     } catch (err) {
       logger.warn("Registration failed", { context: "register", error: err });
-      setError(t("fr", "error.unexpected"));
+      setError(t(locale, "error.unexpected"));
       setLoading(false);
     }
   }
@@ -83,12 +85,12 @@ export default function RegisterPage() {
     try {
       const result = await verifyOTP(phone, otp);
       if (result.error) {
-        setError(result.error);
+        setError(t(locale, result.error as TranslationKey));
         setLoading(false);
       }
     } catch (err) {
       logger.warn("OTP verification failed", { context: "register", error: err });
-      setError(t("fr", "error.unexpected"));
+      setError(t(locale, "error.unexpected"));
       setLoading(false);
     }
   }
@@ -102,8 +104,8 @@ export default function RegisterPage() {
               <Heart className="h-5 w-5 text-primary-foreground" />
             </div>
           </div>
-          <h1 className="text-xl font-bold">Portail Santé</h1>
-          <p className="text-sm text-muted-foreground">Créez votre compte patient</p>
+          <h1 className="text-xl font-bold">{t(locale, "auth.portalTitle")}</h1>
+          <p className="text-sm text-muted-foreground">{t(locale, "register.subtitle")}</p>
         </div>
 
         <Card>
@@ -111,20 +113,19 @@ export default function RegisterPage() {
             <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-muted">
               <UserPlus className="h-6 w-6 text-muted-foreground" />
             </div>
-            <CardTitle className="text-xl">Inscription indisponible</CardTitle>
+            <CardTitle className="text-xl">{t(locale, "register.unavailableTitle")}</CardTitle>
             <CardDescription>
-              L&apos;inscription par téléphone n&apos;est pas encore activée.
-              Veuillez contacter votre clinique pour créer un compte.
+              {t(locale, "register.unavailableDesc")}
             </CardDescription>
           </CardHeader>
           <CardFooter className="justify-center border-t pt-4">
             <p className="text-sm text-muted-foreground">
-              Vous avez déjà un compte ?{" "}
+              {t(locale, "auth.hasAccount")}{" "}
               <Link
                 href="/login"
                 className="text-primary hover:underline font-medium"
               >
-                Se connecter
+                {t(locale, "auth.signIn")}
               </Link>
             </p>
           </CardFooter>
@@ -141,8 +142,8 @@ export default function RegisterPage() {
             <Heart className="h-5 w-5 text-primary-foreground" />
           </div>
         </div>
-        <h1 className="text-xl font-bold">Portail Santé</h1>
-        <p className="text-sm text-muted-foreground">Créez votre compte patient</p>
+        <h1 className="text-xl font-bold">{t(locale, "auth.portalTitle")}</h1>
+        <p className="text-sm text-muted-foreground">{t(locale, "register.subtitle")}</p>
       </div>
 
       <Card>
@@ -155,12 +156,12 @@ export default function RegisterPage() {
             )}
           </div>
           <CardTitle className="text-xl">
-            {step === "info" ? "Créer un compte" : "Vérifiez votre numéro"}
+            {step === "info" ? t(locale, "register.createAccount") : t(locale, "auth.verifyNumber")}
           </CardTitle>
           <CardDescription>
             {step === "info"
-              ? "Inscrivez-vous pour prendre des rendez-vous et accéder à votre portail santé."
-              : `Nous avons envoyé un code à 6 chiffres au ${phone}`}
+              ? t(locale, "register.desc")
+              : `${t(locale, "auth.otpSent")} ${phone}`}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -174,20 +175,20 @@ export default function RegisterPage() {
             <form className="space-y-4" onSubmit={handleRegister}>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
-                  <Label htmlFor="firstName">Prénom</Label>
+                  <Label htmlFor="firstName">{t(locale, "register.firstName")}</Label>
                   <Input
                     id="firstName"
-                    placeholder="Votre prénom"
+                    placeholder={t(locale, "register.firstNamePlaceholder")}
                     value={firstName}
                     onChange={(e) => setFirstName(e.target.value)}
                     required
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="lastName">Nom</Label>
+                  <Label htmlFor="lastName">{t(locale, "register.lastName")}</Label>
                   <Input
                     id="lastName"
-                    placeholder="Votre nom"
+                    placeholder={t(locale, "register.lastNamePlaceholder")}
                     value={lastName}
                     onChange={(e) => setLastName(e.target.value)}
                     required
@@ -195,7 +196,7 @@ export default function RegisterPage() {
                 </div>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="phone">Numéro de téléphone</Label>
+                <Label htmlFor="phone">{t(locale, "auth.phoneLabel")}</Label>
                 <Input
                   id="phone"
                   type="tel"
@@ -206,7 +207,7 @@ export default function RegisterPage() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="email">E-mail (optionnel)</Label>
+                <Label htmlFor="email">{t(locale, "register.emailOptional")}</Label>
                 <Input
                   id="email"
                   type="email"
@@ -217,7 +218,7 @@ export default function RegisterPage() {
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
-                  <Label htmlFor="age">Âge</Label>
+                  <Label htmlFor="age">{t(locale, "register.age")}</Label>
                   <Input
                     id="age"
                     type="number"
@@ -227,39 +228,39 @@ export default function RegisterPage() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="gender">Genre</Label>
+                  <Label htmlFor="gender">{t(locale, "register.gender")}</Label>
                   <Select value={gender} onValueChange={setGender}>
                     <SelectTrigger>
-                      <SelectValue placeholder="Sélectionner" />
+                      <SelectValue placeholder={t(locale, "register.genderPlaceholder")} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="M">Homme</SelectItem>
-                      <SelectItem value="F">Femme</SelectItem>
+                      <SelectItem value="M">{t(locale, "register.male")}</SelectItem>
+                      <SelectItem value="F">{t(locale, "register.female")}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="insurance">Assurance (optionnel)</Label>
+                <Label htmlFor="insurance">{t(locale, "register.insuranceOptional")}</Label>
                 <Select value={insurance} onValueChange={setInsurance}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Pas d'assurance" />
+                    <SelectValue placeholder={t(locale, "register.noInsurance")} />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="CNSS">CNSS</SelectItem>
                     <SelectItem value="CNOPS">CNOPS</SelectItem>
-                    <SelectItem value="other">Autre</SelectItem>
+                    <SelectItem value="other">{t(locale, "register.other")}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               <Button type="submit" className="w-full" disabled={loading}>
-                {loading ? "Création du compte..." : "Créer un compte"}
+                {loading ? t(locale, "register.creating") : t(locale, "register.createAccount")}
               </Button>
             </form>
           ) : (
             <form className="space-y-4" onSubmit={handleVerifyOTP}>
               <div className="space-y-2">
-                <Label htmlFor="otp">Code de vérification</Label>
+                <Label htmlFor="otp">{t(locale, "auth.otpLabel")}</Label>
                 <Input
                   id="otp"
                   placeholder="000000"
@@ -271,11 +272,11 @@ export default function RegisterPage() {
                   autoFocus
                 />
                 <p className="text-xs text-muted-foreground text-center">
-                  Entrez le code à 6 chiffres envoyé sur votre téléphone.
+                  {t(locale, "register.otpHint")}
                 </p>
               </div>
               <Button type="submit" className="w-full" disabled={loading}>
-                {loading ? "Vérification..." : "Vérifier et finaliser l'inscription"}
+                {loading ? t(locale, "auth.verifying") : t(locale, "register.verifyAndFinish")}
               </Button>
               <Button
                 type="button"
@@ -288,19 +289,19 @@ export default function RegisterPage() {
                 }}
               >
                 <ArrowLeft className="h-4 w-4 mr-1" />
-                Retour à l&apos;inscription
+                {t(locale, "register.backToRegister")}
               </Button>
             </form>
           )}
         </CardContent>
         <CardFooter className="justify-center border-t pt-4">
           <p className="text-sm text-muted-foreground">
-            Vous avez déjà un compte ?{" "}
+            {t(locale, "auth.hasAccount")}{" "}
             <Link
               href="/login"
               className="text-primary hover:underline font-medium"
             >
-              Se connecter
+              {t(locale, "auth.signIn")}
             </Link>
           </p>
         </CardFooter>

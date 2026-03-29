@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { logger } from "@/lib/logger";
 import { t } from "@/lib/i18n";
+import { useLocale } from "@/components/locale-switcher";
 
 export default function Error({
   error,
@@ -14,6 +15,8 @@ export default function Error({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
+  const [locale] = useLocale();
+
   useEffect(() => {
     logger.warn("Operation failed", { context: "error", error });
   }, [error]);
@@ -25,9 +28,9 @@ export default function Error({
           <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-destructive/10">
             <AlertTriangle className="h-7 w-7 text-destructive" />
           </div>
-          <h2 className="mb-2 text-lg font-semibold">{t("fr", "error.title")}</h2>
+          <h2 className="mb-2 text-lg font-semibold">{t(locale, "error.title")}</h2>
           <p className="mb-6 text-sm text-muted-foreground">
-            {t("fr", "error.description")}
+            {t(locale, "error.description")}
           </p>
           {error.digest && (
             <p className="mb-4 text-xs text-muted-foreground">
@@ -36,7 +39,7 @@ export default function Error({
           )}
           <Button onClick={reset} size="lg">
             <RefreshCw className="mr-2 h-4 w-4" />
-            {t("fr", "error.retry")}
+            {t(locale, "error.retry")}
           </Button>
         </CardContent>
       </Card>

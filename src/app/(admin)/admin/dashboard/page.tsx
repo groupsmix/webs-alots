@@ -13,6 +13,8 @@ import { LabDashboardKPIsComponent } from "@/components/admin/lab-dashboard-kpis
 import { ClinicCenterDashboardKPIsComponent } from "@/components/admin/clinic-center-dashboard-kpis";
 import { ErrorBoundary } from "@/components/ui/error-boundary";
 import { PageLoader } from "@/components/ui/page-loader";
+import { useLocale } from "@/components/locale-switcher";
+import { t } from "@/lib/i18n";
 
 const activityVariant: Record<string, "default" | "success" | "warning" | "destructive"> = {
   booking: "default",
@@ -22,6 +24,7 @@ const activityVariant: Record<string, "default" | "success" | "warning" | "destr
 };
 
 export default function AdminDashboardPage() {
+  const [locale] = useLocale();
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
@@ -47,13 +50,13 @@ export default function AdminDashboardPage() {
   }, []);
 
   if (loading) {
-    return <PageLoader message="Loading dashboard..." />;
+    return <PageLoader message={t(locale, "dashboard.loading")} />;
   }
 
   if (error) {
     return (
       <div className="p-8 text-center">
-        <p className="text-red-600 font-medium">Failed to load data. Please try refreshing the page.</p>
+        <p className="text-red-600 font-medium">{t(locale, "error.loadFailed")}</p>
         <p className="text-sm text-muted-foreground mt-2">{error.message}</p>
       </div>
     );
@@ -69,17 +72,17 @@ export default function AdminDashboardPage() {
   const insurancePatients = stats?.insurancePatients ?? 0;
 
   const statCards = [
-    { icon: Users, label: "Total Patients", value: totalPatients.toString(), color: "text-blue-600" },
-    { icon: Calendar, label: "Total Appointments", value: totalAppts.toString(), color: "text-green-600" },
-    { icon: CreditCard, label: "Monthly Revenue", value: `${totalRevenue} MAD`, color: "text-purple-600" },
-    { icon: Star, label: "Average Rating", value: avgRating.toFixed(1), color: "text-yellow-600" },
+    { icon: Users, label: t(locale, "admin.totalPatients"), value: totalPatients.toString(), color: "text-blue-600" },
+    { icon: Calendar, label: t(locale, "admin.totalAppointments"), value: totalAppts.toString(), color: "text-green-600" },
+    { icon: CreditCard, label: t(locale, "admin.monthlyRevenue"), value: `${totalRevenue} MAD`, color: "text-purple-600" },
+    { icon: Star, label: t(locale, "admin.averageRating"), value: avgRating.toFixed(1), color: "text-yellow-600" },
   ];
 
   const recentActivity: { type: string; message: string; time: string }[] = [];
 
   return (
     <div>
-      <h1 className="text-2xl font-bold mb-6">Clinic Admin Dashboard</h1>
+      <h1 className="text-2xl font-bold mb-6">{t(locale, "dashboard.admin")}</h1>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-8">
         {statCards.map((stat) => (
@@ -100,12 +103,12 @@ export default function AdminDashboardPage() {
           <CardHeader>
             <CardTitle className="text-base flex items-center gap-2">
               <Activity className="h-4 w-4" />
-              Recent Activity
+              {t(locale, "admin.recentActivity")}
             </CardTitle>
           </CardHeader>
           <CardContent>
             {recentActivity.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-4">No recent activity</p>
+              <p className="text-sm text-muted-foreground text-center py-4">{t(locale, "admin.noRecentActivity")}</p>
             ) : (
               <div className="space-y-3">
                 {recentActivity.map((activity, i) => (
@@ -124,28 +127,28 @@ export default function AdminDashboardPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Quick Stats</CardTitle>
+            <CardTitle className="text-base">{t(locale, "admin.quickStats")}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
               <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Active Doctors</span>
+                <span className="text-muted-foreground">{t(locale, "admin.activeDoctors")}</span>
                 <span className="font-medium">{doctorCount}</span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Completed Appts</span>
+                <span className="text-muted-foreground">{t(locale, "admin.completedAppts")}</span>
                 <span className="font-medium">{completedAppts}</span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">No-show Rate</span>
+                <span className="text-muted-foreground">{t(locale, "admin.noShowRate")}</span>
                 <span className="font-medium">{noShowRate}%</span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Avg Rating</span>
+                <span className="text-muted-foreground">{t(locale, "admin.avgRating")}</span>
                 <span className="font-medium">{avgRating.toFixed(1)} / 5</span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Insurance Patients</span>
+                <span className="text-muted-foreground">{t(locale, "admin.insurancePatients")}</span>
                 <span className="font-medium">{insurancePatients}</span>
               </div>
             </div>

@@ -15,9 +15,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { resetPassword } from "@/lib/auth";
-import { t } from "@/lib/i18n";
+import { t, type TranslationKey } from "@/lib/i18n";
+import { useLocale } from "@/components/locale-switcher";
 
 export default function ForgotPasswordPage() {
+  const [locale] = useLocale();
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
@@ -37,7 +39,7 @@ export default function ForgotPasswordPage() {
       );
 
       if (result.error) {
-        setError(result.error);
+        setError(t(locale, result.error as TranslationKey));
         setLoading(false);
         return;
       }
@@ -47,7 +49,7 @@ export default function ForgotPasswordPage() {
       setSent(true);
       setLoading(false);
     } catch {
-      setError(t("fr", "error.unexpected"));
+      setError(t(locale, "error.unexpected"));
       setLoading(false);
     }
   }
@@ -60,9 +62,9 @@ export default function ForgotPasswordPage() {
             <Heart className="h-5 w-5 text-primary-foreground" />
           </div>
         </div>
-        <h1 className="text-xl font-bold">Portail Santé</h1>
+        <h1 className="text-xl font-bold">{t(locale, "auth.portalTitle")}</h1>
         <p className="text-sm text-muted-foreground">
-          Réinitialisez votre mot de passe
+          {t(locale, "forgot.resetSubtitle")}
         </p>
       </div>
 
@@ -76,12 +78,12 @@ export default function ForgotPasswordPage() {
             )}
           </div>
           <CardTitle className="text-xl">
-            {sent ? "E-mail envoyé" : "Mot de passe oublié"}
+            {sent ? t(locale, "forgot.emailSent") : t(locale, "forgot.title")}
           </CardTitle>
           <CardDescription>
             {sent
-              ? `Un lien de réinitialisation a été envoyé à ${email}. Vérifiez votre boîte de réception.`
-              : "Entrez votre adresse e-mail pour recevoir un lien de réinitialisation."}
+              ? `${t(locale, "forgot.emailSentDesc")} ${email}`
+              : t(locale, "forgot.desc")}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -94,11 +96,11 @@ export default function ForgotPasswordPage() {
           {!sent && (
             <form className="space-y-4" onSubmit={handleSubmit}>
               <div className="space-y-2">
-                <Label htmlFor="email">E-mail</Label>
+                <Label htmlFor="email">{t(locale, "auth.email")}</Label>
                 <Input
                   id="email"
                   type="email"
-                  placeholder="votre@email.com"
+                  placeholder={t(locale, "auth.emailPlaceholder")}
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
@@ -107,8 +109,8 @@ export default function ForgotPasswordPage() {
               </div>
               <Button type="submit" className="w-full" disabled={loading}>
                 {loading
-                  ? "Envoi en cours..."
-                  : "Envoyer le lien de réinitialisation"}
+                  ? t(locale, "forgot.sending")
+                  : t(locale, "forgot.sendLink")}
               </Button>
             </form>
           )}
@@ -122,7 +124,7 @@ export default function ForgotPasswordPage() {
                 setEmail("");
               }}
             >
-              Envoyer à une autre adresse
+              {t(locale, "forgot.sendToAnother")}
             </Button>
           )}
         </CardContent>
@@ -132,7 +134,7 @@ export default function ForgotPasswordPage() {
             className="inline-flex items-center text-sm text-primary hover:underline font-medium"
           >
             <ArrowLeft className="h-4 w-4 mr-1" />
-            Retour à la connexion
+            {t(locale, "forgot.backToLogin")}
           </Link>
         </CardFooter>
       </Card>
