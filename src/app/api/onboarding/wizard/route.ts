@@ -4,6 +4,7 @@ import { logger } from "@/lib/logger";
 import { z } from "zod";
 import { safeParse } from "@/lib/validations";
 import { sendTextMessage } from "@/lib/whatsapp";
+import { invalidateAllSubdomainCaches } from "@/lib/subdomain-cache";
 
 // ---------------------------------------------------------------------------
 // Validation
@@ -141,6 +142,9 @@ export const POST = withAuth(async (request, { supabase, profile }) => {
             context: "onboarding/wizard",
             error: brandError,
           });
+        } else {
+          // Invalidate subdomain cache so middleware picks up branding changes
+          invalidateAllSubdomainCaches();
         }
       }
     }

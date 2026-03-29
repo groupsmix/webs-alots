@@ -30,8 +30,8 @@ async function fetchFeaturedProducts(clinicId: string): Promise<PromotionProduct
   const supabase = createClient();
 
   const [{ data: products }, { data: stockRows }] = await Promise.all([
-    supabase.from("products").select("*").eq("clinic_id", clinicId).eq("is_active", true),
-    supabase.from("stock").select("*").eq("clinic_id", clinicId),
+    supabase.from("products").select("id, name, generic_name, category, description, price, requires_prescription, is_active").eq("clinic_id", clinicId).eq("is_active", true),
+    supabase.from("stock").select("product_id, quantity").eq("clinic_id", clinicId),
   ]);
 
   if (!products) return [];

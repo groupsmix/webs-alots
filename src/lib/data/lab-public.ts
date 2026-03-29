@@ -54,7 +54,7 @@ export async function getPublicLabTests(): Promise<LabTest[]> {
 
   const { data, error } = await supabase
     .from("lab_tests")
-    .select("*")
+    .select("id, name, category, description, preparation_instructions, turnaround_time, price, requires_fasting, sample_type, is_active")
     .eq("clinic_id", clinicId)
     .order("name", { ascending: true });
 
@@ -100,7 +100,7 @@ export async function getPublicCollectionPoints(): Promise<CollectionPoint[]> {
 
   const { data, error } = await supabase
     .from("collection_points")
-    .select("*")
+    .select("id, name, address, city, phone, hours, is_main_lab, has_parking, wheelchair_accessible, lat, lng")
     .eq("clinic_id", clinicId)
     .order("is_main_lab", { ascending: false });
 

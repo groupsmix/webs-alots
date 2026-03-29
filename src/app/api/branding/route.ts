@@ -18,6 +18,7 @@ import type { UserRole } from "@/lib/types/database";
 import { withAuth } from "@/lib/with-auth";
 import { logger } from "@/lib/logger";
 import { brandingUpdateSchema, safeParse } from "@/lib/validations";
+import { invalidateAllSubdomainCaches } from "@/lib/subdomain-cache";
 
 const ADMIN_ROLES: UserRole[] = ["super_admin", "clinic_admin"];
 
@@ -182,6 +183,9 @@ export const PUT = withAuth(async (request, { supabase }) => {
   // Invalidate branding cache so public pages pick up the change
   revalidatePath("/", "layout");
 
+  // Invalidate subdomain cache so middleware picks up any name/config changes
+  invalidateAllSubdomainCaches();
+
   return NextResponse.json({ ok: true });
 }, ADMIN_ROLES);
 
@@ -267,6 +271,9 @@ export const POST = withAuth(async (request, { supabase }) => {
 
   // Invalidate branding cache so public pages pick up the new image
   revalidatePath("/", "layout");
+
+  // Invalidate subdomain cache so middleware picks up any config changes
+  invalidateAllSubdomainCaches();
 
   return NextResponse.json({ url, key });
 }, ADMIN_ROLES);

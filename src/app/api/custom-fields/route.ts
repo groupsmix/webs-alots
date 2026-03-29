@@ -23,7 +23,7 @@ export const GET = withAuth(async (request, { supabase }) => {
 
     let query = supabase
       .from("custom_field_definitions")
-      .select("*")
+      .select("id, clinic_type_key, entity_type, field_key, field_type, label_fr, label_ar, description, placeholder, is_required, sort_order, options, validation, default_value, is_system, is_active")
       .eq("clinic_type_key", clinicTypeKey)
       .eq("is_active", true)
       .order("sort_order", { ascending: true });

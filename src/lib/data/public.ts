@@ -576,11 +576,11 @@ export async function getPublicPharmacyProducts(): Promise<PublicPharmacyProduct
   const [{ data: products }, { data: stockRows }] = await Promise.all([
     supabase
       .from("products")
-      .select("*")
+      .select("id, name, generic_name, category, description, price, requires_prescription, is_active, manufacturer, barcode, dosage_form, strength")
       .eq("clinic_id", clinicId),
     supabase
       .from("stock")
-      .select("*")
+      .select("product_id, quantity, min_threshold, expiry_date, batch_number")
       .eq("clinic_id", clinicId),
   ]);
 
@@ -658,7 +658,7 @@ export async function getPublicPharmacyServices(): Promise<PublicPharmacyService
 
   const { data, error } = await supabase
     .from("services")
-    .select("*")
+    .select("id, name, description, price, duration_minutes, duration_min, is_active")
     .eq("clinic_id", clinicId)
     .order("name", { ascending: true });
 
@@ -697,7 +697,7 @@ export async function getPublicOnDutySchedule(): Promise<PublicOnDutySchedule[]>
   // Try fetching from on_duty_schedule table if it exists
   const { data, error } = await supabase
     .from("on_duty_schedule")
-    .select("*")
+    .select("id, date, start_time, end_time, is_on_duty, notes")
     .eq("clinic_id", clinicId)
     .order("date", { ascending: true });
 
@@ -766,18 +766,18 @@ export async function getPublicPharmacyPrescriptions(): Promise<PublicPharmacyPr
 
   const { data: requests, error } = await supabase
     .from("prescription_requests")
-    .select("*")
-    .eq("clinic_id", clinicId)
-    .order("created_at", { ascending: false });
+      .select("id, patient_id, status, image_url, created_at, notes, delivery_requested")
+      .eq("clinic_id", clinicId)
+      .order("created_at", { ascending: false });
 
-  if (error || !requests) return [];
+    if (error || !requests) return [];
 
-  // Get patient details
-  const patientIds = [...new Set((requests as Record<string, unknown>[]).map((r) => r.patient_id as string))];
-  const { data: users } = await supabase
-    .from("users")
-    .select("id, name, phone")
-    .in("id", patientIds);
+    // Get patient details
+    const patientIds = [...new Set((requests as Record<string, unknown>[]).map((r) => r.patient_id as string))];
+    const { data: users } = await supabase
+      .from("users")
+      .select("id, name, phone")
+      .in("id", patientIds);
 
   const userMap = new Map(
     ((users ?? []) as { id: string; name: string; phone: string | null }[]).map((u) => [u.id, u]),

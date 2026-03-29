@@ -54,8 +54,8 @@ async function fetchProductsClient(clinicId: string): Promise<PublicPharmacyProd
   const supabase = createClient();
 
   const [{ data: products }, { data: stockRows }] = await Promise.all([
-    supabase.from("products").select("*").eq("clinic_id", clinicId),
-    supabase.from("stock").select("*").eq("clinic_id", clinicId),
+    supabase.from("products").select("id, name, generic_name, category, description, price, requires_prescription, is_active, manufacturer, barcode, dosage_form, strength").eq("clinic_id", clinicId),
+    supabase.from("stock").select("product_id, quantity, min_threshold, expiry_date").eq("clinic_id", clinicId),
   ]);
 
   if (!products) return [];

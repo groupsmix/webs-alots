@@ -97,7 +97,7 @@ export const GET = withAuth(async (request, { supabase, profile }) => {
   if (patientId) {
     const { data: entries } = await supabase
       .from("waiting_list")
-      .select("*")
+      .select("id, clinic_id, patient_id, doctor_id, preferred_date, preferred_time, service_id, status, created_at")
       .eq("clinic_id", clinicId)
       .eq("patient_id", patientId)
       .order("created_at", { ascending: false });
@@ -108,7 +108,7 @@ export const GET = withAuth(async (request, { supabase, profile }) => {
   if (doctorId && date) {
     let q = supabase
       .from("waiting_list")
-      .select("*")
+      .select("id, clinic_id, patient_id, doctor_id, preferred_date, preferred_time, service_id, status, created_at")
       .eq("clinic_id", clinicId)
       .eq("doctor_id", doctorId)
       .eq("preferred_date", date);

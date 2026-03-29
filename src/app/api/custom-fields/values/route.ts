@@ -24,7 +24,7 @@ export const GET = withAuth(async (request, { supabase, profile }) => {
 
   const { data, error } = await supabase
     .from("custom_field_values")
-    .select("*")
+    .select("id, clinic_id, entity_type, entity_id, field_values, updated_at")
     .eq("clinic_id", clinicId)
     .eq("entity_type", entityType)
     .eq("entity_id", entityId)

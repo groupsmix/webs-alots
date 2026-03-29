@@ -385,7 +385,7 @@ export async function fetchPurchaseOrders(clinicId: string): Promise<PurchaseOrd
   const supabase = createClient();
   const { data: orders } = await supabase
     .from("purchase_orders")
-    .select("*")
+    .select("id, supplier_id, status, total_amount, notes, ordered_at, expected_delivery, received_at, created_at")
     .eq("clinic_id", clinicId)
     .order("created_at", { ascending: false });
 

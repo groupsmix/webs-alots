@@ -192,9 +192,9 @@ export async function fetchAnalytics(clinicId: string, period: AnalyticsPeriod =
   const supabase = createClient();
 
   const [apptsRes, paymentsRes, reviewsRes, patientsRes] = await Promise.all([
-  supabase.from("appointments").select("*").eq("clinic_id", clinicId),
-  supabase.from("payments").select("*").eq("clinic_id", clinicId).eq("status", "completed"),
-  supabase.from("reviews").select("*").eq("clinic_id", clinicId),
+  supabase.from("appointments").select("id, appointment_date, start_time, status, patient_id, service_id, booking_source").eq("clinic_id", clinicId),
+  supabase.from("payments").select("id, amount, created_at").eq("clinic_id", clinicId).eq("status", "completed"),
+  supabase.from("reviews").select("id, stars, created_at").eq("clinic_id", clinicId),
   supabase.from("users").select("id, created_at").eq("clinic_id", clinicId).eq("role", "patient"),
   ]);
 
