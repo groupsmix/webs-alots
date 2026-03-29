@@ -281,6 +281,7 @@ export const translations = {
     // Booking form
     "booking.submitting": "Envoi en cours…",
     "booking.next": "Suivant",
+    "booking.invalidPhone": "Veuillez entrer un numéro marocain valide (+212 6XX XX XX XX)",
 
     // Error pages
     "error.title": "Une erreur est survenue",
@@ -363,6 +364,8 @@ export const translations = {
     "auth.emailPlaceholder": "votre@email.com",
     "auth.password": "Mot de passe",
     "auth.passwordPlaceholder": "Votre mot de passe",
+    "auth.invalidEmail": "Veuillez entrer une adresse e-mail valide.",
+    "auth.passwordTooShort": "Le mot de passe doit contenir au moins 6 caractères.",
     "auth.forgotPassword": "Mot de passe oublié ?",
     "auth.signingIn": "Connexion...",
     "auth.signIn": "Se connecter",
@@ -819,6 +822,7 @@ export const translations = {
 
     // Booking form
     "booking.submitting": "جاري الإرسال…",
+    "booking.invalidPhone": "يرجى إدخال رقم مغربي صالح (+212 6XX XX XX XX)",
     "booking.next": "التالي",
 
     // Error pages
@@ -902,6 +906,8 @@ export const translations = {
     "auth.emailPlaceholder": "your@email.com",
     "auth.password": "كلمة المرور",
     "auth.passwordPlaceholder": "كلمة المرور الخاصة بك",
+    "auth.invalidEmail": "يرجى إدخال عنوان بريد إلكتروني صالح.",
+    "auth.passwordTooShort": "يجب أن تحتوي كلمة المرور على 6 أحرف على الأقل.",
     "auth.forgotPassword": "نسيت كلمة المرور؟",
     "auth.signingIn": "جاري تسجيل الدخول...",
     "auth.signIn": "تسجيل الدخول",
@@ -1358,6 +1364,7 @@ export const translations = {
 
     // Booking form
     "booking.submitting": "Sending…",
+    "booking.invalidPhone": "Please enter a valid Moroccan number (+212 6XX XX XX XX)",
     "booking.next": "Next",
 
     // Error pages
@@ -1441,6 +1448,8 @@ export const translations = {
     "auth.emailPlaceholder": "your@email.com",
     "auth.password": "Password",
     "auth.passwordPlaceholder": "Your password",
+    "auth.invalidEmail": "Please enter a valid email address.",
+    "auth.passwordTooShort": "Password must be at least 6 characters.",
     "auth.forgotPassword": "Forgot password?",
     "auth.signingIn": "Signing in...",
     "auth.signIn": "Sign in",
