@@ -202,14 +202,14 @@ export function ReceptionistBookingCalendar() {
       {/* Controls */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={prevWeek}>
+          <Button variant="outline" size="sm" onClick={prevWeek} aria-label="Semaine précédente">
             <ChevronLeft className="h-4 w-4" />
           </Button>
           <span className="text-sm font-medium">
             {weekDates[0].toLocaleDateString("en-US", { month: "short", day: "numeric" })} -{" "}
             {weekDates[6].toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
           </span>
-          <Button variant="outline" size="sm" onClick={nextWeek}>
+          <Button variant="outline" size="sm" onClick={nextWeek} aria-label="Semaine suivante">
             <ChevronRight className="h-4 w-4" />
           </Button>
           <Button variant="outline" size="sm" onClick={() => setCurrentDate(new Date())}>
