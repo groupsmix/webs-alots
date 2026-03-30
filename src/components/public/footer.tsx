@@ -30,34 +30,34 @@ export function PublicFooter({ clinicName, phone, email, address, locale = "fr" 
 
           <div>
             <h2 className="text-base font-semibold mb-2">{t(locale, "public.quickLinks")}</h2>
-            <nav aria-label={t(locale, "public.quickLinks")} className="flex flex-col gap-1">
+            <nav aria-label={t(locale, "public.quickLinks")} className="flex flex-col gap-0">
               <Link
                 href="/services"
-                className="text-sm text-muted-foreground hover:text-foreground"
+                className="text-sm text-muted-foreground hover:text-foreground min-h-11 flex items-center"
               >
                 {t(locale, "public.services")}
               </Link>
               <Link
                 href="/how-to-book"
-                className="text-sm text-muted-foreground hover:text-foreground"
+                className="text-sm text-muted-foreground hover:text-foreground min-h-11 flex items-center"
               >
                 {t(locale, "public.appointments")}
               </Link>
               <Link
                 href="/location"
-                className="text-sm text-muted-foreground hover:text-foreground"
+                className="text-sm text-muted-foreground hover:text-foreground min-h-11 flex items-center"
               >
                 {t(locale, "public.locationHours")}
               </Link>
               <Link
                 href="/contact"
-                className="text-sm text-muted-foreground hover:text-foreground"
+                className="text-sm text-muted-foreground hover:text-foreground min-h-11 flex items-center"
               >
                 {t(locale, "public.contact")}
               </Link>
               <Link
                 href="/privacy"
-                className="text-sm text-muted-foreground hover:text-foreground"
+                className="text-sm text-muted-foreground hover:text-foreground min-h-11 flex items-center"
               >
                 {t(locale, "public.privacy")}
               </Link>

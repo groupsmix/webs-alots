@@ -478,7 +478,7 @@ export function BookingForm() {
                   <button
                     key={d.id}
                     onClick={() => { setSelectedDoctor(d.id); setSelectedService(""); }}
-                    className={`rounded-lg border p-3 text-left transition-colors ${
+                    className={`rounded-lg border p-3 min-h-11 text-left transition-colors ${
                       selectedDoctor === d.id ? "border-primary bg-primary/5" : "hover:bg-muted/50"
                     }`}
                   >
@@ -512,7 +512,7 @@ export function BookingForm() {
                     <button
                       key={s.id}
                       onClick={() => setSelectedService(s.id)}
-                      className={`rounded-lg border p-3 text-left transition-colors ${
+                      className={`rounded-lg border p-3 min-h-11 text-left transition-colors ${
                         selectedService === s.id ? "border-primary bg-primary/5" : "hover:bg-muted/50"
                       }`}
                     >
@@ -657,7 +657,7 @@ export function BookingForm() {
                   type="checkbox"
                   checked={isFirstVisit}
                   onChange={(e) => setIsFirstVisit(e.target.checked)}
-                  className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                  className="h-5 w-5 rounded border-gray-300 text-primary focus:ring-primary"
                 />
                 <Label htmlFor="b-first-visit" className="text-sm cursor-pointer">
                   {t("fr", "booking.isFirstVisit")}
@@ -671,7 +671,7 @@ export function BookingForm() {
                   type="checkbox"
                   checked={confirmChecked}
                   onChange={(e) => { setConfirmChecked(e.target.checked); markTouched("confirm"); }}
-                  className="h-4 w-4 mt-0.5 rounded border-gray-300 text-primary focus:ring-primary"
+                  className="h-5 w-5 mt-0.5 rounded border-gray-300 text-primary focus:ring-primary"
                 />
                 <Label htmlFor="b-confirm" className="text-sm cursor-pointer leading-snug">
                   Je confirme que ces informations sont correctes
