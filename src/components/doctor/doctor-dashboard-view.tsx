@@ -169,12 +169,14 @@ export function DoctorDashboardView({
     newStatus: string,
     previousStatus: string,
   ) => {
+    // Optimistic update: reflect the change immediately
+    setAppointmentList((prev) =>
+      prev.map((a) => (a.id === appointmentId ? { ...a, status: newStatus } : a))
+    );
+
     try {
       const result = await updateAppointmentStatus(appointmentId, newStatus);
       if (!result.success) throw new Error(result.error?.message ?? "Failed to update status");
-      setAppointmentList((prev) =>
-        prev.map((a) => (a.id === appointmentId ? { ...a, status: newStatus } : a))
-      );
       addToast(
         t(locale, "dashboard.statusChanged"),
         "success",
@@ -183,14 +185,19 @@ export function DoctorDashboardView({
           label: t(locale, "dashboard.undo"),
           onClick: () => {
             void (async () => {
+              // Optimistic undo
+              setAppointmentList((prev) =>
+                prev.map((a) => (a.id === appointmentId ? { ...a, status: previousStatus } : a))
+              );
               try {
                 const undo = await updateAppointmentStatus(appointmentId, previousStatus);
                 if (!undo.success) throw new Error(undo.error?.message ?? "Undo failed");
-                setAppointmentList((prev) =>
-                  prev.map((a) => (a.id === appointmentId ? { ...a, status: previousStatus } : a))
-                );
                 addToast(t(locale, "dashboard.undone"), "info");
               } catch (err) {
+                // Revert the undo — restore the new status
+                setAppointmentList((prev) =>
+                  prev.map((a) => (a.id === appointmentId ? { ...a, status: newStatus } : a))
+                );
                 logger.warn("Undo failed", { context: "doctor-dashboard", error: err });
                 addToast(t(locale, "error.updateFailed"), "error");
               }
@@ -199,8 +206,12 @@ export function DoctorDashboardView({
         },
       );
     } catch (err) {
+      // Roll back optimistic update on failure
+      setAppointmentList((prev) =>
+        prev.map((a) => (a.id === appointmentId ? { ...a, status: previousStatus } : a))
+      );
       logger.warn("Failed to update appointment status", { context: "doctor-dashboard", error: err });
-      setError(new Error(t(locale, "error.updateFailed")));
+      addToast(t(locale, "error.updateFailed"), "error");
     }
   }, [addToast, locale]);
 
@@ -221,15 +232,22 @@ export function DoctorDashboardView({
   };
 
   const handleStartConsultation = async (appointmentId: string) => {
+    const apt = appointmentList.find((a) => a.id === appointmentId);
+    const previousStatus = apt?.status ?? "scheduled";
+    // Optimistic update
+    setAppointmentList((prev) =>
+      prev.map((a) => (a.id === appointmentId ? { ...a, status: "in-progress" } : a))
+    );
     try {
       const result = await updateAppointmentStatus(appointmentId, "in-progress");
       if (!result.success) throw new Error(result.error?.message ?? "Failed to start consultation");
-      setAppointmentList((prev) =>
-        prev.map((a) => (a.id === appointmentId ? { ...a, status: "in-progress" } : a))
-      );
     } catch (err) {
+      // Roll back on failure
+      setAppointmentList((prev) =>
+        prev.map((a) => (a.id === appointmentId ? { ...a, status: previousStatus } : a))
+      );
       logger.warn("Failed to start consultation", { context: "doctor-dashboard", error: err });
-      setError(new Error(t(locale, "error.updateFailed")));
+      addToast(t(locale, "error.updateFailed"), "error");
     }
   };
 
