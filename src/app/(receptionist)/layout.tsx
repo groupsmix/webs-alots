@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { SignOutButton } from "@/components/sign-out-button";
 import { SessionTimeoutWarning } from "@/components/session-timeout-warning";
 import { signOut } from "@/lib/auth";
+import { AutoBreadcrumb } from "@/components/ui/auto-breadcrumb";
 
 const navItems = [
   { href: "/receptionist/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -114,7 +115,10 @@ export default function ReceptionistLayout({
           </div>
         )}
 
-        <main className="flex-1 p-4 md:p-6">{children}</main>
+        <main className="flex-1 p-4 md:p-6">
+          <AutoBreadcrumb />
+          {children}
+        </main>
       </div>
       <SessionTimeoutWarning onLogout={() => signOut()} />
     </div>

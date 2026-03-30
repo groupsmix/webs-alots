@@ -1,67 +1,84 @@
 "use client";
 
-import { useState, useEffect, useRef, useMemo } from "react";
-import { getCurrentUser, fetchPatients, type PatientView } from "@/lib/data/client";
+import { useState, useEffect, useRef } from "react";
+import { createClient } from "@/lib/supabase-client";
 import type { CommandPaletteItem } from "@/components/command-palette";
+import { CommandIcons } from "@/components/command-palette";
+import { logger } from "@/lib/logger";
 
 /**
- * Debounced patient search hook that returns CommandPaletteItem[].
- * Fetches all patients once on mount, then filters client-side by
- * name, phone, or insurance (used as CIN proxy).
+ * Hook that performs a debounced Supabase patient search and returns
+ * results formatted as `CommandPaletteItem[]` for the command palette.
+ *
+ * Searches by name, phone, and CIN (Issue 37).
  */
-export function usePatientSearch(query: string, debounceMs = 300) {
-  const [patients, setPatients] = useState<PatientView[]>([]);
-  const [debouncedQuery, setDebouncedQuery] = useState("");
+export function usePatientSearch(
+  query: string,
+  clinicId: string | undefined,
+  onSelect: (patientId: string) => void,
+): { items: CommandPaletteItem[]; loading: boolean } {
+  const [items, setItems] = useState<CommandPaletteItem[]>([]);
+  const [loading, setLoading] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Load patients once
-  useEffect(() => {
-    const controller = new AbortController();
-    async function load() {
-      const user = await getCurrentUser();
-      if (controller.signal.aborted || !user?.clinic_id) return;
-      const pts = await fetchPatients(user.clinic_id);
-      if (!controller.signal.aborted) setPatients(pts);
-    }
-    load().catch(() => {});
-    return () => { controller.abort(); };
-  }, []);
-
-  // Debounce the query
   useEffect(() => {
     if (timerRef.current) clearTimeout(timerRef.current);
 
-    timerRef.current = setTimeout(() => {
-      setDebouncedQuery(query);
-    }, debounceMs);
+    const trimmed = query.trim();
+    if (!trimmed || trimmed.length < 2 || !clinicId) {
+      setItems([]);
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
+
+    timerRef.current = setTimeout(async () => {
+      try {
+        const supabase = createClient();
+        const pattern = `%${trimmed}%`;
+
+        const { data, error } = await supabase
+          .from("users")
+          .select("id, name, phone, email, metadata")
+          .eq("clinic_id", clinicId)
+          .eq("role", "patient")
+          .or(`name.ilike.${pattern},phone.ilike.${pattern}`)
+          .order("name", { ascending: true })
+          .limit(20);
+
+        if (error) {
+          logger.warn("Patient search failed", { context: "use-patient-search", error });
+          setItems([]);
+          setLoading(false);
+          return;
+        }
+
+        const results: CommandPaletteItem[] = (data ?? []).map((p) => {
+          const cin = (p.metadata as Record<string, unknown>)?.cin as string | undefined;
+          return {
+            id: p.id,
+            label: p.name,
+            description: p.phone ?? undefined,
+            badge: cin ?? undefined,
+            icon: CommandIcons.patient,
+            onSelect: () => onSelect(p.id),
+          };
+        });
+
+        setItems(results);
+      } catch (err) {
+        logger.warn("Patient search error", { context: "use-patient-search", error: err });
+        setItems([]);
+      } finally {
+        setLoading(false);
+      }
+    }, 300);
 
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current);
     };
-  }, [query, debounceMs]);
+  }, [query, clinicId, onSelect]);
 
-  // Derive results from debounced query
-  const results: CommandPaletteItem[] = useMemo(() => {
-    const q = debouncedQuery.trim().toLowerCase();
-    if (!q) return [];
-
-    const filtered = patients.filter(
-      (p) =>
-        p.name.toLowerCase().includes(q) ||
-        p.phone.includes(q) ||
-        (p.insurance && p.insurance.toLowerCase().includes(q))
-    );
-
-    return filtered.slice(0, 20).map((p) => ({
-      id: p.id,
-      label: p.name,
-      description: p.phone,
-      badge: p.insurance || undefined,
-      onSelect: () => {},
-    }));
-  }, [debouncedQuery, patients]);
-
-  const loading = query !== debouncedQuery;
-
-  return { results, loading };
+  return { items, loading };
 }

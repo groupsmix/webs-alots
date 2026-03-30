@@ -2,44 +2,45 @@
 
 import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { User } from "lucide-react";
-import { CommandPalette, type CommandPaletteItem } from "@/components/command-palette";
+import { CommandPalette } from "@/components/command-palette";
 import { usePatientSearch } from "@/lib/hooks/use-patient-search";
 import { useKeyboardShortcuts } from "@/lib/hooks/use-keyboard-shortcuts";
+import { useTenant } from "@/components/tenant-provider";
 
 /**
- * Patient search palette — wraps CommandPalette with live patient data.
- * Opens with Ctrl+K. Selecting a patient navigates to their detail page.
+ * Command-palette wrapper that searches patients by name, phone, or CIN
+ * and navigates to the patient detail page on selection (Issue 37).
+ *
+ * Mount this in doctor/receptionist layouts — it binds Ctrl+K to open.
  */
-export function PatientSearchPalette() {
+export function PatientSearchPalette({ basePath = "/doctor/patients" }: { basePath?: string }) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const router = useRouter();
-  const { results } = usePatientSearch(query);
+  const tenant = useTenant();
+
+  const handleSelect = useCallback(
+    (patientId: string) => {
+      router.push(`${basePath}/${patientId}`);
+    },
+    [router, basePath],
+  );
+
+  const { items } = usePatientSearch(query, tenant?.clinicId, handleSelect);
 
   useKeyboardShortcuts([
-    { key: "k", ctrl: true, handler: () => setOpen(true), description: "Open patient search" },
+    { key: "k", ctrl: true, handler: () => setOpen(true) },
   ]);
-
-  const items: CommandPaletteItem[] = results.map((r) => ({
-    ...r,
-    icon: <User className="h-4 w-4" />,
-    onSelect: () => {
-      router.push(`/doctor/patients`);
-      setOpen(false);
-    },
-  }));
-
-  const handleClose = useCallback(() => {
-    setOpen(false);
-    setQuery("");
-  }, []);
 
   return (
     <CommandPalette
       open={open}
-      onClose={handleClose}
+      onClose={() => {
+        setOpen(false);
+        setQuery("");
+      }}
       items={items}
+      placeholder="Rechercher un patient (nom, tél, CIN)..."
     />
   );
 }

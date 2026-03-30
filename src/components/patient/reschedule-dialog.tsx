@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { BookingCalendar } from "@/components/booking/calendar";
 import { TimeSlotPicker } from "@/components/booking/time-slots";
 import { clinicConfig } from "@/config/clinic.config";
+import { formatDisplayDate } from "@/lib/utils";
 import { useTenant } from "@/components/tenant-provider";
 import { fetchAvailableSlots, fetchGeneratedSlots, fetchSlotBookingCounts } from "@/lib/data/client";
 
@@ -109,7 +110,7 @@ export function RescheduleDialog({ appointment, onClose, onReschedule }: Resched
           <RefreshCw className="h-8 w-8 mx-auto text-green-600 mb-3" />
           <h3 className="font-semibold text-lg mb-1">Rescheduled!</h3>
           <p className="text-sm text-muted-foreground mb-2">
-            Your appointment has been moved to {selectedDate} at {selectedTime}.
+            Your appointment has been moved to {formatDisplayDate(selectedDate, "fr", "long")} at {selectedTime}.
           </p>
           <Button variant="outline" onClick={onClose} className="mt-3">Close</Button>
         </CardContent>
@@ -125,7 +126,7 @@ export function RescheduleDialog({ appointment, onClose, onReschedule }: Resched
           Reschedule Appointment
         </CardTitle>
         <div className="text-sm text-muted-foreground">
-          Current: <Badge variant="outline">{appointment.date}</Badge>{" "}
+          Current: <Badge variant="outline">{formatDisplayDate(appointment.date, "fr", "long")}</Badge>{" "}
           at <Badge variant="outline">{appointment.time}</Badge>{" "}
           with {appointment.doctorName}
         </div>

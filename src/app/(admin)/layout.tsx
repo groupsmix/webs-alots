@@ -12,6 +12,7 @@ import { GettingStartedChecklist } from "@/components/onboarding/getting-started
 import { OnboardingTour } from "@/components/onboarding/onboarding-tour";
 import { SessionTimeoutWarning } from "@/components/session-timeout-warning";
 import { signOut } from "@/lib/auth";
+import { AutoBreadcrumb } from "@/components/ui/auto-breadcrumb";
 
 interface NavItem {
   href: string;
@@ -174,7 +175,10 @@ export default function AdminLayout({
         <SidebarContent pathname={pathname} />
       </aside>
 
-      <main id="admin-main-content" className="flex-1 p-6 pt-16 md:pt-6">{children}</main>
+      <main id="admin-main-content" className="flex-1 p-6 pt-16 md:pt-6">
+        <AutoBreadcrumb />
+        {children}
+      </main>
       <OnboardingTourOverlay />
       <SessionTimeoutWarning onLogout={() => signOut()} />
     </div>

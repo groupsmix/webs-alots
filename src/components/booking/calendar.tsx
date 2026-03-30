@@ -72,25 +72,23 @@ export function BookingCalendar({ selectedDate, onSelectDate }: BookingCalendarP
     setFocusedDay(null);
   }, [currentMonth, currentYear]);
 
-  const isDateAvailable = (day: number) => {
+  /** Check whether a calendar day is bookable and, if not, why. */
+  const getDateStatus = (day: number): { available: boolean; reason?: string } => {
     const date = new Date(currentYear, currentMonth, day);
+    const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    if (date < todayStart) return { available: false, reason: "Date passée" };
     const dayOfWeek = date.getDay();
     const hours = clinicConfig.workingHours[dayOfWeek];
-    if (!hours?.enabled) return false;
-    // Don't allow past dates
-    const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-    return date >= todayStart;
+    if (!hours?.enabled) return { available: false, reason: "Fermé" };
+    return { available: true };
   };
+
+  /** Backwards-compatible helper used by the rest of the component. */
+  const isDateAvailable = (day: number) => getDateStatus(day).available;
 
   /** Return the reason a day is disabled, or null if available. */
   const getDisableReason = (day: number): string | null => {
-    const date = new Date(currentYear, currentMonth, day);
-    const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-    if (date < todayStart) return "Date passée";
-    const dayOfWeek = date.getDay();
-    const hours = clinicConfig.workingHours[dayOfWeek];
-    if (!hours?.enabled) return "Fermé";
-    return null;
+    return getDateStatus(day).reason ?? null;
   };
 
   // Determine which day should be tabbable (roving tabindex)

@@ -308,6 +308,75 @@
     border: 1px solid #ccc !important;
     padding: 0.5rem;
   }
+
+  /* ── Clinical document print layouts (Issue 50) ── */
+
+  /* Hide dashboard chrome (sidebar, breadcrumbs, mobile header) */
+  aside,
+  [data-slot="breadcrumb"],
+  .no-print {
+    display: none !important;
+  }
+
+  /* Certificate / consultation print wrapper */
+  .print-document {
+    display: block !important;
+    width: 100%;
+    padding: 0;
+    margin: 0;
+    font-size: 11pt;
+    line-height: 1.6;
+    color: black;
+    background: white;
+  }
+
+  .print-document .print-header {
+    text-align: center;
+    border-bottom: 2px solid #333;
+    padding-bottom: 12pt;
+    margin-bottom: 18pt;
+  }
+
+  .print-document .print-header h1 {
+    font-size: 16pt;
+    font-weight: 700;
+    margin: 0 0 4pt;
+  }
+
+  .print-document .print-header p {
+    font-size: 9pt;
+    color: #555;
+    margin: 0;
+  }
+
+  .print-document .print-field {
+    margin-bottom: 8pt;
+  }
+
+  .print-document .print-field-label {
+    font-weight: 600;
+    display: inline;
+  }
+
+  .print-document .print-signature {
+    margin-top: 48pt;
+    text-align: right;
+    border-top: 1px solid #999;
+    padding-top: 8pt;
+    width: 40%;
+    margin-left: auto;
+  }
+
+  /* Page setup for A4 */
+  @page {
+    size: A4;
+    margin: 20mm;
+  }
+
+  /* Force page break between clinical documents */
+  .print-page-break {
+    break-before: page;
+  }
 }
 
 /* ── Mobile table scroll indicator ── */

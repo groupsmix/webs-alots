@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import type { TreatmentPlan, TreatmentStep } from "@/lib/types/dental";
+import { formatDisplayDate } from "@/lib/utils";
 
 const STATUS_ICON = {
   pending: Circle,
@@ -129,7 +130,7 @@ export function TreatmentPlanBuilder({
                             <span className="text-xs font-medium whitespace-nowrap">{step.cost.toLocaleString()} MAD</span>
                           </div>
                           {step.date && (
-                            <p className="text-xs text-muted-foreground mt-0.5">{step.date}</p>
+                            <p className="text-xs text-muted-foreground mt-0.5">{formatDisplayDate(step.date, "fr", "short")}</p>
                           )}
                         </div>
                         {editable && (

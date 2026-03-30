@@ -7,6 +7,15 @@ import type { Database } from "@/lib/types/database";
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
+/**
+ * Create a Supabase browser client.
+ *
+ * `createBrowserClient` from `@supabase/ssr` returns a **singleton** — calling
+ * this function multiple times with the same URL/key pair returns the same
+ * underlying `SupabaseClient` instance.  There is no need to cache the return
+ * value manually; it is safe (and intended) to call `createClient()` in every
+ * function/component that needs Supabase access (Issue 47).
+ */
 export function createClient() {
   if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
     throw new Error(
