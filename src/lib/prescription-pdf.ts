@@ -27,6 +27,12 @@ interface PrescriptionData {
   doctorName?: string;
   clinicName?: string;
   date: string;
+  /** Unique prescription number (RX-YYYY-XXXXXX) */
+  prescriptionNumber?: string;
+  /** Doctor INPE number */
+  doctorINPE?: string;
+  /** Base64 data URL of the QR code image */
+  qrCodeDataURL?: string;
 }
 
 /**
@@ -79,6 +85,12 @@ function generatePrescriptionHTML(data: PrescriptionData): string {
     .signature .line { border-top: 1px solid #ccc; width: 200px; margin-left: auto; padding-top: 8px; }
     .signature p { font-size: 11px; color: #666; }
     .footer { margin-top: 30px; padding-top: 15px; border-top: 1px solid #e0e0e0; text-align: center; font-size: 9px; color: #999; }
+    .qr-section { display: flex; justify-content: space-between; align-items: flex-end; margin-top: 20px; padding-top: 15px; border-top: 1px dashed #ccc; }
+    .qr-code { text-align: center; }
+    .qr-code img { width: 120px; height: 120px; }
+    .qr-code p { font-size: 8px; color: #999; margin-top: 4px; }
+    .rx-number { font-size: 10px; color: #2563eb; font-weight: 600; letter-spacing: 0.5px; }
+    .inpe-info { font-size: 9px; color: #666; margin-top: 2px; }
     @media print {
       body { padding: 10mm; }
     }
@@ -91,8 +103,12 @@ function generatePrescriptionHTML(data: PrescriptionData): string {
         <h1>${escapeHtml(data.clinicName) || "Medical Clinic"}</h1>
         <p>Date: ${escapeHtml(data.date)}</p>
         ${data.doctorName ? `<p>Dr. ${escapeHtml(data.doctorName)}</p>` : ""}
+        ${data.doctorINPE ? `<p class="inpe-info">INPE: ${escapeHtml(data.doctorINPE)}</p>` : ""}
       </div>
-      <div class="rx-symbol">Rx</div>
+      <div style="text-align:right;">
+        <div class="rx-symbol">Rx</div>
+        ${data.prescriptionNumber ? `<div class="rx-number">${escapeHtml(data.prescriptionNumber)}</div>` : ""}
+      </div>
     </div>
 
     <div class="patient-info">
@@ -128,6 +144,18 @@ function generatePrescriptionHTML(data: PrescriptionData): string {
     ${data.notes ? `<div class="notes">
       <h3>Additional Notes</h3>
       <p>${escapeHtml(data.notes)}</p>
+    </div>` : ""}
+
+    ${data.qrCodeDataURL ? `<div class="qr-section">
+      <div>
+        ${data.prescriptionNumber ? `<p class="rx-number">${escapeHtml(data.prescriptionNumber)}</p>` : ""}
+        ${data.doctorINPE ? `<p class="inpe-info">INPE: ${escapeHtml(data.doctorINPE)}</p>` : ""}
+        <p style="font-size:8px;color:#999;margin-top:8px;">Scannez le QR code pour vérifier l'ordonnance</p>
+      </div>
+      <div class="qr-code">
+        <img src="${data.qrCodeDataURL}" alt="QR Code Ordonnance" />
+        <p>Ordonnance électronique</p>
+      </div>
     </div>` : ""}
 
     <div class="signature">

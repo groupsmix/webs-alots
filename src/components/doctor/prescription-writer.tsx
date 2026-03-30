@@ -14,6 +14,12 @@ import {
 } from "@/lib/data/client";
 import { downloadPrescriptionPDF } from "@/lib/prescription-pdf";
 import { PageLoader } from "@/components/ui/page-loader";
+import { DrugSearch, type DrugSelection } from "@/components/prescription/drug-search";
+import { generatePrescriptionNumber } from "@/lib/prescription-id";
+import {
+  buildPrescriptionQRData,
+  generatePrescriptionQRDataURL,
+} from "@/lib/prescription-qr";
 
 interface Medication {
   _id: string;
@@ -28,7 +34,11 @@ interface Medication {
  * PrescriptionWriter
  *
  * Form to create prescriptions for a patient.
- * Generates downloadable PDF.
+ * Features:
+ * - DCI drug search/autocomplete
+ * - Unique prescription ID (RX-YYYY-XXXXXX)
+ * - QR code with structured prescription data
+ * - Generates downloadable PDF with QR code
  */
 export function PrescriptionWriter() {
   const [patients, setPatients] = useState<PatientView[]>([]);
@@ -39,20 +49,33 @@ export function PrescriptionWriter() {
   const [notes, setNotes] = useState("");
   const [diagnosis, setDiagnosis] = useState("");
   const [loading, setLoading] = useState(true);
+  const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<Error | null>(null);
+  const [doctorName, setDoctorName] = useState("");
+  const [doctorINPE, setDoctorINPE] = useState("");
+  const [clinicName, setClinicName] = useState("");
 
   useEffect(() => {
     const controller = new AbortController();
     async function load() {
-    const user = await getCurrentUser();
+      const user = await getCurrentUser();
       if (controller.signal.aborted) return;
-    if (!user?.clinic_id) { setLoading(false); return; }
-    const pts = await fetchPatients(user.clinic_id);
+      if (!user?.clinic_id) { setLoading(false); return; }
+
+      // Extract doctor info from the current user
+      setDoctorName(user.name ?? "");
+      const meta = (user as unknown as Record<string, unknown>).metadata as Record<string, unknown> | undefined;
+      if (meta?.inpe_number) {
+        setDoctorINPE(meta.inpe_number as string);
+      }
+      setClinicName((user as unknown as Record<string, unknown>).clinic_name as string ?? "");
+
+      const pts = await fetchPatients(user.clinic_id);
       if (controller.signal.aborted) return;
-    setPatients(pts);
-    if (pts.length > 0) setSelectedPatient(pts[0].id);
-    setLoading(false);
-  }
+      setPatients(pts);
+      if (pts.length > 0) setSelectedPatient(pts[0].id);
+      setLoading(false);
+    }
     load().catch((err) => {
       if (!controller.signal.aborted) {
         setError(err instanceof Error ? err : new Error(String(err)));
@@ -92,6 +115,65 @@ export function PrescriptionWriter() {
     const updated = [...medications];
     updated[index] = { ...updated[index], [field]: value };
     setMedications(updated);
+  };
+
+  const handleDrugSelect = (index: number, selection: DrugSelection) => {
+    const updated = [...medications];
+    updated[index] = {
+      ...updated[index],
+      name: selection.dci,
+      dosage: selection.strength ?? updated[index].dosage,
+    };
+    setMedications(updated);
+  };
+
+  const handleDownloadPDF = async () => {
+    setGenerating(true);
+    try {
+      const prescriptionNumber = generatePrescriptionNumber();
+      const date = new Date().toISOString().split("T")[0];
+
+      // Build QR data
+      const qrData = buildPrescriptionQRData({
+        prescriptionNumber,
+        doctorINPE: doctorINPE || "N/A",
+        doctorName: doctorName || "Doctor",
+        patientName: patient?.name ?? "Patient",
+        patientDOB: patient?.dateOfBirth,
+        date,
+        clinicName: clinicName || "Clinic",
+        diagnosis: diagnosis || undefined,
+        medications: medications
+          .filter((m) => m.name.trim() !== "")
+          .map((m) => ({
+            dci: m.name,
+            dosage: m.dosage,
+            frequency: m.frequency,
+            duration: m.duration,
+            instructions: m.instructions || undefined,
+          })),
+      });
+
+      // Generate QR code as data URL
+      const qrCodeDataURL = await generatePrescriptionQRDataURL(qrData);
+
+      downloadPrescriptionPDF({
+        patientName: patient?.name ?? "Patient",
+        patientAge: patient?.age,
+        patientGender: patient?.gender,
+        diagnosis,
+        medications,
+        notes,
+        doctorName,
+        clinicName,
+        date,
+        prescriptionNumber,
+        doctorINPE: doctorINPE || undefined,
+        qrCodeDataURL,
+      });
+    } finally {
+      setGenerating(false);
+    }
   };
 
   return (
@@ -160,12 +242,12 @@ export function PrescriptionWriter() {
                   )}
                 </div>
                 <div className="grid gap-3 sm:grid-cols-2">
-                  <div className="space-y-2">
-                    <Label>Medication Name</Label>
-                    <Input
-                      placeholder="e.g., Amoxicillin"
+                  <div className="space-y-2 sm:col-span-2">
+                    <Label>Medication Name (DCI)</Label>
+                    <DrugSearch
                       value={med.name}
-                      onChange={(e) => updateMedication(index, "name", e.target.value)}
+                      onChange={(val) => updateMedication(index, "name", val)}
+                      onSelect={(sel) => handleDrugSelect(index, sel)}
                     />
                   </div>
                   <div className="space-y-2">
@@ -192,7 +274,7 @@ export function PrescriptionWriter() {
                       onChange={(e) => updateMedication(index, "duration", e.target.value)}
                     />
                   </div>
-                  <div className="space-y-2 sm:col-span-2">
+                  <div className="space-y-2">
                     <Label>Special Instructions</Label>
                     <Input
                       placeholder="e.g., Take with food"
@@ -220,23 +302,17 @@ export function PrescriptionWriter() {
               />
             </div>
             <div className="flex gap-2">
-              <Button className="flex-1" onClick={() => {
-                downloadPrescriptionPDF({
-                  patientName: patient?.name ?? "Patient",
-                  patientAge: patient?.age,
-                  patientGender: patient?.gender,
-                  diagnosis,
-                  medications,
-                  notes,
-                  date: new Date().toISOString().split("T")[0],
-                });
-              }}>
+              <Button
+                className="flex-1"
+                onClick={handleDownloadPDF}
+                disabled={generating}
+              >
                 <FileDown className="h-4 w-4 mr-2" />
-                Download PDF
+                {generating ? "Generating..." : "Download PDF with QR"}
               </Button>
               <Button variant="outline" className="flex-1">
                 <Send className="h-4 w-4 mr-2" />
-                Send to Patient ({patient.name})
+                Send to Patient ({patient?.name ?? "Patient"})
               </Button>
             </div>
           </div>
