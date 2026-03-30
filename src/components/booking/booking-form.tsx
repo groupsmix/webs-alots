@@ -15,6 +15,7 @@ import { TimeSlotPicker } from "./time-slots";
 import { logger } from "@/lib/logger";
 import { t } from "@/lib/i18n";
 import { useFormValidation, commonRules } from "@/lib/hooks/use-form-validation";
+import { formatDisplayDate } from "@/lib/utils";
 
 // Simplified 3-step booking flow
 // Step 1: Select Service (with doctor)
@@ -102,6 +103,7 @@ export function BookingForm() {
   const [verificationStatus, setVerificationStatus] = useState<string | null>(null);
   // Honeypot field for basic bot protection (invisible to real users)
   const [honeypot, setHoneypot] = useState("");
+  const [confirmChecked, setConfirmChecked] = useState(false);
 
   // Refs for focus management on step transitions (Issue 25)
   const stepHeadingRefs = useRef<(HTMLHeadingElement | null)[]>([null, null, null]);
@@ -196,7 +198,7 @@ export function BookingForm() {
   const canNext = () => {
     if (step === 0) return !!selectedService && !!selectedDoctor;
     if (step === 1) return !!selectedDate && !!selectedTime;
-    if (step === 2) return !!patientPhone.trim() && isValidMoroccanPhone(patientPhone);
+    if (step === 2) return !!patientPhone.trim() && isValidMoroccanPhone(patientPhone) && confirmChecked;
     return true;
   };
 
@@ -344,7 +346,7 @@ export function BookingForm() {
           <div className="rounded-lg border p-4 max-w-sm mx-auto text-left text-sm space-y-1">
             <p><span className="text-muted-foreground">Service :</span> {service?.name ?? "—"}</p>
             <p><span className="text-muted-foreground">M\u00e9decin :</span> {doctor?.name ?? "—"}</p>
-            <p><span className="text-muted-foreground">Date :</span> {selectedDate}</p>
+            <p><span className="text-muted-foreground">Date :</span> {formatDisplayDate(selectedDate, "fr", "long")}</p>
             <p><span className="text-muted-foreground">Heure :</span> {selectedTime}</p>
             <p><span className="text-muted-foreground">Dur\u00e9e :</span> {service?.duration ?? "—"} min</p>
             <p><span className="text-muted-foreground">Prix :</span> {service?.price ?? "—"} {service?.currency ?? ""}</p>
@@ -534,7 +536,7 @@ export function BookingForm() {
               <div className="rounded-lg bg-muted/50 p-3 text-sm space-y-1">
                 <p className="font-medium text-xs text-muted-foreground uppercase tracking-wide">R\u00e9sum\u00e9</p>
                 <p>{service?.name ?? "—"} avec {doctor?.name ?? "—"}</p>
-                <p>{selectedDate} \u00e0 {selectedTime} \u00b7 {service?.duration ?? "—"} min</p>
+                <p>{formatDisplayDate(selectedDate, "fr", "long")} \u00e0 {selectedTime} \u00b7 {service?.duration ?? "—"} min</p>
               </div>
             )}
           </div>
@@ -550,7 +552,7 @@ export function BookingForm() {
                 <div className="flex justify-between"><span className="text-muted-foreground">Service</span><span className="font-medium">{service?.name ?? "—"}</span></div>
                 <div className="flex justify-between"><span className="text-muted-foreground">M\u00e9decin</span><span className="font-medium">{doctor?.name ?? "—"}</span></div>
                 <div className="flex justify-between"><span className="text-muted-foreground">Sp\u00e9cialit\u00e9</span><span className="font-medium">{doctor?.specialty ?? "—"}</span></div>
-                <div className="flex justify-between"><span className="text-muted-foreground">Date</span><span className="font-medium">{selectedDate}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Date</span><span className="font-medium">{formatDisplayDate(selectedDate, "fr", "long")}</span></div>
                 <div className="flex justify-between"><span className="text-muted-foreground">Heure</span><span className="font-medium">{selectedTime}</span></div>
                 <div className="flex justify-between"><span className="text-muted-foreground">Dur\u00e9e</span><span className="font-medium">{service?.duration ?? "—"} min</span></div>
                 <hr />
@@ -618,6 +620,20 @@ export function BookingForm() {
                 />
                 <Label htmlFor="b-first-visit" className="text-sm cursor-pointer">
                   Est-ce votre premi\u00e8re visite ?
+                </Label>
+              </div>
+
+              {/* Confirmation checkbox (Issue 18) */}
+              <div className="flex items-start gap-3">
+                <input
+                  id="b-confirm"
+                  type="checkbox"
+                  checked={confirmChecked}
+                  onChange={(e) => setConfirmChecked(e.target.checked)}
+                  className="h-4 w-4 mt-0.5 rounded border-gray-300 text-primary focus:ring-primary"
+                />
+                <Label htmlFor="b-confirm" className="text-sm cursor-pointer leading-snug">
+                  Je confirme que ces informations sont correctes
                 </Label>
               </div>
 

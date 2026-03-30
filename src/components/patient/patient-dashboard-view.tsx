@@ -9,6 +9,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { ErrorBoundary } from "@/components/ui/error-boundary";
 import { useLocale } from "@/components/locale-switcher";
 import { t } from "@/lib/i18n";
+import { formatDisplayDate } from "@/lib/utils";
 import type { PatientDashboardData } from "@/lib/data/server";
 
 const quickLinkDefs = [
@@ -105,7 +106,7 @@ export function PatientDashboardView({ data }: PatientDashboardViewProps) {
                       </div>
                     </div>
                     <div className="text-right">
-                      <p className="text-sm font-medium">{apt.date}</p>
+                      <p className="text-sm font-medium">{formatDisplayDate(apt.date, locale, "long")}</p>
                       <p className="text-xs text-muted-foreground">{apt.time}</p>
                     </div>
                   </div>
@@ -139,7 +140,7 @@ export function PatientDashboardView({ data }: PatientDashboardViewProps) {
                   <div key={rx.id} className="rounded-lg border p-3">
                     <div className="flex items-center justify-between mb-2">
                       <p className="text-sm font-medium">{rx.doctorName}</p>
-                      <Badge variant="outline">{rx.date}</Badge>
+                      <Badge variant="outline">{formatDisplayDate(rx.date, locale, "short")}</Badge>
                     </div>
                     <div className="space-y-1">
                       {rx.medications.map((med, i) => (
@@ -171,7 +172,7 @@ export function PatientDashboardView({ data }: PatientDashboardViewProps) {
                 <div key={inv.id} className="flex items-center justify-between rounded-lg border p-3">
                   <div>
                     <p className="text-sm font-medium">Invoice #{inv.id.toUpperCase()}</p>
-                    <p className="text-xs text-muted-foreground">{inv.date}</p>
+                    <p className="text-xs text-muted-foreground">{formatDisplayDate(inv.date, locale, "short")}</p>
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="text-sm font-semibold">{inv.amount} {inv.currency}</span>

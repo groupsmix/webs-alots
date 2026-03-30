@@ -14,6 +14,7 @@ import {
   type PrescriptionView,
 } from "@/lib/data/client";
 import { PageLoader } from "@/components/ui/page-loader";
+import { formatDisplayDate } from "@/lib/utils";
 
 /**
  * MedicalRecord
@@ -170,7 +171,7 @@ export function MedicalRecord({ patientId }: { patientId?: string }) {
                 <div key={appt.id} className="border rounded-lg p-3">
                   <div className="flex items-center justify-between mb-1">
                     <p className="text-sm font-medium">{appt.serviceName}</p>
-                    <span className="text-xs text-muted-foreground">{appt.date}</span>
+                    <span className="text-xs text-muted-foreground">{formatDisplayDate(appt.date, "fr", "short")}</span>
                   </div>
                   <p className="text-xs text-muted-foreground">Dr. {appt.doctorName}</p>
                   <Badge variant="secondary" className="text-xs mt-2">Completed</Badge>
@@ -197,7 +198,7 @@ export function MedicalRecord({ patientId }: { patientId?: string }) {
                 <div key={rx.id} className="border rounded-lg p-3">
                   <div className="flex items-center justify-between mb-2">
                     <p className="text-sm font-medium">Dr. {rx.doctorName}</p>
-                    <span className="text-xs text-muted-foreground">{rx.date}</span>
+                    <span className="text-xs text-muted-foreground">{formatDisplayDate(rx.date, "fr", "short")}</span>
                   </div>
                   <div className="space-y-1">
                     {rx.medications.map((med, idx) => (

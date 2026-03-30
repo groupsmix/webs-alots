@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { formatDisplayDate } from "@/lib/utils";
 
 interface InstallmentFormProps {
   patientName?: string;
@@ -187,7 +188,7 @@ export function InstallmentForm({
               {schedule.map((s) => (
                 <div key={s.month} className="flex items-center justify-between rounded border p-2 text-sm">
                   <span className="text-muted-foreground">Month {s.month}</span>
-                  <span className="text-xs text-muted-foreground">{s.date}</span>
+                  <span className="text-xs text-muted-foreground">{formatDisplayDate(s.date, "fr", "short")}</span>
                   <span className="font-medium">{s.amount.toLocaleString()} MAD</span>
                 </div>
               ))}
