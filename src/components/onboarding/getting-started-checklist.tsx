@@ -10,8 +10,6 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   ONBOARDING_STEPS,
-  dismissTour,
-  resetTour,
   type OnboardingStepId,
 } from "@/lib/data/client/onboarding";
 
@@ -49,10 +47,7 @@ export function GettingStartedChecklist({
     return (
       <button
         type="button"
-        onClick={async () => {
-          await resetTour();
-          onReshow();
-        }}
+        onClick={() => onReshow()}
         className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors px-3 py-2 rounded-lg hover:bg-muted w-full"
       >
         <RotateCcw className="h-3 w-3" />
@@ -84,10 +79,7 @@ export function GettingStartedChecklist({
             </button>
             <button
               type="button"
-              onClick={async () => {
-                await dismissTour();
-                onDismiss();
-              }}
+              onClick={() => onDismiss()}
               className="rounded p-0.5 hover:bg-muted transition-colors"
               aria-label="Dismiss checklist"
             >

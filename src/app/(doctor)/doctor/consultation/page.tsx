@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { FileEdit, CheckCircle, XCircle, Save, Eye, EyeOff, Plus } from "lucide-react";
+import { useState, useEffect, useCallback } from "react";
+import { FileEdit, CheckCircle, XCircle, Save, Eye, EyeOff, Plus, CloudOff, Cloud, Loader2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -21,6 +21,7 @@ import {
   type ConsultationNoteView,
 } from "@/lib/data/client";
 import { PageLoader } from "@/components/ui/page-loader";
+import { useOfflineDrafts } from "@/lib/hooks/use-offline-drafts";
 
 interface ConsultationNote {
   id: string;
@@ -69,6 +70,31 @@ export default function ConsultationNotesPage() {
     plan: "",
     privateNotes: "",
   });
+  const [savingNote, setSavingNote] = useState(false);
+
+  // Auto-save drafts for the currently editing note
+  const draftKey = editingApptId ? `consultation-note-${editingApptId}` : "consultation-note-none";
+  const {
+    draft,
+    saveDraft,
+    clearDraft,
+    isSynced,
+    hasDraft,
+  } = useOfflineDrafts<typeof formData>(draftKey, { autoSaveMs: 5000 });
+
+  // Track whether we've shown the restore prompt for this editing session
+  const [draftRestoreOffered, setDraftRestoreOffered] = useState(false);
+
+  const updateFormField = useCallback(
+    (field: string, value: string) => {
+      setFormData((prev) => {
+        const updated = { ...prev, [field]: value };
+        saveDraft(updated);
+        return updated;
+      });
+    },
+    [saveDraft],
+  );
 
   useEffect(() => {
     const controller = new AbortController();
@@ -93,6 +119,13 @@ export default function ConsultationNotesPage() {
     });
     return () => { controller.abort(); };
   }, []);
+
+  // Check for unsaved draft when editor opens
+  useEffect(() => {
+    if (editingApptId && hasDraft && draft && !isSynced && !draftRestoreOffered) {
+      setDraftRestoreOffered(true);
+    }
+  }, [editingApptId, hasDraft, draft, isSynced, draftRestoreOffered]);
 
   if (loading) {
     return <PageLoader message="Loading consultation notes..." />;
@@ -128,6 +161,7 @@ export default function ConsultationNotesPage() {
     } else {
       setFormData({ chiefComplaint: "", examination: "", diagnosis: "", plan: "", privateNotes: "" });
     }
+    setDraftRestoreOffered(false);
     setEditingApptId(appointmentId);
   };
 
@@ -136,10 +170,11 @@ export default function ConsultationNotesPage() {
     const appt = apptList.find((a) => a.id === editingApptId);
     if (!appt) return;
 
+    setSavingNote(true);
     const existing = getNoteForAppointment(editingApptId);
     const now = new Date().toISOString();
     const user = await getCurrentUser();
-    if (!user?.clinic_id) return;
+    if (!user?.clinic_id) { setSavingNote(false); return; }
 
     const content = {
       chiefComplaint: formData.chiefComplaint,
@@ -163,6 +198,7 @@ export default function ConsultationNotesPage() {
               : n
           )
         );
+        clearDraft();
       }
     } else {
       const newId = await createConsultationNote({
@@ -187,23 +223,43 @@ export default function ConsultationNotesPage() {
           updatedAt: now,
         };
         setNotes((prev) => [...prev, newNote]);
+        clearDraft();
       }
     }
+    setSavingNote(false);
     setEditingApptId(null);
   };
 
   const handleMarkDone = async (appointmentId: string) => {
-    await updateAppointmentStatus(appointmentId, "completed");
+    const apt = apptList.find((a) => a.id === appointmentId);
+    const previousStatus = apt?.status ?? "in-progress";
+    // Optimistic update
     setApptList((prev) =>
       prev.map((a) => (a.id === appointmentId ? { ...a, status: "completed" } : a))
     );
+    const result = await updateAppointmentStatus(appointmentId, "completed");
+    if (!result.success) {
+      // Roll back on failure
+      setApptList((prev) =>
+        prev.map((a) => (a.id === appointmentId ? { ...a, status: previousStatus } : a))
+      );
+    }
   };
 
   const handleNoShow = async (appointmentId: string) => {
-    await updateAppointmentStatus(appointmentId, "no-show");
+    const apt = apptList.find((a) => a.id === appointmentId);
+    const previousStatus = apt?.status ?? "scheduled";
+    // Optimistic update
     setApptList((prev) =>
       prev.map((a) => (a.id === appointmentId ? { ...a, status: "no-show" } : a))
     );
+    const result = await updateAppointmentStatus(appointmentId, "no-show");
+    if (!result.success) {
+      // Roll back on failure
+      setApptList((prev) =>
+        prev.map((a) => (a.id === appointmentId ? { ...a, status: previousStatus } : a))
+      );
+    }
   };
 
   const togglePrivate = (noteId: string) => {
@@ -329,7 +385,7 @@ export default function ConsultationNotesPage() {
               <Textarea
                 placeholder="What is the patient's main concern?"
                 value={formData.chiefComplaint}
-                onChange={(e) => setFormData((p) => ({ ...p, chiefComplaint: e.target.value }))}
+                onChange={(e) => updateFormField("chiefComplaint", e.target.value)}
               />
             </div>
             <div className="space-y-2">
@@ -337,7 +393,7 @@ export default function ConsultationNotesPage() {
               <Textarea
                 placeholder="Physical examination findings..."
                 value={formData.examination}
-                onChange={(e) => setFormData((p) => ({ ...p, examination: e.target.value }))}
+                onChange={(e) => updateFormField("examination", e.target.value)}
               />
             </div>
             <div className="space-y-2">
@@ -345,7 +401,7 @@ export default function ConsultationNotesPage() {
               <Input
                 placeholder="Diagnosis..."
                 value={formData.diagnosis}
-                onChange={(e) => setFormData((p) => ({ ...p, diagnosis: e.target.value }))}
+                onChange={(e) => updateFormField("diagnosis", e.target.value)}
               />
             </div>
             <div className="space-y-2">
@@ -353,7 +409,7 @@ export default function ConsultationNotesPage() {
               <Textarea
                 placeholder="Treatment plan and next steps..."
                 value={formData.plan}
-                onChange={(e) => setFormData((p) => ({ ...p, plan: e.target.value }))}
+                onChange={(e) => updateFormField("plan", e.target.value)}
               />
             </div>
             <div className="space-y-2">
@@ -364,16 +420,60 @@ export default function ConsultationNotesPage() {
               <Textarea
                 placeholder="Private observations, reminders..."
                 value={formData.privateNotes}
-                onChange={(e) => setFormData((p) => ({ ...p, privateNotes: e.target.value }))}
+                onChange={(e) => updateFormField("privateNotes", e.target.value)}
                 className="border-yellow-200 dark:border-yellow-800"
               />
             </div>
-            <div className="flex gap-2 justify-end">
-              <Button variant="outline" onClick={() => setEditingApptId(null)}>Cancel</Button>
-              <Button onClick={handleSaveNote}>
-                <Save className="h-4 w-4 mr-1" />
-                Save Notes
-              </Button>
+            {/* Draft restore banner */}
+            {draftRestoreOffered && hasDraft && draft && !isSynced && (
+              <div className="flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-900/20 p-3">
+                <CloudOff className="h-4 w-4 text-amber-600 shrink-0" />
+                <p className="text-xs text-amber-800 dark:text-amber-200 flex-1">
+                  An unsaved draft was found. Restore it?
+                </p>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="text-xs"
+                  onClick={() => {
+                    setFormData(draft);
+                    setDraftRestoreOffered(false);
+                  }}
+                >
+                  Restore
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-xs"
+                  onClick={() => {
+                    clearDraft();
+                    setDraftRestoreOffered(false);
+                  }}
+                >
+                  Discard
+                </Button>
+              </div>
+            )}
+
+            {/* Draft status indicator + actions */}
+            <div className="flex items-center gap-2 justify-between">
+              <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                {savingNote ? (
+                  <><Loader2 className="h-3 w-3 animate-spin" /> Saving...</>
+                ) : isSynced ? (
+                  <><Cloud className="h-3 w-3 text-green-500" /> Draft saved</>
+                ) : (
+                  <><CloudOff className="h-3 w-3 text-amber-500" /> Unsaved changes</>
+                )}
+              </div>
+              <div className="flex gap-2">
+                <Button variant="outline" onClick={() => setEditingApptId(null)}>Cancel</Button>
+                <Button onClick={handleSaveNote} disabled={savingNote}>
+                  <Save className="h-4 w-4 mr-1" />
+                  Save Notes
+                </Button>
+              </div>
             </div>
           </div>
         </DialogContent>

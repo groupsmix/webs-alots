@@ -8,7 +8,7 @@ export function buildCsp(nonce: string): string {
   return [
     "default-src 'self'",
     `script-src 'self' 'nonce-${nonce}' https://static.cloudflareinsights.com${isDev ? " 'unsafe-eval'" : ""}`,
-    `style-src 'self' 'unsafe-inline' 'nonce-${nonce}'`,
+    `style-src 'self' 'nonce-${nonce}'`,
     "img-src 'self' data: blob: *.supabase.co *.r2.cloudflarestorage.com *.r2.dev",
     "font-src 'self' data:",
     "connect-src 'self' *.supabase.co wss://*.supabase.co graph.facebook.com api.twilio.com api.cloudflare.com *.googleapis.com https://cloudflareinsights.com https://static.cloudflareinsights.com",
