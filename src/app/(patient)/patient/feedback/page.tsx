@@ -13,6 +13,7 @@ import {
   type DoctorView,
   type ReviewView,
 } from "@/lib/data/client";
+import { Breadcrumb } from "@/components/ui/breadcrumb";
 
 export default function PatientFeedbackPage() {
   const [doctors, setDoctors] = useState<DoctorView[]>([]);
@@ -67,6 +68,7 @@ export default function PatientFeedbackPage() {
 
   return (
     <div>
+      <Breadcrumb items={[{ label: "Patient", href: "/patient/dashboard" }, { label: "Feedback" }]} />
       <h1 className="text-2xl font-bold mb-6">Feedback & Reviews</h1>
 
       <div className="grid gap-6 lg:grid-cols-2">

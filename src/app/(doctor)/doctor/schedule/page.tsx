@@ -10,6 +10,7 @@ import {
   type AppointmentView,
 } from "@/lib/data/client";
 import { PageLoader } from "@/components/ui/page-loader";
+import { Breadcrumb } from "@/components/ui/breadcrumb";
 
 const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
@@ -100,6 +101,7 @@ export default function DoctorSchedulePage() {
                 const wh = clinicConfig.workingHours[i];
                 return (
                   <div key={i} className="flex items-center justify-between text-sm">
+                    <Breadcrumb items={[{ label: "Doctor", href: "/doctor/dashboard" }, { label: "Schedule" }]} />
                     <span className={wh.enabled ? "" : "text-muted-foreground"}>{day}</span>
                     {wh.enabled ? (
                       <span className="font-medium">{wh.open} - {wh.close}</span>

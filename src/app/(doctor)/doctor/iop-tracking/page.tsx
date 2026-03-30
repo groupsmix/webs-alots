@@ -30,6 +30,7 @@ import {
   type PatientView,
 } from "@/lib/data/client";
 import { PageLoader } from "@/components/ui/page-loader";
+import { Breadcrumb } from "@/components/ui/breadcrumb";
 
 const METHODS = [
   { value: "goldmann", label: "Goldmann Applanation" },
@@ -131,6 +132,7 @@ export default function IopTrackingPage() {
 
   return (
     <div>
+      <Breadcrumb items={[{ label: "Doctor", href: "/doctor/dashboard" }, { label: "IOP Tracking" }]} />
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold">Intraocular Pressure (IOP)</h1>
         <Button onClick={() => setShowAdd(true)}>

@@ -18,6 +18,7 @@ import {
   type UrologyExamView,
 } from "@/lib/data/specialists";
 import { PageLoader } from "@/components/ui/page-loader";
+import { Breadcrumb } from "@/components/ui/breadcrumb";
 
 const UROLOGY_TEMPLATES = [
   { value: "general", label: "General Urology Exam" },
@@ -105,6 +106,7 @@ export default function UrologyPage() {
 
   return (
     <div>
+      <Breadcrumb items={[{ label: "Doctor", href: "/doctor/dashboard" }, { label: "Urology" }]} />
       <h1 className="text-2xl font-bold mb-6">Urology</h1>
 
       <Tabs defaultValue="exams">

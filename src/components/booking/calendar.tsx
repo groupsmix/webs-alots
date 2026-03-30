@@ -3,6 +3,7 @@
 import { useState, useCallback, useRef, useEffect } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Tooltip } from "@/components/ui/tooltip";
 import { clinicConfig } from "@/config/clinic.config";
 
 interface BookingCalendarProps {
@@ -84,6 +85,11 @@ export function BookingCalendar({ selectedDate, onSelectDate }: BookingCalendarP
 
   /** Backwards-compatible helper used by the rest of the component. */
   const isDateAvailable = (day: number) => getDateStatus(day).available;
+
+  /** Return the reason a day is disabled, or null if available. */
+  const getDisableReason = (day: number): string | null => {
+    return getDateStatus(day).reason ?? null;
+  };
 
   // Determine which day should be tabbable (roving tabindex)
   const selectedDayInMonth = (() => {
@@ -193,29 +199,36 @@ export function BookingCalendar({ selectedDate, onSelectDate }: BookingCalendarP
             const isSelected = selectedDate === dateStr;
             const isTabbable = day === tabbableDay;
 
+            const disableReason = available ? null : getDisableReason(day);
+            const ariaLabel = formatAriaDate(currentYear, currentMonth, day) + (disableReason ? `, ${disableReason}` : "");
+
+            const btn = (
+              <button
+                data-day={day}
+                onClick={() => available && onSelectDate(dateStr)}
+                disabled={!available}
+                tabIndex={isTabbable ? 0 : -1}
+                aria-label={ariaLabel}
+                onFocus={() => setFocusedDay(day)}
+                className={`h-9 w-full rounded-md text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-1 ${
+                  isSelected
+                    ? "bg-primary text-primary-foreground"
+                    : available
+                      ? "hover:bg-muted"
+                      : "text-muted-foreground/30 cursor-not-allowed"
+                }`}
+              >
+                {day}
+              </button>
+            );
+
             return (
               <div key={day} role="gridcell" aria-selected={isSelected}>
-                <button
-                  data-day={day}
-                  onClick={() => available && onSelectDate(dateStr)}
-                  disabled={!available}
-                  tabIndex={isTabbable ? 0 : -1}
-                  aria-label={
-                    formatAriaDate(currentYear, currentMonth, day) +
-                    (getDateStatus(day).reason ? `, ${getDateStatus(day).reason}` : "")
-                  }
-                  title={getDateStatus(day).reason ?? undefined}
-                  onFocus={() => setFocusedDay(day)}
-                  className={`h-9 w-full rounded-md text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-1 ${
-                    isSelected
-                      ? "bg-primary text-primary-foreground"
-                      : available
-                        ? "hover:bg-muted"
-                        : "text-muted-foreground/30 cursor-not-allowed"
-                  }`}
-                >
-                  {day}
-                </button>
+                {disableReason ? (
+                  <Tooltip content={disableReason}>{btn}</Tooltip>
+                ) : (
+                  btn
+                )}
               </div>
             );
           })}

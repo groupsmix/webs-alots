@@ -111,6 +111,7 @@ export default function PatientLayout({
             variant="ghost"
             size="sm"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            aria-label={mobileMenuOpen ? "Fermer le menu" : "Ouvrir le menu"}
           >
             {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </Button>
@@ -128,7 +129,7 @@ export default function PatientLayout({
                   </div>
                   <h2 className="text-lg font-semibold">{t(locale, "patientNav.title")}</h2>
                 </div>
-                <Button variant="ghost" size="sm" onClick={() => setMobileMenuOpen(false)}>
+                <Button variant="ghost" size="sm" onClick={() => setMobileMenuOpen(false)} aria-label="Fermer le menu">
                   <X className="h-5 w-5" />
                 </Button>
               </div>

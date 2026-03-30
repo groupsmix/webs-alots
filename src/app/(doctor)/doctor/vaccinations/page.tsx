@@ -31,6 +31,7 @@ import {
   type PatientView,
 } from "@/lib/data/client";
 import { PageLoader } from "@/components/ui/page-loader";
+import { Breadcrumb } from "@/components/ui/breadcrumb";
 
 const COMMON_VACCINES = [
   "BCG", "Hepatitis B", "DTP (Diphtheria-Tetanus-Pertussis)",
@@ -147,6 +148,7 @@ export default function VaccinationsPage() {
 
   return (
     <div>
+      <Breadcrumb items={[{ label: "Doctor", href: "/doctor/dashboard" }, { label: "Vaccinations" }]} />
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold">Vaccination Tracking</h1>
         <Button onClick={() => setShowAdd(true)}>

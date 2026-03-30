@@ -5,6 +5,7 @@ import { LabOrdersPanel } from "@/components/dental/lab-orders-panel";
 import { getCurrentUser, fetchLabOrders, createLabOrder } from "@/lib/data/client";
 import type { LabOrder } from "@/lib/types/dental";
 import { PageLoader } from "@/components/ui/page-loader";
+import { Breadcrumb } from "@/components/ui/breadcrumb";
 
 export default function DoctorLabOrdersPage() {
   const [orders, setOrders] = useState<LabOrder[]>([]);
@@ -82,6 +83,7 @@ export default function DoctorLabOrdersPage() {
 
   return (
     <div className="space-y-6">
+      <Breadcrumb items={[{ label: "Doctor", href: "/doctor/dashboard" }, { label: "Lab Orders" }]} />
       <h1 className="text-2xl font-bold">Lab Orders</h1>
       <LabOrdersPanel
         orders={orders}

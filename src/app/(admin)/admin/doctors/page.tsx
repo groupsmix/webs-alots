@@ -17,6 +17,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { getCurrentUser, fetchDoctors, type DoctorView } from "@/lib/data/client";
+import { Breadcrumb } from "@/components/ui/breadcrumb";
 
 type Doctor = DoctorView;
 
@@ -126,6 +127,7 @@ export default function ManageDoctorsPage() {
 
   return (
     <div>
+      <Breadcrumb items={[{ label: "Admin", href: "/admin/dashboard" }, { label: "Doctors" }]} />
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold">Manage Doctors</h1>
         <Button onClick={openAddDialog}>

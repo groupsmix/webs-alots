@@ -22,6 +22,7 @@ import {
 } from "@/lib/data/client";
 import { PageLoader } from "@/components/ui/page-loader";
 import { useOfflineDrafts } from "@/lib/hooks/use-offline-drafts";
+import { Breadcrumb } from "@/components/ui/breadcrumb";
 
 interface ConsultationNote {
   id: string;
@@ -307,6 +308,7 @@ export default function ConsultationNotesPage() {
             <Card key={apt.id}>
               <CardHeader className="pb-2">
                 <div className="flex items-center justify-between">
+                  <Breadcrumb items={[{ label: "Doctor", href: "/doctor/dashboard" }, { label: "Consultation" }]} />
                   <div className="flex items-center gap-3">
                     <Avatar>
                       <AvatarFallback className="text-xs">

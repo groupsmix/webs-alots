@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Download, Trash2, ShieldCheck, AlertTriangle } from "lucide-react";
 import { logger } from "@/lib/logger";
+import { Breadcrumb } from "@/components/ui/breadcrumb";
 
 export default function PatientSettingsPage() {
   const [exportLoading, setExportLoading] = useState(false);
@@ -93,6 +94,7 @@ export default function PatientSettingsPage() {
 
   return (
     <div className="space-y-6">
+      <Breadcrumb items={[{ label: "Patient", href: "/patient/dashboard" }, { label: "Settings" }]} />
       <div>
         <h1 className="text-2xl font-bold">Paramètres & Confidentialité</h1>
         <p className="text-muted-foreground mt-1">

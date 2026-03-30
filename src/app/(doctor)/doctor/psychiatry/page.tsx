@@ -21,6 +21,7 @@ import {
   type PsychSessionNoteView, type PsychMedicationView,
 } from "@/lib/data/specialists";
 import { PageLoader } from "@/components/ui/page-loader";
+import { Breadcrumb } from "@/components/ui/breadcrumb";
 
 const MOOD_LABELS = ["", "Very Low", "Low", "Below Average", "Slightly Low", "Neutral", "Slightly Good", "Good", "Very Good", "Excellent", "Outstanding"];
 
@@ -182,6 +183,7 @@ export default function PsychiatryPage() {
                   <Card key={s.id} className={s.isConfidential ? "border-amber-200" : ""}>
                     <CardContent className="p-4">
                       <div className="flex items-center justify-between mb-3">
+                        <Breadcrumb items={[{ label: "Doctor", href: "/doctor/dashboard" }, { label: "Psychiatry" }]} />
                         <div className="flex items-center gap-2">
                           <span className="font-medium text-sm">Session #{s.sessionNumber}</span>
                           <Badge variant="outline" className="text-xs">{s.sessionType}</Badge>

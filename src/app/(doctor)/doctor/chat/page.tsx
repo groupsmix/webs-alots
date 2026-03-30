@@ -9,6 +9,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { getCurrentUser, type ClinicUser } from "@/lib/data/client";
+import { Breadcrumb } from "@/components/ui/breadcrumb";
 
 interface ChatMessage {
   id: string;
@@ -84,6 +85,7 @@ export default function DoctorChatPage() {
 
   return (
     <div>
+      <Breadcrumb items={[{ label: "Doctor", href: "/doctor/dashboard" }, { label: "Chat" }]} />
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold flex items-center gap-2">
           <MessageCircle className="h-6 w-6" />

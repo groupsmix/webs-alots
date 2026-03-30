@@ -20,6 +20,7 @@ import {
   type JointAssessmentView, type MobilityTestView,
 } from "@/lib/data/specialists";
 import { PageLoader } from "@/components/ui/page-loader";
+import { Breadcrumb } from "@/components/ui/breadcrumb";
 
 const JOINTS = [
   "Left Shoulder", "Right Shoulder", "Left Elbow", "Right Elbow",
@@ -332,6 +333,7 @@ export default function RheumatologyPage() {
                   const data = assessmentForm.jointsData[joint];
                   return (
                     <div key={joint} className="flex items-center gap-2 p-2 rounded border text-sm">
+                      <Breadcrumb items={[{ label: "Doctor", href: "/doctor/dashboard" }, { label: "Rheumatology" }]} />
                       <span className="flex-1">{joint}</span>
                       <Button
                         variant={data?.swollen ? "destructive" : "outline"}

@@ -20,6 +20,7 @@ import {
   type EEGRecordView, type NeuroExamView,
 } from "@/lib/data/specialists";
 import { PageLoader } from "@/components/ui/page-loader";
+import { Breadcrumb } from "@/components/ui/breadcrumb";
 
 const NEURO_EXAM_SECTIONS = [
   { key: "mentalStatus", label: "Mental Status", fields: ["Orientation", "Attention", "Memory", "Language", "Calculation"] },
@@ -248,6 +249,7 @@ export default function NeurologyPage() {
                         if (!data || Object.keys(data).length === 0) return null;
                         return (
                           <div key={key} className="rounded-lg bg-muted/50 p-3">
+                            <Breadcrumb items={[{ label: "Doctor", href: "/doctor/dashboard" }, { label: "Neurology" }]} />
                             <p className="text-xs font-medium mb-1">{label}</p>
                             {Object.entries(data).map(([k, v]) => (
                               <div key={k} className="text-xs flex gap-1">

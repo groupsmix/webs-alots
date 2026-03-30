@@ -15,6 +15,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Breadcrumb } from "@/components/ui/breadcrumb";
 
 type DocType = "analysis" | "radiology" | "insurance" | "other";
 
@@ -85,6 +86,7 @@ export default function PatientDocumentsPage() {
 
   return (
     <div>
+      <Breadcrumb items={[{ label: "Patient", href: "/patient/dashboard" }, { label: "Documents" }]} />
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold">My Documents</h1>

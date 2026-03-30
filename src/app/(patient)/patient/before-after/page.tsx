@@ -8,6 +8,7 @@ import {
   type BeforeAfterPhotoView,
 } from "@/lib/data/client";
 import { PageLoader } from "@/components/ui/page-loader";
+import { Breadcrumb } from "@/components/ui/breadcrumb";
 
 export default function PatientBeforeAfterPage() {
   const [myPhotos, setMyPhotos] = useState<BeforeAfterPhotoView[]>([]);
@@ -49,6 +50,7 @@ export default function PatientBeforeAfterPage() {
 
   return (
     <div className="space-y-6">
+      <Breadcrumb items={[{ label: "Patient", href: "/patient/dashboard" }, { label: "Before/After" }]} />
       <h1 className="text-2xl font-bold">Before / After Photos</h1>
       <p className="text-sm text-muted-foreground">
         Visual progress of your dental treatments.

@@ -15,6 +15,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
+import { Breadcrumb } from "@/components/ui/breadcrumb";
 
 interface FamilyMember {
   id: string;
@@ -78,6 +79,7 @@ export default function FamilyMembersPage() {
 
   return (
     <div>
+      <Breadcrumb items={[{ label: "Patient", href: "/patient/dashboard" }, { label: "Family" }]} />
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold">Family Members</h1>

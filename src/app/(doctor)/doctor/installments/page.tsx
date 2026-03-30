@@ -10,6 +10,7 @@ import {
   type InstallmentPlanView,
 } from "@/lib/data/client";
 import { PageLoader } from "@/components/ui/page-loader";
+import { Breadcrumb } from "@/components/ui/breadcrumb";
 
 export default function DoctorInstallmentsPage() {
   const [plans, setPlans] = useState<InstallmentPlanView[]>([]);
@@ -101,6 +102,7 @@ export default function DoctorInstallmentsPage() {
 
   return (
     <div className="space-y-6">
+      <Breadcrumb items={[{ label: "Doctor", href: "/doctor/dashboard" }, { label: "Installments" }]} />
       <h1 className="text-2xl font-bold">Installment Payments</h1>
 
       <Tabs defaultValue="tracker">

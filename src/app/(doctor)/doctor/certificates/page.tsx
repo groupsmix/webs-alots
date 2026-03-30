@@ -11,6 +11,7 @@ import {
   type PatientView,
 } from "@/lib/data/client";
 import { PageLoader } from "@/components/ui/page-loader";
+import { Breadcrumb } from "@/components/ui/breadcrumb";
 
 export default function DoctorCertificatesPage() {
   const [certificates, setCertificates] = useState<MedicalCertificateView[]>([]);
@@ -90,6 +91,7 @@ export default function DoctorCertificatesPage() {
 
   return (
     <div className="space-y-6">
+      <Breadcrumb items={[{ label: "Doctor", href: "/doctor/dashboard" }, { label: "Certificates" }]} />
       <h1 className="text-2xl font-bold">Medical Certificates</h1>
       <CertificateGenerator
         certificates={certificates}

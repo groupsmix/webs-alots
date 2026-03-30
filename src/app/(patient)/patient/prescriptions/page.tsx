@@ -11,6 +11,7 @@ import {
   type PrescriptionView,
 } from "@/lib/data/client";
 import { PageLoader } from "@/components/ui/page-loader";
+import { Breadcrumb } from "@/components/ui/breadcrumb";
 
 export default function PatientPrescriptionsPage() {
   const [downloading, setDownloading] = useState<string | null>(null);
@@ -60,6 +61,7 @@ export default function PatientPrescriptionsPage() {
 
   return (
     <div>
+      <Breadcrumb items={[{ label: "Patient", href: "/patient/dashboard" }, { label: "Prescriptions" }]} />
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold">My Prescriptions</h1>

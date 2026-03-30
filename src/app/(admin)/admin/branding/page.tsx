@@ -27,6 +27,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { PageLoader } from "@/components/ui/page-loader";
 import { useAsyncData } from "@/lib/hooks/use-async-data";
+import { Breadcrumb } from "@/components/ui/breadcrumb";
 
 interface BrandingState {
   name: string;
@@ -622,6 +623,7 @@ export default function BrandingPage() {
                 const secondaryRatio = getContrastRatio("#ffffff", branding.secondary_color).toFixed(1);
                 return (!primaryOk || !secondaryOk) ? (
                   <div className="mt-4 rounded-lg border border-yellow-300 bg-yellow-50 dark:bg-yellow-900/20 p-3 flex items-start gap-2 text-sm">
+                    <Breadcrumb items={[{ label: "Admin", href: "/admin/dashboard" }, { label: "Branding" }]} />
                     <AlertCircle className="h-4 w-4 text-yellow-600 mt-0.5 shrink-0" />
                     <div>
                       <p className="font-medium text-yellow-800 dark:text-yellow-200">Low contrast warning (WCAG AA)</p>

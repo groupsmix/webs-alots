@@ -18,6 +18,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { getCurrentUser, fetchServices, type ServiceView } from "@/lib/data/client";
+import { Breadcrumb } from "@/components/ui/breadcrumb";
 
 type Service = ServiceView;
 
@@ -127,6 +128,7 @@ export default function ManageServicesPage() {
 
   return (
     <div>
+      <Breadcrumb items={[{ label: "Admin", href: "/admin/dashboard" }, { label: "Services" }]} />
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold">Manage Services & Prices</h1>
         <Button onClick={openAddDialog}>

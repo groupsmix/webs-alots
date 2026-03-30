@@ -8,6 +8,7 @@ import {
   type TreatmentPlanView,
 } from "@/lib/data/client";
 import { PageLoader } from "@/components/ui/page-loader";
+import { Breadcrumb } from "@/components/ui/breadcrumb";
 
 export default function PatientTreatmentPlanPage() {
   const [myPlans, setMyPlans] = useState<TreatmentPlanView[]>([]);
@@ -49,6 +50,7 @@ export default function PatientTreatmentPlanPage() {
 
   return (
     <div className="space-y-6">
+      <Breadcrumb items={[{ label: "Patient", href: "/patient/dashboard" }, { label: "Treatment Plan" }]} />
       <h1 className="text-2xl font-bold">My Treatment Plan</h1>
       {myPlans.length === 0 ? (
         <p className="text-muted-foreground">No treatment plans found.</p>

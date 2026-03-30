@@ -30,6 +30,7 @@ import {
   type PatientView,
 } from "@/lib/data/client";
 import { PageLoader } from "@/components/ui/page-loader";
+import { Breadcrumb } from "@/components/ui/breadcrumb";
 
 function formatRx(sphere: number | null, cylinder: number | null, axis: number | null): string {
   if (sphere === null && cylinder === null) return "—";
@@ -133,6 +134,7 @@ export default function VisionTestsPage() {
 
   return (
     <div>
+      <Breadcrumb items={[{ label: "Doctor", href: "/doctor/dashboard" }, { label: "Vision Tests" }]} />
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold">Vision Tests & Prescriptions</h1>
         <Button onClick={() => setShowAdd(true)}>

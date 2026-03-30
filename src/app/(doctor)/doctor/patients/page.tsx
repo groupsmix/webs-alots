@@ -20,6 +20,7 @@ import {
   type ConsultationNoteView,
 } from "@/lib/data/client";
 import { PageLoader } from "@/components/ui/page-loader";
+import { Breadcrumb } from "@/components/ui/breadcrumb";
 
 type Patient = PatientView;
 
@@ -292,6 +293,7 @@ export default function DoctorPatientsPage() {
               if (activeTab === "notes") {
                 return (
                   <div className="space-y-4 mt-4">
+                    <Breadcrumb items={[{ label: "Doctor", href: "/doctor/dashboard" }, { label: "Patients" }]} />
                     {patientNotes.length === 0 ? (
                       <p className="text-sm text-muted-foreground">No consultation notes found.</p>
                     ) : (

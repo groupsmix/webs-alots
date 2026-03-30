@@ -20,6 +20,7 @@ import {
   type HearingTestView, type ENTExamView,
 } from "@/lib/data/specialists";
 import { PageLoader } from "@/components/ui/page-loader";
+import { Breadcrumb } from "@/components/ui/breadcrumb";
 
 const AUDIOGRAM_FREQUENCIES = ["250", "500", "1000", "2000", "4000", "8000"];
 
@@ -154,6 +155,7 @@ export default function ENTPage() {
 
   return (
     <div>
+      <Breadcrumb items={[{ label: "Doctor", href: "/doctor/dashboard" }, { label: "ENT" }]} />
       <h1 className="text-2xl font-bold mb-6">ENT Specialist</h1>
 
       <Tabs defaultValue="hearing">

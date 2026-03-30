@@ -20,6 +20,7 @@ import {
   type SpirometryRecordView, type RespiratoryTestView,
 } from "@/lib/data/specialists";
 import { PageLoader } from "@/components/ui/page-loader";
+import { Breadcrumb } from "@/components/ui/breadcrumb";
 
 function spirometryInterpretation(fev1FvcRatio: number | null): string {
   if (fev1FvcRatio === null) return "Insufficient data";
@@ -131,6 +132,7 @@ export default function PulmonologyPage() {
 
   return (
     <div>
+      <Breadcrumb items={[{ label: "Doctor", href: "/doctor/dashboard" }, { label: "Pulmonology" }]} />
       <h1 className="text-2xl font-bold mb-6">Pulmonology</h1>
 
       <Tabs defaultValue="spirometry">

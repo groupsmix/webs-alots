@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase-server";
 import { requireTenant } from "@/lib/tenant";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { t } from "@/lib/i18n";
+import { Breadcrumb } from "@/components/ui/breadcrumb";
 
 /**
  * Admin Analytics Dashboard
@@ -70,6 +71,7 @@ export default async function AnalyticsPage() {
 
   return (
     <div className="space-y-6">
+      <Breadcrumb items={[{ label: "Admin", href: "/admin/dashboard" }, { label: "Analytics" }]} />
       <h1 className="text-2xl font-bold">{t("fr", "accounting.title")}</h1>
 
       {/* Revenue Overview */}
