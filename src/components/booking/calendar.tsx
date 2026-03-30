@@ -177,7 +177,7 @@ export function BookingCalendar({ selectedDate, onSelectDate }: BookingCalendarP
         role="grid"
         aria-labelledby="calendar-heading"
         onKeyDown={handleKeyDown}
-        className="grid grid-cols-7 gap-1 text-center"
+        className="grid grid-cols-7 gap-1 sm:gap-1.5 text-center"
       >
         <div role="row" className="contents">
           {dayNames.map((d) => (
@@ -210,7 +210,7 @@ export function BookingCalendar({ selectedDate, onSelectDate }: BookingCalendarP
                 tabIndex={isTabbable ? 0 : -1}
                 aria-label={ariaLabel}
                 onFocus={() => setFocusedDay(day)}
-                className={`h-9 w-full rounded-md text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-1 ${
+                className={`min-h-11 w-full rounded-md text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-1 ${
                   isSelected
                     ? "bg-primary text-primary-foreground"
                     : available

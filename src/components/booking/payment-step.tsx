@@ -121,7 +121,7 @@ export function PaymentStep({
       <div className="grid grid-cols-2 gap-3">
         <button
           onClick={() => setPaymentType("deposit")}
-          className={`rounded-lg border p-4 text-center transition-colors ${
+          className={`rounded-lg border p-4 text-center transition-colors min-h-11 ${
             paymentType === "deposit" ? "border-primary bg-primary/5" : "hover:bg-muted/50"
           }`}
         >
@@ -134,7 +134,7 @@ export function PaymentStep({
         </button>
         <button
           onClick={() => setPaymentType("full")}
-          className={`rounded-lg border p-4 text-center transition-colors ${
+          className={`rounded-lg border p-4 text-center transition-colors min-h-11 ${
             paymentType === "full" ? "border-primary bg-primary/5" : "hover:bg-muted/50"
           }`}
         >
@@ -155,7 +155,7 @@ export function PaymentStep({
         <CardContent className="space-y-2">
           <button
             onClick={() => setMethod("cash")}
-            className={`w-full rounded-lg border p-3 text-left text-sm transition-colors flex items-center gap-3 ${
+            className={`w-full rounded-lg border p-3 min-h-11 text-left text-sm transition-colors flex items-center gap-3 ${
               method === "cash" ? "border-primary bg-primary/5" : "hover:bg-muted/50"
             }`}
           >
@@ -165,7 +165,7 @@ export function PaymentStep({
           </button>
           <button
             onClick={() => setMethod("cmi")}
-            className={`w-full rounded-lg border p-3 text-left text-sm transition-colors flex items-center gap-3 ${
+            className={`w-full rounded-lg border p-3 min-h-11 text-left text-sm transition-colors flex items-center gap-3 ${
               method === "cmi" ? "border-primary bg-primary/5" : "hover:bg-muted/50"
             }`}
           >
@@ -175,7 +175,7 @@ export function PaymentStep({
           </button>
           <button
             onClick={() => setMethod("cashplus")}
-            className={`w-full rounded-lg border p-3 text-left text-sm transition-colors flex items-center gap-3 ${
+            className={`w-full rounded-lg border p-3 min-h-11 text-left text-sm transition-colors flex items-center gap-3 ${
               method === "cashplus" ? "border-primary bg-primary/5" : "hover:bg-muted/50"
             }`}
           >
@@ -185,7 +185,7 @@ export function PaymentStep({
           </button>
           <button
             onClick={() => setMethod("wafacash")}
-            className={`w-full rounded-lg border p-3 text-left text-sm transition-colors flex items-center gap-3 ${
+            className={`w-full rounded-lg border p-3 min-h-11 text-left text-sm transition-colors flex items-center gap-3 ${
               method === "wafacash" ? "border-primary bg-primary/5" : "hover:bg-muted/50"
             }`}
           >
@@ -195,7 +195,7 @@ export function PaymentStep({
           </button>
           <button
             onClick={() => setMethod("baridbank")}
-            className={`w-full rounded-lg border p-3 text-left text-sm transition-colors flex items-center gap-3 ${
+            className={`w-full rounded-lg border p-3 min-h-11 text-left text-sm transition-colors flex items-center gap-3 ${
               method === "baridbank" ? "border-primary bg-primary/5" : "hover:bg-muted/50"
             }`}
           >
@@ -205,7 +205,7 @@ export function PaymentStep({
           </button>
           <button
             onClick={() => setMethod("check")}
-            className={`w-full rounded-lg border p-3 text-left text-sm transition-colors flex items-center gap-3 ${
+            className={`w-full rounded-lg border p-3 min-h-11 text-left text-sm transition-colors flex items-center gap-3 ${
               method === "check" ? "border-primary bg-primary/5" : "hover:bg-muted/50"
             }`}
           >
@@ -215,7 +215,7 @@ export function PaymentStep({
           </button>
           <button
             onClick={() => setMethod("insurance")}
-            className={`w-full rounded-lg border p-3 text-left text-sm transition-colors flex items-center gap-3 ${
+            className={`w-full rounded-lg border p-3 min-h-11 text-left text-sm transition-colors flex items-center gap-3 ${
               method === "insurance" ? "border-primary bg-primary/5" : "hover:bg-muted/50"
             }`}
           >

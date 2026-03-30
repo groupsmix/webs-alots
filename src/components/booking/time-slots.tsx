@@ -44,7 +44,7 @@ export function TimeSlotPicker({ slots, allSlots, slotCounts, maxPerSlot = 1, se
         <div key={slot} className="flex flex-col gap-1">
           <button
             disabled
-            className="rounded-lg border px-3 py-2 text-sm font-medium bg-muted/50 text-muted-foreground line-through cursor-not-allowed opacity-60"
+            className="rounded-lg border px-3 py-2.5 min-h-11 text-sm font-medium bg-muted/50 text-muted-foreground line-through cursor-not-allowed opacity-60"
             title="This slot is taken"
           >
             {slot}
@@ -52,7 +52,7 @@ export function TimeSlotPicker({ slots, allSlots, slotCounts, maxPerSlot = 1, se
           {showWaitingList && onJoinWaitingList && (
             <button
               onClick={() => onJoinWaitingList(slot)}
-              className="text-xs text-primary hover:underline flex items-center justify-center gap-1"
+              className="text-xs text-primary hover:underline flex items-center justify-center gap-1 min-h-11 px-2"
               title="Join waiting list for this slot"
             >
               <Bell className="h-3 w-3" />
@@ -67,7 +67,7 @@ export function TimeSlotPicker({ slots, allSlots, slotCounts, maxPerSlot = 1, se
       <button
         key={slot}
         onClick={() => onSelectSlot(slot)}
-        className={`rounded-lg border px-3 py-2 text-sm font-medium transition-colors ${
+        className={`rounded-lg border px-3 py-2.5 min-h-11 text-sm font-medium transition-colors ${
           selectedSlot === slot
             ? "border-primary bg-primary text-primary-foreground"
             : "hover:border-primary/50 hover:bg-primary/5"

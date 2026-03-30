@@ -17,6 +17,8 @@ export default function manifest(): MetadataRoute.Manifest {
     orientation: "portrait-primary",
     categories: ["health", "medical", "business"],
     lang: "fr",
+    dir: "ltr",
+    prefer_related_applications: false,
     icons: [
       {
         src: "/favicon.ico",
@@ -34,6 +36,26 @@ export default function manifest(): MetadataRoute.Manifest {
         sizes: "512x512",
         type: "image/png",
         purpose: "maskable",
+      },
+    ],
+    shortcuts: [
+      {
+        name: "Prendre rendez-vous",
+        short_name: "RDV",
+        url: "/book",
+        description: "Réserver un rendez-vous médical en ligne",
+      },
+      {
+        name: "Nos services",
+        short_name: "Services",
+        url: "/services",
+        description: "Voir les services disponibles",
+      },
+      {
+        name: "Contact",
+        short_name: "Contact",
+        url: "/contact",
+        description: "Nous contacter",
       },
     ],
   };

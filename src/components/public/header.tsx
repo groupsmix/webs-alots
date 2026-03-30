@@ -94,7 +94,7 @@ export function PublicHeader({ logoUrl, clinicName, sectionVisibility }: PublicH
 
         {/* Mobile menu toggle */}
         <button
-          className="md:hidden"
+          className="md:hidden flex items-center justify-center min-h-11 min-w-11 rounded-md hover:bg-muted transition-colors"
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
           aria-label={mobileMenuOpen ? t(locale, "public.closeMenu") : t(locale, "public.openMenu")}
           aria-expanded={mobileMenuOpen}
@@ -113,7 +113,7 @@ export function PublicHeader({ logoUrl, clinicName, sectionVisibility }: PublicH
                 key={link.href}
                 href={link.href}
                 aria-current={pathname === link.href ? "page" : undefined}
-                className="text-sm text-muted-foreground"
+                className="text-sm text-muted-foreground min-h-11 flex items-center"
                 onClick={() => setMobileMenuOpen(false)}
               >
                 {t(locale, link.labelKey)}
