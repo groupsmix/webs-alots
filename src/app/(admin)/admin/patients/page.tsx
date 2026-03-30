@@ -26,6 +26,7 @@ import {
 import { exportPatients } from "@/lib/export-data";
 import { PageLoader } from "@/components/ui/page-loader";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
+import { DataMask } from "@/components/ui/data-mask";
 
 type Patient = PatientView;
 
@@ -134,11 +135,11 @@ export default function AdminPatientDatabasePage() {
                     <div className="space-y-1 mt-1">
                       <p className="text-xs text-muted-foreground flex items-center gap-1">
                         <Phone className="h-3 w-3" />
-                        {patient.phone}
+                        <DataMask value={patient.phone} type="phone" />
                       </p>
                       <p className="text-xs text-muted-foreground flex items-center gap-1">
                         <Mail className="h-3 w-3" />
-                        {patient.email}
+                        <DataMask value={patient.email} type="email" />
                       </p>
                       <p className="text-xs text-muted-foreground flex items-center gap-1">
                         <Calendar className="h-3 w-3" />
@@ -206,11 +207,11 @@ export default function AdminPatientDatabasePage() {
               <div className="grid grid-cols-2 gap-3 mb-4 text-sm">
                 <div className="border rounded-lg p-3">
                   <p className="text-xs text-muted-foreground">Phone</p>
-                  <p className="font-medium">{selectedPatient.phone}</p>
+                  <DataMask value={selectedPatient.phone} type="phone" className="font-medium" />
                 </div>
                 <div className="border rounded-lg p-3">
                   <p className="text-xs text-muted-foreground">Email</p>
-                  <p className="font-medium text-xs">{selectedPatient.email}</p>
+                  <DataMask value={selectedPatient.email} type="email" className="font-medium text-xs" />
                 </div>
                 <div className="border rounded-lg p-3">
                   <p className="text-xs text-muted-foreground">Insurance</p>
