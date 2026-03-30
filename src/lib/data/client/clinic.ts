@@ -1,6 +1,6 @@
 "use client";
 
-import { fetchRows, ensureLookups, _activeUserMap, type TableName } from "./_core";
+import { fetchRows, ensureLookups, _activeUserMap, _activeServiceMap, type TableName } from "./_core";
 import { fetchTodayAppointments } from "./appointments";
 
 // ─────────────────────────────────────────────

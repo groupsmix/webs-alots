@@ -3,7 +3,6 @@
 import { fetchRows, ensureLookups, _activeUserMap } from "./_core";
 import { createClient } from "@/lib/supabase-client";
 import { logger } from "@/lib/logger";
-import type { Database as _Database } from "@/lib/types/database";
 
 // OPHTHALMOLOGIST — Vision Tests
 // ─────────────────────────────────────────────
