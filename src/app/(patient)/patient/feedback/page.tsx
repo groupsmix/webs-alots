@@ -116,8 +116,11 @@ export default function PatientFeedbackPage() {
                         onMouseEnter={() => setHoverRating(star)}
                         onMouseLeave={() => setHoverRating(0)}
                         className="p-1 transition-colors"
+                        aria-label={`Rate ${star} out of 5 stars`}
+                        aria-pressed={star === rating}
                       >
                         <Star
+                          aria-hidden="true"
                           className={`h-7 w-7 transition-colors ${
                             star <= (hoverRating || rating)
                               ? "text-yellow-500 fill-yellow-500"
@@ -173,10 +176,11 @@ export default function PatientFeedbackPage() {
                       <p className="text-sm font-medium">{fb.doctorName}</p>
                       <Badge variant="outline" className="text-xs">{fb.status}</Badge>
                     </div>
-                    <div className="flex gap-0.5 mb-2">
+                    <div className="flex gap-0.5 mb-2" role="img" aria-label={`${fb.rating} out of 5 stars`}>
                       {[1, 2, 3, 4, 5].map((star) => (
                         <Star
                           key={star}
+                          aria-hidden="true"
                           className={`h-4 w-4 ${star <= fb.rating ? "text-yellow-500 fill-yellow-500" : "text-muted-foreground"}`}
                         />
                       ))}
