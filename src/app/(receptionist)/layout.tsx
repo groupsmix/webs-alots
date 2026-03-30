@@ -12,6 +12,7 @@ import { SignOutButton } from "@/components/sign-out-button";
 import { SessionTimeoutWarning } from "@/components/session-timeout-warning";
 import { signOut } from "@/lib/auth";
 import { AutoBreadcrumb } from "@/components/ui/auto-breadcrumb";
+import { PatientSearchPalette } from "@/components/patient-search-palette";
 
 const navItems = [
   { href: "/receptionist/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -122,6 +123,7 @@ export default function ReceptionistLayout({
         </main>
       </div>
       <SessionTimeoutWarning onLogout={() => signOut()} />
+      <PatientSearchPalette basePath="/receptionist/patients" />
     </div>
   );
 }

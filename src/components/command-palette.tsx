@@ -31,6 +31,8 @@ interface CommandPaletteProps {
   onClose?: () => void;
   /** Whether the palette is open */
   open: boolean;
+  /** Relay query changes to the parent (e.g. for server-side search). */
+  onQueryChange?: (query: string) => void;
 }
 
 /**
@@ -49,6 +51,7 @@ export function CommandPalette({
   placeholder,
   onClose,
   open,
+  onQueryChange,
 }: CommandPaletteProps) {
   const [query, setQuery] = useState("");
   const [locale] = useLocale();
@@ -66,11 +69,19 @@ export function CommandPalette({
     );
   });
 
+  const updateQuery = useCallback(
+    (value: string) => {
+      setQuery(value);
+      onQueryChange?.(value);
+    },
+    [onQueryChange],
+  );
+
   const handleClose = useCallback(() => {
-    setQuery("");
+    updateQuery("");
     setSelectedIndex(0);
     onClose?.();
-  }, [onClose]);
+  }, [onClose, updateQuery]);
 
   useEffect(() => {
     if (open) {
@@ -149,7 +160,7 @@ export function CommandPalette({
             ref={inputRef}
             type="text"
             value={query}
-            onChange={(e) => setQuery(e.target.value)}
+            onChange={(e) => updateQuery(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder={effectivePlaceholder}
             className="flex-1 bg-transparent px-3 py-3 text-sm outline-none placeholder:text-muted-foreground"
@@ -165,7 +176,7 @@ export function CommandPalette({
           {query && (
             <button
               type="button"
-              onClick={() => setQuery("")}
+              onClick={() => updateQuery("")}
               className="p-1 text-muted-foreground hover:text-foreground"
               aria-label={t(locale, "commandPalette.clearSearch")}
             >
