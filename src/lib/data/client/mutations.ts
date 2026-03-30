@@ -45,20 +45,20 @@ export async function createPayment(data: {
   amount: number;
   method?: string;
   status?: string;
-}): Promise<MutationResult> {
+}): Promise<MutationResult<{ id: string }>> {
   const supabase = createClient();
-  const { error } = await supabase.from("payments").insert({
+  const { data: created, error } = await supabase.from("payments").insert({
     ...data,
     status: data.status ?? "completed",
     payment_type: "full",
     refunded_amount: 0,
-  });
+  }).select("id").single();
   if (error) {
     logger.warn("Query failed", { context: "data/client", error });
     return { success: false, error: { code: error.code, message: error.message } };
   }
   clearLookupCache();
-  return { success: true };
+  return { success: true, data: { id: created.id } };
 }
 
 export async function upsertReview(data: {
@@ -66,15 +66,15 @@ export async function upsertReview(data: {
   patient_id: string;
   stars: number;
   comment?: string;
-}): Promise<MutationResult> {
+}): Promise<MutationResult<{ id: string }>> {
   const supabase = createClient();
-  const { error } = await supabase.from("reviews").insert(data);
+  const { data: created, error } = await supabase.from("reviews").insert(data).select("id").single();
   if (error) {
     logger.warn("Query failed", { context: "data/client", error });
     return { success: false, error: { code: error.code, message: error.message } };
   }
   clearLookupCache();
-  return { success: true };
+  return { success: true, data: { id: created.id } };
 }
 
 export async function updateReviewResponse(reviewId: string, response: string): Promise<boolean> {
