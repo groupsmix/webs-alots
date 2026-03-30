@@ -89,6 +89,8 @@ export const waitingListSchema = z.object({
   preferredDate: isoDate,
   preferredTime: timeHHMM.optional(),
   serviceId: z.string().optional(),
+  /** Honeypot field – hidden from real users, filled only by bots (Issue 51) */
+  website: z.string().max(200).optional(),
 });
 
 export const paymentConfirmSchema = z.object({

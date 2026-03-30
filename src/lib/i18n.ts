@@ -360,6 +360,7 @@ export const translations = {
     "booking.invalidPhone": "Veuillez entrer un numéro marocain valide (+212 6XX XX XX XX)",
     "booking.verifyingPhone": "Vérification de votre numéro…",
     "booking.creatingAppointment": "Création du rendez-vous…",
+    "booking.isFirstVisit": "Est-ce votre première visite ?",
 
     // Error pages
     "error.title": "Une erreur est survenue",
@@ -987,6 +988,7 @@ export const translations = {
     "booking.next": "التالي",
     "booking.verifyingPhone": "جاري التحقق من رقمك…",
     "booking.creatingAppointment": "جاري إنشاء الموعد…",
+    "booking.isFirstVisit": "هل هذه زيارتك الأولى؟",
 
     // Error pages
     "error.title": "حدث خطأ",
@@ -1614,6 +1616,7 @@ export const translations = {
     "booking.next": "Next",
     "booking.verifyingPhone": "Verifying your number…",
     "booking.creatingAppointment": "Creating appointment…",
+    "booking.isFirstVisit": "Is this your first visit?",
 
     // Error pages
     "error.title": "An error occurred",

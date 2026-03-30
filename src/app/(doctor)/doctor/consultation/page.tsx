@@ -23,6 +23,7 @@ import {
 import { PageLoader } from "@/components/ui/page-loader";
 import { useOfflineDrafts } from "@/lib/hooks/use-offline-drafts";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
+import { clinicConfig } from "@/config/clinic.config";
 
 interface ConsultationNote {
   id: string;
@@ -58,10 +59,17 @@ function mapDbNoteToLocal(n: ConsultationNoteView): ConsultationNote {
 }
 
 function printConsultationNote(apt: AppointmentView, note: ConsultationNote): void {
+  const clinicName = clinicConfig.name || "";
+  const clinicAddress = clinicConfig.contact.address || "";
+  const clinicPhone = clinicConfig.contact.phone || "";
+
   const html = `<!DOCTYPE html>
 <html><head><meta charset="utf-8"><title>Consultation – ${apt.patientName}</title>
 <style>
   body{font-family:Helvetica,Arial,sans-serif;font-size:11pt;line-height:1.6;color:#000;margin:0;padding:20mm}
+  .letterhead{text-align:center;margin-bottom:12pt}
+  .letterhead h2{font-size:14pt;margin:0 0 2pt;color:#333}
+  .letterhead p{font-size:9pt;color:#555;margin:0}
   .header{text-align:center;border-bottom:2px solid #333;padding-bottom:12pt;margin-bottom:18pt}
   .header h1{font-size:16pt;margin:0 0 4pt}
   .header p{font-size:9pt;color:#555;margin:0}
@@ -70,14 +78,15 @@ function printConsultationNote(apt: AppointmentView, note: ConsultationNote): vo
   .signature{margin-top:48pt;text-align:right;border-top:1px solid #999;padding-top:8pt;width:40%;margin-left:auto}
   @page{size:A4;margin:20mm}
 </style></head><body>
-<div class="header"><h1>CONSULTATION NOTES</h1><p>${apt.serviceName} — ${apt.date}</p></div>
-<div class="field"><span class="field-label">Patient:</span> ${apt.patientName}</div>
-<div class="field"><span class="field-label">Date:</span> ${apt.date} at ${apt.time}</div>
-<div class="field"><span class="field-label">Chief Complaint:</span> ${note.chiefComplaint}</div>
-<div class="field"><span class="field-label">Examination:</span> ${note.examination}</div>
-<div class="field"><span class="field-label">Diagnosis:</span> ${note.diagnosis}</div>
-<div class="field"><span class="field-label">Plan:</span> ${note.plan}</div>
-<div class="signature">Doctor's Signature</div>
+${clinicName ? `<div class="letterhead"><h2>${clinicName}</h2>${clinicAddress ? `<p>${clinicAddress}</p>` : ""}${clinicPhone ? `<p>Tél : ${clinicPhone}</p>` : ""}</div>` : ""}
+<div class="header"><h1>NOTES DE CONSULTATION</h1><p>${apt.serviceName} — ${apt.date}</p></div>
+<div class="field"><span class="field-label">Patient :</span> ${apt.patientName}</div>
+<div class="field"><span class="field-label">Date :</span> ${apt.date} à ${apt.time}</div>
+<div class="field"><span class="field-label">Motif de consultation :</span> ${note.chiefComplaint}</div>
+<div class="field"><span class="field-label">Examen :</span> ${note.examination}</div>
+<div class="field"><span class="field-label">Diagnostic :</span> ${note.diagnosis}</div>
+<div class="field"><span class="field-label">Plan :</span> ${note.plan}</div>
+<div class="signature">Signature du médecin</div>
 </body></html>`;
 
   const win = window.open("", "_blank");
