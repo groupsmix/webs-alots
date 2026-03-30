@@ -142,6 +142,82 @@ export const translations = {
     "directory.filterBySpecialty": "Filtrer par spécialité",
     "directory.noResults": "Aucun résultat trouvé",
 
+    // Patient nav sidebar
+    "patientNav.title": "Portail Patient",
+    "patientNav.dashboard": "Tableau de bord",
+    "patientNav.appointments": "Rendez-vous",
+    "patientNav.medicalHistory": "Historique médical",
+    "patientNav.prescriptions": "Ordonnances",
+    "patientNav.documents": "Documents",
+    "patientNav.invoices": "Factures",
+    "patientNav.family": "Membres de la famille",
+    "patientNav.notifications": "Notifications",
+    "patientNav.feedback": "Avis",
+    "patientNav.treatmentPlan": "Plan de traitement",
+    "patientNav.toothMap": "Carte dentaire",
+    "patientNav.beforeAfter": "Avant/Après",
+    "patientNav.paymentPlan": "Plan de paiement",
+
+    // Feature gate
+    "featureGate.notEnabled": "{module} n'est pas activé",
+    "featureGate.notAvailable": "Ce module n'est pas disponible pour votre type de clinique. Veuillez contacter votre administrateur pour l'activer.",
+    "featureGate.backToDashboard": "Retour au tableau de bord",
+
+    // Impersonation banner
+    "impersonation.viewingAs": "Vous visualisez en tant que",
+    "impersonation.sessionActive": "— session d'usurpation active",
+    "impersonation.reason": "Raison : {reason}",
+    "impersonation.endSession": "Terminer la session",
+
+    // Session timeout
+    "session.expiring": "Session expirante",
+    "session.logoutIn": "Déconnexion dans {time}",
+    "session.expiryMessage": "Votre session va expirer pour des raisons de sécurité. Cliquez ci-dessous pour rester connecté.",
+    "session.stayConnected": "Rester connecté",
+    "session.logout": "Se déconnecter",
+
+    // Command palette
+    "commandPalette.searchPlaceholder": "Rechercher un patient (nom, CIN, téléphone)...",
+    "commandPalette.noResults": "Aucun résultat pour",
+    "commandPalette.navigate": "naviguer",
+    "commandPalette.select": "sélectionner",
+    "commandPalette.close": "fermer",
+    "commandPalette.quickSearch": "Recherche rapide",
+    "commandPalette.searchLabel": "Recherche",
+    "commandPalette.clearSearch": "Effacer la recherche",
+
+    // Specialty filter options
+    "specialty.gp": "Médecin généraliste",
+    "specialty.dentist": "Dentiste",
+    "specialty.pediatrician": "Pédiatre",
+    "specialty.gynecologist": "Gynécologue",
+    "specialty.ophthalmologist": "Ophtalmologue",
+    "specialty.cardiologist": "Cardiologue",
+    "specialty.dermatologist": "Dermatologue",
+    "specialty.orthopedist": "Orthopédiste",
+    "specialty.neurologist": "Neurologue",
+    "specialty.psychiatrist": "Psychiatre",
+    "specialty.physiotherapist": "Kinésithérapeute",
+    "specialty.radiologist": "Radiologue",
+    "specialty.nutritionist": "Nutritionniste",
+    "specialty.ivf_specialist": "Spécialiste FIV",
+    "specialty.dialysis_specialist": "Spécialiste dialyse",
+
+    // Public header/footer
+    "public.quickLinks": "Liens rapides",
+    "public.allRightsReserved": "Tous droits réservés.",
+    "public.bookAppointment": "Prendre RDV",
+    "public.home": "Accueil",
+    "public.services": "Services",
+    "public.about": "À propos",
+    "public.appointments": "Rendez-vous",
+    "public.locationHours": "Accès & Horaires",
+    "public.contact": "Contact",
+    "public.reviews": "Avis",
+    "public.privacy": "Confidentialité",
+    "public.openMenu": "Ouvrir le menu",
+    "public.closeMenu": "Fermer le menu",
+
     // Accounting
     "accounting.title": "Comptabilité",
     "accounting.revenue": "Chiffre d'affaires",
@@ -282,6 +358,8 @@ export const translations = {
     "booking.submitting": "Envoi en cours…",
     "booking.next": "Suivant",
     "booking.invalidPhone": "Veuillez entrer un numéro marocain valide (+212 6XX XX XX XX)",
+    "booking.verifyingPhone": "Vérification de votre numéro…",
+    "booking.creatingAppointment": "Création du rendez-vous…",
 
     // Error pages
     "error.title": "Une erreur est survenue",
@@ -691,6 +769,82 @@ export const translations = {
     "directory.filterBySpecialty": "تصفية حسب التخصص",
     "directory.noResults": "لم يتم العثور على نتائج",
 
+    // Patient nav sidebar
+    "patientNav.title": "بوابة المريض",
+    "patientNav.dashboard": "لوحة التحكم",
+    "patientNav.appointments": "المواعيد",
+    "patientNav.medicalHistory": "السجل الطبي",
+    "patientNav.prescriptions": "الوصفات الطبية",
+    "patientNav.documents": "المستندات",
+    "patientNav.invoices": "الفواتير",
+    "patientNav.family": "أفراد العائلة",
+    "patientNav.notifications": "الإشعارات",
+    "patientNav.feedback": "التقييمات",
+    "patientNav.treatmentPlan": "خطة العلاج",
+    "patientNav.toothMap": "خريطة الأسنان",
+    "patientNav.beforeAfter": "قبل/بعد",
+    "patientNav.paymentPlan": "خطة الدفع",
+
+    // Feature gate
+    "featureGate.notEnabled": "{module} غير مفعّل",
+    "featureGate.notAvailable": "هذه الوحدة غير متاحة لنوع عيادتك. يرجى الاتصال بالمسؤول لتفعيلها.",
+    "featureGate.backToDashboard": "العودة إلى لوحة التحكم",
+
+    // Impersonation banner
+    "impersonation.viewingAs": "أنت تعرض باسم",
+    "impersonation.sessionActive": "— جلسة انتحال نشطة",
+    "impersonation.reason": "السبب: {reason}",
+    "impersonation.endSession": "إنهاء الجلسة",
+
+    // Session timeout
+    "session.expiring": "الجلسة على وشك الانتهاء",
+    "session.logoutIn": "تسجيل الخروج في {time}",
+    "session.expiryMessage": "ستنتهي جلستك لأسباب أمنية. انقر أدناه للبقاء متصلاً.",
+    "session.stayConnected": "البقاء متصلاً",
+    "session.logout": "تسجيل الخروج",
+
+    // Command palette
+    "commandPalette.searchPlaceholder": "البحث عن مريض (الاسم، CIN، الهاتف)...",
+    "commandPalette.noResults": "لا توجد نتائج لـ",
+    "commandPalette.navigate": "تنقل",
+    "commandPalette.select": "اختيار",
+    "commandPalette.close": "إغلاق",
+    "commandPalette.quickSearch": "بحث سريع",
+    "commandPalette.searchLabel": "بحث",
+    "commandPalette.clearSearch": "مسح البحث",
+
+    // Specialty filter options
+    "specialty.gp": "طبيب عام",
+    "specialty.dentist": "طبيب أسنان",
+    "specialty.pediatrician": "طبيب أطفال",
+    "specialty.gynecologist": "طبيب نساء وتوليد",
+    "specialty.ophthalmologist": "طبيب عيون",
+    "specialty.cardiologist": "طبيب قلب",
+    "specialty.dermatologist": "طبيب جلدية",
+    "specialty.orthopedist": "طبيب عظام",
+    "specialty.neurologist": "طبيب أعصاب",
+    "specialty.psychiatrist": "طبيب نفسي",
+    "specialty.physiotherapist": "أخصائي علاج طبيعي",
+    "specialty.radiologist": "طبيب أشعة",
+    "specialty.nutritionist": "أخصائي تغذية",
+    "specialty.ivf_specialist": "أخصائي أطفال الأنابيب",
+    "specialty.dialysis_specialist": "أخصائي غسيل الكلى",
+
+    // Public header/footer
+    "public.quickLinks": "روابط سريعة",
+    "public.allRightsReserved": "جميع الحقوق محفوظة.",
+    "public.bookAppointment": "حجز موعد",
+    "public.home": "الرئيسية",
+    "public.services": "الخدمات",
+    "public.about": "من نحن",
+    "public.appointments": "المواعيد",
+    "public.locationHours": "الوصول والمواعيد",
+    "public.contact": "اتصل بنا",
+    "public.reviews": "التقييمات",
+    "public.privacy": "الخصوصية",
+    "public.openMenu": "فتح القائمة",
+    "public.closeMenu": "إغلاق القائمة",
+
     // Accounting
     "accounting.title": "المحاسبة",
     "accounting.revenue": "رقم المعاملات",
@@ -831,6 +985,8 @@ export const translations = {
     "booking.submitting": "جاري الإرسال…",
     "booking.invalidPhone": "يرجى إدخال رقم مغربي صالح (+212 6XX XX XX XX)",
     "booking.next": "التالي",
+    "booking.verifyingPhone": "جاري التحقق من رقمك…",
+    "booking.creatingAppointment": "جاري إنشاء الموعد…",
 
     // Error pages
     "error.title": "حدث خطأ",
@@ -1240,6 +1396,82 @@ export const translations = {
     "directory.filterBySpecialty": "Filter by Specialty",
     "directory.noResults": "No results found",
 
+    // Patient nav sidebar
+    "patientNav.title": "Patient Portal",
+    "patientNav.dashboard": "Dashboard",
+    "patientNav.appointments": "Appointments",
+    "patientNav.medicalHistory": "Medical History",
+    "patientNav.prescriptions": "Prescriptions",
+    "patientNav.documents": "Documents",
+    "patientNav.invoices": "Invoices",
+    "patientNav.family": "Family Members",
+    "patientNav.notifications": "Notifications",
+    "patientNav.feedback": "Feedback",
+    "patientNav.treatmentPlan": "Treatment Plan",
+    "patientNav.toothMap": "Tooth Map",
+    "patientNav.beforeAfter": "Before/After",
+    "patientNav.paymentPlan": "Payment Plan",
+
+    // Feature gate
+    "featureGate.notEnabled": "{module} is not enabled",
+    "featureGate.notAvailable": "This module is not available for your clinic type. Please contact your administrator to enable it.",
+    "featureGate.backToDashboard": "Back to Dashboard",
+
+    // Impersonation banner
+    "impersonation.viewingAs": "You are viewing as",
+    "impersonation.sessionActive": "— impersonation session active",
+    "impersonation.reason": "Reason: {reason}",
+    "impersonation.endSession": "End Session",
+
+    // Session timeout
+    "session.expiring": "Session Expiring",
+    "session.logoutIn": "Logout in {time}",
+    "session.expiryMessage": "Your session will expire for security reasons. Click below to stay connected.",
+    "session.stayConnected": "Stay Connected",
+    "session.logout": "Log Out",
+
+    // Command palette
+    "commandPalette.searchPlaceholder": "Search patient (name, CIN, phone)...",
+    "commandPalette.noResults": "No results for",
+    "commandPalette.navigate": "navigate",
+    "commandPalette.select": "select",
+    "commandPalette.close": "close",
+    "commandPalette.quickSearch": "Quick Search",
+    "commandPalette.searchLabel": "Search",
+    "commandPalette.clearSearch": "Clear search",
+
+    // Specialty filter options
+    "specialty.gp": "General Practitioner",
+    "specialty.dentist": "Dentist",
+    "specialty.pediatrician": "Pediatrician",
+    "specialty.gynecologist": "Gynecologist",
+    "specialty.ophthalmologist": "Ophthalmologist",
+    "specialty.cardiologist": "Cardiologist",
+    "specialty.dermatologist": "Dermatologist",
+    "specialty.orthopedist": "Orthopedist",
+    "specialty.neurologist": "Neurologist",
+    "specialty.psychiatrist": "Psychiatrist",
+    "specialty.physiotherapist": "Physiotherapist",
+    "specialty.radiologist": "Radiologist",
+    "specialty.nutritionist": "Nutritionist",
+    "specialty.ivf_specialist": "IVF Specialist",
+    "specialty.dialysis_specialist": "Dialysis Specialist",
+
+    // Public header/footer
+    "public.quickLinks": "Quick Links",
+    "public.allRightsReserved": "All rights reserved.",
+    "public.bookAppointment": "Book Now",
+    "public.home": "Home",
+    "public.services": "Services",
+    "public.about": "About",
+    "public.appointments": "Appointments",
+    "public.locationHours": "Location & Hours",
+    "public.contact": "Contact",
+    "public.reviews": "Reviews",
+    "public.privacy": "Privacy",
+    "public.openMenu": "Open menu",
+    "public.closeMenu": "Close menu",
+
     // Accounting
     "accounting.title": "Accounting",
     "accounting.revenue": "Revenue",
@@ -1380,6 +1612,8 @@ export const translations = {
     "booking.submitting": "Sending…",
     "booking.invalidPhone": "Please enter a valid Moroccan number (+212 6XX XX XX XX)",
     "booking.next": "Next",
+    "booking.verifyingPhone": "Verifying your number…",
+    "booking.creatingAppointment": "Creating appointment…",
 
     // Error pages
     "error.title": "An error occurred",

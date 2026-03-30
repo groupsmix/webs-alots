@@ -14,6 +14,7 @@ import { BookingCalendar } from "./calendar";
 import { TimeSlotPicker } from "./time-slots";
 import { logger } from "@/lib/logger";
 import { t } from "@/lib/i18n";
+import { useFormValidation, commonRules } from "@/lib/hooks/use-form-validation";
 
 // Simplified 3-step booking flow
 // Step 1: Select Service (with doctor)
@@ -97,8 +98,15 @@ export function BookingForm() {
   const [bookingId, setBookingId] = useState<string | null>(null);
   const [bookingError, setBookingError] = useState<string | null>(null);
   const [phoneError, setPhoneError] = useState<string | null>(null);
+  const [verificationStatus, setVerificationStatus] = useState<string | null>(null);
   // Honeypot field for basic bot protection (invisible to real users)
   const [honeypot, setHoneypot] = useState("");
+
+  // Inline validation via useFormValidation hook
+  const validationRules = useMemo(() => ({
+    phone: [commonRules.required("Le numéro de téléphone est obligatoire"), commonRules.phone()],
+  }), []);
+  const { onFieldChange: onValidationChange, onFieldBlur: onValidationBlur, getFieldError } = useFormValidation<{ phone: string }>(validationRules);
   const [waitingListMessage, setWaitingListMessage] = useState<string | null>(null);
 
   // Supabase-loaded data
@@ -179,7 +187,7 @@ export function BookingForm() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          patientId: `patient-${Date.now()}`,
+          patientPhone: patientPhone,
           patientName: patientName || "Patient",
           doctorId: selectedDoctor,
           preferredDate: selectedDate,
@@ -219,6 +227,7 @@ export function BookingForm() {
 
     try {
       // Step 1: Get booking token (phone verification)
+      setVerificationStatus(t("fr", "booking.verifyingPhone"));
       const verifyRes = await fetch("/api/booking/verify", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -227,11 +236,13 @@ export function BookingForm() {
       const verifyData = await verifyRes.json();
       if (!verifyRes.ok) {
         setBookingError(verifyData.error ?? "Erreur de v\u00e9rification. Veuillez r\u00e9essayer.");
+        setVerificationStatus(null);
         return;
       }
       const bookingToken = verifyData.token as string;
 
       // Step 2: Create booking with the token + idempotency key
+      setVerificationStatus(t("fr", "booking.creatingAppointment"));
       const specialtyId = doctor?.specialtyId ?? "";
 
       const res = await fetch("/api/booking", {
@@ -271,6 +282,7 @@ export function BookingForm() {
       setBookingError("Erreur de connexion. Veuillez r\u00e9essayer.");
     } finally {
       setIsSubmitting(false);
+      setVerificationStatus(null);
     }
   };
 
@@ -512,8 +524,10 @@ export function BookingForm() {
                   onChange={(e) => {
                     setPatientPhone(e.target.value);
                     if (phoneError) setPhoneError(null);
+                    onValidationChange("phone", e.target.value);
                   }}
                   onBlur={() => {
+                    onValidationBlur("phone", patientPhone);
                     if (patientPhone.trim() && !isValidMoroccanPhone(patientPhone)) {
                       setPhoneError(t("fr", "booking.invalidPhone"));
                     }
@@ -526,8 +540,8 @@ export function BookingForm() {
                   aria-invalid={!!phoneError}
                   aria-describedby={phoneError ? "phone-error" : undefined}
                 />
-                {phoneError ? (
-                  <p id="phone-error" className="text-xs text-destructive">{phoneError}</p>
+                {(phoneError || getFieldError("phone")) ? (
+                  <p id="phone-error" className="text-xs text-destructive">{phoneError || getFieldError("phone")}</p>
                 ) : (
                   <p className="text-xs text-muted-foreground">
                     Vous recevrez la confirmation par WhatsApp. Aucun compte requis.
@@ -600,7 +614,9 @@ export function BookingForm() {
           ) : (
             <Button onClick={handleConfirm} disabled={isSubmitting || !canNext()}>
               {isSubmitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-              {isSubmitting ? t("fr", "booking.submitting") : t("fr", "booking.confirm")}
+              {isSubmitting
+                ? (verificationStatus ?? t("fr", "booking.submitting"))
+                : t("fr", "booking.confirm")}
             </Button>
           )}
         </div>

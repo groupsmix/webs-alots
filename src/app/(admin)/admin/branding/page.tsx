@@ -43,6 +43,36 @@ interface BrandingState {
   hero_image_url: string | null;
 }
 
+/**
+ * Calculate WCAG 2.1 relative luminance from a hex color.
+ * @see https://www.w3.org/TR/WCAG21/#dfn-relative-luminance
+ */
+function getLuminance(hex: string): number {
+  const rgb = hex
+    .replace(/^#/, "")
+    .match(/.{2}/g)
+    ?.map((c) => {
+      const v = parseInt(c, 16) / 255;
+      return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+    });
+  if (!rgb || rgb.length < 3) return 0;
+  return 0.2126 * rgb[0] + 0.7152 * rgb[1] + 0.0722 * rgb[2];
+}
+
+/** WCAG contrast ratio between two hex colors. */
+function getContrastRatio(hex1: string, hex2: string): number {
+  const l1 = getLuminance(hex1);
+  const l2 = getLuminance(hex2);
+  const lighter = Math.max(l1, l2);
+  const darker = Math.min(l1, l2);
+  return (lighter + 0.05) / (darker + 0.05);
+}
+
+/** Returns true if the color pair meets WCAG AA for normal text (4.5:1). */
+function meetsWCAGAA(fg: string, bg: string): boolean {
+  return getContrastRatio(fg, bg) >= 4.5;
+}
+
 const FONT_OPTIONS = [
   "Geist",
   "Inter",
@@ -560,6 +590,27 @@ export default function BrandingPage() {
                   />
                 </div>
               </div>
+
+              {/* Contrast warnings */}
+              {(() => {
+                const primaryOk = meetsWCAGAA("#ffffff", branding.primary_color);
+                const secondaryOk = meetsWCAGAA("#ffffff", branding.secondary_color);
+                const primaryRatio = getContrastRatio("#ffffff", branding.primary_color).toFixed(1);
+                const secondaryRatio = getContrastRatio("#ffffff", branding.secondary_color).toFixed(1);
+                return (!primaryOk || !secondaryOk) ? (
+                  <div className="mt-4 rounded-lg border border-yellow-300 bg-yellow-50 dark:bg-yellow-900/20 p-3 flex items-start gap-2 text-sm">
+                    <AlertCircle className="h-4 w-4 text-yellow-600 mt-0.5 shrink-0" />
+                    <div>
+                      <p className="font-medium text-yellow-800 dark:text-yellow-200">Low contrast warning (WCAG AA)</p>
+                      <p className="text-yellow-700 dark:text-yellow-300 text-xs mt-1">
+                        White text requires a contrast ratio of at least 4.5:1.
+                        {!primaryOk && ` Primary (${primaryRatio}:1) fails.`}
+                        {!secondaryOk && ` Secondary (${secondaryRatio}:1) fails.`}
+                      </p>
+                    </div>
+                  </div>
+                ) : null;
+              })()}
 
               {/* Preview */}
               <div className="mt-6 border-t pt-4">

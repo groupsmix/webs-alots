@@ -9,6 +9,8 @@ import {
 } from "react";
 import { Search, X, User, Phone, CreditCard } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useLocale } from "@/components/locale-switcher";
+import { t } from "@/lib/i18n";
 
 export interface CommandPaletteItem {
   id: string;
@@ -44,11 +46,13 @@ interface CommandPaletteProps {
  */
 export function CommandPalette({
   items,
-  placeholder = "Rechercher un patient (nom, CIN, téléphone)...",
+  placeholder,
   onClose,
   open,
 }: CommandPaletteProps) {
   const [query, setQuery] = useState("");
+  const [locale] = useLocale();
+  const effectivePlaceholder = placeholder ?? t(locale, "commandPalette.searchPlaceholder");
   const [selectedIndex, setSelectedIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
@@ -127,7 +131,7 @@ export function CommandPalette({
       className="fixed inset-0 z-[200] flex items-start justify-center pt-[15vh]"
       role="dialog"
       aria-modal="true"
-      aria-label="Recherche rapide"
+      aria-label={t(locale, "commandPalette.quickSearch")}
     >
       {/* Backdrop */}
       <div
@@ -147,9 +151,9 @@ export function CommandPalette({
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder={placeholder}
+            placeholder={effectivePlaceholder}
             className="flex-1 bg-transparent px-3 py-3 text-sm outline-none placeholder:text-muted-foreground"
-            aria-label="Recherche"
+            aria-label={t(locale, "commandPalette.searchLabel")}
             aria-autocomplete="list"
             aria-controls="command-palette-list"
             aria-activedescendant={
@@ -163,7 +167,7 @@ export function CommandPalette({
               type="button"
               onClick={() => setQuery("")}
               className="p-1 text-muted-foreground hover:text-foreground"
-              aria-label="Effacer la recherche"
+              aria-label={t(locale, "commandPalette.clearSearch")}
             >
               <X className="h-3.5 w-3.5" />
             </button>
@@ -179,7 +183,7 @@ export function CommandPalette({
         >
           {filtered.length === 0 ? (
             <div className="px-4 py-8 text-center text-sm text-muted-foreground">
-              Aucun résultat pour &ldquo;{query}&rdquo;
+              {t(locale, "commandPalette.noResults")} &ldquo;{query}&rdquo;
             </div>
           ) : (
             filtered.map((item, index) => (
@@ -227,19 +231,19 @@ export function CommandPalette({
             <kbd className="rounded border bg-muted px-1.5 py-0.5 font-mono text-[10px]">
               ↑↓
             </kbd>
-            naviguer
+            {t(locale, "commandPalette.navigate")}
           </span>
           <span className="flex items-center gap-1">
             <kbd className="rounded border bg-muted px-1.5 py-0.5 font-mono text-[10px]">
               ↵
             </kbd>
-            sélectionner
+            {t(locale, "commandPalette.select")}
           </span>
           <span className="flex items-center gap-1">
             <kbd className="rounded border bg-muted px-1.5 py-0.5 font-mono text-[10px]">
               esc
             </kbd>
-            fermer
+            {t(locale, "commandPalette.close")}
           </span>
         </div>
       </div>

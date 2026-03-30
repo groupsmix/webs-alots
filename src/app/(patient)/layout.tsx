@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -22,21 +22,31 @@ import {
 } from "lucide-react";
 import { SignOutButton } from "@/components/sign-out-button";
 import { Button } from "@/components/ui/button";
+import { useLocale } from "@/components/locale-switcher";
+import { t, type TranslationKey } from "@/lib/i18n";
+import { SessionTimeoutWarning } from "@/components/session-timeout-warning";
+import { signOut } from "@/lib/auth";
 
-const navItems = [
-  { href: "/patient/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/patient/appointments", label: "Appointments", icon: Calendar },
-  { href: "/patient/medical-history", label: "Medical History", icon: History },
-  { href: "/patient/prescriptions", label: "Prescriptions", icon: Pill },
-  { href: "/patient/documents", label: "Documents", icon: FileText },
-  { href: "/patient/invoices", label: "Invoices", icon: CreditCard },
-  { href: "/patient/family", label: "Family Members", icon: Users },
-  { href: "/patient/notifications", label: "Notifications", icon: Bell },
-  { href: "/patient/feedback", label: "Feedback", icon: MessageSquare },
-  { href: "/patient/treatment-plan", label: "Treatment Plan", icon: ClipboardList },
-  { href: "/patient/tooth-map", label: "Tooth Map", icon: Heart },
-  { href: "/patient/before-after", label: "Before/After", icon: Camera },
-  { href: "/patient/payment-plan", label: "Payment Plan", icon: CreditCardIcon },
+interface NavItem {
+  href: string;
+  labelKey: TranslationKey;
+  icon: React.ComponentType<{ className?: string }>;
+}
+
+const navItems: NavItem[] = [
+  { href: "/patient/dashboard", labelKey: "patientNav.dashboard", icon: LayoutDashboard },
+  { href: "/patient/appointments", labelKey: "patientNav.appointments", icon: Calendar },
+  { href: "/patient/medical-history", labelKey: "patientNav.medicalHistory", icon: History },
+  { href: "/patient/prescriptions", labelKey: "patientNav.prescriptions", icon: Pill },
+  { href: "/patient/documents", labelKey: "patientNav.documents", icon: FileText },
+  { href: "/patient/invoices", labelKey: "patientNav.invoices", icon: CreditCard },
+  { href: "/patient/family", labelKey: "patientNav.family", icon: Users },
+  { href: "/patient/notifications", labelKey: "patientNav.notifications", icon: Bell },
+  { href: "/patient/feedback", labelKey: "patientNav.feedback", icon: MessageSquare },
+  { href: "/patient/treatment-plan", labelKey: "patientNav.treatmentPlan", icon: ClipboardList },
+  { href: "/patient/tooth-map", labelKey: "patientNav.toothMap", icon: Heart },
+  { href: "/patient/before-after", labelKey: "patientNav.beforeAfter", icon: Camera },
+  { href: "/patient/payment-plan", labelKey: "patientNav.paymentPlan", icon: CreditCardIcon },
 ];
 
 export default function PatientLayout({
@@ -46,6 +56,11 @@ export default function PatientLayout({
 }) {
   const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [locale] = useLocale();
+
+  useEffect(() => {
+    setMobileMenuOpen(false);
+  }, [pathname]);
 
   return (
     <div className="flex min-h-screen">
@@ -55,7 +70,7 @@ export default function PatientLayout({
           <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
             <Heart className="h-4 w-4 text-primary-foreground" />
           </div>
-          <h2 className="text-lg font-semibold">Patient Portal</h2>
+          <h2 className="text-lg font-semibold">{t(locale, "patientNav.title")}</h2>
         </div>
         <nav className="space-y-1 flex-1">
           {navItems.map((item) => {
@@ -71,7 +86,7 @@ export default function PatientLayout({
                 }`}
               >
                 <item.icon className="h-4 w-4" />
-                {item.label}
+                {t(locale, item.labelKey)}
               </Link>
             );
           })}
@@ -88,7 +103,7 @@ export default function PatientLayout({
             <div className="h-7 w-7 rounded-lg bg-primary flex items-center justify-center">
               <Heart className="h-3.5 w-3.5 text-primary-foreground" />
             </div>
-            <span className="font-semibold text-sm">Patient Portal</span>
+            <span className="font-semibold text-sm">{t(locale, "patientNav.title")}</span>
           </div>
           <Button
             variant="ghost"
@@ -109,7 +124,7 @@ export default function PatientLayout({
                   <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
                     <Heart className="h-4 w-4 text-primary-foreground" />
                   </div>
-                  <h2 className="text-lg font-semibold">Patient Portal</h2>
+                  <h2 className="text-lg font-semibold">{t(locale, "patientNav.title")}</h2>
                 </div>
                 <Button variant="ghost" size="sm" onClick={() => setMobileMenuOpen(false)}>
                   <X className="h-5 w-5" />
@@ -130,7 +145,7 @@ export default function PatientLayout({
                       }`}
                     >
                       <item.icon className="h-4 w-4" />
-                      {item.label}
+                      {t(locale, item.labelKey)}
                     </Link>
                   );
                 })}
@@ -144,6 +159,7 @@ export default function PatientLayout({
 
         <main className="flex-1 p-4 md:p-6">{children}</main>
       </div>
+      <SessionTimeoutWarning onLogout={() => signOut()} />
     </div>
   );
 }

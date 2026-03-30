@@ -70,7 +70,10 @@ function applyAnalyticsConsent(allowed: boolean): void {
       )
       .forEach((el) => el.remove());
     // Opt-out flag for Google Analytics (if loaded before removal)
-    (window as unknown as Record<string, unknown>)["ga-disable-GA_MEASUREMENT_ID"] = true;
+    const gaMeasurementId = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
+    if (gaMeasurementId) {
+      (window as unknown as Record<string, unknown>)[`ga-disable-${gaMeasurementId}`] = true;
+    }
   }
 }
 

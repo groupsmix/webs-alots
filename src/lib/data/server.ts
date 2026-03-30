@@ -24,6 +24,15 @@ type TableName = keyof Database["public"]["Tables"];
 /** Default upper-bound limit for list queries to prevent unbounded result sets. */
 const DEFAULT_QUERY_LIMIT = 1000;
 
+/** Paginated result envelope returned by `queryPaginated`. */
+export interface PaginatedResult<T> {
+  data: T[];
+  total: number;
+  hasMore: boolean;
+  page: number;
+  pageSize: number;
+}
+
 async function query<T>(
   table: TableName,
   opts?: {
@@ -59,6 +68,57 @@ async function query<T>(
     return [];
   }
   return (data ?? []) as T[];
+}
+
+/**
+ * Paginated query helper. Returns a page of results along with total count
+ * and a `hasMore` flag so callers can implement pagination UIs.
+ */
+async function queryPaginated<T>(
+  table: TableName,
+  opts?: {
+    select?: string;
+    eq?: [string, unknown][];
+    order?: [string, { ascending: boolean }];
+    page?: number;
+    pageSize?: number;
+    inFilter?: [string, unknown[]];
+  },
+): Promise<PaginatedResult<T>> {
+  const page = Math.max(1, opts?.page ?? 1);
+  const pageSize = Math.min(opts?.pageSize ?? 50, DEFAULT_QUERY_LIMIT);
+  const from = (page - 1) * pageSize;
+  const to = from + pageSize - 1;
+
+  const supabase = await createClient();
+  let q = supabase.from(table).select(opts?.select ?? "*", { count: "exact" });
+
+  if (opts?.eq) {
+    for (const [col, val] of opts.eq) {
+      q = q.eq(col, val as string);
+    }
+  }
+  if (opts?.inFilter) {
+    q = q.in(opts.inFilter[0], opts.inFilter[1] as string[]);
+  }
+  if (opts?.order) {
+    q = q.order(opts.order[0], opts.order[1]);
+  }
+  q = q.range(from, to);
+
+  const { data, error, count } = await q;
+  if (error) {
+    logger.error("Paginated query failed", { context: "data/server", table, error });
+    return { data: [], total: 0, hasMore: false, page, pageSize };
+  }
+  const total = count ?? 0;
+  return {
+    data: (data ?? []) as T[],
+    total,
+    hasMore: from + pageSize < total,
+    page,
+    pageSize,
+  };
 }
 
 async function queryOne<T>(

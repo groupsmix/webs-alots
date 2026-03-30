@@ -10,6 +10,8 @@ import type { ClinicFeatureKey } from "@/lib/features";
 import { OnboardingProvider, useOnboarding } from "@/components/onboarding/onboarding-provider";
 import { GettingStartedChecklist } from "@/components/onboarding/getting-started-checklist";
 import { OnboardingTour } from "@/components/onboarding/onboarding-tour";
+import { SessionTimeoutWarning } from "@/components/session-timeout-warning";
+import { signOut } from "@/lib/auth";
 
 interface NavItem {
   href: string;
@@ -173,6 +175,7 @@ export default function AdminLayout({
 
       <main id="admin-main-content" className="flex-1 p-6 pt-16 md:pt-6">{children}</main>
       <OnboardingTourOverlay />
+      <SessionTimeoutWarning onLogout={() => signOut()} />
     </div>
     </OnboardingProvider>
   );

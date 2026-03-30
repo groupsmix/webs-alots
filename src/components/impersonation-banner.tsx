@@ -12,6 +12,8 @@ import { useState, useEffect } from "react";
 import { logger } from "@/lib/logger";
 import { AlertTriangle, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useLocale } from "@/components/locale-switcher";
+import { t } from "@/lib/i18n";
 
 function getCookie(name: string): string | null {
   if (typeof document === "undefined") return null;
@@ -23,6 +25,7 @@ export function ImpersonationBanner() {
   const [clinicName, setClinicName] = useState<string | null>(null);
   const [reason, setReason] = useState<string | null>(null);
   const [ending, setEnding] = useState(false);
+  const [locale] = useLocale();
 
   useEffect(() => {
     const name = getCookie("sa_impersonate_clinic_name");
@@ -48,8 +51,8 @@ export function ImpersonationBanner() {
     <div className="sticky top-0 z-50 flex items-center justify-center gap-3 bg-amber-500 px-4 py-2 text-sm font-medium text-amber-950">
       <AlertTriangle className="h-4 w-4 shrink-0" />
       <span>
-        You are viewing as <strong>{clinicName}</strong> — impersonation session active
-        {reason && <span className="ml-1 text-amber-800">(Reason: {reason})</span>}
+        {t(locale, "impersonation.viewingAs")} <strong>{clinicName}</strong> {t(locale, "impersonation.sessionActive")}
+        {reason && <span className="ml-1 text-amber-800">({t(locale, "impersonation.reason").replace("{reason}", reason)})</span>}
       </span>
       <Button
         variant="outline"
@@ -59,7 +62,7 @@ export function ImpersonationBanner() {
         disabled={ending}
       >
         <X className="h-3 w-3 mr-1" />
-        End Session
+        {t(locale, "impersonation.endSession")}
       </Button>
     </div>
   );

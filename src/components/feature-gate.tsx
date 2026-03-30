@@ -5,6 +5,8 @@ import type { ClinicFeatureKey } from "@/lib/features";
 import { ShieldAlert, ArrowLeft } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import Link from "next/link";
+import { useLocale } from "@/components/locale-switcher";
+import { t } from "@/lib/i18n";
 
 interface FeatureGateProps {
   /** The feature key that must be enabled for this module to render. */
@@ -25,6 +27,7 @@ interface FeatureGateProps {
  */
 export function FeatureGate({ featureKey, moduleName, children }: FeatureGateProps) {
   const { hasFeature, loaded } = useClinicFeatures();
+  const [locale] = useLocale();
 
   // While loading, show children to avoid flash
   if (!loaded) return <>{children}</>;
@@ -38,18 +41,17 @@ export function FeatureGate({ featureKey, moduleName, children }: FeatureGatePro
               <ShieldAlert className="h-7 w-7 text-muted-foreground" />
             </div>
             <h2 className="mb-2 text-lg font-semibold">
-              {moduleName} is not enabled
+              {t(locale, "featureGate.notEnabled").replace("{module}", moduleName)}
             </h2>
             <p className="mb-6 text-sm text-muted-foreground">
-              This module is not available for your clinic type. Please contact
-              your administrator to enable it.
+              {t(locale, "featureGate.notAvailable")}
             </p>
             <Link
               href="/admin/dashboard"
               className="inline-flex items-center justify-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium ring-offset-background transition-colors hover:bg-accent hover:text-accent-foreground"
             >
               <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to Dashboard
+              {t(locale, "featureGate.backToDashboard")}
             </Link>
           </CardContent>
         </Card>

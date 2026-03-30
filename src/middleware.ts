@@ -164,11 +164,8 @@ export async function middleware(request: NextRequest) {
   });
   applyAllSecurityHeaders(supabaseResponse, cspHeaderValue, nonce);
 
-  // Add default rate limit headers to successful responses
-  supabaseResponse.headers.set("X-RateLimit-Limit", "30");
-  supabaseResponse.headers.set("X-RateLimit-Remaining", "29");
-  const resetTime = Math.ceil(Date.now() / 1000) + 60;
-  supabaseResponse.headers.set("X-RateLimit-Reset", resetTime.toString());
+  // Note: Real rate-limit state is enforced by the rate limiter above.
+  // These placeholder headers are omitted to avoid misleading API consumers.
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL,
