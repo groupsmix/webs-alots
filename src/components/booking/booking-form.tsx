@@ -262,7 +262,7 @@ export function BookingForm() {
       // Unified progress: verify phone + create booking in one flow (Issue 3).
       // The verify endpoint issues an HMAC token (no OTP) so we present
       // a single "Confirmation en cours..." status to the user.
-      setVerificationStatus("Confirmation en cours...");
+      setVerificationStatus(t("fr", "booking.confirming"));
       const verifyRes = await fetch("/api/booking/verify", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -272,10 +272,10 @@ export function BookingForm() {
       if (!verifyRes.ok) {
         const errorMsg =
           verifyRes.status === 503
-            ? "Service temporairement indisponible. Veuillez r\u00e9essayer."
-            : verifyRes.status === 404
-              ? "Ce num\u00e9ro n\u2019est pas enregistr\u00e9."
-              : verifyData.error ?? "Erreur de connexion, veuillez r\u00e9essayer.";
+            ? t("fr", "booking.errorServiceUnavailable")
+            : verifyRes.status === 400
+              ? t("fr", "booking.errorInvalidPhone")
+              : (verifyData.error as string | undefined) ?? t("fr", "booking.errorConnection");
         setBookingError(errorMsg);
         setVerificationStatus(null);
         return;
@@ -309,11 +309,15 @@ export function BookingForm() {
       const data = await res.json();
       if (!res.ok) {
         const serverMsg = data.error as string | undefined;
-        setBookingError(
-          serverMsg?.includes("slot")
-            ? "Ce cr\u00e9neau n\u2019est plus disponible. Veuillez en choisir un autre."
-            : serverMsg ?? "Erreur lors de la r\u00e9servation. Veuillez r\u00e9essayer.",
-        );
+        if (res.status === 403) {
+          setBookingError(t("fr", "booking.errorTokenExpired"));
+        } else if (res.status === 429) {
+          setBookingError(t("fr", "booking.errorRateLimit"));
+        } else if (res.status === 409 || serverMsg?.includes("slot")) {
+          setBookingError(t("fr", "booking.errorSlotTaken"));
+        } else {
+          setBookingError(serverMsg ?? t("fr", "booking.errorGeneric"));
+        }
         return;
       }
       if (data.appointment?.id) {
@@ -322,7 +326,7 @@ export function BookingForm() {
       setSubmitted(true);
     } catch (err) {
       logger.warn("Booking confirmation failed", { context: "booking-form", error: err });
-      setBookingError("Erreur de connexion. Veuillez r\u00e9essayer.");
+      setBookingError(t("fr", "booking.errorConnection"));
     } finally {
       setIsSubmitting(false);
       setVerificationStatus(null);
