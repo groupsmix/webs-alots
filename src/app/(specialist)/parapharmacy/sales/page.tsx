@@ -289,14 +289,14 @@ export default function ParapharmacySalesPage() {
                     </div>
                     <div className="flex items-center gap-2">
                       <Button size="icon" variant="outline" className="h-6 w-6" aria-label="Decrease quantity" onClick={() => updateCartQty(item.productId, -1)}>
-                        <Minus className="h-3 w-3" />
+                        <Minus className="h-3 w-3" aria-hidden="true" />
                       </Button>
                       <span className="w-6 text-center">{item.quantity}</span>
                       <Button size="icon" variant="outline" className="h-6 w-6" aria-label="Increase quantity" onClick={() => updateCartQty(item.productId, 1)}>
-                        <Plus className="h-3 w-3" />
+                        <Plus className="h-3 w-3" aria-hidden="true" />
                       </Button>
                       <Button size="icon" variant="ghost" className="h-6 w-6 text-red-500" aria-label="Remove from cart" onClick={() => removeFromCart(item.productId)}>
-                        <Trash2 className="h-3 w-3" />
+                        <Trash2 className="h-3 w-3" aria-hidden="true" />
                       </Button>
                       <span className="w-16 text-right font-medium">{(item.quantity * item.unitPrice).toFixed(2)}</span>
                     </div>

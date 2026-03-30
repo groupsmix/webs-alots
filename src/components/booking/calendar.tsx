@@ -162,13 +162,13 @@ export function BookingCalendar({ selectedDate, onSelectDate }: BookingCalendarP
     <div>
       <div className="flex items-center justify-between mb-4">
         <Button variant="ghost" size="icon" onClick={prevMonth} aria-label="Mois précédent">
-          <ChevronLeft className="h-4 w-4" />
+          <ChevronLeft className="h-4 w-4" aria-hidden="true" />
         </Button>
         <h3 id="calendar-heading" className="font-semibold" aria-live="polite">
           {monthNames[currentMonth]} {currentYear}
         </h3>
         <Button variant="ghost" size="icon" onClick={nextMonth} aria-label="Mois suivant">
-          <ChevronRight className="h-4 w-4" />
+          <ChevronRight className="h-4 w-4" aria-hidden="true" />
         </Button>
       </div>
 
