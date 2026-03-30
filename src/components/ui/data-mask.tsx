@@ -3,53 +3,69 @@
 import { useState } from "react";
 import { Eye, EyeOff } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { mask, getMaskLevel, type MaskLevel } from "@/lib/mask";
 
 interface DataMaskProps {
   /** The sensitive value to mask */
   value: string;
-  /** Number of characters to show at the end (default: 4) */
-  visibleChars?: number;
-  /** Mask character (default: "•") */
-  maskChar?: string;
+  /** Type of data — determines the masking strategy */
+  type: "phone" | "email" | "cin";
+  /** Override the environment-level masking level for this instance */
+  level?: MaskLevel;
   /** Label for accessibility */
   label?: string;
   className?: string;
 }
 
 /**
- * Data masking component for sensitive information (CIN, phone numbers, etc.).
- * Shows masked value by default with a toggle to reveal.
+ * Masks sensitive patient data based on user role and environment.
+ *
+ * Masking level is controlled by `NEXT_PUBLIC_DATA_MASKING` (full | partial | none).
+ * When masking is active, a reveal/hide toggle is shown.
+ *
+ * - Full mask for demo:  `"06 *** *** 78"`
+ * - Partial mask for staff:  `"0612 *** 78"`
+ * - No mask for authorized doctors
  *
  * Usage:
  * ```tsx
- * <DataMask value="AB123456" label="CIN" />
- * // Displays: ••••3456 [eye icon]
+ * <DataMask value="0612345678" type="phone" />
+ * <DataMask value="ahmed@example.com" type="email" />
+ * <DataMask value="AB123456" type="cin" />
  * ```
+ *
+ * Issue 46
  */
 export function DataMask({
   value,
-  visibleChars = 4,
-  maskChar = "\u2022",
-  label = "Donnée sensible",
+  type,
+  level,
+  label,
   className,
 }: DataMaskProps) {
+  const effectiveLevel = level ?? getMaskLevel();
   const [revealed, setRevealed] = useState(false);
 
-  const masked =
-    value.length <= visibleChars
-      ? maskChar.repeat(value.length)
-      : maskChar.repeat(value.length - visibleChars) +
-        value.slice(-visibleChars);
+  // When masking is disabled, render the value directly — no toggle needed.
+  if (effectiveLevel === "none") {
+    return <span className={className}>{value}</span>;
+  }
+
+  const masked = mask(value, type, effectiveLevel);
+
+  const defaultLabel =
+    type === "phone" ? "Téléphone" : type === "email" ? "Email" : "CIN";
+  const a11yLabel = label ?? defaultLabel;
 
   return (
     <span
       className={cn("inline-flex items-center gap-1.5", className)}
-      aria-label={`${label}: ${revealed ? value : "masqué"}`}
+      aria-label={`${a11yLabel}: ${revealed ? value : "masqué"}`}
     >
       <span
         className={cn(
           "font-mono text-sm transition-all",
-          !revealed && "select-none blur-[1px]"
+          !revealed && "select-none blur-[1px]",
         )}
         aria-hidden={!revealed}
       >

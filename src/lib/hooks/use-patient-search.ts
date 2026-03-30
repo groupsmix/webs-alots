@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase-client";
 import type { CommandPaletteItem } from "@/components/command-palette";
 import { CommandIcons } from "@/components/command-palette";
 import { logger } from "@/lib/logger";
+import { maskPhone, maskCIN } from "@/lib/mask";
 
 /**
  * Hook that performs a debounced Supabase patient search and returns
@@ -59,8 +60,8 @@ export function usePatientSearch(
           return {
             id: p.id,
             label: p.name,
-            description: p.phone ?? undefined,
-            badge: cin ?? undefined,
+            description: p.phone ? maskPhone(p.phone) : undefined,
+            badge: cin ? maskCIN(cin) : undefined,
             icon: CommandIcons.patient,
             onSelect: () => onSelect(p.id),
           };

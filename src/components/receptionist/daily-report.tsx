@@ -18,6 +18,7 @@ import {
 } from "@/lib/data/client";
 import { exportAppointments, exportInvoices } from "@/lib/export-data";
 import { PageLoader } from "@/components/ui/page-loader";
+import { DataMask } from "@/components/ui/data-mask";
 
 const statusVariant: Record<string, "default" | "success" | "warning" | "destructive" | "secondary" | "outline"> = {
   scheduled: "outline",
@@ -292,8 +293,8 @@ export function DailyReport() {
                                     <Badge variant="secondary" className="ml-2 text-[10px]">New</Badge>
                                   )}
                                 </div>
-                                {patient && (
-                                  <span className="text-xs text-muted-foreground">{patient.phone}</span>
+                                {patient?.phone && (
+                                  <DataMask value={patient.phone} type="phone" className="text-xs text-muted-foreground" />
                                 )}
                               </td>
                               <td className="py-2 px-3">{apt.serviceName}</td>
