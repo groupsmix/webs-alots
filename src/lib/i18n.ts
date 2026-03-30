@@ -361,6 +361,18 @@ export const translations = {
     "booking.verifyingPhone": "Vérification de votre numéro…",
     "booking.creatingAppointment": "Création du rendez-vous…",
     "booking.isFirstVisit": "Est-ce votre première visite ?",
+    "booking.confirming": "Confirmation en cours…",
+    "booking.errorServiceUnavailable": "Service temporairement indisponible. Veuillez réessayer.",
+    "booking.errorInvalidPhone": "Numéro de téléphone invalide. Vérifiez le format.",
+    "booking.errorConnection": "Erreur de connexion, veuillez réessayer.",
+    "booking.errorTokenExpired": "La session a expiré, veuillez réessayer.",
+    "booking.errorRateLimit": "Trop de tentatives. Veuillez patienter quelques minutes.",
+    "booking.errorSlotTaken": "Ce créneau n\u2019est plus disponible. Veuillez en choisir un autre.",
+    "booking.errorGeneric": "Erreur lors de la réservation. Veuillez réessayer.",
+    // Branding contrast (Issue 8)
+    "branding.contrastWarning": "Contraste insuffisant (WCAG AA)",
+    "branding.contrastHelp": "Le texte blanc nécessite un ratio de contraste d'au moins 4.5:1.",
+    "branding.fixContrast": "Corriger le contraste",
 
     // Error pages
     "error.title": "Une erreur est survenue",
@@ -990,6 +1002,18 @@ export const translations = {
     "booking.verifyingPhone": "جاري التحقق من رقمك…",
     "booking.creatingAppointment": "جاري إنشاء الموعد…",
     "booking.isFirstVisit": "هل هذه زيارتك الأولى؟",
+    "booking.confirming": "جاري التأكيد…",
+    "booking.errorServiceUnavailable": "الخدمة غير متاحة مؤقتًا. يرجى المحاولة لاحقًا.",
+    "booking.errorInvalidPhone": "رقم هاتف غير صالح. تحقق من الصيغة.",
+    "booking.errorConnection": "خطأ في الاتصال، يرجى المحاولة مرة أخرى.",
+    "booking.errorTokenExpired": "انتهت صلاحية الجلسة، يرجى المحاولة مرة أخرى.",
+    "booking.errorRateLimit": "محاولات كثيرة. يرجى الانتظار بضع دقائق.",
+    "booking.errorSlotTaken": "هذا الموعد لم يعد متاحًا. يرجى اختيار موعد آخر.",
+    "booking.errorGeneric": "خطأ أثناء الحجز. يرجى المحاولة مرة أخرى.",
+    // Branding contrast (Issue 8)
+    "branding.contrastWarning": "تباين غير كافٍ (WCAG AA)",
+    "branding.contrastHelp": "النص الأبيض يتطلب نسبة تباين 4.5:1 على الأقل.",
+    "branding.fixContrast": "تصحيح التباين",
 
     // Error pages
     "error.title": "حدث خطأ",
@@ -1619,6 +1643,18 @@ export const translations = {
     "booking.verifyingPhone": "Verifying your number…",
     "booking.creatingAppointment": "Creating appointment…",
     "booking.isFirstVisit": "Is this your first visit?",
+    "booking.confirming": "Confirming…",
+    "booking.errorServiceUnavailable": "Service temporarily unavailable. Please try again.",
+    "booking.errorInvalidPhone": "Invalid phone number. Please check the format.",
+    "booking.errorConnection": "Connection error, please try again.",
+    "booking.errorTokenExpired": "Session expired, please try again.",
+    "booking.errorRateLimit": "Too many attempts. Please wait a few minutes.",
+    "booking.errorSlotTaken": "This slot is no longer available. Please choose another.",
+    "booking.errorGeneric": "Booking error. Please try again.",
+    // Branding contrast (Issue 8)
+    "branding.contrastWarning": "Insufficient contrast (WCAG AA)",
+    "branding.contrastHelp": "White text requires a contrast ratio of at least 4.5:1.",
+    "branding.fixContrast": "Fix contrast",
 
     // Error pages
     "error.title": "An error occurred",

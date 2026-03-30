@@ -20,6 +20,7 @@ import { brandingUpdateSchema } from "@/lib/validations";
 import { withAuthValidation } from "@/lib/api-validate";
 import { invalidateAllSubdomainCaches } from "@/lib/subdomain-cache";
 import { apiError, apiInternalError, apiSuccess } from "@/lib/api-response";
+import { meetsWCAG_AA, WCAG_SAFE_DEFAULTS } from "@/lib/contrast";
 
 const ADMIN_ROLES: UserRole[] = ["super_admin", "clinic_admin"];
 
@@ -104,6 +105,18 @@ export async function GET() {
     // render the clinic's branded booking page).  Phone and address are
     // PII that should only be visible to authenticated users.
     const { phone: _phone, address: _address, ...publicData } = data;
+
+    // Issue 8: Server-side contrast fallback — if custom colors fail
+    // WCAG AA against white, fall back to accessible defaults so public
+    // pages always render with sufficient contrast.
+    const primaryColor = publicData.primary_color ?? WCAG_SAFE_DEFAULTS.primary;
+    const secondaryColor = publicData.secondary_color ?? WCAG_SAFE_DEFAULTS.secondary;
+    if (!meetsWCAG_AA("#ffffff", primaryColor)) {
+      publicData.primary_color = WCAG_SAFE_DEFAULTS.primary;
+    }
+    if (!meetsWCAG_AA("#ffffff", secondaryColor)) {
+      publicData.secondary_color = WCAG_SAFE_DEFAULTS.secondary;
+    }
 
     return apiSuccess(publicData, 200, { "Cache-Control": "public, max-age=300" });
   } catch (err) {
