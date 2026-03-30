@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
+import { useState, useEffect, useMemo } from "react";
 import {
   LayoutDashboard, Users, Clock, CalendarDays, CreditCard, FileText,
   Menu, X, ClipboardList,
@@ -11,6 +11,8 @@ import { Button } from "@/components/ui/button";
 import { SignOutButton } from "@/components/sign-out-button";
 import { SessionTimeoutWarning } from "@/components/session-timeout-warning";
 import { signOut } from "@/lib/auth";
+import { CommandPalette, CommandIcons, type CommandPaletteItem } from "@/components/command-palette";
+import { usePatientSearch } from "@/lib/hooks/use-patient-search";
 
 const navItems = [
   { href: "/receptionist/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -59,7 +61,37 @@ export default function ReceptionistLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const router = useRouter();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [cmdOpen, setCmdOpen] = useState(false);
+  const patients = usePatientSearch();
+
+  // Ctrl+K shortcut to open command palette
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      if ((e.ctrlKey || e.metaKey) && e.key === "k") {
+        e.preventDefault();
+        setCmdOpen((prev) => !prev);
+      }
+    }
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, []);
+
+  const cmdItems = useMemo<CommandPaletteItem[]>(() => {
+    const items: CommandPaletteItem[] = [];
+    patients.forEach((p) => {
+      items.push({
+        id: `patient-${p.id}`,
+        label: p.name,
+        description: p.phone,
+        icon: CommandIcons.patient,
+        badge: p.insurance ?? undefined,
+        onSelect: () => router.push("/receptionist/patients"),
+      });
+    });
+    return items;
+  }, [patients, router]);
 
   return (
     <div className="flex min-h-screen">
@@ -117,6 +149,11 @@ export default function ReceptionistLayout({
         <main className="flex-1 p-4 md:p-6">{children}</main>
       </div>
       <SessionTimeoutWarning onLogout={() => signOut()} />
+      <CommandPalette
+        open={cmdOpen}
+        onClose={() => setCmdOpen(false)}
+        items={cmdItems}
+      />
     </div>
   );
 }

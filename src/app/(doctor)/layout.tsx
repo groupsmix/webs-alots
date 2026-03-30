@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { useState, useCallback, useEffect } from "react";
+import { usePathname, useRouter } from "next/navigation";
+import { useState, useCallback, useEffect, useMemo } from "react";
 import {
   LayoutDashboard, Users, Calendar, Pill, FileEdit, Clock,
   MessageCircle, CalendarClock, BarChart3, ClipboardList,
@@ -22,6 +22,8 @@ import type { TranslationKey } from "@/lib/i18n";
 import { SessionTimeoutWarning } from "@/components/session-timeout-warning";
 import { signOut } from "@/lib/auth";
 import type { ClinicFeatureKey } from "@/lib/features";
+import { CommandPalette, CommandIcons, type CommandPaletteItem } from "@/components/command-palette";
+import { usePatientSearch } from "@/lib/hooks/use-patient-search";
 
 interface NavItem {
   href: string;
@@ -332,10 +334,41 @@ export default function DoctorLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const router = useRouter();
   const [locale] = useLocale();
   const { hasFeature } = useClinicFeatures();
   const [selectedSpecialty, setSelectedSpecialty] = useState<string | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [cmdOpen, setCmdOpen] = useState(false);
+  const patients = usePatientSearch();
+
+  // Ctrl+K shortcut to open command palette
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      if ((e.ctrlKey || e.metaKey) && e.key === "k") {
+        e.preventDefault();
+        setCmdOpen((prev) => !prev);
+      }
+    }
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, []);
+
+  const cmdItems = useMemo<CommandPaletteItem[]>(() => {
+    const items: CommandPaletteItem[] = [];
+    // Patient search results
+    patients.forEach((p) => {
+      items.push({
+        id: `patient-${p.id}`,
+        label: p.name,
+        description: p.phone,
+        icon: CommandIcons.patient,
+        badge: p.insurance ?? undefined,
+        onSelect: () => router.push("/doctor/patients"),
+      });
+    });
+    return items;
+  }, [patients, router]);
 
   const visibleItems = navItems.filter((item) => {
     if (selectedSpecialty) {
@@ -416,6 +449,11 @@ export default function DoctorLayout({
         <main className="flex-1 p-4 md:p-6">{children}</main>
       </div>
       <SessionTimeoutWarning onLogout={() => signOut()} />
+      <CommandPalette
+        open={cmdOpen}
+        onClose={() => setCmdOpen(false)}
+        items={cmdItems}
+      />
     </div>
   );
 }

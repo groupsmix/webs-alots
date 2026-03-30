@@ -9,12 +9,19 @@ interface WebVitalsMetric {
   rating: "good" | "needs-improvement" | "poor";
 }
 
+interface PerformanceMonitoringOptions {
+  /** When false the hook is a no-op. Defaults to true. */
+  enabled?: boolean;
+}
+
 /**
  * Monitor Core Web Vitals (LCP, FID, CLS, FCP, TTFB) using
  * the PerformanceObserver API. Logs metrics via the app logger.
  */
-export function usePerformanceMonitoring() {
+export function usePerformanceMonitoring(options: PerformanceMonitoringOptions = {}) {
+  const { enabled = true } = options;
   useEffect(() => {
+    if (!enabled) return;
     if (typeof window === "undefined" || !("PerformanceObserver" in window)) return;
 
     const report = (metric: WebVitalsMetric) => {
@@ -110,5 +117,5 @@ export function usePerformanceMonitoring() {
     return () => {
       observers.forEach((obs) => obs.disconnect());
     };
-  }, []);
+  }, [enabled]);
 }
