@@ -14,6 +14,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { updateAppointmentStatus } from "@/lib/data/client";
 import { PageLoader } from "@/components/ui/page-loader";
+import { EmptyState } from "@/components/ui/empty-state";
 import { logger } from "@/lib/logger";
 import { getLocalDateStr } from "@/lib/utils";
 import { useToast } from "@/components/ui/toast";
@@ -303,7 +304,7 @@ export function DoctorDashboardView({
           </CardHeader>
           <CardContent>
             {todayAppts.length === 0 ? (
-              <p className="text-sm text-muted-foreground">{t(locale, "dashboard.noAppointmentsToday")}</p>
+              <EmptyState icon={Calendar} title={t(locale, "dashboard.noAppointmentsToday")} className="py-6" />
             ) : (
               <div className="space-y-3">
                 {todayAppts.map((apt) => (
@@ -379,7 +380,7 @@ export function DoctorDashboardView({
             </CardHeader>
             <CardContent>
               {waitingRoomEntries.length === 0 ? (
-                <p className="text-sm text-muted-foreground">{t(locale, "dashboard.noPatientsWaiting")}</p>
+                <EmptyState icon={Clock} title={t(locale, "dashboard.noPatientsWaiting")} className="py-6" />
               ) : (
                 <div className="space-y-3">
                   {waitingRoomEntries.map((wr) => (
@@ -420,7 +421,7 @@ export function DoctorDashboardView({
             </CardHeader>
             <CardContent>
               {upcomingFollowUps.length === 0 ? (
-                <p className="text-sm text-muted-foreground">{t(locale, "dashboard.noFollowUps")}</p>
+                <EmptyState icon={CalendarClock} title={t(locale, "dashboard.noFollowUps")} className="py-6" />
               ) : (
                 <div className="space-y-3">
                   {upcomingFollowUps.slice(0, 5).map((apt) => (

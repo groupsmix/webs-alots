@@ -3,11 +3,13 @@
 import { Users, Calendar, CreditCard, Star, Activity } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { EmptyState } from "@/components/ui/empty-state";
 import { LabDashboardKPIsComponent } from "@/components/admin/lab-dashboard-kpis";
 import { ClinicCenterDashboardKPIsComponent } from "@/components/admin/clinic-center-dashboard-kpis";
 import { ErrorBoundary } from "@/components/ui/error-boundary";
 import { useLocale } from "@/components/locale-switcher";
 import { t } from "@/lib/i18n";
+import { formatDisplayDate } from "@/lib/utils";
 import type { DashboardStats, RecentActivityItem } from "@/lib/data/server";
 
 const activityVariant: Record<string, "default" | "success" | "warning" | "destructive"> = {
@@ -21,22 +23,6 @@ const activityVariant: Record<string, "default" | "success" | "warning" | "destr
   patient: "default",
   config: "warning",
 };
-
-/** Format an ISO timestamp into a short relative or absolute label. */
-function formatActivityTime(iso: string): string {
-  if (!iso) return "";
-  const date = new Date(iso);
-  const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  const diffMin = Math.floor(diffMs / 60_000);
-  if (diffMin < 1) return "just now";
-  if (diffMin < 60) return `${diffMin}m ago`;
-  const diffHr = Math.floor(diffMin / 60);
-  if (diffHr < 24) return `${diffHr}h ago`;
-  const diffDay = Math.floor(diffHr / 24);
-  if (diffDay < 7) return `${diffDay}d ago`;
-  return date.toLocaleDateString();
-}
 
 interface AdminDashboardViewProps {
   stats: DashboardStats;
@@ -91,7 +77,7 @@ export function AdminDashboardView({ stats }: AdminDashboardViewProps) {
           </CardHeader>
           <CardContent>
             {recentActivity.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-4">{t(locale, "admin.noRecentActivity")}</p>
+              <EmptyState icon={Activity} title={t(locale, "admin.noRecentActivity")} className="py-4" />
             ) : (
               <div className="space-y-3">
                 {recentActivity.map((activity, i) => (
@@ -100,7 +86,7 @@ export function AdminDashboardView({ stats }: AdminDashboardViewProps) {
                       {activity.type}
                     </Badge>
                     <p className="flex-1 text-sm">{activity.message}</p>
-                    <span className="text-xs text-muted-foreground whitespace-nowrap">{formatActivityTime(activity.time)}</span>
+                    <span className="text-xs text-muted-foreground whitespace-nowrap">{formatDisplayDate(activity.time, locale, "relative")}</span>
                   </div>
                 ))}
               </div>

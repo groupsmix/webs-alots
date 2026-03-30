@@ -5,6 +5,7 @@ import { Calendar, FileText, Clock, Bell, Pill, CreditCard, Users, MessageSquare
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/ui/empty-state";
 import { ErrorBoundary } from "@/components/ui/error-boundary";
 import { useLocale } from "@/components/locale-switcher";
 import { t } from "@/lib/i18n";
@@ -80,13 +81,16 @@ export function PatientDashboardView({ data }: PatientDashboardViewProps) {
           </CardHeader>
           <CardContent>
             {upcoming.length === 0 ? (
-              <div className="text-center py-6">
-                <Calendar className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
-                <p className="text-sm text-muted-foreground">{t(locale, "patient.noUpcoming")}</p>
-                <Link href="/book">
-                  <Button variant="link" size="sm" className="mt-1">{t(locale, "patient.bookAppointment")}</Button>
-                </Link>
-              </div>
+              <EmptyState
+                icon={Calendar}
+                title={t(locale, "patient.noUpcoming")}
+                description={t(locale, "patient.bookAppointment")}
+                action={
+                  <Link href="/book">
+                    <Button size="sm">{t(locale, "patient.bookAppointment")}</Button>
+                  </Link>
+                }
+              />
             ) : (
               <div className="space-y-3">
                 {upcoming.slice(0, 3).map((apt) => (
@@ -124,10 +128,11 @@ export function PatientDashboardView({ data }: PatientDashboardViewProps) {
           </CardHeader>
           <CardContent>
             {patientPrescriptions.length === 0 ? (
-              <div className="text-center py-6">
-                <Pill className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
-                <p className="text-sm text-muted-foreground">{t(locale, "patient.noPrescriptions")}</p>
-              </div>
+              <EmptyState
+                icon={Pill}
+                title={t(locale, "patient.noPrescriptions")}
+                description={t(locale, "patient.noPrescriptions")}
+              />
             ) : (
               <div className="space-y-3">
                 {patientPrescriptions.map((rx) => (
