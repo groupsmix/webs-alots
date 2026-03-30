@@ -5,6 +5,8 @@
  * variable substitution, and multi-channel delivery (WhatsApp + In-App).
  */
 
+import { logger } from "@/lib/logger";
+
 // ---- Notification Trigger Types ----
 
 export type NotificationTrigger =
@@ -390,6 +392,39 @@ export const triggerMetadata: Record<
   },
 };
 
+// ---- Retry Helper ----
+
+/**
+ * Sleep for the given number of milliseconds.
+ */
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/**
+ * Retry a function with exponential backoff.
+ *
+ * Callers don't need to worry about transient failures — the helper
+ * retries up to `maxRetries` times with exponentially increasing
+ * delays (1s, 2s, 4s …). If all attempts fail the last error is
+ * re-thrown so the caller can handle it.
+ */
+async function withRetry<T>(
+  fn: () => Promise<T>,
+  maxRetries = 3,
+): Promise<T> {
+  for (let i = 0; i < maxRetries; i++) {
+    try {
+      return await fn();
+    } catch (e) {
+      if (i === maxRetries - 1) throw e;
+      await sleep(Math.pow(2, i) * 1000);
+    }
+  }
+  // Unreachable but satisfies the type checker
+  throw new Error("withRetry: exhausted all attempts");
+}
+
 // ---- Notification Dispatch Engine ----
 
 export interface DispatchResult {
@@ -476,13 +511,35 @@ export async function dispatchNotification(
           const title = substituteVariables(template.subject, variables);
           const body = substituteVariables(template.body, variables);
           const { insertInAppNotification } = await import("./notification-persist");
-          const inAppResult = await insertInAppNotification({
-            userId: recipientId,
-            trigger,
-            title,
-            message: body,
-            priority: template.priority,
-          });
+          const inAppResult = await withRetry(() =>
+            insertInAppNotification({
+              userId: recipientId,
+              trigger,
+              title,
+              message: body,
+              priority: template.priority,
+            }),
+          );
+          if (!inAppResult.success) {
+            logger.error("In-app notification failed after retries", {
+              context: "notification-dispatch",
+              channel: "in_app",
+              trigger,
+              recipientId,
+              error: inAppResult.error,
+            });
+            // Persist to dead letter queue for manual review
+            const { enqueueNotification } = await import("./notification-queue");
+            await enqueueNotification({
+              clinicId: variables.clinic_id ?? "",
+              channel: "in_app",
+              recipient: recipientId,
+              body,
+              trigger,
+              metadata: { recipient_id: recipientId, dead_letter: "true", failure_reason: inAppResult.error ?? "unknown" },
+              maxAttempts: 1, // Already retried — mark as dead letter immediately
+            });
+          }
           results.push({
             channel: "in_app",
             success: inAppResult.success,
@@ -505,12 +562,34 @@ export async function dispatchNotification(
           }
 
           const { sendNotificationEmail } = await import("./email");
-          const emailResult = await sendNotificationEmail(
-            recipientEmail,
-            subject,
-            body,
-            variables.clinic_name,
+          const emailResult = await withRetry(() =>
+            sendNotificationEmail(
+              recipientEmail,
+              subject,
+              body,
+              variables.clinic_name,
+            ),
           );
+          if (!emailResult.success) {
+            logger.error("Email notification failed after retries", {
+              context: "notification-dispatch",
+              channel: "email",
+              trigger,
+              recipientId,
+              error: emailResult.error,
+            });
+            // Persist to dead letter queue for manual review
+            const { enqueueNotification: enqueueDeadLetter } = await import("./notification-queue");
+            await enqueueDeadLetter({
+              clinicId: variables.clinic_id ?? "",
+              channel: "email",
+              recipient: recipientEmail,
+              body,
+              trigger,
+              metadata: { recipient_id: recipientId, dead_letter: "true", failure_reason: emailResult.error ?? "unknown" },
+              maxAttempts: 1, // Already retried — mark as dead letter immediately
+            });
+          }
           results.push({
             channel: "email",
             success: emailResult.success,
@@ -551,10 +630,18 @@ export async function dispatchNotification(
         }
       }
     } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : "Unknown error";
+      logger.error("Notification dispatch failed", {
+        context: "notification-dispatch",
+        channel,
+        trigger,
+        recipientId,
+        error: err,
+      });
       results.push({
         channel,
         success: false,
-        error: err instanceof Error ? err.message : "Unknown error",
+        error: errorMsg,
       });
     }
   }
