@@ -99,7 +99,7 @@ export function ServiceWorkerRegister() {
   if (!updateAvailable) return null;
 
   return (
-    <div className="fixed bottom-4 left-4 right-4 z-[110] flex justify-center pointer-events-none sm:left-auto sm:right-4 sm:max-w-sm">
+    <div className="fixed bottom-4 left-4 right-4 z-[90] flex justify-center pointer-events-none sm:left-auto sm:right-4 sm:max-w-sm">
       <div className="pointer-events-auto flex items-center gap-3 rounded-lg border border-blue-200 bg-blue-50 p-3 shadow-lg dark:border-blue-800 dark:bg-blue-950">
         <p className="text-sm font-medium text-blue-900 dark:text-blue-100">
           Nouvelle version disponible

@@ -329,10 +329,14 @@ export function BookingForm() {
           </div>
 
           {manageUrl && (
-            <p className="text-xs text-muted-foreground mt-4">
-              G\u00e9rer ou annuler votre rendez-vous :{" "}
-              <a href={manageUrl} className="text-primary underline">{manageUrl}</a>
-            </p>
+            <div className="mt-4">
+              <a
+                href={manageUrl}
+                className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow hover:bg-primary/90 transition-colors"
+              >
+                G\u00e9rer mon rendez-vous
+              </a>
+            </div>
           )}
 
           <div className="flex items-center justify-center gap-2 mt-2 text-xs text-muted-foreground">

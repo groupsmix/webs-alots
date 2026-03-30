@@ -79,6 +79,7 @@ export default function PatientLayout({
               <Link
                 key={item.href}
                 href={item.href}
+                aria-current={isActive ? "page" : undefined}
                 className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors ${
                   isActive
                     ? "bg-primary/10 text-primary font-medium"
@@ -138,6 +139,7 @@ export default function PatientLayout({
                       key={item.href}
                       href={item.href}
                       onClick={() => setMobileMenuOpen(false)}
+                      aria-current={isActive ? "page" : undefined}
                       className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors ${
                         isActive
                           ? "bg-primary/10 text-primary font-medium"
