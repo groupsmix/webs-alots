@@ -29,8 +29,17 @@ export function FeatureGate({ featureKey, moduleName, children }: FeatureGatePro
   const { hasFeature, loaded } = useClinicFeatures();
   const [locale] = useLocale();
 
-  // While loading, show children to avoid flash
-  if (!loaded) return <>{children}</>;
+  // While loading, show a subtle skeleton instead of children to avoid
+  // a brief flash of feature-gated content (issue #38).
+  if (!loaded) {
+    return (
+      <div className="animate-pulse space-y-4 p-6" aria-busy="true" aria-label={t(locale, "featureGate.loading") as string}>
+        <div className="h-6 w-1/3 rounded bg-muted" />
+        <div className="h-4 w-2/3 rounded bg-muted" />
+        <div className="h-4 w-1/2 rounded bg-muted" />
+      </div>
+    );
+  }
 
   if (!hasFeature(featureKey)) {
     return (

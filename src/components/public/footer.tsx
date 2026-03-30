@@ -2,6 +2,7 @@ import Link from "next/link";
 import { clinicConfig } from "@/config/clinic.config";
 import { defaultWebsiteConfig } from "@/lib/website-config";
 import { t, type Locale } from "@/lib/i18n";
+import { CopyrightYear } from "@/components/copyright-year";
 
 interface PublicFooterProps {
   clinicName?: string;
@@ -71,7 +72,7 @@ export function PublicFooter({ clinicName, phone, email, address, locale = "fr" 
         </div>
 
         <div className="mt-8 border-t pt-4 text-center text-xs text-muted-foreground">
-          &copy; {new Date().getFullYear()} {displayName}. {t(locale, "public.allRightsReserved")}
+          &copy; <CopyrightYear /> {displayName}. {t(locale, "public.allRightsReserved")}
         </div>
       </div>
     </footer>

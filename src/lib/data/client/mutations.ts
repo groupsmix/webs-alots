@@ -16,8 +16,20 @@ export async function updateAppointmentStatus(
   status: string,
 ): Promise<MutationResult> {
   const supabase = createClient();
-  // Map UI status names to DB status names
-  const dbStatus = status.replace("-", "_");
+  // Explicit mapping from UI status names to DB column values.
+  // Using a lookup object avoids fragile string.replace() that would break
+  // on statuses with multiple hyphens or unconventional names.
+  const STATUS_MAP: Record<string, string> = {
+    "no-show": "no_show",
+    "in-progress": "in_progress",
+    "checked-in": "checked_in",
+    "follow-up": "follow_up",
+    confirmed: "confirmed",
+    completed: "completed",
+    cancelled: "cancelled",
+    pending: "pending",
+  };
+  const dbStatus = STATUS_MAP[status] ?? status;
   const updateData: Record<string, unknown> = { status: dbStatus };
   if (dbStatus === "cancelled") {
     updateData.cancelled_at = new Date().toISOString();

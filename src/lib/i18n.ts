@@ -159,6 +159,7 @@ export const translations = {
     "patientNav.paymentPlan": "Plan de paiement",
 
     // Feature gate
+    "featureGate.loading": "Chargement du module…",
     "featureGate.notEnabled": "{module} n'est pas activé",
     "featureGate.notAvailable": "Ce module n'est pas disponible pour votre type de clinique. Veuillez contacter votre administrateur pour l'activer.",
     "featureGate.backToDashboard": "Retour au tableau de bord",
@@ -786,6 +787,7 @@ export const translations = {
     "patientNav.paymentPlan": "خطة الدفع",
 
     // Feature gate
+    "featureGate.loading": "جاري تحميل الوحدة…",
     "featureGate.notEnabled": "{module} غير مفعّل",
     "featureGate.notAvailable": "هذه الوحدة غير متاحة لنوع عيادتك. يرجى الاتصال بالمسؤول لتفعيلها.",
     "featureGate.backToDashboard": "العودة إلى لوحة التحكم",
@@ -1413,6 +1415,7 @@ export const translations = {
     "patientNav.paymentPlan": "Payment Plan",
 
     // Feature gate
+    "featureGate.loading": "Loading module…",
     "featureGate.notEnabled": "{module} is not enabled",
     "featureGate.notAvailable": "This module is not available for your clinic type. Please contact your administrator to enable it.",
     "featureGate.backToDashboard": "Back to Dashboard",

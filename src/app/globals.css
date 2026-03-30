@@ -48,6 +48,15 @@
 }
 
 :root {
+  /* ── Z-index scale ── */
+  --z-toast: 50;
+  --z-header: 50;
+  --z-offline: 60;
+  --z-cookie: 70;
+  --z-session-timeout: 80;
+  --z-command-palette: 90;
+  --z-modal: 100;
+
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
   --card: oklch(1 0 0);

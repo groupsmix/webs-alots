@@ -1,13 +1,31 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useCallback } from "react";
 import { logger } from "@/lib/logger";
+import { useToast } from "@/components/ui/toast";
 
 /**
  * Register the service worker for PWA offline support and push notifications.
  * Only registers in production to avoid caching dev assets.
+ *
+ * When a new service worker version is detected, a toast prompts the user
+ * to refresh so they always run the latest code (issue #29).
  */
 export function ServiceWorkerRegister() {
+  const { addToast } = useToast();
+
+  const promptUpdate = useCallback(() => {
+    addToast(
+      "Nouvelle version disponible — Cliquez pour mettre à jour",
+      "info",
+      15_000,
+      {
+        label: "Rafraîchir",
+        onClick: () => window.location.reload(),
+      },
+    );
+  }, [addToast]);
+
   useEffect(() => {
     if (
       typeof window === "undefined" ||
@@ -21,6 +39,24 @@ export function ServiceWorkerRegister() {
       .register("/sw.js")
       .then((registration) => {
         logger.info("Service worker registered", { context: "sw-register" });
+
+        // Detect waiting worker (new version installed but not yet active)
+        if (registration.waiting) {
+          promptUpdate();
+        }
+
+        // Listen for new service worker installations
+        registration.addEventListener("updatefound", () => {
+          const newWorker = registration.installing;
+          if (!newWorker) return;
+
+          newWorker.addEventListener("statechange", () => {
+            if (newWorker.state === "installed" && navigator.serviceWorker.controller) {
+              // New version available — prompt user to refresh
+              promptUpdate();
+            }
+          });
+        });
 
         // Subscribe to push notifications if supported and permission granted
         if (!("PushManager" in window)) return;
@@ -44,7 +80,16 @@ export function ServiceWorkerRegister() {
       .catch(() => {
         // Silent fail — SW is a progressive enhancement
       });
-  }, []);
+
+    // When a new SW takes control (e.g. after skipWaiting), reload the page
+    // so the user gets the latest assets.
+    let refreshing = false;
+    navigator.serviceWorker.addEventListener("controllerchange", () => {
+      if (refreshing) return;
+      refreshing = true;
+      window.location.reload();
+    });
+  }, [promptUpdate]);
 
   return null;
 }

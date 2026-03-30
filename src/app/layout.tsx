@@ -128,9 +128,9 @@ export default async function RootLayout({
             </TenantProvider>
             <OfflineIndicator />
             <PerformanceMonitor />
+            <ServiceWorkerRegister />
           </ToastProvider>
         </ThemeProvider>
-        <ServiceWorkerRegister />
         <PlausibleScript />
       </body>
     </html>

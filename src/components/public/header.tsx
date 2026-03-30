@@ -75,15 +75,21 @@ export function PublicHeader({ logoUrl, clinicName, sectionVisibility }: PublicH
 
         {/* Desktop navigation */}
         <nav aria-label="Navigation principale" className="hidden items-center gap-6 md:flex">
-          {navLinks.map((link) => (
+          {navLinks.map((link) => {
+            const isActive = pathname === link.href;
+            return (
             <Link
               key={link.href}
               href={link.href}
-              className="text-sm text-muted-foreground transition-colors hover:text-foreground"
+              aria-current={isActive ? "page" : undefined}
+              className={`text-sm transition-colors hover:text-foreground ${
+                isActive ? "text-foreground font-medium" : "text-muted-foreground"
+              }`}
             >
               {t(locale, link.labelKey)}
             </Link>
-          ))}
+            );
+          })}
           <Link href="/book" className={buttonVariants()}>
             {t(locale, "public.bookAppointment")}
           </Link>
@@ -105,16 +111,20 @@ export function PublicHeader({ logoUrl, clinicName, sectionVisibility }: PublicH
       {mobileMenuOpen && (
         <nav id="clinic-mobile-nav" aria-label="Navigation mobile" className="border-t px-4 py-4 md:hidden">
           <div className="flex flex-col gap-3">
-            {navLinks.map((link) => (
+            {navLinks.map((link) => {
+              const isActive = pathname === link.href;
+              return (
               <Link
                 key={link.href}
                 href={link.href}
-                className="text-sm text-muted-foreground"
+                aria-current={isActive ? "page" : undefined}
+                className={`text-sm ${isActive ? "text-foreground font-medium" : "text-muted-foreground"}`}
                 onClick={() => setMobileMenuOpen(false)}
               >
                 {t(locale, link.labelKey)}
               </Link>
-            ))}
+              );
+            })}
             <Link href="/book" className={buttonVariants({ className: "mt-2" })}>
               {t(locale, "public.bookAppointment")}
             </Link>

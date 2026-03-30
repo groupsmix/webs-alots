@@ -102,6 +102,9 @@ function ToastItem({ toast, onRemove }: { toast: Toast; onRemove: (id: string) =
   );
 }
 
+/** Maximum number of toasts visible at once; extras are queued. */
+const MAX_VISIBLE_TOASTS = 3;
+
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [toasts, setToasts] = useState<Toast[]>([]);
 
@@ -117,12 +120,12 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   return (
     <ToastContext.Provider value={{ addToast, removeToast }}>
       {children}
-      {/* Toast container */}
+      {/* Toast container — top-right on desktop, bottom-center on mobile, RTL-aware */}
       <div
         aria-label="Notifications"
-        className="pointer-events-none fixed top-4 right-4 z-[100] flex flex-col gap-2"
+        className="pointer-events-none fixed z-[100] flex flex-col gap-2 top-4 right-4 rtl:right-auto rtl:left-4 max-sm:top-auto max-sm:bottom-4 max-sm:right-1/2 max-sm:translate-x-1/2 max-sm:rtl:right-1/2 max-sm:rtl:left-auto max-sm:items-center max-sm:w-full max-sm:px-4"
       >
-        {toasts.map((toast) => (
+        {toasts.slice(0, MAX_VISIBLE_TOASTS).map((toast) => (
           <ToastItem key={toast.id} toast={toast} onRemove={removeToast} />
         ))}
       </div>

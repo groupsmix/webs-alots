@@ -5,6 +5,7 @@ import {
   fetchOnboardingState,
   autoDetectCompletedSteps,
   updateOnboardingState,
+  markStepComplete,
   type OnboardingState,
   type OnboardingStepId,
 } from "@/lib/data/client/onboarding";
@@ -80,6 +81,8 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
       if (!prev) return prev;
       if (prev.completedSteps.includes(stepId)) return prev;
       const completedSteps = [...prev.completedSteps, stepId];
+      // Persist to database so progress survives refresh / browser switch (issue #20)
+      void markStepComplete(stepId);
       return { ...prev, completedSteps };
     });
   }, []);
@@ -87,11 +90,14 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
   const dismiss = useCallback(() => {
     setShowTour(false);
     setState((prev) => (prev ? { ...prev, tourDismissed: true } : prev));
+    // Persist dismissal so it survives page refresh (issue #20)
+    void updateOnboardingState({ tourDismissed: true });
   }, []);
 
   const reshow = useCallback(() => {
     setShowTour(true);
     setState((prev) => (prev ? { ...prev, tourDismissed: false } : prev));
+    void updateOnboardingState({ tourDismissed: false });
   }, []);
 
   return (

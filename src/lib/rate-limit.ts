@@ -403,7 +403,11 @@ function createMemoryRateLimiter(options: RateLimiterOptions): RateLimiter {
       // know the rate-limit state was reset (all previous counters lost).
       if (!coldStartWarned) {
         coldStartWarned = true;
-        // In-memory fallback active — counters not shared across isolates
+        logger.warn(
+          "In-memory rate limiter active — counters are NOT shared across isolates and will reset on cold start. " +
+          "Configure RATE_LIMIT_BACKEND=kv (primary) or RATE_LIMIT_BACKEND=supabase (secondary) for production.",
+          { context: "rate-limit/memory-fallback" },
+        );
       }
 
       prune(now);
@@ -430,6 +434,18 @@ function createMemoryRateLimiter(options: RateLimiterOptions): RateLimiter {
 
 // ── Factory ──
 
+/**
+ * Create a rate limiter using the best available backend.
+ *
+ * Priority: KV (primary) > Supabase (secondary) > In-memory (last resort).
+ *
+ * **Important:** The in-memory fallback is a _last-resort_ option intended
+ * only for local development or single-instance deployments.  In a
+ * serverless environment (Cloudflare Workers, Vercel Edge, etc.) each
+ * isolate maintains its own Map, so counters are neither shared nor
+ * persistent.  Always configure `RATE_LIMIT_BACKEND=kv` (preferred) or
+ * `RATE_LIMIT_BACKEND=supabase` for production deployments.
+ */
 export function createRateLimiter(options: RateLimiterOptions): RateLimiter {
   // Priority: KV > Supabase > Memory
   // KV provides best consistency for distributed rate limiting

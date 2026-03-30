@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect, useRef } from "react";
+import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { ChevronLeft, ChevronRight, Check, Stethoscope, User, Clock, Phone, Loader2, MessageCircle } from "lucide-react";
 import { fetchDoctors, fetchServices, type DoctorView, type ServiceView } from "@/lib/data/client";
 import { clinicConfig } from "@/config/clinic.config";
@@ -99,6 +99,13 @@ export function BookingForm() {
   const [bookingError, setBookingError] = useState<string | null>(null);
   const [phoneError, setPhoneError] = useState<string | null>(null);
   const [verificationStatus, setVerificationStatus] = useState<string | null>(null);
+
+  // Refs for focus management on step transitions (issue #25)
+  const stepHeadingRefs = useRef<(HTMLHeadingElement | HTMLParagraphElement | null)[]>([null, null, null]);
+  const setStepRef = useCallback((index: number) => (el: HTMLHeadingElement | HTMLParagraphElement | null) => {
+    stepHeadingRefs.current[index] = el;
+  }, []);
+  const [announceStep, setAnnounceStep] = useState<string | null>(null);
   // Honeypot field for basic bot protection (invisible to real users)
   const [honeypot, setHoneypot] = useState("");
 
@@ -312,10 +319,14 @@ export function BookingForm() {
           </div>
 
           {manageUrl && (
-            <p className="text-xs text-muted-foreground mt-4">
-              G\u00e9rer ou annuler votre rendez-vous :{" "}
-              <a href={manageUrl} className="text-primary underline">{manageUrl}</a>
-            </p>
+            <div className="mt-4">
+              <a
+                href={manageUrl}
+                className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow hover:bg-primary/90 transition-colors"
+              >
+                Gérer mon rendez-vous
+              </a>
+            </div>
           )}
 
           <div className="flex items-center justify-center gap-2 mt-2 text-xs text-muted-foreground">
@@ -384,12 +395,17 @@ export function BookingForm() {
       </CardHeader>
 
       <CardContent>
+        {/* Screen-reader step announcer (issue #25) */}
+        <div aria-live="polite" className="sr-only">
+          {announceStep && `\u00c9tape : ${announceStep}`}
+        </div>
+
         {/* Step 1: Select Service (with doctor) */}
         {step === 0 && (
-          <div className="space-y-6">
+          <div className="space-y-6" role="tabpanel" aria-label={STEPS[0]}>
             {/* Select doctor */}
             <div>
-              <p className="text-sm font-medium mb-3 flex items-center gap-2">
+              <p ref={setStepRef(0)} tabIndex={-1} className="text-sm font-medium mb-3 flex items-center gap-2">
                 <User className="h-4 w-4 text-primary" />
                 Choisissez votre m\u00e9decin :
               </p>
@@ -452,9 +468,9 @@ export function BookingForm() {
 
         {/* Step 2: Pick Date & Time */}
         {step === 1 && (
-          <div className="space-y-6">
+          <div className="space-y-6" role="tabpanel" aria-label={STEPS[1]}>
             <div>
-              <p className="text-sm text-muted-foreground mb-3 flex items-center gap-2">
+              <p ref={setStepRef(1)} tabIndex={-1} className="text-sm text-muted-foreground mb-3 flex items-center gap-2">
                 <Clock className="h-4 w-4" />
                 S\u00e9lectionnez une date et un cr\u00e9neau :
               </p>
@@ -495,10 +511,10 @@ export function BookingForm() {
 
         {/* Step 3: Confirm (phone only) */}
         {step === 2 && (
-          <div className="space-y-6">
+          <div className="space-y-6" role="tabpanel" aria-label={STEPS[2]}>
             {/* Booking summary */}
             <div className="rounded-lg border p-4 space-y-2 text-sm">
-              <h3 className="font-semibold text-base mb-3">R\u00e9capitulatif</h3>
+              <h3 ref={setStepRef(2)} tabIndex={-1} className="font-semibold text-base mb-3">R\u00e9capitulatif</h3>
               <div className="grid gap-1.5">
                 <div className="flex justify-between"><span className="text-muted-foreground">Service</span><span className="font-medium">{service?.name ?? "—"}</span></div>
                 <div className="flex justify-between"><span className="text-muted-foreground">M\u00e9decin</span><span className="font-medium">{doctor?.name ?? "—"}</span></div>
@@ -597,7 +613,12 @@ export function BookingForm() {
         <div className="flex justify-between mt-6">
           <Button
             variant="outline"
-            onClick={() => setStep(step - 1)}
+            onClick={() => {
+              const newStep = step - 1;
+              setStep(newStep);
+              setAnnounceStep(STEPS[newStep]);
+              requestAnimationFrame(() => stepHeadingRefs.current[newStep]?.focus());
+            }}
             disabled={step === 0}
           >
             <ChevronLeft className="h-4 w-4 mr-1" />
@@ -605,7 +626,12 @@ export function BookingForm() {
           </Button>
           {step < 2 ? (
             <Button
-              onClick={() => setStep(step + 1)}
+              onClick={() => {
+                const newStep = step + 1;
+                setStep(newStep);
+                setAnnounceStep(STEPS[newStep]);
+                requestAnimationFrame(() => stepHeadingRefs.current[newStep]?.focus());
+              }}
               disabled={!canNext()}
             >
               {t("fr", "booking.next")}
