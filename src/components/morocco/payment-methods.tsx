@@ -17,6 +17,7 @@ import {
   type InstallmentPlan,
   calculateInstallments,
 } from "@/lib/morocco";
+import { formatDisplayDate } from "@/lib/utils";
 
 // ---- Payment method icon mapping ----
 
@@ -198,11 +199,7 @@ export function PaymentMethodSelector({
                           {i + 1}
                         </span>
                         <span>
-                          {new Date(payment.dueDate).toLocaleDateString("fr-MA", {
-                            day: "numeric",
-                            month: "short",
-                            year: "numeric",
-                          })}
+                          {formatDisplayDate(payment.dueDate, "fr", "short")}
                         </span>
                       </div>
                       <div className="flex items-center gap-2">

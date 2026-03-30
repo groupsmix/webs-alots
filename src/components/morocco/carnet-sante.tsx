@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { formatDisplayDate } from "@/lib/utils";
 
 // ---- Types ----
 
@@ -202,7 +203,7 @@ export function CarnetSante({ data, onUpdate, readOnly = false }: CarnetSantePro
               <div>
                 <span className="text-muted-foreground">Date de naissance:</span>
                 <p className="font-medium">
-                  {new Date(data.dateOfBirth).toLocaleDateString("fr-MA")}
+                  {formatDisplayDate(data.dateOfBirth, "fr", "long")}
                   {age !== null && ` (${age} ans)`}
                 </p>
               </div>
@@ -233,7 +234,7 @@ export function CarnetSante({ data, onUpdate, readOnly = false }: CarnetSantePro
             {data.vitalSigns && (
               <div className="mt-3 p-3 rounded-lg bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800">
                 <p className="text-xs text-muted-foreground mb-2">
-                  Derniers signes vitaux ({new Date(data.vitalSigns.date).toLocaleDateString("fr-MA")})
+                  Derniers signes vitaux ({formatDisplayDate(data.vitalSigns.date, "fr", "short")})
                 </p>
                 <div className="grid grid-cols-3 gap-2 text-sm">
                   {data.vitalSigns.weight && (
@@ -363,13 +364,13 @@ export function CarnetSante({ data, onUpdate, readOnly = false }: CarnetSantePro
                     <div>
                       <p className="font-medium">{v.name}</p>
                       <p className="text-xs text-muted-foreground">
-                        {new Date(v.date).toLocaleDateString("fr-MA")}
+                        {formatDisplayDate(v.date, "fr", "short")}
                         {v.batchNumber && ` — Lot: ${v.batchNumber}`}
                       </p>
                     </div>
                     {v.nextDueDate && (
                       <Badge variant="outline" className="text-xs">
-                        Rappel: {new Date(v.nextDueDate).toLocaleDateString("fr-MA")}
+                        Rappel: {formatDisplayDate(v.nextDueDate, "fr", "short")}
                       </Badge>
                     )}
                   </div>
@@ -394,8 +395,8 @@ export function CarnetSante({ data, onUpdate, readOnly = false }: CarnetSantePro
                       <Badge variant="secondary" className="text-xs">En cours</Badge>
                     </div>
                     <p className="text-xs text-muted-foreground">
-                      Prescrit par {m.prescribedBy} — Depuis le {new Date(m.startDate).toLocaleDateString("fr-MA")}
-                      {m.endDate && ` jusqu'au ${new Date(m.endDate).toLocaleDateString("fr-MA")}`}
+                      Prescrit par {m.prescribedBy} — Depuis le {formatDisplayDate(m.startDate, "fr", "short")}
+                      {m.endDate && ` jusqu'au ${formatDisplayDate(m.endDate, "fr", "short")}`}
                     </p>
                   </div>
                 ))}
@@ -426,7 +427,7 @@ export function CarnetSante({ data, onUpdate, readOnly = false }: CarnetSantePro
                           </Badge>
                         </div>
                         <p className="text-xs text-muted-foreground">
-                          {new Date(h.date).toLocaleDateString("fr-MA")} — {h.doctor}
+                          {formatDisplayDate(h.date, "fr", "short")} — {h.doctor}
                           {h.notes && ` — ${h.notes}`}
                         </p>
                       </div>

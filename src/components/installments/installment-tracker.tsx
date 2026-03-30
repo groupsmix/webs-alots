@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import type { InstallmentPlanView as InstallmentPlan, InstallmentPaymentView as InstallmentPayment } from "@/lib/data/client";
+import { formatDisplayDate } from "@/lib/utils";
 
 const STATUS_CONFIG: Record<InstallmentPayment["status"], { icon: typeof Clock; color: string; variant: "default" | "success" | "destructive" | "outline" }> = {
   pending: { icon: Clock, color: "text-gray-500", variant: "outline" },
@@ -92,7 +93,7 @@ export function InstallmentTracker({
                 <div className="mt-2 flex items-center gap-2 text-xs">
                   <Calendar className="h-3 w-3 text-muted-foreground" />
                   <span className="text-muted-foreground">
-                    Next payment: {nextDue.amount.toLocaleString()} {plan.currency} due {nextDue.dueDate}
+                    Next payment: {nextDue.amount.toLocaleString()} {plan.currency} due {formatDisplayDate(nextDue.dueDate, "fr", "short")}
                   </span>
                 </div>
               )}
@@ -136,8 +137,8 @@ export function InstallmentTracker({
                             </Badge>
                           </div>
                           <p className="text-xs text-muted-foreground">
-                            Due: {inst.dueDate}
-                            {inst.paidDate && ` | Paid: ${inst.paidDate}`}
+                            Due: {formatDisplayDate(inst.dueDate, "fr", "short")}
+                            {inst.paidDate && ` | Paid: ${formatDisplayDate(inst.paidDate, "fr", "short")}`}
                           </p>
                         </div>
 

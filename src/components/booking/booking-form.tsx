@@ -16,6 +16,7 @@ import { logger } from "@/lib/logger";
 import { t } from "@/lib/i18n";
 import { useFormValidation, commonRules } from "@/lib/hooks/use-form-validation";
 import { formatDisplayDate } from "@/lib/utils";
+import { useToast } from "@/components/ui/toast";
 
 // Simplified 3-step booking flow
 // Step 1: Select Service (with doctor)
@@ -114,7 +115,7 @@ export function BookingForm() {
     phone: [commonRules.required("Le numéro de téléphone est obligatoire"), commonRules.phone()],
   }), []);
   const { onFieldChange: onValidationChange, onFieldBlur: onValidationBlur, getFieldError } = useFormValidation<{ phone: string }>(validationRules);
-  const [waitingListMessage, setWaitingListMessage] = useState<string | null>(null);
+  const { addToast } = useToast();
   const [isJoiningWaitlist, setIsJoiningWaitlist] = useState(false);
 
   // Supabase-loaded data
@@ -205,7 +206,7 @@ export function BookingForm() {
   const handleJoinWaitingList = async (slot: string) => {
     // Require a valid phone before joining the waiting list (Issue 17)
     if (!patientPhone.trim() || !isValidMoroccanPhone(patientPhone)) {
-      setWaitingListMessage("Veuillez saisir un numéro de téléphone valide avant de rejoindre la liste d\u2019attente.");
+      addToast("Veuillez saisir un numéro de téléphone valide avant de rejoindre la liste d\u2019attente.", "warning");
       return;
     }
     // Prevent double-clicks while request is in-flight (Issue 51)
@@ -227,13 +228,13 @@ export function BookingForm() {
       });
       const data = await res.json();
       if (res.ok) {
-        setWaitingListMessage(`Vous avez \u00e9t\u00e9 ajout\u00e9(e) \u00e0 la liste d'attente pour le ${selectedDate} \u00e0 ${slot}.`);
+        addToast(`Vous avez \u00e9t\u00e9 ajout\u00e9(e) \u00e0 la liste d'attente pour le ${selectedDate} \u00e0 ${slot}.`, "success");
       } else {
-        setWaitingListMessage(data.error ?? "Impossible de rejoindre la liste d'attente.");
+        addToast(data.error ?? "Impossible de rejoindre la liste d'attente.", "error");
       }
     } catch (err) {
       logger.warn("Failed to join waiting list", { context: "booking-form", error: err });
-      setWaitingListMessage("Impossible de rejoindre la liste d'attente.");
+      addToast("Impossible de rejoindre la liste d'attente.", "error");
     } finally {
       setIsJoiningWaitlist(false);
     }
@@ -381,7 +382,6 @@ export function BookingForm() {
             setIsFirstVisit(true);
             setBookingId(null);
             setBookingError(null);
-            setWaitingListMessage(null);
           }}>
             Prendre un autre rendez-vous
           </Button>
@@ -526,9 +526,6 @@ export function BookingForm() {
                   showWaitingList={clinicConfig.features.waitingList}
                   onJoinWaitingList={handleJoinWaitingList}
                 />
-                {waitingListMessage && (
-                  <p className="text-sm text-primary mt-2">{waitingListMessage}</p>
-                )}
               </div>
             )}
 

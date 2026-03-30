@@ -15,6 +15,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import type { GardeType, GardeScheduleEntry } from "@/lib/morocco";
+import { formatDisplayDate } from "@/lib/utils";
 
 interface GardeSchedulerProps {
   doctors: { id: string; name: string }[];
@@ -248,12 +249,7 @@ export function GardeScheduler({
               <div className="flex items-center gap-2">
                 <Calendar className="h-4 w-4 text-muted-foreground" />
                 <CardTitle className="text-sm">
-                  {d.toLocaleDateString("fr-MA", {
-                    weekday: "long",
-                    day: "numeric",
-                    month: "long",
-                    year: "numeric",
-                  })}
+                  {formatDisplayDate(d, "fr", "long")}
                   {isWeekend && (
                     <Badge variant="outline" className="ml-2 text-xs">
                       Week-end

@@ -157,6 +157,9 @@ function SidebarContent({
   });
   const [searchQuery, setSearchQuery] = useState("");
   const [pinnedHrefs, setPinnedHrefs] = useState<string[]>([]);
+  // Progressive disclosure: track which sections show all items (Issue 15)
+  const [fullyExpandedSections, setFullyExpandedSections] = useState<Set<string>>(new Set());
+  const MAX_VISIBLE_ITEMS = 5;
 
   // Load pinned items from localStorage on mount
   useEffect(() => {
@@ -317,7 +320,18 @@ function SidebarContent({
                 </button>
                 {isExpanded && (
                   <div className="ml-4 space-y-0.5">
-                    {items.map((item) => renderNavLink(item, true))}
+                    {(fullyExpandedSections.has(section.key) || items.length <= MAX_VISIBLE_ITEMS
+                      ? items
+                      : items.slice(0, MAX_VISIBLE_ITEMS)
+                    ).map((item) => renderNavLink(item, true))}
+                    {items.length > MAX_VISIBLE_ITEMS && !fullyExpandedSections.has(section.key) && (
+                      <button
+                        onClick={() => setFullyExpandedSections((prev) => new Set([...prev, section.key]))}
+                        className="flex items-center gap-2 w-full px-3 py-1.5 text-xs text-primary hover:text-primary/80 hover:bg-muted rounded-lg transition-colors"
+                      >
+                        {t(locale, "doctorNav.showAll")} ({items.length - MAX_VISIBLE_ITEMS})
+                      </button>
+                    )}
                   </div>
                 )}
               </div>
