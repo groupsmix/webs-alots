@@ -14,7 +14,7 @@ import type { Database } from "@/lib/types/database";
 export async function updateAppointmentStatus(
   appointmentId: string,
   status: string,
-): Promise<MutationResult> {
+): Promise<MutationResult<{ id: string; status: string }>> {
   const supabase = createClient();
   // Explicit mapping from UI status names to DB column values (Issue 40).
   // Using a lookup object instead of fragile string replace.
@@ -29,13 +29,19 @@ export async function updateAppointmentStatus(
   if (dbStatus === "cancelled") {
     updateData.cancelled_at = new Date().toISOString();
   }
-  const { error } = await supabase.from("appointments").update(updateData).eq("id", appointmentId);
+  // Issue 45: Return updated entity data via .select()
+  const { data: updated, error } = await supabase
+    .from("appointments")
+    .update(updateData)
+    .eq("id", appointmentId)
+    .select("id, status")
+    .single();
   if (error) {
     logger.warn("Query failed", { context: "data/client", error });
     return { success: false, error: { code: error.code, message: error.message } };
   }
   clearLookupCache();
-  return { success: true, data: undefined };
+  return { success: true, data: { id: updated.id, status: updated.status } };
 }
 
 export async function createPayment(data: {

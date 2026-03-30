@@ -29,6 +29,7 @@ import {
   type ServiceView,
   type PatientView,
 } from "@/lib/data/client";
+import { maskPhone } from "@/lib/mask";
 
 interface ManualBookingDialogProps {
   trigger?: React.ReactNode;
@@ -142,7 +143,7 @@ export function ManualBookingDialog({ trigger, onBook }: ManualBookingDialogProp
                 <SelectContent>
                   {patients.map((p) => (
                     <SelectItem key={p.id} value={p.id}>
-                      {p.name} - {p.phone}
+                      {p.name} - {maskPhone(p.phone)}
                     </SelectItem>
                   ))}
                 </SelectContent>

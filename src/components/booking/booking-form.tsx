@@ -105,7 +105,12 @@ export function BookingForm() {
   // Honeypot field for basic bot protection (invisible to real users)
   const [honeypot, setHoneypot] = useState("");
   const [confirmChecked, setConfirmChecked] = useState(false);
-  // Issue 7: Track whether the user attempted to proceed so inline errors show
+  // Issue 7: Track per-field touched state for inline real-time validation
+  const [touchedFields, setTouchedFields] = useState<Record<string, boolean>>({});
+  const markTouched = useCallback((field: string) => {
+    setTouchedFields((prev) => (prev[field] ? prev : { ...prev, [field]: true }));
+  }, []);
+  // Also keep stepAttempted for "Next" button press fallback
   const [stepAttempted, setStepAttempted] = useState(false);
 
   // Refs for focus management on step transitions (Issue 25)
@@ -205,17 +210,21 @@ export function BookingForm() {
     return true;
   };
 
-  // Issue 7: Inline validation error messages per step field
+  // Issue 7: Inline validation error messages per step field.
+  // Errors show when a field is touched (blur/interaction) OR when the user
+  // clicks "Next" without completing required fields (stepAttempted fallback).
   const stepErrors = useMemo(() => {
-    if (!stepAttempted) return { doctor: null, service: null, date: null, time: null, confirm: null };
+    const show = (field: string) => touchedFields[field] || stepAttempted;
     return {
-      doctor: step === 0 && !selectedDoctor ? "Veuillez choisir un médecin" : null,
-      service: step === 0 && selectedDoctor && !selectedService ? "Veuillez choisir un service" : null,
-      date: step === 1 && !selectedDate ? "Veuillez sélectionner une date" : null,
-      time: step === 1 && selectedDate && !selectedTime ? "Veuillez sélectionner un créneau" : null,
-      confirm: step === 2 && !confirmChecked ? "Veuillez confirmer vos informations" : null,
+      doctor: show("doctor") && step === 0 && !selectedDoctor ? "Veuillez choisir un médecin" : null,
+      service: show("service") && step === 0 && selectedDoctor && !selectedService ? "Veuillez choisir un service" : null,
+      date: show("date") && step === 1 && !selectedDate ? "Veuillez sélectionner une date" : null,
+      time: show("time") && step === 1 && selectedDate && !selectedTime ? "Veuillez sélectionner un créneau" : null,
+      phone: show("phone") && step === 2 && patientPhone.trim() !== "" && !isValidMoroccanPhone(patientPhone) ? "Numéro de téléphone invalide" : null,
+      phoneRequired: show("phone") && step === 2 && patientPhone.trim() === "" ? "Le numéro de téléphone est obligatoire" : null,
+      confirm: show("confirm") && step === 2 && !confirmChecked ? "Veuillez confirmer vos informations" : null,
     };
-  }, [stepAttempted, step, selectedDoctor, selectedService, selectedDate, selectedTime, confirmChecked]);
+  }, [touchedFields, stepAttempted, step, selectedDoctor, selectedService, selectedDate, selectedTime, patientPhone, confirmChecked]);
 
   const handleJoinWaitingList = async (slot: string) => {
     // Require a valid phone before joining the waiting list (Issue 17)
@@ -602,9 +611,13 @@ export function BookingForm() {
                     setPatientPhone(e.target.value);
                     if (phoneError) setPhoneError(null);
                     onValidationChange("phone", e.target.value);
+                    // Issue 7: Mark field as touched on first input so
+                    // real-time validation feedback appears immediately
+                    markTouched("phone");
                   }}
                   onBlur={() => {
                     onValidationBlur("phone", patientPhone);
+                    markTouched("phone");
                     if (patientPhone.trim() && !isValidMoroccanPhone(patientPhone)) {
                       setPhoneError(t("fr", "booking.invalidPhone"));
                     }
@@ -613,12 +626,12 @@ export function BookingForm() {
                   type="tel"
                   required
                   autoFocus
-                  className={phoneError ? "border-destructive" : ""}
+                  className={phoneError || stepErrors.phone || stepErrors.phoneRequired ? "border-destructive" : patientPhone.trim() && isValidMoroccanPhone(patientPhone) ? "border-green-500" : ""}
                   aria-invalid={!!phoneError}
                   aria-describedby={phoneError ? "phone-error" : undefined}
                 />
-                {(phoneError || getFieldError("phone")) ? (
-                  <p id="phone-error" className="text-xs text-destructive">{phoneError || getFieldError("phone")}</p>
+                {(phoneError || getFieldError("phone") || stepErrors.phone || stepErrors.phoneRequired) ? (
+                  <p id="phone-error" className="text-xs text-destructive">{phoneError || getFieldError("phone") || stepErrors.phone || stepErrors.phoneRequired}</p>
                 ) : (
                   <p className="text-xs text-muted-foreground">
                     Vous recevrez la confirmation par WhatsApp. Aucun compte requis.
@@ -657,7 +670,7 @@ export function BookingForm() {
                   id="b-confirm"
                   type="checkbox"
                   checked={confirmChecked}
-                  onChange={(e) => setConfirmChecked(e.target.checked)}
+                  onChange={(e) => { setConfirmChecked(e.target.checked); markTouched("confirm"); }}
                   className="h-4 w-4 mt-0.5 rounded border-gray-300 text-primary focus:ring-primary"
                 />
                 <Label htmlFor="b-confirm" className="text-sm cursor-pointer leading-snug">

@@ -16,19 +16,19 @@ describe("extractClientIp", () => {
     expect(extractClientIp(req as never)).toBe("1.2.3.4");
   });
 
-  it("returns 'unknown' when only X-Real-IP is present (not trusted)", () => {
+  it("falls back to X-Real-IP when CF-Connecting-IP is absent", () => {
     const req = createMockRequest({ "x-real-ip": "5.6.7.8" });
-    expect(extractClientIp(req as never)).toBe("unknown");
+    expect(extractClientIp(req as never)).toBe("5.6.7.8");
   });
 
-  it("returns 'unknown' when only X-Forwarded-For is present (not trusted)", () => {
+  it("falls back to X-Forwarded-For (first IP) when CF-Connecting-IP is absent", () => {
     const req = createMockRequest({ "x-forwarded-for": "10.0.0.1, 10.0.0.2" });
-    expect(extractClientIp(req as never)).toBe("unknown");
+    expect(extractClientIp(req as never)).toBe("10.0.0.1");
   });
 
-  it("ignores X-Forwarded-For even with whitespace", () => {
+  it("trims whitespace in X-Forwarded-For entries", () => {
     const req = createMockRequest({ "x-forwarded-for": "  10.0.0.1  , 10.0.0.2" });
-    expect(extractClientIp(req as never)).toBe("unknown");
+    expect(extractClientIp(req as never)).toBe("10.0.0.1");
   });
 
   it("returns 'unknown' when no headers present", () => {
@@ -45,12 +45,12 @@ describe("extractClientIp", () => {
     expect(extractClientIp(req as never)).toBe("1.1.1.1");
   });
 
-  it("ignores X-Real-IP and X-Forwarded-For without CF-Connecting-IP", () => {
+  it("prefers X-Forwarded-For over X-Real-IP when CF-Connecting-IP is absent", () => {
     const req = createMockRequest({
       "x-real-ip": "2.2.2.2",
       "x-forwarded-for": "3.3.3.3",
     });
-    expect(extractClientIp(req as never)).toBe("unknown");
+    expect(extractClientIp(req as never)).toBe("3.3.3.3");
   });
 });
 
