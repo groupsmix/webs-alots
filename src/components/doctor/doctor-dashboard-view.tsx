@@ -14,7 +14,6 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { updateAppointmentStatus } from "@/lib/data/client";
 import { useOptimisticUpdate } from "@/lib/hooks/use-optimistic-update";
-import { PageLoader } from "@/components/ui/page-loader";
 import { EmptyState } from "@/components/ui/empty-state";
 import { DataMask } from "@/components/ui/data-mask";
 import { logger } from "@/lib/logger";
@@ -79,7 +78,7 @@ export function DoctorDashboardView({
   invoices,
 }: DoctorDashboardViewProps) {
   const [locale] = useLocale();
-  const { data: appointmentList, mutate: mutateAppointments, isPending: isStatusUpdating } = useOptimisticUpdate(initialAppointments);
+  const { data: appointmentList, mutate: mutateAppointments, isPending: _isStatusUpdating } = useOptimisticUpdate(initialAppointments);
   const [searchQuery, setSearchQuery] = useState("");
   const [error, setError] = useState<Error | null>(null);
   const { addToast } = useToast();

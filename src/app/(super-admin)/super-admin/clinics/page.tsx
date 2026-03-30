@@ -25,7 +25,7 @@ import { Breadcrumb } from "@/components/ui/breadcrumb";
 /** Anonymized user count range — avoids exposing exact patient numbers. */
 type UserCountRange = "0" | "1-50" | "51-200" | "200+";
 
-function toUserCountRange(count: number): UserCountRange {
+function _toUserCountRange(count: number): UserCountRange {
   if (count === 0) return "0";
   if (count <= 50) return "1-50";
   if (count <= 200) return "51-200";

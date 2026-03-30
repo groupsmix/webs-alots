@@ -18,7 +18,7 @@ vi.mock("@/lib/tenant-context", () => ({
   logTenantContext: vi.fn(),
 }));
 
-import { createClient } from "@/lib/supabase-server";
+import { createClient as _createClient } from "@/lib/supabase-server";
 
 describe("Onboarding API — validation", () => {
   beforeEach(() => {

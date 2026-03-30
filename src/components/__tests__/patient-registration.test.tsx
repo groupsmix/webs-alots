@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { render, screen, fireEvent } from "@testing-library/react";
 import { PatientRegistrationDialog } from "../receptionist/patient-registration-dialog";
 
 /**
@@ -31,19 +31,19 @@ vi.mock("@/components/ui/textarea", () => ({
 }));
 
 vi.mock("@/components/ui/dialog", () => ({
-  Dialog: ({ open, onOpenChange, children }: { open: boolean; onOpenChange: (open: boolean) => void; children: React.ReactNode }) => (
+  Dialog: ({ open, onOpenChange: _onOpenChange, children }: { open: boolean; onOpenChange: (open: boolean) => void; children: React.ReactNode }) => (
     <div data-open={open}>{children}</div>
   ),
-  DialogContent: ({ children, onClose }: { children: React.ReactNode; onClose?: () => void }) => <div>{children}</div>,
+  DialogContent: ({ children, onClose: _onClose }: { children: React.ReactNode; onClose?: () => void }) => <div>{children}</div>,
   DialogHeader: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
   DialogTitle: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
   DialogFooter: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
 }));
 
 vi.mock("@/components/ui/select", () => ({
-  Select: ({ value, onValueChange, children }: { value: string; onValueChange: (v: string) => void; children: React.ReactNode }) => <div>{children}</div>,
+  Select: ({ value: _value, onValueChange: _onValueChange, children }: { value: string; onValueChange: (v: string) => void; children: React.ReactNode }) => <div>{children}</div>,
   SelectContent: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-  SelectItem: ({ value, children }: { value: string; children: React.ReactNode }) => <div>{children}</div>,
+  SelectItem: ({ value: _value, children }: { value: string; children: React.ReactNode }) => <div>{children}</div>,
   SelectTrigger: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
   SelectValue: ({ placeholder }: { placeholder?: string }) => <div>{placeholder}</div>,
 }));

@@ -499,7 +499,7 @@ Production: https://oltigo.com/api
 /**
  * GET handler - returns OpenAPI JSON spec
  */
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   const spec = generateOpenApiSpec();
   return new Response(JSON.stringify(spec, null, 2), {
     headers: {

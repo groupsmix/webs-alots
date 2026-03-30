@@ -74,7 +74,7 @@ async function query<T>(
  * Paginated query helper. Returns a page of results along with total count
  * and a `hasMore` flag so callers can implement pagination UIs.
  */
-async function queryPaginated<T>(
+async function _queryPaginated<T>(
   table: TableName,
   opts?: {
     select?: string;

@@ -39,6 +39,9 @@ preview_id = "YOUR_FEATURE_FLAGS_PREVIEW_ID"  # For local dev
 ROOT_DOMAIN = "oltigo.com"
 NEXT_PUBLIC_SITE_URL = "https://oltigo.com"
 R2_BUCKET_NAME = "webs-alots-uploads"
+# Use Cloudflare KV for distributed rate limiting in production
+# Falls back to Supabase → in-memory if KV is unavailable
+RATE_LIMIT_BACKEND = "kv"
 # Seed users from migration 00019 have been deleted in production.
 # This flag tells instrumentation.ts not to block startup.
 SEED_PASSWORDS_ROTATED = "true"
@@ -80,6 +83,7 @@ bucket_name = "webs-alots-uploads-staging"
 ROOT_DOMAIN = "staging.oltigo.com"
 NEXT_PUBLIC_SITE_URL = "https://staging.oltigo.com"
 R2_BUCKET_NAME = "webs-alots-uploads-staging"
+RATE_LIMIT_BACKEND = "kv"
 SEED_PASSWORDS_ROTATED = "true"
 
 # ---- Staging Cron Triggers ----

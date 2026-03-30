@@ -14,7 +14,6 @@ import {
   saveRadiologyReport,
 } from "@/lib/data/server";
 import { STAFF_ROLES } from "@/lib/auth-roles";
-import { logger } from "@/lib/logger";
 import { radiologyOrderCreateSchema, radiologyOrderPatchSchema } from "@/lib/validations";
 import { withAuthValidation } from "@/lib/api-validate";
 import { apiError, apiInternalError, apiSuccess } from "@/lib/api-response";
@@ -45,7 +44,7 @@ export const POST = withAuthValidation(radiologyOrderCreateSchema, async (body, 
     return apiSuccess(result, 201);
 }, STAFF_ROLES);
 
-export const PATCH = withAuthValidation(radiologyOrderPatchSchema, async (body, request) => {
+export const PATCH = withAuthValidation(radiologyOrderPatchSchema, async (body, _request) => {
     const { orderId, action } = body;
 
     if (action === "status") {

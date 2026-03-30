@@ -15,7 +15,6 @@ import {
 import { RescheduleDialog } from "@/components/patient/reschedule-dialog";
 import { PageLoader } from "@/components/ui/page-loader";
 import { logger } from "@/lib/logger";
-import { Breadcrumb } from "@/components/ui/breadcrumb";
 
 const statusColors: Record<string, string> = {
   scheduled: "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300",

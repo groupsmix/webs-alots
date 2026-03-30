@@ -5,7 +5,6 @@ import { APPOINTMENT_STATUS, BOOKING_SOURCE } from "@/lib/types/database";
 import { logAuditEvent } from "@/lib/audit-log";
 import { computeEndTime } from "@/lib/timezone";
 import { STAFF_ROLES } from "@/lib/auth-roles";
-import { logger } from "@/lib/logger";
 import { emergencySlotSchema } from "@/lib/validations";
 import { withAuthValidation } from "@/lib/api-validate";
 import { apiError, apiInternalError, apiNotFound, apiSuccess } from "@/lib/api-response";

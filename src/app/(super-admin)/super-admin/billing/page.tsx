@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import {
   DollarSign, TrendingUp, AlertTriangle, CheckCircle, Clock,
-  Send, Eye, Search, Filter, CreditCard, Receipt, Loader2,
+  Send, Eye, Search, Filter, CreditCard, Receipt,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";

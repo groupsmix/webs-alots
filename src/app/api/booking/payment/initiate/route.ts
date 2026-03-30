@@ -2,7 +2,6 @@ import { logAuditEvent } from "@/lib/audit-log";
 import { requireTenant } from "@/lib/tenant";
 import { findOrCreatePatient } from "@/lib/find-or-create-patient";
 import { STAFF_ROLES } from "@/lib/auth-roles";
-import { logger } from "@/lib/logger";
 import { paymentInitiateSchema } from "@/lib/validations";
 import { withAuthValidation } from "@/lib/api-validate";
 import { apiError, apiInternalError, apiNotFound, apiSuccess } from "@/lib/api-response";
