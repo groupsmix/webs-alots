@@ -19,6 +19,8 @@ import { useClinicFeatures, SPECIALTY_FEATURES } from "@/lib/hooks/use-clinic-fe
 import { useLocale } from "@/components/locale-switcher";
 import { t } from "@/lib/i18n";
 import type { TranslationKey } from "@/lib/i18n";
+import { SessionTimeoutWarning } from "@/components/session-timeout-warning";
+import { signOut } from "@/lib/auth";
 import type { ClinicFeatureKey } from "@/lib/features";
 
 interface NavItem {
@@ -145,9 +147,10 @@ function SidebarContent({
 }) {
   const [locale] = useLocale();
   const [expandedSections, setExpandedSections] = useState<Set<string>>(() => {
-    // Default: expand the section containing the active route
+    // Default: only expand the section containing the active route (collapse all others)
     const activeItem = visibleItems.find((item) => pathname === item.href);
-    return new Set(activeItem?.section ? [activeItem.section, "General"] : ["General"]);
+    const activeSection = activeItem?.section ?? "General";
+    return new Set([activeSection]);
   });
   const [searchQuery, setSearchQuery] = useState("");
   const [pinnedHrefs, setPinnedHrefs] = useState<string[]>([]);
@@ -249,21 +252,21 @@ function SidebarContent({
           onChange={(e) => onSpecialtyChange(e.target.value || null)}
         >
           <option value="">{t(locale, "doctorNav.allFeatures")}</option>
-          <option value="gp">General Practitioner</option>
-          <option value="dentist">Dentist</option>
-          <option value="pediatrician">Pediatrician</option>
-          <option value="gynecologist">Gynecologist</option>
-          <option value="ophthalmologist">Ophthalmologist</option>
-          <option value="cardiologist">Cardiologist</option>
-          <option value="dermatologist">Dermatologist</option>
-          <option value="orthopedist">Orthopedist</option>
-          <option value="neurologist">Neurologist</option>
-          <option value="psychiatrist">Psychiatrist</option>
-          <option value="physiotherapist">Physiotherapist</option>
-          <option value="radiologist">Radiologist</option>
-          <option value="nutritionist">Nutritionist</option>
-          <option value="ivf_specialist">IVF Specialist</option>
-          <option value="dialysis_specialist">Dialysis Specialist</option>
+          <option value="gp">{t(locale, "specialty.gp")}</option>
+          <option value="dentist">{t(locale, "specialty.dentist")}</option>
+          <option value="pediatrician">{t(locale, "specialty.pediatrician")}</option>
+          <option value="gynecologist">{t(locale, "specialty.gynecologist")}</option>
+          <option value="ophthalmologist">{t(locale, "specialty.ophthalmologist")}</option>
+          <option value="cardiologist">{t(locale, "specialty.cardiologist")}</option>
+          <option value="dermatologist">{t(locale, "specialty.dermatologist")}</option>
+          <option value="orthopedist">{t(locale, "specialty.orthopedist")}</option>
+          <option value="neurologist">{t(locale, "specialty.neurologist")}</option>
+          <option value="psychiatrist">{t(locale, "specialty.psychiatrist")}</option>
+          <option value="physiotherapist">{t(locale, "specialty.physiotherapist")}</option>
+          <option value="radiologist">{t(locale, "specialty.radiologist")}</option>
+          <option value="nutritionist">{t(locale, "specialty.nutritionist")}</option>
+          <option value="ivf_specialist">{t(locale, "specialty.ivf_specialist")}</option>
+          <option value="dialysis_specialist">{t(locale, "specialty.dialysis_specialist")}</option>
         </select>
       </div>
 
@@ -411,6 +414,7 @@ export default function DoctorLayout({
 
         <main className="flex-1 p-4 md:p-6">{children}</main>
       </div>
+      <SessionTimeoutWarning onLogout={() => signOut()} />
     </div>
   );
 }

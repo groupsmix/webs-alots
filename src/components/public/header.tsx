@@ -3,28 +3,65 @@
 import Link from "next/link";
 import Image from "next/image";
 import { Menu, X } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { usePathname } from "next/navigation";
 import { buttonVariants } from "@/components/ui/button";
 import { clinicConfig } from "@/config/clinic.config";
+import { useLocale } from "@/components/locale-switcher";
+import { t, type TranslationKey } from "@/lib/i18n";
 
-const navLinks = [
-  { href: "/", label: "Accueil" },
-  { href: "/services", label: "Services" },
-  { href: "/about", label: "À propos" },
-  { href: "/how-to-book", label: "Rendez-vous" },
-  { href: "/location", label: "Accès & Horaires" },
-  { href: "/contact", label: "Contact" },
-  { href: "/reviews", label: "Avis" },
+interface NavLink {
+  href: string;
+  labelKey: TranslationKey;
+}
+
+const defaultNavLinks: NavLink[] = [
+  { href: "/", labelKey: "public.home" },
+  { href: "/services", labelKey: "public.services" },
+  { href: "/about", labelKey: "public.about" },
+  { href: "/how-to-book", labelKey: "public.appointments" },
+  { href: "/location", labelKey: "public.locationHours" },
+  { href: "/contact", labelKey: "public.contact" },
+  { href: "/reviews", labelKey: "public.reviews" },
 ];
+
+/**
+ * Returns navigation links filtered by section visibility configuration.
+ * Clinics can hide sections via sectionVisibility in their config/branding.
+ */
+function getNavLinks(sectionVisibility?: Record<string, boolean>): NavLink[] {
+  if (!sectionVisibility) return defaultNavLinks;
+  const sectionKeyMap: Record<string, string> = {
+    "/services": "services",
+    "/about": "about",
+    "/how-to-book": "appointments",
+    "/location": "location",
+    "/contact": "contact",
+    "/reviews": "reviews",
+  };
+  return defaultNavLinks.filter((link) => {
+    const sectionKey = sectionKeyMap[link.href];
+    if (!sectionKey) return true; // Always show Home
+    return sectionVisibility[sectionKey] !== false;
+  });
+}
 
 interface PublicHeaderProps {
   logoUrl?: string | null;
   clinicName?: string;
+  sectionVisibility?: Record<string, boolean>;
 }
 
-export function PublicHeader({ logoUrl, clinicName }: PublicHeaderProps) {
+export function PublicHeader({ logoUrl, clinicName, sectionVisibility }: PublicHeaderProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [locale] = useLocale();
+  const pathname = usePathname();
   const displayName = clinicName || clinicConfig.name;
+  const navLinks = getNavLinks(sectionVisibility);
+
+  useEffect(() => {
+    setMobileMenuOpen(false);
+  }, [pathname]);
 
   return (
     <header className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur">
@@ -44,11 +81,11 @@ export function PublicHeader({ logoUrl, clinicName }: PublicHeaderProps) {
               href={link.href}
               className="text-sm text-muted-foreground transition-colors hover:text-foreground"
             >
-              {link.label}
+              {t(locale, link.labelKey)}
             </Link>
           ))}
           <Link href="/book" className={buttonVariants()}>
-            Prendre RDV
+            {t(locale, "public.bookAppointment")}
           </Link>
         </nav>
 
@@ -56,7 +93,7 @@ export function PublicHeader({ logoUrl, clinicName }: PublicHeaderProps) {
         <button
           className="md:hidden"
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          aria-label={mobileMenuOpen ? "Fermer le menu" : "Ouvrir le menu"}
+          aria-label={mobileMenuOpen ? t(locale, "public.closeMenu") : t(locale, "public.openMenu")}
           aria-expanded={mobileMenuOpen}
           aria-controls="clinic-mobile-nav"
         >
@@ -75,11 +112,11 @@ export function PublicHeader({ logoUrl, clinicName }: PublicHeaderProps) {
                 className="text-sm text-muted-foreground"
                 onClick={() => setMobileMenuOpen(false)}
               >
-                {link.label}
+                {t(locale, link.labelKey)}
               </Link>
             ))}
             <Link href="/book" className={buttonVariants({ className: "mt-2" })}>
-              Prendre RDV
+              {t(locale, "public.bookAppointment")}
             </Link>
           </div>
         </nav>

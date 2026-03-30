@@ -3,6 +3,8 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useLocale } from "@/components/locale-switcher";
+import { t } from "@/lib/i18n";
 
 interface SessionTimeoutWarningProps {
   /** Minutes of inactivity before showing warning */
@@ -23,6 +25,7 @@ export function SessionTimeoutWarning({
   const [remainingSeconds, setRemainingSeconds] = useState(logoutAfterMinutes * 60);
   const warningTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [locale] = useLocale();
 
   const resetTimer = useCallback(() => {
     setShowWarning(false);
@@ -99,21 +102,21 @@ export function SessionTimeoutWarning({
             <Clock className="h-5 w-5 text-yellow-600 dark:text-yellow-400" />
           </div>
           <div>
-            <h2 id="session-timeout-title" className="font-semibold">Session expirante</h2>
+            <h2 id="session-timeout-title" className="font-semibold">{t(locale, "session.expiring")}</h2>
             <p className="text-sm text-muted-foreground">
-              D&eacute;connexion dans {minutes}:{seconds.toString().padStart(2, "0")}
+              {t(locale, "session.logoutIn").replace("{time}", `${minutes}:${seconds.toString().padStart(2, "0")}`)}
             </p>
           </div>
         </div>
         <p className="text-sm text-muted-foreground mb-4">
-          Votre session va expirer pour des raisons de s&eacute;curit&eacute;. Cliquez ci-dessous pour rester connect&eacute;.
+          {t(locale, "session.expiryMessage")}
         </p>
         <div className="flex gap-2">
           <Button onClick={handleExtend} className="flex-1">
-            Rester connect&eacute;
+            {t(locale, "session.stayConnected")}
           </Button>
           <Button variant="outline" onClick={onLogout} className="flex-1">
-            Se d&eacute;connecter
+            {t(locale, "session.logout")}
           </Button>
         </div>
       </div>
