@@ -23,16 +23,16 @@ bucket_name = "webs-alots-uploads"
 # Enables rate limit counters to survive Worker restarts
 [[kv_namespaces]]
 binding = "RATE_LIMIT_KV"
-id = "YOUR_KV_NAMESPACE_ID"  # Replace with actual KV namespace ID after creation
-preview_id = "YOUR_PREVIEW_KV_NAMESPACE_ID"  # For local dev
+id = "7ac37dff0a794542b0c766f38e73f105"
+preview_id = "7ac37dff0a794542b0c766f38e73f105"
 
 # ---- Feature Flags KV Namespace ----
 # Runtime feature flags using Cloudflare KV
 # Enables per-clinic feature overrides without redeployment
 [[kv_namespaces]]
 binding = "FEATURE_FLAGS_KV"
-id = "YOUR_FEATURE_FLAGS_KV_ID"  # Replace with actual KV namespace ID after creation
-preview_id = "YOUR_FEATURE_FLAGS_PREVIEW_ID"  # For local dev
+id = "610b3748bba545e2b083473b9023d66f"
+preview_id = "610b3748bba545e2b083473b9023d66f"
 
 # ---- Non-Sensitive Environment Variables ----
 [vars]
