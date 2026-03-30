@@ -14,7 +14,6 @@ import { Separator } from "@/components/ui/separator";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from "@/components/ui/dialog";
-import { Loader2 } from "lucide-react";
 import {
   systemTypeLabels,
   tierColors,

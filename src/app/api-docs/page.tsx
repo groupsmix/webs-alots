@@ -23,7 +23,7 @@ import "swagger-ui-react/swagger-ui.css";
  * Displays OpenAPI spec from /api/docs/route.ts
  */
 export default function ApiDocsPage() {
-  const [specUrl, setSpecUrl] = useState("/api/docs");
+  const [specUrl] = useState("/api/docs");
 
   return (
     <div className="min-h-screen bg-gray-50">

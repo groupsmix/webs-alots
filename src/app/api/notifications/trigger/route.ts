@@ -5,7 +5,6 @@ import {
   type TemplateVariables,
 } from "@/lib/notifications";
 import { STAFF_ROLES } from "@/lib/auth-roles";
-import { logger } from "@/lib/logger";
 import { notificationTriggerSchema } from "@/lib/validations";
 import { withAuthValidation } from "@/lib/api-validate";
 import { apiForbidden, apiNotFound, apiSuccess } from "@/lib/api-response";

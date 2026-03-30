@@ -32,7 +32,7 @@ export async function GET(request: NextRequest) {
     const now = new Date();
 
     // Calculate time windows
-    const twoHoursFromNow = new Date(now.getTime() + 2 * 60 * 60 * 1000);
+    const _twoHoursFromNow = new Date(now.getTime() + 2 * 60 * 60 * 1000);
     const twentyFourHoursFromNow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
 
     // FIX (MED-05): Use ISO timestamp range filtering instead of date-string

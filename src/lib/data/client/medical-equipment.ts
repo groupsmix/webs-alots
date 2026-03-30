@@ -1,6 +1,6 @@
 "use client";
 
-import { fetchRows, ensureLookups, _activeUserMap } from "./_core";
+import { fetchRows, _activeUserMap } from "./_core";
 import { createClient } from "@/lib/supabase-client";
 import { logger } from "@/lib/logger";
 import type { Database } from "@/lib/types/database";

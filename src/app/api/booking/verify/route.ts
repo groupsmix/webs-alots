@@ -27,7 +27,7 @@ const bookingVerifySchema = z.object({
 /** Token validity period: 15 minutes. */
 const TOKEN_TTL_MS = 15 * 60 * 1000;
 
-export const POST = withValidation(bookingVerifySchema, async (data, request: NextRequest) => {
+export const POST = withValidation(bookingVerifySchema, async (data, _request: NextRequest) => {
   // Ensure we are in a valid tenant context (subdomain resolved)
   await requireTenantWithConfig();
 

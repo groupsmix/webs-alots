@@ -1,5 +1,4 @@
 import { STAFF_ROLES } from "@/lib/auth-roles";
-import { logger } from "@/lib/logger";
 import { stripeCheckoutSchema } from "@/lib/validations";
 import { withAuthValidation } from "@/lib/api-validate";
 import { apiError, apiSuccess } from "@/lib/api-response";

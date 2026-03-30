@@ -11,7 +11,6 @@
 import { uploadToR2, isR2Configured, buildUploadKey } from "@/lib/r2";
 import { updateLabOrderPdfUrl } from "@/lib/data/server";
 import { STAFF_ROLES } from "@/lib/auth-roles";
-import { logger } from "@/lib/logger";
 import { escapeHtml } from "@/lib/escape-html";
 import { labReportSchema } from "@/lib/validations";
 import { withAuthValidation } from "@/lib/api-validate";

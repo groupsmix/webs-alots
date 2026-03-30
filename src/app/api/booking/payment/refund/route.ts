@@ -1,7 +1,6 @@
 import { logAuditEvent } from "@/lib/audit-log";
 import { requireTenant } from "@/lib/tenant";
 import type { UserRole } from "@/lib/types/database";
-import { logger } from "@/lib/logger";
 import { paymentRefundSchema } from "@/lib/validations";
 import { withAuthValidation } from "@/lib/api-validate";
 import { apiError, apiInternalError, apiNotFound, apiSuccess } from "@/lib/api-response";

@@ -1,6 +1,5 @@
 import { createCmiPayment, isCmiConfigured } from "@/lib/cmi";
 import { STAFF_ROLES } from "@/lib/auth-roles";
-import { logger } from "@/lib/logger";
 import { cmiPaymentSchema } from "@/lib/validations";
 import { withAuthValidation } from "@/lib/api-validate";
 import { apiError, apiInternalError, apiSuccess } from "@/lib/api-response";

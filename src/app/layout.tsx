@@ -88,6 +88,13 @@ export default async function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} ${notoSansArabic.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
+        {/* Skip to main content link for keyboard/screen-reader accessibility (WCAG 2.4.1) */}
+        <a
+          href="#main-content"
+          className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-primary focus:text-primary-foreground focus:rounded-md focus:outline-none focus:ring-2 focus:ring-ring"
+        >
+          Skip to main content
+        </a>
         {/* JSON-LD structured data is rendered on public pages only (Issue 59).
             See src/app/(public)/page.tsx for clinic-specific schema. */}
         <ThemeProvider>
