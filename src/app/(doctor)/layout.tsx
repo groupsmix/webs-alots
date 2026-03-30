@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback } from "react";
 import {
   LayoutDashboard, Users, Calendar, Pill, FileEdit, Clock,
   MessageCircle, CalendarClock, BarChart3, ClipboardList,
@@ -156,15 +156,10 @@ function SidebarContent({
     return new Set([activeSection]);
   });
   const [searchQuery, setSearchQuery] = useState("");
-  const [pinnedHrefs, setPinnedHrefs] = useState<string[]>([]);
+  const [pinnedHrefs, setPinnedHrefs] = useState<string[]>(() => getPinnedItems());
   // Progressive disclosure: track which sections show all items (Issue 15)
   const [fullyExpandedSections, setFullyExpandedSections] = useState<Set<string>>(new Set());
   const MAX_VISIBLE_ITEMS = 5;
-
-  // Load pinned items from localStorage on mount
-  useEffect(() => {
-    setPinnedHrefs(getPinnedItems());
-  }, []);
 
   const togglePin = useCallback((href: string) => {
     setPinnedHrefs((prev) => {

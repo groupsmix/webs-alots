@@ -169,7 +169,8 @@ export default function SuperAdminLayout({
   // Load command items on mount
   useEffect(() => {
     buildCommandItems();
-  }, [buildCommandItems]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     mountedRef.current = true;

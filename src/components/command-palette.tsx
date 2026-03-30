@@ -92,9 +92,11 @@ export function CommandPalette({
     }
   }, [open]);
 
-  useEffect(() => {
-    setSelectedIndex(0);
-  }, [query]);
+  const [prevQuery, setPrevQuery] = useState(query);
+  if (prevQuery !== query) {
+    setPrevQuery(query);
+    if (selectedIndex !== 0) setSelectedIndex(0);
+  }
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {

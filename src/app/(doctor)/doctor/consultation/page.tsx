@@ -161,11 +161,10 @@ export default function ConsultationNotesPage() {
   }, []);
 
   // Check for unsaved draft when editor opens
-  useEffect(() => {
-    if (editingApptId && hasDraft && draft && !isSynced && !draftRestoreOffered) {
-      setDraftRestoreOffered(true);
-    }
-  }, [editingApptId, hasDraft, draft, isSynced, draftRestoreOffered]);
+  const shouldOfferRestore = editingApptId && hasDraft && draft && !isSynced && !draftRestoreOffered;
+  if (shouldOfferRestore) {
+    setDraftRestoreOffered(true);
+  }
 
   if (loading) {
     return <PageLoader message="Loading consultation notes..." />;

@@ -82,7 +82,7 @@ export function SessionTimeoutWarning({
       if (warningTimerRef.current) clearTimeout(warningTimerRef.current);
       if (countdownRef.current) clearInterval(countdownRef.current);
     };
-  }, [resetTimer, showWarning]);
+  }, [resetTimer, showWarning, logoutAfterMinutes, onLogout, warningAfterMinutes]);
 
   const handleExtend = () => {
     resetTimer();

@@ -8,11 +8,9 @@ import { t } from "@/lib/i18n";
 
 export function OfflineIndicator() {
   const [locale] = useLocale();
-  const [isOffline, setIsOffline] = useState(false);
+  const [isOffline, setIsOffline] = useState(() => typeof navigator !== "undefined" ? !navigator.onLine : false);
 
   useEffect(() => {
-    setIsOffline(!navigator.onLine);
-
     const handleOffline = () => setIsOffline(true);
     const handleOnline = () => setIsOffline(false);
 

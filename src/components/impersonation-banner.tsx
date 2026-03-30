@@ -8,7 +8,7 @@
  * with an option to end the session.
  */
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { logger } from "@/lib/logger";
 import { AlertTriangle, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -22,17 +22,10 @@ function getCookie(name: string): string | null {
 }
 
 export function ImpersonationBanner() {
-  const [clinicName, setClinicName] = useState<string | null>(null);
-  const [reason, setReason] = useState<string | null>(null);
+  const [clinicName] = useState<string | null>(() => getCookie("sa_impersonate_clinic_name"));
+  const [reason] = useState<string | null>(() => getCookie("sa_impersonate_reason"));
   const [ending, setEnding] = useState(false);
   const [locale] = useLocale();
-
-  useEffect(() => {
-    const name = getCookie("sa_impersonate_clinic_name");
-    if (name) setClinicName(name);
-    const r = getCookie("sa_impersonate_reason");
-    if (r) setReason(r);
-  }, []);
 
   if (!clinicName) return null;
 
