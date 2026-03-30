@@ -19,10 +19,11 @@ export const metadata: Metadata = {
 
 function StarRating({ rating }: { rating: number }) {
   return (
-    <div className="flex gap-0.5">
+    <div className="flex gap-0.5" role="img" aria-label={`${rating} out of 5 stars`}>
       {Array.from({ length: 5 }).map((_, i) => (
         <Star
           key={i}
+          aria-hidden="true"
           className={`h-4 w-4 ${
             i < rating
               ? "fill-yellow-400 text-yellow-400"
@@ -77,7 +78,7 @@ export default async function TestimonialsPage() {
               <div className="flex-1 space-y-2 w-full">
                 {ratingDistribution.map((dist) => (
                   <div key={dist.stars} className="flex items-center gap-2 text-sm">
-                    <span className="w-8 text-right">{dist.stars} <Star className="h-3 w-3 inline fill-yellow-400 text-yellow-400" /></span>
+                    <span className="w-8 text-right">{dist.stars} <Star aria-hidden="true" className="h-3 w-3 inline fill-yellow-400 text-yellow-400" /></span>
                     <div className="flex-1 bg-muted rounded-full h-2.5 overflow-hidden">
                       <div
                         className="h-full bg-yellow-400 rounded-full transition-all"

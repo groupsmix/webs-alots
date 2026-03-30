@@ -212,10 +212,11 @@ export default async function HomePage() {
               <p className="text-sm text-muted-foreground mb-2">Meilleurs avis</p>
               <div className="flex items-center justify-center gap-2">
                 <span className="text-3xl font-bold">{avgRating}</span>
-                <div className="flex gap-0.5">
+                <div className="flex gap-0.5" role="img" aria-label={`${avgRating} out of 5 stars`}>
                   {Array.from({ length: 5 }).map((_, i) => (
                     <Star
                       key={i}
+                      aria-hidden="true"
                       className={`h-5 w-5 ${
                         i < Math.round(avgRating)
                           ? "fill-yellow-400 text-yellow-400"
@@ -255,10 +256,11 @@ export default async function HomePage() {
               {topReviews.map((review) => (
                 <Card key={review.id}>
                   <CardContent className="pt-6">
-                    <div className="flex gap-0.5 mb-3">
+                    <div className="flex gap-0.5 mb-3" role="img" aria-label={`${review.rating} out of 5 stars`}>
                       {Array.from({ length: 5 }).map((_, i) => (
                         <Star
                           key={i}
+                          aria-hidden="true"
                           className={`h-4 w-4 ${
                             i < review.rating
                               ? "fill-yellow-400 text-yellow-400"
