@@ -8,7 +8,8 @@ import { waitingListSchema } from "@/lib/validations";
 import { withAuthValidation } from "@/lib/api-validate";
 import { STAFF_ROLES } from "@/lib/auth-roles";
 import type { UserRole } from "@/lib/types/database";
-import { apiError, apiForbidden, apiInternalError, apiSuccess } from "@/lib/api-response";
+import { apiError, apiForbidden, apiInternalError, apiRateLimited, apiSuccess } from "@/lib/api-response";
+import { waitingListLimiter, extractClientIp } from "@/lib/rate-limit";
 
 const WAITING_LIST_ROLES: UserRole[] = [...STAFF_ROLES, "patient"];
 /**
@@ -17,6 +18,28 @@ const WAITING_LIST_ROLES: UserRole[] = [...STAFF_ROLES, "patient"];
  * Add a patient to the waiting list.
  */
 export const POST = withAuthValidation(waitingListSchema, async (body, request, { supabase }) => {
+
+    // Honeypot check: if the hidden field was filled, silently reject (Issue 51)
+    if (body.website) {
+      return apiSuccess({ status: "added", message: "Added to waiting list", entryId: "ok" });
+    }
+
+    // Defence-in-depth: per-IP rate limit (Issue 51).
+    // The middleware also applies waitingListLimiter, but checking here
+    // guards against deployment configs that skip the middleware layer.
+    const clientIp = extractClientIp(request);
+    const ipAllowed = await waitingListLimiter.check(`waiting-list:${clientIp}`);
+    if (!ipAllowed) {
+      return apiRateLimited("Trop de demandes. Veuillez réessayer plus tard.");
+    }
+
+    // Per-phone rate limit: 3 requests per phone number per hour (Issue 51)
+    if (body.patientPhone) {
+      const phoneAllowed = await waitingListLimiter.check(`waiting-list-phone:${body.patientPhone}`);
+      if (!phoneAllowed) {
+        return apiRateLimited("Trop de demandes pour ce numéro. Veuillez réessayer plus tard.");
+      }
+    }
 
     // Find or create patient (prefer phone-based lookup to avoid name collisions)
     const tenant = await requireTenant();

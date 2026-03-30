@@ -222,6 +222,7 @@ export function BookingForm() {
           preferredDate: selectedDate,
           preferredTime: slot,
           serviceId: selectedService,
+          website: honeypot,
         }),
       });
       const data = await res.json();
@@ -619,7 +620,7 @@ export function BookingForm() {
                   className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
                 />
                 <Label htmlFor="b-first-visit" className="text-sm cursor-pointer">
-                  Est-ce votre premi\u00e8re visite ?
+                  {t("fr", "booking.isFirstVisit")}
                 </Label>
               </div>
 

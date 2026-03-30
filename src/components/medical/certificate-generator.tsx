@@ -24,6 +24,7 @@ const CERTIFICATE_TYPES: { value: CertificateType; label: string }[] = [
 interface CertificateGeneratorProps {
   certificates: MedicalCertificateView[];
   patients: { id: string; name: string }[];
+  clinic?: { name: string; address?: string; phone?: string };
   onCreateCertificate?: (data: {
     patientId: string;
     type: CertificateType;
@@ -109,14 +110,20 @@ function generateCertificateSVG(cert: MedicalCertificateView): void {
   URL.revokeObjectURL(url);
 }
 
-function printCertificate(cert: MedicalCertificateView): void {
+function printCertificate(cert: MedicalCertificateView, clinic?: { name: string; address?: string; phone?: string }): void {
   const content = cert.content as Record<string, string>;
   const typeLabel = CERTIFICATE_TYPES.find((t) => t.value === cert.type)?.label ?? cert.type;
+  const clinicName = clinic?.name || "";
+  const clinicAddress = clinic?.address || "";
+  const clinicPhone = clinic?.phone || "";
 
   const html = `<!DOCTYPE html>
 <html><head><meta charset="utf-8"><title>Certificate – ${cert.patientName}</title>
 <style>
   body{font-family:Helvetica,Arial,sans-serif;font-size:11pt;line-height:1.6;color:#000;margin:0;padding:20mm}
+  .letterhead{text-align:center;margin-bottom:12pt}
+  .letterhead h2{font-size:14pt;margin:0 0 2pt;color:#333}
+  .letterhead p{font-size:9pt;color:#555;margin:0}
   .header{text-align:center;border-bottom:2px solid #333;padding-bottom:12pt;margin-bottom:18pt}
   .header h1{font-size:16pt;margin:0 0 4pt}
   .header p{font-size:9pt;color:#555;margin:0}
@@ -125,15 +132,16 @@ function printCertificate(cert: MedicalCertificateView): void {
   .signature{margin-top:48pt;text-align:right;border-top:1px solid #999;padding-top:8pt;width:40%;margin-left:auto}
   @page{size:A4;margin:20mm}
 </style></head><body>
-<div class="header"><h1>MEDICAL CERTIFICATE</h1><p>${typeLabel}</p></div>
-<div class="field"><span class="field-label">Patient:</span> ${cert.patientName}</div>
-<div class="field"><span class="field-label">Doctor:</span> ${cert.doctorName}</div>
-<div class="field"><span class="field-label">Date:</span> ${cert.issuedDate}</div>
-${content.reason ? `<div class="field"><span class="field-label">Reason:</span> ${content.reason}</div>` : ""}
-${content.startDate && content.endDate ? `<div class="field"><span class="field-label">Period:</span> ${content.startDate} to ${content.endDate}</div>` : ""}
-${content.details ? `<div class="field"><span class="field-label">Details:</span><br/>${content.details.replace(/\n/g, "<br/>")}</div>` : ""}
-${content.recommendations ? `<div class="field"><span class="field-label">Recommendations:</span> ${content.recommendations}</div>` : ""}
-<div class="signature">Doctor's Signature</div>
+${clinicName ? `<div class="letterhead"><h2>${clinicName}</h2>${clinicAddress ? `<p>${clinicAddress}</p>` : ""}${clinicPhone ? `<p>Tél : ${clinicPhone}</p>` : ""}</div>` : ""}
+<div class="header"><h1>CERTIFICAT MÉDICAL</h1><p>${typeLabel}</p></div>
+<div class="field"><span class="field-label">Patient :</span> ${cert.patientName}</div>
+<div class="field"><span class="field-label">Médecin :</span> ${cert.doctorName}</div>
+<div class="field"><span class="field-label">Date :</span> ${cert.issuedDate}</div>
+${content.reason ? `<div class="field"><span class="field-label">Motif :</span> ${content.reason}</div>` : ""}
+${content.startDate && content.endDate ? `<div class="field"><span class="field-label">Période :</span> du ${content.startDate} au ${content.endDate}</div>` : ""}
+${content.details ? `<div class="field"><span class="field-label">Détails :</span><br/>${content.details.replace(/\n/g, "<br/>")}</div>` : ""}
+${content.recommendations ? `<div class="field"><span class="field-label">Recommandations :</span> ${content.recommendations}</div>` : ""}
+<div class="signature">Signature du médecin</div>
 </body></html>`;
 
   const win = window.open("", "_blank");
@@ -146,6 +154,7 @@ ${content.recommendations ? `<div class="field"><span class="field-label">Recomm
 export function CertificateGenerator({
   certificates,
   patients,
+  clinic,
   onCreateCertificate,
 }: CertificateGeneratorProps) {
   const [showForm, setShowForm] = useState(false);
@@ -215,7 +224,7 @@ export function CertificateGenerator({
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => printCertificate(cert)}
+                        onClick={() => printCertificate(cert, clinic)}
                       >
                         <Printer className="h-3.5 w-3.5 mr-1" />
                         Print
