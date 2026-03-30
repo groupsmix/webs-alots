@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -59,9 +59,11 @@ export default function PatientLayout({
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [locale] = useLocale();
 
-  useEffect(() => {
-    setMobileMenuOpen(false);
-  }, [pathname]);
+  const [prevPathname, setPrevPathname] = useState(pathname);
+  if (prevPathname !== pathname) {
+    setPrevPathname(pathname);
+    if (mobileMenuOpen) setMobileMenuOpen(false);
+  }
 
   return (
     <div className="flex min-h-screen">

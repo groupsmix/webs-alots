@@ -107,21 +107,18 @@ function logConsentToServer(preferences: CookiePreferences): void {
  */
 export function CookieConsent() {
   const [locale] = useLocale();
-  const [visible, setVisible] = useState(false);
+  const [visible, setVisible] = useState(() => {
+    if (typeof window === "undefined") return false;
+    const stored = getStoredCookiePreferences();
+    if (stored) {
+      applyAnalyticsConsent(stored.analytics);
+      return false;
+    }
+    return true;
+  });
   const [showPreferences, setShowPreferences] = useState(false);
   const [preferences, setPreferences] =
     useState<CookiePreferences>(DEFAULT_PREFERENCES);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const stored = getStoredCookiePreferences();
-    if (!stored) {
-      setVisible(true);
-    } else {
-      // Apply stored preferences on mount
-      applyAnalyticsConsent(stored.analytics);
-    }
-  }, []);
 
   // Add bottom padding to body when banner is visible
   useEffect(() => {

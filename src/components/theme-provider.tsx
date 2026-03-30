@@ -27,15 +27,12 @@ export function useTheme() {
 }
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [theme, setThemeState] = useState<Theme>("system");
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
+  const [theme, setThemeState] = useState<Theme>(() => {
+    if (typeof window === "undefined") return "system";
     const stored = localStorage.getItem("theme") as Theme | null;
-    if (stored === "dark" || stored === "light") {
-      setThemeState(stored);
-    }
-  }, []);
+    if (stored === "dark" || stored === "light") return stored;
+    return "system";
+  });
 
   useEffect(() => {
     const root = document.documentElement;

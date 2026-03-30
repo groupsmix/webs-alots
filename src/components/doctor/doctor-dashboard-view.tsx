@@ -80,7 +80,7 @@ export function DoctorDashboardView({
   const [locale] = useLocale();
   const { data: appointmentList, mutate: mutateAppointments, isPending: _isStatusUpdating } = useOptimisticUpdate(initialAppointments);
   const [searchQuery, setSearchQuery] = useState("");
-  const [error, setError] = useState<Error | null>(null);
+  const [error, _setError] = useState<Error | null>(null);
   const { addToast } = useToast();
   const [confirmAction, setConfirmAction] = useState<{
     appointmentId: string;
