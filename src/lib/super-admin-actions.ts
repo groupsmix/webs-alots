@@ -21,7 +21,7 @@ import type {
   ClinicTier,
   Json,
 } from "@/lib/types/database";
-import { invalidateSubdomainCache, invalidateAllSubdomainCaches } from "@/lib/subdomain-cache";
+import { invalidateSubdomainCache } from "@/lib/subdomain-cache";
 
 /**
  * Server-side Supabase client scoped to super_admin operations.

@@ -149,7 +149,7 @@ export function ClinicDashboardLayout({
         <SidebarContent config={config} pathname={pathname} />
       </aside>
 
-      <main className="flex-1 p-6 pt-16 md:pt-6">
+      <main id="main-content" className="flex-1 p-6 pt-16 md:pt-6">
         {content}
       </main>
     </div>

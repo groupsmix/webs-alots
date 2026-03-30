@@ -163,7 +163,7 @@ export default function EquipmentLayout({
           <SidebarContent pathname={pathname} locale={locale} />
         </aside>
 
-        <main className="flex-1 p-6 pt-16 md:pt-6">
+        <main id="main-content" className="flex-1 p-6 pt-16 md:pt-6">
           <FeatureGate featureKey="equipment_rentals" moduleName="Medical Equipment">
             {children}
           </FeatureGate>
