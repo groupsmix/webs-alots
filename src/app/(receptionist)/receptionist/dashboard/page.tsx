@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Calendar, Users, UserPlus, Clock, CreditCard, FileText, Phone, MessageCircle, CheckCircle } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -11,6 +11,7 @@ import {
   fetchTodayAppointments,
   fetchInvoices,
   fetchPatients,
+  updateAppointmentStatus,
   type AppointmentView,
   type PatientView,
 } from "@/lib/data/client";
@@ -18,10 +19,14 @@ import { ManualBookingDialog } from "@/components/receptionist/manual-booking-di
 import { WalkInDialog } from "@/components/receptionist/walk-in-dialog";
 import { PaymentDialog } from "@/components/receptionist/payment-dialog";
 import { PageLoader } from "@/components/ui/page-loader";
+import { useOptimisticUpdate } from "@/lib/hooks/use-optimistic-update";
+import { useToast } from "@/components/ui/toast";
+import { logger } from "@/lib/logger";
 
 const statusVariant: Record<string, "default" | "success" | "warning" | "destructive" | "secondary" | "outline"> = {
   scheduled: "outline",
   confirmed: "default",
+  "checked-in": "success",
   "in-progress": "warning",
   completed: "success",
   "no-show": "destructive",
@@ -29,12 +34,13 @@ const statusVariant: Record<string, "default" | "success" | "warning" | "destruc
 };
 
 export default function ReceptionistDashboardPage() {
-  const [todayAppts, setTodayAppts] = useState<AppointmentView[]>([]);
+  const [initialAppts, setInitialAppts] = useState<AppointmentView[]>([]);
   const [patientMap, setPatientMap] = useState<Map<string, PatientView>>(new Map());
   const [totalRevenue, setTotalRevenue] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
-  const [checkedInIds, setCheckedInIds] = useState<Set<string>>(new Set());
+  const { data: todayAppts, mutate: mutateAppointments } = useOptimisticUpdate(initialAppts);
+  const { addToast } = useToast();
 
   useEffect(() => {
     const controller = new AbortController();
@@ -48,7 +54,7 @@ export default function ReceptionistDashboardPage() {
         fetchPatients(user.clinic_id),
       ]);
       if (controller.signal.aborted) return;
-      setTodayAppts(appts);
+      setInitialAppts(appts);
       setPatientMap(new Map(patients.map((p) => [p.id, p])));
       const revenue = invoices
         .filter((inv) => inv.status === "paid")
@@ -65,17 +71,72 @@ export default function ReceptionistDashboardPage() {
     return () => { controller.abort(); };
   }, []);
 
-  const checkedIn = todayAppts.filter((a) => a.status === "confirmed" || a.status === "in-progress").length;
+  const checkedIn = todayAppts.filter((a) => a.status === "confirmed" || a.status === "in-progress" || a.status === "checked-in").length;
 
   const stats = [
     { icon: Calendar, label: "Today's Bookings", value: todayAppts.length.toString(), color: "text-blue-600" },
-    { icon: Users, label: "Checked In", value: (checkedIn + checkedInIds.size).toString(), color: "text-green-600" },
+    { icon: Users, label: "Checked In", value: checkedIn.toString(), color: "text-green-600" },
     { icon: UserPlus, label: "Walk-ins Today", value: "0", color: "text-purple-600" },
     { icon: CreditCard, label: "Revenue (Month)", value: `${totalRevenue} MAD`, color: "text-orange-600" },
   ];
 
+  // Issue 22: Optimistic UI for appointment status changes
+  const handleStatusChange = useCallback(async (
+    appointmentId: string,
+    newStatus: string,
+  ) => {
+    const apt = todayAppts.find((a) => a.id === appointmentId);
+    const previousStatus = apt?.status ?? "scheduled";
+    const optimisticList = todayAppts.map((a) =>
+      a.id === appointmentId ? { ...a, status: newStatus } : a
+    );
+
+    await mutateAppointments(
+      optimisticList,
+      async () => {
+        const result = await updateAppointmentStatus(appointmentId, newStatus);
+        if (!result.success) throw new Error(result.error?.message ?? "Failed to update status");
+      },
+      {
+        onSuccess: () => {
+          addToast(
+            `Status updated to ${newStatus}`,
+            "success",
+            10_000,
+            {
+              label: "Undo",
+              onClick: () => {
+                const undoList = todayAppts.map((a) =>
+                  a.id === appointmentId ? { ...a, status: previousStatus } : a
+                );
+                void mutateAppointments(
+                  undoList,
+                  async () => {
+                    const undo = await updateAppointmentStatus(appointmentId, previousStatus);
+                    if (!undo.success) throw new Error(undo.error?.message ?? "Undo failed");
+                  },
+                  {
+                    onSuccess: () => addToast("Status reverted", "info"),
+                    onError: (err) => {
+                      logger.warn("Undo failed", { context: "receptionist-dashboard", error: err });
+                      addToast("Failed to undo", "error");
+                    },
+                  },
+                );
+              },
+            },
+          );
+        },
+        onError: (err) => {
+          logger.warn("Failed to update appointment status", { context: "receptionist-dashboard", error: err });
+          addToast("Failed to update status", "error");
+        },
+      },
+    );
+  }, [todayAppts, mutateAppointments, addToast]);
+
   const handleCheckIn = (id: string) => {
-    setCheckedInIds((prev) => new Set(prev).add(id));
+    void handleStatusChange(id, "checked-in");
   };
 
   const handleCallPatient = (phone: string) => {
@@ -169,7 +230,6 @@ export default function ReceptionistDashboardPage() {
               <div className="space-y-3">
                 {todayAppts.map((apt) => {
                   const patient = patientMap.get(apt.patientId);
-                  const isCheckedIn = checkedInIds.has(apt.id);
                   return (
                     <div key={apt.id} className="flex items-center gap-3 rounded-lg border p-3">
                       <Avatar>
@@ -183,16 +243,16 @@ export default function ReceptionistDashboardPage() {
                       </div>
                       <div className="text-right flex items-center gap-2">
                         <p className="text-sm font-medium">{apt.time}</p>
-                        <Badge variant={isCheckedIn ? "success" : statusVariant[apt.status]}>
-                          {isCheckedIn ? "checked-in" : apt.status}
+                        <Badge variant={statusVariant[apt.status] ?? "outline"}>
+                          {apt.status}
                         </Badge>
                       </div>
                       <div className="flex gap-1">
-                        {!isCheckedIn && apt.status !== "completed" && apt.status !== "cancelled" && (
-                          <Button variant="outline" size="sm" onClick={() => handleCheckIn(apt.id)} title="Check in">
-                            <CheckCircle className="h-3.5 w-3.5 text-green-600" />
-                          </Button>
-                        )}
+                          {apt.status !== "checked-in" && apt.status !== "completed" && apt.status !== "cancelled" && apt.status !== "no-show" && (
+                            <Button variant="outline" size="sm" onClick={() => handleCheckIn(apt.id)} title="Check in">
+                              <CheckCircle className="h-3.5 w-3.5 text-green-600" />
+                            </Button>
+                          )}
                         {patient && (
                           <>
                             <Button variant="ghost" size="sm" onClick={() => handleCallPatient(patient.phone)} title="Call">
