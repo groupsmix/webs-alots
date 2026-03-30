@@ -530,6 +530,12 @@ export const bookingLimiter = createRateLimiter({
   max: 10,
 });
 
+/** Waiting-list joins: 3 req / 60 min per key (applied per phone, Issue 51) */
+export const waitingListLimiter = createRateLimiter({
+  windowMs: 60 * 60_000,
+  max: 3,
+});
+
 /** Email verification: 5 req / 60s per IP (prevent OTP/link abuse) */
 export const emailVerificationLimiter = createRateLimiter({
   windowMs: 60_000,
@@ -547,6 +553,7 @@ export interface RateLimitRule {
  * Ordered list of rate-limit rules. First matching prefix wins.
  */
 export const rateLimitRules: RateLimitRule[] = [
+  { prefix: "/api/booking/waiting-list", limiter: waitingListLimiter },
   { prefix: "/api/book", limiter: bookingLimiter },
   { prefix: "/api/verify-email", limiter: emailVerificationLimiter },
   { prefix: "/api/upload", limiter: uploadLimiter },

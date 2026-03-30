@@ -113,6 +113,7 @@ export function BookingForm() {
   }), []);
   const { onFieldChange: onValidationChange, onFieldBlur: onValidationBlur, getFieldError } = useFormValidation<{ phone: string }>(validationRules);
   const [waitingListMessage, setWaitingListMessage] = useState<string | null>(null);
+  const [isJoiningWaitlist, setIsJoiningWaitlist] = useState(false);
 
   // Supabase-loaded data
   const [doctors, setDoctors] = useState<Doctor[]>([]);
@@ -205,6 +206,9 @@ export function BookingForm() {
       setWaitingListMessage("Veuillez saisir un numéro de téléphone valide avant de rejoindre la liste d\u2019attente.");
       return;
     }
+    // Prevent double-clicks while request is in-flight (Issue 51)
+    if (isJoiningWaitlist) return;
+    setIsJoiningWaitlist(true);
     try {
       const res = await fetch("/api/booking/waiting-list", {
         method: "POST",
@@ -227,6 +231,8 @@ export function BookingForm() {
     } catch (err) {
       logger.warn("Failed to join waiting list", { context: "booking-form", error: err });
       setWaitingListMessage("Impossible de rejoindre la liste d'attente.");
+    } finally {
+      setIsJoiningWaitlist(false);
     }
   };
 

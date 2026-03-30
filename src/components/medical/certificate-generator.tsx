@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, Download, FileText } from "lucide-react";
+import { Plus, Download, FileText, Printer } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -109,6 +109,40 @@ function generateCertificateSVG(cert: MedicalCertificateView): void {
   URL.revokeObjectURL(url);
 }
 
+function printCertificate(cert: MedicalCertificateView): void {
+  const content = cert.content as Record<string, string>;
+  const typeLabel = CERTIFICATE_TYPES.find((t) => t.value === cert.type)?.label ?? cert.type;
+
+  const html = `<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>Certificate – ${cert.patientName}</title>
+<style>
+  body{font-family:Helvetica,Arial,sans-serif;font-size:11pt;line-height:1.6;color:#000;margin:0;padding:20mm}
+  .header{text-align:center;border-bottom:2px solid #333;padding-bottom:12pt;margin-bottom:18pt}
+  .header h1{font-size:16pt;margin:0 0 4pt}
+  .header p{font-size:9pt;color:#555;margin:0}
+  .field{margin-bottom:8pt}
+  .field-label{font-weight:600}
+  .signature{margin-top:48pt;text-align:right;border-top:1px solid #999;padding-top:8pt;width:40%;margin-left:auto}
+  @page{size:A4;margin:20mm}
+</style></head><body>
+<div class="header"><h1>MEDICAL CERTIFICATE</h1><p>${typeLabel}</p></div>
+<div class="field"><span class="field-label">Patient:</span> ${cert.patientName}</div>
+<div class="field"><span class="field-label">Doctor:</span> ${cert.doctorName}</div>
+<div class="field"><span class="field-label">Date:</span> ${cert.issuedDate}</div>
+${content.reason ? `<div class="field"><span class="field-label">Reason:</span> ${content.reason}</div>` : ""}
+${content.startDate && content.endDate ? `<div class="field"><span class="field-label">Period:</span> ${content.startDate} to ${content.endDate}</div>` : ""}
+${content.details ? `<div class="field"><span class="field-label">Details:</span><br/>${content.details.replace(/\n/g, "<br/>")}</div>` : ""}
+${content.recommendations ? `<div class="field"><span class="field-label">Recommendations:</span> ${content.recommendations}</div>` : ""}
+<div class="signature">Doctor's Signature</div>
+</body></html>`;
+
+  const win = window.open("", "_blank");
+  if (!win) return;
+  win.document.write(html);
+  win.document.close();
+  win.addEventListener("load", () => { win.print(); });
+}
+
 export function CertificateGenerator({
   certificates,
   patients,
@@ -169,15 +203,24 @@ export function CertificateGenerator({
                         <p>Reason: {(cert.content as Record<string, string>).reason}</p>
                       )}
                     </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="mt-2"
-                      onClick={() => generateCertificateSVG(cert)}
-                    >
-                      <Download className="h-3.5 w-3.5 mr-1" />
-                      Download
-                    </Button>
+                    <div className="flex gap-2 mt-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => generateCertificateSVG(cert)}
+                      >
+                        <Download className="h-3.5 w-3.5 mr-1" />
+                        Download
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => printCertificate(cert)}
+                      >
+                        <Printer className="h-3.5 w-3.5 mr-1" />
+                        Print
+                      </Button>
+                    </div>
                   </div>
                 </div>
               </CardContent>

@@ -1,7 +1,8 @@
 "use client";
 
-import { ExternalLink, Lock } from "lucide-react";
+import { ExternalLink as ExternalLinkIcon, Lock } from "lucide-react";
 import { useLandingLocale } from "./landing-locale-provider";
+import { ExternalLink } from "@/components/ui/external-link";
 
 export function DemoSection() {
   const { t } = useLandingLocale();
@@ -22,10 +23,8 @@ export function DemoSection() {
         </div>
 
         <div className="mt-12 flex justify-center">
-          <a
+          <ExternalLink
             href="https://demo.oltigo.com"
-            target="_blank"
-            rel="noopener noreferrer"
             className="group w-full max-w-2xl"
           >
             <div className="overflow-hidden rounded-2xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 shadow-lg transition-all group-hover:border-gray-300 dark:group-hover:border-gray-600 group-hover:shadow-xl">
@@ -39,7 +38,7 @@ export function DemoSection() {
                 <div className="mx-auto flex items-center gap-2 rounded-lg bg-gray-50 dark:bg-gray-700 px-4 py-1.5 text-sm text-gray-500 dark:text-gray-400">
                   <Lock className="h-3 w-3 text-green-500" />
                   <span>demo.oltigo.com</span>
-                  <ExternalLink className="h-3 w-3" />
+                  <ExternalLinkIcon className="h-3 w-3" />
                 </div>
               </div>
 
@@ -70,24 +69,22 @@ export function DemoSection() {
                 </div>
                 <p className="mt-8 inline-flex items-center gap-2 text-sm font-medium text-blue-600 transition-colors group-hover:text-blue-700">
                   {t("landing.demoViewSite")}
-                  <ExternalLink className="h-3.5 w-3.5" />
+                  <ExternalLinkIcon className="h-3.5 w-3.5" />
                 </p>
               </div>
             </div>
-          </a>
+          </ExternalLink>
         </div>
 
         {/* Try Demo CTA */}
         <div className="mt-8 text-center">
-          <a
+          <ExternalLink
             href="https://demo.oltigo.com"
-            target="_blank"
-            rel="noopener noreferrer"
             className="inline-flex items-center gap-2 rounded-full bg-blue-600 px-8 py-3 text-sm font-semibold text-white shadow-md transition-all hover:bg-blue-700 hover:shadow-lg"
           >
             {t("landing.tryDemo")}
-            <ExternalLink className="h-4 w-4" />
-          </a>
+            <ExternalLinkIcon className="h-4 w-4" />
+          </ExternalLink>
           <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
             {t("landing.tryDemoSubtitle")}
           </p>

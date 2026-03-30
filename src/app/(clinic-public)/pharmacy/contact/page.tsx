@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Card, CardContent } from "@/components/ui/card";
 import { Phone, Mail, MapPin, Clock, MessageCircle } from "lucide-react";
+import { ExternalLink } from "@/components/ui/external-link";
 import { getPublicOnDutySchedule } from "@/lib/data/public";
 
 export const metadata: Metadata = {
@@ -48,14 +49,12 @@ export default async function PharmacyContactPage() {
                   <div>
                     <h3 className="font-semibold">WhatsApp</h3>
                     <p className="text-muted-foreground">+212 6 12 34 56 78</p>
-                    <a
+                    <ExternalLink
                       href="https://wa.me/212612345678?text=Hello%2C%20I%20need%20help%20with%20my%20prescription"
-                      target="_blank"
-                      rel="noopener noreferrer"
                       className="text-sm text-emerald-600 hover:underline"
                     >
                       Send WhatsApp Message
-                    </a>
+                    </ExternalLink>
                   </div>
                 </div>
 

@@ -3,7 +3,8 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ExternalLink, Monitor, Info, FileImage, Scan } from "lucide-react";
+import { ExternalLink as ExternalLinkIcon, Monitor, Info, FileImage, Scan } from "lucide-react";
+import { ExternalLink } from "@/components/ui/external-link";
 import { useTenant } from "@/components/tenant-provider";
 import { fetchRadiologyOrders } from "@/lib/data/client";
 import type { RadiologyOrderView } from "@/lib/data/client";
@@ -60,15 +61,13 @@ export default function DicomViewerPage() {
               to view medical images with full diagnostic tools.
             </p>
             <div className="flex items-center justify-center gap-3 pt-4">
-              <a
+              <ExternalLink
                 href="https://viewer.ohif.org/"
-                target="_blank"
-                rel="noopener noreferrer"
                 className="inline-flex items-center rounded-md border px-4 py-2 text-sm font-medium hover:bg-muted transition-colors"
               >
-                <ExternalLink className="h-4 w-4 mr-2" />
+                <ExternalLinkIcon className="h-4 w-4 mr-2" />
                 Open OHIF Viewer
-              </a>
+              </ExternalLink>
             </div>
           </div>
         </CardContent>
@@ -102,14 +101,12 @@ export default function DicomViewerPage() {
                         <div className="flex items-center gap-2">
                           <Badge variant="outline" className="text-xs">{order.imageCount} image{order.imageCount !== 1 ? "s" : ""}</Badge>
                           {order.images.find((img) => img.dicomStudyUid) && (
-                            <a
+                            <ExternalLink
                               href={`https://viewer.ohif.org/viewer?StudyInstanceUIDs=${order.images.find((img) => img.dicomStudyUid)?.dicomStudyUid}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
                               className="inline-flex items-center rounded-md bg-indigo-600 text-white px-3 py-1.5 text-xs font-medium hover:bg-indigo-700 transition-colors"
                             >
-                              <ExternalLink className="h-3 w-3 mr-1" /> Open in OHIF
-                            </a>
+                              <ExternalLinkIcon className="h-3 w-3 mr-1" /> Open in OHIF
+                            </ExternalLink>
                           )}
                         </div>
                       </div>
@@ -136,14 +133,12 @@ export default function DicomViewerPage() {
                           </p>
                         </div>
                         {order.images[0]?.fileUrl && (
-                          <a
+                          <ExternalLink
                             href={order.images[0].fileUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
                             className="inline-flex items-center rounded-md border px-2 py-1 text-xs hover:bg-muted transition-colors"
                           >
                             View
-                          </a>
+                          </ExternalLink>
                         )}
                       </div>
                     </CardContent>

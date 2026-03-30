@@ -71,15 +71,19 @@ export function BookingCalendar({ selectedDate, onSelectDate }: BookingCalendarP
     setFocusedDay(null);
   }, [currentMonth, currentYear]);
 
-  const isDateAvailable = (day: number) => {
+  /** Check whether a calendar day is bookable and, if not, why. */
+  const getDateStatus = (day: number): { available: boolean; reason?: string } => {
     const date = new Date(currentYear, currentMonth, day);
+    const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    if (date < todayStart) return { available: false, reason: "Date passée" };
     const dayOfWeek = date.getDay();
     const hours = clinicConfig.workingHours[dayOfWeek];
-    if (!hours?.enabled) return false;
-    // Don't allow past dates
-    const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-    return date >= todayStart;
+    if (!hours?.enabled) return { available: false, reason: "Fermé" };
+    return { available: true };
   };
+
+  /** Backwards-compatible helper used by the rest of the component. */
+  const isDateAvailable = (day: number) => getDateStatus(day).available;
 
   // Determine which day should be tabbable (roving tabindex)
   const selectedDayInMonth = (() => {
@@ -196,7 +200,11 @@ export function BookingCalendar({ selectedDate, onSelectDate }: BookingCalendarP
                   onClick={() => available && onSelectDate(dateStr)}
                   disabled={!available}
                   tabIndex={isTabbable ? 0 : -1}
-                  aria-label={formatAriaDate(currentYear, currentMonth, day)}
+                  aria-label={
+                    formatAriaDate(currentYear, currentMonth, day) +
+                    (getDateStatus(day).reason ? `, ${getDateStatus(day).reason}` : "")
+                  }
+                  title={getDateStatus(day).reason ?? undefined}
                   onFocus={() => setFocusedDay(day)}
                   className={`h-9 w-full rounded-md text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-1 ${
                     isSelected
