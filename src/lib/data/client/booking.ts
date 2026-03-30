@@ -1,10 +1,9 @@
 "use client";
 
-import { fetchRows, clearLookupCache, type ClientBookingConfig } from "./_core";
+import { clearLookupCache, type ClientBookingConfig } from "./_core";
 import { createClient } from "@/lib/supabase-client";
 import { logger } from "@/lib/logger";
 import type { Database } from "@/lib/types/database";
-import { getLocalDateStr } from "@/lib/utils";
 import { fetchTimeSlots } from "./clinical";
 import { fetchServices } from "./services";
 

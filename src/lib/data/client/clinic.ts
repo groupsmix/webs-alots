@@ -1,8 +1,6 @@
 "use client";
 
 import { fetchRows, ensureLookups, _activeUserMap, _activeServiceMap, type TableName } from "./_core";
-import { createClient } from "@/lib/supabase-client";
-import { getLocalDateStr } from "@/lib/utils";
 import { fetchTodayAppointments } from "./appointments";
 
 // ─────────────────────────────────────────────

@@ -31,7 +31,7 @@ export async function ClinicPublicLayout({
         logoUrl={branding.logoUrl}
         clinicName={branding.clinicName}
       />
-      <main className="flex-1">{children}</main>
+      <main id="main-content" className="flex-1">{children}</main>
       <PublicFooter clinicName={branding.clinicName} />
     </div>
   );

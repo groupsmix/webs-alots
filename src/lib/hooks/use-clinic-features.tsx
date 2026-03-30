@@ -200,7 +200,7 @@ export const SPECIALTY_FEATURES: Record<string, ClinicFeatureKey[]> = {
  * Get the user's specialty from their profile
  * This could be extended to read from user metadata or a profile table
  */
-function getUserSpecialty(): string | null {
+function _getUserSpecialty(): string | null {
   // In a real implementation, this would read from the user's session/profile
   // For now, we'll return null to fall back to clinic features only
   // The sidebar can be enhanced to accept a specialty prop from the user context

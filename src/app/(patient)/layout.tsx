@@ -161,7 +161,7 @@ export default function PatientLayout({
           </div>
         )}
 
-        <main className="flex-1 p-4 md:p-6">
+        <main id="main-content" className="flex-1 p-4 md:p-6">
           <AutoBreadcrumb />
           {children}
         </main>
