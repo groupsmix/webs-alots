@@ -10,6 +10,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { getCurrentUser, fetchPatients, type PatientView } from "@/lib/data/client";
 import { PatientRegistrationDialog } from "@/components/receptionist/patient-registration-dialog";
 import { PageLoader } from "@/components/ui/page-loader";
+import { DataMask } from "@/components/ui/data-mask";
 
 export default function ReceptionistPatientsPage() {
   const [patients, setPatients] = useState<PatientView[]>([]);
@@ -101,7 +102,7 @@ export default function ReceptionistPatientsPage() {
                 </Avatar>
                 <div className="flex-1 min-w-0">
                   <p className="font-medium text-sm">{patient.name}</p>
-                  <p className="text-xs text-muted-foreground">{patient.phone}</p>
+                  <DataMask value={patient.phone} type="phone" className="text-xs text-muted-foreground" />
                 </div>
                 <div className="flex items-center gap-2">
                   <Badge variant={patient.insurance ? "success" : "secondary"}>

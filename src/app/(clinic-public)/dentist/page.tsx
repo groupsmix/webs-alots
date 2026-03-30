@@ -36,7 +36,8 @@ export default async function DentistHomePage() {
   ]);
 
   const activeServices = services.filter((s) => s.active).slice(0, 6);
-  const topReviews = reviews.filter((r) => r.rating >= 4).slice(0, 3);
+  // Issue 53: Show all reviews unfiltered (consistent with main public page)
+  const topReviews = reviews.slice(0, 6);
 
   return (
     <>
@@ -156,10 +157,11 @@ export default async function DentistHomePage() {
               {topReviews.map((review) => (
                 <Card key={review.id}>
                   <CardContent className="pt-6">
-                    <div className="flex gap-0.5 mb-3">
+                    <div className="flex gap-0.5 mb-3" role="img" aria-label={`${review.rating} out of 5 stars`}>
                       {Array.from({ length: 5 }).map((_, i) => (
                         <Star
                           key={i}
+                          aria-hidden="true"
                           className={`h-4 w-4 ${
                             i < review.rating
                               ? "fill-yellow-400 text-yellow-400"

@@ -21,6 +21,7 @@ import {
 } from "@/lib/data/client";
 import { PageLoader } from "@/components/ui/page-loader";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
+import { DataMask } from "@/components/ui/data-mask";
 
 type Patient = PatientView;
 
@@ -123,7 +124,7 @@ export default function DoctorPatientsPage() {
                   </Avatar>
                   <div className="flex-1 min-w-0">
                     <p className="font-medium text-sm truncate">{patient.name}</p>
-                    <p className="text-xs text-muted-foreground">{patient.phone}</p>
+                    <DataMask value={patient.phone} type="phone" className="text-xs text-muted-foreground" />
                   </div>
                 </div>
                 <div className="space-y-1 text-xs text-muted-foreground">
@@ -180,7 +181,7 @@ export default function DoctorPatientsPage() {
                 <div className="flex flex-wrap gap-3 mt-1 text-sm text-muted-foreground">
                   <span className="flex items-center gap-1">
                     <Phone className="h-3 w-3" />
-                    {selectedPatient.phone}
+                    <DataMask value={selectedPatient.phone} type="phone" />
                   </span>
                   <span className="flex items-center gap-1">
                     <Calendar className="h-3 w-3" />
