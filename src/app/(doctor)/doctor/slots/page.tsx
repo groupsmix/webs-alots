@@ -11,6 +11,7 @@ import {
   type TimeSlotView,
 } from "@/lib/data/client";
 import { PageLoader } from "@/components/ui/page-loader";
+import { Breadcrumb } from "@/components/ui/breadcrumb";
 
 const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
@@ -160,6 +161,7 @@ export default function NextAvailableSlotsPage() {
               <Card key={date}>
                 <CardHeader className="pb-2">
                   <div className="flex items-center justify-between">
+                    <Breadcrumb items={[{ label: "Doctor", href: "/doctor/dashboard" }, { label: "Slots" }]} />
                     <CardTitle className="text-base flex items-center gap-2">
                       <Calendar className="h-4 w-4 text-primary" />
                       {formatted.day}, {formatted.month} {formatted.date}

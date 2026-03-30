@@ -21,6 +21,7 @@ import { useLocale } from "@/components/locale-switcher";
 import { t } from "@/lib/i18n";
 import type { TranslationKey } from "@/lib/i18n";
 import { SessionTimeoutWarning } from "@/components/session-timeout-warning";
+import { PatientSearchPalette } from "@/components/patient-search-palette";
 import { signOut } from "@/lib/auth";
 import type { ClinicFeatureKey } from "@/lib/features";
 
@@ -434,6 +435,7 @@ export default function DoctorLayout({
         <main className="flex-1 p-4 md:p-6">{children}</main>
       </div>
       <SessionTimeoutWarning onLogout={() => signOut()} />
+      <PatientSearchPalette />
     </div>
   );
 }

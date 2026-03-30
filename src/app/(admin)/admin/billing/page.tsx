@@ -25,6 +25,7 @@ import {
   fetchPricingTiers,
   type PricingTierRow,
 } from "@/lib/super-admin-actions";
+import { Breadcrumb } from "@/components/ui/breadcrumb";
 
 export default function ClientBillingPage() {
   const tenant = useTenant();
@@ -309,6 +310,7 @@ export default function ClientBillingPage() {
                 </DialogDescription>
               </DialogHeader>
               <div className="space-y-4 py-4">
+                <Breadcrumb items={[{ label: "Admin", href: "/admin/dashboard" }, { label: "Billing" }]} />
                 <div className="flex items-center justify-between rounded-lg border p-4">
                   <div>
                     <p className="text-sm text-muted-foreground">Plan actuel</p>

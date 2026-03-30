@@ -25,6 +25,7 @@ import {
 } from "@/lib/data/client";
 import { exportPatients } from "@/lib/export-data";
 import { PageLoader } from "@/components/ui/page-loader";
+import { Breadcrumb } from "@/components/ui/breadcrumb";
 
 type Patient = PatientView;
 
@@ -124,6 +125,7 @@ export default function AdminPatientDatabasePage() {
             <Card key={patient.id}>
               <CardContent className="pt-4 pb-4">
                 <div className="flex items-start gap-3">
+                  <Breadcrumb items={[{ label: "Admin", href: "/admin/dashboard" }, { label: "Patients" }]} />
                   <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
                     <User className="h-5 w-5 text-primary" />
                   </div>

@@ -22,6 +22,7 @@ import {
   type ECGRecordView, type BloodPressureView, type HeartMonitoringNoteView,
 } from "@/lib/data/specialists";
 import { PageLoader } from "@/components/ui/page-loader";
+import { Breadcrumb } from "@/components/ui/breadcrumb";
 
 function bpCategory(systolic: number, diastolic: number): { label: string; color: string } {
   // AHA BP classification (checked top-down; Stage 2 must be tested before Stage 1)
@@ -272,6 +273,7 @@ export default function CardiologyPage() {
                     const cat = bpCategory(bp.systolic, bp.diastolic);
                     return (
                       <div key={bp.id} className="flex items-center gap-3 text-sm">
+                        <Breadcrumb items={[{ label: "Doctor", href: "/doctor/dashboard" }, { label: "Cardiology" }]} />
                         <span className="text-muted-foreground w-24">{bp.readingDate}</span>
                         <div className="flex-1 flex items-center gap-2">
                           <div className="h-2 rounded-full bg-red-200" style={{ width: `${(bp.systolic / 200) * 100}%` }} />

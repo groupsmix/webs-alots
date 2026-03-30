@@ -12,6 +12,7 @@ import {
   type WaitingRoomEntry,
 } from "@/lib/data/client";
 import { PageLoader } from "@/components/ui/page-loader";
+import { Breadcrumb } from "@/components/ui/breadcrumb";
 
 export default function WaitingRoomPage() {
   const [entries, setEntries] = useState<WaitingRoomEntry[]>([]);
@@ -82,6 +83,7 @@ export default function WaitingRoomPage() {
 
   return (
     <div>
+      <Breadcrumb items={[{ label: "Doctor", href: "/doctor/dashboard" }, { label: "Waiting Room" }]} />
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold">Waiting Room</h1>
         <div className="flex gap-4 text-sm">

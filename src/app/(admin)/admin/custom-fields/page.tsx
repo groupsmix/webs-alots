@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/dialog";
 import { Plus, Pencil, Trash2, Settings } from "lucide-react";
 import type { CustomFieldDefinition } from "@/lib/types/custom-fields";
+import { Breadcrumb } from "@/components/ui/breadcrumb";
 
 const ENTITY_TYPES = [
   { value: "appointment", label: "Rendez-vous" },
@@ -123,6 +124,7 @@ export default function CustomFieldsAdminPage() {
 
   return (
     <div className="space-y-6 p-6">
+      <Breadcrumb items={[{ label: "Admin", href: "/admin/dashboard" }, { label: "Custom Fields" }]} />
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2">

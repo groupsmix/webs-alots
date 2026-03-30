@@ -8,6 +8,7 @@ import {
   type OdontogramView,
 } from "@/lib/data/client";
 import { PageLoader } from "@/components/ui/page-loader";
+import { Breadcrumb } from "@/components/ui/breadcrumb";
 
 export default function PatientToothMapPage() {
   const [entries, setEntries] = useState<OdontogramView[]>([]);
@@ -49,6 +50,7 @@ export default function PatientToothMapPage() {
 
   return (
     <div className="space-y-6">
+      <Breadcrumb items={[{ label: "Patient", href: "/patient/dashboard" }, { label: "Tooth Map" }]} />
       <h1 className="text-2xl font-bold">My Tooth Map</h1>
       <p className="text-sm text-muted-foreground">
         Visual overview of your dental health. Click on any tooth for details.

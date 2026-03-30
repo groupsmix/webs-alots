@@ -31,6 +31,7 @@ import {
   fetchNotifications,
   type NotificationView,
 } from "@/lib/data/client";
+import { Breadcrumb } from "@/components/ui/breadcrumb";
 
 // ---- Type Mapping ----
 
@@ -208,6 +209,7 @@ export default function PatientNotificationsPage() {
             >
               <CardContent className="flex items-start gap-4 pt-4 pb-4">
                 <div className={`h-10 w-10 rounded-full flex items-center justify-center shrink-0 ${colorMap[nType]}`}>
+                  <Breadcrumb items={[{ label: "Patient", href: "/patient/dashboard" }, { label: "Notifications" }]} />
                   <Icon className="h-5 w-5" />
                 </div>
                 <div className="flex-1 min-w-0">

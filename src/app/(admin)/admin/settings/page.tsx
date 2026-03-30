@@ -11,6 +11,7 @@ import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { clinicConfig } from "@/config/clinic.config";
+import { Breadcrumb } from "@/components/ui/breadcrumb";
 
 interface PaymentSettings {
   currency: string;
@@ -175,6 +176,7 @@ export default function ClinicSettingsPage() {
 
   return (
     <div>
+      <Breadcrumb items={[{ label: "Admin", href: "/admin/dashboard" }, { label: "Settings" }]} />
       <h1 className="text-2xl font-bold mb-6">Clinic Settings</h1>
 
       <Tabs defaultValue="profile">

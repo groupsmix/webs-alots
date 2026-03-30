@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { templateList, type TemplateId } from "@/lib/templates";
 import { useAsyncData } from "@/lib/hooks/use-async-data";
+import { Breadcrumb } from "@/components/ui/breadcrumb";
 
 export default function TemplatesPage() {
   const { data: initialTemplate, loading, error } = useAsyncData(
@@ -111,6 +112,7 @@ export default function TemplatesPage() {
             >
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
+                  <Breadcrumb items={[{ label: "Admin", href: "/admin/dashboard" }, { label: "Templates" }]} />
                   <CardTitle className="text-base flex items-center gap-2">
                     <Layout className="h-4 w-4" />
                     {tmpl.name}

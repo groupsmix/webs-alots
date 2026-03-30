@@ -17,6 +17,7 @@ import {
   DialogFooter,
   DialogDescription,
 } from "@/components/ui/dialog";
+import { Breadcrumb } from "@/components/ui/breadcrumb";
 
 interface Receptionist {
   id: string;
@@ -100,6 +101,7 @@ export default function ManageReceptionistsPage() {
 
   return (
     <div>
+      <Breadcrumb items={[{ label: "Admin", href: "/admin/dashboard" }, { label: "Receptionists" }]} />
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold">Receptionist Accounts</h1>

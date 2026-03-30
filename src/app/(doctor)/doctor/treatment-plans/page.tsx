@@ -5,6 +5,7 @@ import { TreatmentPlanBuilder } from "@/components/dental/treatment-plan-builder
 import { getCurrentUser, fetchTreatmentPlans, updateTreatmentPlan } from "@/lib/data/client";
 import type { TreatmentPlan, TreatmentStep } from "@/lib/types/dental";
 import { PageLoader } from "@/components/ui/page-loader";
+import { Breadcrumb } from "@/components/ui/breadcrumb";
 
 export default function DoctorTreatmentPlansPage() {
   const [plans, setPlans] = useState<TreatmentPlan[]>([]);
@@ -147,6 +148,7 @@ export default function DoctorTreatmentPlansPage() {
 
   return (
     <div className="space-y-6">
+      <Breadcrumb items={[{ label: "Doctor", href: "/doctor/dashboard" }, { label: "Treatment Plans" }]} />
       <h1 className="text-2xl font-bold">Treatment Plans</h1>
       <TreatmentPlanBuilder
         plans={plans}

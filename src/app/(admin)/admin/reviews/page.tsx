@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { getCurrentUser, fetchReviews, type ReviewView } from "@/lib/data/client";
 import { PageLoader } from "@/components/ui/page-loader";
+import { Breadcrumb } from "@/components/ui/breadcrumb";
 
 function StarRating({ rating }: { rating: number }) {
   return (
@@ -68,6 +69,7 @@ export default function ReviewManagementPage() {
 
   return (
     <div>
+      <Breadcrumb items={[{ label: "Admin", href: "/admin/dashboard" }, { label: "Reviews" }]} />
       <h1 className="text-2xl font-bold mb-6">Review Management</h1>
 
       <div className="grid gap-6 lg:grid-cols-3 mb-8">

@@ -37,6 +37,7 @@ import {
   type NotificationTemplate,
   type NotificationTrigger,
 } from "@/lib/notifications";
+import { Breadcrumb } from "@/components/ui/breadcrumb";
 
 // ---- Status & Channel Badges ----
 
@@ -117,6 +118,7 @@ export default function AdminNotificationsPage() {
 
   return (
     <div>
+      <Breadcrumb items={[{ label: "Admin", href: "/admin/dashboard" }, { label: "Notifications" }]} />
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold">Notification Center</h1>

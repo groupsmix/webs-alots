@@ -18,6 +18,7 @@ import {
   defaultWebsiteConfig,
   type WebsiteConfig,
 } from "@/lib/website-config";
+import { Breadcrumb } from "@/components/ui/breadcrumb";
 
 export default function WebsiteEditorPage() {
   const [config, setConfig] = useState<WebsiteConfig>(defaultWebsiteConfig);
@@ -149,6 +150,7 @@ export default function WebsiteEditorPage() {
 
   return (
     <div className="space-y-6">
+      <Breadcrumb items={[{ label: "Admin", href: "/admin/dashboard" }, { label: "Website Editor" }]} />
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">Website Editor</h1>

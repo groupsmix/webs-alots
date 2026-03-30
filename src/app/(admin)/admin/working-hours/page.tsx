@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { getCurrentUser, fetchDoctors, type DoctorView } from "@/lib/data/client";
+import { Breadcrumb } from "@/components/ui/breadcrumb";
 
 const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
@@ -131,6 +132,7 @@ export default function WorkingHoursPage() {
                 const daySchedule = currentSchedule.days[i];
                 return (
                   <div key={i} className="flex items-center gap-4 p-3 border rounded-lg">
+                    <Breadcrumb items={[{ label: "Admin", href: "/admin/dashboard" }, { label: "Working Hours" }]} />
                     <div className="w-28">
                       <span className="text-sm font-medium">{day}</span>
                     </div>

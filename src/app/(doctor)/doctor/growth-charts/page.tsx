@@ -30,6 +30,7 @@ import {
   type PatientView,
 } from "@/lib/data/client";
 import { PageLoader } from "@/components/ui/page-loader";
+import { Breadcrumb } from "@/components/ui/breadcrumb";
 
 // WHO Weight-for-age reference data (boys, simplified percentiles: 3rd, 50th, 97th)
 const WHO_WEIGHT_BOYS: Record<number, [number, number, number]> = {
@@ -149,6 +150,7 @@ export default function GrowthChartsPage() {
 
   return (
     <div>
+      <Breadcrumb items={[{ label: "Doctor", href: "/doctor/dashboard" }, { label: "Growth Charts" }]} />
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold">Growth Charts</h1>
         <Button onClick={() => setShowAdd(true)}>

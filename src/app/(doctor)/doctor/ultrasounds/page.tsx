@@ -30,6 +30,7 @@ import {
   type PregnancyView,
 } from "@/lib/data/client";
 import { PageLoader } from "@/components/ui/page-loader";
+import { Breadcrumb } from "@/components/ui/breadcrumb";
 
 export default function UltrasoundsPage() {
   const [ultrasounds, setUltrasounds] = useState<UltrasoundView[]>([]);
@@ -132,6 +133,7 @@ export default function UltrasoundsPage() {
 
   return (
     <div>
+      <Breadcrumb items={[{ label: "Doctor", href: "/doctor/dashboard" }, { label: "Ultrasounds" }]} />
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold">Ultrasound Records</h1>
         <Button onClick={() => setShowAdd(true)} disabled={activePregnancies.length === 0}>

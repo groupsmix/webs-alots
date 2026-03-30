@@ -14,6 +14,7 @@ import {
   type PrescriptionView,
   type ConsultationNoteView,
 } from "@/lib/data/client";
+import { Breadcrumb } from "@/components/ui/breadcrumb";
 
 const vitals = [
   { label: "Blood Pressure", value: "120/80 mmHg", icon: Activity, trend: "stable", color: "text-blue-600" },
@@ -89,6 +90,7 @@ export default function MedicalHistoryPage() {
 
   return (
     <div>
+      <Breadcrumb items={[{ label: "Patient", href: "/patient/dashboard" }, { label: "Medical History" }]} />
       <h1 className="text-2xl font-bold mb-6">Medical History</h1>
 
       <Card className="mb-6">

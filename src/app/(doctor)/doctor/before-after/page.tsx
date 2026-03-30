@@ -9,6 +9,7 @@ import {
   type BeforeAfterPhotoView,
 } from "@/lib/data/client";
 import { PageLoader } from "@/components/ui/page-loader";
+import { Breadcrumb } from "@/components/ui/breadcrumb";
 
 export default function DoctorBeforeAfterPage() {
   const [photos, setPhotos] = useState<BeforeAfterPhotoView[]>([]);
@@ -70,6 +71,7 @@ export default function DoctorBeforeAfterPage() {
 
   return (
     <div className="space-y-6">
+      <Breadcrumb items={[{ label: "Doctor", href: "/doctor/dashboard" }, { label: "Before/After" }]} />
       <h1 className="text-2xl font-bold">Before / After Photos</h1>
       <BeforeAfterGallery photos={photos} editable onAddPhoto={handleAddPhoto} />
     </div>

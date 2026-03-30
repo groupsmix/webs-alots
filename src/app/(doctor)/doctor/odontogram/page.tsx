@@ -7,6 +7,7 @@ import { OdontogramChart } from "@/components/dental/odontogram-chart";
 import { getCurrentUser, fetchPatients, fetchOdontogram, upsertOdontogramEntry, type PatientView, type OdontogramView } from "@/lib/data/client";
 import type { ToothStatus, OdontogramEntry } from "@/lib/types/dental";
 import { PageLoader } from "@/components/ui/page-loader";
+import { Breadcrumb } from "@/components/ui/breadcrumb";
 
 export default function DoctorOdontogramPage() {
   const [patients, setPatients] = useState<PatientView[]>([]);
@@ -81,6 +82,7 @@ export default function DoctorOdontogramPage() {
 
   return (
     <div className="space-y-6">
+      <Breadcrumb items={[{ label: "Doctor", href: "/doctor/dashboard" }, { label: "Odontogram" }]} />
       <h1 className="text-2xl font-bold">Odontogram Editor</h1>
 
       <Card>

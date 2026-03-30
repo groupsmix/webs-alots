@@ -31,6 +31,7 @@ import {
   type PatientView,
 } from "@/lib/data/client";
 import { PageLoader } from "@/components/ui/page-loader";
+import { Breadcrumb } from "@/components/ui/breadcrumb";
 
 function addDays(date: string, days: number): string {
   const d = new Date(date);
@@ -153,6 +154,7 @@ export default function PregnanciesPage() {
 
   return (
     <div>
+      <Breadcrumb items={[{ label: "Doctor", href: "/doctor/dashboard" }, { label: "Pregnancies" }]} />
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold">Pregnancy Tracking</h1>
         <Button onClick={() => setShowAdd(true)}>

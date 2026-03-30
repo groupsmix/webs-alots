@@ -4,6 +4,7 @@ import { useState } from "react";
 import { DepartmentManagement } from "@/components/polyclinic/department-management";
 import { DepartmentDashboard } from "@/components/polyclinic/department-dashboard";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Breadcrumb } from "@/components/ui/breadcrumb";
 
 export default function AdminDepartmentsPage() {
   const [departments] = useState<Parameters<typeof DepartmentManagement>[0]["departments"]>([]);
@@ -11,6 +12,7 @@ export default function AdminDepartmentsPage() {
 
   return (
     <div className="space-y-6">
+      <Breadcrumb items={[{ label: "Admin", href: "/admin/dashboard" }, { label: "Departments" }]} />
       <h1 className="text-2xl font-bold">Department Management</h1>
       <Tabs defaultValue="departments">
         <TabsList>

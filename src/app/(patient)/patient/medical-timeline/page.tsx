@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase-server";
 import { requireTenant } from "@/lib/tenant";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { t } from "@/lib/i18n";
+import { Breadcrumb } from "@/components/ui/breadcrumb";
 
 /**
  * Patient Medical Timeline
@@ -112,6 +113,7 @@ export default async function MedicalTimelinePage() {
 
   return (
     <div className="space-y-6">
+      <Breadcrumb items={[{ label: "Patient", href: "/patient/dashboard" }, { label: "Medical Timeline" }]} />
       <h1 className="text-2xl font-bold">{t("fr", "carnet.title")}</h1>
 
       {timeline.length === 0 ? (

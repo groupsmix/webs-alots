@@ -5,6 +5,7 @@ import { SterilizationLogPanel } from "@/components/dental/sterilization-log-pan
 import { getCurrentUser, fetchSterilizationLog, createSterilizationEntry } from "@/lib/data/client";
 import type { SterilizationEntry } from "@/lib/types/dental";
 import { PageLoader } from "@/components/ui/page-loader";
+import { Breadcrumb } from "@/components/ui/breadcrumb";
 
 export default function DoctorSterilizationPage() {
   const [log, setLog] = useState<SterilizationEntry[]>([]);
@@ -69,6 +70,7 @@ export default function DoctorSterilizationPage() {
 
   return (
     <div className="space-y-6">
+      <Breadcrumb items={[{ label: "Doctor", href: "/doctor/dashboard" }, { label: "Sterilization" }]} />
       <h1 className="text-2xl font-bold">Sterilization Log</h1>
       <SterilizationLogPanel entries={log} onAddEntry={handleAddEntry} />
     </div>

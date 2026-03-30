@@ -23,6 +23,7 @@ import {
   type XRayRecordView, type FractureRecordView, type RehabPlanView,
 } from "@/lib/data/specialists";
 import { PageLoader } from "@/components/ui/page-loader";
+import { Breadcrumb } from "@/components/ui/breadcrumb";
 
 const FRACTURE_STATUSES: Record<string, { label: string; variant: "default" | "warning" | "success" | "destructive" }> = {
   diagnosed: { label: "Diagnosed", variant: "destructive" },
@@ -306,6 +307,7 @@ export default function OrthopedicsPage() {
                   <Card key={plan.id}>
                     <CardHeader className="pb-2">
                       <div className="flex items-center justify-between">
+                        <Breadcrumb items={[{ label: "Doctor", href: "/doctor/dashboard" }, { label: "Orthopedics" }]} />
                         <CardTitle className="text-base">{plan.title}</CardTitle>
                         <Badge variant={plan.status === "active" ? "default" : plan.status === "completed" ? "success" : "warning"}>
                           {plan.status}

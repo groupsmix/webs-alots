@@ -22,6 +22,7 @@ import {
   type SkinPhotoView, type SkinConditionView,
 } from "@/lib/data/specialists";
 import { PageLoader } from "@/components/ui/page-loader";
+import { Breadcrumb } from "@/components/ui/breadcrumb";
 
 const BODY_REGIONS = [
   "Face", "Scalp", "Neck", "Chest", "Back", "Abdomen",
@@ -340,6 +341,7 @@ export default function DermatologyPage() {
                     const last = regionPhotos[regionPhotos.length - 1];
                     return (
                       <div key={region}>
+                        <Breadcrumb items={[{ label: "Doctor", href: "/doctor/dashboard" }, { label: "Dermatology" }]} />
                         <h3 className="text-sm font-medium mb-2 flex items-center gap-2">
                           <MapPin className="h-3 w-3" /> {region}
                           <Badge variant="outline" className="text-[10px]">{regionPhotos.length} photos</Badge>

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { DeliveryInvoicing } from "@/components/dental-lab/delivery-invoicing";
+import { Breadcrumb } from "@/components/ui/breadcrumb";
 
 export default function AdminLabInvoicesPage() {
   const [deliveries] = useState<Parameters<typeof DeliveryInvoicing>[0]["deliveries"]>([]);
@@ -9,6 +10,7 @@ export default function AdminLabInvoicesPage() {
 
   return (
     <div className="space-y-6">
+      <Breadcrumb items={[{ label: "Admin", href: "/admin/dashboard" }, { label: "Lab Invoices" }]} />
       <h1 className="text-2xl font-bold">Delivery & Invoicing</h1>
       <DeliveryInvoicing deliveries={deliveries} invoices={invoices} editable />
     </div>

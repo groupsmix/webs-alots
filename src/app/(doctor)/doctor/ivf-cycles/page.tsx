@@ -4,6 +4,7 @@ import { useState } from "react";
 import { CycleTracking } from "@/components/ivf/cycle-tracking";
 import { OutcomeStatistics } from "@/components/ivf/outcome-statistics";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Breadcrumb } from "@/components/ui/breadcrumb";
 
 export default function DoctorIVFCyclesPage() {
   const [cycles] = useState<Parameters<typeof CycleTracking>[0]["cycles"]>([]);
@@ -18,6 +19,7 @@ export default function DoctorIVFCyclesPage() {
 
   return (
     <div className="space-y-6">
+      <Breadcrumb items={[{ label: "Doctor", href: "/doctor/dashboard" }, { label: "IVF Cycles" }]} />
       <h1 className="text-2xl font-bold">IVF Cycle Management</h1>
       <Tabs defaultValue="cycles">
         <TabsList>

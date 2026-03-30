@@ -22,6 +22,7 @@ import {
   type BloodSugarReadingView, type HormoneLevelView, type DiabetesManagementView,
 } from "@/lib/data/specialists";
 import { PageLoader } from "@/components/ui/page-loader";
+import { Breadcrumb } from "@/components/ui/breadcrumb";
 
 function glucoseCategory(level: number, type: string): { label: string; color: string } {
   if (type === "fasting") {
@@ -231,6 +232,7 @@ export default function EndocrinologyPage() {
                     const cat = glucoseCategory(s.glucoseLevel, s.readingType);
                     return (
                       <div key={s.id} className="flex items-center gap-3 text-sm">
+                        <Breadcrumb items={[{ label: "Doctor", href: "/doctor/dashboard" }, { label: "Endocrinology" }]} />
                         <span className="text-muted-foreground w-24">{s.readingDate}</span>
                         <div className="flex-1 flex items-center gap-2">
                           <div className="h-2 rounded-full bg-blue-200" style={{ width: `${Math.min((s.glucoseLevel / 300) * 100, 100)}%` }} />

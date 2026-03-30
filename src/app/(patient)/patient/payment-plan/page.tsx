@@ -8,6 +8,7 @@ import {
   type InstallmentPlanView,
 } from "@/lib/data/client";
 import { PageLoader } from "@/components/ui/page-loader";
+import { Breadcrumb } from "@/components/ui/breadcrumb";
 
 export default function PatientPaymentPlanPage() {
   const [myPlans, setMyPlans] = useState<InstallmentPlanView[]>([]);
@@ -79,6 +80,7 @@ export default function PatientPaymentPlanPage() {
 
   return (
     <div className="space-y-6">
+      <Breadcrumb items={[{ label: "Patient", href: "/patient/dashboard" }, { label: "Payment Plan" }]} />
       <h1 className="text-2xl font-bold">Payment Plan</h1>
       <p className="text-sm text-muted-foreground">
         Track your installment payments and download receipts.

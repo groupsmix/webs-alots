@@ -19,6 +19,7 @@ import {
   type SectionKey,
 } from "@/lib/section-visibility";
 import { useAsyncData } from "@/lib/hooks/use-async-data";
+import { Breadcrumb } from "@/components/ui/breadcrumb";
 
 export default function SectionsPage() {
   const { data: initialData, loading, error } = useAsyncData(
@@ -137,6 +138,7 @@ export default function SectionsPage() {
                     !isOn && !isAlwaysOn ? "opacity-50" : ""
                   }`}
                 >
+                  <Breadcrumb items={[{ label: "Admin", href: "/admin/dashboard" }, { label: "Sections" }]} />
                   <div className="space-y-0.5">
                     <div className="flex items-center gap-2">
                       <span className="text-sm font-medium">
