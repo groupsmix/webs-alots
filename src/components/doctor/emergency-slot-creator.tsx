@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import type { EmergencySlotView as EmergencySlot } from "@/lib/data/client";
 import { logger } from "@/lib/logger";
+import { formatDisplayDate } from "@/lib/utils";
 
 interface EmergencySlotCreatorProps {
   doctorId: string;
@@ -159,7 +160,7 @@ export function EmergencySlotCreator({ doctorId }: EmergencySlotCreatorProps) {
                 <div className="flex items-center gap-2">
                   <Clock className="h-3 w-3 text-muted-foreground" />
                   <span className="text-sm">
-                    {slot.date} &middot; {slot.startTime} - {slot.endTime}
+                    {formatDisplayDate(slot.date, "fr", "short")} &middot; {slot.startTime} - {slot.endTime}
                   </span>
                   {slot.reason && (
                     <span className="text-xs text-muted-foreground">({slot.reason})</span>

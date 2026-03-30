@@ -15,6 +15,7 @@ import {
   type AppointmentView,
 } from "@/lib/data/client";
 import { PageLoader } from "@/components/ui/page-loader";
+import { formatDisplayDate } from "@/lib/utils";
 
 type TabKey = "overview" | "history" | "prescriptions" | "notes";
 
@@ -187,7 +188,7 @@ export function PatientCard({ patientId }: { patientId?: string }) {
                     <div>
                       <p className="font-medium text-sm">{appt.serviceName}</p>
                       <p className="text-xs text-muted-foreground">
-                        {appt.date} at {appt.time} - Dr. {appt.doctorName}
+                        {formatDisplayDate(appt.date, "fr", "short")} at {appt.time} - Dr. {appt.doctorName}
                       </p>
                     </div>
                     <Badge variant={appt.status === "completed" ? "default" : "secondary"}>
@@ -212,7 +213,7 @@ export function PatientCard({ patientId }: { patientId?: string }) {
                   <div key={rx.id} className="border rounded-lg p-4">
                     <div className="flex items-center justify-between mb-2">
                       <p className="font-medium text-sm">Dr. {rx.doctorName}</p>
-                      <span className="text-xs text-muted-foreground">{rx.date}</span>
+                      <span className="text-xs text-muted-foreground">{formatDisplayDate(rx.date, "fr", "short")}</span>
                     </div>
                     <div className="space-y-1">
                       {rx.medications.map((med, idx) => (

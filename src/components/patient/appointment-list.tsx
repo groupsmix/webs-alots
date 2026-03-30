@@ -13,6 +13,7 @@ import {
 } from "@/lib/data/client";
 import { RescheduleDialog } from "./reschedule-dialog";
 import { PageLoader } from "@/components/ui/page-loader";
+import { formatDisplayDate } from "@/lib/utils";
 
 const statusVariant: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
   scheduled: "default",
@@ -216,7 +217,7 @@ export function AppointmentList({ patientId }: { patientId?: string }) {
                       <div className="flex flex-wrap gap-3 text-sm text-muted-foreground">
                         <span className="flex items-center gap-1">
                           <Calendar className="h-3 w-3" />
-                          {appt.date}
+                          {formatDisplayDate(appt.date, "fr", "long")}
                         </span>
                         <span className="flex items-center gap-1">
                           <Clock className="h-3 w-3" />
@@ -284,7 +285,7 @@ export function AppointmentList({ patientId }: { patientId?: string }) {
                 <div>
                   <p className="text-sm font-medium">{appt.serviceName}</p>
                   <p className="text-xs text-muted-foreground">
-                    {appt.date} - {appt.doctorName}
+                    {formatDisplayDate(appt.date, "fr", "short")} - {appt.doctorName}
                   </p>
                   {appt.cancellationReason && (
                     <p className="text-xs text-destructive mt-1">
