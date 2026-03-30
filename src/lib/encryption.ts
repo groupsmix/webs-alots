@@ -13,6 +13,43 @@
  *   - Each file gets a unique random IV (96 bits) prepended to the ciphertext
  *
  * Encrypted format: [12-byte IV][ciphertext + GCM auth tag]
+ *
+ * ── Key Rotation Procedure ──
+ *
+ * PHI encryption keys should be rotated periodically (recommended: annually,
+ * or immediately if a key compromise is suspected).
+ *
+ * Steps to rotate the PHI_ENCRYPTION_KEY:
+ *
+ *   1. Generate a new 256-bit key:
+ *        openssl rand -hex 32
+ *
+ *   2. Set the new key as PHI_ENCRYPTION_KEY and keep the old key as
+ *      PHI_ENCRYPTION_KEY_OLD in your environment / secret manager:
+ *        PHI_ENCRYPTION_KEY=<new-key-hex>
+ *        PHI_ENCRYPTION_KEY_OLD=<old-key-hex>
+ *
+ *   3. Run the re-encryption migration script (scripts/rotate-phi-key.ts):
+ *      - Reads all encrypted files from R2 (PHI_CATEGORIES)
+ *      - Decrypts each file with PHI_ENCRYPTION_KEY_OLD
+ *      - Re-encrypts with PHI_ENCRYPTION_KEY
+ *      - Uploads the re-encrypted file back to R2
+ *      - Logs progress and any failures for manual retry
+ *
+ *   4. After all files are re-encrypted successfully, remove
+ *      PHI_ENCRYPTION_KEY_OLD from the environment.
+ *
+ *   5. Update Cloudflare Worker secrets:
+ *        wrangler secret put PHI_ENCRYPTION_KEY
+ *
+ *   6. Record the rotation in the audit log for compliance:
+ *        - Date of rotation
+ *        - Operator who performed it
+ *        - Number of files re-encrypted
+ *        - Any files that failed and require manual attention
+ *
+ * IMPORTANT: Never delete the old key until ALL files have been successfully
+ * re-encrypted. Keep a secure backup of both keys during the transition.
  */
 
 import { logger } from "@/lib/logger";
