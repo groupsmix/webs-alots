@@ -23,16 +23,16 @@ bucket_name = "webs-alots-uploads"
 # Enables rate limit counters to survive Worker restarts
 [[kv_namespaces]]
 binding = "RATE_LIMIT_KV"
-id = "YOUR_KV_NAMESPACE_ID"  # Replace with actual KV namespace ID after creation
-preview_id = "YOUR_PREVIEW_KV_NAMESPACE_ID"  # For local dev
+id = "7ac37dff0a794542b0c766f38e73f105"
+preview_id = "7ac37dff0a794542b0c766f38e73f105"
 
 # ---- Feature Flags KV Namespace ----
 # Runtime feature flags using Cloudflare KV
 # Enables per-clinic feature overrides without redeployment
 [[kv_namespaces]]
 binding = "FEATURE_FLAGS_KV"
-id = "YOUR_FEATURE_FLAGS_KV_ID"  # Replace with actual KV namespace ID after creation
-preview_id = "YOUR_FEATURE_FLAGS_PREVIEW_ID"  # For local dev
+id = "610b3748bba545e2b083473b9023d66f"
+preview_id = "610b3748bba545e2b083473b9023d66f"
 
 # ---- Non-Sensitive Environment Variables ----
 [vars]
@@ -45,6 +45,12 @@ RATE_LIMIT_BACKEND = "kv"
 # Seed users from migration 00019 have been deleted in production.
 # This flag tells instrumentation.ts not to block startup.
 SEED_PASSWORDS_ROTATED = "true"
+# Data masking for patient PHI in the UI
+NEXT_PUBLIC_DATA_MASKING = "partial"
+# Phone/OTP auth disabled until Twilio SMS is configured
+NEXT_PUBLIC_PHONE_AUTH_ENABLED = "false"
+# WhatsApp provider selection
+WHATSAPP_PROVIDER = "meta"
 
 # ---- Workers Routes (custom domain + wildcard subdomains) ----
 routes = [
@@ -79,12 +85,25 @@ binding = "ASSETS"
 binding = "R2_BUCKET"
 bucket_name = "webs-alots-uploads-staging"
 
+[[env.staging.kv_namespaces]]
+binding = "RATE_LIMIT_KV"
+id = "7ac37dff0a794542b0c766f38e73f105"
+preview_id = "7ac37dff0a794542b0c766f38e73f105"
+
+[[env.staging.kv_namespaces]]
+binding = "FEATURE_FLAGS_KV"
+id = "610b3748bba545e2b083473b9023d66f"
+preview_id = "610b3748bba545e2b083473b9023d66f"
+
 [env.staging.vars]
 ROOT_DOMAIN = "staging.oltigo.com"
 NEXT_PUBLIC_SITE_URL = "https://staging.oltigo.com"
 R2_BUCKET_NAME = "webs-alots-uploads-staging"
 RATE_LIMIT_BACKEND = "kv"
 SEED_PASSWORDS_ROTATED = "true"
+NEXT_PUBLIC_DATA_MASKING = "partial"
+NEXT_PUBLIC_PHONE_AUTH_ENABLED = "false"
+WHATSAPP_PROVIDER = "meta"
 
 # ---- Staging Cron Triggers ----
 # Same schedule as production
