@@ -144,7 +144,8 @@ export default async function HomePage() {
   );
   const template = getTemplate(branding.templateId);
 
-  const topReviews = reviews.filter((r) => r.rating >= 4).slice(0, 3);
+  // Issue 53: Show all ratings (not just 4+) for unfiltered display
+  const topReviews = reviews.slice(0, 6);
 
   // Build LocalBusiness + MedicalOrganization structured data
   const rootDomain = process.env.ROOT_DOMAIN ?? "oltigo.com";

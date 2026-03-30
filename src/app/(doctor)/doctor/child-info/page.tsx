@@ -32,6 +32,7 @@ import {
   type PatientView,
 } from "@/lib/data/client";
 import { PageLoader } from "@/components/ui/page-loader";
+import { useOfflineDrafts } from "@/lib/hooks/use-offline-drafts";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
 
 const MILESTONE_TEMPLATES: Record<string, { milestone: string; expectedAgeMonths: number }[]> = {
@@ -80,13 +81,23 @@ export default function ChildInfoPage() {
   const [selectedPatient, setSelectedPatient] = useState<string>("");
   const [loading, setLoading] = useState(true);
   const [showAdd, setShowAdd] = useState(false);
-  const [form, setForm] = useState({
+  const [form, setFormRaw] = useState({
     patientId: "",
     category: "motor" as MilestoneView["category"],
     milestone: "",
     expectedAgeMonths: "",
     notes: "",
   });
+
+  // Issue 21: Auto-save draft for clinical form
+  const { saveDraft: saveChildDraft, clearDraft: clearChildDraft } = useOfflineDrafts<typeof form>("child-info-form", { autoSaveMs: 5000 });
+  const setForm: typeof setFormRaw = (val) => {
+    setFormRaw((prev) => {
+      const next = typeof val === "function" ? val(prev) : val;
+      saveChildDraft(next);
+      return next;
+    });
+  };
 
   const fetchData = useCallback(async () => {
     const user = await getCurrentUser();
@@ -139,7 +150,8 @@ export default function ChildInfoPage() {
       notes: form.notes || undefined,
     });
     setShowAdd(false);
-    setForm({ patientId: "", category: "motor", milestone: "", expectedAgeMonths: "", notes: "" });
+    clearChildDraft();
+    setFormRaw({ patientId: "", category: "motor", milestone: "", expectedAgeMonths: "", notes: "" });
     reload();
   };
 
@@ -170,12 +182,22 @@ export default function ChildInfoPage() {
   };
 
   const handleStatusUpdate = async (id: string, status: MilestoneView["status"]) => {
+    // Issue 22: Optimistic UI — update milestone status locally before server response
+    const previousMilestones = [...milestones];
+    const achievedDate = status === "achieved" ? new Date().toISOString().split("T")[0] : null;
+    setMilestones((prev) =>
+      prev.map((m) => (m.id === id ? { ...m, status, achievedDate: achievedDate ?? m.achievedDate } : m))
+    );
     const updates: Record<string, unknown> = { status };
     if (status === "achieved") {
-      updates.achieved_date = new Date().toISOString().split("T")[0];
+      updates.achieved_date = achievedDate;
     }
-    await updateMilestone(id, updates);
-    reload();
+    try {
+      await updateMilestone(id, updates);
+      reload();
+    } catch {
+      setMilestones(previousMilestones);
+    }
   };
 
   if (loading) {

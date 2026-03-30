@@ -30,6 +30,7 @@ import {
   type PregnancyView,
 } from "@/lib/data/client";
 import { PageLoader } from "@/components/ui/page-loader";
+import { useOfflineDrafts } from "@/lib/hooks/use-offline-drafts";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
 
 export default function UltrasoundsPage() {
@@ -38,7 +39,7 @@ export default function UltrasoundsPage() {
   const [selectedPregnancy, setSelectedPregnancy] = useState<string>("");
   const [loading, setLoading] = useState(true);
   const [showAdd, setShowAdd] = useState(false);
-  const [form, setForm] = useState({
+  const [form, setFormRaw] = useState({
     pregnancyId: "",
     scanDate: new Date().toISOString().split("T")[0],
     trimester: "1",
@@ -54,6 +55,16 @@ export default function UltrasoundsPage() {
     fl: "",  // Femur length
     efw: "", // Estimated fetal weight
   });
+
+  // Issue 21: Auto-save draft for clinical form
+  const { saveDraft: saveUsDraft, clearDraft: clearUsDraft } = useOfflineDrafts<typeof form>("ultrasounds-form", { autoSaveMs: 5000 });
+  const setForm: typeof setFormRaw = (val) => {
+    setFormRaw((prev) => {
+      const next = typeof val === "function" ? val(prev) : val;
+      saveUsDraft(next);
+      return next;
+    });
+  };
 
   const fetchData = useCallback(async () => {
     const user = await getCurrentUser();
@@ -121,7 +132,8 @@ export default function UltrasoundsPage() {
       notes: form.notes || undefined,
     });
     setShowAdd(false);
-    setForm({ pregnancyId: "", scanDate: new Date().toISOString().split("T")[0], trimester: "1", gestationalWeeks: "", gestationalDays: "", findings: "", notes: "", crl: "", bpd: "", hc: "", ac: "", fl: "", efw: "" });
+    clearUsDraft();
+    setFormRaw({ pregnancyId: "", scanDate: new Date().toISOString().split("T")[0], trimester: "1", gestationalWeeks: "", gestationalDays: "", findings: "", notes: "", crl: "", bpd: "", hc: "", ac: "", fl: "", efw: "" });
     reload();
   };
 

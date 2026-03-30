@@ -31,6 +31,7 @@ import {
   type PatientView,
 } from "@/lib/data/client";
 import { PageLoader } from "@/components/ui/page-loader";
+import { useOfflineDrafts } from "@/lib/hooks/use-offline-drafts";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
 
 function addDays(date: string, days: number): string {
@@ -45,7 +46,7 @@ export default function PregnanciesPage() {
   const [selectedPatient, setSelectedPatient] = useState<string>("");
   const [loading, setLoading] = useState(true);
   const [showAdd, setShowAdd] = useState(false);
-  const [form, setForm] = useState({
+  const [form, setFormRaw] = useState({
     patientId: "",
     lmpDate: "",
     gravida: "",
@@ -54,6 +55,17 @@ export default function PregnanciesPage() {
     rhFactor: "",
     notes: "",
   });
+
+  // Issue 21: Auto-save draft for clinical form
+  const { saveDraft: savePregDraft, clearDraft: clearPregDraft } = useOfflineDrafts<typeof form>("pregnancies-form", { autoSaveMs: 5000 });
+  const setForm: typeof setFormRaw = (val) => {
+    setFormRaw((prev) => {
+      const next = typeof val === "function" ? val(prev) : val;
+      savePregDraft(next);
+      return next;
+    });
+  };
+
   const [birthPlanForm, setBirthPlanForm] = useState({
     id: "",
     birthPlanNotes: "",
@@ -116,13 +128,21 @@ export default function PregnanciesPage() {
       notes: form.notes || undefined,
     });
     setShowAdd(false);
-    setForm({ patientId: "", lmpDate: "", gravida: "", para: "", bloodType: "", rhFactor: "", notes: "" });
+    clearPregDraft();
+    setFormRaw({ patientId: "", lmpDate: "", gravida: "", para: "", bloodType: "", rhFactor: "", notes: "" });
     reload();
   };
 
-  const handleStatusUpdate = async (id: string, status: string) => {
-    await updatePregnancy(id, { status });
-    reload();
+  const handleStatusUpdate = async (id: string, status: PregnancyView["status"]) => {
+    // Issue 22: Optimistic UI — update pregnancy status locally before server response
+    const previousPregnancies = [...pregnancies];
+    setPregnancies((prev) => prev.map((p) => (p.id === id ? { ...p, status } : p)));
+    try {
+      await updatePregnancy(id, { status });
+      reload();
+    } catch {
+      setPregnancies(previousPregnancies);
+    }
   };
 
   const handleSaveBirthPlan = async () => {
@@ -248,7 +268,7 @@ export default function PregnanciesPage() {
                     </Button>
                     <Select
                       value=""
-                      onValueChange={(v) => handleStatusUpdate(p.id, v)}
+                      onValueChange={(v) => handleStatusUpdate(p.id, v as PregnancyView["status"])}
                     >
                       <SelectTrigger className="w-[140px] h-8 text-xs">
                         <SelectValue placeholder="Update status" />

@@ -104,9 +104,15 @@ export default function TestOrdersPage() {
 
   const handleStatusUpdate = async (orderId: string, newStatus: string) => {
     setUpdatingStatusId(orderId);
+    // Issue 22: Optimistic UI — update status locally before server response
+    const previousOrders = [...orders];
+    setOrders((prev) => prev.map((o) => (o.id === orderId ? { ...o, status: newStatus } : o)));
     try {
       await updateLabOrderStatus(orderId, newStatus);
       refreshOrders();
+    } catch {
+      // Roll back on failure
+      setOrders(previousOrders);
     } finally {
       setUpdatingStatusId(null);
     }

@@ -173,7 +173,7 @@ export default function DoctorPrescriptionsPage() {
       .filter((m) => m.name.trim())
       .map((m) => ({ name: m.name, dosage: `${m.dosage} ${m.frequency}`.trim(), duration: m.duration }));
 
-    const ok = await createPrescription({
+    const result = await createPrescription({
       clinic_id: user.clinic_id,
       doctor_id: user.id,
       patient_id: patient.id,
@@ -181,9 +181,9 @@ export default function DoctorPrescriptionsPage() {
       notes: notes || undefined,
     });
 
-    if (ok) {
+    if (result.success) {
       const newRx: Prescription = {
-        id: `rx-${Date.now()}`,
+        id: result.data.id,
         patientId: patient.id,
         patientName: patient.name,
         doctorName: user.name ?? "Doctor",
@@ -209,7 +209,7 @@ export default function DoctorPrescriptionsPage() {
       .filter((m) => m.name.trim())
       .map((m) => ({ name: m.name, dosage: `${m.dosage} ${m.frequency}`.trim(), duration: m.duration }));
 
-    const ok = await createPrescription({
+    const result = await createPrescription({
       clinic_id: user.clinic_id,
       doctor_id: user.id,
       patient_id: patient.id,
@@ -218,7 +218,7 @@ export default function DoctorPrescriptionsPage() {
     });
 
     const newRx: Prescription = {
-      id: `rx-${Date.now()}`,
+      id: result.success ? result.data.id : `rx-${Date.now()}`,
       patientId: patient.id,
       patientName: patient.name,
       doctorName: user.name ?? "Doctor",
@@ -227,7 +227,7 @@ export default function DoctorPrescriptionsPage() {
       notes: notes || undefined,
     };
 
-    if (ok) {
+    if (result.success) {
       setRxList((prev) => [newRx, ...prev]);
     }
     generatePrescriptionPDF(newRx);

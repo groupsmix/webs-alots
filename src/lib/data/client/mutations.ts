@@ -91,14 +91,15 @@ export async function createPrescription(data: {
   items: { name: string; dosage: string; duration: string }[];
   notes?: string;
   appointment_id?: string;
-}): Promise<boolean> {
+}): Promise<MutationResult<{ id: string }>> {
   const supabase = createClient();
-  const { error } = await supabase.from("prescriptions").insert(data);
+  // Issue 45: Return created entity data via .select()
+  const { data: created, error } = await supabase.from("prescriptions").insert(data).select("id").single();
   if (error) {
     logger.warn("Query failed", { context: "data/client", error });
-    return false;
+    return { success: false, error: { code: error.code, message: error.message } };
   }
-  return true;
+  return { success: true, data: { id: created.id } };
 }
 
 export async function updatePrescription(
@@ -186,16 +187,17 @@ export async function upsertOdontogramEntry(data: {
   status: string;
   notes?: string;
   dentition?: "adult" | "child";
-}): Promise<boolean> {
+}): Promise<MutationResult<{ id: string }>> {
   const supabase = createClient();
-  const { error } = await supabase.from("odontogram").upsert(data, {
+  // Issue 45: Return created/updated entity data via .select()
+  const { data: created, error } = await supabase.from("odontogram").upsert(data, {
     onConflict: "clinic_id,patient_id,tooth_number",
-  });
+  }).select("id").single();
   if (error) {
     logger.warn("Query failed", { context: "data/client", error });
-    return false;
+    return { success: false, error: { code: error.code, message: error.message } };
   }
-  return true;
+  return { success: true, data: { id: created.id } };
 }
 
 export async function deleteOdontogramEntry(

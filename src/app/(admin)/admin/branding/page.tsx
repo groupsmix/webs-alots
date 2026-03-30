@@ -118,7 +118,15 @@ export default function BrandingPage() {
     setInitialized(true);
   }
 
+  // Issue 8: Derive whether colors pass WCAG AA so we can block save
+  const primaryPassesAA = meetsWCAG_AA("#ffffff", branding.primary_color);
+  const secondaryPassesAA = meetsWCAG_AA("#ffffff", branding.secondary_color);
+  const colorsPassContrast = primaryPassesAA && secondaryPassesAA;
+
   const handleSave = async () => {
+    // Issue 8: Block save when colors fail WCAG AA contrast validation
+    if (!colorsPassContrast) return;
+
     setSaving(true);
     try {
       await fetch("/api/branding", {
@@ -214,7 +222,7 @@ export default function BrandingPage() {
             to your public website.
           </p>
         </div>
-        <Button onClick={handleSave} disabled={saving}>
+        <Button onClick={handleSave} disabled={saving || !colorsPassContrast} title={!colorsPassContrast ? "Corrigez le contraste des couleurs avant de sauvegarder" : undefined}>
           <Save className="h-4 w-4 mr-2" />
           {saved ? "Saved!" : saving ? "Saving..." : "Save Changes"}
         </Button>

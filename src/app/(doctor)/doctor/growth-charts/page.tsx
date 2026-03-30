@@ -30,6 +30,7 @@ import {
   type PatientView,
 } from "@/lib/data/client";
 import { PageLoader } from "@/components/ui/page-loader";
+import { useOfflineDrafts } from "@/lib/hooks/use-offline-drafts";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
 
 // WHO Weight-for-age reference data (boys, simplified percentiles: 3rd, 50th, 97th)
@@ -65,7 +66,7 @@ export default function GrowthChartsPage() {
   const [selectedPatient, setSelectedPatient] = useState<string>("");
   const [loading, setLoading] = useState(true);
   const [showAdd, setShowAdd] = useState(false);
-  const [form, setForm] = useState({
+  const [form, setFormRaw] = useState({
     patientId: "",
     measuredAt: new Date().toISOString().split("T")[0],
     ageMonths: "",
@@ -74,6 +75,16 @@ export default function GrowthChartsPage() {
     headCircCm: "",
     notes: "",
   });
+
+  // Issue 21: Auto-save draft for clinical form
+  const { saveDraft: saveGrowthDraft, clearDraft: clearGrowthDraft } = useOfflineDrafts<typeof form>("growth-charts-form", { autoSaveMs: 5000 });
+  const setForm: typeof setFormRaw = (val) => {
+    setFormRaw((prev) => {
+      const next = typeof val === "function" ? val(prev) : val;
+      saveGrowthDraft(next);
+      return next;
+    });
+  };
 
   const fetchData = useCallback(async () => {
     const user = await getCurrentUser();
@@ -132,7 +143,8 @@ export default function GrowthChartsPage() {
       notes: form.notes || undefined,
     });
     setShowAdd(false);
-    setForm({ patientId: "", measuredAt: new Date().toISOString().split("T")[0], ageMonths: "", weightKg: "", heightCm: "", headCircCm: "", notes: "" });
+    clearGrowthDraft();
+    setFormRaw({ patientId: "", measuredAt: new Date().toISOString().split("T")[0], ageMonths: "", weightKg: "", heightCm: "", headCircCm: "", notes: "" });
     reload();
   };
 
