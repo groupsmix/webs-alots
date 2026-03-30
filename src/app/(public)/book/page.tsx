@@ -2,16 +2,31 @@ import type { Metadata } from "next";
 import { BookingForm } from "@/components/booking/booking-form";
 import { ErrorBoundary } from "@/components/ui/error-boundary";
 import { safeJsonLdStringify } from "@/lib/json-ld";
+import { getTenant } from "@/lib/tenant";
 
-export const metadata: Metadata = {
-  title: "Prendre Rendez-vous",
-  description:
-    "Réservez votre rendez-vous médical en ligne en quelques clics. Choisissez votre créneau et confirmez instantanément.",
-  openGraph: {
-    title: "Prendre Rendez-vous",
-    description: "Réservez votre rendez-vous médical en ligne en quelques clics.",
-  },
-};
+/**
+ * Dynamic metadata that includes the clinic name when available (Issue 58).
+ */
+export async function generateMetadata(): Promise<Metadata> {
+  const tenant = await getTenant();
+  const clinicName = tenant?.clinicName;
+
+  const title = clinicName
+    ? `Prendre Rendez-vous — ${clinicName}`
+    : "Prendre Rendez-vous";
+  const description = clinicName
+    ? `Réservez votre rendez-vous chez ${clinicName} en ligne en quelques clics. Choisissez votre créneau et confirmez instantanément.`
+    : "Réservez votre rendez-vous médical en ligne en quelques clics. Choisissez votre créneau et confirmez instantanément.";
+
+  return {
+    title,
+    description,
+    openGraph: {
+      title,
+      description,
+    },
+  };
+}
 
 export default function BookingPage() {
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://example.com";

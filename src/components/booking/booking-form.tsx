@@ -93,6 +93,7 @@ export function BookingForm() {
   // Simplified patient info: phone only required for first booking
   const [patientPhone, setPatientPhone] = useState("");
   const [patientName, setPatientName] = useState("");
+  const [isFirstVisit, setIsFirstVisit] = useState(true);
   const [submitted, setSubmitted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [bookingId, setBookingId] = useState<string | null>(null);
@@ -275,7 +276,7 @@ export function BookingForm() {
           serviceId: selectedService,
           date: selectedDate,
           time: selectedTime,
-          isFirstVisit: true,
+          isFirstVisit,
           hasInsurance: false,
           patient: {
             name: patientName || patientPhone,
@@ -353,6 +354,7 @@ export function BookingForm() {
             setSelectedTime("");
             setPatientPhone("");
             setPatientName("");
+            setIsFirstVisit(true);
             setBookingId(null);
             setBookingError(null);
             setWaitingListMessage(null);
@@ -582,6 +584,20 @@ export function BookingForm() {
                   onChange={(e) => setPatientName(e.target.value)}
                   placeholder="Votre nom"
                 />
+              </div>
+
+              {/* First visit toggle (Issue 49) */}
+              <div className="flex items-center gap-3">
+                <input
+                  id="b-first-visit"
+                  type="checkbox"
+                  checked={isFirstVisit}
+                  onChange={(e) => setIsFirstVisit(e.target.checked)}
+                  className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                />
+                <Label htmlFor="b-first-visit" className="text-sm cursor-pointer">
+                  Est-ce votre premi\u00e8re visite ?
+                </Label>
               </div>
 
               {/* Honeypot field - hidden from real users, catches bots */}

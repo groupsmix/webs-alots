@@ -208,6 +208,7 @@ export default async function HomePage() {
               <h2 className="text-3xl font-bold mb-4">
                 Ce que disent nos patients
               </h2>
+              <p className="text-sm text-muted-foreground mb-2">Meilleurs avis</p>
               <div className="flex items-center justify-center gap-2">
                 <span className="text-3xl font-bold">{avgRating}</span>
                 <div className="flex gap-0.5">

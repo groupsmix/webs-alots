@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono, Noto_Sans_Arabic } from "next/font/google";
 import "./globals.css";
 import { getTenant } from "@/lib/tenant";
 import { clinicConfig } from "@/config/clinic.config";
@@ -21,6 +21,13 @@ const geistSans = Geist({
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
+});
+
+const notoSansArabic = Noto_Sans_Arabic({
+  variable: "--font-noto-arabic",
+  subsets: ["arabic"],
+  weight: ["400", "500", "600", "700"],
+  display: "swap",
 });
 
 export const metadata: Metadata = {
@@ -79,7 +86,7 @@ export default async function RootLayout({
       lang={locale}
       dir={dir}
       suppressHydrationWarning
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} ${notoSansArabic.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
         <script
@@ -127,7 +134,9 @@ export default async function RootLayout({
               {children}
             </TenantProvider>
             <OfflineIndicator />
-            <PerformanceMonitor />
+            {process.env.NEXT_PUBLIC_ENABLE_PERF_MONITORING === "true" && (
+              <PerformanceMonitor />
+            )}
           </ToastProvider>
         </ThemeProvider>
         <ServiceWorkerRegister />

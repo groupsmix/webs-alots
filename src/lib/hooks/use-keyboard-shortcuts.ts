@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useCallback } from "react";
+import { useEffect, useRef } from "react";
 
 interface ShortcutConfig {
   key: string;
@@ -14,17 +14,27 @@ interface ShortcutConfig {
 /**
  * Register keyboard shortcuts for navigation and actions.
  * Shortcuts are disabled when focus is inside an input/textarea/select.
+ *
+ * Uses useRef internally so callers do NOT need to memoize the shortcuts
+ * array — the event listener is registered once and reads the latest
+ * shortcuts on each keydown via the ref (Issue 54).
  */
 export function useKeyboardShortcuts(shortcuts: ShortcutConfig[]) {
-  const handleKeyDown = useCallback(
-    (e: KeyboardEvent) => {
+  const shortcutsRef = useRef(shortcuts);
+
+  useEffect(() => {
+    shortcutsRef.current = shortcuts;
+  });
+
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
       const target = e.target as HTMLElement;
       const tagName = target.tagName.toLowerCase();
       if (tagName === "input" || tagName === "textarea" || tagName === "select" || target.isContentEditable) {
         return;
       }
 
-      for (const shortcut of shortcuts) {
+      for (const shortcut of shortcutsRef.current) {
         const ctrlMatch = shortcut.ctrl ? (e.ctrlKey || e.metaKey) : !(e.ctrlKey || e.metaKey);
         const shiftMatch = shortcut.shift ? e.shiftKey : !e.shiftKey;
         const altMatch = shortcut.alt ? e.altKey : !e.altKey;
@@ -35,12 +45,9 @@ export function useKeyboardShortcuts(shortcuts: ShortcutConfig[]) {
           return;
         }
       }
-    },
-    [shortcuts]
-  );
+    }
 
-  useEffect(() => {
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [handleKeyDown]);
+  }, []);
 }

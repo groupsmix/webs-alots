@@ -205,8 +205,9 @@
   transform: scaleX(-1);
 }
 
-/* Arabic typography */
+/* Arabic typography — use Noto Sans Arabic when in RTL mode (Issue 62) */
 [dir="rtl"] {
+  font-family: var(--font-noto-arabic), var(--font-geist-sans), sans-serif;
   font-feature-settings: "liga" 1, "calt" 1;
   line-height: 1.8;
 }
