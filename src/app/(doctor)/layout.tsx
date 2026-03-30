@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { SignOutButton } from "@/components/sign-out-button";
 import { useClinicFeatures, SPECIALTY_FEATURES } from "@/lib/hooks/use-clinic-features";
+import { clinicConfig } from "@/config/clinic.config";
 import { useLocale } from "@/components/locale-switcher";
 import { t } from "@/lib/i18n";
 import type { TranslationKey } from "@/lib/i18n";
@@ -334,7 +335,24 @@ export default function DoctorLayout({
   const pathname = usePathname();
   const [locale] = useLocale();
   const { hasFeature } = useClinicFeatures();
-  const [selectedSpecialty, setSelectedSpecialty] = useState<string | null>(null);
+  // Auto-detect specialty from clinic config type (Issue 15).
+  // Maps clinic types to the specialty filter keys used by SPECIALTY_FEATURES.
+  const CLINIC_TYPE_TO_SPECIALTY: Record<string, string> = {
+    doctor: "gp",
+    dentist: "dentist",
+    pediatrician: "pediatrician",
+    gynecologist: "gynecologist",
+    ophthalmologist: "ophthalmologist",
+    cardiologist: "cardiologist",
+    dermatologist: "dermatologist",
+    orthopedist: "orthopedist",
+    neurologist: "neurologist",
+    psychiatrist: "psychiatrist",
+    physiotherapist: "physiotherapist",
+    nutritionist: "nutritionist",
+  };
+  const detectedSpecialty = CLINIC_TYPE_TO_SPECIALTY[clinicConfig.type] ?? null;
+  const [selectedSpecialty, setSelectedSpecialty] = useState<string | null>(detectedSpecialty);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const visibleItems = navItems.filter((item) => {

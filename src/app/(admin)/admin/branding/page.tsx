@@ -73,6 +73,29 @@ function meetsWCAGAA(fg: string, bg: string): boolean {
   return getContrastRatio(fg, bg) >= 4.5;
 }
 
+/**
+ * Darken or lighten a hex color until it meets WCAG AA (4.5:1) against white.
+ * Iteratively adjusts luminance by mixing toward black (Issue 8).
+ */
+function suggestAccessibleColor(hex: string): string {
+  let r = parseInt(hex.slice(1, 3), 16);
+  let g = parseInt(hex.slice(3, 5), 16);
+  let b = parseInt(hex.slice(5, 7), 16);
+
+  // Darken step-by-step until we meet contrast against white
+  for (let i = 0; i < 100; i++) {
+    const candidate = `#${r.toString(16).padStart(2, "0")}${g.toString(16).padStart(2, "0")}${b.toString(16).padStart(2, "0")}`;
+    if (getContrastRatio("#ffffff", candidate) >= 4.5) {
+      return candidate;
+    }
+    // Mix 5% toward black each step
+    r = Math.round(r * 0.95);
+    g = Math.round(g * 0.95);
+    b = Math.round(b * 0.95);
+  }
+  return "#000000";
+}
+
 const FONT_OPTIONS = [
   "Geist",
   "Inter",
@@ -607,6 +630,20 @@ export default function BrandingPage() {
                         {!primaryOk && ` Primary (${primaryRatio}:1) fails.`}
                         {!secondaryOk && ` Secondary (${secondaryRatio}:1) fails.`}
                       </p>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="mt-2 text-xs"
+                        onClick={() => {
+                          setBranding((p) => ({
+                            ...p,
+                            ...((!primaryOk) ? { primary_color: suggestAccessibleColor(p.primary_color) } : {}),
+                            ...((!secondaryOk) ? { secondary_color: suggestAccessibleColor(p.secondary_color) } : {}),
+                          }));
+                        }}
+                      >
+                        Corriger le contraste
+                      </Button>
                     </div>
                   </div>
                 ) : null;

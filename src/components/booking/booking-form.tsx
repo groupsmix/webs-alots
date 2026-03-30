@@ -200,6 +200,11 @@ export function BookingForm() {
   };
 
   const handleJoinWaitingList = async (slot: string) => {
+    // Require a valid phone before joining the waiting list (Issue 17)
+    if (!patientPhone.trim() || !isValidMoroccanPhone(patientPhone)) {
+      setWaitingListMessage("Veuillez saisir un numéro de téléphone valide avant de rejoindre la liste d\u2019attente.");
+      return;
+    }
     try {
       const res = await fetch("/api/booking/waiting-list", {
         method: "POST",
@@ -244,8 +249,10 @@ export function BookingForm() {
     const idempotencyKey = idempotencyKeyRef.current;
 
     try {
-      // Step 1: Get booking token (phone verification)
-      setVerificationStatus(t("fr", "booking.verifyingPhone"));
+      // Unified progress: verify phone + create booking in one flow (Issue 3).
+      // The verify endpoint issues an HMAC token (no OTP) so we present
+      // a single "Confirmation en cours..." status to the user.
+      setVerificationStatus("Confirmation en cours...");
       const verifyRes = await fetch("/api/booking/verify", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -253,14 +260,17 @@ export function BookingForm() {
       });
       const verifyData = await verifyRes.json();
       if (!verifyRes.ok) {
-        setBookingError(verifyData.error ?? "Erreur de v\u00e9rification. Veuillez r\u00e9essayer.");
+        const errorMsg =
+          verifyRes.status === 503
+            ? "Service temporairement indisponible. Veuillez r\u00e9essayer."
+            : verifyRes.status === 404
+              ? "Ce num\u00e9ro n\u2019est pas enregistr\u00e9."
+              : verifyData.error ?? "Erreur de connexion, veuillez r\u00e9essayer.";
+        setBookingError(errorMsg);
         setVerificationStatus(null);
         return;
       }
       const bookingToken = verifyData.token as string;
-
-      // Step 2: Create booking with the token + idempotency key
-      setVerificationStatus(t("fr", "booking.creatingAppointment"));
       const specialtyId = doctor?.specialtyId ?? "";
 
       const res = await fetch("/api/booking", {
@@ -288,7 +298,12 @@ export function BookingForm() {
       });
       const data = await res.json();
       if (!res.ok) {
-        setBookingError(data.error ?? "Erreur lors de la r\u00e9servation. Veuillez r\u00e9essayer.");
+        const serverMsg = data.error as string | undefined;
+        setBookingError(
+          serverMsg?.includes("slot")
+            ? "Ce cr\u00e9neau n\u2019est plus disponible. Veuillez en choisir un autre."
+            : serverMsg ?? "Erreur lors de la r\u00e9servation. Veuillez r\u00e9essayer.",
+        );
         return;
       }
       if (data.appointment?.id) {
