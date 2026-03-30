@@ -207,6 +207,7 @@ function SidebarContent({
         <Link
           href={item.href}
           onClick={onNavClick}
+          aria-current={isActive ? "page" : undefined}
           className={`flex flex-1 items-center gap-3 rounded-lg px-3 ${compact ? "py-1.5" : "py-2"} text-sm transition-colors ${
             isActive
               ? "bg-primary/10 text-primary font-medium"

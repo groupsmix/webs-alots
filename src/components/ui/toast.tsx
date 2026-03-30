@@ -123,7 +123,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       {/* Toast container — RTL-aware and mobile-friendly */}
       <div
         aria-label="Notifications"
-        className="pointer-events-none fixed z-[100] flex flex-col gap-2 top-4 right-4 rtl:right-auto rtl:left-4 max-sm:top-auto max-sm:bottom-4 max-sm:right-2 max-sm:left-2 max-sm:items-center"
+        className="pointer-events-none fixed z-[80] flex flex-col gap-2 top-4 right-4 rtl:right-auto rtl:left-4 max-sm:top-auto max-sm:bottom-4 max-sm:right-2 max-sm:left-2 max-sm:items-center"
       >
         {visibleToasts.map((toast) => (
           <ToastItem key={toast.id} toast={toast} onRemove={removeToast} />

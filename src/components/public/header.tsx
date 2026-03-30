@@ -79,6 +79,7 @@ export function PublicHeader({ logoUrl, clinicName, sectionVisibility }: PublicH
             <Link
               key={link.href}
               href={link.href}
+              aria-current={pathname === link.href ? "page" : undefined}
               className="text-sm text-muted-foreground transition-colors hover:text-foreground"
             >
               {t(locale, link.labelKey)}
@@ -109,6 +110,7 @@ export function PublicHeader({ logoUrl, clinicName, sectionVisibility }: PublicH
               <Link
                 key={link.href}
                 href={link.href}
+                aria-current={pathname === link.href ? "page" : undefined}
                 className="text-sm text-muted-foreground"
                 onClick={() => setMobileMenuOpen(false)}
               >
