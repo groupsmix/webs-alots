@@ -1,13 +1,23 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { logger } from "@/lib/logger";
 
 /**
  * Register the service worker for PWA offline support and push notifications.
  * Only registers in production to avoid caching dev assets.
+ * Shows a toast when a new version is available (Issue 29).
  */
 export function ServiceWorkerRegister() {
+  const [updateAvailable, setUpdateAvailable] = useState(false);
+  const [waitingWorker, setWaitingWorker] = useState<ServiceWorker | null>(null);
+
+  const handleUpdate = useCallback(() => {
+    if (waitingWorker) {
+      waitingWorker.postMessage({ type: "SKIP_WAITING" });
+    }
+  }, [waitingWorker]);
+
   useEffect(() => {
     if (
       typeof window === "undefined" ||
@@ -17,10 +27,44 @@ export function ServiceWorkerRegister() {
       return;
     }
 
+    // Listen for controller changes (new SW activated) and reload
+    let refreshing = false;
+    const onControllerChange = () => {
+      if (refreshing) return;
+      refreshing = true;
+      window.location.reload();
+    };
+    navigator.serviceWorker.addEventListener("controllerchange", onControllerChange);
+
     navigator.serviceWorker
       .register("/sw.js")
       .then((registration) => {
         logger.info("Service worker registered", { context: "sw-register" });
+
+        // Check for updates periodically (every 60 minutes)
+        const updateInterval = setInterval(() => {
+          registration.update().catch(() => {});
+        }, 60 * 60 * 1000);
+
+        // Detect waiting worker (new version available)
+        const onStateChange = () => {
+          if (registration.waiting) {
+            setWaitingWorker(registration.waiting);
+            setUpdateAvailable(true);
+          }
+        };
+
+        if (registration.waiting) {
+          setWaitingWorker(registration.waiting);
+          setUpdateAvailable(true);
+        }
+
+        registration.addEventListener("updatefound", () => {
+          const newWorker = registration.installing;
+          if (newWorker) {
+            newWorker.addEventListener("statechange", onStateChange);
+          }
+        });
 
         // Subscribe to push notifications if supported and permission granted
         if (!("PushManager" in window)) return;
@@ -40,13 +84,35 @@ export function ServiceWorkerRegister() {
             subscribeToPush(registration);
           }
         });
+
+        return () => clearInterval(updateInterval);
       })
       .catch(() => {
         // Silent fail — SW is a progressive enhancement
       });
+
+    return () => {
+      navigator.serviceWorker.removeEventListener("controllerchange", onControllerChange);
+    };
   }, []);
 
-  return null;
+  if (!updateAvailable) return null;
+
+  return (
+    <div className="fixed bottom-4 left-4 right-4 z-[110] flex justify-center pointer-events-none sm:left-auto sm:right-4 sm:max-w-sm">
+      <div className="pointer-events-auto flex items-center gap-3 rounded-lg border border-blue-200 bg-blue-50 p-3 shadow-lg dark:border-blue-800 dark:bg-blue-950">
+        <p className="text-sm font-medium text-blue-900 dark:text-blue-100">
+          Nouvelle version disponible
+        </p>
+        <button
+          onClick={handleUpdate}
+          className="shrink-0 rounded-md bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-700 transition-colors"
+        >
+          Mettre à jour
+        </button>
+      </div>
+    </div>
+  );
 }
 
 /**

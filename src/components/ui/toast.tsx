@@ -114,15 +114,18 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     setToasts((prev) => [...prev, { id, message, type, duration, action }]);
   }, []);
 
+  // Limit visible toasts to 3; queue the rest
+  const visibleToasts = toasts.slice(-3);
+
   return (
     <ToastContext.Provider value={{ addToast, removeToast }}>
       {children}
-      {/* Toast container */}
+      {/* Toast container — RTL-aware and mobile-friendly */}
       <div
         aria-label="Notifications"
-        className="pointer-events-none fixed top-4 right-4 z-[100] flex flex-col gap-2"
+        className="pointer-events-none fixed z-[100] flex flex-col gap-2 top-4 right-4 rtl:right-auto rtl:left-4 max-sm:top-auto max-sm:bottom-4 max-sm:right-2 max-sm:left-2 max-sm:items-center"
       >
-        {toasts.map((toast) => (
+        {visibleToasts.map((toast) => (
           <ToastItem key={toast.id} toast={toast} onRemove={removeToast} />
         ))}
       </div>
