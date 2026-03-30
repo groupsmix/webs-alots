@@ -41,6 +41,7 @@ export function PatientSearchPalette({ basePath = "/doctor/patients" }: { basePa
       }}
       items={items}
       placeholder="Rechercher un patient (nom, tél, CIN)..."
+      onQueryChange={setQuery}
     />
   );
 }
