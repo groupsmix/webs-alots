@@ -26,6 +26,7 @@ import { useLocale } from "@/components/locale-switcher";
 import { t, type TranslationKey } from "@/lib/i18n";
 import { SessionTimeoutWarning } from "@/components/session-timeout-warning";
 import { signOut } from "@/lib/auth";
+import { AutoBreadcrumb } from "@/components/ui/auto-breadcrumb";
 
 interface NavItem {
   href: string;
@@ -159,7 +160,10 @@ export default function PatientLayout({
           </div>
         )}
 
-        <main className="flex-1 p-4 md:p-6">{children}</main>
+        <main className="flex-1 p-4 md:p-6">
+          <AutoBreadcrumb />
+          {children}
+        </main>
       </div>
       <SessionTimeoutWarning onLogout={() => signOut()} />
     </div>

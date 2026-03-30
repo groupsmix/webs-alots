@@ -228,6 +228,28 @@ export default async function HomePage() {
                 </span>
               </div>
             </div>
+            {/* Rating distribution */}
+            {reviews.length > 0 && (
+              <div className="mx-auto mb-10 max-w-xs space-y-1.5">
+                {[5, 4, 3, 2, 1].map((star) => {
+                  const count = reviews.filter((r) => r.rating === star).length;
+                  const pct = Math.round((count / reviews.length) * 100);
+                  return (
+                    <div key={star} className="flex items-center gap-2 text-sm">
+                      <span className="w-6 text-right font-medium">{star}<span className="text-yellow-400">&#9733;</span></span>
+                      <div className="flex-1 h-2 rounded-full bg-muted overflow-hidden">
+                        <div
+                          className="h-full rounded-full bg-yellow-400"
+                          style={{ width: `${pct}%` }}
+                        />
+                      </div>
+                      <span className="w-8 text-xs text-muted-foreground">{count}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
             <div className="grid gap-6 md:grid-cols-3 max-w-4xl mx-auto">
               {topReviews.map((review) => (
                 <Card key={review.id}>

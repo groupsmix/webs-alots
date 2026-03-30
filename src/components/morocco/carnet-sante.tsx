@@ -304,7 +304,7 @@ export function CarnetSante({ data, onUpdate, readOnly = false }: CarnetSantePro
                   onKeyDown={(e) => e.key === "Enter" && addAllergy()}
                   className="h-8 text-sm"
                 />
-                <Button size="sm" variant="outline" onClick={addAllergy} className="h-8">
+                <Button size="sm" variant="outline" onClick={addAllergy} className="h-8" aria-label="Ajouter allergie">
                   <Plus className="h-3 w-3" />
                 </Button>
               </div>
@@ -342,7 +342,7 @@ export function CarnetSante({ data, onUpdate, readOnly = false }: CarnetSantePro
                   onKeyDown={(e) => e.key === "Enter" && addCondition()}
                   className="h-8 text-sm"
                 />
-                <Button size="sm" variant="outline" onClick={addCondition} className="h-8">
+                <Button size="sm" variant="outline" onClick={addCondition} className="h-8" aria-label="Ajouter pathologie">
                   <Plus className="h-3 w-3" />
                 </Button>
               </div>

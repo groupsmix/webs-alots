@@ -23,6 +23,8 @@ import type { TranslationKey } from "@/lib/i18n";
 import { SessionTimeoutWarning } from "@/components/session-timeout-warning";
 import { signOut } from "@/lib/auth";
 import type { ClinicFeatureKey } from "@/lib/features";
+import { PatientSearchPalette } from "@/components/patient-search-palette";
+import { AutoBreadcrumb } from "@/components/ui/auto-breadcrumb";
 
 interface NavItem {
   href: string;
@@ -431,9 +433,13 @@ export default function DoctorLayout({
           </div>
         )}
 
-        <main className="flex-1 p-4 md:p-6">{children}</main>
+        <main className="flex-1 p-4 md:p-6">
+          <AutoBreadcrumb />
+          {children}
+        </main>
       </div>
       <SessionTimeoutWarning onLogout={() => signOut()} />
+      <PatientSearchPalette basePath="/doctor/patients" />
     </div>
   );
 }

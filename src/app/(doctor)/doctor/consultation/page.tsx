@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { FileEdit, CheckCircle, XCircle, Save, Eye, EyeOff, Plus, CloudOff, Cloud, Loader2 } from "lucide-react";
+import { FileEdit, CheckCircle, XCircle, Save, Eye, EyeOff, Plus, CloudOff, Cloud, Loader2, Printer } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -54,6 +54,36 @@ function mapDbNoteToLocal(n: ConsultationNoteView): ConsultationNote {
     createdAt: n.date,
     updatedAt: n.date,
   };
+}
+
+function printConsultationNote(apt: AppointmentView, note: ConsultationNote): void {
+  const html = `<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>Consultation – ${apt.patientName}</title>
+<style>
+  body{font-family:Helvetica,Arial,sans-serif;font-size:11pt;line-height:1.6;color:#000;margin:0;padding:20mm}
+  .header{text-align:center;border-bottom:2px solid #333;padding-bottom:12pt;margin-bottom:18pt}
+  .header h1{font-size:16pt;margin:0 0 4pt}
+  .header p{font-size:9pt;color:#555;margin:0}
+  .field{margin-bottom:8pt}
+  .field-label{font-weight:600}
+  .signature{margin-top:48pt;text-align:right;border-top:1px solid #999;padding-top:8pt;width:40%;margin-left:auto}
+  @page{size:A4;margin:20mm}
+</style></head><body>
+<div class="header"><h1>CONSULTATION NOTES</h1><p>${apt.serviceName} — ${apt.date}</p></div>
+<div class="field"><span class="field-label">Patient:</span> ${apt.patientName}</div>
+<div class="field"><span class="field-label">Date:</span> ${apt.date} at ${apt.time}</div>
+<div class="field"><span class="field-label">Chief Complaint:</span> ${note.chiefComplaint}</div>
+<div class="field"><span class="field-label">Examination:</span> ${note.examination}</div>
+<div class="field"><span class="field-label">Diagnosis:</span> ${note.diagnosis}</div>
+<div class="field"><span class="field-label">Plan:</span> ${note.plan}</div>
+<div class="signature">Doctor's Signature</div>
+</body></html>`;
+
+  const win = window.open("", "_blank");
+  if (!win) return;
+  win.document.write(html);
+  win.document.close();
+  win.addEventListener("load", () => { win.print(); });
 }
 
 export default function ConsultationNotesPage() {
@@ -342,6 +372,16 @@ export default function ConsultationNotesPage() {
                       <><Plus className="h-3.5 w-3.5 mr-1" /> Add Notes</>
                     )}
                   </Button>
+                  {note && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => printConsultationNote(apt, note)}
+                    >
+                      <Printer className="h-3.5 w-3.5 mr-1" />
+                      Print
+                    </Button>
+                  )}
                   {apt.status !== "completed" && apt.status !== "no-show" && (
                     <>
                       <Button

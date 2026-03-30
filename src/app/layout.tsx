@@ -10,7 +10,6 @@ import { OfflineIndicator } from "@/components/offline-indicator";
 import { PerformanceMonitor } from "@/components/performance-monitor";
 import { ServiceWorkerRegister } from "@/components/sw-register";
 import { PlausibleScript } from "@/components/plausible-script";
-import { safeJsonLdStringify } from "@/lib/json-ld";
 import { getDirection, type Locale } from "@/lib/i18n";
 
 const geistSans = Geist({
@@ -89,45 +88,8 @@ export default async function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} ${notoSansArabic.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{
-            __html: safeJsonLdStringify({
-              "@context": "https://schema.org",
-              "@type": "MedicalBusiness",
-              name: tenant?.clinicName || clinicConfig.name || "Oltigo",
-              description: tenant
-                ? `${tenant.clinicName} — Cabinet ${tenant.clinicType || "médical"} professionnel. Prenez rendez-vous en ligne.`
-                : "Plateforme SaaS pour la gestion de cabinets médicaux, dentaires et pharmacies au Maroc.",
-              url: process.env.NEXT_PUBLIC_SITE_URL ?? "https://oltigo.com",
-              "@id":
-                (process.env.NEXT_PUBLIC_SITE_URL ?? "https://oltigo.com") +
-                "/#organization",
-              ...(clinicConfig.contact.phone && {
-                telephone: clinicConfig.contact.phone,
-              }),
-              ...(clinicConfig.contact.email && {
-                email: clinicConfig.contact.email,
-              }),
-              ...(clinicConfig.contact.address && {
-                address: {
-                  "@type": "PostalAddress",
-                  streetAddress: clinicConfig.contact.address,
-                  addressLocality: clinicConfig.contact.city ?? "",
-                  addressCountry: "MA",
-                },
-              }),
-              currenciesAccepted: clinicConfig.currency,
-              potentialAction: {
-                "@type": "ReserveAction",
-                target:
-                  (process.env.NEXT_PUBLIC_SITE_URL ?? "https://oltigo.com") +
-                  "/book",
-                name: "Prendre rendez-vous en ligne",
-              },
-            }),
-          }}
-        />
+        {/* JSON-LD structured data is rendered on public pages only (Issue 59).
+            See src/app/(public)/page.tsx for clinic-specific schema. */}
         <ThemeProvider>
           <ToastProvider>
             <TenantProvider tenant={tenant}>

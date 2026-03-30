@@ -87,8 +87,11 @@ export function ServiceWorkerRegister() {
 
         return () => clearInterval(updateInterval);
       })
-      .catch(() => {
-        // Silent fail — SW is a progressive enhancement
+      .catch((err) => {
+        logger.warn("Service worker registration failed", {
+          context: "sw-register",
+          error: err,
+        });
       });
 
     return () => {
