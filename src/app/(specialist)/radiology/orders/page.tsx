@@ -122,6 +122,9 @@ export default function RadiologyOrdersPage() {
 
   const handleStatusUpdate = async (orderId: string, newStatus: string) => {
     setUpdatingStatusId(orderId);
+    // Issue 22: Optimistic UI — update status locally before server response
+    const previousOrders = [...orders];
+    setOrders((prev) => prev.map((o) => (o.id === orderId ? { ...o, status: newStatus } : o)));
     try {
       const res = await fetch("/api/radiology/orders", {
         method: "PATCH",
@@ -129,6 +132,9 @@ export default function RadiologyOrdersPage() {
         body: JSON.stringify({ orderId, action: "status", status: newStatus }),
       });
       if (res.ok) refreshOrders();
+      else setOrders(previousOrders); // Roll back on failure
+    } catch {
+      setOrders(previousOrders); // Roll back on error
     } finally {
       setUpdatingStatusId(null);
     }

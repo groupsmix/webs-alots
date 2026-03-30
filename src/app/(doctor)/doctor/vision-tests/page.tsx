@@ -30,6 +30,7 @@ import {
   type PatientView,
 } from "@/lib/data/client";
 import { PageLoader } from "@/components/ui/page-loader";
+import { useOfflineDrafts } from "@/lib/hooks/use-offline-drafts";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
 
 function formatRx(sphere: number | null, cylinder: number | null, axis: number | null): string {
@@ -47,7 +48,7 @@ export default function VisionTestsPage() {
   const [selectedPatient, setSelectedPatient] = useState<string>("");
   const [loading, setLoading] = useState(true);
   const [showAdd, setShowAdd] = useState(false);
-  const [form, setForm] = useState({
+  const [form, setFormRaw] = useState({
     patientId: "",
     testDate: new Date().toISOString().split("T")[0],
     odAcuity: "",
@@ -63,6 +64,16 @@ export default function VisionTestsPage() {
     pdMm: "",
     notes: "",
   });
+
+  // Issue 21: Auto-save draft for clinical form
+  const { saveDraft: saveVisionDraft, clearDraft: clearVisionDraft } = useOfflineDrafts<typeof form>("vision-tests-form", { autoSaveMs: 5000 });
+  const setForm: typeof setFormRaw = (val) => {
+    setFormRaw((prev) => {
+      const next = typeof val === "function" ? val(prev) : val;
+      saveVisionDraft(next);
+      return next;
+    });
+  };
 
   const fetchData = useCallback(async () => {
     const user = await getCurrentUser();
@@ -124,7 +135,8 @@ export default function VisionTestsPage() {
       notes: form.notes || undefined,
     });
     setShowAdd(false);
-    setForm({ patientId: "", testDate: new Date().toISOString().split("T")[0], odAcuity: "", osAcuity: "", odSphere: "", odCylinder: "", odAxis: "", osSphere: "", osCylinder: "", osAxis: "", odAdd: "", osAdd: "", pdMm: "", notes: "" });
+    clearVisionDraft();
+    setFormRaw({ patientId: "", testDate: new Date().toISOString().split("T")[0], odAcuity: "", osAcuity: "", odSphere: "", odCylinder: "", odAxis: "", osSphere: "", osCylinder: "", osAxis: "", odAdd: "", osAdd: "", pdMm: "", notes: "" });
     reload();
   };
 

@@ -30,6 +30,7 @@ import {
   type PatientView,
 } from "@/lib/data/client";
 import { PageLoader } from "@/components/ui/page-loader";
+import { useOfflineDrafts } from "@/lib/hooks/use-offline-drafts";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
 
 const METHODS = [
@@ -53,7 +54,7 @@ export default function IopTrackingPage() {
   const [selectedPatient, setSelectedPatient] = useState<string>("");
   const [loading, setLoading] = useState(true);
   const [showAdd, setShowAdd] = useState(false);
-  const [form, setForm] = useState({
+  const [form, setFormRaw] = useState({
     patientId: "",
     measuredAt: new Date().toISOString().split("T")[0],
     odPressure: "",
@@ -61,6 +62,16 @@ export default function IopTrackingPage() {
     method: "goldmann",
     notes: "",
   });
+
+  // Issue 21: Auto-save draft for clinical form
+  const { saveDraft: saveIopDraft, clearDraft: clearIopDraft } = useOfflineDrafts<typeof form>("iop-tracking-form", { autoSaveMs: 5000 });
+  const setForm: typeof setFormRaw = (val) => {
+    setFormRaw((prev) => {
+      const next = typeof val === "function" ? val(prev) : val;
+      saveIopDraft(next);
+      return next;
+    });
+  };
 
   const fetchData = useCallback(async () => {
     const user = await getCurrentUser();
@@ -114,7 +125,8 @@ export default function IopTrackingPage() {
       notes: form.notes || undefined,
     });
     setShowAdd(false);
-    setForm({ patientId: "", measuredAt: new Date().toISOString().split("T")[0], odPressure: "", osPressure: "", method: "goldmann", notes: "" });
+    clearIopDraft();
+    setFormRaw({ patientId: "", measuredAt: new Date().toISOString().split("T")[0], odPressure: "", osPressure: "", method: "goldmann", notes: "" });
     reload();
   };
 

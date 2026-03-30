@@ -105,6 +105,8 @@ export function BookingForm() {
   // Honeypot field for basic bot protection (invisible to real users)
   const [honeypot, setHoneypot] = useState("");
   const [confirmChecked, setConfirmChecked] = useState(false);
+  // Issue 7: Track whether the user attempted to proceed so inline errors show
+  const [stepAttempted, setStepAttempted] = useState(false);
 
   // Refs for focus management on step transitions (Issue 25)
   const stepHeadingRefs = useRef<(HTMLHeadingElement | null)[]>([null, null, null]);
@@ -202,6 +204,18 @@ export function BookingForm() {
     if (step === 2) return !!patientPhone.trim() && isValidMoroccanPhone(patientPhone) && confirmChecked;
     return true;
   };
+
+  // Issue 7: Inline validation error messages per step field
+  const stepErrors = useMemo(() => {
+    if (!stepAttempted) return { doctor: null, service: null, date: null, time: null, confirm: null };
+    return {
+      doctor: step === 0 && !selectedDoctor ? "Veuillez choisir un médecin" : null,
+      service: step === 0 && selectedDoctor && !selectedService ? "Veuillez choisir un service" : null,
+      date: step === 1 && !selectedDate ? "Veuillez sélectionner une date" : null,
+      time: step === 1 && selectedDate && !selectedTime ? "Veuillez sélectionner un créneau" : null,
+      confirm: step === 2 && !confirmChecked ? "Veuillez confirmer vos informations" : null,
+    };
+  }, [stepAttempted, step, selectedDoctor, selectedService, selectedDate, selectedTime, confirmChecked]);
 
   const handleJoinWaitingList = async (slot: string) => {
     // Require a valid phone before joining the waiting list (Issue 17)
@@ -447,6 +461,9 @@ export function BookingForm() {
                 <User className="h-4 w-4 text-primary" />
                 Choisissez votre m\u00e9decin :
               </p>
+              {stepErrors.doctor && (
+                <p className="text-xs text-destructive mb-2" role="alert">{stepErrors.doctor}</p>
+              )}
               <div className="grid gap-2">
                 {doctors.map((d) => (
                   <button
@@ -478,6 +495,9 @@ export function BookingForm() {
                   <Stethoscope className="h-4 w-4 text-primary" />
                   Choisissez le service :
                 </p>
+                {stepErrors.service && (
+                  <p className="text-xs text-destructive mb-2" role="alert">{stepErrors.service}</p>
+                )}
                 <div className="grid gap-2">
                   {activeServices.map((s) => (
                     <button
@@ -512,6 +532,9 @@ export function BookingForm() {
                 <Clock className="h-4 w-4" />
                 S\u00e9lectionnez une date et un cr\u00e9neau :
               </p>
+              {stepErrors.date && (
+                <p className="text-xs text-destructive mb-2" role="alert">{stepErrors.date}</p>
+              )}
               <BookingCalendar
                 selectedDate={selectedDate}
                 onSelectDate={(date) => { setSelectedDate(date); setSelectedTime(""); }}
@@ -520,6 +543,9 @@ export function BookingForm() {
             {selectedDate && (
               <div>
                 <p className="text-sm text-muted-foreground mb-3">Cr\u00e9neaux disponibles :</p>
+                {stepErrors.time && (
+                  <p className="text-xs text-destructive mb-2" role="alert">{stepErrors.time}</p>
+                )}
                 <TimeSlotPicker
                   slots={availableSlots}
                   allSlots={allSlots}
@@ -638,6 +664,9 @@ export function BookingForm() {
                   Je confirme que ces informations sont correctes
                 </Label>
               </div>
+              {stepErrors.confirm && (
+                <p className="text-xs text-destructive" role="alert">{stepErrors.confirm}</p>
+              )}
 
               {/* Honeypot field - hidden from real users, catches bots */}
               <div className="absolute -left-[9999px]" aria-hidden="true">
@@ -684,8 +713,14 @@ export function BookingForm() {
           </Button>
           {step < 2 ? (
             <Button
-              onClick={() => goToStep(step + 1)}
-              disabled={!canNext()}
+              onClick={() => {
+                if (!canNext()) {
+                  setStepAttempted(true);
+                  return;
+                }
+                setStepAttempted(false);
+                goToStep(step + 1);
+              }}
             >
               {t("fr", "booking.next")}
               <ChevronRight className="h-4 w-4 ml-1" />
