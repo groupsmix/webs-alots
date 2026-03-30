@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Clock, Bell, Stethoscope, Users } from "lucide-react";
+import { formatDisplayDate } from "@/lib/utils";
 
 interface QueuePatient {
   id: string;
@@ -105,12 +106,7 @@ export function TVQueueDisplay({
             })}
           </p>
           <p className="text-sm text-blue-200">
-            {time.toLocaleDateString(locale === "ar" ? "ar-MA" : "fr-MA", {
-              weekday: "long",
-              year: "numeric",
-              month: "long",
-              day: "numeric",
-            })}
+            {formatDisplayDate(time, locale === "ar" ? "ar" : "fr", "long")}
           </p>
         </div>
       </div>
