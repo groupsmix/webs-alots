@@ -15,6 +15,7 @@ import {
   type AppointmentView,
 } from "@/lib/data/client";
 import { PageLoader } from "@/components/ui/page-loader";
+import { DataMask } from "@/components/ui/data-mask";
 import { formatDisplayDate } from "@/lib/utils";
 
 type TabKey = "overview" | "history" | "prescriptions" | "notes";
@@ -103,7 +104,7 @@ export function PatientCard({ patientId }: { patientId?: string }) {
               <div className="flex flex-wrap gap-3 mt-1 text-sm text-muted-foreground">
                 <span className="flex items-center gap-1">
                   <Phone className="h-3 w-3" />
-                  {patient.phone}
+                  <DataMask value={patient.phone} type="phone" />
                 </span>
                 <span className="flex items-center gap-1">
                   <Calendar className="h-3 w-3" />

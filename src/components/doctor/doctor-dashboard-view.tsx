@@ -16,6 +16,7 @@ import { updateAppointmentStatus } from "@/lib/data/client";
 import { useOptimisticUpdate } from "@/lib/hooks/use-optimistic-update";
 import { PageLoader } from "@/components/ui/page-loader";
 import { EmptyState } from "@/components/ui/empty-state";
+import { DataMask } from "@/components/ui/data-mask";
 import { logger } from "@/lib/logger";
 import { getLocalDateStr, formatDisplayDate } from "@/lib/utils";
 import { useToast } from "@/components/ui/toast";
@@ -481,7 +482,7 @@ export function DoctorDashboardView({
                         </Avatar>
                         <div className="flex-1 min-w-0">
                           <p className="font-medium truncate">{p.name}</p>
-                          <p className="text-xs text-muted-foreground">{p.phone}</p>
+                          <DataMask value={p.phone} type="phone" className="text-xs text-muted-foreground" />
                         </div>
                       </div>
                     ))

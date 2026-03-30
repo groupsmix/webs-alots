@@ -35,7 +35,7 @@ export async function updateAppointmentStatus(
     return { success: false, error: { code: error.code, message: error.message } };
   }
   clearLookupCache();
-  return { success: true };
+  return { success: true, data: undefined };
 }
 
 export async function createPayment(data: {

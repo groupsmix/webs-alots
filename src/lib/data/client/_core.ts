@@ -164,8 +164,23 @@ export function clearLookupCache() {
 
 // ── Mutation result type ──
 
-export interface MutationResult<T = void> {
-  success: boolean;
-  data?: T;
-  error?: { code: string; message: string };
-}
+/**
+ * Discriminated union for mutation outcomes.
+ *
+ * On success the result carries `data` of type `T` (defaults to `void` for
+ * mutations that don't return a payload).  On failure it carries a structured
+ * `error` object.  Using a discriminated union (`success: true` vs
+ * `success: false`) lets callers narrow the type with a simple `if` check:
+ *
+ * ```ts
+ * const res = await createPayment({ ... });
+ * if (res.success) {
+ *   console.log(res.data.id); // TS knows `data` exists
+ * } else {
+ *   console.error(res.error.message); // TS knows `error` exists
+ * }
+ * ```
+ */
+export type MutationResult<T = void> =
+  | { success: true; data: T }
+  | { success: false; error: { code: string; message: string } };
