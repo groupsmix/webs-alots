@@ -1581,6 +1581,10 @@ export interface PatientDashboardData {
 export async function getPatientDashboardData(clinicId: string, userId: string, userName: string): Promise<PatientDashboardData> {
   const supabase = await createClient();
 
+  // Resolve clinic currency from DB config (DAL-04: was hardcoded to "MAD")
+  const { getClinicConfig } = await import("@/lib/tenant");
+  const clinicCfg = await getClinicConfig(clinicId);
+
   // Fetch lookup maps
   const [usersRes, servicesRes] = await Promise.all([
     supabase.from("users").select("id, name").eq("clinic_id", clinicId),
@@ -1642,7 +1646,7 @@ export async function getPatientDashboardData(clinicId: string, userId: string, 
   const invoices: PatientInvoiceView[] = ((invoicesRes.data ?? []) as InvRaw[]).map((r) => ({
     id: r.id,
     amount: r.amount,
-    currency: "MAD",
+    currency: clinicCfg.currency,
     status: r.status === "completed" ? "paid" : r.status,
     date: r.created_at?.split("T")[0] ?? "",
   }));

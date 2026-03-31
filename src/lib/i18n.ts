@@ -232,8 +232,15 @@ export const translations = {
     "accounting.exportDGI": "Export DGI",
     "accounting.fiscYear": "Année fiscale",
 
+    // Root metadata (SEO-01)
+    "meta.title": "Oltigo \u2014 Gestion M\u00e9dicale en Ligne",
+    "meta.titleTemplate": "%s | Oltigo",
+    "meta.description": "Plateforme de gestion de cabinets m\u00e9dicaux, dentaires et pharmacies au Maroc. Prise de rendez-vous en ligne, dossiers patients, ordonnances et plus.",
+    "meta.ogTitle": "Oltigo \u2014 Gestion M\u00e9dicale en Ligne",
+    "meta.ogDescription": "Plateforme de gestion de cabinets m\u00e9dicaux, dentaires et pharmacies au Maroc.",
+
     // Landing page
-    "landing.badge": "Plateforme SaaS pour professionnels de santé",
+    "landing.badge": "Plateforme SaaS pour professionnels de sant\u00e9",
     "landing.heroTitle1": "La plateforme complète pour gérer votre ",
     "landing.heroTitle2": "cabinet médical",
     "landing.heroSubtitle": "Créez le site de votre cabinet, gérez les rendez-vous et développez votre activité facilement.",
@@ -912,6 +919,13 @@ export const translations = {
     "accounting.profit": "الربح",
     "accounting.exportDGI": "تصدير للمديرية العامة للضرائب",
     "accounting.fiscYear": "السنة المالية",
+
+    // Root metadata (SEO-01)
+    "meta.title": "Oltigo — إدارة طبية عبر الإنترنت",
+    "meta.titleTemplate": "%s | Oltigo",
+    "meta.description": "منصة إدارة العيادات الطبية وطب الأسنان والصيدليات في المغرب. حجز المواعيد عبر الإنترنت، ملفات المرضى، الوصفات والمزيد.",
+    "meta.ogTitle": "Oltigo — إدارة طبية عبر الإنترنت",
+    "meta.ogDescription": "منصة إدارة العيادات الطبية وطب الأسنان والصيدليات في المغرب.",
 
     // Landing page
     "landing.badge": "منصة SaaS لمهنيي الصحة",
@@ -1593,6 +1607,13 @@ export const translations = {
     "accounting.profit": "Profit",
     "accounting.exportDGI": "Export for DGI",
     "accounting.fiscYear": "Fiscal Year",
+
+    // Root metadata (SEO-01)
+    "meta.title": "Oltigo \u2014 Online Medical Management",
+    "meta.titleTemplate": "%s | Oltigo",
+    "meta.description": "Medical practice, dental, and pharmacy management platform in Morocco. Online appointment booking, patient records, prescriptions and more.",
+    "meta.ogTitle": "Oltigo \u2014 Online Medical Management",
+    "meta.ogDescription": "Medical practice, dental, and pharmacy management platform in Morocco.",
 
     // Landing page
     "landing.badge": "SaaS Platform for Healthcare Professionals",

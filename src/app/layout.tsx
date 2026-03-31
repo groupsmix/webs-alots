@@ -9,7 +9,7 @@ import { OfflineIndicator } from "@/components/offline-indicator";
 import { PerformanceMonitor } from "@/components/performance-monitor";
 import { ServiceWorkerRegister } from "@/components/sw-register";
 import { PlausibleScript } from "@/components/plausible-script";
-import { getDirection, t, type Locale } from "@/lib/i18n";
+import { getDirection, t, type Locale, type TranslationKey } from "@/lib/i18n";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -38,57 +38,68 @@ export const viewport: Viewport = {
   ],
 };
 
-export const metadata: Metadata = {
-  manifest: "/manifest.webmanifest",
-  icons: {
-    icon: [
-      { url: "/favicon.ico", sizes: "64x64", type: "image/x-icon" },
-      { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
-      { url: "/icon-512.png", sizes: "512x512", type: "image/png" },
-    ],
-    apple: [
-      { url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" },
-    ],
-  },
-  title: {
-    default: "Oltigo — Gestion Médicale en Ligne",
-    template: "%s | Oltigo",
-  },
-  description:
-    "Plateforme de gestion de cabinets médicaux, dentaires et pharmacies au Maroc. Prise de rendez-vous en ligne, dossiers patients, ordonnances et plus.",
-  keywords: [
-    "gestion cabinet médical",
-    "logiciel médecin",
-    "logiciel dentiste",
-    "logiciel pharmacie",
-    "rendez-vous médical en ligne",
-    "SaaS santé Maroc",
-    "dossier patient électronique",
-    "plateforme médicale",
-    "إدارة العيادات الطبية",
-    "حجز موعد طبي",
-  ],
-  authors: [{ name: "Oltigo" }],
-  alternates: {
-    languages: {
-      "fr": "https://oltigo.com",
-      "ar": "https://oltigo.com?lang=ar",
+/**
+ * SEO-01: Locale-aware metadata via i18n instead of hardcoded French.
+ *
+ * The locale is defaulted to "fr" for now (same as the layout). When
+ * per-tenant locale headers are added (see TODO in RootLayout), this
+ * will automatically pick up the correct language.
+ */
+export async function generateMetadata(): Promise<Metadata> {
+  // Default locale — will be dynamically resolved once per-tenant locale
+  // headers are available (see TODO in RootLayout below).
+  const locale = "fr" as Locale;
+
+  return {
+    manifest: "/manifest.webmanifest",
+    icons: {
+      icon: [
+        { url: "/favicon.ico", sizes: "64x64", type: "image/x-icon" },
+        { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
+        { url: "/icon-512.png", sizes: "512x512", type: "image/png" },
+      ],
+      apple: [
+        { url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" },
+      ],
     },
-  },
-  openGraph: {
-    type: "website",
-    locale: "fr_MA",
-    alternateLocale: ["ar_MA"],
-    siteName: "Oltigo",
-    title: "Oltigo — Gestion Médicale en Ligne",
-    description:
-      "Plateforme de gestion de cabinets médicaux, dentaires et pharmacies au Maroc.",
-  },
-  robots: {
-    index: true,
-    follow: true,
-  },
-};
+    title: {
+      default: t(locale, "meta.title" as TranslationKey),
+      template: t(locale, "meta.titleTemplate" as TranslationKey),
+    },
+    description: t(locale, "meta.description" as TranslationKey),
+    keywords: [
+      "gestion cabinet médical",
+      "logiciel médecin",
+      "logiciel dentiste",
+      "logiciel pharmacie",
+      "rendez-vous médical en ligne",
+      "SaaS santé Maroc",
+      "dossier patient électronique",
+      "plateforme médicale",
+      "إدارة العيادات الطبية",
+      "حجز موعد طبي",
+    ],
+    authors: [{ name: "Oltigo" }],
+    alternates: {
+      languages: {
+        "fr": "https://oltigo.com",
+        "ar": "https://oltigo.com?lang=ar",
+      },
+    },
+    openGraph: {
+      type: "website",
+      locale: locale === "ar" ? "ar_MA" : "fr_MA",
+      alternateLocale: locale === "ar" ? ["fr_MA"] : ["ar_MA"],
+      siteName: "Oltigo",
+      title: t(locale, "meta.ogTitle" as TranslationKey),
+      description: t(locale, "meta.ogDescription" as TranslationKey),
+    },
+    robots: {
+      index: true,
+      follow: true,
+    },
+  };
+}
 
 export default async function RootLayout({
   children,
