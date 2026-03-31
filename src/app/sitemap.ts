@@ -2,6 +2,8 @@ import type { MetadataRoute } from "next";
 import { createClient } from "@/lib/supabase-server";
 import { getAllPosts } from "@/lib/blog";
 import { logger } from "@/lib/logger";
+import { DIRECTORY_CITIES, TOP_CITY_SPECIALTY_COMBOS } from "@/lib/directory-constants";
+import { getDirectoryDoctors } from "@/lib/data/directory";
 
 /**
  * Dynamic sitemap for public-facing pages.
@@ -86,6 +88,51 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     }
   } catch (err) {
     logger.warn("Failed to fetch clinic subdomains for sitemap", { context: "sitemap", error: err });
+  }
+
+  // ── Doctor Directory pages ──
+
+  // Directory index
+  entries.push({
+    url: `${baseUrl}/annuaire`,
+    lastModified: now,
+    changeFrequency: "weekly",
+    priority: 0.9,
+  });
+
+  // City pages
+  for (const city of DIRECTORY_CITIES) {
+    entries.push({
+      url: `${baseUrl}/annuaire/${city.slug}`,
+      lastModified: now,
+      changeFrequency: "weekly",
+      priority: 0.8,
+    });
+  }
+
+  // City + specialty combo pages
+  for (const combo of TOP_CITY_SPECIALTY_COMBOS) {
+    entries.push({
+      url: `${baseUrl}/annuaire/${combo.city}/${combo.specialty}`,
+      lastModified: now,
+      changeFrequency: "weekly",
+      priority: 0.7,
+    });
+  }
+
+  // Individual doctor profile pages
+  try {
+    const doctors = await getDirectoryDoctors();
+    for (const doctor of doctors) {
+      entries.push({
+        url: `${baseUrl}/annuaire/${doctor.slug}`,
+        lastModified: now,
+        changeFrequency: "weekly",
+        priority: 0.6,
+      });
+    }
+  } catch (err) {
+    logger.warn("Failed to fetch directory doctors for sitemap", { context: "sitemap", error: err });
   }
 
   return entries;
