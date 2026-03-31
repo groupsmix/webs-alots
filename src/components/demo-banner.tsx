@@ -17,7 +17,7 @@ export function DemoBanner() {
         Mode démo — Les données sont fictives et les modifications ne sont pas enregistrées.
       </span>
       <a
-        href="/register"
+        href="/register-clinic"
         className="ml-2 inline-flex items-center rounded-full bg-white/20 px-3 py-0.5 text-xs font-semibold text-white transition-colors hover:bg-white/30"
       >
         Créer votre clinique

@@ -123,7 +123,7 @@ export function DemoLoginCard() {
             Les données sont fictives et réinitialisées régulièrement.
           </p>
           <div className="mt-3 flex items-center justify-center gap-3">
-            <a href="/register" className="text-xs text-primary underline">
+            <a href="/register-clinic" className="text-xs text-primary underline">
               Créer votre clinique
             </a>
             <span className="text-muted-foreground">•</span>
