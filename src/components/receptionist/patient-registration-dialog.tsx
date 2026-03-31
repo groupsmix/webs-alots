@@ -31,6 +31,9 @@ interface PatientFormData {
   cin: string;
   insurance: string;
   insuranceNumber: string;
+  mutuelleName: string;
+  mutuelleNumber: string;
+  mutuelleCoverageRate: string;
   allergies: string;
   medicalHistory: string;
   emergencyContactName: string;
@@ -52,6 +55,9 @@ const initialForm: PatientFormData = {
   cin: "",
   insurance: "",
   insuranceNumber: "",
+  mutuelleName: "",
+  mutuelleNumber: "",
+  mutuelleCoverageRate: "",
   allergies: "",
   medicalHistory: "",
   emergencyContactName: "",
@@ -165,33 +171,70 @@ export function PatientRegistrationDialog({ trigger, onRegister }: PatientRegist
             {/* Insurance */}
             <div>
               <h3 className="text-sm font-semibold mb-3 text-muted-foreground uppercase tracking-wide">
-                Insurance
+                Assurance / Insurance
               </h3>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label>Insurance Provider</Label>
+                  <Label>Type d&apos;assurance</Label>
                   <Select value={form.insurance} onValueChange={(v) => updateField("insurance", v)}>
                     <SelectTrigger>
-                      <SelectValue placeholder="Select insurance" />
+                      <SelectValue placeholder="Sélectionner l'assurance" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="none">No Insurance</SelectItem>
-                      <SelectItem value="CNSS">CNSS</SelectItem>
-                      <SelectItem value="CNOPS">CNOPS</SelectItem>
-                      <SelectItem value="RAMED">RAMED</SelectItem>
-                      <SelectItem value="private">Private Insurance</SelectItem>
+                      <SelectItem value="none">Aucune assurance</SelectItem>
+                      <SelectItem value="CNSS">CNSS (70%)</SelectItem>
+                      <SelectItem value="CNOPS">CNOPS (80%)</SelectItem>
+                      <SelectItem value="AMO">AMO (70%)</SelectItem>
+                      <SelectItem value="RAMED">RAMED (100%)</SelectItem>
+                      <SelectItem value="private">Assurance privée</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label>Insurance Number</Label>
+                  <Label>N° d&apos;affiliation</Label>
                   <Input
-                    placeholder="Insurance ID"
+                    placeholder="Numéro d'affiliation"
                     value={form.insuranceNumber}
                     onChange={(e) => updateField("insuranceNumber", e.target.value)}
                   />
                 </div>
               </div>
+
+              {/* Mutuelle (complementary insurance) */}
+              {form.insurance && form.insurance !== "none" && (
+                <div className="mt-4">
+                  <p className="text-xs text-muted-foreground mb-2">Mutuelle complémentaire (optionnel)</p>
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="space-y-2">
+                      <Label>Nom de la mutuelle</Label>
+                      <Input
+                        placeholder="Ex: MGPAP, OMFAM..."
+                        value={form.mutuelleName}
+                        onChange={(e) => updateField("mutuelleName", e.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>N° d&apos;adhérent</Label>
+                      <Input
+                        placeholder="Numéro mutuelle"
+                        value={form.mutuelleNumber}
+                        onChange={(e) => updateField("mutuelleNumber", e.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Taux de couverture (%)</Label>
+                      <Input
+                        type="number"
+                        min="0"
+                        max="100"
+                        placeholder="Ex: 20"
+                        value={form.mutuelleCoverageRate}
+                        onChange={(e) => updateField("mutuelleCoverageRate", e.target.value)}
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Medical */}
