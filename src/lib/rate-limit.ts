@@ -585,6 +585,16 @@ export interface RateLimitRule {
  * Ordered list of rate-limit rules. First matching prefix wins.
  */
 export const rateLimitRules: RateLimitRule[] = [
+  // RL-01: Auth endpoints — strict limits to prevent brute-force / credential stuffing.
+  // Auth is primarily handled by Supabase, but demo-login and any future
+  // auth routes under /api/auth/ get the loginLimiter (5 req / 60s).
+  { prefix: "/api/auth/", limiter: loginLimiter, windowMs: 60_000, max: 5 },
+  // RL-01: Public registration — same limits as onboarding to prevent abuse
+  { prefix: "/api/v1/register-clinic", limiter: onboardingLimiter, windowMs: 60_000, max: 5 },
+  // RL-01: Public check-in kiosk endpoints
+  { prefix: "/api/checkin", limiter: apiMutationLimiter, windowMs: 60_000, max: 30 },
+  // RL-01: Password reset — strict limit to prevent email spam
+  { prefix: "/api/patient/delete-account", limiter: passwordResetLimiter, windowMs: 60_000, max: 3 },
   { prefix: "/api/booking/waiting-list", limiter: waitingListLimiter, windowMs: 60 * 60_000, max: 3 },
   { prefix: "/api/book", limiter: bookingLimiter, windowMs: 60_000, max: 10 },
   { prefix: "/api/verify-email", limiter: emailVerificationLimiter, windowMs: 60_000, max: 5 },
