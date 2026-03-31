@@ -575,24 +575,28 @@ export interface RateLimitRule {
   prefix: string;
   /** The limiter instance to use */
   limiter: RateLimiter;
+  /** Time window in milliseconds (mirrors the limiter's config for header reporting) */
+  windowMs: number;
+  /** Maximum requests allowed per window (mirrors the limiter's config for header reporting) */
+  max: number;
 }
 
 /**
  * Ordered list of rate-limit rules. First matching prefix wins.
  */
 export const rateLimitRules: RateLimitRule[] = [
-  { prefix: "/api/booking/waiting-list", limiter: waitingListLimiter },
-  { prefix: "/api/book", limiter: bookingLimiter },
-  { prefix: "/api/verify-email", limiter: emailVerificationLimiter },
-  { prefix: "/api/upload", limiter: uploadLimiter },
-  { prefix: "/api/onboarding", limiter: onboardingLimiter },
-  { prefix: "/api/v1/ai/patient-summary", limiter: aiPatientSummaryLimiter },
-  { prefix: "/api/v1/ai/drug-check", limiter: aiDrugCheckLimiter },
-  { prefix: "/api/v1/ai/prescription", limiter: aiPrescriptionLimiter },
-  { prefix: "/api/chat", limiter: chatLimiter },
-  { prefix: "/api/webhooks", limiter: webhookLimiter },
-  { prefix: "/api/branding", limiter: brandingLimiter },
-  { prefix: "/api/notifications", limiter: apiMutationLimiter },
+  { prefix: "/api/booking/waiting-list", limiter: waitingListLimiter, windowMs: 60 * 60_000, max: 3 },
+  { prefix: "/api/book", limiter: bookingLimiter, windowMs: 60_000, max: 10 },
+  { prefix: "/api/verify-email", limiter: emailVerificationLimiter, windowMs: 60_000, max: 5 },
+  { prefix: "/api/upload", limiter: uploadLimiter, windowMs: 60_000, max: 10 },
+  { prefix: "/api/onboarding", limiter: onboardingLimiter, windowMs: 60_000, max: 5 },
+  { prefix: "/api/v1/ai/patient-summary", limiter: aiPatientSummaryLimiter, windowMs: 24 * 60 * 60_000, max: 30 },
+  { prefix: "/api/v1/ai/drug-check", limiter: aiDrugCheckLimiter, windowMs: 24 * 60 * 60_000, max: 100 },
+  { prefix: "/api/v1/ai/prescription", limiter: aiPrescriptionLimiter, windowMs: 24 * 60 * 60_000, max: 50 },
+  { prefix: "/api/chat", limiter: chatLimiter, windowMs: 60_000, max: 15 },
+  { prefix: "/api/webhooks", limiter: webhookLimiter, windowMs: 60_000, max: 100 },
+  { prefix: "/api/branding", limiter: brandingLimiter, windowMs: 60_000, max: 20 },
+  { prefix: "/api/notifications", limiter: apiMutationLimiter, windowMs: 60_000, max: 30 },
   // Catch-all for other API mutations (applied in middleware only to POST/PUT/PATCH/DELETE)
-  { prefix: "/api/", limiter: apiMutationLimiter },
+  { prefix: "/api/", limiter: apiMutationLimiter, windowMs: 60_000, max: 30 },
 ];

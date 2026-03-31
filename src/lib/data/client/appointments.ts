@@ -11,6 +11,7 @@ export interface AppointmentView {
   id: string;
   patientId: string;
   patientName: string;
+  patientPhone?: string;
   doctorId: string;
   doctorName: string;
   serviceId: string;
@@ -65,6 +66,7 @@ function mapAppointment(raw: AppointmentRaw): AppointmentView {
     id: raw.id,
     patientId: raw.patient_id,
     patientName: patient?.name ?? "Unknown",
+    patientPhone: patient?.phone || undefined,
     doctorId: raw.doctor_id,
     doctorName: doctor?.name ?? "Unknown",
     serviceId: raw.service_id ?? "",
