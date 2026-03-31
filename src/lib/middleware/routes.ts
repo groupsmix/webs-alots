@@ -82,3 +82,10 @@ export function isPublicRoute(pathname: string): boolean {
 export function isProtectedRoute(pathname: string): boolean {
   return PROTECTED_PREFIXES.some((prefix) => pathname.startsWith(prefix));
 }
+
+/**
+ * Get the dashboard path for a given role.
+ */
+export function getDashboardPath(role: string): string {
+  return ROLE_DASHBOARD_MAP[role];
+}
