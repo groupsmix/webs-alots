@@ -1,9 +1,11 @@
 import Link from "next/link";
 import { t, type Locale } from "@/lib/i18n";
-import { clinicConfig } from "@/config/clinic.config";
 
 export default function NotFound() {
-  const locale: Locale = (clinicConfig.locale as Locale) ?? "fr";
+  // Default locale for server-rendered 404 page. Removed static clinicConfig
+  // import which leaked a single-tenant assumption (audit MT-02).
+  // Client-side locale is handled by useLocale() via localStorage.
+  const locale: Locale = "fr";
 
   return (
     <div className="flex min-h-[60vh] items-center justify-center px-4">
