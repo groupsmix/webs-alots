@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { MoreHorizontal } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+import { Z_INDEX } from "@/lib/z-index";
 
 export interface MobileTabItem {
   href: string;
@@ -56,7 +57,7 @@ export function MobileTabBar({
 
   return (
     <nav
-      className="fixed bottom-0 left-0 right-0 z-40 border-t bg-card md:hidden"
+      className={`fixed bottom-0 left-0 right-0 ${Z_INDEX.mobileTabBar} border-t bg-card md:hidden`}
       role="navigation"
       aria-label="Mobile navigation"
     >

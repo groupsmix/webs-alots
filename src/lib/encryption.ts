@@ -53,14 +53,26 @@
  */
 
 import { logger } from "@/lib/logger";
+import { hexToBytes } from "@/lib/crypto-utils";
 
 // ── Key Management ──
 
+/** Cached CryptoKey promise — the key doesn't change at runtime. */
+let _cachedKey: Promise<CryptoKey | null> | undefined;
+
 /**
  * Derive a CryptoKey from the hex-encoded master key in environment.
+ * The result is cached so that repeated encrypt/decrypt calls avoid
+ * re-importing the same raw key via crypto.subtle.importKey().
  * Returns null if PHI_ENCRYPTION_KEY is not configured.
  */
-async function getEncryptionKey(): Promise<CryptoKey | null> {
+function getEncryptionKey(): Promise<CryptoKey | null> {
+  if (_cachedKey !== undefined) return _cachedKey;
+  _cachedKey = importEncryptionKey();
+  return _cachedKey;
+}
+
+async function importEncryptionKey(): Promise<CryptoKey | null> {
   const hexKey = process.env.PHI_ENCRYPTION_KEY;
   if (!hexKey) {
     return null;
@@ -74,9 +86,7 @@ async function getEncryptionKey(): Promise<CryptoKey | null> {
     return null;
   }
 
-  const keyBytes = new Uint8Array(
-    hexKey.match(/.{2}/g)!.map((byte) => parseInt(byte, 16)),
-  );
+  const keyBytes = hexToBytes(hexKey);
 
   return crypto.subtle.importKey(
     "raw",

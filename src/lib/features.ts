@@ -102,14 +102,6 @@ export const DEFAULT_FEATURES: FeaturesConfig = {
 };
 
 /**
- * Check if KV backend is available
- * Kept for potential future use - currently not used
- */
-function _isKVAvailable(): boolean {
-  return !!(globalThis as unknown as { FEATURE_FLAGS_KV?: unknown }).FEATURE_FLAGS_KV;
-}
-
-/**
  * Cloudflare KV binding type
  */
 interface CloudflareKV {

@@ -21,6 +21,7 @@
  */
 
 import { NextResponse } from "next/server";
+import { logger } from "@/lib/logger";
 
 interface ApiSuccessBody<T> {
   ok: true;
@@ -96,4 +97,23 @@ export function apiRateLimited(message = "Too many requests. Please try again la
  */
 export function apiInternalError(message = "Internal server error"): NextResponse<ApiErrorBody> {
   return apiError(message, 500, "INTERNAL_ERROR");
+}
+
+/**
+ * Handle a Supabase PostgREST error by logging it and returning a 500 response.
+ *
+ * Consolidates the repeated `if (error) { logger.warn(...); return apiInternalError(...); }`
+ * pattern found across API routes.  Routes can adopt this incrementally:
+ *
+ * @example
+ *   const { data, error } = await supabase.from("patients").select();
+ *   if (error) return handleSupabaseError(error, "Failed to fetch patients", "patients");
+ */
+export function handleSupabaseError(
+  error: { message: string; code?: string; details?: string },
+  clientMessage: string,
+  context: string,
+): NextResponse<ApiErrorBody> {
+  logger.warn(clientMessage, { context, error });
+  return apiInternalError(clientMessage);
 }

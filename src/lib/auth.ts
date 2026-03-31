@@ -11,6 +11,7 @@ import {
 } from "@/lib/rate-limit";
 import { logger } from "@/lib/logger";
 import { logAuthEvent } from "@/lib/audit-log";
+import { ROLE_DASHBOARD_MAP } from "@/lib/middleware/routes";
 
 /**
  * Phone auth feature flag.
@@ -41,14 +42,6 @@ export interface UserProfile {
   metadata: Record<string, unknown>;
 }
 
-// Role to dashboard path mapping
-const ROLE_DASHBOARD_MAP: Record<UserProfile["role"], string> = {
-  super_admin: "/super-admin/dashboard",
-  clinic_admin: "/admin/dashboard",
-  receptionist: "/receptionist/dashboard",
-  doctor: "/doctor/dashboard",
-  patient: "/patient/dashboard",
-};
 
 // ============================================================
 // Auth Actions
