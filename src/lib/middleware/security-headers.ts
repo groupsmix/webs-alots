@@ -6,6 +6,16 @@ const HSTS_VALUE = "max-age=63072000; includeSubDomains; preload";
 /**
  * Build the Content-Security-Policy header value with a per-request nonce.
  */
+/**
+ * CSP reporting endpoint. In production, violations are sent to Sentry's
+ * CSP reporting ingestion endpoint. The project ID and key should be
+ * configured via the SENTRY_CSP_REPORT_URI environment variable.
+ * Falls back to the app's own /api/csp-report endpoint for self-hosted
+ * collection when Sentry is not configured.
+ */
+const CSP_REPORT_URI =
+  process.env.SENTRY_CSP_REPORT_URI || "/api/csp-report";
+
 export function buildCsp(nonce: string): string {
   const isDev = process.env.NODE_ENV === "development";
   return [
@@ -20,6 +30,10 @@ export function buildCsp(nonce: string): string {
     "base-uri 'self'",
     "frame-ancestors 'none'",
     ...(isDev ? [] : ["upgrade-insecure-requests"]),
+    ...(isDev ? [] : [`report-uri ${CSP_REPORT_URI}`]),
+    ...(isDev
+      ? []
+      : [`report-to csp-endpoint`]),
   ].join("; ");
 }
 
@@ -64,4 +78,16 @@ export function applyAllSecurityHeaders(
   response.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
   response.headers.set("Permissions-Policy", "camera=(), microphone=(), geolocation=(self), payment=(self)");
   response.headers.set("X-DNS-Prefetch-Control", "on");
+
+  // Report-To header for CSP violation reporting (Reporting API v1)
+  if (process.env.NODE_ENV !== "development") {
+    response.headers.set(
+      "Report-To",
+      JSON.stringify({
+        group: "csp-endpoint",
+        max_age: 86400,
+        endpoints: [{ url: CSP_REPORT_URI }],
+      }),
+    );
+  }
 }
