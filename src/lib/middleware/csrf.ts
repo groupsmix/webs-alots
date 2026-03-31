@@ -3,13 +3,14 @@ import { NextResponse, type NextRequest } from "next/server";
 /** HTTP methods that mutate state and need CSRF protection */
 const MUTATION_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 
-/** API routes that receive legitimate external requests (webhooks, callbacks) */
+/** API routes that receive legitimate external requests (webhooks, callbacks, cron) */
 const CSRF_EXEMPT_PREFIXES = [
   "/api/webhooks",
   "/api/payments/webhook",
   "/api/payments/cmi/callback",
-  "/api/cron/reminders",
-  "/api/cron/billing",
+  // CSRF-01: All cron endpoints are authenticated via CRON_SECRET bearer token
+  // and may be triggered by external schedulers (Cloudflare Cron Triggers).
+  "/api/cron/",
 ];
 
 function isCsrfExempt(pathname: string): boolean {

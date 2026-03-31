@@ -10,10 +10,12 @@
 import { NextRequest } from "next/server";
 import { z } from "zod";
 import { createAdminClient } from "@/lib/supabase-server";
-import { DEMO_USERS } from "@/lib/demo";
-import { apiError, apiSuccess, apiValidationError, apiInternalError } from "@/lib/api-response";
+import { DEMO_USERS, DEMO_CLINIC_ID } from "@/lib/demo";
+import { apiError, apiSuccess, apiValidationError, apiInternalError, apiForbidden, apiRateLimited } from "@/lib/api-response";
 import { safeParse } from "@/lib/validations";
 import { logger } from "@/lib/logger";
+import { loginLimiter, extractClientIp } from "@/lib/rate-limit";
+import { createClient } from "@/lib/supabase-server";
 
 const demoLoginSchema = z.object({
   email: z.string().email(),
@@ -25,6 +27,27 @@ const ALLOWED_DEMO_EMAILS: Set<string> = new Set(
 );
 
 export async function POST(request: NextRequest) {
+  // AUTH-01: Verify the demo clinic actually exists in the database before
+  // allowing demo login. This prevents authentication bypass in production
+  // environments where the demo tenant has been removed or was never seeded.
+  const supabaseCheck = await createClient();
+  const { data: demoClinic } = await supabaseCheck
+    .from("clinics")
+    .select("id")
+    .eq("id", DEMO_CLINIC_ID)
+    .maybeSingle();
+
+  if (!demoClinic) {
+    return apiForbidden("Demo mode is not available");
+  }
+
+  // Rate limit demo login to prevent abuse (same limits as regular login)
+  const clientIp = extractClientIp(request);
+  const allowed = await loginLimiter.check(`demo-login:${clientIp}`);
+  if (!allowed) {
+    return apiRateLimited("Too many demo login attempts. Please try again later.");
+  }
+
   let body: unknown;
   try {
     body = await request.json();

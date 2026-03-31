@@ -170,10 +170,10 @@ export default async function PharmacyHomePage() {
                       {product.price} {product.currency}
                     </span>
                     <Badge
-                      variant={product.stockQuantity > 0 ? "outline" : "destructive"}
-                      className={product.stockQuantity > 0 ? "text-emerald-600 border-emerald-600" : ""}
+                      variant={product.stockStatus !== "out" ? "outline" : "destructive"}
+                      className={product.stockStatus !== "out" ? "text-emerald-600 border-emerald-600" : ""}
                     >
-                      {product.stockQuantity > 0 ? "In Stock" : "Out of Stock"}
+                      {product.stockStatus === "out" ? "Out of Stock" : product.stockStatus === "low" ? "Low Stock" : "In Stock"}
                     </Badge>
                   </div>
                 </CardContent>

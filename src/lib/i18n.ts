@@ -28,6 +28,12 @@ export const translations = {
     "nav.invoices": "Factures",
     "nav.settings": "Paramètres",
     "nav.waitingRoom": "Salle d'attente",
+    "nav.skipToContent": "Aller au contenu principal",
+    "nav.skipToForm": "Aller au formulaire",
+    "nav.backToHome": "Retour à l'accueil",
+    "nav.clinicAdmin": "Clinic Admin",
+    "nav.searchNav": "Rechercher dans le menu",
+    "nav.filterSpecialty": "Filtrer par spécialité",
 
     // Common actions
     "action.save": "Enregistrer",
@@ -703,6 +709,12 @@ export const translations = {
     "nav.invoices": "الفواتير",
     "nav.settings": "الإعدادات",
     "nav.waitingRoom": "قاعة الانتظار",
+    "nav.skipToContent": "انتقل إلى المحتوى الرئيسي",
+    "nav.skipToForm": "انتقل إلى النموذج",
+    "nav.backToHome": "العودة إلى الصفحة الرئيسية",
+    "nav.clinicAdmin": "إدارة العيادة",
+    "nav.searchNav": "البحث في القائمة",
+    "nav.filterSpecialty": "تصفية حسب التخصص",
 
     // Common actions
     "action.save": "حفظ",
@@ -1378,6 +1390,12 @@ export const translations = {
     "nav.invoices": "Invoices",
     "nav.settings": "Settings",
     "nav.waitingRoom": "Waiting Room",
+    "nav.skipToContent": "Skip to main content",
+    "nav.skipToForm": "Skip to form",
+    "nav.backToHome": "Back to home",
+    "nav.clinicAdmin": "Clinic Admin",
+    "nav.searchNav": "Search navigation",
+    "nav.filterSpecialty": "Filter by specialty",
 
     // Common actions
     "action.save": "Save",

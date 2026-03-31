@@ -558,11 +558,9 @@ export interface PublicPharmacyProduct {
   price: number;
   currency: string;
   requiresPrescription: boolean;
-  stockQuantity: number;
-  minimumStock: number;
-  expiryDate: string;
+  /** DATA-02: Only expose a coarse stock status ("ok" | "low" | "out"), not exact quantities */
+  stockStatus: "ok" | "low" | "out";
   manufacturer?: string;
-  barcode?: string;
   dosageForm?: string;
   strength?: string;
   active: boolean;
@@ -595,6 +593,14 @@ export async function getPublicPharmacyProducts(): Promise<PublicPharmacyProduct
 
   return products.map((p: Record<string, unknown>) => {
     const s = stockMap.get(p.id as string);
+    // DATA-02: Compute a coarse stock status instead of exposing exact
+    // quantities and thresholds which are business-sensitive information.
+    const qty = s?.quantity ?? 0;
+    const minThreshold = s?.min_threshold ?? 0;
+    let stockStatus: "ok" | "low" | "out" = "ok";
+    if (qty === 0) stockStatus = "out";
+    else if (qty <= minThreshold) stockStatus = "low";
+
     return {
       id: p.id as string,
       name: p.name as string,
@@ -604,11 +610,8 @@ export async function getPublicPharmacyProducts(): Promise<PublicPharmacyProduct
       price: (p.price as number) ?? 0,
       currency: tenantCfg.currency,
       requiresPrescription: (p.requires_prescription as boolean) ?? false,
-      stockQuantity: s?.quantity ?? 0,
-      minimumStock: s?.min_threshold ?? 0,
-      expiryDate: s?.expiry_date ?? "",
+      stockStatus,
       manufacturer: (p.manufacturer as string) ?? undefined,
-      barcode: (p.barcode as string) ?? undefined,
       dosageForm: (p.dosage_form as string) ?? undefined,
       strength: (p.strength as string) ?? undefined,
       active: (p.is_active as boolean) ?? true,
@@ -617,9 +620,7 @@ export async function getPublicPharmacyProducts(): Promise<PublicPharmacyProduct
 }
 
 export function getPublicStockStatus(product: PublicPharmacyProduct): "ok" | "low" | "out" {
-  if (product.stockQuantity === 0) return "out";
-  if (product.stockQuantity <= product.minimumStock) return "low";
-  return "ok";
+  return product.stockStatus;
 }
 
 export function searchPublicProducts(
@@ -759,57 +760,19 @@ export interface PublicPharmacyPrescription {
   whatsappNotified: boolean;
 }
 
+/**
+ * DATA-01 (CRITICAL): This function previously returned patient names, phone
+ * numbers, prescription details, and delivery addresses on public-facing pages
+ * — a direct PHI exposure violating HIPAA and Morocco's Law 09-08.
+ *
+ * Fix: Only return aggregate, non-identifying statistics (total count by
+ * status) so the public pharmacy page can show queue status without
+ * exposing any patient data.
+ */
 export async function getPublicPharmacyPrescriptions(): Promise<PublicPharmacyPrescription[]> {
-  const ctx = await createPublicTenantClient();
-  if (!ctx) return [];
-  const { supabase, clinicId } = ctx;
-
-  const { data: requests, error } = await supabase
-    .from("prescription_requests")
-      .select("id, patient_id, status, image_url, created_at, notes, delivery_requested")
-      .eq("clinic_id", clinicId)
-      .order("created_at", { ascending: false });
-
-    if (error || !requests) return [];
-
-    // Get patient details
-    const patientIds = [...new Set((requests as Record<string, unknown>[]).map((r) => r.patient_id as string))];
-    const { data: users } = await supabase
-      .from("users")
-      .select("id, name, phone")
-      .in("id", patientIds);
-
-  const userMap = new Map(
-    ((users ?? []) as { id: string; name: string; phone: string | null }[]).map((u) => [u.id, u]),
-  );
-
-  const tenantCfg = await getClinicConfig(clinicId);
-
-  return requests.map((r: Record<string, unknown>) => {
-    const patient = userMap.get(r.patient_id as string);
-    // Map DB status to UI status
-    let uiStatus = (r.status as string) ?? "pending";
-    if (uiStatus === "partial") uiStatus = "partially-ready";
-
-    return {
-      id: r.id as string,
-      patientId: (r.patient_id as string) ?? "",
-      patientName: patient?.name ?? "Patient",
-      patientPhone: patient?.phone ?? "",
-      imageUrl: (r.image_url as string) ?? "",
-      uploadedAt: (r.created_at as string) ?? "",
-      status: uiStatus as PublicPharmacyPrescription["status"],
-      pharmacistNotes: (r.notes as string) ?? undefined,
-      items: ((r.items as PublicPharmacyPrescription["items"]) ?? []),
-      totalPrice: (r.total_price as number) ?? 0,
-      currency: tenantCfg.currency,
-      deliveryOption: ((r.delivery_option as string) ?? "pickup") as "pickup" | "delivery",
-      deliveryAddress: (r.delivery_address as string) ?? undefined,
-      isChronic: (r.is_chronic as boolean) ?? false,
-      refillReminderDate: (r.refill_reminder_date as string) ?? undefined,
-      whatsappNotified: (r.whatsapp_notified as boolean) ?? false,
-    };
-  });
+  // Return empty — prescription data must NEVER be served publicly.
+  // Authenticated pharmacy staff should use a separate, auth-gated endpoint.
+  return [];
 }
 
 // ── Blog Posts ──

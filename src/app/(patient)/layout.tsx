@@ -29,6 +29,7 @@ import { signOut } from "@/lib/auth";
 import { AutoBreadcrumb } from "@/components/ui/auto-breadcrumb";
 import { MobileTabBar } from "@/components/layouts/mobile-tab-bar";
 import type { MobileTabItem } from "@/components/layouts/mobile-tab-bar";
+import { MobileMenuOverlay } from "@/components/layouts/mobile-menu-overlay";
 
 interface NavItem {
   href: string;
@@ -129,11 +130,9 @@ export default function PatientLayout({
           </Button>
         </header>
 
-        {/* Mobile Menu Overlay */}
+        {/* Mobile Menu Overlay — A11Y-01: Escape key + focus trapping */}
         {mobileMenuOpen && (
-          <div className="fixed inset-0 z-50 md:hidden">
-            <div className="absolute inset-0 bg-black/50" onClick={() => setMobileMenuOpen(false)} />
-            <div className="absolute left-0 top-0 bottom-0 w-64 bg-card p-4 shadow-lg">
+          <MobileMenuOverlay onClose={() => setMobileMenuOpen(false)}>
               <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-2">
                   <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
@@ -169,8 +168,7 @@ export default function PatientLayout({
               <div className="mt-6 pt-4 border-t">
                 <SignOutButton />
               </div>
-            </div>
-          </div>
+          </MobileMenuOverlay>
         )}
 
         <main id="main-content" className="flex-1 p-4 pb-20 md:p-6 md:pb-6">
