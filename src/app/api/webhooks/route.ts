@@ -291,6 +291,109 @@ export async function POST(request: NextRequest) {
       } else {
         // No valid recipient found — notification skipped
       }
+      // ── Handle rebooking button replies (Feature 16) ──
+      if (rawText.startsWith("REBOOK_") && clinicId) {
+        try {
+          // Format: REBOOK_{appointmentId}_{optionIndex}
+          const parts = rawText.split("_");
+          if (parts.length >= 3) {
+            const appointmentId = parts.slice(1, -1).join("_");
+            const optionIndex = parseInt(parts[parts.length - 1], 10);
+
+            // rebooking_requests not yet in generated types — cast through unknown
+            type RebookRow = { id: string; alternatives: unknown; doctor_id: string };
+            type RebookClient = {
+              from(t: string): {
+                select(s: string): {
+                  eq(c: string, v: string): {
+                    eq(c2: string, v2: string): {
+                      eq(c3: string, v3: string): {
+                        limit(n: number): { single(): Promise<{ data: RebookRow | null }> };
+                      };
+                    };
+                  };
+                };
+                update(row: Record<string, unknown>): {
+                  eq(c: string, v: string): Promise<void>;
+                };
+              };
+            };
+            const rbClient = supabase as unknown as RebookClient;
+
+            // Find the rebooking request
+            const { data: rebookReq } = await rbClient
+              .from("rebooking_requests")
+              .select("id, alternatives, doctor_id")
+              .eq("appointment_id", appointmentId)
+              .eq("clinic_id", clinicId)
+              .eq("status", "pending")
+              .limit(1)
+              .single();
+
+            if (rebookReq) {
+              const alternatives = rebookReq.alternatives as Array<{
+                option_index: number;
+                date: string;
+                time: string;
+                slot_start: string;
+                slot_end: string;
+                label: string;
+              }> | null;
+
+              const chosen = alternatives?.find((a) => a.option_index === optionIndex);
+
+              if (chosen && patientId) {
+                // Create new appointment with the chosen slot
+                await supabase.from("appointments").insert({
+                  patient_id: patientId,
+                  doctor_id: rebookReq.doctor_id,
+                  clinic_id: clinicId,
+                  appointment_date: chosen.date,
+                  start_time: chosen.time + ":00",
+                  slot_start: chosen.slot_start,
+                  slot_end: chosen.slot_end,
+                  status: "confirmed",
+                  rescheduled_from: appointmentId,
+                });
+
+                // Cancel the original appointment
+                await supabase
+                  .from("appointments")
+                  .update({
+                    status: "cancelled",
+                    cancellation_reason: "Rebooked due to doctor unavailability",
+                    cancelled_at: new Date().toISOString(),
+                  })
+                  .eq("id", appointmentId)
+                  .eq("clinic_id", clinicId);
+
+                // Update rebooking request status
+                await rbClient
+                  .from("rebooking_requests")
+                  .update({
+                    status: "rebooked",
+                    selected_option: optionIndex,
+                    rebooked_at: new Date().toISOString(),
+                  })
+                  .eq("id", rebookReq.id);
+
+                // Confirm to patient via WhatsApp
+                const { sendTextMessage } = await import("@/lib/whatsapp");
+                await sendTextMessage(
+                  msgInfo.senderPhone,
+                  `Your appointment has been rebooked to ${chosen.label}. Thank you!`,
+                );
+              }
+            }
+          }
+        } catch (rebookErr) {
+          logger.warn("Failed to process rebooking response", {
+            context: "webhooks/rebooking",
+            error: rebookErr,
+          });
+        }
+      }
+
       // ── Handle feedback rating button replies (Feature 14) ──
       if (rawText.startsWith("RATING_") && patientId) {
         try {

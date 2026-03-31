@@ -11,6 +11,8 @@ import {
 } from "@/lib/data/client";
 import { PageLoader } from "@/components/ui/page-loader";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
+import { MarkUnavailableDialog } from "@/components/doctor/mark-unavailable-dialog";
+import { RebookingStatus } from "@/components/doctor/rebooking-status";
 
 const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
@@ -27,6 +29,8 @@ export default function DoctorSchedulePage() {
   const [doctorAppointments, setDoctorAppointments] = useState<AppointmentView[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
+  const [userId, setUserId] = useState("");
+  const [clinicId, setClinicId] = useState("");
 
   useEffect(() => {
     const controller = new AbortController();
@@ -34,6 +38,8 @@ export default function DoctorSchedulePage() {
     const user = await getCurrentUser();
       if (controller.signal.aborted) return;
     if (!user?.clinic_id) { setLoading(false); return; }
+    setUserId(user.id);
+    setClinicId(user.clinic_id);
     const appts = await fetchDoctorAppointments(user.clinic_id, user.id);
       if (controller.signal.aborted) return;
     setDoctorAppointments(appts);
@@ -63,7 +69,12 @@ export default function DoctorSchedulePage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold mb-6">My Schedule</h1>
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-2xl font-bold">My Schedule</h1>
+        {clinicId && (
+          <MarkUnavailableDialog doctorId={userId} clinicId={clinicId} />
+        )}
+      </div>
 
       <div className="grid gap-6 lg:grid-cols-3">
         <Card className="lg:col-span-2">
@@ -91,29 +102,36 @@ export default function DoctorSchedulePage() {
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Working Hours</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              {dayNames.map((day, i) => {
-                const wh = clinicConfig.workingHours[i];
-                return (
-                  <div key={i} className="flex items-center justify-between text-sm">
-                    <Breadcrumb items={[{ label: "Doctor", href: "/doctor/dashboard" }, { label: "Schedule" }]} />
-                    <span className={wh.enabled ? "" : "text-muted-foreground"}>{day}</span>
-                    {wh.enabled ? (
-                      <span className="font-medium">{wh.open} - {wh.close}</span>
-                    ) : (
-                      <Badge variant="secondary" className="text-xs">Closed</Badge>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </CardContent>
-        </Card>
+        <div className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Working Hours</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                {dayNames.map((day, i) => {
+                  const wh = clinicConfig.workingHours[i];
+                  return (
+                    <div key={i} className="flex items-center justify-between text-sm">
+                      <Breadcrumb items={[{ label: "Doctor", href: "/doctor/dashboard" }, { label: "Schedule" }]} />
+                      <span className={wh.enabled ? "" : "text-muted-foreground"}>{day}</span>
+                      {wh.enabled ? (
+                        <span className="font-medium">{wh.open} - {wh.close}</span>
+                      ) : (
+                        <Badge variant="secondary" className="text-xs">Closed</Badge>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Rebooking Status (Feature 16.7) */}
+          {clinicId && userId && (
+            <RebookingStatus clinicId={clinicId} doctorId={userId} />
+          )}
+        </div>
       </div>
     </div>
   );
