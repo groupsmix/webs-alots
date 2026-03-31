@@ -319,6 +319,16 @@ export async function middleware(request: NextRequest) {
       return supabaseResponse;
     }
 
+    // Enforce 2FA for clinic_admin role: if admin has MFA factors but
+    // current session is only AAL1, redirect to the 2FA setup/verify page.
+    // This ensures admins cannot access admin routes without completing MFA.
+    if (profile.role === "clinic_admin" && pathname.startsWith("/admin")) {
+      const { data: aalData } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+      if (aalData?.currentLevel === "aal1" && aalData?.nextLevel === "aal2") {
+        return secureRedirect(new URL("/login?mfa=required", request.url));
+      }
+    }
+
     // Check if user is accessing their allowed routes
     if (allowedPrefix && !pathname.startsWith(allowedPrefix)) {
       const dashboardPath =
