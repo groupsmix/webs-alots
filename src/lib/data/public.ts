@@ -10,7 +10,6 @@
 import { createClient, createTenantClient } from "@/lib/supabase-server";
 import { APPOINTMENT_STATUS } from "@/lib/types/database";
 import { getTenant, getClinicConfig } from "@/lib/tenant";
-import { clinicConfig } from "@/config/clinic.config";
 import { getLocalDateStr } from "@/lib/utils";
 import { unstable_cache } from "next/cache";
 import { logger } from "@/lib/logger";
@@ -216,18 +215,14 @@ export async function getPublicBranding(): Promise<ClinicBranding> {
   const tenant = await getTenantInfo();
   const clinicId = await getClinicId();
 
-  // No tenant resolved (root domain) — return static defaults
+  // No tenant resolved (root domain) — return static defaults.
+  // MT-01: Use DEFAULT_BRANDING only; never fall back to static clinicConfig
+  // which hard-codes a single tenant's details into the shared root layout.
   if (!clinicId) {
-    return {
-      ...DEFAULT_BRANDING,
-      clinicName: clinicConfig.name || "Oltigo",
-      phone: clinicConfig.contact.phone ?? null,
-      address: clinicConfig.contact.address ?? null,
-      email: clinicConfig.contact.email ?? null,
-    };
+    return { ...DEFAULT_BRANDING };
   }
 
-  const fallbackName = tenant?.clinicName || clinicConfig.name || "Oltigo";
+  const fallbackName = tenant?.clinicName || "Oltigo";
   return getCachedBranding(clinicId, fallbackName);
 }
 

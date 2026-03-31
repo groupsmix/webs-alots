@@ -1,4 +1,3 @@
-import { clinicConfig } from "@/config/clinic.config";
 import { defaultWebsiteConfig } from "@/lib/website-config";
 import { safeJsonLdStringify } from "@/lib/json-ld";
 
@@ -35,7 +34,7 @@ export function SEOStructuredData({
 }: MedicalBusinessSchemaProps) {
   const contact = defaultWebsiteConfig.contact;
   const location = defaultWebsiteConfig.location;
-  const clinicName = name || clinicConfig.name || "Cabinet Médical";
+  const clinicName = name || "Cabinet Médical";
   const clinicDescription =
     description ||
     `${clinicName} - Cabinet médical professionnel au Maroc. Prenez rendez-vous en ligne.`;

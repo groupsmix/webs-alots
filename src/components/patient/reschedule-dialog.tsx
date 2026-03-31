@@ -8,7 +8,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { BookingCalendar } from "@/components/booking/calendar";
 import { TimeSlotPicker } from "@/components/booking/time-slots";
-import { clinicConfig } from "@/config/clinic.config";
 import { formatDisplayDate } from "@/lib/utils";
 import { useTenant } from "@/components/tenant-provider";
 import { fetchAvailableSlots, fetchGeneratedSlots, fetchSlotBookingCounts } from "@/lib/data/client";
@@ -151,7 +150,7 @@ export function RescheduleDialog({ appointment, onClose, onReschedule }: Resched
               slots={availableSlots}
               allSlots={allSlots}
               slotCounts={slotCounts}
-              maxPerSlot={clinicConfig.booking.maxPerSlot}
+              maxPerSlot={1}
               selectedSlot={selectedTime}
               onSelectSlot={setSelectedTime}
             />
