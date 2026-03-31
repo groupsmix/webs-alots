@@ -1327,8 +1327,8 @@ export async function getDashboardStats(clinicId: string): Promise<DashboardStat
     getRecentActivity(supabase, clinicId),
   ]);
 
-  const insurancePatients = (insurancePatientsRes.data ?? []) as { id: string; metadata: Record<string, unknown> | null }[];
-  const insuranceCount = insurancePatients.filter((p) => p.metadata && (p.metadata as Record<string, unknown>).insurance).length;
+  const insurancePatients = (insurancePatientsRes.data ?? []) as { id: string; metadata: { insurance?: boolean } | null }[];
+  const insuranceCount = insurancePatients.filter((p) => p.metadata?.insurance).length;
 
   return {
     ...base,
@@ -1435,24 +1435,6 @@ export interface DoctorDashboardData {
 export async function getDoctorDashboardData(clinicId: string, doctorId: string): Promise<DoctorDashboardData> {
   const supabase = await createClient();
 
-  // Fetch lookup maps for names
-  const [usersRes, servicesRes] = await Promise.all([
-    supabase.from("users").select("id, name, phone, email").eq("clinic_id", clinicId),
-    supabase.from("services").select("id, name, price").eq("clinic_id", clinicId),
-  ]);
-  const userMap = new Map(
-    ((usersRes.data ?? []) as { id: string; name: string; phone: string; email: string }[]).map((u) => [
-      u.id,
-      { name: u.name, phone: u.phone ?? "", email: u.email ?? "" },
-    ]),
-  );
-  const serviceMap = new Map(
-    ((servicesRes.data ?? []) as { id: string; name: string; price: number }[]).map((s) => [
-      s.id,
-      { name: s.name, price: s.price },
-    ]),
-  );
-
   // Fetch doctor's appointments, patients, waiting room, invoices in parallel
   const today = getLocalDateStr();
   const [apptsRes, patientsRes, waitingRes, invoicesRes] = await Promise.all([
@@ -1488,8 +1470,49 @@ export async function getDoctorDashboardData(clinicId: string, doctorId: string)
     is_first_visit: boolean; insurance_flag: boolean; is_emergency: boolean;
     notes: string | null; recurrence_group_id: string | null; recurrence_pattern: string | null;
   };
+  const apptRows = (apptsRes.data ?? []) as ApptRaw[];
 
-  const appointments: DoctorAppointmentView[] = ((apptsRes.data ?? []) as ApptRaw[]).map((raw) => ({
+  type WaitRaw = { id: string; patient_id: string; service_id: string | null; start_time: string; status: string; is_emergency: boolean };
+  const waitRows = (waitingRes.data ?? []) as WaitRaw[];
+
+  // DAL-03: Only fetch the users & services actually referenced by appointments
+  const referencedUserIds = new Set<string>();
+  const referencedServiceIds = new Set<string>();
+  for (const a of apptRows) {
+    referencedUserIds.add(a.patient_id);
+    referencedUserIds.add(a.doctor_id);
+    if (a.service_id) referencedServiceIds.add(a.service_id);
+  }
+  for (const w of waitRows) {
+    referencedUserIds.add(w.patient_id);
+    if (w.service_id) referencedServiceIds.add(w.service_id);
+  }
+
+  const userIds = [...referencedUserIds];
+  const serviceIds = [...referencedServiceIds];
+
+  const [usersRes, servicesRes] = await Promise.all([
+    userIds.length > 0
+      ? supabase.from("users").select("id, name, phone, email").eq("clinic_id", clinicId).in("id", userIds)
+      : Promise.resolve({ data: [] as { id: string; name: string; phone: string; email: string }[] }),
+    serviceIds.length > 0
+      ? supabase.from("services").select("id, name, price").eq("clinic_id", clinicId).in("id", serviceIds)
+      : Promise.resolve({ data: [] as { id: string; name: string; price: number }[] }),
+  ]);
+  const userMap = new Map(
+    ((usersRes.data ?? []) as { id: string; name: string; phone: string; email: string }[]).map((u) => [
+      u.id,
+      { name: u.name, phone: u.phone ?? "", email: u.email ?? "" },
+    ]),
+  );
+  const serviceMap = new Map(
+    ((servicesRes.data ?? []) as { id: string; name: string; price: number }[]).map((s) => [
+      s.id,
+      { name: s.name, price: s.price },
+    ]),
+  );
+
+  const appointments: DoctorAppointmentView[] = apptRows.map((raw) => ({
     id: raw.id,
     patientId: raw.patient_id,
     patientName: userMap.get(raw.patient_id)?.name ?? "Unknown",
@@ -1514,8 +1537,7 @@ export async function getDoctorDashboardData(clinicId: string, doctorId: string)
     phone: p.phone ?? "",
   }));
 
-  type WaitRaw = { id: string; patient_id: string; service_id: string | null; start_time: string; status: string; is_emergency: boolean };
-  const waitingRoom: DoctorWaitingRoomEntry[] = ((waitingRes.data ?? []) as WaitRaw[]).map((r) => ({
+  const waitingRoom: DoctorWaitingRoomEntry[] = waitRows.map((r) => ({
     id: r.id,
     patientName: userMap.get(r.patient_id)?.name ?? "Patient",
     scheduledTime: r.start_time?.slice(0, 5) ?? "",
@@ -1585,18 +1607,6 @@ export async function getPatientDashboardData(clinicId: string, userId: string, 
   const { getClinicConfig } = await import("@/lib/tenant");
   const clinicCfg = await getClinicConfig(clinicId);
 
-  // Fetch lookup maps
-  const [usersRes, servicesRes] = await Promise.all([
-    supabase.from("users").select("id, name").eq("clinic_id", clinicId),
-    supabase.from("services").select("id, name").eq("clinic_id", clinicId),
-  ]);
-  const userMap = new Map(
-    ((usersRes.data ?? []) as { id: string; name: string }[]).map((u) => [u.id, u.name]),
-  );
-  const serviceMap = new Map(
-    ((servicesRes.data ?? []) as { id: string; name: string }[]).map((s) => [s.id, s.name]),
-  );
-
   const [apptsRes, rxRes, invoicesRes, notifsRes] = await Promise.all([
     supabase.from("appointments")
       .select("id, doctor_id, service_id, appointment_date, start_time, status")
@@ -1624,7 +1634,40 @@ export async function getPatientDashboardData(clinicId: string, userId: string, 
   ]);
 
   type ApptRaw = { id: string; doctor_id: string; service_id: string | null; appointment_date: string; start_time: string; status: string };
-  const appointments: PatientAppointmentView[] = ((apptsRes.data ?? []) as ApptRaw[]).map((r) => ({
+  type RxRaw = { id: string; patient_id: string; doctor_id: string; items: { name: string; dosage: string; duration: string }[] | null; created_at: string };
+  const apptRows = (apptsRes.data ?? []) as ApptRaw[];
+  const rxRows = (rxRes.data ?? []) as RxRaw[];
+
+  // DAL-02: Only fetch users & services actually referenced by patient data
+  const referencedUserIds = new Set<string>();
+  const referencedServiceIds = new Set<string>();
+  for (const a of apptRows) {
+    referencedUserIds.add(a.doctor_id);
+    if (a.service_id) referencedServiceIds.add(a.service_id);
+  }
+  for (const rx of rxRows) {
+    referencedUserIds.add(rx.doctor_id);
+  }
+
+  const userIds = [...referencedUserIds];
+  const serviceIds = [...referencedServiceIds];
+
+  const [usersRes, servicesRes] = await Promise.all([
+    userIds.length > 0
+      ? supabase.from("users").select("id, name").eq("clinic_id", clinicId).in("id", userIds)
+      : Promise.resolve({ data: [] as { id: string; name: string }[] }),
+    serviceIds.length > 0
+      ? supabase.from("services").select("id, name").eq("clinic_id", clinicId).in("id", serviceIds)
+      : Promise.resolve({ data: [] as { id: string; name: string }[] }),
+  ]);
+  const userMap = new Map(
+    ((usersRes.data ?? []) as { id: string; name: string }[]).map((u) => [u.id, u.name]),
+  );
+  const serviceMap = new Map(
+    ((servicesRes.data ?? []) as { id: string; name: string }[]).map((s) => [s.id, s.name]),
+  );
+
+  const appointments: PatientAppointmentView[] = apptRows.map((r) => ({
     id: r.id,
     serviceName: r.service_id ? (serviceMap.get(r.service_id) ?? "Consultation") : "Consultation",
     doctorName: userMap.get(r.doctor_id) ?? "Doctor",
@@ -1633,8 +1676,7 @@ export async function getPatientDashboardData(clinicId: string, userId: string, 
     status: r.status?.replaceAll("_", "-") ?? "scheduled",
   }));
 
-  type RxRaw = { id: string; patient_id: string; doctor_id: string; items: { name: string; dosage: string; duration: string }[] | null; created_at: string };
-  const prescriptions: PatientPrescriptionView[] = ((rxRes.data ?? []) as RxRaw[]).map((r) => ({
+  const prescriptions: PatientPrescriptionView[] = rxRows.map((r) => ({
     id: r.id,
     patientId: r.patient_id,
     doctorName: userMap.get(r.doctor_id) ?? "Doctor",

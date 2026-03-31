@@ -13,6 +13,11 @@ const nextConfig: NextConfig = {
   // Enable static generation for better performance
   trailingSlash: true,
 
+  // PERF-01: Enable the stable `use cache` directive (Next.js 16).
+  experimental: {
+    useCache: true,
+  },
+
   async headers() {
     return [
       {
