@@ -6,6 +6,8 @@ import { usePathname } from "next/navigation";
 import { Menu, X } from "lucide-react";
 import { SignOutButton } from "@/components/sign-out-button";
 import { FeatureGate } from "@/components/feature-gate";
+import { MobileTabBar } from "@/components/layouts/mobile-tab-bar";
+import type { MobileTabItem } from "@/components/layouts/mobile-tab-bar";
 import type { LucideIcon } from "lucide-react";
 import type { ClinicFeatureKey } from "@/lib/features";
 
@@ -27,6 +29,8 @@ export interface ClinicDashboardConfig {
   accentColor: string;
   /** Navigation items */
   navItems: DashboardNavItem[];
+  /** Primary tabs shown in the mobile bottom tab bar (max 4 recommended) */
+  mobileTabs?: MobileTabItem[];
   /** FeatureGate featureKey for the module */
   featureKey?: ClinicFeatureKey;
   /** FeatureGate moduleName for the module */
@@ -149,9 +153,17 @@ export function ClinicDashboardLayout({
         <SidebarContent config={config} pathname={pathname} />
       </aside>
 
-      <main id="main-content" className="flex-1 p-6 pt-16 md:pt-6">
+      <main id="main-content" className={`flex-1 p-6 pt-16 md:pt-6${config.mobileTabs ? " pb-20 md:pb-6" : ""}`}>
         {content}
       </main>
+
+      {/* Mobile bottom tab bar */}
+      {config.mobileTabs && (
+        <MobileTabBar
+          tabs={config.mobileTabs}
+          onMoreClick={() => setMobileOpen(true)}
+        />
+      )}
     </div>
   );
 }

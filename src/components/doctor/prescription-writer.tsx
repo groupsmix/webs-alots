@@ -62,6 +62,7 @@ export function PrescriptionWriter() {
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<Error | null>(null);
   const [doctorName, setDoctorName] = useState("");
+  const [doctorNameAr, setDoctorNameAr] = useState("");
   const [doctorINPE, setDoctorINPE] = useState("");
   const [clinicName, setClinicName] = useState("");
 
@@ -81,11 +82,13 @@ export function PrescriptionWriter() {
 
       // Extract doctor info from the current user
       setDoctorName(user.name ?? "");
-      const meta = (user as unknown as Record<string, unknown>).metadata as Record<string, unknown> | undefined;
+      const userRecord = user as unknown as Record<string, unknown>;
+      setDoctorNameAr((userRecord.name_ar as string) ?? "");
+      const meta = userRecord.metadata as Record<string, unknown> | undefined;
       if (meta?.inpe_number) {
         setDoctorINPE(meta.inpe_number as string);
       }
-      setClinicName((user as unknown as Record<string, unknown>).clinic_name as string ?? "");
+      setClinicName((userRecord.clinic_name as string) ?? "");
 
       const pts = await fetchPatients(user.clinic_id);
       if (controller.signal.aborted) return;
@@ -288,6 +291,7 @@ export function PrescriptionWriter() {
         medications,
         notes,
         doctorName,
+        doctorNameAr: doctorNameAr || undefined,
         clinicName,
         date,
         prescriptionNumber,
@@ -324,6 +328,15 @@ export function PrescriptionWriter() {
             <div className="space-y-2">
               <Label>Date</Label>
               <Input type="date" defaultValue={new Date().toISOString().split("T")[0]} />
+            </div>
+            <div className="space-y-2">
+              <Label>Doctor Arabic Name (optional)</Label>
+              <Input
+                placeholder="e.g., د. محمد"
+                value={doctorNameAr}
+                onChange={(e) => setDoctorNameAr(e.target.value)}
+                dir="rtl"
+              />
             </div>
             <div className="space-y-2 sm:col-span-2">
               <Label>Diagnosis</Label>
