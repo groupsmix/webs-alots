@@ -5,6 +5,7 @@
  * this file to avoid conflicts when multiple overlays appear simultaneously.
  *
  * Scale (lowest → highest):
+ *   mobileTabBar     40   — mobile bottom tab bar
  *   header           40   — sticky headers / top bars
  *   mobileSidebar    50   — mobile sidebar overlays
  *   demoBanner       60   — demo environment banner
@@ -18,6 +19,7 @@
  */
 
 export const Z_INDEX = {
+  mobileTabBar: "z-40",
   header: "z-40",
   mobileSidebar: "z-50",
   demoBanner: "z-[60]",
