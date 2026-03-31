@@ -11,8 +11,29 @@ import { createClient, createTenantClient } from "@/lib/supabase-server";
 import { APPOINTMENT_STATUS } from "@/lib/types/database";
 import { getTenant, getClinicConfig } from "@/lib/tenant";
 import { getLocalDateStr } from "@/lib/utils";
-import { unstable_cache } from "next/cache";
+import { cacheLife } from "next/cache";
+import { cacheTag } from "next/cache";
 import { logger } from "@/lib/logger";
+
+// ── JSONB field types (TS-01 / TS-02: replace Record<string, unknown> casts) ──
+
+/** Shape of the `users.metadata` JSONB column for doctors. */
+interface UserMetadata {
+  specialty?: string;
+  specialty_id?: string;
+  consultation_fee?: number;
+  languages?: string[];
+  bio?: string | null;
+  insurance?: boolean;
+}
+
+/** Shape of the `clinics.config` JSONB column. */
+interface ClinicConfigJson {
+  city?: string;
+  phone?: string;
+  address?: string;
+  email?: string;
+}
 
 // ── Types (match existing UI shapes) ──
 
@@ -167,7 +188,7 @@ const DEFAULT_BRANDING: ClinicBranding = {
 
 /**
  * Fetch branding from DB for a specific clinic.
- * Wrapped with unstable_cache for a 5-minute TTL to avoid
+ * Wrapped with `use cache` for a 5-minute TTL to avoid
  * hitting the DB on every page load (branding rarely changes).
  */
 async function fetchBrandingFromDb(clinicId: string, fallbackName: string): Promise<ClinicBranding> {
@@ -184,7 +205,7 @@ async function fetchBrandingFromDb(clinicId: string, fallbackName: string): Prom
   }
 
   // Fallback to config JSONB for phone/address/email when direct columns are null
-  const cfg = (data.config as Record<string, unknown> | null) ?? {};
+  const cfg = (data.config ?? {}) as ClinicConfigJson;
 
   return {
     logoUrl: data.logo_url ?? null,
@@ -195,23 +216,21 @@ async function fetchBrandingFromDb(clinicId: string, fallbackName: string): Prom
     bodyFont: data.body_font ?? "Geist",
     heroImageUrl: data.hero_image_url ?? null,
     clinicName: data.name ?? fallbackName,
-    tagline: (data.tagline as string | null) ?? null,
-    coverPhotoUrl: (data.cover_photo_url as string | null) ?? null,
-    templateId: (data.template_id as string | null) ?? "modern",
+    tagline: data.tagline ?? null,
+    coverPhotoUrl: data.cover_photo_url ?? null,
+    templateId: data.template_id ?? "modern",
     sectionVisibility: (data.section_visibility as Record<string, boolean> | null) ?? {},
-    phone: (data.phone as string | null) ?? (cfg.phone as string | null) ?? null,
-    address: (data.address as string | null) ?? (cfg.address as string | null) ?? null,
-    email: (data.owner_email as string | null) ?? (cfg.email as string | null) ?? null,
+    phone: data.phone ?? cfg.phone ?? null,
+    address: data.address ?? cfg.address ?? null,
+    email: data.owner_email ?? cfg.email ?? null,
   };
 }
 
-const getCachedBranding = unstable_cache(
-  fetchBrandingFromDb,
-  ["clinic-branding"],
-  { revalidate: 300, tags: ["clinic-branding"] }, // 5-minute TTL
-);
-
 export async function getPublicBranding(): Promise<ClinicBranding> {
+  "use cache";
+  cacheLife("minutes");
+  cacheTag("clinic-branding");
+
   const tenant = await getTenantInfo();
   const clinicId = await getClinicId();
 
@@ -223,7 +242,7 @@ export async function getPublicBranding(): Promise<ClinicBranding> {
   }
 
   const fallbackName = tenant?.clinicName || "Oltigo";
-  return getCachedBranding(clinicId, fallbackName);
+  return fetchBrandingFromDb(clinicId, fallbackName);
 }
 
 // ── Reviews ──
@@ -253,16 +272,14 @@ async function fetchReviewsFromDb(clinicId: string): Promise<PublicReview[]> {
   });
 }
 
-const getCachedReviews = unstable_cache(
-  fetchReviewsFromDb,
-  ["clinic-reviews"],
-  { revalidate: 120, tags: ["clinic-reviews"] }, // 2-minute TTL
-);
-
 export async function getPublicReviews(): Promise<PublicReview[]> {
+  "use cache";
+  cacheLife("minutes");
+  cacheTag("clinic-reviews");
+
   const clinicId = await getClinicId();
   if (!clinicId) return [];
-  return getCachedReviews(clinicId);
+  return fetchReviewsFromDb(clinicId);
 }
 
 async function fetchAverageRatingFromDb(clinicId: string): Promise<number> {
@@ -307,16 +324,14 @@ async function fetchAverageRatingFromDb(clinicId: string): Promise<number> {
   return Math.round((sum / count) * 10) / 10;
 }
 
-const getCachedAverageRating = unstable_cache(
-  fetchAverageRatingFromDb,
-  ["clinic-avg-rating"],
-  { revalidate: 120, tags: ["clinic-reviews"] }, // 2-minute TTL, same tag as reviews
-);
-
 export async function getPublicAverageRating(): Promise<number> {
+  "use cache";
+  cacheLife("minutes");
+  cacheTag("clinic-reviews");
+
   const clinicId = await getClinicId();
   if (!clinicId) return 0;
-  return getCachedAverageRating(clinicId);
+  return fetchAverageRatingFromDb(clinicId);
 }
 
 // ── Services ──
@@ -365,17 +380,17 @@ export async function getPublicDoctors(): Promise<PublicDoctor[]> {
   if (error || !data) return [];
 
   return data.map((d) => {
-    const meta = (d.metadata ?? {}) as Record<string, unknown>;
+    const meta = (d.metadata ?? {}) as UserMetadata;
     return {
       id: d.id,
       name: d.name,
-      specialtyId: (meta.specialty_id as string) ?? "",
-      specialty: (meta.specialty as string) ?? "",
+      specialtyId: meta.specialty_id ?? "",
+      specialty: meta.specialty ?? "",
       phone: d.phone ?? "",
       email: d.email ?? "",
       avatar: d.avatar_url ?? undefined,
-      consultationFee: (meta.consultation_fee as number) ?? 0,
-      languages: (meta.languages as string[]) ?? [],
+      consultationFee: meta.consultation_fee ?? 0,
+      languages: meta.languages ?? [],
     };
   });
 }
@@ -530,14 +545,17 @@ export async function getPublicAvailableSlots(
   date: string,
   doctorId: string,
 ): Promise<string[]> {
-  const [allSlots, bookingCounts] = await Promise.all([
-    getPublicGeneratedSlots(date, doctorId),
-    getPublicSlotBookingCounts(date, doctorId),
-  ]);
-
+  // PERF-03: Resolve clinic config in parallel with slots + booking counts
+  // instead of making a 3rd sequential DB call.
   const currentClinicId = await getClinicId();
   if (!currentClinicId) return [];
-  const tenantCfg = await getClinicConfig(currentClinicId);
+
+  const [allSlots, bookingCounts, tenantCfg] = await Promise.all([
+    getPublicGeneratedSlots(date, doctorId),
+    getPublicSlotBookingCounts(date, doctorId),
+    getClinicConfig(currentClinicId),
+  ]);
+
   const maxPerSlot = tenantCfg.booking.maxPerSlot;
   return allSlots.filter((slot) => (bookingCounts[slot] ?? 0) < maxPerSlot);
 }
@@ -586,8 +604,8 @@ export async function getPublicPharmacyProducts(): Promise<PublicPharmacyProduct
 
   const tenantCfg = await getClinicConfig(clinicId);
 
-  return products.map((p: Record<string, unknown>) => {
-    const s = stockMap.get(p.id as string);
+  return products.map((p) => {
+    const s = stockMap.get(p.id);
     // DATA-02: Compute a coarse stock status instead of exposing exact
     // quantities and thresholds which are business-sensitive information.
     const qty = s?.quantity ?? 0;
@@ -597,19 +615,19 @@ export async function getPublicPharmacyProducts(): Promise<PublicPharmacyProduct
     else if (qty <= minThreshold) stockStatus = "low";
 
     return {
-      id: p.id as string,
-      name: p.name as string,
-      genericName: (p.generic_name as string) ?? undefined,
-      category: (p.category as string) ?? "medication",
-      description: (p.description as string) ?? "",
-      price: (p.price as number) ?? 0,
+      id: p.id,
+      name: p.name,
+      genericName: p.generic_name ?? undefined,
+      category: p.category ?? "medication",
+      description: p.description ?? "",
+      price: p.price ?? 0,
       currency: tenantCfg.currency,
-      requiresPrescription: (p.requires_prescription as boolean) ?? false,
+      requiresPrescription: p.requires_prescription ?? false,
       stockStatus,
-      manufacturer: (p.manufacturer as string) ?? undefined,
-      dosageForm: (p.dosage_form as string) ?? undefined,
-      strength: (p.strength as string) ?? undefined,
-      active: (p.is_active as boolean) ?? true,
+      manufacturer: p.manufacturer ?? undefined,
+      dosageForm: p.dosage_form ?? undefined,
+      strength: p.strength ?? undefined,
+      active: p.is_active ?? true,
     };
   });
 }
@@ -662,15 +680,15 @@ export async function getPublicPharmacyServices(): Promise<PublicPharmacyService
 
   const tenantCfg = await getClinicConfig(clinicId);
 
-  return data.map((s: Record<string, unknown>) => ({
-    id: s.id as string,
-    name: s.name as string,
-    description: (s.description as string) ?? "",
-    price: (s.price as number) ?? 0,
+  return data.map((s) => ({
+    id: s.id,
+    name: s.name,
+    description: s.description ?? "",
+    price: s.price ?? 0,
     currency: tenantCfg.currency,
-    duration: (s.duration_minutes as number) ?? (s.duration_min as number) ?? 0,
-    available: (s.is_active as boolean) ?? true,
-    icon: (s.icon as string) ?? "Pill",
+    duration: s.duration_minutes ?? (s.duration_min as number) ?? 0,
+    available: s.is_active ?? true,
+    icon: "Pill",
   }));
 }
 
@@ -700,13 +718,13 @@ export async function getPublicOnDutySchedule(): Promise<PublicOnDutySchedule[]>
   // If the table doesn't exist or errors, return empty (graceful fallback)
   if (error || !data) return [];
 
-  return data.map((d: Record<string, unknown>) => ({
-    id: (d.id as string) ?? "",
-    date: (d.date as string) ?? "",
-    startTime: (d.start_time as string) ?? "",
-    endTime: (d.end_time as string) ?? "",
-    isOnDuty: (d.is_on_duty as boolean) ?? false,
-    notes: (d.notes as string) ?? undefined,
+  return data.map((d) => ({
+    id: d.id ?? "",
+    date: d.date ?? "",
+    startTime: d.start_time ?? "",
+    endTime: d.end_time ?? "",
+    isOnDuty: d.is_on_duty ?? false,
+    notes: d.notes ?? undefined,
   }));
 }
 
