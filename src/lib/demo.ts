@@ -55,11 +55,15 @@ export const DESTRUCTIVE_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 
 /**
  * API paths that are allowed even in demo mode (e.g., auth, read-only endpoints).
+ *
+ * Note: `/api/branding` is intentionally NOT included here.
+ * Branding GET requests pass through because GET is not a destructive method.
+ * Branding POST/PUT (file uploads, config changes) are blocked to prevent
+ * demo users from polluting R2 storage (SEED-02).
  */
 export const DEMO_ALLOWED_PATHS = new Set([
   "/api/auth",
   "/api/v1/register-clinic",
-  "/api/branding",
 ]);
 
 /**

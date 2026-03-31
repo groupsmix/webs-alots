@@ -21,6 +21,9 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
+/** UUID v4 format validator */
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 interface AppointmentRow {
   id: string;
   appointment_date: string | null;
@@ -88,11 +91,39 @@ async function sendWhatsApp(to: string, body: string): Promise<boolean> {
 
 serve(async (req: Request) => {
   try {
+    // ── Authentication (EDGE-01) ──────────────────────────────────────
+    // Verify the request carries a valid Authorization header.
+    // Accepts either:
+    //   1. The Supabase service-role JWT (for DB webhook triggers)
+    //   2. A shared EDGE_FUNCTION_SECRET bearer token (for manual calls)
+    const authHeader = req.headers.get("authorization");
+    if (!authHeader) {
+      return new Response(
+        JSON.stringify({ error: "Missing Authorization header" }),
+        { status: 401, headers: { "Content-Type": "application/json" } },
+      );
+    }
+
+    const token = authHeader.replace(/^Bearer\s+/i, "");
+    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+    const edgeFunctionSecret = Deno.env.get("EDGE_FUNCTION_SECRET") ?? "";
+
+    const isServiceRole = serviceRoleKey && token === serviceRoleKey;
+    const isEdgeSecret = edgeFunctionSecret && token === edgeFunctionSecret;
+
+    if (!isServiceRole && !isEdgeSecret) {
+      return new Response(
+        JSON.stringify({ error: "Invalid or expired token" }),
+        { status: 403, headers: { "Content-Type": "application/json" } },
+      );
+    }
+
+    // ── Input validation (EDGE-01) ────────────────────────────────────
     const { appointmentId } = await req.json();
 
-    if (!appointmentId) {
+    if (!appointmentId || typeof appointmentId !== "string" || !UUID_RE.test(appointmentId)) {
       return new Response(
-        JSON.stringify({ error: "appointmentId is required" }),
+        JSON.stringify({ error: "appointmentId must be a valid UUID" }),
         { status: 400, headers: { "Content-Type": "application/json" } },
       );
     }

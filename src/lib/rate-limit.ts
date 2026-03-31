@@ -469,10 +469,16 @@ export function createRateLimiter(options: RateLimiterOptions): RateLimiter {
  * within the same Worker isolate.
  */
 
-/** Login attempts: 5 req / 60s per key (applied per-email and per-IP) */
+/** Login attempts: 5 req / 60s per key (applied per-email and per-IP in handler, per-IP in middleware) */
 export const loginLimiter = createRateLimiter({
   windowMs: 60_000,
   max: 5,
+});
+
+/** Auth endpoints catch-all: 10 req / 60s per IP (RL-01 defense-in-depth) */
+export const authLimiter = createRateLimiter({
+  windowMs: 60_000,
+  max: 10,
 });
 
 /**

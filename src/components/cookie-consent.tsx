@@ -24,6 +24,19 @@ const ALL_ACCEPTED: CookiePreferences = {
   marketing: true,
 };
 
+/** Key used in the custom event that re-opens the cookie consent banner. */
+const REOPEN_EVENT = "cookie-consent:reopen";
+
+/**
+ * Programmatically re-open the cookie consent banner.
+ * Call from a "Cookie Settings" link in the footer (COOKIE-01).
+ */
+export function reopenCookieConsent(): void {
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new Event(REOPEN_EVENT));
+  }
+}
+
 /**
  * Read stored cookie preferences from localStorage.
  * Returns `null` when no consent has been given yet.
@@ -119,6 +132,17 @@ export function CookieConsent() {
   const [showPreferences, setShowPreferences] = useState(false);
   const [preferences, setPreferences] =
     useState<CookiePreferences>(DEFAULT_PREFERENCES);
+
+  // Listen for programmatic re-open (e.g. footer "Cookie Settings" link)
+  useEffect(() => {
+    const handler = () => {
+      const stored = getStoredCookiePreferences();
+      if (stored) setPreferences(stored);
+      setVisible(true);
+    };
+    window.addEventListener(REOPEN_EVENT, handler);
+    return () => window.removeEventListener(REOPEN_EVENT, handler);
+  }, []);
 
   // Add bottom padding to body when banner is visible
   useEffect(() => {
