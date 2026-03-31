@@ -36,7 +36,7 @@ describe("Billing API — plan configuration", () => {
   });
 
   it("starter plan has correct monthly price", () => {
-    expect(getPlanPrice("starter", "monthly")).toBe(299);
+    expect(getPlanPrice("starter", "monthly")).toBe(199);
   });
 
   it("professional plan has correct yearly price", () => {

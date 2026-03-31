@@ -85,8 +85,8 @@ export const SUBSCRIPTION_PLANS: PlanConfig[] = [
   {
     id: "starter",
     name: "Starter",
-    priceMonthly: 299,
-    priceYearly: 2990,
+    priceMonthly: 199,
+    priceYearly: 1990,
     currency: "MAD",
     features: ["Up to 5 doctors", "500 patients", "500 appointments/month", "SMS & WhatsApp (100/mo)", "CSV Export"],
     maxDoctors: 5,

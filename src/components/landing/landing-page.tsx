@@ -7,6 +7,7 @@ import { TrustSection } from "./trust-section";
 import { FeaturesSection } from "./features-section";
 import { HowItWorksSection } from "./how-it-works-section";
 import { DemoSection } from "./demo-section";
+import { ComparisonSection } from "@/components/marketing/comparison-table";
 import { CtaSection } from "./cta-section";
 import { LandingFooter } from "./landing-footer";
 import { CookieConsent } from "@/components/cookie-consent";
@@ -34,6 +35,7 @@ export function LandingPage() {
           <FeaturesSection />
           <HowItWorksSection />
           <DemoSection />
+          <ComparisonSection />
           <CtaSection />
         </main>
         <LandingFooter />
