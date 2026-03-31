@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { CreditCard, MessageCircle, Calendar, Save, Edit, Ban, Building2, Phone, MapPin, Globe, RefreshCw } from "lucide-react";
+import { CreditCard, MessageCircle, Calendar, Save, Edit, Ban, Building2, Phone, MapPin, Globe, RefreshCw, Languages } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -151,6 +151,7 @@ export default function ClinicSettingsPage() {
   const [templates, setTemplates] = useState<WhatsAppTemplate[]>(defaultTemplates);
   const [editingTemplate, setEditingTemplate] = useState<string | null>(null);
   const [savedSection, setSavedSection] = useState<string | null>(null);
+  const [patientMessageLocale, setPatientMessageLocale] = useState<"fr" | "ar" | "darija">("fr");
 
   const handleSave = (section: string) => {
     setSavedSection(section);
@@ -511,6 +512,26 @@ export default function ClinicSettingsPage() {
               </div>
             </CardHeader>
             <CardContent>
+              {/* Patient Message Locale Preference */}
+              <div className="border rounded-lg p-4 mb-6 bg-muted/30">
+                <div className="flex items-center gap-2 mb-3">
+                  <Languages className="h-4 w-4" />
+                  <h4 className="text-sm font-medium">Patient Message Language</h4>
+                </div>
+                <p className="text-xs text-muted-foreground mb-3">
+                  Choose the language for patient-facing WhatsApp notifications. Darija (Moroccan Arabic) is recommended for higher engagement.
+                </p>
+                <select
+                  value={patientMessageLocale}
+                  onChange={(e) => setPatientMessageLocale(e.target.value as "fr" | "ar" | "darija")}
+                  className="flex h-10 w-full max-w-xs rounded-md border border-input bg-background px-3 py-2 text-sm"
+                >
+                  <option value="fr">Fran\u00e7ais (French)</option>
+                  <option value="ar">\u0627\u0644\u0639\u0631\u0628\u064a\u0629 (Arabic)</option>
+                  <option value="darija">\u0627\u0644\u062f\u0627\u0631\u062c\u0629 (Darija / Moroccan Arabic)</option>
+                </select>
+              </div>
+
               <p className="text-sm text-muted-foreground mb-4">
                 Customize the message templates sent via WhatsApp. Use placeholders like{" "}
                 <code className="bg-muted px-1 rounded text-xs">{"{{patient_name}}"}</code>,{" "}

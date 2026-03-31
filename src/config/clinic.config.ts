@@ -68,6 +68,9 @@ export interface ClinicConfig {
   /** Default locale */
   locale: "fr" | "ar" | "en";
 
+  /** Locale for patient-facing WhatsApp/SMS messages */
+  patientMessageLocale: "fr" | "ar" | "darija";
+
   /** Currency code */
   currency: string;
 
@@ -171,6 +174,7 @@ export const clinicConfig: ClinicConfig = {
   tier: "pro",
   domain: undefined,
   locale: "fr",
+  patientMessageLocale: "fr",
   currency: "MAD",
   timezone: "Africa/Casablanca",
 
