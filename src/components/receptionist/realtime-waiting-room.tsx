@@ -114,24 +114,28 @@ export function RealtimeWaitingRoom({ clinicId, onCallIn }: RealtimeWaitingRoomP
                     Call In
                   </Button>
                   <div className="flex gap-1">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-6 w-6 p-0"
-                      onClick={() => handleCallPatient(apt.patientName)}
-                      title="Call"
-                    >
-                      <Phone className="h-3 w-3 text-blue-600" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-6 w-6 p-0"
-                      onClick={() => handleWhatsApp(apt.patientName)}
-                      title="WhatsApp"
-                    >
-                      <MessageCircle className="h-3 w-3 text-green-600" />
-                    </Button>
+                    {apt.patientPhone && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 w-6 p-0"
+                        onClick={() => handleCallPatient(apt.patientPhone!)}
+                        title="Call"
+                      >
+                        <Phone className="h-3 w-3 text-blue-600" />
+                      </Button>
+                    )}
+                    {apt.patientPhone && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 w-6 p-0"
+                        onClick={() => handleWhatsApp(apt.patientPhone!)}
+                        title="WhatsApp"
+                      >
+                        <MessageCircle className="h-3 w-3 text-green-600" />
+                      </Button>
+                    )}
                   </div>
                 </div>
               </div>

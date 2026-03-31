@@ -33,24 +33,22 @@ export async function applyRateLimit(
   const rule = rateLimitRules.find((r) => pathname.startsWith(r.prefix));
 
   if (rule) {
-    // Get the window and max from the limiter options
-    // For now, we'll use default values based on the rule
-    const windowMs = 60_000; // Default 60 seconds
-    const max = 30; // Default max
-
     const allowed = await rule.limiter.check(rateLimitKey);
     if (!allowed) {
-      const reset = Math.ceil(Date.now() / 1000) + Math.ceil(windowMs / 1000);
-      return {
-        response: withSecurityHeaders(
-          NextResponse.json(
-            { error: "Too many requests. Please try again later.", code: "RATE_LIMIT_EXCEEDED" },
-            { status: 429 },
-          ),
-          cspHeaderValue,
+      const retryAfterSec = Math.ceil(rule.windowMs / 1000);
+      const reset = Math.ceil(Date.now() / 1000) + retryAfterSec;
+      const response = withSecurityHeaders(
+        NextResponse.json(
+          { error: "Too many requests. Please try again later.", code: "RATE_LIMIT_EXCEEDED" },
+          { status: 429 },
         ),
+        cspHeaderValue,
+      );
+      response.headers.set("Retry-After", String(retryAfterSec));
+      return {
+        response,
         rateLimitInfo: {
-          limit: max,
+          limit: rule.max,
           remaining: 0,
           reset,
         },

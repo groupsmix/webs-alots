@@ -23,9 +23,8 @@ import {
   getCurrentUser,
   fetchTodayAppointments,
   fetchInvoices,
-  type AppointmentView,
-  type InvoiceView,
 } from "@/lib/data/client";
+import { getLocalDateStr } from "@/lib/utils";
 
 interface EndOfDayReportButtonProps {
   trigger?: React.ReactNode;
@@ -56,7 +55,7 @@ export function EndOfDayReportButton({ trigger }: EndOfDayReportButtonProps) {
         return;
       }
 
-      const today = new Date().toISOString().split("T")[0];
+      const today = getLocalDateStr();
       const [appts, invoices] = await Promise.all([
         fetchTodayAppointments(user.clinic_id),
         fetchInvoices(user.clinic_id),

@@ -1,5 +1,8 @@
 import { NextResponse } from "next/server";
 
+/** OWASP-recommended HSTS max-age: 2 years (63 072 000 seconds). */
+const HSTS_VALUE = "max-age=63072000; includeSubDomains; preload";
+
 /**
  * Build the Content-Security-Policy header value with a per-request nonce.
  */
@@ -28,7 +31,7 @@ export function withSecurityHeaders(
   cspHeaderValue: string,
 ): NextResponse {
   response.headers.set("Content-Security-Policy", cspHeaderValue);
-  response.headers.set("Strict-Transport-Security", "max-age=31536000; includeSubDomains; preload");
+  response.headers.set("Strict-Transport-Security", HSTS_VALUE);
   response.headers.set("X-Content-Type-Options", "nosniff");
   response.headers.set("X-Frame-Options", "DENY");
   return response;
@@ -39,7 +42,7 @@ export function withSecurityHeaders(
  */
 export function secureRedirect(url: string | URL, init?: number | ResponseInit): NextResponse {
   const response = NextResponse.redirect(url, init);
-  response.headers.set("Strict-Transport-Security", "max-age=31536000; includeSubDomains; preload");
+  response.headers.set("Strict-Transport-Security", HSTS_VALUE);
   response.headers.set("X-Content-Type-Options", "nosniff");
   response.headers.set("X-Frame-Options", "DENY");
   return response;
@@ -55,7 +58,7 @@ export function applyAllSecurityHeaders(
 ): void {
   response.headers.set("Content-Security-Policy", cspHeaderValue);
   response.headers.set("x-nonce", nonce);
-  response.headers.set("Strict-Transport-Security", "max-age=63072000; includeSubDomains; preload");
+  response.headers.set("Strict-Transport-Security", HSTS_VALUE);
   response.headers.set("X-Content-Type-Options", "nosniff");
   response.headers.set("X-Frame-Options", "DENY");
   response.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
