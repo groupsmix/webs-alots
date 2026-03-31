@@ -448,6 +448,37 @@ export const verifyEmailConfirmSchema = z.object({
   code: z.string().length(6),
 });
 
+// ── AI Patient Summary ──────────────────────────────────────────────────
+
+export const aiPatientSummaryRequestSchema = z.object({
+  patientId: z.string().min(1),
+  forceRefresh: z.boolean().optional().default(false),
+});
+
+export type AiPatientSummaryRequest = z.infer<typeof aiPatientSummaryRequestSchema>;
+
+// ── AI Drug Interaction Checker ─────────────────────────────────────────
+
+export const aiDrugCheckRequestSchema = z.object({
+  medications: z.array(z.string().min(1).max(200)).min(1).max(50),
+  patientId: z.string().min(1).optional(),
+  patientAllergies: z.array(z.string().max(200)).optional(),
+  useAiFallback: z.boolean().optional().default(true),
+});
+
+export type AiDrugCheckRequest = z.infer<typeof aiDrugCheckRequestSchema>;
+
+export const aiDrugCheckOverrideSchema = z.object({
+  patientId: z.string().min(1).optional(),
+  alertId: z.string().min(1),
+  alertSeverity: z.enum(["dangerous", "caution"]),
+  alertTitle: z.string().max(500),
+  reason: z.string().min(1).max(2000),
+  medications: z.array(z.string()).min(1),
+});
+
+export type AiDrugCheckOverride = z.infer<typeof aiDrugCheckOverrideSchema>;
+
 // ── Helper: parse with friendly error response ──────────────────────────
 
 /**
