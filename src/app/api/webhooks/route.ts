@@ -163,7 +163,8 @@ export async function POST(request: NextRequest) {
       const msgInfo = extractMessageInfo(entry);
       if (!msgInfo) continue;
 
-      const upperText = msgInfo.text.trim().toUpperCase();
+      const rawText = msgInfo.text.trim();
+      const upperText = rawText.toUpperCase();
 
       // Resolve the clinic context from the webhook entry's WhatsApp Business
       // Account ID (WABA). Each clinic has its own WABA linked via phone_number_id.
@@ -290,6 +291,74 @@ export async function POST(request: NextRequest) {
       } else {
         // No valid recipient found — notification skipped
       }
+      // ── Handle feedback rating button replies (Feature 14) ──
+      if (rawText.startsWith("RATING_") && patientId) {
+        try {
+          const { parseRatingFromButtonId, handleFeedbackResponse } = await import("@/lib/post-appointment-feedback");
+          const rating = parseRatingFromButtonId(rawText);
+          if (rating !== null) {
+            // Find the pending feedback entry for this patient
+            // patient_feedback & google_place_id added by migration 00055 — cast through unknown
+            type FbRow = { id: string; appointment_id: string; doctor_id: string | null };
+            type FbClient = { from(t: string): { select(s: string): { eq(c: string, v: string): { eq(c2: string, v2: string): { eq(c3: string, v3: number): { order(c4: string, o: { ascending: boolean }): { limit(n: number): { single(): Promise<{ data: FbRow | null }> } } } } } }; update(row: Record<string, unknown>): { eq(c: string, v: string): Promise<void> } } };
+            const fbClient = supabase as unknown as FbClient;
+            const { data: pendingFeedback } = await fbClient.from("patient_feedback")
+              .select("id, appointment_id, doctor_id")
+              .eq("clinic_id", clinicId)
+              .eq("patient_id", patientId)
+              .eq("rating", 0)
+              .order("created_at", { ascending: false })
+              .limit(1)
+              .single();
+
+            if (pendingFeedback) {
+              // Update the feedback entry with the rating
+              const googleReviewSent = rating >= 4;
+              await fbClient.from("patient_feedback")
+                .update({
+                  rating,
+                  responded_at: new Date().toISOString(),
+                  google_review_sent: googleReviewSent,
+                })
+                .eq("id", pendingFeedback.id);
+
+              // Look up clinic's Google Place ID
+              const { data: clinicData } = await supabase
+                .from("clinics")
+                .select("google_place_id")
+                .eq("id", clinicId)
+                .single();
+
+              // Find the clinic admin for notifications
+              const { data: adminUser } = await supabase
+                .from("users")
+                .select("id")
+                .eq("clinic_id", clinicId)
+                .eq("role", "clinic_admin")
+                .limit(1)
+                .single();
+
+              const clinicRow = clinicData as unknown as { google_place_id?: string | null } | null;
+              await handleFeedbackResponse({
+                clinicId,
+                clinicName,
+                patientPhone: msgInfo.senderPhone,
+                patientName: patientName,
+                patientId,
+                rating,
+                googlePlaceId: clinicRow?.google_place_id ?? null,
+                adminUserId: adminUser?.id ?? null,
+              });
+            }
+          }
+        } catch (feedbackErr) {
+          logger.warn("Failed to process feedback rating", {
+            context: "webhooks/feedback",
+            error: feedbackErr,
+          });
+        }
+      }
+
       // Other messages are logged for receptionist review
     }
 

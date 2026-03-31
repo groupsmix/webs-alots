@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { CreditCard, MessageCircle, Calendar, Save, Edit, Ban, Building2, Phone, MapPin, Globe, RefreshCw, Languages } from "lucide-react";
+import { CreditCard, MessageCircle, Calendar, Save, Edit, Ban, Building2, Phone, MapPin, Globe, RefreshCw, Languages, Monitor, Star } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -152,6 +152,8 @@ export default function ClinicSettingsPage() {
   const [editingTemplate, setEditingTemplate] = useState<string | null>(null);
   const [savedSection, setSavedSection] = useState<string | null>(null);
   const [patientMessageLocale, setPatientMessageLocale] = useState<"fr" | "ar" | "darija">("fr");
+  const [kioskModeEnabled, setKioskModeEnabled] = useState(false);
+  const [googlePlaceId, setGooglePlaceId] = useState("");
 
   const handleSave = (section: string) => {
     setSavedSection(section);
@@ -186,6 +188,7 @@ export default function ClinicSettingsPage() {
           <TabsTrigger value="payment">Payment</TabsTrigger>
           <TabsTrigger value="booking">Booking Rules</TabsTrigger>
           <TabsTrigger value="whatsapp">WhatsApp Templates</TabsTrigger>
+          <TabsTrigger value="features">Features</TabsTrigger>
         </TabsList>
 
         {/* Clinic Profile */}
@@ -574,6 +577,105 @@ export default function ClinicSettingsPage() {
               </div>
             </CardContent>
           </Card>
+        </TabsContent>
+        {/* Features (Kiosk Mode & Google Reviews) */}
+        <TabsContent value="features">
+          <div className="space-y-6">
+            {/* Kiosk Mode */}
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <Monitor className="h-4 w-4" />
+                    Patient Self-Check-In Kiosk
+                  </CardTitle>
+                  <Button size="sm" onClick={() => handleSave("features")}>
+                    <Save className="h-4 w-4 mr-1" />
+                    {savedSection === "features" ? "Saved!" : "Save"}
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between border rounded-lg p-4">
+                    <div>
+                      <span className="text-sm font-medium">Enable Kiosk Mode</span>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        When enabled, patients can self-check-in using a tablet at your clinic entrance.
+                        Access via <code className="bg-muted px-1 rounded text-xs">/checkin</code>
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Switch
+                        checked={kioskModeEnabled}
+                        onCheckedChange={setKioskModeEnabled}
+                      />
+                      <Badge variant={kioskModeEnabled ? "default" : "secondary"}>
+                        {kioskModeEnabled ? "Enabled" : "Disabled"}
+                      </Badge>
+                    </div>
+                  </div>
+                  {kioskModeEnabled && (
+                    <div className="bg-blue-50 p-4 rounded-lg">
+                      <p className="text-sm text-blue-800">
+                        Kiosk mode is active. Set up a tablet at your clinic entrance and open the
+                        <code className="bg-blue-100 px-1 mx-1 rounded text-xs">/checkin</code>
+                        page in full-screen mode. Patients can enter their phone number to check in.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Google Reviews */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Star className="h-4 w-4" />
+                  Google Reviews Automation
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <p className="text-sm text-muted-foreground">
+                    After appointments, patients receive a WhatsApp message asking to rate their experience.
+                    Positive ratings (4-5 stars) are redirected to leave a Google Review.
+                  </p>
+                  <div className="space-y-2">
+                    <Label>Google Place ID</Label>
+                    <Input
+                      value={googlePlaceId}
+                      onChange={(e) => setGooglePlaceId(e.target.value)}
+                      placeholder="ChIJxxxxxxxxxxxxxxxxx"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Find your Place ID at{" "}
+                      <a
+                        href="https://developers.google.com/maps/documentation/places/web-service/place-id"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-600 underline"
+                      >
+                        Google Place ID Finder
+                      </a>
+                      . This is used to generate the review link sent to happy patients.
+                    </p>
+                  </div>
+                  {googlePlaceId && (
+                    <div className="bg-green-50 p-3 rounded-lg">
+                      <p className="text-xs text-green-800">
+                        Review link preview:{" "}
+                        <code className="bg-green-100 px-1 rounded">
+                          https://search.google.com/local/writereview?placeid={googlePlaceId}
+                        </code>
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </TabsContent>
       </Tabs>
     </div>
