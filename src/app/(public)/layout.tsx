@@ -1,6 +1,6 @@
 import { PublicHeader } from "@/components/public/header";
 import { PublicFooter } from "@/components/public/footer";
-import { getPublicBranding } from "@/lib/data/public";
+import { getPublicBranding, type ClinicBranding } from "@/lib/data/public";
 import { getTenant } from "@/lib/tenant";
 import { AnalyticsScript } from "@/components/analytics-script";
 import { CookieConsent } from "@/components/cookie-consent";
@@ -24,9 +24,9 @@ export default async function PublicLayout({
   const branding = await getPublicBranding();
 
   // Analytics IDs from branding config (stored in clinic's JSONB config)
-  const brandingRecord = branding as unknown as Record<string, unknown>;
-  const gaId = (brandingRecord.gaId as string | undefined) ?? null;
-  const gtmId = (brandingRecord.gtmId as string | undefined) ?? null;
+  const brandingConfig = branding as ClinicBranding & { gaId?: string; gtmId?: string };
+  const gaId = brandingConfig.gaId ?? null;
+  const gtmId = brandingConfig.gtmId ?? null;
 
   const isDemo = tenant.subdomain === "demo";
 

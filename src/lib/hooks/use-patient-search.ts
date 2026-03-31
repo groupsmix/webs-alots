@@ -56,7 +56,8 @@ export function usePatientSearch(
         }
 
         const results: CommandPaletteItem[] = (data ?? []).map((p) => {
-          const cin = (p.metadata as Record<string, unknown>)?.cin as string | undefined;
+          const meta = (p.metadata ?? {}) as { cin?: string };
+          const cin = meta.cin;
           return {
             id: p.id,
             label: p.name,
