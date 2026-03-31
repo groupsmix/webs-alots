@@ -558,6 +558,18 @@ export const emailVerificationLimiter = createRateLimiter({
   max: 5,
 });
 
+/** AI Patient Summary: 30 req / 24h per doctor (included in plan limits) */
+export const aiPatientSummaryLimiter = createRateLimiter({
+  windowMs: 24 * 60 * 60_000,
+  max: 30,
+});
+
+/** AI Drug Interaction Check: 100 req / 24h per doctor */
+export const aiDrugCheckLimiter = createRateLimiter({
+  windowMs: 24 * 60 * 60_000,
+  max: 100,
+});
+
 export interface RateLimitRule {
   /** URL prefix to match */
   prefix: string;
@@ -574,6 +586,8 @@ export const rateLimitRules: RateLimitRule[] = [
   { prefix: "/api/verify-email", limiter: emailVerificationLimiter },
   { prefix: "/api/upload", limiter: uploadLimiter },
   { prefix: "/api/onboarding", limiter: onboardingLimiter },
+  { prefix: "/api/v1/ai/patient-summary", limiter: aiPatientSummaryLimiter },
+  { prefix: "/api/v1/ai/drug-check", limiter: aiDrugCheckLimiter },
   { prefix: "/api/v1/ai/prescription", limiter: aiPrescriptionLimiter },
   { prefix: "/api/chat", limiter: chatLimiter },
   { prefix: "/api/webhooks", limiter: webhookLimiter },
