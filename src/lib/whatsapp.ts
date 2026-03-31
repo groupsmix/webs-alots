@@ -12,6 +12,15 @@ import {
   type NotificationTemplate,
   defaultNotificationTemplates,
 } from "./notifications";
+import { toDarijaNotificationTemplates } from "./whatsapp-templates-darija";
+
+/**
+ * Supported locales for patient-facing WhatsApp messages.
+ * - `fr`     – French / formal (default, uses `defaultNotificationTemplates`)
+ * - `ar`     – Arabic (same as default for now, can be extended)
+ * - `darija` – Moroccan Arabic (uses Darija-specific templates)
+ */
+export type PatientMessageLocale = "fr" | "ar" | "darija";
 
 // ---- Types ----
 
@@ -346,16 +355,44 @@ export async function sendTextMessage(
 }
 
 /**
+ * Return the correct template set for the given patient message locale.
+ * Falls back to the default (French) templates when no locale-specific
+ * set exists.
+ */
+export function getTemplatesForLocale(
+  locale: PatientMessageLocale = "fr",
+): NotificationTemplate[] {
+  switch (locale) {
+    case "darija":
+      return toDarijaNotificationTemplates();
+    case "ar":
+      // Arabic templates can be added later; fall back to default for now
+      return defaultNotificationTemplates;
+    case "fr":
+    default:
+      return defaultNotificationTemplates;
+  }
+}
+
+/**
  * Send a notification-triggered WhatsApp message with variable substitution.
  * Looks up the template for the given trigger, substitutes variables, and sends.
+ *
+ * When a `locale` is provided the function selects the matching template set
+ * (e.g. Darija) automatically. The explicit `templates` parameter still takes
+ * precedence if supplied so existing call-sites are unaffected.
  */
 export async function sendNotificationWhatsApp(
   trigger: NotificationTrigger,
   to: string,
   variables: TemplateVariables,
-  templates: NotificationTemplate[] = defaultNotificationTemplates,
+  templates?: NotificationTemplate[],
+  locale?: PatientMessageLocale,
 ): Promise<WhatsAppSendResult> {
-  const template = templates.find(
+  const resolvedTemplates =
+    templates ?? getTemplatesForLocale(locale);
+
+  const template = resolvedTemplates.find(
     (t) => t.trigger === trigger && t.enabled && t.channels.includes("whatsapp"),
   );
 
