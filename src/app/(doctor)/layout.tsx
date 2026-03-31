@@ -25,6 +25,8 @@ import { PatientSearchPalette } from "@/components/patient-search-palette";
 import { signOut } from "@/lib/auth";
 import type { ClinicFeatureKey } from "@/lib/features";
 import { AutoBreadcrumb } from "@/components/ui/auto-breadcrumb";
+import { MobileTabBar } from "@/components/layouts/mobile-tab-bar";
+import type { MobileTabItem } from "@/components/layouts/mobile-tab-bar";
 
 interface NavItem {
   href: string;
@@ -366,6 +368,14 @@ export default function DoctorLayout({
   const [selectedSpecialty, setSelectedSpecialty] = useState<string | null>(detectedSpecialty);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
+  // Doctor mobile tabs: Dashboard, Patients, Schedule, Prescriptions, More
+  const doctorMobileTabs: MobileTabItem[] = [
+    { href: "/doctor/dashboard", label: t(locale, "doctorNav.dashboard"), icon: LayoutDashboard },
+    { href: "/doctor/patients", label: t(locale, "doctorNav.myPatients"), icon: Users },
+    { href: "/doctor/schedule", label: t(locale, "doctorNav.schedule"), icon: Calendar },
+    { href: "/doctor/prescriptions", label: t(locale, "doctorNav.prescriptions"), icon: Pill },
+  ];
+
   const visibleItems = navItems.filter((item) => {
     if (selectedSpecialty) {
       const specialtyFeatures = SPECIALTY_FEATURES[selectedSpecialty.toLowerCase()];
@@ -443,11 +453,18 @@ export default function DoctorLayout({
           </div>
         )}
 
-        <main id="main-content" className="flex-1 p-4 md:p-6">
+        <main id="main-content" className="flex-1 p-4 pb-20 md:p-6 md:pb-6">
           <AutoBreadcrumb />
           {children}
         </main>
       </div>
+
+      {/* Mobile bottom tab bar */}
+      <MobileTabBar
+        tabs={doctorMobileTabs}
+        onMoreClick={() => setMobileMenuOpen(true)}
+      />
+
       <SessionTimeoutWarning onLogout={() => signOut()} />
       <PatientSearchPalette basePath="/doctor/patients" />
     </div>
