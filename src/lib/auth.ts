@@ -12,6 +12,7 @@ import {
 import { logger } from "@/lib/logger";
 import { logAuthEvent } from "@/lib/audit-log";
 import { ROLE_DASHBOARD_MAP } from "@/lib/middleware/routes";
+import { isSeedUserBlocked } from "@/lib/seed-guard";
 
 /**
  * Phone auth feature flag.
@@ -104,6 +105,28 @@ export async function signInWithPassword(
       success: false,
     }).catch((err) => { logger.warn("Failed to log auth event", { context: "auth/signIn", error: err }); });
     return { error: error.message };
+  }
+
+  // SEED-01: Block seed users from authenticating in production.
+  // Even if the password matches, these accounts must not be usable
+  // in production because their credentials are in git history.
+  if (signInData?.user && isSeedUserBlocked(signInData.user.id)) {
+    logger.warn("Blocked seed user login attempt in production", {
+      context: "auth/signIn",
+      userId: signInData.user.id,
+      email: normalizedEmail,
+      ip: clientIp,
+    });
+    await supabase.auth.signOut();
+    logAuthEvent({
+      supabase,
+      action: "login.blocked_seed_user",
+      actor: normalizedEmail,
+      description: `Seed user login blocked in production from IP ${clientIp}`,
+      ipAddress: clientIp,
+      success: false,
+    }).catch((err) => { logger.warn("Failed to log auth event", { context: "auth/signIn", error: err }); });
+    return { error: "auth.invalidCredentials" };
   }
 
   // Check if user has MFA enabled and needs to complete 2FA
