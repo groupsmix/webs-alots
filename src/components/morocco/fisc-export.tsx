@@ -111,10 +111,18 @@ export function FiscExport({
     return e.date >= filterFrom && e.date <= filterTo;
   });
 
-  // Filter expenses by fiscal year
+  // Filter expenses by the same period as revenue entries
   const filteredExpenses = expenses.filter((e) => {
-    const d = new Date(e.date);
-    return d.getFullYear() === fiscalYear;
+    if (period === "month") {
+      const d = new Date(e.date);
+      return d.getMonth() + 1 === selectedMonth && d.getFullYear() === fiscalYear;
+    }
+    if (period === "quarter") {
+      const d = new Date(e.date);
+      const q = Math.ceil((d.getMonth() + 1) / 3);
+      return q === selectedQuarter && d.getFullYear() === fiscalYear;
+    }
+    return e.date >= filterFrom && e.date <= filterTo;
   });
 
   // Totals

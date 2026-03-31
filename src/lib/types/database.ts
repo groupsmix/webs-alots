@@ -7936,6 +7936,7 @@ export type Database = {
           is_active: boolean | null
           metadata: Json | null
           name: string
+          name_ar: string | null
           phone: string | null
           role: string
           updated_at: string | null
@@ -7950,6 +7951,7 @@ export type Database = {
           is_active?: boolean | null
           metadata?: Json | null
           name: string
+          name_ar?: string | null
           phone?: string | null
           role: string
           updated_at?: string | null
@@ -7964,6 +7966,7 @@ export type Database = {
           is_active?: boolean | null
           metadata?: Json | null
           name?: string
+          name_ar?: string | null
           phone?: string | null
           role?: string
           updated_at?: string | null
@@ -8644,6 +8647,8 @@ export type User = {
   clinic_id: string | null;
   role: UserRole;
   name: string;
+  /** Optional Arabic name for bilingual documents (prescriptions, certificates) */
+  name_ar: string | null;
   phone: string | null;
   email: string | null;
   avatar_url: string | null;
