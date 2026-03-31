@@ -77,7 +77,7 @@ describe("PatientRegistrationDialog", () => {
     
     // Check form sections are present
     expect(screen.getByText("Personal Information")).toBeDefined();
-    expect(screen.getByText("Insurance")).toBeDefined();
+    expect(screen.getByText("Assurance / Insurance")).toBeDefined();
     expect(screen.getByText("Medical Information")).toBeDefined();
     expect(screen.getByText("Emergency Contact")).toBeDefined();
   });
@@ -112,11 +112,11 @@ describe("PatientRegistrationDialog", () => {
     // Open the dialog
     fireEvent.click(screen.getByText("Register New Patient"));
     
-    // Check insurance options exist
-    expect(screen.getByText("No Insurance")).toBeDefined();
-    expect(screen.getByText("CNSS")).toBeDefined();
-    expect(screen.getByText("CNOPS")).toBeDefined();
-    expect(screen.getByText("RAMED")).toBeDefined();
+    // Check insurance options exist (French labels)
+    expect(screen.getByText("Aucune assurance")).toBeDefined();
+    expect(screen.getByText("CNSS (70%)")).toBeDefined();
+    expect(screen.getByText("CNOPS (80%)")).toBeDefined();
+    expect(screen.getByText("RAMED (100%)")).toBeDefined();
   });
 
   it("has cancel and register buttons", () => {

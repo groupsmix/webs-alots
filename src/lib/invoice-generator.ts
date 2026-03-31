@@ -28,6 +28,12 @@ export interface InvoiceLineItem {
   unitPrice: number;
   tvaRate: TVARate;
   discount?: number; // percentage
+  /** Optional tariff act code (CNSS/CNOPS NGAP code) */
+  actCode?: string;
+  /** Tarif national de référence (if different from unitPrice) */
+  tarifReference?: number;
+  /** Insurance reimbursement amount per unit (auto-calculated from tariff) */
+  insuranceReimbursement?: number;
 }
 
 export interface ClinicLegalInfo {
@@ -77,6 +83,15 @@ export interface InvoiceData {
   isProforma?: boolean;
   /** Additional notes */
   notes?: string;
+  /** Tariff-based coverage calculation (from insurance-billing module) */
+  coverageCalculation?: {
+    totalReimbursement: number;
+    totalPatientShare: number;
+    totalDepassement: number;
+    mutuelleCoverage: number;
+    finalResteACharge: number;
+    actsRequiringApproval: string[];
+  };
 }
 
 export interface InvoiceTotals {
@@ -130,12 +145,18 @@ export function calculateInvoiceTotals(invoice: InvoiceData): InvoiceTotals {
     tvaAmount: Math.round(values.tvaAmount * 100) / 100,
   }));
 
-  // Insurance calculation
+  // Insurance calculation — prefer tariff-based if available
   let insuranceCovered = 0;
   let mutuelleCovered = 0;
   let resteACharge = totalTTC;
 
-  if (invoice.patient.insurance) {
+  if (invoice.coverageCalculation) {
+    // Use pre-calculated tariff-based coverage
+    insuranceCovered = invoice.coverageCalculation.totalReimbursement;
+    mutuelleCovered = invoice.coverageCalculation.mutuelleCoverage;
+    resteACharge = invoice.coverageCalculation.finalResteACharge;
+  } else if (invoice.patient.insurance) {
+    // Fallback to percentage-based calculation
     const coverage = calculateResteACharge(totalTTC, invoice.patient.insurance);
     insuranceCovered = coverage.insuranceCovered;
     mutuelleCovered = coverage.mutuelleCovered;
@@ -337,6 +358,8 @@ export function generateInvoiceHTML(invoice: InvoiceData): string {
       <h4>Informations Assurance</h4>
       <p>N° Affiliation: ${escapeHtml(invoice.patient.insurance.affiliationNumber)}</p>
       ${invoice.patient.insurance.mutuelle ? `<p>Mutuelle: ${escapeHtml(invoice.patient.insurance.mutuelle.name)} (N° ${escapeHtml(invoice.patient.insurance.mutuelle.registrationNumber)})</p>` : ""}
+      ${invoice.coverageCalculation && invoice.coverageCalculation.totalDepassement > 0 ? `<p style="color: #b45309; margin-top: 4px;">Dépassement d'honoraires: ${formatMADFormal(invoice.coverageCalculation.totalDepassement)}</p>` : ""}
+      ${invoice.coverageCalculation && invoice.coverageCalculation.actsRequiringApproval.length > 0 ? `<p style="color: #dc2626; margin-top: 4px;">⚠ Entente préalable requise pour: ${invoice.coverageCalculation.actsRequiringApproval.join(", ")}</p>` : ""}
     </div>` : ""}
 
     ${invoice.paymentMethod ? `<div class="payment-info">
