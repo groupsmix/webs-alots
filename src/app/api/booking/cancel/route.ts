@@ -1,6 +1,6 @@
 import { withAuth } from "@/lib/with-auth";
 import { requireTenantWithConfig } from "@/lib/tenant";
-import { APPOINTMENT_STATUS, WAITING_LIST_STATUS } from "@/lib/types/database";
+import { APPOINTMENT_STATUS } from "@/lib/types/database";
 import { logAuditEvent } from "@/lib/audit-log";
 import { clinicDateTime } from "@/lib/timezone";
 import { logger } from "@/lib/logger";
@@ -71,24 +71,16 @@ export const POST = withAuthValidation(bookingCancelSchema, async (body, request
       return apiInternalError("Failed to cancel appointment");
     }
 
-    // Promote the first waiting-list entry for the freed slot
-    const { data: candidate } = await supabase
-      .from("waiting_list")
-      .select("id")
-      .eq("clinic_id", clinicId)
-      .eq("doctor_id", appt.doctor_id)
-      .eq("preferred_date", appt.appointment_date)
-      .eq("status", WAITING_LIST_STATUS.WAITING)
-      .order("created_at", { ascending: true })
-      .limit(1)
-      .single();
-
-    if (candidate) {
-      await supabase
-        .from("waiting_list")
-        .update({ status: WAITING_LIST_STATUS.NOTIFIED, notified_at: new Date().toISOString() })
-        .eq("id", candidate.id);
-    }
+    // RACE-02: Promote the first waiting-list entry for the freed slot
+    // using the DB function with advisory locking to prevent concurrent
+    // cancellations from promoting the same entry.
+     
+    await (supabase.rpc as (...args: unknown[]) => ReturnType<typeof supabase.rpc>)(
+      "promote_waiting_list_entry", {
+        p_clinic_id: clinicId,
+        p_doctor_id: appt.doctor_id,
+        p_preferred_date: appt.appointment_date,
+      });
 
     await logAuditEvent({
       supabase,
