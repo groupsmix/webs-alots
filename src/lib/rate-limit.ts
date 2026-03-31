@@ -528,6 +528,12 @@ export const chatLimiter = createRateLimiter({
   max: 15,
 });
 
+/** AI Prescription: 50 req / 24h per doctor (included in plan limits) */
+export const aiPrescriptionLimiter = createRateLimiter({
+  windowMs: 24 * 60 * 60_000,
+  max: 50,
+});
+
 /** Webhook ingress: 100 req / 60s per IP (higher limit for legitimate webhook traffic) */
 export const webhookLimiter = createRateLimiter({
   windowMs: 60_000,
@@ -568,6 +574,7 @@ export const rateLimitRules: RateLimitRule[] = [
   { prefix: "/api/verify-email", limiter: emailVerificationLimiter },
   { prefix: "/api/upload", limiter: uploadLimiter },
   { prefix: "/api/onboarding", limiter: onboardingLimiter },
+  { prefix: "/api/v1/ai/prescription", limiter: aiPrescriptionLimiter },
   { prefix: "/api/chat", limiter: chatLimiter },
   { prefix: "/api/webhooks", limiter: webhookLimiter },
   { prefix: "/api/branding", limiter: brandingLimiter },

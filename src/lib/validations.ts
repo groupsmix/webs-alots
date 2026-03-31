@@ -356,6 +356,24 @@ export const v1PatientCreateSchema = z.object({
   address: z.string().max(500).optional(),
 });
 
+// ── AI Prescription ──────────────────────────────────────────────────────
+
+export const aiPrescriptionRequestSchema = z.object({
+  patientId: z.string().min(1),
+  diagnosis: z.string().min(1).max(2000),
+  symptoms: z.string().max(2000).optional(),
+  patientContext: z.object({
+    age: z.number().int().min(0).max(150).optional(),
+    gender: z.enum(["M", "F"]).optional(),
+    allergies: z.array(z.string().max(200)).optional(),
+    currentMedications: z.array(z.string().max(200)).optional(),
+    chronicConditions: z.array(z.string().max(200)).optional(),
+    weight: z.number().positive().max(500).optional(),
+  }).optional(),
+});
+
+export type AiPrescriptionRequest = z.infer<typeof aiPrescriptionRequestSchema>;
+
 // ── Chat ────────────────────────────────────────────────────────────────
 
 export const chatRequestSchema = z.object({

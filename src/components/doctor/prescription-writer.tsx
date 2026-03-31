@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Plus, Trash2, FileDown, Send } from "lucide-react";
+import { useState, useEffect, useCallback } from "react";
+import { Plus, Trash2, FileDown, Send, Sparkles, Check, Pencil, RefreshCw, AlertTriangle } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -30,12 +30,21 @@ interface Medication {
   instructions: string;
 }
 
+type AiSuggestionState = "idle" | "loading" | "suggested" | "accepted" | "editing";
+
+interface AiPrescriptionResult {
+  medications: { name: string; dosage: string; frequency: string; duration: string; instructions: string }[];
+  notes: string;
+  warnings: string[];
+}
+
 /**
  * PrescriptionWriter
  *
  * Form to create prescriptions for a patient.
  * Features:
  * - DCI drug search/autocomplete
+ * - AI-powered prescription generation
  * - Unique prescription ID (RX-YYYY-XXXXXX)
  * - QR code with structured prescription data
  * - Generates downloadable PDF with QR code
@@ -48,12 +57,20 @@ export function PrescriptionWriter() {
   ]);
   const [notes, setNotes] = useState("");
   const [diagnosis, setDiagnosis] = useState("");
+  const [symptoms, setSymptoms] = useState("");
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<Error | null>(null);
   const [doctorName, setDoctorName] = useState("");
   const [doctorINPE, setDoctorINPE] = useState("");
   const [clinicName, setClinicName] = useState("");
+
+  // AI state
+  const [aiState, setAiState] = useState<AiSuggestionState>("idle");
+  const [aiResult, setAiResult] = useState<AiPrescriptionResult | null>(null);
+  const [aiError, setAiError] = useState<string | null>(null);
+  const [preAiMedications, setPreAiMedications] = useState<Medication[] | null>(null);
+  const [preAiNotes, setPreAiNotes] = useState<string | null>(null);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -85,6 +102,114 @@ export function PrescriptionWriter() {
     return () => { controller.abort(); };
   }, []);
 
+  const patient = patients.find((p) => p.id === selectedPatient) ?? patients[0];
+
+  // ── AI Prescription Generation ──
+
+  const handleAiGenerate = useCallback(async () => {
+    if (!diagnosis.trim()) {
+      setAiError("Veuillez entrer un diagnostic avant de générer.");
+      return;
+    }
+    if (!selectedPatient) {
+      setAiError("Veuillez sélectionner un patient.");
+      return;
+    }
+
+    setAiState("loading");
+    setAiError(null);
+    setAiResult(null);
+
+    // Save current state for potential revert
+    setPreAiMedications([...medications]);
+    setPreAiNotes(notes);
+
+    try {
+      const response = await fetch("/api/v1/ai/prescription", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          patientId: selectedPatient,
+          diagnosis: diagnosis.trim(),
+          symptoms: symptoms.trim() || undefined,
+          patientContext: patient ? {
+            age: patient.age || undefined,
+            gender: patient.gender || undefined,
+            allergies: patient.allergies?.length ? patient.allergies : undefined,
+          } : undefined,
+        }),
+      });
+
+      const result = await response.json() as {
+        ok: boolean;
+        data?: { prescription: AiPrescriptionResult };
+        error?: string;
+      };
+
+      if (!response.ok || !result.ok) {
+        setAiState("idle");
+        setAiError(result.error ?? "Erreur lors de la génération IA.");
+        return;
+      }
+
+      const prescription = result.data?.prescription;
+      if (!prescription) {
+        setAiState("idle");
+        setAiError("Réponse IA invalide.");
+        return;
+      }
+
+      setAiResult(prescription);
+
+      // Auto-fill the medication table with AI suggestions
+      const aiMeds: Medication[] = prescription.medications.map((m) => ({
+        _id: crypto.randomUUID(),
+        name: m.name,
+        dosage: m.dosage,
+        frequency: m.frequency,
+        duration: m.duration,
+        instructions: m.instructions,
+      }));
+
+      setMedications(aiMeds);
+      if (prescription.notes) {
+        setNotes(prescription.notes);
+      }
+      setAiState("suggested");
+    } catch (err) {
+      setAiState("idle");
+      setAiError(
+        err instanceof Error ? err.message : "Erreur réseau. Veuillez réessayer.",
+      );
+    }
+  }, [diagnosis, symptoms, selectedPatient, patient, medications, notes]);
+
+  const handleAiAccept = useCallback(() => {
+    setAiState("accepted");
+    setPreAiMedications(null);
+    setPreAiNotes(null);
+  }, []);
+
+  const handleAiEdit = useCallback(() => {
+    setAiState("editing");
+  }, []);
+
+  const handleAiRegenerate = useCallback(() => {
+    if (preAiMedications) {
+      setMedications(preAiMedications);
+    }
+    if (preAiNotes !== null) {
+      setNotes(preAiNotes);
+    }
+    setAiState("idle");
+    setAiResult(null);
+    setTimeout(() => {
+      void handleAiGenerate();
+    }, 0);
+  }, [preAiMedications, preAiNotes, handleAiGenerate]);
+
+  // ── Medication helpers ──
+
   if (loading) {
     return <PageLoader message="Loading..." />;
   }
@@ -97,8 +222,6 @@ export function PrescriptionWriter() {
       </div>
     );
   }
-
-  const patient = patients.find((p) => p.id === selectedPatient) ?? patients[0];
 
   const addMedication = () => {
     setMedications([
@@ -210,14 +333,118 @@ export function PrescriptionWriter() {
                 onChange={(e) => setDiagnosis(e.target.value)}
               />
             </div>
+            <div className="space-y-2 sm:col-span-2">
+              <Label>Symptoms (optional, helps AI generate better prescriptions)</Label>
+              <Input
+                placeholder="e.g., fièvre, toux sèche, douleurs articulaires..."
+                value={symptoms}
+                onChange={(e) => setSymptoms(e.target.value)}
+              />
+            </div>
+          </div>
+
+          {/* AI Generate Button */}
+          <div className="mt-4 flex items-center gap-3">
+            <Button
+              variant="outline"
+              onClick={() => void handleAiGenerate()}
+              disabled={aiState === "loading" || !diagnosis.trim()}
+              className="border-violet-300 text-violet-700 hover:bg-violet-50 hover:text-violet-800 dark:border-violet-700 dark:text-violet-400 dark:hover:bg-violet-900/20"
+            >
+              {aiState === "loading" ? (
+                <>
+                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                  Génération en cours...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="h-4 w-4 mr-2" />
+                  Générer avec IA
+                </>
+              )}
+            </Button>
+            {aiError && (
+              <p className="text-sm text-red-600 dark:text-red-400">{aiError}</p>
+            )}
           </div>
         </CardContent>
       </Card>
 
+      {/* AI Warnings */}
+      {aiResult?.warnings && aiResult.warnings.length > 0 && (
+        <Card className="border-amber-200 dark:border-amber-800 bg-amber-50/50 dark:bg-amber-900/10">
+          <CardContent className="pt-4">
+            <div className="flex items-start gap-2">
+              <AlertTriangle className="h-5 w-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+              <div className="space-y-1">
+                <p className="font-medium text-sm text-amber-800 dark:text-amber-300">Avertissements IA</p>
+                <ul className="text-sm text-amber-700 dark:text-amber-400 list-disc list-inside space-y-0.5">
+                  {aiResult.warnings.map((warning, i) => (
+                    <li key={i}>{warning}</li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* AI Accept/Edit/Regenerate Controls */}
+      {aiState === "suggested" && (
+        <Card className="border-violet-200 dark:border-violet-800 bg-violet-50/50 dark:bg-violet-900/10">
+          <CardContent className="pt-4">
+            <div className="flex items-center justify-between flex-wrap gap-2">
+              <div className="flex items-center gap-2">
+                <Sparkles className="h-4 w-4 text-violet-600 dark:text-violet-400" />
+                <span className="text-sm font-medium text-violet-800 dark:text-violet-300">
+                  Prescription générée par IA — Veuillez vérifier avant de valider
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={handleAiAccept}
+                  className="border-green-300 text-green-700 hover:bg-green-50 dark:border-green-700 dark:text-green-400"
+                >
+                  <Check className="h-3.5 w-3.5 mr-1" />
+                  Accepter
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={handleAiEdit}
+                  className="border-blue-300 text-blue-700 hover:bg-blue-50 dark:border-blue-700 dark:text-blue-400"
+                >
+                  <Pencil className="h-3.5 w-3.5 mr-1" />
+                  Modifier
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={handleAiRegenerate}
+                  className="border-violet-300 text-violet-700 hover:bg-violet-50 dark:border-violet-700 dark:text-violet-400"
+                >
+                  <RefreshCw className="h-3.5 w-3.5 mr-1" />
+                  Régénérer
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
-            <CardTitle className="text-base">Medications</CardTitle>
+            <CardTitle className="text-base">
+              Medications
+              {aiState === "suggested" && (
+                <Badge variant="outline" className="ml-2 text-xs border-violet-300 text-violet-700 dark:border-violet-700 dark:text-violet-400">
+                  IA
+                </Badge>
+              )}
+            </CardTitle>
             <Button variant="outline" size="sm" onClick={addMedication}>
               <Plus className="h-4 w-4 mr-1" />
               Add Medication
@@ -227,7 +454,14 @@ export function PrescriptionWriter() {
         <CardContent>
           <div className="space-y-4">
             {medications.map((med, index) => (
-              <div key={med._id} className="border rounded-lg p-4 space-y-3">
+              <div
+                key={med._id}
+                className={`border rounded-lg p-4 space-y-3 ${
+                  aiState === "suggested"
+                    ? "border-violet-200 dark:border-violet-800 bg-violet-50/30 dark:bg-violet-900/5"
+                    : ""
+                }`}
+              >
                 <div className="flex items-center justify-between">
                   <Badge variant="outline">Medication {index + 1}</Badge>
                   {medications.length > 1 && (
