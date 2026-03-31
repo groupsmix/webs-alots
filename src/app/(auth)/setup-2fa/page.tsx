@@ -1,0 +1,347 @@
+"use client";
+
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { ShieldCheck, Copy, Check, ArrowLeft, AlertTriangle, Download } from "lucide-react";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardFooter,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
+import {
+  enrollMFA,
+  verifyMFAEnrollment,
+  generateBackupCodes,
+} from "@/lib/mfa";
+import type { MFAEnrollment } from "@/lib/mfa";
+
+type Step = "loading" | "qr" | "verify" | "backup" | "done";
+
+export default function Setup2FAPage() {
+  const router = useRouter();
+  const [step, setStep] = useState<Step>("loading");
+  const [enrollment, setEnrollment] = useState<MFAEnrollment | null>(null);
+  const [code, setCode] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [backupCodes, setBackupCodes] = useState<string[]>([]);
+  const [backupCopied, setBackupCopied] = useState(false);
+
+  useEffect(() => {
+    async function startEnrollment() {
+      const result = await enrollMFA();
+      if (result.error || !result.data) {
+        setError(result.error ?? "Failed to start enrollment");
+        setStep("qr");
+        return;
+      }
+      setEnrollment(result.data);
+      setStep("qr");
+    }
+    startEnrollment();
+  }, []);
+
+  async function handleVerify(e: React.FormEvent) {
+    e.preventDefault();
+    if (!enrollment) return;
+    setError(null);
+    setLoading(true);
+
+    const result = await verifyMFAEnrollment(enrollment.factorId, code);
+    if (result.error) {
+      setError("Code invalide. Veuillez réessayer.");
+      setLoading(false);
+      return;
+    }
+
+    // Generate backup codes after successful enrollment
+    const backupResult = await generateBackupCodes();
+    if (backupResult.codes) {
+      setBackupCodes(backupResult.codes);
+      setStep("backup");
+    } else {
+      setStep("done");
+    }
+    setLoading(false);
+  }
+
+  function handleCopySecret() {
+    if (!enrollment) return;
+    navigator.clipboard.writeText(enrollment.secret);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }
+
+  function handleCopyBackupCodes() {
+    const codesText = backupCodes.join("\n");
+    navigator.clipboard.writeText(codesText);
+    setBackupCopied(true);
+    setTimeout(() => setBackupCopied(false), 2000);
+  }
+
+  function handleDownloadBackupCodes() {
+    const codesText = [
+      "=== Codes de secours 2FA ===",
+      "Conservez ces codes en lieu sûr.",
+      "Chaque code ne peut être utilisé qu'une seule fois.",
+      "",
+      ...backupCodes,
+      "",
+      `Générés le: ${new Date().toLocaleString("fr-FR")}`,
+    ].join("\n");
+
+    const blob = new Blob([codesText], { type: "text/plain" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "backup-codes-2fa.txt";
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  if (step === "loading") {
+    return (
+      <div className="w-full max-w-md mx-auto">
+        <Card>
+          <CardContent className="py-12 text-center">
+            <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full mx-auto mb-4" />
+            <p className="text-muted-foreground">Configuration de la 2FA...</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (step === "backup") {
+    return (
+      <div className="w-full max-w-md mx-auto">
+        <Card>
+          <CardHeader className="text-center pb-4">
+            <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-amber-100 dark:bg-amber-900/30">
+              <AlertTriangle className="h-6 w-6 text-amber-600" />
+            </div>
+            <CardTitle className="text-xl">Codes de secours</CardTitle>
+            <CardDescription>
+              Sauvegardez ces codes en lieu sûr. Ils vous permettront de vous
+              connecter si vous perdez l&apos;accès à votre application
+              d&apos;authentification.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="bg-muted rounded-lg p-4">
+              <div className="grid grid-cols-2 gap-2">
+                {backupCodes.map((c) => (
+                  <code
+                    key={c}
+                    className="text-sm font-mono bg-background rounded px-2 py-1 text-center"
+                  >
+                    {c}
+                  </code>
+                ))}
+              </div>
+            </div>
+
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                className="flex-1"
+                onClick={handleCopyBackupCodes}
+              >
+                {backupCopied ? (
+                  <Check className="h-4 w-4 mr-1" />
+                ) : (
+                  <Copy className="h-4 w-4 mr-1" />
+                )}
+                {backupCopied ? "Copié" : "Copier"}
+              </Button>
+              <Button
+                variant="outline"
+                className="flex-1"
+                onClick={handleDownloadBackupCodes}
+              >
+                <Download className="h-4 w-4 mr-1" />
+                Télécharger
+              </Button>
+            </div>
+
+            <p className="text-xs text-muted-foreground text-center">
+              Chaque code ne peut être utilisé qu&apos;une seule fois. Vous pouvez
+              en générer de nouveaux depuis les paramètres.
+            </p>
+          </CardContent>
+          <CardFooter>
+            <Button
+              className="w-full"
+              onClick={() => router.push("/doctor/dashboard")}
+            >
+              J&apos;ai sauvegardé mes codes
+            </Button>
+          </CardFooter>
+        </Card>
+      </div>
+    );
+  }
+
+  if (step === "done") {
+    return (
+      <div className="w-full max-w-md mx-auto">
+        <Card>
+          <CardContent className="py-12 text-center">
+            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/30">
+              <ShieldCheck className="h-6 w-6 text-green-600" />
+            </div>
+            <h2 className="text-xl font-bold mb-2">2FA activée</h2>
+            <p className="text-muted-foreground mb-6">
+              Votre compte est maintenant protégé par l&apos;authentification à
+              deux facteurs.
+            </p>
+            <Button onClick={() => router.push("/doctor/dashboard")}>
+              Continuer vers le tableau de bord
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  return (
+    <div className="w-full max-w-md mx-auto">
+      <div className="text-center mb-6">
+        <div className="flex items-center justify-center gap-2 mb-2">
+          <div className="h-10 w-10 rounded-xl bg-primary flex items-center justify-center">
+            <ShieldCheck className="h-5 w-5 text-primary-foreground" />
+          </div>
+        </div>
+        <h1 className="text-xl font-bold">
+          Configurer l&apos;authentification à deux facteurs
+        </h1>
+        <p className="text-sm text-muted-foreground">
+          Protégez votre compte avec une application d&apos;authentification
+        </p>
+      </div>
+
+      <Card>
+        <CardHeader className="text-center pb-4">
+          <CardTitle className="text-lg">
+            {step === "qr"
+              ? "1. Scannez le QR code"
+              : "2. Entrez le code de vérification"}
+          </CardTitle>
+          <CardDescription>
+            {step === "qr"
+              ? "Utilisez Google Authenticator, Authy, ou une autre application TOTP."
+              : "Entrez le code à 6 chiffres affiché dans votre application."}
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {error && !enrollment && (
+            <div className="mb-4 rounded-lg border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
+              {error}
+            </div>
+          )}
+
+          {step === "qr" && enrollment && (
+            <div className="space-y-4">
+              {/* QR Code */}
+              <div className="flex justify-center">
+                <div
+                  className="bg-white p-4 rounded-lg"
+                  dangerouslySetInnerHTML={{ __html: enrollment.qrCode }}
+                />
+              </div>
+
+              {/* Manual entry */}
+              <div className="space-y-2">
+                <p className="text-xs text-muted-foreground text-center">
+                  Ou entrez ce code manuellement :
+                </p>
+                <div className="flex items-center gap-2">
+                  <code className="flex-1 text-xs font-mono bg-muted rounded px-3 py-2 text-center break-all">
+                    {enrollment.secret}
+                  </code>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleCopySecret}
+                  >
+                    {copied ? (
+                      <Check className="h-4 w-4" />
+                    ) : (
+                      <Copy className="h-4 w-4" />
+                    )}
+                  </Button>
+                </div>
+              </div>
+
+              <Button
+                className="w-full"
+                onClick={() => setStep("verify")}
+              >
+                Suivant
+              </Button>
+            </div>
+          )}
+
+          {step === "verify" && (
+            <form className="space-y-4" onSubmit={handleVerify}>
+              {error && (
+                <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
+                  {error}
+                </div>
+              )}
+              <div className="space-y-2">
+                <Label htmlFor="totp-code">Code de vérification</Label>
+                <Input
+                  id="totp-code"
+                  placeholder="000000"
+                  maxLength={6}
+                  className="text-center text-2xl tracking-[0.5em] font-mono"
+                  value={code}
+                  onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
+                  required
+                  autoFocus
+                />
+              </div>
+              <Button
+                type="submit"
+                className="w-full"
+                disabled={loading || code.length !== 6}
+              >
+                {loading ? "Vérification..." : "Vérifier et activer"}
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                className="w-full"
+                onClick={() => {
+                  setStep("qr");
+                  setCode("");
+                  setError(null);
+                }}
+              >
+                <ArrowLeft className="h-4 w-4 mr-1" />
+                Retour au QR code
+              </Button>
+            </form>
+          )}
+        </CardContent>
+        <CardFooter className="justify-center border-t pt-4">
+          <Button
+            variant="link"
+            className="text-sm text-muted-foreground"
+            onClick={() => router.back()}
+          >
+            Annuler
+          </Button>
+        </CardFooter>
+      </Card>
+    </div>
+  );
+}

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState, useEffect, useCallback } from "react";
-import { Phone, ShieldCheck, ArrowLeft, Heart, Mail, Lock } from "lucide-react";
+import { Phone, ShieldCheck, ArrowLeft, Heart, Mail, Lock, Key } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -15,6 +15,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { signInWithOTP, verifyOTP, signInWithPassword } from "@/lib/auth";
+import { createClient } from "@/lib/supabase-client";
 import { logger } from "@/lib/logger";
 import { t, type TranslationKey } from "@/lib/i18n";
 import { useLocale } from "@/components/locale-switcher";
@@ -23,11 +24,14 @@ const PHONE_AUTH_ENABLED = process.env.NEXT_PUBLIC_PHONE_AUTH_ENABLED === "true"
 export default function LoginPage() {
   const [locale] = useLocale();
   const [method, setMethod] = useState<"email" | "phone">("email");
-  const [step, setStep] = useState<"credentials" | "otp">("credentials");
+  const [step, setStep] = useState<"credentials" | "otp" | "mfa" | "backup">("credentials");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [otp, setOtp] = useState("");
+  const [mfaCode, setMfaCode] = useState("");
+  const [backupCode, setBackupCode] = useState("");
+  const [mfaFactorId, setMfaFactorId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<{ email?: string; password?: string }>({});
   const [loading, setLoading] = useState(false);
@@ -68,6 +72,18 @@ export default function LoginPage() {
     try {
       const result = await signInWithPassword(email.trim(), password);
       if (result.error) {
+        // Check if MFA is required after successful password auth
+        if (result.error === "mfa_required") {
+          const supabase = createClient();
+          const { data: factorsData } = await supabase.auth.mfa.listFactors();
+          const totpFactor = factorsData?.totp?.find((f) => f.status === "verified");
+          if (totpFactor) {
+            setMfaFactorId(totpFactor.id);
+            setStep("mfa");
+            setLoading(false);
+            return;
+          }
+        }
         // HIGH 2.4: Normalize all login error messages to a single generic
         // message to prevent username enumeration. Supabase returns different
         // messages for valid vs. invalid accounts which could leak information.
@@ -113,6 +129,67 @@ export default function LoginPage() {
     }
   }
 
+  async function handleMFAVerify(e: React.FormEvent) {
+    e.preventDefault();
+    if (!mfaFactorId) return;
+    setError(null);
+    setLoading(true);
+
+    try {
+      const supabase = createClient();
+      const { data: challengeData, error: challengeError } =
+        await supabase.auth.mfa.challenge({ factorId: mfaFactorId });
+
+      if (challengeError) {
+        setError(t(locale, "auth.mfaVerifyError" as TranslationKey));
+        setLoading(false);
+        return;
+      }
+
+      const { error: verifyError } = await supabase.auth.mfa.verify({
+        factorId: mfaFactorId,
+        challengeId: challengeData.id,
+        code: mfaCode,
+      });
+
+      if (verifyError) {
+        setError(t(locale, "auth.mfaInvalidCode" as TranslationKey));
+        setLoading(false);
+        return;
+      }
+
+      // MFA verified — redirect will happen via auth state change
+      window.location.href = "/doctor/dashboard";
+    } catch (err) {
+      logger.warn("MFA verification failed", { context: "login", error: err });
+      setError(t(locale, "error.unexpected"));
+      setLoading(false);
+    }
+  }
+
+  async function handleBackupCodeVerify(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+    setLoading(true);
+
+    try {
+      const { verifyBackupCode } = await import("@/lib/mfa");
+      const result = await verifyBackupCode(backupCode);
+      if (result.error) {
+        setError(t(locale, "auth.mfaInvalidBackupCode" as TranslationKey));
+        setLoading(false);
+        return;
+      }
+
+      // Backup code verified — redirect
+      window.location.href = "/doctor/dashboard";
+    } catch (err) {
+      logger.warn("Backup code verification failed", { context: "login", error: err });
+      setError(t(locale, "error.unexpected"));
+      setLoading(false);
+    }
+  }
+
   async function handleVerifyOTP(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
@@ -146,7 +223,7 @@ export default function LoginPage() {
       <Card>
         <CardHeader className="text-center pb-4">
           <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
-            {step === "otp" ? (
+            {step === "otp" || step === "mfa" || step === "backup" ? (
               <ShieldCheck className="h-6 w-6 text-primary" />
             ) : method === "email" ? (
               <Mail className="h-6 w-6 text-primary" />
@@ -157,14 +234,22 @@ export default function LoginPage() {
           <CardTitle className="text-xl">
             {step === "otp"
               ? t(locale, "auth.verifyNumber")
-              : t(locale, "auth.login")}
+              : step === "mfa"
+                ? t(locale, "auth.mfaTitle" as TranslationKey)
+                : step === "backup"
+                  ? t(locale, "auth.mfaBackupTitle" as TranslationKey)
+                  : t(locale, "auth.login")}
           </CardTitle>
           <CardDescription>
             {step === "otp"
               ? `${t(locale, "auth.otpSent")} ${phone}`
-              : method === "email"
-                ? t(locale, "auth.emailLoginDesc")
-                : t(locale, "auth.phoneLoginDesc")}
+              : step === "mfa"
+                ? t(locale, "auth.mfaDesc" as TranslationKey)
+                : step === "backup"
+                  ? t(locale, "auth.mfaBackupDesc" as TranslationKey)
+                  : method === "email"
+                    ? t(locale, "auth.emailLoginDesc")
+                    : t(locale, "auth.phoneLoginDesc")}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -174,7 +259,88 @@ export default function LoginPage() {
             </div>
           )}
 
-          {step === "otp" && PHONE_AUTH_ENABLED ? (
+          {/* MFA TOTP Verification Step */}
+          {step === "mfa" ? (
+            <form className="space-y-4" onSubmit={handleMFAVerify}>
+              <div className="space-y-2">
+                <Label htmlFor="mfa-code">{t(locale, "auth.mfaCodeLabel" as TranslationKey)}</Label>
+                <Input
+                  id="mfa-code"
+                  placeholder="000000"
+                  maxLength={6}
+                  className="text-center text-2xl tracking-[0.5em] font-mono"
+                  value={mfaCode}
+                  onChange={(e) => setMfaCode(e.target.value.replace(/\D/g, ""))}
+                  required
+                  autoFocus
+                />
+              </div>
+              <Button type="submit" className="w-full" disabled={loading || mfaCode.length !== 6}>
+                {loading ? t(locale, "auth.verifying") : t(locale, "auth.mfaVerifyButton" as TranslationKey)}
+              </Button>
+              <div className="text-center">
+                <button
+                  type="button"
+                  className="text-sm text-primary hover:underline inline-flex items-center gap-1"
+                  onClick={() => {
+                    setStep("backup");
+                    setError(null);
+                    setMfaCode("");
+                  }}
+                >
+                  <Key className="h-3 w-3" />
+                  {t(locale, "auth.mfaUseBackupCode" as TranslationKey)}
+                </button>
+              </div>
+              <Button
+                type="button"
+                variant="ghost"
+                className="w-full"
+                onClick={() => {
+                  setStep("credentials");
+                  setMfaCode("");
+                  setError(null);
+                  setMfaFactorId(null);
+                }}
+              >
+                <ArrowLeft className="h-4 w-4 mr-1" />
+                {t(locale, "action.back")}
+              </Button>
+            </form>
+          ) : step === "backup" ? (
+            /* Backup Code Verification Step */
+            <form className="space-y-4" onSubmit={handleBackupCodeVerify}>
+              <div className="space-y-2">
+                <Label htmlFor="backup-code">{t(locale, "auth.mfaBackupCodeLabel" as TranslationKey)}</Label>
+                <Input
+                  id="backup-code"
+                  placeholder="XXXX-XXXX"
+                  maxLength={9}
+                  className="text-center text-xl tracking-widest font-mono uppercase"
+                  value={backupCode}
+                  onChange={(e) => setBackupCode(e.target.value.toUpperCase())}
+                  required
+                  autoFocus
+                />
+              </div>
+              <Button type="submit" className="w-full" disabled={loading || backupCode.length < 8}>
+                {loading ? t(locale, "auth.verifying") : t(locale, "auth.mfaVerifyButton" as TranslationKey)}
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                className="w-full"
+                onClick={() => {
+                  setStep("mfa");
+                  setBackupCode("");
+                  setError(null);
+                }}
+              >
+                <ArrowLeft className="h-4 w-4 mr-1" />
+                {t(locale, "auth.mfaUseTOTP" as TranslationKey)}
+              </Button>
+            </form>
+          ) : step === "otp" && PHONE_AUTH_ENABLED ? (
             <form className="space-y-4" onSubmit={handleVerifyOTP}>
               <div className="space-y-2">
                 <Label htmlFor="otp">{t(locale, "auth.otpLabel")}</Label>

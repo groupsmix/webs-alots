@@ -95,7 +95,7 @@ export async function signInWithPassword(
 
   const supabase = await createClient();
 
-  const { error } = await supabase.auth.signInWithPassword({
+  const { data: signInData, error } = await supabase.auth.signInWithPassword({
     email: normalizedEmail,
     password,
   });
@@ -111,6 +111,17 @@ export async function signInWithPassword(
       success: false,
     }).catch((err) => { logger.warn("Failed to log auth event", { context: "auth/signIn", error: err }); });
     return { error: error.message };
+  }
+
+  // Check if user has MFA enabled and needs to complete 2FA
+  // When AAL1 is granted but AAL2 is required, the user needs to verify TOTP
+  if (signInData?.user) {
+    const { data: aalData } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+    if (aalData?.currentLevel === "aal1" && aalData?.nextLevel === "aal2") {
+      // Password auth succeeded but MFA verification is needed
+      // Return special error code so the client can show the TOTP input
+      return { error: "mfa_required" };
+    }
   }
 
   // Fetch user profile to determine redirect
