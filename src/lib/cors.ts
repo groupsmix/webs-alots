@@ -102,3 +102,11 @@ export function handlePreflight(request: NextRequest): NextResponse {
 export function resetCorsCache(): void {
   _parsedOrigins = undefined;
 }
+
+/**
+ * Test-only alias for `resetCorsCache()`.
+ *
+ * Exported with the underscore-prefixed name so test files can import a
+ * clearly-marked test utility without pulling in production-sounding helpers.
+ */
+export const _resetForTesting = resetCorsCache;

@@ -117,3 +117,34 @@ export function handleSupabaseError(
   logger.warn(clientMessage, { context, error });
   return apiInternalError(clientMessage);
 }
+
+/**
+ * Map a Supabase PostgREST error to the appropriate HTTP status and return
+ * a standardized API error response.
+ *
+ * Unlike `handleSupabaseError` (which always returns 500), this function
+ * inspects the PostgreSQL error code to return semantically correct statuses:
+ *
+ *   - `23505` (unique_violation) → 409 Conflict
+ *   - `PGRST116` (row not found / single-row expected) → 404 Not Found
+ *   - Everything else → 500 Internal Server Error
+ *
+ * @example
+ *   const { data, error } = await supabase.from("clinics").insert(row);
+ *   if (error) return apiSupabaseError(error, "clinics/create");
+ */
+export function apiSupabaseError(
+  error: { message: string; code?: string; details?: string },
+  context: string,
+): NextResponse<ApiErrorBody> {
+  logger.warn("Supabase error", { context, error });
+
+  switch (error.code) {
+    case "23505":
+      return apiError("Resource already exists", 409, "CONFLICT");
+    case "PGRST116":
+      return apiNotFound();
+    default:
+      return apiInternalError();
+  }
+}
