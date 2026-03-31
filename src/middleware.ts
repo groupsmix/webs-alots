@@ -13,6 +13,7 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { extractSubdomain } from "@/lib/subdomain";
 import { TENANT_HEADERS } from "@/lib/tenant";
+import { DEMO_SUBDOMAIN, shouldBlockDemoRequest } from "@/lib/demo";
 import { generateTraceId, TRACE_ID_HEADER } from "@/lib/logger";
 import { subdomainCache, SUBDOMAIN_CACHE_TTL_MS } from "@/lib/subdomain-cache";
 import {
@@ -246,6 +247,17 @@ export async function middleware(request: NextRequest) {
     }
 
     resolvedClinic = clinic;
+
+    // --- Demo tenant guard: block destructive API requests ---
+    if (clinic.subdomain === DEMO_SUBDOMAIN && shouldBlockDemoRequest(request.method, pathname, clinic.id)) {
+      return withSecurityHeaders(
+        NextResponse.json(
+          { ok: false, error: "Les modifications ne sont pas autorisées en mode démo." },
+          { status: 403 },
+        ),
+        cspHeaderValue,
+      );
+    }
 
     // Attach tenant info to all responses so pages can read it
     setTenantHeaders(supabaseResponse, {

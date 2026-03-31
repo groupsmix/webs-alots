@@ -25,7 +25,7 @@ export function CtaSection() {
           </p>
           <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
             <Link
-              href="/register"
+              href="/register-clinic"
               className="group inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-white px-8 text-sm font-semibold text-gray-900 shadow-lg transition-all hover:bg-gray-100"
             >
               {t("landing.ctaPrimary")}

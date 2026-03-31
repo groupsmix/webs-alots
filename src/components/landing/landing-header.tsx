@@ -89,7 +89,7 @@ export function LandingHeader() {
             {t("nav.login")}
           </Link>
           <Link
-            href="/register"
+            href="/register-clinic"
             className="hidden h-9 items-center rounded-lg bg-blue-600 px-4 text-sm font-medium text-white transition-colors hover:bg-blue-700 sm:inline-flex"
           >
             {t("landing.ctaPrimary")}

@@ -50,7 +50,7 @@ export function HeroSection() {
 
           <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
             <Link
-              href="/register"
+              href="/register-clinic"
               className="group inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-8 text-sm font-semibold text-white shadow-lg shadow-blue-600/20 transition-all hover:bg-blue-700 hover:shadow-xl sm:w-auto"
             >
               {t("landing.ctaPrimary")}
@@ -61,6 +61,14 @@ export function HeroSection() {
               className="inline-flex h-12 w-full items-center justify-center rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-8 text-sm font-semibold text-gray-700 dark:text-gray-300 transition-all hover:border-gray-300 dark:hover:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800 sm:w-auto"
             >
               {t("landing.ctaSecondary")}
+            </a>
+            <a
+              href="https://demo.oltigo.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex h-12 w-full items-center justify-center rounded-xl border border-amber-200 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/30 px-8 text-sm font-semibold text-amber-700 dark:text-amber-300 transition-all hover:border-amber-300 dark:hover:border-amber-600 hover:bg-amber-100 dark:hover:bg-amber-900/50 sm:w-auto"
+            >
+              {t("landing.tryDemo")}
             </a>
           </div>
 
