@@ -67,11 +67,11 @@ describe("getPlanConfig", () => {
 
 describe("getPlanPrice", () => {
   it("returns monthly price for monthly interval", () => {
-    expect(getPlanPrice("starter", "monthly")).toBe(299);
+    expect(getPlanPrice("starter", "monthly")).toBe(199);
   });
 
   it("returns yearly price for yearly interval", () => {
-    expect(getPlanPrice("starter", "yearly")).toBe(2990);
+    expect(getPlanPrice("starter", "yearly")).toBe(1990);
   });
 
   it("returns 0 for free plan monthly", () => {
@@ -93,8 +93,8 @@ describe("getPlanPrice", () => {
 
 describe("getYearlySavings", () => {
   it("calculates savings for starter plan", () => {
-    // 299 * 12 - 2990 = 3588 - 2990 = 598
-    expect(getYearlySavings("starter")).toBe(598);
+    // 199 * 12 - 1990 = 2388 - 1990 = 398
+    expect(getYearlySavings("starter")).toBe(398);
   });
 
   it("calculates savings for professional plan", () => {
