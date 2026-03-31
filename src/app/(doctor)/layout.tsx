@@ -27,6 +27,7 @@ import type { ClinicFeatureKey } from "@/lib/features";
 import { AutoBreadcrumb } from "@/components/ui/auto-breadcrumb";
 import { MobileTabBar } from "@/components/layouts/mobile-tab-bar";
 import type { MobileTabItem } from "@/components/layouts/mobile-tab-bar";
+import { MobileMenuOverlay } from "@/components/layouts/mobile-menu-overlay";
 
 interface NavItem {
   href: string;
@@ -237,10 +238,14 @@ function SidebarContent({
 
   return (
     <>
-      {/* Search */}
+      {/* Search — A11Y-02: associate label with input via htmlFor */}
       <div className="relative mb-3">
+        <label htmlFor="doctor-nav-search" className="sr-only">
+          {t(locale, "nav.searchNav")}
+        </label>
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
         <Input
+          id="doctor-nav-search"
           placeholder={t(locale, "doctorNav.searchNav")}
           className="pl-9 h-8 text-sm"
           value={searchQuery}
@@ -248,9 +253,13 @@ function SidebarContent({
         />
       </div>
 
-      {/* Specialty Filter */}
+      {/* Specialty Filter — A11Y-02: associate label with select via htmlFor */}
       <div className="mb-3">
+        <label htmlFor="doctor-specialty-filter" className="sr-only">
+          {t(locale, "nav.filterSpecialty")}
+        </label>
         <select
+          id="doctor-specialty-filter"
           className="w-full text-xs border rounded-md p-1.5 bg-background"
           value={selectedSpecialty ?? ""}
           onChange={(e) => onSpecialtyChange(e.target.value || null)}
@@ -425,11 +434,9 @@ export default function DoctorLayout({
           </Button>
         </header>
 
-        {/* Mobile Menu Overlay */}
+        {/* Mobile Menu Overlay — A11Y-01: Escape key + focus trapping */}
         {mobileMenuOpen && (
-          <div className="fixed inset-0 z-50 md:hidden">
-            <div className="absolute inset-0 bg-black/50" onClick={() => setMobileMenuOpen(false)} />
-            <div className="absolute left-0 top-0 bottom-0 w-72 bg-card p-4 shadow-lg flex flex-col overflow-y-auto">
+          <MobileMenuOverlay onClose={() => setMobileMenuOpen(false)}>
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
                   <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
@@ -451,8 +458,7 @@ export default function DoctorLayout({
               <div className="pt-4 border-t mt-4">
                 <SignOutButton />
               </div>
-            </div>
-          </div>
+          </MobileMenuOverlay>
         )}
 
         <main id="main-content" className="flex-1 p-4 pb-20 md:p-6 md:pb-6">

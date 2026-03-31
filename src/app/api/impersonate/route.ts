@@ -21,6 +21,19 @@ import { apiSuccess, apiInternalError, apiNotFound, apiUnauthorized } from "@/li
 export const POST = withAuthValidation(impersonateSchema, async (body, request, { supabase, user }) => {
     const { clinicId, clinicName, password, reason } = body;
 
+    // AUTH-02: Prevent impersonation of other super_admin accounts.
+    // Check if the target clinic has any super_admin users — if so, block.
+    const { data: superAdminsInClinic } = await supabase
+      .from("users")
+      .select("id")
+      .eq("clinic_id", clinicId)
+      .eq("role", "super_admin")
+      .limit(1);
+
+    if (superAdminsInClinic && superAdminsInClinic.length > 0) {
+      return apiUnauthorized("Cannot impersonate a clinic with super_admin accounts");
+    }
+
     const reauthClient = await createClient();
     const { error: reauthError } = await reauthClient.auth.signInWithPassword({
       email: user.email ?? "",
@@ -42,6 +55,12 @@ export const POST = withAuthValidation(impersonateSchema, async (body, request, 
       return apiNotFound("Clinic not found");
     }
 
+    // AUTH-02: Log IP and user agent for every impersonation event
+    const clientIp = request.headers.get("cf-connecting-ip")
+      ?? request.headers.get("x-forwarded-for")?.split(",")[0]?.trim()
+      ?? "unknown";
+    const userAgent = request.headers.get("user-agent") ?? "unknown";
+
     // Log the impersonation for security audit
     await logSecurityEvent({
       supabase,
@@ -50,7 +69,7 @@ export const POST = withAuthValidation(impersonateSchema, async (body, request, 
       clinicId,
       clinicName: clinicName || clinic.name,
       description: `Super admin started impersonating clinic: ${clinicName || clinic.name}. Reason: ${reason}`,
-      metadata: { reason, targetClinicId: clinicId },
+      metadata: { reason, targetClinicId: clinicId, ipAddress: clientIp, userAgent },
     });
 
     // Set impersonation cookie

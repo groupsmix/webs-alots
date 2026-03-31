@@ -13,6 +13,9 @@ import { OnboardingTour } from "@/components/onboarding/onboarding-tour";
 import { SessionTimeoutWarning } from "@/components/session-timeout-warning";
 import { signOut } from "@/lib/auth";
 import { AutoBreadcrumb } from "@/components/ui/auto-breadcrumb";
+import { useLocale } from "@/components/locale-switcher";
+import { t } from "@/lib/i18n";
+import { MobileMenuOverlay } from "@/components/layouts/mobile-menu-overlay";
 
 interface NavItem {
   href: string;
@@ -123,6 +126,7 @@ export default function AdminLayout({
 }) {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [locale] = useLocale();
 
   return (
     <OnboardingProvider>
@@ -132,7 +136,7 @@ export default function AdminLayout({
         href="#main-content"
         className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[100] focus:rounded-lg focus:bg-primary focus:px-4 focus:py-2 focus:text-primary-foreground focus:text-sm focus:font-medium"
       >
-        Aller au contenu principal
+        {t(locale, "nav.skipToContent")}
       </a>
       {/* Mobile header bar */}
       <div className="fixed top-0 left-0 right-0 z-40 flex items-center gap-3 border-b bg-card px-4 py-3 md:hidden">
@@ -143,19 +147,14 @@ export default function AdminLayout({
         >
           <Menu className="h-5 w-5" />
         </button>
-        <h2 className="text-sm font-semibold">Clinic Admin</h2>
+        <h2 className="text-sm font-semibold">{t(locale, "nav.clinicAdmin")}</h2>
       </div>
 
-      {/* Mobile sidebar overlay */}
+      {/* Mobile sidebar overlay — A11Y-01: Escape key + focus trapping */}
       {mobileOpen && (
-        <div className="fixed inset-0 z-50 md:hidden">
-          <div
-            className="absolute inset-0 bg-black/50"
-            onClick={() => setMobileOpen(false)}
-          />
-          <aside className="absolute left-0 top-0 bottom-0 w-64 bg-card p-4 flex flex-col shadow-xl">
+        <MobileMenuOverlay onClose={() => setMobileOpen(false)}>
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold">Clinic Admin</h2>
+              <h2 className="text-lg font-semibold">{t(locale, "nav.clinicAdmin")}</h2>
               <button
                 onClick={() => setMobileOpen(false)}
                 className="rounded-md p-1 hover:bg-muted"
@@ -165,13 +164,12 @@ export default function AdminLayout({
               </button>
             </div>
             <SidebarContent pathname={pathname} onNavClick={() => setMobileOpen(false)} />
-          </aside>
-        </div>
+        </MobileMenuOverlay>
       )}
 
       {/* Desktop sidebar */}
       <aside className="hidden w-64 border-r bg-card p-4 md:flex md:flex-col">
-        <h2 className="text-lg font-semibold mb-6">Clinic Admin</h2>
+        <h2 className="text-lg font-semibold mb-6">{t(locale, "nav.clinicAdmin")}</h2>
         <SidebarContent pathname={pathname} />
       </aside>
 

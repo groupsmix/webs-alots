@@ -9,7 +9,7 @@ import { OfflineIndicator } from "@/components/offline-indicator";
 import { PerformanceMonitor } from "@/components/performance-monitor";
 import { ServiceWorkerRegister } from "@/components/sw-register";
 import { PlausibleScript } from "@/components/plausible-script";
-import { getDirection, type Locale } from "@/lib/i18n";
+import { getDirection, t, type Locale } from "@/lib/i18n";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -118,7 +118,7 @@ export default async function RootLayout({
           href="#main-content"
           className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-[9999] focus:rounded-md focus:bg-primary focus:px-4 focus:py-2 focus:text-primary-foreground focus:outline-none focus:ring-2 focus:ring-ring"
         >
-          Aller au contenu principal
+          {t(locale, "nav.skipToContent")}
         </a>
         {/* JSON-LD structured data is rendered on public pages only (Issue 59).
             See src/app/(public)/page.tsx for clinic-specific schema. */}
