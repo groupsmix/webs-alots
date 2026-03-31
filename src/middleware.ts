@@ -14,6 +14,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { extractSubdomain } from "@/lib/subdomain";
 import { TENANT_HEADERS } from "@/lib/tenant";
 import { DEMO_SUBDOMAIN, shouldBlockDemoRequest } from "@/lib/demo";
+import { isSeedUserBlocked } from "@/lib/seed-guard";
 import { generateTraceId, TRACE_ID_HEADER } from "@/lib/logger";
 import { subdomainCache, SUBDOMAIN_CACHE_TTL_MS } from "@/lib/subdomain-cache";
 import {
@@ -274,6 +275,13 @@ export async function middleware(request: NextRequest) {
   const {
     data: { user },
   } = await supabase.auth.getUser();
+
+  // SEED-01: Block seed users from accessing any route in production.
+  // Sign them out and redirect to login with an error.
+  if (user && isSeedUserBlocked(user.id)) {
+    await supabase.auth.signOut();
+    return secureRedirect(new URL("/login?error=account_disabled", request.url));
+  }
 
   // Single profile query for authenticated users, reused for both
   // login-redirect and role-enforcement (avoids duplicate DB calls).
