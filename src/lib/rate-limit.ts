@@ -469,10 +469,16 @@ export function createRateLimiter(options: RateLimiterOptions): RateLimiter {
  * within the same Worker isolate.
  */
 
-/** Login attempts: 5 req / 60s per key (applied per-email and per-IP) */
+/** Login attempts: 5 req / 60s per key (applied per-email and per-IP in handler, per-IP in middleware) */
 export const loginLimiter = createRateLimiter({
   windowMs: 60_000,
   max: 5,
+});
+
+/** Auth endpoints catch-all: 10 req / 60s per IP (RL-01 defense-in-depth) */
+export const authLimiter = createRateLimiter({
+  windowMs: 60_000,
+  max: 10,
 });
 
 /**
@@ -585,6 +591,7 @@ export interface RateLimitRule {
  * Ordered list of rate-limit rules. First matching prefix wins.
  */
 export const rateLimitRules: RateLimitRule[] = [
+  { prefix: "/api/auth", limiter: authLimiter, windowMs: 60_000, max: 10 },
   { prefix: "/api/booking/waiting-list", limiter: waitingListLimiter, windowMs: 60 * 60_000, max: 3 },
   { prefix: "/api/book", limiter: bookingLimiter, windowMs: 60_000, max: 10 },
   { prefix: "/api/verify-email", limiter: emailVerificationLimiter, windowMs: 60_000, max: 5 },

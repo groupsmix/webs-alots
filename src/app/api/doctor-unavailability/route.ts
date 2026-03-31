@@ -1,4 +1,5 @@
 import { NextRequest } from "next/server";
+import { z } from "zod";
 import { createClient } from "@/lib/supabase-server";
 import { sendInteractiveMessage } from "@/lib/whatsapp";
 import {
@@ -12,7 +13,19 @@ import {
   apiError,
   apiInternalError,
   apiUnauthorized,
+  apiValidationError,
 } from "@/lib/api-response";
+
+/**
+ * Zod schema for doctor unavailability requests (VAL-01).
+ */
+const doctorUnavailabilitySchema = z.object({
+  doctorId: z.string().uuid(),
+  clinicId: z.string().uuid(),
+  startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Expected YYYY-MM-DD"),
+  endDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Expected YYYY-MM-DD"),
+  reason: z.string().max(500).optional().default(""),
+});
 
 /**
  * POST /api/doctor-unavailability
@@ -36,19 +49,19 @@ export async function POST(request: NextRequest) {
       return apiUnauthorized();
     }
 
-    const body = (await request.json()) as {
-      doctorId: string;
-      clinicId: string;
-      startDate: string;
-      endDate: string;
-      reason: string;
-    };
-
-    const { doctorId, clinicId, startDate, endDate, reason } = body;
-
-    if (!doctorId || !clinicId || !startDate || !endDate) {
-      return apiError("Missing required fields: doctorId, clinicId, startDate, endDate");
+    let body: unknown;
+    try {
+      body = await request.json();
+    } catch {
+      return apiValidationError("Invalid JSON body");
     }
+
+    const parsed = doctorUnavailabilitySchema.safeParse(body);
+    if (!parsed.success) {
+      return apiValidationError(parsed.error.issues.map((e: { message: string }) => e.message).join("; "));
+    }
+
+    const { doctorId, clinicId, startDate, endDate, reason } = parsed.data;
 
     // 1. Record the unavailability in doctor_unavailability table
     // doctor_unavailability & rebooking_requests not yet in generated types — cast through unknown

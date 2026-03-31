@@ -1,7 +1,16 @@
 import { NextRequest } from "next/server";
+import { z } from "zod";
 import { createTenantClient } from "@/lib/supabase-server";
-import { apiSuccess, apiError, apiInternalError } from "@/lib/api-response";
+import { apiSuccess, apiInternalError, apiValidationError } from "@/lib/api-response";
 import { logger } from "@/lib/logger";
+
+/**
+ * Zod schema for check-in confirmation requests (VAL-01).
+ */
+const checkinConfirmSchema = z.object({
+  appointmentId: z.string().uuid(),
+  clinicId: z.string().uuid(),
+});
 
 /**
  * POST /api/checkin/confirm
@@ -11,12 +20,19 @@ import { logger } from "@/lib/logger";
  */
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
-    const { appointmentId, clinicId } = body as { appointmentId?: string; clinicId?: string };
-
-    if (!appointmentId || !clinicId) {
-      return apiError("Missing appointmentId or clinicId", 400);
+    let body: unknown;
+    try {
+      body = await request.json();
+    } catch {
+      return apiValidationError("Invalid JSON body");
     }
+
+    const parsed = checkinConfirmSchema.safeParse(body);
+    if (!parsed.success) {
+      return apiValidationError(parsed.error.issues.map((e: { message: string }) => e.message).join("; "));
+    }
+
+    const { appointmentId, clinicId } = parsed.data;
 
     const supabase = await createTenantClient(clinicId);
 

@@ -3,6 +3,7 @@ import { clinicConfig } from "@/config/clinic.config";
 import { defaultWebsiteConfig } from "@/lib/website-config";
 import { t, type Locale } from "@/lib/i18n";
 import { CopyrightYear } from "./copyright-year";
+import { CookieSettingsLink } from "./cookie-settings-link";
 
 interface PublicFooterProps {
   clinicName?: string;
@@ -61,6 +62,7 @@ export function PublicFooter({ clinicName, phone, email, address, locale = "fr" 
               >
                 {t(locale, "public.privacy")}
               </Link>
+              <CookieSettingsLink locale={locale} />
             </nav>
           </div>
 
