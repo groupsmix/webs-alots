@@ -1,7 +1,8 @@
-import { NextRequest } from "next/server";
 import { createTenantClient } from "@/lib/supabase-server";
-import { apiSuccess, apiError, apiInternalError } from "@/lib/api-response";
+import { apiSuccess, apiInternalError } from "@/lib/api-response";
 import { logger } from "@/lib/logger";
+import { withValidation } from "@/lib/api-validate";
+import { checkinConfirmSchema } from "@/lib/validations";
 
 /**
  * POST /api/checkin/confirm
@@ -9,14 +10,8 @@ import { logger } from "@/lib/logger";
  * Confirm patient arrival: update appointment status to "checked_in"
  * and calculate queue position / estimated wait.
  */
-export async function POST(request: NextRequest) {
-  try {
-    const body = await request.json();
-    const { appointmentId, clinicId } = body as { appointmentId?: string; clinicId?: string };
-
-    if (!appointmentId || !clinicId) {
-      return apiError("Missing appointmentId or clinicId", 400);
-    }
+export const POST = withValidation(checkinConfirmSchema, async (body) => {
+    const { appointmentId, clinicId } = body;
 
     const supabase = await createTenantClient(clinicId);
 
@@ -60,8 +55,4 @@ export async function POST(request: NextRequest) {
       estimatedWait,
       checkedIn: true,
     });
-  } catch (err) {
-    logger.error("Failed to confirm check-in", { context: "api/checkin/confirm", error: err });
-    return apiInternalError("Failed to confirm check-in");
-  }
-}
+});

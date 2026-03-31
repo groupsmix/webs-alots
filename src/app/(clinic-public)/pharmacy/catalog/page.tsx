@@ -6,8 +6,10 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Search, Filter, Loader2 } from "lucide-react";
 import { useTenant } from "@/components/tenant-provider";
-import { clinicConfig } from "@/config/clinic.config";
 import { createClient } from "@/lib/supabase-client";
+
+/** Default currency when tenant config is not yet loaded. */
+const DEFAULT_CURRENCY = "MAD";
 
 interface PublicPharmacyProduct {
   id: string;
@@ -74,7 +76,7 @@ async function fetchProductsClient(clinicId: string): Promise<PublicPharmacyProd
       category: (p.category as string) ?? "medication",
       description: (p.description as string) ?? "",
       price: (p.price as number) ?? 0,
-      currency: clinicConfig.currency,
+      currency: DEFAULT_CURRENCY,
       requiresPrescription: (p.requires_prescription as boolean) ?? false,
       stockQuantity: s?.quantity ?? 0,
       minimumStock: s?.min_threshold ?? 0,

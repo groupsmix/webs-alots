@@ -3,7 +3,6 @@
 import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { ChevronLeft, ChevronRight, Check, Stethoscope, User, Clock, Phone, Loader2, MessageCircle } from "lucide-react";
 import { fetchDoctors, fetchServices, type DoctorView, type ServiceView } from "@/lib/data/client";
-import { clinicConfig } from "@/config/clinic.config";
 import { useTenant } from "@/components/tenant-provider";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -17,6 +16,12 @@ import { t } from "@/lib/i18n";
 import { useFormValidation, commonRules } from "@/lib/hooks/use-form-validation";
 import { formatDisplayDate } from "@/lib/utils";
 import { useToast } from "@/components/ui/toast";
+
+/** Defaults used until tenant booking config is loaded from the DB. */
+const DEFAULT_SLOT_DURATION = 30;
+const DEFAULT_BUFFER_TIME = 5;
+const DEFAULT_MAX_PER_SLOT = 1;
+const DEFAULT_SHOW_WAITING_LIST = true;
 
 // Simplified 3-step booking flow
 // Step 1: Select Service (with doctor)
@@ -325,8 +330,8 @@ export function BookingForm() {
             name: patientName || patientPhone,
             phone: patientPhone,
           },
-          slotDuration: clinicConfig.booking.slotDuration,
-          bufferTime: clinicConfig.booking.bufferTime,
+          slotDuration: DEFAULT_SLOT_DURATION,
+          bufferTime: DEFAULT_BUFFER_TIME,
         }),
       });
       const data = await res.json();
@@ -559,10 +564,10 @@ export function BookingForm() {
                   slots={availableSlots}
                   allSlots={allSlots}
                   slotCounts={slotCounts}
-                  maxPerSlot={clinicConfig.booking.maxPerSlot}
+                  maxPerSlot={DEFAULT_MAX_PER_SLOT}
                   selectedSlot={selectedTime}
                   onSelectSlot={setSelectedTime}
-                  showWaitingList={clinicConfig.features.waitingList}
+                  showWaitingList={DEFAULT_SHOW_WAITING_LIST}
                   onJoinWaitingList={handleJoinWaitingList}
                 />
               </div>

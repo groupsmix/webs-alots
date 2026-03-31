@@ -10,7 +10,6 @@ import {
   fetchAppointments,
   type AppointmentView,
 } from "@/lib/data/client";
-import { clinicConfig } from "@/config/clinic.config";
 import { EmergencySlotCreator } from "./emergency-slot-creator";
 import { PageLoader } from "@/components/ui/page-loader";
 
@@ -186,9 +185,7 @@ export function ScheduleView() {
         </Card>
       )}
 
-      {clinicConfig.features.emergencySlots && (
-        <EmergencySlotCreator doctorId="d1" />
-      )}
+      <EmergencySlotCreator doctorId="d1" />
 
       <Card>
         <CardHeader>
