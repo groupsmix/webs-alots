@@ -991,6 +991,24 @@ export interface SuperAdminStats {
 export async function getSuperAdminStats(): Promise<SuperAdminStats> {
   const supabase = await createClient();
 
+  // DAL-01 (HIGH): Verify the caller is a super_admin before returning
+  // platform-wide statistics. Without this guard, any authenticated user
+  // could call this function and see cross-tenant aggregated data.
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw new Error("Authentication required");
+
+  const { data: profile } = await supabase
+    .from("users")
+    .select("role")
+    .eq("auth_id", user.id)
+    .single();
+
+  if (profile?.role !== "super_admin") {
+    throw new Error("Forbidden: super_admin role required");
+  }
+
   const [clinicsRes, patientCountRes, appointmentCountRes, revenueRes] = await Promise.all([
     supabase.from("clinics").select("id, name, type, config, tier, status, subdomain, created_at").order("created_at", { ascending: false }),
     supabase.from("users").select("id", { count: "exact", head: true }).eq("role", "patient"),

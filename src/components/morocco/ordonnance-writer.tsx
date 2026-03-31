@@ -8,7 +8,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { escapeHtml } from "@/lib/escape-html";
-import { clinicConfig } from "@/config/clinic.config";
 
 // ---- Types ----
 
@@ -344,7 +343,7 @@ export function OrdonnanceWriter({
 
 function generateOrdonnanceHTML(data: OrdonnanceData): string {
   return `<!DOCTYPE html>
-<html lang="${clinicConfig.locale ?? "fr"}">
+<html lang="fr">
 <head>
   <meta charset="UTF-8">
   <title>Ordonnance - ${escapeHtml(data.patientName)}</title>

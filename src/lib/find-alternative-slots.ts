@@ -4,9 +4,11 @@
  * When a doctor marks themselves unavailable for a date range,
  * this module finds alternative available slots for affected appointments.
  * It looks at the same doctor's schedule on subsequent available dates.
+ *
+ * MT-01: Working hours and slot duration are now passed as parameters
+ * instead of being read from the static clinicConfig import, so each
+ * tenant's configuration is respected at runtime.
  */
-
-import { clinicConfig } from "@/config/clinic.config";
 
 export interface AlternativeSlot {
   date: string;
@@ -29,15 +31,25 @@ export interface AffectedAppointment {
   status: string;
 }
 
+/** Working-hours shape expected by the slot generator. */
+export interface WorkingHoursEntry {
+  open: string;
+  close: string;
+  enabled: boolean;
+}
+
 /**
  * Generate time slots for a given day based on clinic working hours.
  */
-function generateTimeSlots(dayOfWeek: number): string[] {
-  const wh = clinicConfig.workingHours[dayOfWeek];
+function generateTimeSlots(
+  dayOfWeek: number,
+  workingHours: Record<number, WorkingHoursEntry>,
+  slotDuration: number,
+): string[] {
+  const wh = workingHours[dayOfWeek];
   if (!wh?.enabled) return [];
 
   const slots: string[] = [];
-  const slotDuration = clinicConfig.booking.slotDuration || 30;
   const [openH, openM] = wh.open.split(":").map(Number);
   const [closeH, closeM] = wh.close.split(":").map(Number);
 
@@ -61,12 +73,16 @@ function generateTimeSlots(dayOfWeek: number): string[] {
  * @param bookedSlots - Set of "YYYY-MM-DD|HH:MM" strings already booked for this doctor
  * @param unavailableStartDate - Start of unavailable range (inclusive, YYYY-MM-DD)
  * @param unavailableEndDate - End of unavailable range (inclusive, YYYY-MM-DD)
+ * @param workingHours - Per-day working hours from the tenant's clinic config
+ * @param slotDuration - Slot duration in minutes from the tenant's clinic config
  * @param count - Number of alternative slots to find (default: 3)
  */
 export function findAlternativeSlots(
   bookedSlots: Set<string>,
   unavailableStartDate: string,
   unavailableEndDate: string,
+  workingHours: Record<number, WorkingHoursEntry>,
+  slotDuration: number,
   count = 3,
 ): AlternativeSlot[] {
   const results: AlternativeSlot[] = [];
@@ -90,7 +106,7 @@ export function findAlternativeSlots(
     // Skip if this date falls in the unavailable range
     if (candidateDate >= unavailStart && candidateDate <= unavailEnd) continue;
 
-    const slots = generateTimeSlots(dayOfWeek);
+    const slots = generateTimeSlots(dayOfWeek, workingHours, slotDuration);
 
     for (const time of slots) {
       if (results.length >= count) break;
@@ -98,7 +114,6 @@ export function findAlternativeSlots(
       const slotKey = `${dateStr}|${time}`;
       if (bookedSlots.has(slotKey)) continue;
 
-      const slotDuration = clinicConfig.booking.slotDuration || 30;
       const [h, m] = time.split(":").map(Number);
       const endMinutes = h * 60 + m + slotDuration;
       const endH = Math.floor(endMinutes / 60);

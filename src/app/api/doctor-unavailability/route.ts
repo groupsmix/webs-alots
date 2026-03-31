@@ -5,6 +5,7 @@ import {
   findAlternativeSlots,
   buildBookedSlotsSet,
 } from "@/lib/find-alternative-slots";
+import { getClinicConfig } from "@/lib/tenant";
 import { logger } from "@/lib/logger";
 import {
   apiSuccess,
@@ -133,11 +134,14 @@ export async function POST(request: NextRequest) {
 
     const bookedSlots = buildBookedSlotsSet(allDoctorAppts ?? []);
 
-    // 4. Find alternative slots
+    // 4. Find alternative slots using tenant-specific working hours
+    const tenantConfig = await getClinicConfig(clinicId);
     const alternatives = findAlternativeSlots(
       bookedSlots,
       startDate,
       endDate,
+      tenantConfig.workingHours,
+      tenantConfig.booking.slotDuration,
       3,
     );
 
