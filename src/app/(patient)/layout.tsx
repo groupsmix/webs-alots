@@ -27,6 +27,8 @@ import { t, type TranslationKey } from "@/lib/i18n";
 import { SessionTimeoutWarning } from "@/components/session-timeout-warning";
 import { signOut } from "@/lib/auth";
 import { AutoBreadcrumb } from "@/components/ui/auto-breadcrumb";
+import { MobileTabBar } from "@/components/layouts/mobile-tab-bar";
+import type { MobileTabItem } from "@/components/layouts/mobile-tab-bar";
 
 interface NavItem {
   href: string;
@@ -64,6 +66,14 @@ export default function PatientLayout({
     setPrevPathname(pathname);
     if (mobileMenuOpen) setMobileMenuOpen(false);
   }
+
+  // Patient mobile tabs: Dashboard, Appointments, Prescriptions, Profile
+  const patientMobileTabs: MobileTabItem[] = [
+    { href: "/patient/dashboard", label: t(locale, "patientNav.dashboard"), icon: LayoutDashboard },
+    { href: "/patient/appointments", label: t(locale, "patientNav.appointments"), icon: Calendar },
+    { href: "/patient/prescriptions", label: t(locale, "patientNav.prescriptions"), icon: Pill },
+    { href: "/patient/medical-history", label: t(locale, "patientNav.medicalHistory"), icon: History },
+  ];
 
   return (
     <div className="flex min-h-screen">
@@ -163,11 +173,18 @@ export default function PatientLayout({
           </div>
         )}
 
-        <main id="main-content" className="flex-1 p-4 md:p-6">
+        <main id="main-content" className="flex-1 p-4 pb-20 md:p-6 md:pb-6">
           <AutoBreadcrumb />
           {children}
         </main>
       </div>
+
+      {/* Mobile bottom tab bar */}
+      <MobileTabBar
+        tabs={patientMobileTabs}
+        onMoreClick={() => setMobileMenuOpen(true)}
+      />
+
       <SessionTimeoutWarning onLogout={() => signOut()} />
     </div>
   );

@@ -13,6 +13,8 @@ import { SessionTimeoutWarning } from "@/components/session-timeout-warning";
 import { signOut } from "@/lib/auth";
 import { AutoBreadcrumb } from "@/components/ui/auto-breadcrumb";
 import { PatientSearchPalette } from "@/components/patient-search-palette";
+import { MobileTabBar } from "@/components/layouts/mobile-tab-bar";
+import type { MobileTabItem } from "@/components/layouts/mobile-tab-bar";
 
 const navItems = [
   { href: "/receptionist/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -62,6 +64,14 @@ export default function ReceptionistLayout({
 }) {
   const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  // Receptionist mobile tabs: Dashboard, Queue, Patients, Payments, More
+  const receptionistMobileTabs: MobileTabItem[] = [
+    { href: "/receptionist/dashboard", label: "Dashboard", icon: LayoutDashboard },
+    { href: "/receptionist/waiting-room", label: "Queue", icon: Clock },
+    { href: "/receptionist/patients", label: "Patients", icon: Users },
+    { href: "/receptionist/payments", label: "Payments", icon: CreditCard },
+  ];
 
   return (
     <div className="flex min-h-screen">
@@ -117,11 +127,18 @@ export default function ReceptionistLayout({
           </div>
         )}
 
-        <main id="main-content" className="flex-1 p-4 md:p-6">
+        <main id="main-content" className="flex-1 p-4 pb-20 md:p-6 md:pb-6">
           <AutoBreadcrumb />
           {children}
         </main>
       </div>
+
+      {/* Mobile bottom tab bar */}
+      <MobileTabBar
+        tabs={receptionistMobileTabs}
+        onMoreClick={() => setMobileMenuOpen(true)}
+      />
+
       <SessionTimeoutWarning onLogout={() => signOut()} />
       <PatientSearchPalette basePath="/receptionist/patients" />
     </div>
