@@ -9,9 +9,11 @@ import {
   Loader2, Sparkles,
 } from "lucide-react";
 import { useTenant } from "@/components/tenant-provider";
-import { clinicConfig } from "@/config/clinic.config";
 import { createClient } from "@/lib/supabase-client";
 import Link from "next/link";
+
+/** Default currency when tenant config is not yet loaded. */
+const DEFAULT_CURRENCY = "MAD";
 
 interface PromotionProduct {
   id: string;
@@ -50,7 +52,7 @@ async function fetchFeaturedProducts(clinicId: string): Promise<PromotionProduct
       category: (p.category as string) ?? "medication",
       description: (p.description as string) ?? "",
       price: (p.price as number) ?? 0,
-      currency: clinicConfig.currency,
+      currency: DEFAULT_CURRENCY,
       requiresPrescription: (p.requires_prescription as boolean) ?? false,
       stockQuantity: s?.quantity ?? 0,
       active: true,

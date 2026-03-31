@@ -6,6 +6,14 @@
 
 import { createClient } from "@/lib/supabase-server";
 
+/** Shape of the `clinics.config` JSONB column (subset used by chatbot). */
+interface ClinicConfigJson {
+  address?: string;
+  city?: string;
+  phone?: string;
+  email?: string;
+}
+
 export interface ChatbotClinicContext {
   clinic: {
     id: string;
@@ -85,11 +93,11 @@ export async function fetchChatbotContext(clinicId: string): Promise<ChatbotClin
           name: clinicData.name as string,
           type: clinicData.type as string,
           tier: clinicData.tier as string,
-          address: (clinicData.config as Record<string, unknown> | null)?.address as string | undefined,
-          city: clinicData.city as string | undefined,
-          phone: clinicData.owner_phone as string | undefined,
-          email: clinicData.owner_email as string | undefined,
-          domain: clinicData.domain as string | undefined,
+          address: (clinicData.config as ClinicConfigJson | null)?.address ?? undefined,
+          city: clinicData.city ?? undefined,
+          phone: clinicData.owner_phone ?? undefined,
+          email: clinicData.owner_email ?? undefined,
+          domain: clinicData.domain ?? undefined,
           config: (clinicData.config as Record<string, unknown>) ?? {},
         }
       : null,

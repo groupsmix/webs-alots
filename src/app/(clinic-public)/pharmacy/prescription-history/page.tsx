@@ -5,8 +5,10 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Clock, Check, Package, Truck, AlertCircle, RefreshCw, Eye, Loader2 } from "lucide-react";
 import { useTenant } from "@/components/tenant-provider";
-import { clinicConfig } from "@/config/clinic.config";
 import { createClient } from "@/lib/supabase-client";
+
+/** Default currency when tenant config is not yet loaded. */
+const DEFAULT_CURRENCY = "MAD";
 
 interface PrescriptionItem {
   id: string;
@@ -74,7 +76,7 @@ async function fetchPrescriptionsClient(clinicId: string): Promise<PharmacyPresc
       pharmacistNotes: (r.notes as string) ?? undefined,
       items: ((r.items as PrescriptionItem[]) ?? []),
       totalPrice: (r.total_price as number) ?? 0,
-      currency: clinicConfig.currency,
+      currency: DEFAULT_CURRENCY,
       deliveryOption: ((r.delivery_option as string) ?? "pickup") as "pickup" | "delivery",
       deliveryAddress: (r.delivery_address as string) ?? undefined,
       isChronic: (r.is_chronic as boolean) ?? false,

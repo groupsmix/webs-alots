@@ -12,9 +12,10 @@ import {
 } from "@/lib/data/client";
 import { PageLoader } from "@/components/ui/page-loader";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
-import { clinicConfig } from "@/config/clinic.config";
+import { useTenant } from "@/components/tenant-provider";
 
 export default function DoctorCertificatesPage() {
+  const tenant = useTenant();
   const [certificates, setCertificates] = useState<MedicalCertificateView[]>([]);
   const [patients, setPatients] = useState<PatientView[]>([]);
   const [loading, setLoading] = useState(true);
@@ -97,7 +98,7 @@ export default function DoctorCertificatesPage() {
       <CertificateGenerator
         certificates={certificates}
         patients={patients.map((p) => ({ id: p.id, name: p.name }))}
-        clinic={{ name: clinicConfig.name, address: clinicConfig.contact.address, phone: clinicConfig.contact.phone }}
+        clinic={{ name: tenant?.clinicName ?? "", address: "", phone: "" }}
         onCreateCertificate={handleCreateCertificate}
       />
     </div>

@@ -10,8 +10,16 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { clinicConfig } from "@/config/clinic.config";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
+import { useTenant } from "@/components/tenant-provider";
+
+/** Defaults used until the tenant settings are fetched from the DB. */
+const DEFAULT_CURRENCY = "MAD";
+const DEFAULT_SLOT_DURATION = 30;
+const DEFAULT_BUFFER_TIME = 5;
+const DEFAULT_MAX_ADVANCE_DAYS = 30;
+const DEFAULT_MAX_PER_SLOT = 1;
+const DEFAULT_CANCELLATION_HOURS = 24;
 
 interface PaymentSettings {
   currency: string;
@@ -112,20 +120,22 @@ const defaultTemplates: WhatsAppTemplate[] = [
 ];
 
 export default function ClinicSettingsPage() {
+  const tenant = useTenant();
+
   const [clinicProfile, setClinicProfile] = useState<ClinicProfile>({
-    name: clinicConfig.name,
-    type: clinicConfig.type,
-    phone: clinicConfig.contact.phone || "",
-    whatsapp: clinicConfig.contact.whatsapp || "",
-    email: clinicConfig.contact.email || "",
-    address: clinicConfig.contact.address || "",
-    city: clinicConfig.contact.city || "",
-    googleMapsUrl: clinicConfig.contact.googleMapsUrl || "",
-    website: clinicConfig.domain || "",
+    name: tenant?.clinicName ?? "",
+    type: tenant?.clinicType ?? "doctor",
+    phone: "",
+    whatsapp: "",
+    email: "",
+    address: "",
+    city: "",
+    googleMapsUrl: "",
+    website: "",
   });
 
   const [paymentSettings, setPaymentSettings] = useState<PaymentSettings>({
-    currency: clinicConfig.currency,
+    currency: DEFAULT_CURRENCY,
     methods: [
       { name: "Cash", enabled: true },
       { name: "Card", enabled: true },
@@ -137,11 +147,11 @@ export default function ClinicSettingsPage() {
   });
 
   const [bookingRules, setBookingRules] = useState<BookingRules>({
-    slotDuration: clinicConfig.booking.slotDuration,
-    bufferTime: clinicConfig.booking.bufferTime,
-    maxAdvanceDays: clinicConfig.booking.maxAdvanceDays,
-    maxPerSlot: clinicConfig.booking.maxPerSlot,
-    cancellationHours: clinicConfig.booking.cancellationHours,
+    slotDuration: DEFAULT_SLOT_DURATION,
+    bufferTime: DEFAULT_BUFFER_TIME,
+    maxAdvanceDays: DEFAULT_MAX_ADVANCE_DAYS,
+    maxPerSlot: DEFAULT_MAX_PER_SLOT,
+    cancellationHours: DEFAULT_CANCELLATION_HOURS,
     allowRescheduling: true,
     rescheduleHours: 12,
     autoConfirm: false,

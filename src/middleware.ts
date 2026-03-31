@@ -14,6 +14,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { extractSubdomain } from "@/lib/subdomain";
 import { TENANT_HEADERS } from "@/lib/tenant";
 import { DEMO_SUBDOMAIN, shouldBlockDemoRequest } from "@/lib/demo";
+import { isSeedUserBlocked } from "@/lib/seed-guard";
 import { generateTraceId, TRACE_ID_HEADER } from "@/lib/logger";
 import { subdomainCache, SUBDOMAIN_CACHE_TTL_MS } from "@/lib/subdomain-cache";
 import {
@@ -111,6 +112,10 @@ export async function middleware(request: NextRequest) {
   for (const key of Object.values(TENANT_HEADERS)) {
     requestHeaders.delete(key);
   }
+  // RLS-05: Also strip the legacy x-clinic-id header used by tenant-scoped
+  // Supabase clients (createTenantClient). An attacker could inject this
+  // header to bypass RLS policies that read `request.headers->>'x-clinic-id'`.
+  requestHeaders.delete("x-clinic-id");
 
   // --- Subdomain resolution ---
   const subdomain = extractSubdomain(hostname, rootDomain);
@@ -274,6 +279,13 @@ export async function middleware(request: NextRequest) {
   const {
     data: { user },
   } = await supabase.auth.getUser();
+
+  // SEED-01: Block seed users from accessing any route in production.
+  // Sign them out and redirect to login with an error.
+  if (user && isSeedUserBlocked(user.id)) {
+    await supabase.auth.signOut();
+    return secureRedirect(new URL("/login?error=account_disabled", request.url));
+  }
 
   // Single profile query for authenticated users, reused for both
   // login-redirect and role-enforcement (avoids duplicate DB calls).

@@ -49,6 +49,62 @@ export AWS_ACCESS_KEY_ID="${R2_ACCESS_KEY_ID}"
 export AWS_SECRET_ACCESS_KEY="${R2_SECRET_ACCESS_KEY}"
 export AWS_DEFAULT_REGION="auto"
 
+# ---- Verify subcommand ----
+if [[ "${BACKUP_TYPE}" == "verify" ]]; then
+  log_info "Verifying latest backup..."
+
+  # Find the most recent daily backup; fall back to weekly
+  LATEST=$(aws s3 ls "s3://${R2_BACKUP_BUCKET}/backups/daily/" \
+    --endpoint-url "${R2_ENDPOINT}" 2>/dev/null \
+    | sort -r | head -1 | awk '{print $4}')
+  PREFIX="daily"
+
+  if [[ -z "${LATEST}" ]]; then
+    log_warn "No daily backup found, checking weekly..."
+    LATEST=$(aws s3 ls "s3://${R2_BACKUP_BUCKET}/backups/weekly/" \
+      --endpoint-url "${R2_ENDPOINT}" 2>/dev/null \
+      | sort -r | head -1 | awk '{print $4}')
+    PREFIX="weekly"
+  fi
+
+  if [[ -z "${LATEST}" ]]; then
+    log_error "No backups found in R2 bucket."
+    exit 1
+  fi
+
+  VERIFY_FILE="/tmp/verify_backup_${TIMESTAMP}.sql.gz"
+  log_info "Downloading: backups/${PREFIX}/${LATEST}"
+  aws s3 cp "s3://${R2_BACKUP_BUCKET}/backups/${PREFIX}/${LATEST}" \
+    "${VERIFY_FILE}" --endpoint-url "${R2_ENDPOINT}"
+
+  # Basic integrity checks
+  FILESIZE=$(stat -c%s "${VERIFY_FILE}" 2>/dev/null || stat -f%z "${VERIFY_FILE}" 2>/dev/null)
+  if [[ "${FILESIZE}" -lt 1024 ]]; then
+    log_error "Backup file is suspiciously small (${FILESIZE} bytes). Possibly corrupt."
+    rm -f "${VERIFY_FILE}"
+    exit 1
+  fi
+
+  # Verify gzip integrity
+  if ! gunzip -t "${VERIFY_FILE}" 2>/dev/null; then
+    log_error "Backup file failed gzip integrity check."
+    rm -f "${VERIFY_FILE}"
+    exit 1
+  fi
+
+  # Verify SQL content contains expected table references
+  TABLE_COUNT=$(gunzip -c "${VERIFY_FILE}" | grep -c "CREATE TABLE" || true)
+  if [[ "${TABLE_COUNT}" -lt 5 ]]; then
+    log_error "Backup contains only ${TABLE_COUNT} CREATE TABLE statements. Possibly incomplete."
+    rm -f "${VERIFY_FILE}"
+    exit 1
+  fi
+
+  rm -f "${VERIFY_FILE}"
+  log_info "Backup verification PASSED — ${LATEST} (${PREFIX}, ${TABLE_COUNT} tables, ${FILESIZE} bytes)"
+  exit 0
+fi
+
 # ---- Create backup ----
 log_info "Creating ${BACKUP_TYPE} backup: ${FILENAME}"
 

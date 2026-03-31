@@ -1,6 +1,5 @@
 import { NextRequest } from "next/server";
 import { requireTenantWithConfig } from "@/lib/tenant";
-import { clinicConfig } from "@/config/clinic.config";
 import {
   getPublicGeneratedSlots,
   getPublicAvailableSlots,
@@ -357,8 +356,8 @@ export const POST = withValidation(bookingRequestSchema, async (body, request: N
       patient_name: body.patient.name,
       doctor_name: doctor?.name ?? "Doctor",
       clinic_name: tenant.clinicName,
-      clinic_address: clinicConfig.contact?.address ?? "",
-      clinic_phone: clinicConfig.contact?.phone ?? "",
+      clinic_address: "",
+      clinic_phone: "",
       service_name: service?.name ?? "Consultation",
       date: body.date,
       time: body.time,

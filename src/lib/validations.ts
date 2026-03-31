@@ -476,6 +476,29 @@ export const aiDrugCheckOverrideSchema = z.object({
 
 export type AiDrugCheckOverride = z.infer<typeof aiDrugCheckOverrideSchema>;
 
+// ── Doctor Unavailability ────────────────────────────────────────────────
+
+export const doctorUnavailabilitySchema = z.object({
+  doctorId: z.string().min(1),
+  clinicId: z.string().min(1),
+  startDate: isoDate,
+  endDate: isoDate,
+  reason: z.string().max(1000).optional(),
+});
+
+// ── Check-in ────────────────────────────────────────────────────────────
+
+export const checkinConfirmSchema = z.object({
+  appointmentId: z.string().min(1),
+  clinicId: z.string().min(1),
+});
+
+// ── Waiting List Delete ─────────────────────────────────────────────────
+
+export const waitingListDeleteSchema = z.object({
+  entryId: z.string().min(1),
+});
+
 // ── Helper: parse with friendly error response ──────────────────────────
 
 /**

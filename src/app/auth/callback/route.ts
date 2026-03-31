@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase-server";
 import { NextResponse } from "next/server";
+import { isSeedUserBlocked } from "@/lib/seed-guard";
 
 /**
  * Validate that a redirect path is a safe, same-origin relative path.
@@ -29,6 +30,12 @@ export async function GET(request: Request) {
       const {
         data: { user },
       } = await supabase.auth.getUser();
+
+      // SEED-01: Block seed users from completing auth callback in production
+      if (user && isSeedUserBlocked(user.id)) {
+        await supabase.auth.signOut();
+        return NextResponse.redirect(`${origin}/login?error=account_disabled`);
+      }
 
       if (user) {
         const { data: profile } = await supabase

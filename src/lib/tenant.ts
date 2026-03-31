@@ -112,23 +112,37 @@ export async function getClinicConfig(clinicId: string): Promise<TenantClinicCon
     .eq("id", clinicId)
     .single();
 
-  const dbConfig = (data?.config ?? {}) as Record<string, unknown>;
+  /** Shape of the `clinics.config` JSONB column for tenant settings. */
+  interface ClinicDbConfig {
+    timezone?: string;
+    currency?: string;
+    workingHours?: TenantClinicConfig["workingHours"];
+    slotDuration?: number;
+    bufferTime?: number;
+    maxAdvanceDays?: number;
+    maxPerSlot?: number;
+    cancellationHours?: number;
+    depositAmount?: number;
+    depositPercentage?: number;
+    maxRecurringWeeks?: number;
+  }
+
+  const dbConfig = (data?.config ?? {}) as ClinicDbConfig;
 
   // Merge DB config with static defaults (DB takes precedence)
   return {
-    timezone: (dbConfig.timezone as string) ?? clinicConfig.timezone ?? DEFAULT_TIMEZONE,
-    currency: (dbConfig.currency as string) ?? clinicConfig.currency ?? "MAD",
-    workingHours: (dbConfig.workingHours as TenantClinicConfig["workingHours"])
-      ?? clinicConfig.workingHours,
+    timezone: dbConfig.timezone ?? clinicConfig.timezone ?? DEFAULT_TIMEZONE,
+    currency: dbConfig.currency ?? clinicConfig.currency ?? "MAD",
+    workingHours: dbConfig.workingHours ?? clinicConfig.workingHours,
     booking: {
-      slotDuration: (dbConfig.slotDuration as number) ?? clinicConfig.booking.slotDuration,
-      bufferTime: (dbConfig.bufferTime as number) ?? clinicConfig.booking.bufferTime,
-      maxAdvanceDays: (dbConfig.maxAdvanceDays as number) ?? clinicConfig.booking.maxAdvanceDays,
-      maxPerSlot: (dbConfig.maxPerSlot as number) ?? clinicConfig.booking.maxPerSlot,
-      cancellationHours: (dbConfig.cancellationHours as number) ?? clinicConfig.booking.cancellationHours,
-      depositAmount: (dbConfig.depositAmount as number) ?? clinicConfig.booking.depositAmount,
-      depositPercentage: (dbConfig.depositPercentage as number) ?? clinicConfig.booking.depositPercentage,
-      maxRecurringWeeks: (dbConfig.maxRecurringWeeks as number) ?? clinicConfig.booking.maxRecurringWeeks,
+      slotDuration: dbConfig.slotDuration ?? clinicConfig.booking.slotDuration,
+      bufferTime: dbConfig.bufferTime ?? clinicConfig.booking.bufferTime,
+      maxAdvanceDays: dbConfig.maxAdvanceDays ?? clinicConfig.booking.maxAdvanceDays,
+      maxPerSlot: dbConfig.maxPerSlot ?? clinicConfig.booking.maxPerSlot,
+      cancellationHours: dbConfig.cancellationHours ?? clinicConfig.booking.cancellationHours,
+      depositAmount: dbConfig.depositAmount ?? clinicConfig.booking.depositAmount,
+      depositPercentage: dbConfig.depositPercentage ?? clinicConfig.booking.depositPercentage,
+      maxRecurringWeeks: dbConfig.maxRecurringWeeks ?? clinicConfig.booking.maxRecurringWeeks,
     },
   };
 }

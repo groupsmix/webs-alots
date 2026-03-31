@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { clinicConfig } from "@/config/clinic.config";
 import { defaultWebsiteConfig } from "@/lib/website-config";
 import { t, type Locale } from "@/lib/i18n";
 import { CopyrightYear } from "./copyright-year";
@@ -15,7 +14,7 @@ interface PublicFooterProps {
 
 export function PublicFooter({ clinicName, phone, email, address, locale = "fr" }: PublicFooterProps) {
   const contact = defaultWebsiteConfig.contact;
-  const displayName = clinicName || clinicConfig.name || "Oltigo";
+  const displayName = clinicName || "Oltigo";
   const displayPhone = phone || contact.phone;
   const displayEmail = email || contact.email;
   const displayAddress = address || contact.address;

@@ -7,8 +7,26 @@
  */
 
 import { createClient } from "@/lib/supabase-server";
-import { unstable_cache } from "next/cache";
+import { cacheLife, cacheTag } from "next/cache";
 import { logger } from "@/lib/logger";
+
+/** Shape of the `users.metadata` JSONB column for doctors. */
+interface UserMetadata {
+  specialty?: string;
+  specialty_id?: string;
+  consultation_fee?: number;
+  languages?: string[];
+  bio?: string | null;
+  insurance?: boolean;
+}
+
+/** Shape of the `clinics.config` JSONB column. */
+interface ClinicConfigJson {
+  city?: string;
+  phone?: string;
+  address?: string;
+  email?: string;
+}
 
 // ── Types ──
 
@@ -165,10 +183,10 @@ async function fetchDirectoryDoctors(): Promise<DirectoryDoctor[]> {
         const clinic = clinicMap.get(d.clinic_id);
         if (!clinic) return null;
 
-        const meta = (d.metadata ?? {}) as Record<string, unknown>;
-        const specialty = (meta.specialty as string) ?? "";
-        const cfg = (clinic.config as Record<string, unknown> | null) ?? {};
-        const city = (cfg.city as string) ?? (clinic.address?.split(",").pop()?.trim() ?? "");
+        const meta = (d.metadata ?? {}) as UserMetadata;
+        const specialty = meta.specialty ?? "";
+        const cfg = (clinic.config ?? {}) as ClinicConfigJson;
+        const city = cfg.city ?? (clinic.address?.split(",").pop()?.trim() ?? "");
 
         if (!specialty || !city) return null;
 
@@ -182,12 +200,12 @@ async function fetchDirectoryDoctors(): Promise<DirectoryDoctor[]> {
           citySlug: cityToSlug(city),
           clinicName: clinic.name ?? "",
           clinicSubdomain: clinic.subdomain,
-          address: clinic.address ?? (cfg.address as string | null) ?? null,
+          address: clinic.address ?? cfg.address ?? null,
           phone: d.phone ?? clinic.phone ?? null,
           avatar: d.avatar_url ?? null,
-          consultationFee: (meta.consultation_fee as number) ?? 0,
-          languages: (meta.languages as string[]) ?? [],
-          bio: (meta.bio as string | null) ?? null,
+          consultationFee: meta.consultation_fee ?? 0,
+          languages: meta.languages ?? [],
+          bio: meta.bio ?? null,
           clinicId: d.clinic_id,
         };
       })
@@ -198,22 +216,20 @@ async function fetchDirectoryDoctors(): Promise<DirectoryDoctor[]> {
   }
 }
 
-const getCachedDirectoryDoctors = unstable_cache(
-  fetchDirectoryDoctors,
-  ["directory-doctors"],
-  { revalidate: 300, tags: ["directory"] }, // 5-minute TTL
-);
-
 // ── Public API ──
 
 /** Fetch all listed doctors across all clinics */
 export async function getDirectoryDoctors(): Promise<DirectoryDoctor[]> {
-  return getCachedDirectoryDoctors();
+  "use cache";
+  cacheLife("minutes");
+  cacheTag("directory");
+
+  return fetchDirectoryDoctors();
 }
 
 /** Fetch doctors filtered by city slug */
 export async function getDirectoryDoctorsByCity(citySlug: string): Promise<DirectoryDoctor[]> {
-  const all = await getCachedDirectoryDoctors();
+  const all = await getDirectoryDoctors();
   return all.filter((d) => d.citySlug === citySlug);
 }
 
@@ -222,19 +238,19 @@ export async function getDirectoryDoctorsByCityAndSpecialty(
   citySlug: string,
   specialtySlug: string,
 ): Promise<DirectoryDoctor[]> {
-  const all = await getCachedDirectoryDoctors();
+  const all = await getDirectoryDoctors();
   return all.filter((d) => d.citySlug === citySlug && d.specialtySlug === specialtySlug);
 }
 
 /** Fetch a single doctor by their slug */
 export async function getDirectoryDoctorBySlug(slug: string): Promise<DirectoryDoctor | null> {
-  const all = await getCachedDirectoryDoctors();
+  const all = await getDirectoryDoctors();
   return all.find((d) => d.slug === slug) ?? null;
 }
 
 /** Get all unique cities that have at least one doctor */
 export async function getDirectoryCities(): Promise<{ slug: string; name: string; count: number }[]> {
-  const all = await getCachedDirectoryDoctors();
+  const all = await getDirectoryDoctors();
   const cityMap = new Map<string, { name: string; count: number }>();
 
   for (const d of all) {
@@ -253,7 +269,7 @@ export async function getDirectoryCities(): Promise<{ slug: string; name: string
 
 /** Get all unique specialties that have at least one doctor */
 export async function getDirectorySpecialties(): Promise<{ slug: string; name: string; count: number }[]> {
-  const all = await getCachedDirectoryDoctors();
+  const all = await getDirectoryDoctors();
   const specMap = new Map<string, { name: string; count: number }>();
 
   for (const d of all) {

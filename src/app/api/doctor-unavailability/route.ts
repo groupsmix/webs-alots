@@ -1,5 +1,3 @@
-import { NextRequest } from "next/server";
-import { z } from "zod";
 import { createClient } from "@/lib/supabase-server";
 import { sendInteractiveMessage } from "@/lib/whatsapp";
 import {
@@ -13,19 +11,9 @@ import {
   apiError,
   apiInternalError,
   apiUnauthorized,
-  apiValidationError,
 } from "@/lib/api-response";
-
-/**
- * Zod schema for doctor unavailability requests (VAL-01).
- */
-const doctorUnavailabilitySchema = z.object({
-  doctorId: z.string().uuid(),
-  clinicId: z.string().uuid(),
-  startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Expected YYYY-MM-DD"),
-  endDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Expected YYYY-MM-DD"),
-  reason: z.string().max(500).optional().default(""),
-});
+import { withValidation } from "@/lib/api-validate";
+import { doctorUnavailabilitySchema } from "@/lib/validations";
 
 /**
  * POST /api/doctor-unavailability
@@ -37,8 +25,7 @@ const doctorUnavailabilitySchema = z.object({
  * 4. Sends WhatsApp messages to affected patients with rebooking options
  * 5. Creates rebooking_requests records to track responses
  */
-export async function POST(request: NextRequest) {
-  try {
+export const POST = withValidation(doctorUnavailabilitySchema, async (body, _request) => {
     const supabase = await createClient();
 
     // Verify the caller is authenticated
@@ -49,19 +36,7 @@ export async function POST(request: NextRequest) {
       return apiUnauthorized();
     }
 
-    let body: unknown;
-    try {
-      body = await request.json();
-    } catch {
-      return apiValidationError("Invalid JSON body");
-    }
-
-    const parsed = doctorUnavailabilitySchema.safeParse(body);
-    if (!parsed.success) {
-      return apiValidationError(parsed.error.issues.map((e: { message: string }) => e.message).join("; "));
-    }
-
-    const { doctorId, clinicId, startDate, endDate, reason } = parsed.data;
+    const { doctorId, clinicId, startDate, endDate, reason } = body;
 
     // 1. Record the unavailability in doctor_unavailability table
     // doctor_unavailability & rebooking_requests not yet in generated types — cast through unknown
@@ -250,21 +225,14 @@ export async function POST(request: NextRequest) {
       alternatives,
       rebookingResults,
     });
-  } catch (err) {
-    logger.warn("Operation failed", {
-      context: "doctor-unavailability",
-      error: err,
-    });
-    return apiInternalError("Failed to process unavailability");
-  }
-}
+});
 
 /**
  * GET /api/doctor-unavailability?clinicId=...&doctorId=...
  *
  * Returns rebooking status for a doctor's unavailability events.
  */
-export async function GET(request: NextRequest) {
+export async function GET(request: Request) {
   try {
     const supabase = await createClient();
 
@@ -275,7 +243,7 @@ export async function GET(request: NextRequest) {
       return apiUnauthorized();
     }
 
-    const { searchParams } = request.nextUrl;
+    const { searchParams } = new URL(request.url);
     const clinicId = searchParams.get("clinicId");
     const doctorId = searchParams.get("doctorId");
 
