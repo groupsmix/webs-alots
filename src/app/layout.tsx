@@ -2,7 +2,6 @@ import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono, Noto_Sans_Arabic } from "next/font/google";
 import "./globals.css";
 import { getTenant } from "@/lib/tenant";
-import { clinicConfig } from "@/config/clinic.config";
 import { TenantProvider } from "@/components/tenant-provider";
 import { ThemeProvider } from "@/components/theme-provider";
 import { ToastProvider } from "@/components/ui/toast";
@@ -97,7 +96,13 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   const tenant = await getTenant();
-  const locale: Locale = (clinicConfig.locale as Locale) ?? "fr";
+  // Default locale for server-side rendering. Previously used the static
+  // clinicConfig.locale which created a single-tenant bottleneck in the
+  // shared root layout (audit MT-01). Client-side locale switching is
+  // handled by useLocale() in locale-switcher.tsx via localStorage.
+  // TODO: Extend tenant headers to carry per-clinic locale from the DB
+  // config JSONB column so each tenant gets their preferred initial locale.
+  const locale: Locale = "fr";
   const dir = getDirection(locale);
 
   return (

@@ -9,21 +9,34 @@ import { t } from "@/lib/i18n";
 import { useLocale } from "@/components/locale-switcher";
 
 /**
- * Shared error boundary for clinic-type route groups.
+ * Shared error boundary for all route groups.
  *
- * Used by (clinic-public), (specialist), and other clinic-type route
- * groups to provide consistent error handling with i18n.
+ * Consolidates the duplicated error boundary pattern across
+ * (admin), (doctor), (patient), (receptionist), (super-admin),
+ * (clinic-public), and the root error.tsx (audit DRY-01).
+ *
+ * @param context  - Logging context label (e.g. "admin", "doctor")
+ * @param variant  - "page" uses error.title / error.description (root-level);
+ *                   "section" uses error.sectionTitle / error.sectionDescription
+ * @param children - Optional extra actions rendered after the retry button
  */
 export default function ClinicErrorBoundary({
   error,
   reset,
   context = "clinic",
+  variant = "section",
+  children,
 }: {
   error: Error & { digest?: string };
   reset: () => void;
   context?: string;
+  variant?: "page" | "section";
+  children?: React.ReactNode;
 }) {
   const [locale] = useLocale();
+
+  const titleKey = variant === "page" ? "error.title" : "error.sectionTitle";
+  const descKey = variant === "page" ? "error.description" : "error.sectionDescription";
 
   useEffect(() => {
     logger.warn("Operation failed", { context: `${context}-error`, error });
@@ -37,10 +50,10 @@ export default function ClinicErrorBoundary({
             <AlertTriangle className="h-7 w-7 text-destructive" />
           </div>
           <h2 className="mb-2 text-lg font-semibold">
-            {t(locale, "error.sectionTitle")}
+            {t(locale, titleKey)}
           </h2>
           <p className="mb-6 text-sm text-muted-foreground">
-            {t(locale, "error.sectionDescription")}
+            {t(locale, descKey)}
           </p>
           {error.digest && (
             <p className="mb-4 text-xs text-muted-foreground">
@@ -51,6 +64,7 @@ export default function ClinicErrorBoundary({
             <RefreshCw className="mr-2 h-4 w-4" />
             {t(locale, "error.retry")}
           </Button>
+          {children}
         </CardContent>
       </Card>
     </div>

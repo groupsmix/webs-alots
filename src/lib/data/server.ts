@@ -920,18 +920,22 @@ export async function getLoyaltyPoints(clinicId: string): Promise<LoyaltyPointsR
 // Dashboard Stats (aggregated)
 // ────────────────────────────────────────────
 
-export interface ClinicDashboardStats {
+/**
+ * Shared base stats fetched by all dashboard variants.
+ * Extracted to eliminate duplication between getClinicDashboardStats
+ * (removed) and getDashboardStats (audit DRY-02).
+ */
+interface BaseDashboardStats {
   totalPatients: number;
   totalAppointments: number;
-  totalRevenue: number;
   completedAppointments: number;
   noShowCount: number;
+  totalRevenue: number;
   averageRating: number;
   doctorCount: number;
-  activeServices: number;
 }
 
-export async function getClinicDashboardStats(clinicId: string): Promise<ClinicDashboardStats> {
+async function fetchBaseDashboardStats(clinicId: string): Promise<BaseDashboardStats> {
   const supabase = await createClient();
 
   const [
@@ -942,7 +946,6 @@ export async function getClinicDashboardStats(clinicId: string): Promise<ClinicD
     paymentsRes,
     reviewsRes,
     doctorCountRes,
-    serviceCountRes,
   ] = await Promise.all([
     supabase.from("users").select("id", { count: "exact", head: true }).eq("clinic_id", clinicId).eq("role", "patient"),
     supabase.from("appointments").select("id", { count: "exact", head: true }).eq("clinic_id", clinicId),
@@ -951,7 +954,6 @@ export async function getClinicDashboardStats(clinicId: string): Promise<ClinicD
     supabase.from("payments").select("amount").eq("clinic_id", clinicId).eq("status", "completed"),
     supabase.from("reviews").select("stars").eq("clinic_id", clinicId),
     supabase.from("users").select("id", { count: "exact", head: true }).eq("clinic_id", clinicId).eq("role", "doctor"),
-    supabase.from("services").select("id", { count: "exact", head: true }).eq("clinic_id", clinicId),
   ]);
 
   const payments = (paymentsRes.data ?? []) as { amount: number }[];
@@ -965,12 +967,11 @@ export async function getClinicDashboardStats(clinicId: string): Promise<ClinicD
   return {
     totalPatients: patientCountRes.count ?? 0,
     totalAppointments: appointmentCountRes.count ?? 0,
-    totalRevenue,
     completedAppointments: completedCountRes.count ?? 0,
     noShowCount: noShowCountRes.count ?? 0,
+    totalRevenue,
     averageRating: avgRating,
     doctorCount: doctorCountRes.count ?? 0,
-    activeServices: serviceCountRes.count ?? 0,
   };
 }
 
@@ -1296,45 +1297,23 @@ export interface DashboardStats {
 }
 
 export async function getDashboardStats(clinicId: string): Promise<DashboardStats> {
-  const supabase = await createClient();
-  const [
-    patientCountRes,
-    appointmentCountRes,
-    completedCountRes,
-    noShowCountRes,
-    paymentsRes,
-    reviewsRes,
-    doctorCountRes,
-    insurancePatientsRes,
-  ] = await Promise.all([
-    supabase.from("users").select("id", { count: "exact", head: true }).eq("clinic_id", clinicId).eq("role", "patient"),
-    supabase.from("appointments").select("id", { count: "exact", head: true }).eq("clinic_id", clinicId),
-    supabase.from("appointments").select("id", { count: "exact", head: true }).eq("clinic_id", clinicId).eq("status", "completed"),
-    supabase.from("appointments").select("id", { count: "exact", head: true }).eq("clinic_id", clinicId).eq("status", "no_show"),
-    supabase.from("payments").select("amount").eq("clinic_id", clinicId).eq("status", "completed"),
-    supabase.from("reviews").select("stars").eq("clinic_id", clinicId),
-    supabase.from("users").select("id", { count: "exact", head: true }).eq("clinic_id", clinicId).eq("role", "doctor"),
-    supabase.from("users").select("id, metadata").eq("clinic_id", clinicId).eq("role", "patient"),
+  // Reuse shared base queries (audit DRY-02)
+  const [base, supabase] = await Promise.all([
+    fetchBaseDashboardStats(clinicId),
+    createClient(),
   ]);
-  const payments = (paymentsRes.data ?? []) as { amount: number }[];
-  const reviews = (reviewsRes.data ?? []) as { stars: number }[];
-  const insurancePatients = (insurancePatientsRes.data ?? []) as { id: string; metadata: Record<string, unknown> | null }[];
 
-  const totalRevenue = payments.reduce((s, p) => s + (p.amount ?? 0), 0);
-  const avgRating = reviews.length > 0 ? reviews.reduce((s, r) => s + r.stars, 0) / reviews.length : 0;
+  // Fetch dashboard-specific data in parallel
+  const [insurancePatientsRes, recentActivity] = await Promise.all([
+    supabase.from("users").select("id, metadata").eq("clinic_id", clinicId).eq("role", "patient"),
+    getRecentActivity(supabase, clinicId),
+  ]);
+
+  const insurancePatients = (insurancePatientsRes.data ?? []) as { id: string; metadata: Record<string, unknown> | null }[];
   const insuranceCount = insurancePatients.filter((p) => p.metadata && (p.metadata as Record<string, unknown>).insurance).length;
 
-  // Fetch recent activity from the audit trail
-  const recentActivity = await getRecentActivity(supabase, clinicId);
-
   return {
-    totalPatients: patientCountRes.count ?? 0,
-    totalAppointments: appointmentCountRes.count ?? 0,
-    completedAppointments: completedCountRes.count ?? 0,
-    noShowCount: noShowCountRes.count ?? 0,
-    totalRevenue,
-    averageRating: avgRating,
-    doctorCount: doctorCountRes.count ?? 0,
+    ...base,
     insurancePatients: insuranceCount,
     recentActivity,
   };
