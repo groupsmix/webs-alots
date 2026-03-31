@@ -30,6 +30,9 @@ import { NextRequest, NextResponse } from "next/server";
  */
 // MED-01: Memoize the parsed result to avoid re-parsing the env var
 // on every request in high-traffic edge runtimes.
+// NOTE: This cache is intentionally never invalidated. In production the
+// env var is set once at deploy time and doesn't change. In development
+// you can call `resetCorsCache()` (exported below) after changing the var.
 let _parsedOrigins: string[] | null | undefined;
 function parseAllowedOrigins(): string[] | null {
   if (_parsedOrigins !== undefined) return _parsedOrigins;
@@ -90,4 +93,12 @@ export function handlePreflight(request: NextRequest): NextResponse {
     status: 204,
     headers: getCorsHeaders(request),
   });
+}
+
+/**
+ * Reset the cached parsed origins so the env var is re-read on the next
+ * request. Useful in tests or when hot-reloading env vars in development.
+ */
+export function resetCorsCache(): void {
+  _parsedOrigins = undefined;
 }

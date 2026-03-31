@@ -18,6 +18,7 @@ import {
   translateGender,
   getArabicLabel,
 } from "@/lib/prescription-arabic";
+import { logger } from "@/lib/logger";
 
 interface PrescriptionMedication {
   name: string;
@@ -338,7 +339,7 @@ export function downloadPrescriptionPDF(data: PrescriptionData): void {
       try {
         iframe.contentWindow?.print();
       } catch (err) {
-        console.warn("[prescription-pdf] iframe print failed, using fallback", err);
+        logger.warn("iframe print failed, using fallback", { context: "prescription-pdf", error: err });
         fallbackPrint(html);
       }
       // Clean up iframe after a delay to allow print dialog
@@ -349,7 +350,7 @@ export function downloadPrescriptionPDF(data: PrescriptionData): void {
       try {
         iframe.contentWindow?.print();
       } catch (err) {
-        console.warn("[prescription-pdf] iframe print failed, using fallback", err);
+        logger.warn("iframe print failed, using fallback", { context: "prescription-pdf", error: err });
         fallbackPrint(html);
       }
       setTimeout(() => document.body.removeChild(iframe), 1000);

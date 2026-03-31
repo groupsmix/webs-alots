@@ -9,9 +9,6 @@ import { z } from "zod";
 
 // ── Reusable primitives ─────────────────────────────────────────────────
 
-/** UUID-like string (basic format check, not cryptographic) */
-const _uuid = z.string().min(1).max(100);
-
 /** ISO date string YYYY-MM-DD */
 const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Expected YYYY-MM-DD");
 
@@ -257,7 +254,7 @@ export const customFieldUpdateSchema = z.object({
 });
 
 export const customFieldValuesSchema = z.object({
-  /** @deprecated Ignored by the server — clinic_id is derived from the authenticated user's profile. */
+  /** @deprecated Ignored by the server — clinic_id is derived from the authenticated user's profile. Remove after v2 API migration (all clients updated). */
   clinic_id: z.string().optional(),
   entity_type: z.string().min(1).max(100),
   entity_id: z.string().min(1),
@@ -268,7 +265,7 @@ export const customFieldValuesSchema = z.object({
 
 export const labReportSchema = z.object({
   orderId: z.string().min(1),
-  /** @deprecated Ignored by the server — clinicId is derived from the authenticated user's profile. */
+  /** @deprecated Ignored by the server — clinicId is derived from the authenticated user's profile. Remove after v2 API migration (all clients updated). */
   clinicId: z.string().optional(),
   patientName: z.string().min(1).max(200),
   orderNumber: z.string().min(1).max(100),
@@ -289,7 +286,7 @@ export const labReportSchema = z.object({
 // ── Radiology ───────────────────────────────────────────────────────────
 
 export const radiologyOrderCreateSchema = z.object({
-  /** @deprecated Ignored by the server — clinicId is derived from the authenticated user's profile. */
+  /** @deprecated Ignored by the server — clinicId is derived from the authenticated user's profile. Remove after v2 API migration (all clients updated). */
   clinicId: z.string().optional(),
   patientId: z.string().min(1),
   modality: z.string().min(1).max(100),
@@ -323,7 +320,7 @@ export const radiologyOrderPatchSchema = z.discriminatedUnion("action", [
 
 export const radiologyReportPdfSchema = z.object({
   orderId: z.string().min(1),
-  /** @deprecated Ignored by the server — clinicId is derived from the authenticated user's profile. */
+  /** @deprecated Ignored by the server — clinicId is derived from the authenticated user's profile. Remove after v2 API migration (all clients updated). */
   clinicId: z.string().optional(),
   patientName: z.string().min(1).max(200),
   modality: z.string().min(1).max(100),

@@ -325,6 +325,10 @@ async function deliverNotification(
         error: result.error,
       };
     }
+    case "in_app":
+      // In-app notifications are persisted to the DB at enqueue time and
+      // read directly by the client — no external delivery is needed.
+      return { success: true };
     default:
       return { success: false, error: `Unsupported channel: ${channel}` };
   }
