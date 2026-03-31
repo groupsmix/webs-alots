@@ -10,7 +10,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { buttonVariants } from "@/components/ui/button-variants";
 import Link from "next/link";
 import { getPublicDoctors, getPublicBranding } from "@/lib/data/public";
-import { clinicConfig } from "@/config/clinic.config";
+import { requireTenantWithConfig } from "@/lib/tenant";
 
 export const metadata: Metadata = {
   title: "Doctor Profile",
@@ -23,9 +23,10 @@ export const metadata: Metadata = {
 };
 
 export default async function DoctorProfilePage() {
-  const [doctors, branding] = await Promise.all([
+  const [doctors, branding, { tenant, config: tenantConfig }] = await Promise.all([
     getPublicDoctors(),
     getPublicBranding(),
+    requireTenantWithConfig(),
   ]);
 
   return (
@@ -88,7 +89,7 @@ export default async function DoctorProfilePage() {
                     {doctor.consultationFee > 0 && (
                       <div className="flex items-center gap-2 text-sm">
                         <Award className="h-4 w-4 text-primary" />
-                        <span>Consultation: <strong>{doctor.consultationFee} {clinicConfig.currency}</strong></span>
+                        <span>Consultation: <strong>{doctor.consultationFee} {tenantConfig.currency}</strong></span>
                       </div>
                     )}
                     {doctor.languages.length > 0 && (
@@ -119,7 +120,7 @@ export default async function DoctorProfilePage() {
                     </Badge>
                     <Badge variant="outline" className="text-xs">
                       <Briefcase className="h-3 w-3 mr-1" />
-                      {clinicConfig.type === "dentist" ? "Dental Surgery" : "General Medicine"}
+                      {tenant.clinicType === "dentist" ? "Dental Surgery" : "General Medicine"}
                     </Badge>
                     {branding.address && (
                       <Badge variant="outline" className="text-xs">

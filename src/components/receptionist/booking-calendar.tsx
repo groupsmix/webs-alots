@@ -12,10 +12,20 @@ import {
   type AppointmentView,
   type DoctorView,
 } from "@/lib/data/client";
-import { clinicConfig } from "@/config/clinic.config";
 import { ManualBookingDialog } from "./manual-booking-dialog";
 import { WalkInDialog } from "./walk-in-dialog";
 import { PageLoader } from "@/components/ui/page-loader";
+
+/** Default working hours when tenant config is not yet loaded. */
+const DEFAULT_WORKING_HOURS: Record<number, { open: string; close: string; enabled: boolean }> = {
+  0: { open: "09:00", close: "17:00", enabled: false },
+  1: { open: "09:00", close: "18:00", enabled: true },
+  2: { open: "09:00", close: "18:00", enabled: true },
+  3: { open: "09:00", close: "18:00", enabled: true },
+  4: { open: "09:00", close: "18:00", enabled: true },
+  5: { open: "09:00", close: "18:00", enabled: true },
+  6: { open: "09:00", close: "13:00", enabled: true },
+};
 
 // Local appointment type that supports drag-and-drop rescheduling
 interface LocalAppointment extends AppointmentView {
@@ -267,7 +277,7 @@ export function ReceptionistBookingCalendar() {
                 {weekDates.map((date, i) => {
                   const dateStr = date.toISOString().split("T")[0];
                   const dayIdx = date.getDay();
-                  const wh = clinicConfig.workingHours[dayIdx];
+                  const wh = DEFAULT_WORKING_HOURS[dayIdx];
                   const isToday = dateStr === today;
                   return (
                     <th
@@ -290,7 +300,7 @@ export function ReceptionistBookingCalendar() {
                   <td className="text-xs text-muted-foreground p-2 align-top">{time}</td>
                   {weekDates.map((date, i) => {
                     const dayIdx = date.getDay();
-                    const wh = clinicConfig.workingHours[dayIdx];
+                    const wh = DEFAULT_WORKING_HOURS[dayIdx];
                     const appt = wh.enabled ? getAppointmentForSlot(date, time) : null;
                     const dateStr = date.toISOString().split("T")[0];
                     const isToday = dateStr === today;

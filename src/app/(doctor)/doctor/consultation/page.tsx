@@ -23,7 +23,7 @@ import {
 import { PageLoader } from "@/components/ui/page-loader";
 import { useOfflineDrafts } from "@/lib/hooks/use-offline-drafts";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
-import { clinicConfig } from "@/config/clinic.config";
+import { useTenant } from "@/components/tenant-provider";
 
 interface ConsultationNote {
   id: string;
@@ -58,10 +58,7 @@ function mapDbNoteToLocal(n: ConsultationNoteView): ConsultationNote {
   };
 }
 
-function printConsultationNote(apt: AppointmentView, note: ConsultationNote): void {
-  const clinicName = clinicConfig.name || "";
-  const clinicAddress = clinicConfig.contact.address || "";
-  const clinicPhone = clinicConfig.contact.phone || "";
+function printConsultationNote(apt: AppointmentView, note: ConsultationNote, clinicName: string): void {
 
   const html = `<!DOCTYPE html>
 <html><head><meta charset="utf-8"><title>Consultation – ${apt.patientName}</title>
@@ -78,7 +75,7 @@ function printConsultationNote(apt: AppointmentView, note: ConsultationNote): vo
   .signature{margin-top:48pt;text-align:right;border-top:1px solid #999;padding-top:8pt;width:40%;margin-left:auto}
   @page{size:A4;margin:20mm}
 </style></head><body>
-${clinicName ? `<div class="letterhead"><h2>${clinicName}</h2>${clinicAddress ? `<p>${clinicAddress}</p>` : ""}${clinicPhone ? `<p>Tél : ${clinicPhone}</p>` : ""}</div>` : ""}
+${clinicName ? `<div class="letterhead"><h2>${clinicName}</h2></div>` : ""}
 <div class="header"><h1>NOTES DE CONSULTATION</h1><p>${apt.serviceName} — ${apt.date}</p></div>
 <div class="field"><span class="field-label">Patient :</span> ${apt.patientName}</div>
 <div class="field"><span class="field-label">Date :</span> ${apt.date} à ${apt.time}</div>
@@ -97,6 +94,7 @@ ${clinicName ? `<div class="letterhead"><h2>${clinicName}</h2>${clinicAddress ? 
 }
 
 export default function ConsultationNotesPage() {
+  const tenant = useTenant();
   const [notes, setNotes] = useState<ConsultationNote[]>([]);
   const [apptList, setApptList] = useState<AppointmentView[]>([]);
   const [loading, setLoading] = useState(true);
@@ -386,7 +384,7 @@ export default function ConsultationNotesPage() {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => printConsultationNote(apt, note)}
+                      onClick={() => printConsultationNote(apt, note, tenant?.clinicName ?? "")}
                     >
                       <Printer className="h-3.5 w-3.5 mr-1" />
                       Print

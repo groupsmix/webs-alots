@@ -6,7 +6,6 @@ import { Menu, X } from "lucide-react";
 import { useState } from "react";
 import { usePathname } from "next/navigation";
 import { buttonVariants } from "@/components/ui/button";
-import { clinicConfig } from "@/config/clinic.config";
 import { useLocale } from "@/components/locale-switcher";
 import { t, type TranslationKey } from "@/lib/i18n";
 
@@ -56,7 +55,7 @@ export function PublicHeader({ logoUrl, clinicName, sectionVisibility }: PublicH
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [locale] = useLocale();
   const pathname = usePathname();
-  const displayName = clinicName || clinicConfig.name;
+  const displayName = clinicName || "Oltigo";
   const navLinks = getNavLinks(sectionVisibility);
 
   const [prevPathname, setPrevPathname] = useState(pathname);

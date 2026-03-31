@@ -1,4 +1,3 @@
-import { NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase-server";
 import { sendInteractiveMessage } from "@/lib/whatsapp";
 import {
@@ -13,6 +12,8 @@ import {
   apiInternalError,
   apiUnauthorized,
 } from "@/lib/api-response";
+import { withValidation } from "@/lib/api-validate";
+import { doctorUnavailabilitySchema } from "@/lib/validations";
 
 /**
  * POST /api/doctor-unavailability
@@ -24,8 +25,7 @@ import {
  * 4. Sends WhatsApp messages to affected patients with rebooking options
  * 5. Creates rebooking_requests records to track responses
  */
-export async function POST(request: NextRequest) {
-  try {
+export const POST = withValidation(doctorUnavailabilitySchema, async (body, _request) => {
     const supabase = await createClient();
 
     // Verify the caller is authenticated
@@ -36,19 +36,7 @@ export async function POST(request: NextRequest) {
       return apiUnauthorized();
     }
 
-    const body = (await request.json()) as {
-      doctorId: string;
-      clinicId: string;
-      startDate: string;
-      endDate: string;
-      reason: string;
-    };
-
     const { doctorId, clinicId, startDate, endDate, reason } = body;
-
-    if (!doctorId || !clinicId || !startDate || !endDate) {
-      return apiError("Missing required fields: doctorId, clinicId, startDate, endDate");
-    }
 
     // 1. Record the unavailability in doctor_unavailability table
     // doctor_unavailability & rebooking_requests not yet in generated types — cast through unknown
@@ -237,21 +225,14 @@ export async function POST(request: NextRequest) {
       alternatives,
       rebookingResults,
     });
-  } catch (err) {
-    logger.warn("Operation failed", {
-      context: "doctor-unavailability",
-      error: err,
-    });
-    return apiInternalError("Failed to process unavailability");
-  }
-}
+});
 
 /**
  * GET /api/doctor-unavailability?clinicId=...&doctorId=...
  *
  * Returns rebooking status for a doctor's unavailability events.
  */
-export async function GET(request: NextRequest) {
+export async function GET(request: Request) {
   try {
     const supabase = await createClient();
 
@@ -262,7 +243,7 @@ export async function GET(request: NextRequest) {
       return apiUnauthorized();
     }
 
-    const { searchParams } = request.nextUrl;
+    const { searchParams } = new URL(request.url);
     const clinicId = searchParams.get("clinicId");
     const doctorId = searchParams.get("doctorId");
 

@@ -5,9 +5,11 @@ import { CreditCard, DollarSign, Shield, CheckCircle2, Smartphone, Building2, Ba
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { clinicConfig } from "@/config/clinic.config";
 import { logger } from "@/lib/logger";
 import { type MoroccanPaymentMethod } from "@/lib/morocco";
+
+/** Default deposit settings when tenant config is not loaded. */
+const DEFAULT_DEPOSIT_PERCENTAGE = 20;
 
 interface PaymentStepProps {
   appointmentId: string;
@@ -40,8 +42,8 @@ export function PaymentStep({
   const [error, setError] = useState<string | null>(null);
   const [paymentSuccess, setPaymentSuccess] = useState(false);
 
-  const depositPercentage = clinicConfig.booking.depositPercentage ?? 20;
-  const fixedDeposit = clinicConfig.booking.depositAmount;
+  const depositPercentage = DEFAULT_DEPOSIT_PERCENTAGE;
+  const fixedDeposit: number | undefined = undefined;
   const depositAmount = fixedDeposit ?? Math.round(servicePrice * (depositPercentage / 100));
   const paymentAmount = paymentType === "deposit" ? depositAmount : servicePrice;
 

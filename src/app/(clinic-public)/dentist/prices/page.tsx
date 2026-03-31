@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button-variants";
 import Link from "next/link";
 import { getPublicServices } from "@/lib/data/public";
-import { clinicConfig } from "@/config/clinic.config";
+import { requireTenantWithConfig } from "@/lib/tenant";
 
 export const metadata: Metadata = {
   title: "Treatment Price List",
@@ -14,7 +14,10 @@ export const metadata: Metadata = {
 };
 
 export default async function DentistPricesPage() {
-  const services = await getPublicServices();
+  const [services, { config: tenantConfig }] = await Promise.all([
+    getPublicServices(),
+    requireTenantWithConfig(),
+  ]);
   const activeServices = services.filter((s) => s.active);
 
   // Group by category
@@ -31,7 +34,7 @@ export default async function DentistPricesPage() {
       <div className="text-center mb-12">
         <h1 className="text-3xl font-bold mb-4">Treatment Price List</h1>
         <p className="text-muted-foreground max-w-2xl mx-auto">
-          Transparent pricing for all our dental services. Prices are in {clinicConfig.currency}
+          Transparent pricing for all our dental services. Prices are in {tenantConfig.currency}
           and may vary based on treatment complexity.
         </p>
       </div>

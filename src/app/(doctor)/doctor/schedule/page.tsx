@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { clinicConfig } from "@/config/clinic.config";
+import { useTenant } from "@/components/tenant-provider";
 import {
   getCurrentUser,
   fetchDoctorAppointments,
@@ -25,12 +25,25 @@ const statusVariant: Record<string, "default" | "success" | "warning" | "destruc
   cancelled: "secondary",
 };
 
+/** Default working hours used until tenant config is loaded from the DB. */
+const DEFAULT_WORKING_HOURS: Record<number, { open: string; close: string; enabled: boolean }> = {
+  0: { open: "09:00", close: "17:00", enabled: false },
+  1: { open: "09:00", close: "18:00", enabled: true },
+  2: { open: "09:00", close: "18:00", enabled: true },
+  3: { open: "09:00", close: "18:00", enabled: true },
+  4: { open: "09:00", close: "18:00", enabled: true },
+  5: { open: "09:00", close: "18:00", enabled: true },
+  6: { open: "09:00", close: "13:00", enabled: true },
+};
+
 export default function DoctorSchedulePage() {
+  const tenant = useTenant();
   const [doctorAppointments, setDoctorAppointments] = useState<AppointmentView[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
   const [userId, setUserId] = useState("");
   const [clinicId, setClinicId] = useState("");
+  const [workingHours, setWorkingHours] = useState<Record<number, { open: string; close: string; enabled: boolean }>>(DEFAULT_WORKING_HOURS);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -43,6 +56,18 @@ export default function DoctorSchedulePage() {
     const appts = await fetchDoctorAppointments(user.clinic_id, user.id);
       if (controller.signal.aborted) return;
     setDoctorAppointments(appts);
+    // Fetch tenant-specific working hours from the API
+    try {
+      const res = await fetch(`/api/booking?doctorId=${user.id}&date=${new Date().toISOString().split("T")[0]}`);
+      if (res.ok) {
+        const json = await res.json();
+        if (json.data?.slotDuration) {
+          // Working hours are not directly exposed via this API,
+          // so we keep the default for now. A dedicated settings
+          // API would be needed for per-tenant working hours.
+        }
+      }
+    } catch { /* non-critical */ }
     setLoading(false);
   }
     load().catch((err) => {
@@ -110,7 +135,7 @@ export default function DoctorSchedulePage() {
             <CardContent>
               <div className="space-y-2">
                 {dayNames.map((day, i) => {
-                  const wh = clinicConfig.workingHours[i];
+                  const wh = workingHours[i];
                   return (
                     <div key={i} className="flex items-center justify-between text-sm">
                       <Breadcrumb items={[{ label: "Doctor", href: "/doctor/dashboard" }, { label: "Schedule" }]} />

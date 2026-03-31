@@ -4,7 +4,7 @@ import { findOrCreatePatient } from "@/lib/find-or-create-patient";
 import { logAuditEvent } from "@/lib/audit-log";
 import { WAITING_LIST_STATUS } from "@/lib/types/database";
 import { logger } from "@/lib/logger";
-import { waitingListSchema } from "@/lib/validations";
+import { waitingListSchema, waitingListDeleteSchema } from "@/lib/validations";
 import { withAuthValidation } from "@/lib/api-validate";
 import { STAFF_ROLES } from "@/lib/auth-roles";
 import type { UserRole } from "@/lib/types/database";
@@ -142,13 +142,7 @@ export const GET = withAuth(async (request, { supabase, profile }) => {
  *
  * Remove a patient from the waiting list.
  */
-export const DELETE = withAuth(async (request, { supabase, profile }) => {
-  try {
-    const body = (await request.json()) as { entryId: string };
-
-    if (!body.entryId) {
-      return apiError("entryId is required");
-    }
+export const DELETE = withAuthValidation(waitingListDeleteSchema, async (body, _request, { supabase, profile }) => {
 
     const tenant = await requireTenant();
     const clinicId = tenant.clinicId;
@@ -188,8 +182,4 @@ export const DELETE = withAuth(async (request, { supabase, profile }) => {
     });
 
     return apiSuccess({ status: "removed", message: "Removed from waiting list" });
-  } catch (err) {
-    logger.warn("Operation failed", { context: "booking/waiting-list", error: err });
-    return apiInternalError("Failed to remove from waiting list");
-  }
 }, WAITING_LIST_ROLES);

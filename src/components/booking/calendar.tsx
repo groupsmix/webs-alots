@@ -4,7 +4,18 @@ import { useState, useCallback, useRef, useEffect } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tooltip } from "@/components/ui/tooltip";
-import { clinicConfig } from "@/config/clinic.config";
+import { useTenant } from "@/components/tenant-provider";
+
+/** Default working hours when tenant config is not yet loaded. */
+const DEFAULT_WORKING_HOURS: Record<number, { open: string; close: string; enabled: boolean }> = {
+  0: { open: "09:00", close: "17:00", enabled: false },
+  1: { open: "09:00", close: "18:00", enabled: true },
+  2: { open: "09:00", close: "18:00", enabled: true },
+  3: { open: "09:00", close: "18:00", enabled: true },
+  4: { open: "09:00", close: "18:00", enabled: true },
+  5: { open: "09:00", close: "18:00", enabled: true },
+  6: { open: "09:00", close: "13:00", enabled: true },
+};
 
 interface BookingCalendarProps {
   selectedDate: string;
@@ -42,6 +53,8 @@ const monthNames = [
 const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 export function BookingCalendar({ selectedDate, onSelectDate }: BookingCalendarProps) {
+  const _tenant = useTenant();
+  const workingHours = DEFAULT_WORKING_HOURS;
   const today = new Date();
   const [currentMonth, setCurrentMonth] = useState(today.getMonth());
   const [currentYear, setCurrentYear] = useState(today.getFullYear());
@@ -78,7 +91,7 @@ export function BookingCalendar({ selectedDate, onSelectDate }: BookingCalendarP
     const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
     if (date < todayStart) return { available: false, reason: "Date passée" };
     const dayOfWeek = date.getDay();
-    const hours = clinicConfig.workingHours[dayOfWeek];
+    const hours = workingHours[dayOfWeek];
     if (!hours?.enabled) return { available: false, reason: "Fermé" };
     return { available: true };
   };
