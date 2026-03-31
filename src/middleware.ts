@@ -112,6 +112,10 @@ export async function middleware(request: NextRequest) {
   for (const key of Object.values(TENANT_HEADERS)) {
     requestHeaders.delete(key);
   }
+  // RLS-05: Also strip the legacy x-clinic-id header used by tenant-scoped
+  // Supabase clients (createTenantClient). An attacker could inject this
+  // header to bypass RLS policies that read `request.headers->>'x-clinic-id'`.
+  requestHeaders.delete("x-clinic-id");
 
   // --- Subdomain resolution ---
   const subdomain = extractSubdomain(hostname, rootDomain);

@@ -630,17 +630,17 @@ export async function fetchAnnouncements(): Promise<Announcement[]> {
 
   if (error || !data) return [];
 
-  return (data as Record<string, unknown>[]).map((row) => ({
-    id: row.id as string,
-    title: (row.title as string) ?? "",
-    message: (row.message as string) ?? "",
-    type: ((row.type as string) ?? "info") as Announcement["type"],
-    target: (row.target as string) ?? "all",
-    targetLabel: (row.target_label as string) ?? "All Clinics",
-    publishedAt: ((row.published_at ?? row.created_at) as string)?.split("T")[0] ?? "",
-    expiresAt: row.expires_at ? (row.expires_at as string).split("T")[0] : undefined,
-    active: (row.active as boolean) ?? true,
-    createdBy: (row.created_by as string) ?? "System",
+  return data.map((row) => ({
+    id: row.id,
+    title: row.title ?? "",
+    message: row.message ?? "",
+    type: (row.type ?? "info") as Announcement["type"],
+    target: row.target ?? "all",
+    targetLabel: row.target_label ?? "All Clinics",
+    publishedAt: (row.published_at ?? row.created_at ?? "").split("T")[0] ?? "",
+    expiresAt: row.expires_at ? row.expires_at.split("T")[0] : undefined,
+    active: row.is_active ?? true,
+    createdBy: row.created_by ?? "System",
   }));
 }
 
@@ -667,15 +667,15 @@ export async function fetchActivityLogs(): Promise<ActivityLog[]> {
 
   if (error || !data) return [];
 
-  return (data as Record<string, unknown>[]).map((row) => ({
-    id: row.id as string,
-    action: (row.action as string) ?? "",
-    description: (row.description as string) ?? "",
-    clinicId: row.clinic_id as string | undefined,
-    clinicName: row.clinic_name as string | undefined,
-    timestamp: (row.created_at as string) ?? "",
-    actor: (row.actor as string) ?? "System",
-    type: ((row.type as string) ?? "clinic") as ActivityLog["type"],
+  return data.map((row) => ({
+    id: row.id,
+    action: row.action ?? "",
+    description: row.description ?? "",
+    clinicId: row.clinic_id ?? undefined,
+    clinicName: row.clinic_name ?? undefined,
+    timestamp: row.created_at ?? "",
+    actor: row.actor ?? "System",
+    type: (row.type ?? "clinic") as ActivityLog["type"],
   }));
 }
 
@@ -700,14 +700,14 @@ export async function fetchFeatureDefinitions(): Promise<FeatureDefinition[]> {
 
   if (error || !data) return [];
 
-  return (data as Record<string, unknown>[]).map((row) => ({
-    id: row.id as string,
-    name: (row.name as string) ?? "",
-    description: (row.description as string) ?? "",
-    key: (row.key as string) ?? "",
-    category: ((row.category as string) ?? "core") as FeatureDefinition["category"],
-    availableTiers: (row.available_tiers as string[]) ?? [],
-    globalEnabled: (row.global_enabled as boolean) ?? true,
+  return data.map((row) => ({
+    id: row.id,
+    name: row.name ?? "",
+    description: row.description ?? "",
+    key: row.key ?? "",
+    category: (row.category ?? "core") as FeatureDefinition["category"],
+    availableTiers: row.available_tiers ?? [],
+    globalEnabled: row.global_enabled ?? true,
   }));
 }
 
@@ -741,12 +741,12 @@ export async function fetchPricingTiers(): Promise<PricingTierRow[]> {
 
   if (error || !data) return [];
 
-  return (data as Record<string, unknown>[]).map((row) => ({
-    id: row.id as string,
-    slug: (row.slug as string) ?? "",
-    name: (row.name as string) ?? "",
-    description: (row.description as string) ?? "",
-    popular: (row.popular as boolean) ?? false,
+  return data.map((row) => ({
+    id: row.id,
+    slug: row.slug ?? "",
+    name: row.name ?? "",
+    description: row.description ?? "",
+    popular: row.is_popular ?? false,
     pricing: (row.pricing as Record<string, { monthly: number; yearly: number }>) ?? {},
     features: (row.features as { key: string; label: string; included: boolean; limit?: string }[]) ?? [],
     limits: (row.limits as PricingTierRow["limits"]) ?? {
@@ -778,15 +778,15 @@ export async function fetchFeatureToggles(): Promise<FeatureToggleRow[]> {
 
   if (error || !data) return [];
 
-  return (data as Record<string, unknown>[]).map((row) => ({
-    id: row.id as string,
-    key: (row.key as string) ?? "",
-    label: (row.label as string) ?? "",
-    description: (row.description as string) ?? "",
-    category: ((row.category as string) ?? "core") as FeatureToggleRow["category"],
-    systemTypes: (row.system_types as string[]) ?? [],
-    tiers: (row.tiers as string[]) ?? [],
-    enabled: (row.enabled as boolean) ?? true,
+  return data.map((row) => ({
+    id: row.id,
+    key: row.key ?? "",
+    label: row.label ?? "",
+    description: row.description ?? "",
+    category: (row.category ?? "core") as FeatureToggleRow["category"],
+    systemTypes: row.system_types ?? [],
+    tiers: row.tiers ?? [],
+    enabled: row.enabled ?? true,
   }));
 }
 

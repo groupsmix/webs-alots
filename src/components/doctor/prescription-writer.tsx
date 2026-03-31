@@ -11,6 +11,7 @@ import {
   getCurrentUser,
   fetchPatients,
   type PatientView,
+  type ClinicUser,
 } from "@/lib/data/client";
 import { downloadPrescriptionPDF } from "@/lib/prescription-pdf";
 import { PageLoader } from "@/components/ui/page-loader";
@@ -82,13 +83,12 @@ export function PrescriptionWriter() {
 
       // Extract doctor info from the current user
       setDoctorName(user.name ?? "");
-      const userRecord = user as unknown as Record<string, unknown>;
-      setDoctorNameAr((userRecord.name_ar as string) ?? "");
-      const meta = userRecord.metadata as Record<string, unknown> | undefined;
-      if (meta?.inpe_number) {
-        setDoctorINPE(meta.inpe_number as string);
+      const userRecord = user as ClinicUser & { name_ar?: string; metadata?: { inpe_number?: string }; clinic_name?: string };
+      setDoctorNameAr(userRecord.name_ar ?? "");
+      if (userRecord.metadata?.inpe_number) {
+        setDoctorINPE(userRecord.metadata.inpe_number);
       }
-      setClinicName((userRecord.clinic_name as string) ?? "");
+      setClinicName(userRecord.clinic_name ?? "");
 
       const pts = await fetchPatients(user.clinic_id);
       if (controller.signal.aborted) return;
