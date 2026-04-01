@@ -30,7 +30,18 @@ export async function encryptAndUpload(
   contentType: string,
 ): Promise<string | null> {
   if (!isEncryptionConfigured()) {
-    logger.warn("PHI encryption not configured — uploading plaintext as fallback", {
+    // In production, PHI MUST be encrypted to comply with Moroccan Law 09-08.
+    // Silently falling back to plaintext would create a legal and data-breach risk
+    // if the encryption key is accidentally unset. Fail hard to surface the issue.
+    if (process.env.NODE_ENV === "production") {
+      logger.error("PHI encryption not configured in production — aborting upload to prevent unencrypted PHI storage", {
+        context: "r2-encrypted",
+        key,
+      });
+      return null;
+    }
+    // Allow plaintext fallback only in development/test for convenience.
+    logger.warn("PHI encryption not configured — uploading plaintext as fallback (non-production only)", {
       context: "r2-encrypted",
       key,
     });

@@ -8,10 +8,26 @@
  * Defence-in-depth: even when content comes from trusted static sources,
  * sanitization prevents stored XSS if the content pipeline is ever
  * compromised or extended to accept user/admin input.
+ *
+ * ⚠️  WARNING — NOT SAFE FOR ARBITRARY USER INPUT  ⚠️
+ *
+ * This function uses regex-based stripping which is inherently unreliable
+ * for untrusted HTML. Known bypass vectors include:
+ *   - Nested/malformed tags (e.g., `<scr<script>ipt>`).
+ *   - Event handlers with tab/newline between attribute name and `=`.
+ *   - Exotic elements: `<svg onload=...>`, `<math>`, `<details/open/ontoggle>`.
+ *
+ * Current usage is acceptable because the input comes from **static blog
+ * content** (trusted source, not user-editable). If this function is ever
+ * used for user-generated content (admin-editable blogs, rich text fields,
+ * comments, etc.), it MUST be replaced with a DOM-based sanitizer such as
+ * DOMPurify (client-side) or isomorphic-dompurify (server-side).
  */
 
 /**
  * Strip dangerous HTML tags and attributes from a string of HTML.
+ *
+ * @see Module-level warning — this is defense-in-depth for trusted content only.
  */
 export function sanitizeHtml(dirty: string): string {
   return (

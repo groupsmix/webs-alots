@@ -17,10 +17,17 @@ import { apiError, apiNotFound, apiSuccess } from "@/lib/api-response";
 import { timingSafeEqual } from "@/lib/crypto-utils";
 
 /**
- * Generate a 6-digit numeric verification code.
+ * Generate a cryptographically secure 6-digit numeric verification code.
+ *
+ * Uses crypto.getRandomValues() instead of Math.random() because Math.random()
+ * uses xorshift128+ on V8, which is predictable if an attacker can observe
+ * enough outputs. For security-sensitive codes this is unacceptable.
  */
 function generateCode(): string {
-  return String(Math.floor(100000 + Math.random() * 900000));
+  const bytes = new Uint8Array(4);
+  crypto.getRandomValues(bytes);
+  const num = ((bytes[0] << 24) | (bytes[1] << 16) | (bytes[2] << 8) | bytes[3]) >>> 0;
+  return String(100000 + (num % 900000));
 }
 
 /**

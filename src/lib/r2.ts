@@ -182,9 +182,14 @@ export async function getPresignedDownloadUrl(
   const { GetObjectCommand } = await import("@aws-sdk/client-s3");
   const { getSignedUrl } = await import("@aws-sdk/s3-request-presigner");
 
+  // S13-FIX: Set Content-Disposition to "attachment" so browsers will always
+  // download the file rather than rendering it inline. This prevents stored XSS
+  // attacks where a malicious HTML file that bypasses magic-byte validation could
+  // be rendered in the context of the R2 storage domain.
   const command = new GetObjectCommand({
     Bucket: config.bucketName,
     Key: key,
+    ResponseContentDisposition: "attachment",
   });
 
   return getSignedUrl(client, command, { expiresIn });

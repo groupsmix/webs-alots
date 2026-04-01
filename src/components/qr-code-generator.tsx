@@ -78,7 +78,7 @@ export function QrCodeGenerator({
       <!DOCTYPE html>
       <html>
       <head>
-        <title>${title} QR Code</title>
+        <title>${escapeHtml(title)} QR Code</title>
         <style>
           body { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; font-family: system-ui, sans-serif; }
           .title { font-size: 24px; font-weight: bold; margin-bottom: 8px; }

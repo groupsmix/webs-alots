@@ -482,10 +482,28 @@ export const authLimiter = createRateLimiter({
 });
 
 /**
- * Account lockout: 10 failed attempts / 15 min per email.
+ * Account lockout: 10 requests / 15 min per email.
  * After exceeding this, the account is locked for the remainder of the window.
  * This is stricter than loginLimiter and prevents sustained brute-force attacks
  * even from distributed IPs.
+ *
+ * SECURITY NOTE — request-count vs. failure-count lockout:
+ * This limiter counts all login *requests* for a given email, not just failed
+ * authentication attempts. This means:
+ *   - An attacker gets at most 10 password guesses per 15-minute window per email,
+ *     regardless of whether some guesses succeed (acceptable trade-off).
+ *   - A legitimate user who logs in successfully still consumes attempts from the
+ *     budget. In practice this is fine — 10 requests in 15 minutes is generous
+ *     for normal login activity.
+ *
+ * The primary account lockout mechanism is Supabase Auth's built-in rate limiting
+ * and brute-force protection (configured in the Supabase dashboard under
+ * Auth > Rate Limits). This custom limiter is **defense-in-depth** — it adds an
+ * application-layer limit in case Supabase's controls are misconfigured or bypassed.
+ *
+ * If failure-aware lockout is needed in the future, the handler should call
+ * `accountLockoutLimiter.check(email)` only *after* Supabase returns an
+ * authentication error, rather than on every request.
  */
 export const accountLockoutLimiter = createRateLimiter({
   windowMs: 15 * 60_000,

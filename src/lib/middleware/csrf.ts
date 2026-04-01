@@ -68,6 +68,24 @@ export function validateCsrf(
     allowedOrigins.add(`${request.nextUrl.protocol}//${hostname}`);
   }
 
+  // CSRF-DESIGN: We intentionally reject requests with a missing Origin header.
+  // Some legitimate scenarios omit the Origin header (same-origin navigational
+  // POSTs in certain browsers, privacy extensions that strip it, or server-to-server
+  // calls). However, accepting missing-Origin requests would weaken CSRF protection
+  // significantly — an attacker could strip the header to bypass the check.
+  //
+  // Mitigations for legitimate consumers:
+  //   - Webhook/cron paths are already exempt (see CSRF_EXEMPT_PREFIXES above).
+  //   - Server-to-server callers should use Bearer token auth, not cookie-based
+  //     sessions, and hit exempt endpoints or use a dedicated API key route.
+  //   - Same-origin fetch() calls in modern browsers always include the Origin
+  //     header for mutation methods when using the default "cors" or "same-origin"
+  //     mode.
+  //
+  // If a legitimate API consumer receives a 403 here, ensure the request includes
+  // the Origin header (e.g., use `fetch(url, { method: 'POST' })` which sends it
+  // automatically) or add the route to CSRF_EXEMPT_PREFIXES with appropriate
+  // alternative authentication (e.g., Bearer token, API key, HMAC signature).
   if (!origin) {
     return withSecurityHeaders(
       NextResponse.json(
