@@ -17,10 +17,14 @@ import { apiError, apiNotFound, apiSuccess } from "@/lib/api-response";
 import { timingSafeEqual } from "@/lib/crypto-utils";
 
 /**
- * Generate a 6-digit numeric verification code.
+ * Generate a 6-digit numeric verification code using a
+ * cryptographically secure random source (SEC-03).
  */
 function generateCode(): string {
-  return String(Math.floor(100000 + Math.random() * 900000));
+  const bytes = new Uint8Array(4);
+  crypto.getRandomValues(bytes);
+  const num = ((bytes[0] << 24) | (bytes[1] << 16) | (bytes[2] << 8) | bytes[3]) >>> 0;
+  return String(100000 + (num % 900000));
 }
 
 /**

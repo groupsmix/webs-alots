@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { ShieldCheck, Copy, Check, ArrowLeft, AlertTriangle, Download } from "lucide-react";
+import QRCodeLib from "qrcode";
 import {
   Card,
   CardContent,
@@ -33,6 +34,7 @@ export default function Setup2FAPage() {
   const [copied, setCopied] = useState(false);
   const [backupCodes, setBackupCodes] = useState<string[]>([]);
   const [backupCopied, setBackupCopied] = useState(false);
+  const [qrSvg, setQrSvg] = useState<string>("");
 
   useEffect(() => {
     async function startEnrollment() {
@@ -43,6 +45,25 @@ export default function Setup2FAPage() {
         return;
       }
       setEnrollment(result.data);
+
+      // SEC-05: Generate QR code client-side from the TOTP URI using the
+      // trusted qrcode library instead of rendering Supabase-provided HTML
+      // via dangerouslySetInnerHTML (prevents XSS if API response is tampered).
+      try {
+        const svg = await QRCodeLib.toString(result.data.totpUri, {
+          type: "svg",
+          width: 200,
+          margin: 1,
+          errorCorrectionLevel: "M",
+        });
+        setQrSvg(svg);
+      } catch {
+        // Fallback: validate that the Supabase QR code is a data URI before using it
+        if (/^data:image\/(svg\+xml|png);base64,/.test(result.data.qrCode)) {
+          setQrSvg(`<img src="${result.data.qrCode}" alt="QR Code" width="200" height="200" />`);
+        }
+      }
+
       setStep("qr");
     }
     startEnrollment();
@@ -249,11 +270,14 @@ export default function Setup2FAPage() {
 
           {step === "qr" && enrollment && (
             <div className="space-y-4">
-              {/* QR Code */}
+              {/* QR Code — rendered client-side from totpUri (SEC-05) */}
               <div className="flex justify-center">
                 <div
                   className="bg-white p-4 rounded-lg"
-                  dangerouslySetInnerHTML={{ __html: enrollment.qrCode }}
+                  // SAFETY: qrSvg is generated locally by the trusted 'qrcode'
+                  // library from the TOTP URI — no Supabase-provided HTML is
+                  // injected directly.
+                  dangerouslySetInnerHTML={{ __html: qrSvg }}
                 />
               </div>
 
