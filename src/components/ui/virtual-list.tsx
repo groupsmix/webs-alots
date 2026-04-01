@@ -15,6 +15,11 @@ interface VirtualListProps<T> {
 /**
  * Virtual scrolling list for rendering large datasets efficiently.
  * Only renders items visible in the viewport plus an overscan buffer.
+ *
+ * Audit 5.8 — This component should be used for any list that may
+ * render 50+ items, such as patient lists, appointment logs, or
+ * search results. Wrap the list container with <VirtualList> and
+ * provide a fixed itemHeight for optimal performance.
  */
 export function VirtualList<T>({
   items,

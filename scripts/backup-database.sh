@@ -119,6 +119,23 @@ pg_dump "${SUPABASE_DB_URL}" \
 SIZE=$(du -h "${FILEPATH}" | cut -f1)
 log_info "Backup created: ${SIZE}"
 
+# Audit 8.7 — Encrypt the backup before uploading to R2.
+# Uses AES-256-CBC symmetric encryption with the BACKUP_ENCRYPTION_KEY env var.
+# To restore: openssl enc -aes-256-cbc -d -pbkdf2 -in backup.sql.gz.enc -out backup.sql.gz
+if [[ -n "${BACKUP_ENCRYPTION_KEY:-}" ]]; then
+  ENC_FILEPATH="${FILEPATH}.enc"
+  openssl enc -aes-256-cbc -salt -pbkdf2 \
+    -in "${FILEPATH}" \
+    -out "${ENC_FILEPATH}" \
+    -pass "env:BACKUP_ENCRYPTION_KEY"
+  rm -f "${FILEPATH}"
+  FILEPATH="${ENC_FILEPATH}"
+  FILENAME="${FILENAME}.enc"
+  log_info "Backup encrypted with AES-256-CBC"
+else
+  log_warn "BACKUP_ENCRYPTION_KEY not set — backup will be stored unencrypted. Set this env var for production use."
+fi
+
 # ---- Upload to R2 ----
 log_info "Uploading to R2: backups/${BACKUP_TYPE}/${FILENAME}"
 

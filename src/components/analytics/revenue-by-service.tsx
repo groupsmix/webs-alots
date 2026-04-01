@@ -1,8 +1,6 @@
 "use client";
 
-import {
-  PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend,
-} from "recharts";
+import dynamic from "next/dynamic";
 import { BarChart3 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
@@ -21,6 +19,50 @@ interface RevenueByServiceProps {
   data: ServiceRevenueData[];
   currency?: string;
 }
+
+/** Audit 5.2 — dynamically import recharts */
+const LazyServicePie = dynamic<{ data: ServiceRevenueData[]; currency: string; colors: string[] }>(
+  () =>
+    import("recharts").then((mod) => {
+      const { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend } = mod;
+      function Inner({ data, currency, colors }: { data: ServiceRevenueData[]; currency: string; colors: string[] }) {
+        return (
+          <ResponsiveContainer width="100%" height={250}>
+            <PieChart>
+              <Pie
+                data={data}
+                dataKey="revenue"
+                nameKey="serviceName"
+                cx="50%"
+                cy="50%"
+                outerRadius={90}
+                label={({ name, percent }: { name?: string; percent?: number }) => `${name ?? ""} ${((percent ?? 0) * 100).toFixed(0)}%`}
+                labelLine={false}
+              >
+                {data.map((_, index) => (
+                  <Cell key={`cell-${index}`} fill={colors[index % colors.length]} />
+                ))}
+              </Pie>
+              <Tooltip
+                formatter={(value) => [`${Number(value).toLocaleString()} ${currency}`, "Revenue"]}
+                contentStyle={{ borderRadius: "8px", fontSize: "12px" }}
+              />
+              <Legend />
+            </PieChart>
+          </ResponsiveContainer>
+        );
+      }
+      return { default: Inner };
+    }),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex items-center justify-center h-[250px] bg-muted/20 rounded-lg animate-pulse">
+        <span className="text-sm text-muted-foreground">Loading chart…</span>
+      </div>
+    ),
+  },
+);
 
 export function RevenueByService({ data, currency = "MAD" }: RevenueByServiceProps) {
   if (data.length === 0) {
@@ -48,29 +90,7 @@ export function RevenueByService({ data, currency = "MAD" }: RevenueByServicePro
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <ResponsiveContainer width="100%" height={250}>
-          <PieChart>
-            <Pie
-              data={data}
-              dataKey="revenue"
-              nameKey="serviceName"
-              cx="50%"
-              cy="50%"
-              outerRadius={90}
-              label={({ name, percent }) => `${name} ${((percent as number) * 100).toFixed(0)}%`}
-              labelLine={false}
-            >
-              {data.map((_, index) => (
-                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-              ))}
-            </Pie>
-            <Tooltip
-              formatter={(value) => [`${Number(value).toLocaleString()} ${currency}`, "Revenue"]}
-              contentStyle={{ borderRadius: "8px", fontSize: "12px" }}
-            />
-            <Legend />
-          </PieChart>
-        </ResponsiveContainer>
+        <LazyServicePie data={data} currency={currency} colors={COLORS} />
       </CardContent>
     </Card>
   );

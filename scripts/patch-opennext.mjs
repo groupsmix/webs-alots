@@ -9,6 +9,11 @@
  * 1. Adds prefetch-hints.json to the glob pattern for inlined manifests
  * 2. Makes loadManifest return undefined for optional/missing manifests
  *    instead of throwing (e.g. subresource-integrity-manifest.json)
+ *
+ * Audit 8.10 — This patch targets @opennextjs/cloudflare ^1.17.1
+ * (pinned in package.json devDependencies). If upgrading the adapter,
+ * verify this patch is still needed and update accordingly.
+ * Last verified: 2025-04-01 against @opennextjs/cloudflare@1.17.1
  */
 
 import fs from "node:fs";

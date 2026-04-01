@@ -43,6 +43,12 @@ export function extractSubdomain(
   // Ignore empty, "www", or multi-level subdomains (e.g., "a.b")
   if (!sub || sub === "www" || sub.includes(".")) return null;
 
+  // Audit 8.3 — Reserved subdomains that must not be resolved as tenant
+  // clinics. "staging" in particular would conflict with the staging
+  // environment route (staging.oltigo.com) defined in wrangler.toml.
+  const RESERVED_SUBDOMAINS = new Set(["staging", "api", "admin", "app", "mail", "ftp", "ns1", "ns2"]);
+  if (RESERVED_SUBDOMAINS.has(sub)) return null;
+
   return sub;
 }
 

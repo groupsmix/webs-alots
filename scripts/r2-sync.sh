@@ -43,26 +43,25 @@ done
 PRIMARY_ENDPOINT="https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com"
 REPLICA_ENDPOINT="https://${R2_REPLICA_ACCOUNT_ID}.r2.cloudflarestorage.com"
 
-# ---- Configure AWS profiles ----
-mkdir -p ~/.aws
-cat > ~/.aws/credentials << EOF
-[primary]
-aws_access_key_id=${R2_ACCESS_KEY_ID}
-aws_secret_access_key=${R2_SECRET_ACCESS_KEY}
-[replica]
-aws_access_key_id=${R2_REPLICA_ACCESS_KEY_ID}
-aws_secret_access_key=${R2_REPLICA_SECRET_ACCESS_KEY}
-EOF
+# ---- Audit 8.2: Use env vars directly instead of writing credentials to disk ----
+# Primary credentials
+export AWS_ACCESS_KEY_ID="${R2_ACCESS_KEY_ID}"
+export AWS_SECRET_ACCESS_KEY="${R2_SECRET_ACCESS_KEY}"
+export AWS_DEFAULT_REGION="auto"
 
 # ---- Verify Mode ----
 if [[ "${1:-}" == "--verify" ]]; then
   log_info "Verifying replication integrity..."
 
+  # Use primary credentials
   PRIMARY_COUNT=$(aws s3 ls "s3://${R2_BUCKET_NAME}" --recursive \
-    --profile primary --endpoint-url "${PRIMARY_ENDPOINT}" | wc -l)
+    --endpoint-url "${PRIMARY_ENDPOINT}" | wc -l)
 
+  # Switch to replica credentials for the second count
+  AWS_ACCESS_KEY_ID="${R2_REPLICA_ACCESS_KEY_ID}" \
+  AWS_SECRET_ACCESS_KEY="${R2_REPLICA_SECRET_ACCESS_KEY}" \
   REPLICA_COUNT=$(aws s3 ls "s3://${R2_REPLICA_BUCKET_NAME}" --recursive \
-    --profile replica --endpoint-url "${REPLICA_ENDPOINT}" | wc -l)
+    --endpoint-url "${REPLICA_ENDPOINT}" | wc -l)
 
   log_info "Primary bucket objects: ${PRIMARY_COUNT}"
   log_info "Replica bucket objects: ${REPLICA_COUNT}"
@@ -85,19 +84,19 @@ echo ""
 TEMP_DIR=$(mktemp -d)
 trap "rm -rf ${TEMP_DIR}" EXIT
 
-# Download from primary
+# Download from primary (uses primary credentials already exported)
 log_info "Downloading from primary bucket..."
 aws s3 sync "s3://${R2_BUCKET_NAME}" "${TEMP_DIR}/" \
-  --profile primary \
   --endpoint-url "${PRIMARY_ENDPOINT}"
 
 FILE_COUNT=$(find "${TEMP_DIR}" -type f | wc -l)
 log_info "Downloaded ${FILE_COUNT} files"
 
-# Upload to replica
+# Upload to replica (switch to replica credentials via env vars)
 log_info "Uploading to replica bucket..."
+AWS_ACCESS_KEY_ID="${R2_REPLICA_ACCESS_KEY_ID}" \
+AWS_SECRET_ACCESS_KEY="${R2_REPLICA_SECRET_ACCESS_KEY}" \
 aws s3 sync "${TEMP_DIR}/" "s3://${R2_REPLICA_BUCKET_NAME}" \
-  --profile replica \
   --endpoint-url "${REPLICA_ENDPOINT}"
 
 log_info "Replication complete: ${FILE_COUNT} files synced"
