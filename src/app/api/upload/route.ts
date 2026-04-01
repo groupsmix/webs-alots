@@ -17,6 +17,10 @@
  *   Returns: { valid: true } or deletes the object and returns 400
  */
 
+import { apiError, apiForbidden, apiInternalError, apiNotFound, apiSuccess } from "@/lib/api-response";
+import { withAuthValidation } from "@/lib/api-validate";
+import { requiresEncryption } from "@/lib/encryption";
+import { logger } from "@/lib/logger";
 import {
   uploadToR2,
   isR2Configured,
@@ -24,14 +28,11 @@ import {
   getPresignedUploadUrl,
   readR2ObjectHead,
   deleteFromR2,
+  getResponsiveImageUrls,
 } from "@/lib/r2";
 import { encryptAndUpload } from "@/lib/r2-encrypted";
-import { requiresEncryption } from "@/lib/encryption";
-import { withAuth } from "@/lib/with-auth";
-import { logger } from "@/lib/logger";
 import { uploadConfirmSchema } from "@/lib/validations";
-import { withAuthValidation } from "@/lib/api-validate";
-import { apiError, apiForbidden, apiInternalError, apiNotFound, apiSuccess } from "@/lib/api-response";
+import { withAuth } from "@/lib/with-auth";
 
 const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2 MB
 
@@ -111,7 +112,12 @@ export const POST = withAuth(async (request, { profile }) => {
     return apiInternalError("Upload failed");
   }
 
-  return apiSuccess({ url, key, encrypted: requiresEncryption(category) });
+  // L3-H2: Return Cloudflare Image Resizing URLs for image uploads so clients
+  // can use optimized thumbnails without additional round-trips.
+  const isImage = file.type.startsWith("image/");
+  const thumbnails = isImage && url ? getResponsiveImageUrls(url) : undefined;
+
+  return apiSuccess({ url, key, encrypted: requiresEncryption(category), thumbnails });
 }, ["super_admin", "clinic_admin", "receptionist", "doctor"]);
 
 /**
@@ -196,5 +202,10 @@ export const GET = withAuth(async (request, { profile }) => {
     ? `${process.env.R2_PUBLIC_URL.replace(/\/$/, "")}/${key}`
     : null;
 
-  return apiSuccess({ uploadUrl, publicUrl, key });
+  // L3-H2: Include responsive thumbnail URLs for image content types so the
+  // client can render optimized previews after direct-upload completes.
+  const isImage = contentType.startsWith("image/");
+  const thumbnails = isImage && publicUrl ? getResponsiveImageUrls(publicUrl) : undefined;
+
+  return apiSuccess({ uploadUrl, publicUrl, key, thumbnails });
 }, ["super_admin", "clinic_admin", "receptionist", "doctor"]);

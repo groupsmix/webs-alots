@@ -167,6 +167,7 @@ The middleware enforces Origin-header checks on all mutation requests (`POST`, `
 | Document | Description |
 |---|---|
 | [WhatsApp Template Approval Guide](docs/whatsapp-template-approval.md) | How to submit and manage WhatsApp message templates for Meta Business API approval — includes all 10 Darija templates with variable mappings |
+| [Backup & Recovery Runbook](docs/backup-recovery-runbook.md) | Operational procedures for database backups, disaster recovery, and data restoration — includes RPO/RPT targets, incident response checklist, and DR drill guide |
 | [API Docs (generated)](docs/api/) | Auto-generated TypeDoc API reference for `src/lib/` utilities (run `npm run docs:generate` to rebuild) |
 
 ## Deploy on Cloudflare Workers
