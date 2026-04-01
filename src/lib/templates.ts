@@ -16,6 +16,21 @@ export type TemplateId =
   | "minimal"
   | "arabic";
 
+/** Header layout variant */
+export type HeaderVariant = "top-sticky" | "top-transparent" | "side-left" | "bottom-bar" | "floating" | "overlay";
+
+/** Footer layout variant */
+export type FooterVariant = "classic-3col" | "minimal" | "centered" | "hidden";
+
+/** Navigation style variant */
+export type NavStyle = "horizontal" | "vertical-side" | "hamburger-only" | "bottom-tabs" | "floating-dots";
+
+/** Hero section layout variant */
+export type HeroVariant = "split" | "centered" | "fullscreen-video" | "slider" | "parallax" | "none";
+
+/** Product click behavior */
+export type ProductClickBehavior = "modal" | "landing-page" | "side-panel" | "new-tab";
+
 export interface TemplateDefinition {
   id: TemplateId;
   name: string;
@@ -34,6 +49,21 @@ export interface TemplateDefinition {
   rtl: boolean;
   /** Preview thumbnail description (for admin picker) */
   preview: string;
+
+  // ── Structural template fields ──
+
+  /** Header component variant */
+  headerVariant: HeaderVariant;
+  /** Footer component variant */
+  footerVariant: FooterVariant;
+  /** Navigation style */
+  navStyle: NavStyle;
+  /** Hero component variant */
+  heroVariant: HeroVariant;
+  /** Order of sections on the public page */
+  sectionOrder: string[];
+  /** What happens when a product/service is clicked */
+  productClickBehavior: ProductClickBehavior;
 }
 
 export const templates: Record<TemplateId, TemplateDefinition> = {
@@ -48,6 +78,12 @@ export const templates: Record<TemplateId, TemplateDefinition> = {
     bgMode: "light",
     rtl: false,
     preview: "Clean, contemporary design with card-based layout and large hero imagery",
+    headerVariant: "top-sticky",
+    footerVariant: "classic-3col",
+    navStyle: "horizontal",
+    heroVariant: "split",
+    sectionOrder: ["hero", "services", "doctors", "reviews", "about", "location", "contact"],
+    productClickBehavior: "modal",
   },
   classic: {
     id: "classic",
@@ -60,6 +96,12 @@ export const templates: Record<TemplateId, TemplateDefinition> = {
     bgMode: "light",
     rtl: false,
     preview: "Professional medical design with structured layout and blue accents",
+    headerVariant: "top-sticky",
+    footerVariant: "classic-3col",
+    navStyle: "horizontal",
+    heroVariant: "centered",
+    sectionOrder: ["hero", "services", "doctors", "about", "reviews", "location", "contact"],
+    productClickBehavior: "modal",
   },
   elegant: {
     id: "elegant",
@@ -72,6 +114,12 @@ export const templates: Record<TemplateId, TemplateDefinition> = {
     bgMode: "light",
     rtl: false,
     preview: "Refined, luxury aesthetic perfect for dental and aesthetic clinics",
+    headerVariant: "top-transparent",
+    footerVariant: "centered",
+    navStyle: "horizontal",
+    heroVariant: "parallax",
+    sectionOrder: ["hero", "about", "services", "reviews", "doctors", "location", "contact"],
+    productClickBehavior: "side-panel",
   },
   bold: {
     id: "bold",
@@ -84,6 +132,12 @@ export const templates: Record<TemplateId, TemplateDefinition> = {
     bgMode: "dark",
     rtl: false,
     preview: "Eye-catching dark theme with bold typography and vibrant accents",
+    headerVariant: "floating",
+    footerVariant: "minimal",
+    navStyle: "horizontal",
+    heroVariant: "fullscreen-video",
+    sectionOrder: ["hero", "services", "about", "reviews", "doctors", "contact", "location"],
+    productClickBehavior: "landing-page",
   },
   minimal: {
     id: "minimal",
@@ -96,6 +150,12 @@ export const templates: Record<TemplateId, TemplateDefinition> = {
     bgMode: "light",
     rtl: false,
     preview: "Ultra-clean design with maximum whitespace and minimal decoration",
+    headerVariant: "top-sticky",
+    footerVariant: "minimal",
+    navStyle: "horizontal",
+    heroVariant: "centered",
+    sectionOrder: ["hero", "services", "about", "contact"],
+    productClickBehavior: "modal",
   },
   arabic: {
     id: "arabic",
@@ -108,6 +168,12 @@ export const templates: Record<TemplateId, TemplateDefinition> = {
     bgMode: "light",
     rtl: true,
     preview: "Right-to-left layout optimized for Arabic typography and reading flow",
+    headerVariant: "top-sticky",
+    footerVariant: "classic-3col",
+    navStyle: "horizontal",
+    heroVariant: "split",
+    sectionOrder: ["hero", "services", "doctors", "reviews", "about", "location", "contact"],
+    productClickBehavior: "modal",
   },
 };
 
