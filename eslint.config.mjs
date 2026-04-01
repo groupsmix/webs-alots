@@ -39,6 +39,13 @@ const eslintConfig = defineConfig([
       "jsx-a11y/click-events-have-key-events": "warn",
       "jsx-a11y/no-static-element-interactions": "warn",
       "jsx-a11y/label-has-associated-control": "warn",
+      // Import ordering (Audit L9-12)
+      "import/order": ["warn", {
+        "groups": ["builtin", "external", "internal", "parent", "sibling", "index"],
+        "pathGroups": [{ "pattern": "@/**", "group": "internal", "position": "after" }],
+        "newlines-between": "never",
+        "alphabetize": { "order": "asc", "caseInsensitive": true },
+      }],
     },
   },
 ]);
