@@ -1,7 +1,7 @@
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
+import { apiSuccess } from "@/lib/api-response";
 import { logger } from "@/lib/logger";
 import { isR2Configured } from "@/lib/r2";
-import { apiSuccess } from "@/lib/api-response";
 /**
  * GET /api/health
  *
@@ -37,6 +37,22 @@ export async function GET() {
       checks.database = error
         ? { status: "degraded", latencyMs: dbLatency, error: "Database query failed" }
         : { status: "ok", latencyMs: dbLatency };
+
+      // L6-H2: Deep Supabase connectivity check — verify Auth service is reachable
+      // beyond the basic PostgREST query above. This catches scenarios where the
+      // database is up but the Auth or GoTrue service is degraded.
+      if (!error) {
+        try {
+          const authStart = Date.now();
+          const { error: authError } = await supabase.auth.getSession();
+          const authLatency = Date.now() - authStart;
+          checks.auth = authError
+            ? { status: "degraded", latencyMs: authLatency, error: "Auth service query failed" }
+            : { status: "ok", latencyMs: authLatency };
+        } catch {
+          checks.auth = { status: "degraded", error: "Auth service unreachable" };
+        }
+      }
     }
   } catch (err) {
     logger.warn("Operation failed", { context: "health", error: err });
