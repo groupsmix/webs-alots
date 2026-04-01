@@ -1,15 +1,17 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import dynamic from "next/dynamic";
 import { TrendingUp } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
-  ResponsiveContainer,
-} from "recharts";
+import { Card, CardContent } from "@/components/ui/card";
 import { getCurrentUser } from "@/lib/data/client";
 import type { TherapySessionNote } from "@/lib/types/para-medical";
 import { PageLoader } from "@/components/ui/page-loader";
+
+const MoodChart = dynamic(
+  () => import("./mood-chart").then((m) => m.MoodChart),
+  { ssr: false, loading: () => <div className="h-[300px] animate-pulse bg-muted rounded-lg" /> },
+);
 
 export default function ProgressTrackingPage() {
   const [sessions, setSessions] = useState<TherapySessionNote[]>([]);
@@ -59,22 +61,7 @@ export default function ProgressTrackingPage() {
       </div>
 
       {moodData.length >= 2 ? (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Mood Rating Over Time</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={moodData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="date" tick={{ fontSize: 10 }} />
-                <YAxis domain={[1, 10]} tick={{ fontSize: 10 }} />
-                <Tooltip />
-                <Line type="monotone" dataKey="mood" stroke="#9333ea" strokeWidth={2} dot={{ r: 4 }} name="Mood Rating" />
-              </LineChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
+        <MoodChart data={moodData} />
       ) : (
         <Card>
           <CardContent className="p-8 text-center">

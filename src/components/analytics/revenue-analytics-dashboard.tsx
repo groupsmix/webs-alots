@@ -12,10 +12,25 @@ import {
   type FeedbackStatsData,
   type AnalyticsPeriod,
 } from "@/lib/data/client";
-import { RevenueChart, type RevenueDataPoint } from "./revenue-chart";
-import { RevenueByDoctor } from "./revenue-by-doctor";
-import { RevenueByService } from "./revenue-by-service";
-import { RevenueByMethod } from "./revenue-by-method";
+import dynamic from "next/dynamic";
+import type { RevenueDataPoint } from "./revenue-chart";
+
+const RevenueChart = dynamic(
+  () => import("./revenue-chart").then((m) => m.RevenueChart),
+  { ssr: false, loading: () => <div className="h-[300px] animate-pulse bg-muted rounded-lg" /> },
+);
+const RevenueByDoctor = dynamic(
+  () => import("./revenue-by-doctor").then((m) => m.RevenueByDoctor),
+  { ssr: false, loading: () => <div className="h-[250px] animate-pulse bg-muted rounded-lg" /> },
+);
+const RevenueByService = dynamic(
+  () => import("./revenue-by-service").then((m) => m.RevenueByService),
+  { ssr: false, loading: () => <div className="h-[250px] animate-pulse bg-muted rounded-lg" /> },
+);
+const RevenueByMethod = dynamic(
+  () => import("./revenue-by-method").then((m) => m.RevenueByMethod),
+  { ssr: false, loading: () => <div className="h-[250px] animate-pulse bg-muted rounded-lg" /> },
+);
 import { RevenueKPICards } from "./revenue-kpi-cards";
 import { ReviewStatsWidget } from "./review-stats-widget";
 import { generateRevenueReport } from "@/lib/revenue-report-pdf";

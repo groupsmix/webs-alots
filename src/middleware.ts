@@ -16,7 +16,7 @@ import { TENANT_HEADERS } from "@/lib/tenant";
 import { DEMO_SUBDOMAIN, shouldBlockDemoRequest } from "@/lib/demo";
 import { isSeedUserBlocked } from "@/lib/seed-guard";
 import { generateTraceId, TRACE_ID_HEADER } from "@/lib/logger";
-import { subdomainCache, SUBDOMAIN_CACHE_TTL_MS } from "@/lib/subdomain-cache";
+import { subdomainCache, SUBDOMAIN_CACHE_TTL_MS, setSubdomainCache } from "@/lib/subdomain-cache";
 import {
   buildCsp,
   withSecurityHeaders,
@@ -236,7 +236,7 @@ export async function middleware(request: NextRequest) {
 
       if (data) {
         clinic = { ...data, subdomain: data.subdomain ?? subdomain, cachedAt: Date.now() };
-        subdomainCache.set(subdomain, clinic);
+        setSubdomainCache(subdomain, clinic);
       } else {
         // Evict stale entry if the subdomain was previously valid
         subdomainCache.delete(subdomain);

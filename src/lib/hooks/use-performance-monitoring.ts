@@ -10,8 +10,10 @@ interface WebVitalsMetric {
 }
 
 /**
- * Monitor Core Web Vitals (LCP, FID, CLS, FCP, TTFB) using
+ * Monitor Core Web Vitals (LCP, INP, CLS, FCP, TTFB) using
  * the PerformanceObserver API. Logs metrics via the app logger.
+ *
+ * INP replaced FID as a Core Web Vital in March 2024.
  */
 export function usePerformanceMonitoring() {
   useEffect(() => {
@@ -46,22 +48,22 @@ export function usePerformanceMonitoring() {
     }
 
     try {
-      // First Input Delay
-      const fidObserver = new PerformanceObserver((list) => {
+      // Interaction to Next Paint (replaced FID as a Core Web Vital, March 2024)
+      const inpObserver = new PerformanceObserver((list) => {
         for (const entry of list.getEntries()) {
-          const fidEntry = entry as PerformanceEventTiming;
-          const value = fidEntry.processingStart - fidEntry.startTime;
+          const eventEntry = entry as PerformanceEventTiming;
+          const value = eventEntry.duration;
           report({
-            name: "FID",
+            name: "INP",
             value,
-            rating: value <= 100 ? "good" : value <= 300 ? "needs-improvement" : "poor",
+            rating: value <= 200 ? "good" : value <= 500 ? "needs-improvement" : "poor",
           });
         }
       });
-      fidObserver.observe({ type: "first-input", buffered: true });
-      observers.push(fidObserver);
+      inpObserver.observe({ type: "event", buffered: true, durationThreshold: 16 } as PerformanceObserverInit);
+      observers.push(inpObserver);
     } catch (err) {
-      logger.warn("FID observer not supported", { context: "web-vitals", error: err });
+      logger.warn("INP observer not supported", { context: "web-vitals", error: err });
     }
 
     try {
