@@ -19,8 +19,22 @@ import { aiPrescriptionLimiter } from "@/lib/rate-limit";
 import { logger } from "@/lib/logger";
 import { DCI_DRUG_DATABASE, CATEGORY_LABELS } from "@/lib/dci-drug-database";
 import type { AuthContext } from "@/lib/with-auth";
+import type { PatientMetadata } from "@/lib/types/patient-metadata";
 
 // ── Types ──
+
+/** Raw shape returned by the AI model before validation. */
+interface AiPrescriptionRaw {
+  medications?: Array<{
+    name?: string;
+    dosage?: string;
+    frequency?: string;
+    duration?: string;
+    instructions?: string;
+  }>;
+  notes?: string;
+  warnings?: unknown[];
+}
 
 interface AiMedication {
   name: string;
@@ -148,12 +162,12 @@ function parseAiResponse(content: string): AiPrescriptionResponse | null {
       jsonStr = jsonMatch[1].trim();
     }
 
-    const parsed = JSON.parse(jsonStr) as Record<string, unknown>;
+    const parsed = JSON.parse(jsonStr) as AiPrescriptionRaw;
 
     // Validate structure
     if (!Array.isArray(parsed.medications)) return null;
 
-    const medications: AiMedication[] = (parsed.medications as Record<string, unknown>[])
+    const medications: AiMedication[] = parsed.medications
       .filter((m) => typeof m.name === "string" && m.name.trim() !== "")
       .map((m) => ({
         name: String(m.name ?? ""),
@@ -257,16 +271,16 @@ export const POST = withAuthValidation(
       return apiError("Patient not found", 404, "PATIENT_NOT_FOUND");
     }
 
-    const patientMeta = (patient.metadata ?? {}) as Record<string, unknown>;
+    const patientMeta = (patient.metadata ?? {}) as PatientMetadata;
 
     // Merge patient DB data with any client-provided context
     const mergedContext = {
-      age: data.patientContext?.age ?? (patientMeta.age as number | undefined),
-      gender: data.patientContext?.gender ?? (patientMeta.gender as "M" | "F" | undefined),
-      allergies: data.patientContext?.allergies ?? (patientMeta.allergies as string[] | undefined),
+      age: data.patientContext?.age ?? patientMeta.age,
+      gender: (data.patientContext?.gender ?? patientMeta.gender) as "M" | "F" | undefined,
+      allergies: data.patientContext?.allergies ?? patientMeta.allergies,
       currentMedications: data.patientContext?.currentMedications,
       chronicConditions: data.patientContext?.chronicConditions,
-      weight: data.patientContext?.weight ?? (patientMeta.weight as number | undefined),
+      weight: data.patientContext?.weight ?? patientMeta.weight,
     };
 
     // Build the prompt

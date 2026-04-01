@@ -20,6 +20,7 @@ import { aiDrugCheckLimiter } from "@/lib/rate-limit";
 import { logger } from "@/lib/logger";
 import { checkAllInteractions, type InteractionAlert } from "@/lib/check-interactions";
 import type { AuthContext } from "@/lib/with-auth";
+import type { PatientMetadata } from "@/lib/types/patient-metadata";
 
 // ── Types ──
 
@@ -165,8 +166,8 @@ export const POST = withAuthValidation(
         .single();
 
       if (patient?.metadata) {
-        const meta = patient.metadata as Record<string, unknown>;
-        const dbAllergies = meta.allergies as string[] | undefined;
+        const meta = patient.metadata as PatientMetadata;
+        const dbAllergies = meta.allergies;
         if (dbAllergies?.length) {
           patientAllergies = dbAllergies;
         }

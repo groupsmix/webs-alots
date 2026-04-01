@@ -20,6 +20,7 @@ import { aiPatientSummaryLimiter } from "@/lib/rate-limit";
 import { logger } from "@/lib/logger";
 import type { AuthContext } from "@/lib/with-auth";
 import type { Json } from "@/lib/types/database";
+import type { PatientMetadata } from "@/lib/types/patient-metadata";
 
 // ── Types ──
 
@@ -121,18 +122,18 @@ function buildUserMessage(context: {
   vitals: { systolic: number; diastolic: number; heart_rate: number | null; reading_date: string; notes: string | null }[];
 }): string {
   const { patient, consultations, prescriptions, vitals } = context;
-  const meta = (patient.metadata ?? {}) as Record<string, unknown>;
+  const meta = (patient.metadata ?? {}) as PatientMetadata;
   const parts: string[] = [];
 
   // Patient info
   parts.push(`Patient: ${patient.name}`);
-  const dateOfBirth = meta.date_of_birth as string | undefined;
-  const gender = meta.gender as string | undefined;
+  const dateOfBirth = meta.date_of_birth;
+  const gender = meta.gender;
   if (dateOfBirth) parts.push(`Date de naissance: ${dateOfBirth}`);
   if (gender) parts.push(`Sexe: ${gender}`);
 
   // Allergies from metadata
-  const allergies = meta.allergies as string[] | undefined;
+  const allergies = meta.allergies;
   if (allergies?.length) {
     parts.push(`\nALLERGIES CONNUES: ${allergies.join(", ")}`);
   } else {
@@ -140,13 +141,13 @@ function buildUserMessage(context: {
   }
 
   // Chronic conditions from metadata
-  const conditions = meta.chronicConditions as string[] | undefined;
+  const conditions = meta.chronicConditions;
   if (conditions?.length) {
     parts.push(`Conditions chroniques: ${conditions.join(", ")}`);
   }
 
   // Current medications from metadata
-  const currentMeds = meta.currentMedications as string[] | undefined;
+  const currentMeds = meta.currentMedications;
   if (currentMeds?.length) {
     parts.push(`Médicaments actuels: ${currentMeds.join(", ")}`);
   }
@@ -201,7 +202,7 @@ function parseSummaryResponse(content: string): string | null {
       jsonStr = jsonMatch[1].trim();
     }
 
-    const parsed = JSON.parse(jsonStr) as Record<string, unknown>;
+    const parsed = JSON.parse(jsonStr) as { summary?: string };
     if (typeof parsed.summary === "string" && parsed.summary.trim().length > 0) {
       return parsed.summary.trim();
     }
@@ -277,8 +278,8 @@ export const POST = withAuthValidation(
         .single();
 
       if (cachedPatient?.metadata) {
-        const meta = cachedPatient.metadata as Record<string, unknown>;
-        const cachedSummary = meta.ai_summary as { text: string; generated_at: string } | undefined;
+        const meta = cachedPatient.metadata as PatientMetadata;
+        const cachedSummary = meta.ai_summary;
         if (cachedSummary?.text) {
           return apiSuccess<PatientSummaryResponse>({
             summary: cachedSummary.text,
@@ -399,7 +400,7 @@ export const POST = withAuthValidation(
             .eq("clinic_id", clinicId)
             .single();
 
-          const currentMeta = (currentPatient?.metadata ?? {}) as Record<string, unknown>;
+          const currentMeta = (currentPatient?.metadata ?? {}) as PatientMetadata;
           const updatedMeta = {
             ...currentMeta,
             ai_summary: { text: summary, generated_at: generatedAt, generated_by: doctorId },

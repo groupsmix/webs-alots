@@ -25,7 +25,7 @@ export interface ChatbotClinicContext {
     phone?: string;
     email?: string;
     domain?: string;
-    config: Record<string, unknown>;
+    config: ClinicConfigJson | Record<string, unknown>;
   } | null;
   services: { name: string; price: number | null; category: string | null; duration_minutes: number }[];
   doctors: { name: string; phone: string | null; email: string | null }[];
@@ -98,7 +98,7 @@ export async function fetchChatbotContext(clinicId: string): Promise<ChatbotClin
           phone: clinicData.owner_phone ?? undefined,
           email: clinicData.owner_email ?? undefined,
           domain: clinicData.domain ?? undefined,
-          config: (clinicData.config as Record<string, unknown>) ?? {},
+          config: (clinicData.config as ClinicConfigJson) ?? {},
         }
       : null,
     services: (servicesRes.data ?? []).map((s) => ({

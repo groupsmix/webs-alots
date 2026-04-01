@@ -8,6 +8,64 @@ import { hmacSha256Hex, timingSafeEqual } from "@/lib/crypto-utils";
 import { logger } from "@/lib/logger";
 import { setTenantContext, logTenantContext } from "@/lib/tenant-context";
 import { apiForbidden, apiInternalError, apiSuccess, apiUnauthorized } from "@/lib/api-response";
+
+// ── WhatsApp Webhook payload types ──
+
+interface WaTextMessage {
+  body: string;
+}
+
+interface WaButtonReply {
+  id: string;
+  title?: string;
+}
+
+interface WaInteractive {
+  type: string;
+  button_reply?: WaButtonReply;
+}
+
+interface WaMessage {
+  from?: string;
+  type?: string;
+  text?: WaTextMessage;
+  interactive?: WaInteractive;
+}
+
+interface WaStatus {
+  id: string;
+  status: string;
+  timestamp?: string;
+  recipient_id?: string;
+  errors?: Array<{ code: number; title: string }>;
+}
+
+interface WaMetadata {
+  phone_number_id?: string;
+  display_phone_number?: string;
+}
+
+interface WaChangeValue {
+  messaging_product?: string;
+  metadata?: WaMetadata;
+  messages?: WaMessage[];
+  statuses?: WaStatus[];
+}
+
+interface WaChange {
+  field?: string;
+  value?: WaChangeValue;
+}
+
+interface WaEntry {
+  id?: string;
+  changes?: WaChange[];
+}
+
+interface WaWebhookBody {
+  object?: string;
+  entry?: WaEntry[];
+}
 /**
  * Verifies the Meta webhook signature (X-Hub-Signature-256) using HMAC-SHA256.
  * Returns true if the signature is valid, false otherwise.
@@ -32,29 +90,29 @@ async function verifyWebhookSignature(
  * Extracts the message text and sender phone from a WhatsApp webhook payload.
  * Supports both regular text messages and interactive button replies.
  */
-function extractMessageInfo(entry: Record<string, unknown>): { text: string; senderPhone: string } | null {
-  const changes = entry.changes as Array<Record<string, unknown>> | undefined;
+function extractMessageInfo(entry: WaEntry): { text: string; senderPhone: string } | null {
+  const changes = entry.changes;
   if (!changes) return null;
   for (const change of changes) {
-    const value = change.value as Record<string, unknown> | undefined;
+    const value = change.value;
     if (!value) continue;
-    const messages = value.messages as Array<Record<string, unknown>> | undefined;
+    const messages = value.messages;
     if (!messages) continue;
     for (const msg of messages) {
-      const from = msg.from as string | undefined;
+      const from = msg.from;
       if (!from) continue;
 
       // Handle interactive button replies (quick replies from reminders)
-      const interactive = msg.interactive as Record<string, unknown> | undefined;
+      const interactive = msg.interactive;
       if (interactive?.type === "button_reply") {
-        const buttonReply = interactive.button_reply as Record<string, unknown> | undefined;
+        const buttonReply = interactive.button_reply;
         if (buttonReply && typeof buttonReply.id === "string") {
           return { text: buttonReply.id, senderPhone: from };
         }
       }
 
       // Handle regular text messages
-      const text = msg.text as Record<string, unknown> | undefined;
+      const text = msg.text;
       if (text && typeof text.body === "string") {
         return { text: text.body, senderPhone: from };
       }
@@ -66,7 +124,7 @@ function extractMessageInfo(entry: Record<string, unknown>): { text: string; sen
 /**
  * Extracts delivery/read status updates from a WhatsApp webhook payload.
  */
-function extractStatusUpdates(entry: Record<string, unknown>): Array<{
+function extractStatusUpdates(entry: WaEntry): Array<{
   messageId: string;
   status: string;
   timestamp: string;
@@ -80,12 +138,12 @@ function extractStatusUpdates(entry: Record<string, unknown>): Array<{
     recipientPhone: string;
     errors?: Array<{ code: number; title: string }>;
   }> = [];
-  const changes = entry.changes as Array<Record<string, unknown>> | undefined;
+  const changes = entry.changes;
   if (!changes) return results;
   for (const change of changes) {
-    const value = change.value as Record<string, unknown> | undefined;
+    const value = change.value;
     if (!value) continue;
-    const statuses = value.statuses as Array<Record<string, unknown>> | undefined;
+    const statuses = value.statuses;
     if (!statuses) continue;
     for (const status of statuses) {
       if (typeof status.id === "string" && typeof status.status === "string") {
@@ -94,7 +152,7 @@ function extractStatusUpdates(entry: Record<string, unknown>): Array<{
           status: status.status,
           timestamp: typeof status.timestamp === "string" ? status.timestamp : new Date().toISOString(),
           recipientPhone: typeof status.recipient_id === "string" ? status.recipient_id : "",
-          errors: status.errors as Array<{ code: number; title: string }> | undefined,
+          errors: status.errors,
         });
       }
     }
@@ -122,8 +180,8 @@ export async function POST(request: NextRequest) {
       return apiUnauthorized("Invalid webhook signature");
     }
 
-    const body = JSON.parse(rawBody) as Record<string, unknown>;
-    const entries = (body.entry || []) as Array<Record<string, unknown>>;
+    const body = JSON.parse(rawBody) as WaWebhookBody;
+    const entries = body.entry ?? [];
 
     const supabase = await createClient();
 
@@ -168,11 +226,9 @@ export async function POST(request: NextRequest) {
 
       // Resolve the clinic context from the webhook entry's WhatsApp Business
       // Account ID (WABA). Each clinic has its own WABA linked via phone_number_id.
-      const changes = entry.changes as Array<Record<string, unknown>> | undefined;
-      const firstChangeValue = changes?.[0]?.value as Record<string, unknown> | undefined;
-      const wabaPhoneNumberId = firstChangeValue?.metadata
-        ? (firstChangeValue.metadata as Record<string, unknown>)?.phone_number_id as string | undefined
-        : undefined;
+      const changes = entry.changes;
+      const firstChangeValue = changes?.[0]?.value;
+      const wabaPhoneNumberId = firstChangeValue?.metadata?.phone_number_id;
 
       // Look up which clinic owns this WhatsApp phone number ID
       let clinicId: string | undefined;

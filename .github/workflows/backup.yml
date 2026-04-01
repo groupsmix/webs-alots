@@ -243,3 +243,33 @@ jobs:
         run: |
           dropdb backup_verify_test 2>/dev/null || true
           rm -f /tmp/verify_backup.sql.gz
+
+  notify:
+    runs-on: ubuntu-latest
+    name: Notify on Failure
+    needs: [backup, verify]
+    if: failure()
+    steps:
+      - name: Slack notification
+        if: vars.SLACK_BACKUP_WEBHOOK_URL != ''
+        uses: slackapi/slack-github-action@v2.0.0
+        with:
+          webhook: ${{ vars.SLACK_BACKUP_WEBHOOK_URL }}
+          webhook-type: incoming-webhook
+          payload: |
+            {
+              "text": ":rotating_light: *Database backup failed*\nWorkflow: ${{ github.workflow }}\nRun: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}\nTriggered by: ${{ github.event_name }}"
+            }
+
+      - name: Email notification (via Resend)
+        if: vars.BACKUP_ALERT_EMAIL != '' && secrets.RESEND_API_KEY != ''
+        run: |
+          curl -s -X POST https://api.resend.com/emails \
+            -H "Authorization: Bearer ${{ secrets.RESEND_API_KEY }}" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "from": "backups@'"${{ vars.BACKUP_ALERT_FROM || 'noreply@yourdomain.com' }}"'",
+              "to": ["'"${{ vars.BACKUP_ALERT_EMAIL }}"'"],
+              "subject": "[webs-alots] Database backup failed",
+              "text": "The automated database backup workflow failed.\n\nRun: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}\nTriggered by: ${{ github.event_name }}\n\nPlease investigate immediately."
+            }'

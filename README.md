@@ -29,7 +29,7 @@ Built with **Next.js 16** (App Router) + **Supabase** + **Cloudflare Workers** (
 npm install
 
 # Copy environment variables
-cp .env.local.example .env.local
+cp .env.example .env.local
 # Edit .env.local with your Supabase and WhatsApp credentials
 
 # Run the development server

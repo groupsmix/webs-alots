@@ -77,7 +77,7 @@ export const POST = withAuthValidation(customFieldValuesSchema, async (body, req
         }
 
         // Type-check values against declared field types
-        for (const [key, value] of Object.entries(field_values as Record<string, unknown>)) {
+        for (const [key, value] of Object.entries(field_values)) {
           const expectedType = defMap.get(key);
           if (!expectedType) continue;
           const valid =
@@ -157,7 +157,7 @@ export const PATCH = withAuthValidation(customFieldValuesSchema, async (body, re
           return apiError(`Unknown custom field keys: ${unknownKeys.join(", ")}`);
         }
 
-        for (const [key, value] of Object.entries(field_values as Record<string, unknown>)) {
+        for (const [key, value] of Object.entries(field_values)) {
           const expectedType = defMap.get(key);
           if (!expectedType) continue;
           const valid =
@@ -183,8 +183,9 @@ export const PATCH = withAuthValidation(customFieldValuesSchema, async (body, re
       .eq("entity_id", entity_id)
       .single();
 
+    const existingValues = (existing?.field_values ?? {}) as Record<string, Json>;
     const mergedValues = {
-      ...(existing?.field_values as Record<string, unknown> ?? {}),
+      ...existingValues,
       ...field_values,
     };
 
