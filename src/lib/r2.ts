@@ -14,15 +14,12 @@
  *   R2_PUBLIC_URL        — Public URL for the bucket (custom domain or r2.dev URL)
  */
 
-import {
-  S3Client,
-  PutObjectCommand,
-  DeleteObjectCommand,
-  GetObjectCommand,
-  type PutObjectCommandInput,
-} from "@aws-sdk/client-s3";
-import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { logger } from "@/lib/logger";
+
+// AWS SDK types — imported dynamically at runtime to keep the heavy SDK
+// out of the main bundle (see PERF-01 audit finding).
+type S3ClientType = import("@aws-sdk/client-s3").S3Client;
+type PutObjectCommandInputType = import("@aws-sdk/client-s3").PutObjectCommandInput;
 
 function getR2Config() {
   const accountId = process.env.R2_ACCOUNT_ID;
@@ -38,10 +35,10 @@ function getR2Config() {
   return { accountId, accessKeyId, secretAccessKey, bucketName, publicUrl };
 }
 
-let _client: S3Client | null = null;
+let _client: S3ClientType | null = null;
 let _lastConfigHash = "";
 
-function getClient(): S3Client | null {
+async function getClient(): Promise<S3ClientType | null> {
   const config = getR2Config();
   if (!config) return null;
 
@@ -49,6 +46,8 @@ function getClient(): S3Client | null {
   // ensuring stale credentials are never used after rotation.
   const configHash = `${config.accountId}:${config.accessKeyId}:${config.bucketName}`;
   if (_client && configHash === _lastConfigHash) return _client;
+
+  const { S3Client } = await import("@aws-sdk/client-s3");
 
   _lastConfigHash = configHash;
   _client = new S3Client({
@@ -83,11 +82,13 @@ export async function uploadToR2(
   body: Buffer | ReadableStream | Uint8Array,
   contentType: string,
 ): Promise<string | null> {
-  const client = getClient();
+  const client = await getClient();
   const config = getR2Config();
   if (!client || !config) return null;
 
-  const params: PutObjectCommandInput = {
+  const { PutObjectCommand } = await import("@aws-sdk/client-s3");
+
+  const params: PutObjectCommandInputType = {
     Bucket: config.bucketName,
     Key: key,
     Body: body,
@@ -111,9 +112,11 @@ export async function uploadToR2(
  * @param key  Object key to delete
  */
 export async function deleteFromR2(key: string): Promise<void> {
-  const client = getClient();
+  const client = await getClient();
   const config = getR2Config();
   if (!client || !config) return;
+
+  const { DeleteObjectCommand } = await import("@aws-sdk/client-s3");
 
   await client.send(
     new DeleteObjectCommand({
@@ -137,9 +140,12 @@ export async function getPresignedUploadUrl(
   contentType: string,
   expiresIn = 600,
 ): Promise<string | null> {
-  const client = getClient();
+  const client = await getClient();
   const config = getR2Config();
   if (!client || !config) return null;
+
+  const { PutObjectCommand } = await import("@aws-sdk/client-s3");
+  const { getSignedUrl } = await import("@aws-sdk/s3-request-presigner");
 
   // HIGH-07: Do NOT set ContentLength here — it enforces an exact byte count,
   // not a maximum.  Files smaller than maxSizeBytes would be rejected by S3.
@@ -169,9 +175,12 @@ export async function getPresignedDownloadUrl(
   key: string,
   expiresIn = 3600,
 ): Promise<string | null> {
-  const client = getClient();
+  const client = await getClient();
   const config = getR2Config();
   if (!client || !config) return null;
+
+  const { GetObjectCommand } = await import("@aws-sdk/client-s3");
+  const { getSignedUrl } = await import("@aws-sdk/s3-request-presigner");
 
   const command = new GetObjectCommand({
     Bucket: config.bucketName,
@@ -192,9 +201,11 @@ export async function readR2ObjectHead(
   key: string,
   bytes = 16,
 ): Promise<Buffer | null> {
-  const client = getClient();
+  const client = await getClient();
   const config = getR2Config();
   if (!client || !config) return null;
+
+  const { GetObjectCommand } = await import("@aws-sdk/client-s3");
 
   const command = new GetObjectCommand({
     Bucket: config.bucketName,

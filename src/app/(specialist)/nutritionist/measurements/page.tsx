@@ -1,9 +1,14 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import dynamic from "next/dynamic";
 import { Scale } from "lucide-react";
-import { BodyMeasurementTracker } from "@/components/para-medical/body-measurement-tracker";
 import { getCurrentUser } from "@/lib/data/client";
+
+const BodyMeasurementTracker = dynamic(
+  () => import("@/components/para-medical/body-measurement-tracker").then((m) => m.BodyMeasurementTracker),
+  { ssr: false, loading: () => <div className="h-[400px] animate-pulse bg-muted rounded-lg" /> },
+);
 import type { BodyMeasurement } from "@/lib/types/para-medical";
 import { PageLoader } from "@/components/ui/page-loader";
 

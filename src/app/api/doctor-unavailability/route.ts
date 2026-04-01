@@ -269,7 +269,7 @@ export async function GET(request: Request) {
 
     let query = rbQuery
       .from("rebooking_requests")
-      .select("*")
+      .select("id, appointment_id, unavailability_id, clinic_id, doctor_id, patient_id, status, alternatives, sent_at, created_at")
       .eq("clinic_id", clinicId);
 
     if (doctorId) {
