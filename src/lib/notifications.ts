@@ -3,6 +3,10 @@
  *
  * Core notification system with template-based messaging,
  * variable substitution, and multi-channel delivery (WhatsApp + In-App).
+ *
+ * WhatsApp templates (Darija) are defined in {@link ./whatsapp-templates-darija.ts}.
+ * For the Meta Business API template approval workflow, variable mappings,
+ * and submission guide, see {@link ../../../docs/whatsapp-template-approval.md}.
  */
 
 import { logger } from "@/lib/logger";
