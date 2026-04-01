@@ -1,5 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { clinicDateTime } from "../timezone";
+import { isCancellableStatus, NON_CANCELLABLE_STATUSES } from "../booking-utils";
+import type { AppointmentStatus } from "@/lib/types/database";
 
 // Test the server-side cancellation logic used in /api/booking/cancel
 // We test the timezone-aware cancellation window check that the route performs.
@@ -116,18 +118,25 @@ describe("booking cancellation window (timezone-aware)", () => {
 });
 
 describe("appointment status cancellability", () => {
-  const NON_CANCELLABLE_STATUSES = ["cancelled", "completed", "rescheduled"];
-  const CANCELLABLE_STATUSES = ["scheduled", "confirmed", "in-progress"];
+  const NON_CANCELLABLE: AppointmentStatus[] = ["cancelled", "completed", "rescheduled"];
+  const CANCELLABLE: AppointmentStatus[] = ["pending", "scheduled", "confirmed", "checked_in", "in_progress", "no_show"];
 
-  NON_CANCELLABLE_STATUSES.forEach((status) => {
+  NON_CANCELLABLE.forEach((status) => {
     it(`rejects cancellation for ${status} appointments`, () => {
-      expect(NON_CANCELLABLE_STATUSES).toContain(status);
+      expect(isCancellableStatus(status)).toBe(false);
     });
   });
 
-  CANCELLABLE_STATUSES.forEach((status) => {
+  CANCELLABLE.forEach((status) => {
     it(`allows cancellation for ${status} appointments`, () => {
-      expect(NON_CANCELLABLE_STATUSES).not.toContain(status);
+      expect(isCancellableStatus(status)).toBe(true);
     });
+  });
+
+  it("NON_CANCELLABLE_STATUSES set contains exactly the expected statuses", () => {
+    expect(NON_CANCELLABLE_STATUSES.size).toBe(3);
+    for (const s of NON_CANCELLABLE) {
+      expect(NON_CANCELLABLE_STATUSES.has(s)).toBe(true);
+    }
   });
 });

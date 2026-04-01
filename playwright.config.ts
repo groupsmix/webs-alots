@@ -25,6 +25,14 @@ export default defineConfig({
       use: { ...devices["Desktop Chrome"] },
     },
     {
+      name: "firefox",
+      use: { ...devices["Desktop Firefox"] },
+    },
+    {
+      name: "webkit",
+      use: { ...devices["Desktop Safari"] },
+    },
+    {
       name: "mobile-chrome",
       use: { ...devices["Pixel 5"] },
     },
@@ -34,11 +42,16 @@ export default defineConfig({
     },
   ],
   webServer: process.env.CI
-    ? undefined
+    ? {
+        command: "npx next start",
+        url: "http://localhost:3000",
+        reuseExistingServer: false,
+        timeout: 30_000,
+      }
     : {
         command: "npm run dev",
         url: "http://localhost:3000",
-        reuseExistingServer: !process.env.CI,
+        reuseExistingServer: true,
         timeout: 30_000,
       },
 });
