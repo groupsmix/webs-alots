@@ -249,12 +249,26 @@ export default function Setup2FAPage() {
 
           {step === "qr" && enrollment && (
             <div className="space-y-4">
-              {/* QR Code */}
+              {/* QR Code — render client-side from TOTP URI for safety.
+                  enrollment.qrCode comes from Supabase's MFA API and is expected
+                  to be a safe SVG data URL, but rendering it via dangerouslySetInnerHTML
+                  would be risky if the API response were ever tampered with (MITM,
+                  Supabase compromise). Instead we validate it's a data URI before use. */}
               <div className="flex justify-center">
-                <div
-                  className="bg-white p-4 rounded-lg"
-                  dangerouslySetInnerHTML={{ __html: enrollment.qrCode }}
-                />
+                {enrollment.qrCode.startsWith("data:image/") ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={enrollment.qrCode}
+                    alt="QR code pour configuration 2FA"
+                    className="bg-white p-4 rounded-lg"
+                    width={200}
+                    height={200}
+                  />
+                ) : (
+                  <div className="bg-white p-4 rounded-lg text-sm text-muted-foreground">
+                    QR code indisponible. Utilisez le code manuel ci-dessous.
+                  </div>
+                )}
               </div>
 
               {/* Manual entry */}

@@ -301,7 +301,7 @@ export async function generateBackupCodes(): Promise<{
   // Store hashed codes in user metadata
   const { createHash } = await import("crypto");
   const hashedCodes = codes.map((code) =>
-    createHash("sha256").update(code.replace("-", "")).digest("hex"),
+    createHash("sha256").update(code.replaceAll("-", "")).digest("hex"),
   );
 
   const { error } = await supabase.auth.updateUser({
@@ -361,7 +361,7 @@ export async function verifyBackupCode(
 
   const { createHash } = await import("crypto");
   const inputHash = createHash("sha256")
-    .update(code.replace("-", "").toUpperCase())
+    .update(code.replaceAll("-", "").toUpperCase())
     .digest("hex");
 
   const matchIndex = storedHashes.findIndex((h) => h === inputHash);

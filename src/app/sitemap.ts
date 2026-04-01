@@ -1,5 +1,5 @@
 import type { MetadataRoute } from "next";
-import { createClient } from "@/lib/supabase-server";
+import { createAdminClient } from "@/lib/supabase-server";
 import { getAllPosts } from "@/lib/blog";
 import { logger } from "@/lib/logger";
 import { DIRECTORY_CITIES, TOP_CITY_SPECIALTY_COMBOS } from "@/lib/directory-constants";
@@ -52,7 +52,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   // Dynamic clinic subdomain pages
   try {
-    const supabase = await createClient();
+    // Use admin client (service role) so the sitemap query works without
+    // authentication cookies. Googlebot won't have session cookies, so the
+    // cookie-based createClient() would fail silently on RLS-protected tables.
+    const supabase = createAdminClient();
     const { data: clinics } = await supabase
       .from("clinics")
       .select("subdomain, updated_at")
