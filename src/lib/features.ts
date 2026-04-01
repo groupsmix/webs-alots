@@ -83,7 +83,14 @@ export type ClinicFeatureKey =
   | "pregnancy_tracking"
   | "ultrasound_records"
   | "vision_tests"
-  | "iop_tracking";
+  | "iop_tracking"
+  // Veterinary
+  | "pet_profiles"
+  // Restaurant
+  | "menu_management"
+  | "table_management"
+  | "qr_ordering"
+  | "reservations";
 
 /** A features_config object as stored in the DB. */
 export type FeaturesConfig = Partial<Record<ClinicFeatureKey, boolean>>;
