@@ -11,6 +11,7 @@ import {
   fetchPatientAppointments,
   type AppointmentView,
 } from "@/lib/data/client";
+import { isCancellableStatus } from "@/lib/booking";
 import { RescheduleDialog } from "./reschedule-dialog";
 import { PageLoader } from "@/components/ui/page-loader";
 import { formatDisplayDate } from "@/lib/utils";
@@ -30,9 +31,12 @@ const statusVariant: Record<string, "default" | "secondary" | "destructive" | "o
  * state. This is a UI convenience only — the server performs the
  * authoritative timezone-aware cancellation window check via
  * `GET /api/booking/cancel?appointmentId=...`.
+ *
+ * Delegates to the shared `isCancellableStatus` helper from `@/lib/booking`
+ * which is the single source of truth for status-based cancellability.
  */
-function isCancellableStatus(appt: AppointmentView): boolean {
-  return appt.status !== "cancelled" && appt.status !== "completed" && appt.status !== "rescheduled";
+function isCancellableStatusCheck(appt: AppointmentView): boolean {
+  return isCancellableStatus(appt.status);
 }
 
 /**
@@ -111,7 +115,7 @@ export function AppointmentList({ patientId }: { patientId?: string }) {
       return;
     }
     // Quick client-side status check (no network call)
-    if (!isCancellableStatus(appt)) {
+    if (!isCancellableStatusCheck(appt)) {
       setCancelError("Appointment cannot be cancelled in its current state");
       return;
     }

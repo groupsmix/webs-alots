@@ -11,8 +11,16 @@ export default defineConfig({
     coverage: {
       provider: "v8",
       reporter: ["text", "lcov"],
-      include: ["src/lib/**/*.ts", "src/components/**/*.tsx"],
-      exclude: ["src/lib/types/**"],
+      include: [
+        "src/lib/**/*.ts",
+        "src/components/**/*.tsx",
+        "src/app/api/**/*.ts",
+        "src/app/api/**/*.tsx",
+      ],
+      exclude: [
+        "src/lib/types/**",
+        "src/app/api/docs/**",
+      ],
       thresholds: {
         statements: 80,
         branches: 70,

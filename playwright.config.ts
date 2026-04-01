@@ -32,9 +32,22 @@ export default defineConfig({
       name: "mobile-safari",
       use: { ...devices["iPhone 12"] },
     },
+    {
+      name: "firefox",
+      use: { ...devices["Desktop Firefox"] },
+    },
+    {
+      name: "webkit",
+      use: { ...devices["Desktop Safari"] },
+    },
   ],
   webServer: process.env.CI
-    ? undefined
+    ? {
+        command: "npm run start",
+        url: "http://localhost:3000",
+        reuseExistingServer: false,
+        timeout: 30_000,
+      }
     : {
         command: "npm run dev",
         url: "http://localhost:3000",

@@ -1,6 +1,7 @@
 import { withAuth } from "@/lib/with-auth";
 import { requireTenantWithConfig } from "@/lib/tenant";
 import { APPOINTMENT_STATUS } from "@/lib/types/database";
+import { isCancellableStatus } from "@/lib/booking";
 import { logAuditEvent } from "@/lib/audit-log";
 import { clinicDateTime } from "@/lib/timezone";
 import { logger } from "@/lib/logger";
@@ -40,7 +41,7 @@ export const POST = withAuthValidation(bookingCancelSchema, async (body, request
       return apiForbidden("Forbidden");
     }
 
-    if (appt.status === APPOINTMENT_STATUS.CANCELLED || appt.status === APPOINTMENT_STATUS.COMPLETED || appt.status === APPOINTMENT_STATUS.RESCHEDULED) {
+    if (!isCancellableStatus(appt.status)) {
       return apiError("Appointment cannot be cancelled in its current state");
     }
 
@@ -157,7 +158,7 @@ export const GET = withAuth(async (request, { supabase, profile }) => {
     return apiSuccess({ canCancel: false, reason: "Appointment not found" });
   }
 
-  if (appt.status === APPOINTMENT_STATUS.CANCELLED || appt.status === APPOINTMENT_STATUS.COMPLETED || appt.status === APPOINTMENT_STATUS.RESCHEDULED) {
+  if (!isCancellableStatus(appt.status)) {
     return apiSuccess({
       canCancel: false,
       reason: "Appointment cannot be cancelled in its current state",
