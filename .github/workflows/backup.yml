@@ -262,10 +262,16 @@ jobs:
             }
 
       - name: Email notification (via Resend)
-        if: vars.BACKUP_ALERT_EMAIL != '' && secrets.RESEND_API_KEY != ''
+        if: vars.BACKUP_ALERT_EMAIL != ''
+        env:
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
         run: |
+          if [ -z "${RESEND_API_KEY}" ]; then
+            echo "Skipping email notification: RESEND_API_KEY secret not configured"
+            exit 0
+          fi
           curl -s -X POST https://api.resend.com/emails \
-            -H "Authorization: Bearer ${{ secrets.RESEND_API_KEY }}" \
+            -H "Authorization: Bearer ${RESEND_API_KEY}" \
             -H "Content-Type: application/json" \
             -d '{
               "from": "backups@'"${{ vars.BACKUP_ALERT_FROM || 'noreply@yourdomain.com' }}"'",
