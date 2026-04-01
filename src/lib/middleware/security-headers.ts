@@ -22,8 +22,10 @@ export function buildCsp(nonce: string): string {
     "default-src 'self'",
     `script-src 'self' 'nonce-${nonce}' https://static.cloudflareinsights.com${isDev ? " 'unsafe-eval'" : ""}`,
     `style-src 'self' 'nonce-${nonce}'`,
+    // blob: is required for QR code downloads in qr-code-generator.tsx (Blob URL → <a download>)
     "img-src 'self' data: blob: *.supabase.co *.r2.cloudflarestorage.com *.r2.dev",
-    "font-src 'self' data:",
+    // SEC-07: Removed data: — next/font self-hosts all fonts, no data URIs needed.
+    "font-src 'self'",
     "connect-src 'self' *.supabase.co wss://*.supabase.co graph.facebook.com api.twilio.com api.cloudflare.com *.googleapis.com https://cloudflareinsights.com https://static.cloudflareinsights.com",
     "frame-src 'self' www.google.com",
     "form-action 'self'",
