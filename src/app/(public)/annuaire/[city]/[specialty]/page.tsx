@@ -14,6 +14,7 @@ import {
   TOP_CITY_SPECIALTY_COMBOS,
 } from "@/lib/directory-constants";
 import { getDirectoryDoctorsByCityAndSpecialty } from "@/lib/data/directory";
+import { HreflangTags } from "@/components/hreflang-tags";
 
 const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://oltigo.com";
 const ROOT_DOMAIN = process.env.ROOT_DOMAIN ?? "oltigo.com";
@@ -60,11 +61,20 @@ export default async function CitySpecialtyPage({ params }: CitySpecialtyPagePro
 
   const doctors = await getDirectoryDoctorsByCityAndSpecialty(citySlug, specialtySlug);
 
+  // Audit 7.7 — Use CollectionPage instead of MedicalBusiness for the
+  // directory listing page. MedicalBusiness describes a single clinic;
+  // CollectionPage correctly describes a directory/index of items.
   const jsonLd = {
     "@context": "https://schema.org",
-    "@type": "MedicalBusiness",
+    "@type": "CollectionPage",
     name: `${specialty.nameFr} à ${city.name}`,
     url: `${BASE_URL}/annuaire/${city.slug}/${specialty.slug}`,
+    description: `${specialty.nameFr} à ${city.name}, Maroc — annuaire médical Oltigo`,
+    isPartOf: {
+      "@type": "WebSite",
+      name: "Oltigo",
+      url: BASE_URL,
+    },
     medicalSpecialty: specialty.name,
     areaServed: {
       "@type": "City",
@@ -103,6 +113,8 @@ export default async function CitySpecialtyPage({ params }: CitySpecialtyPagePro
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: safeJsonLdStringify(jsonLd) }}
       />
+      {/* Audit 7.6 — hreflang tags for multilingual SEO */}
+      <HreflangTags path={`/annuaire/${city.slug}/${specialty.slug}`} />
 
       {/* Breadcrumb */}
       <nav className="text-sm text-muted-foreground mb-6">
