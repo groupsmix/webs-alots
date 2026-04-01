@@ -69,6 +69,8 @@ export interface ClinicTypeEntry {
   name_ar: string;
   category: ClinicTypeCategory;
   icon: string;
+  /** The business vertical this clinic type belongs to */
+  vertical_id?: string;
 }
 
 export const CLINIC_TYPES: ClinicTypeEntry[] = [
