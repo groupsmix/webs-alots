@@ -1,13 +1,14 @@
 import { NextRequest } from "next/server";
-import { createClient } from "@/lib/supabase-server";
-import { dispatchNotification } from "@/lib/notifications";
-import { APPOINTMENT_STATUS } from "@/lib/types/database";
+import { apiInternalError, apiSuccess } from "@/lib/api-response";
+import { assertClinicId } from "@/lib/assert-tenant";
 import { verifyCronSecret } from "@/lib/cron-auth";
 import { logger } from "@/lib/logger";
-import { assertClinicId } from "@/lib/assert-tenant";
-import { sendInteractiveMessage } from "@/lib/whatsapp";
+import { dispatchNotification } from "@/lib/notifications";
 import { substituteVariables, defaultNotificationTemplates } from "@/lib/notifications";
-import { apiInternalError, apiSuccess } from "@/lib/api-response";
+import { withSentryCron } from "@/lib/sentry-cron";
+import { createClient } from "@/lib/supabase-server";
+import { APPOINTMENT_STATUS } from "@/lib/types/database";
+import { sendInteractiveMessage } from "@/lib/whatsapp";
 
 /**
  * GET /api/cron/reminders
@@ -22,7 +23,7 @@ import { apiInternalError, apiSuccess } from "@/lib/api-response";
  *
  * Protected by CRON_SECRET via Authorization: Bearer header.
  */
-export async function GET(request: NextRequest) {
+async function handler(request: NextRequest) {
   // DRY: Use shared cron secret verification helper
   const authError = verifyCronSecret(request);
   if (authError) return authError;
@@ -293,3 +294,5 @@ export async function GET(request: NextRequest) {
     return apiInternalError("Failed to process reminders");
   }
 }
+
+export const GET = withSentryCron("reminders-every-30m", "*/30 * * * *", handler);

@@ -1,9 +1,10 @@
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { NextRequest } from "next/server";
-import { createAdminClient } from "@/lib/supabase-server";
+import { apiSuccess, apiInternalError } from "@/lib/api-response";
 import { verifyCronSecret } from "@/lib/cron-auth";
 import { logger } from "@/lib/logger";
-import { apiSuccess, apiInternalError } from "@/lib/api-response";
-import type { SupabaseClient } from "@supabase/supabase-js";
+import { withSentryCron } from "@/lib/sentry-cron";
+import { createAdminClient } from "@/lib/supabase-server";
 
 // consent_logs and some dependent tables are not in the generated Supabase
 // types yet. Use an untyped client handle for purge operations.
@@ -24,7 +25,7 @@ type UntypedClient = SupabaseClient<any, any, any>;
  * 2. Anonymize consent_logs (set user_id = NULL, keep anonymized_user_id)
  * 3. Delete the user row itself
  */
-export async function GET(request: NextRequest) {
+async function handler(request: NextRequest) {
   const authError = verifyCronSecret(request);
   if (authError) return authError;
 
@@ -174,3 +175,5 @@ export async function GET(request: NextRequest) {
     return apiInternalError("Failed to process GDPR purge");
   }
 }
+
+export const GET = withSentryCron("gdpr-purge-daily", "0 3 * * *", handler);

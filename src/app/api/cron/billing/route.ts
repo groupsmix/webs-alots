@@ -8,14 +8,15 @@
  */
 
 import { NextRequest } from "next/server";
-import { createClient } from "@/lib/supabase-server";
-import { processRenewal } from "@/lib/subscription-billing";
+import { apiInternalError, apiSuccess } from "@/lib/api-response";
+import { assertClinicId } from "@/lib/assert-tenant";
 import { verifyCronSecret } from "@/lib/cron-auth";
 import { logger } from "@/lib/logger";
-import { assertClinicId } from "@/lib/assert-tenant";
-import { apiInternalError, apiSuccess } from "@/lib/api-response";
+import { withSentryCron } from "@/lib/sentry-cron";
+import { processRenewal } from "@/lib/subscription-billing";
+import { createClient } from "@/lib/supabase-server";
 
-export async function GET(request: NextRequest) {
+async function handler(request: NextRequest) {
   // DRY: Use shared cron secret verification helper
   const authError = verifyCronSecret(request);
   if (authError) return authError;
@@ -96,3 +97,5 @@ export async function GET(request: NextRequest) {
     timestamp: new Date().toISOString(),
   });
 }
+
+export const GET = withSentryCron("billing-daily-2am", "0 2 * * *", handler);

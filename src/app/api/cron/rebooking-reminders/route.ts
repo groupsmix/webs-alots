@@ -1,9 +1,10 @@
 import { NextRequest } from "next/server";
+import { apiSuccess, apiInternalError } from "@/lib/api-response";
+import { verifyCronSecret } from "@/lib/cron-auth";
+import { logger } from "@/lib/logger";
+import { withSentryCron } from "@/lib/sentry-cron";
 import { createClient } from "@/lib/supabase-server";
 import { sendInteractiveMessage, sendTextMessage } from "@/lib/whatsapp";
-import { logger } from "@/lib/logger";
-import { verifyCronSecret } from "@/lib/cron-auth";
-import { apiSuccess, apiInternalError } from "@/lib/api-response";
 
 /**
  * GET /api/cron/rebooking-reminders
@@ -15,7 +16,7 @@ import { apiSuccess, apiInternalError } from "@/lib/api-response";
  *
  * Protected by CRON_SECRET via Authorization: Bearer header.
  */
-export async function GET(request: NextRequest) {
+async function handler(request: NextRequest) {
   const authError = verifyCronSecret(request);
   if (authError) return authError;
 
@@ -204,3 +205,5 @@ export async function GET(request: NextRequest) {
     return apiInternalError("Failed to process rebooking reminders");
   }
 }
+
+export const GET = withSentryCron("rebooking-reminders-hourly", "0 * * * *", handler);

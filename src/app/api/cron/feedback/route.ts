@@ -1,9 +1,10 @@
 import { NextRequest } from "next/server";
-import { createClient } from "@/lib/supabase-server";
-import { sendFeedbackRequest } from "@/lib/post-appointment-feedback";
+import { apiSuccess, apiInternalError } from "@/lib/api-response";
 import { verifyCronSecret } from "@/lib/cron-auth";
 import { logger } from "@/lib/logger";
-import { apiSuccess, apiInternalError } from "@/lib/api-response";
+import { sendFeedbackRequest } from "@/lib/post-appointment-feedback";
+import { withSentryCron } from "@/lib/sentry-cron";
+import { createClient } from "@/lib/supabase-server";
 
 /**
  * GET /api/cron/feedback
@@ -14,7 +15,7 @@ import { apiSuccess, apiInternalError } from "@/lib/api-response";
  * Runs every hour. Only sends feedback for appointments completed
  * in the last 2 hours that haven't already received feedback.
  */
-export async function GET(request: NextRequest) {
+async function handler(request: NextRequest) {
   const authError = verifyCronSecret(request);
   if (authError) return authError;
 
@@ -121,3 +122,5 @@ export async function GET(request: NextRequest) {
     return apiInternalError("Failed to process feedback");
   }
 }
+
+export const GET = withSentryCron("feedback-hourly", "0 * * * *", handler);
