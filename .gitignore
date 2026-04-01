@@ -42,5 +42,8 @@ next-env.d.ts
 # client tracker (private)
 /clients/
 
+# Generated API docs (rebuild with: npm run docs:generate)
+/docs/api
+
 # Database dumps
 full_backup.sql

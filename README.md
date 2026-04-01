@@ -162,6 +162,13 @@ SET app.seed_user_password = 'your-strong-random-password';
 
 The middleware enforces Origin-header checks on all mutation requests (`POST`, `PUT`, `PATCH`, `DELETE`) to API routes. Ensure `NEXT_PUBLIC_SITE_URL` is set correctly in your environment so that legitimate requests are not blocked.
 
+## Documentation
+
+| Document | Description |
+|---|---|
+| [WhatsApp Template Approval Guide](docs/whatsapp-template-approval.md) | How to submit and manage WhatsApp message templates for Meta Business API approval — includes all 10 Darija templates with variable mappings |
+| [API Docs (generated)](docs/api/) | Auto-generated TypeDoc API reference for `src/lib/` utilities (run `npm run docs:generate` to rebuild) |
+
 ## Deploy on Cloudflare Workers
 
 This project deploys as a **Cloudflare Worker** using [OpenNext for Cloudflare](https://opennext.js.org/cloudflare), **not** Cloudflare Pages. The build produces a Worker bundle (`.open-next/worker.js`) and static assets (`.open-next/assets/`), both served by the Workers runtime.
