@@ -274,6 +274,19 @@ export default function TemplatesPage() {
                           )}
                         </Button>
                       </div>
+                      <a
+                        href={`/admin/branding?preset=${preset.id}`}
+                        className="mt-2 block"
+                      >
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="w-full text-xs"
+                        >
+                          <Palette className="h-3.5 w-3.5 mr-1" />
+                          Customize
+                        </Button>
+                      </a>
 
                       {justApplied && (
                         <p className="text-xs text-center text-green-600 mt-2">

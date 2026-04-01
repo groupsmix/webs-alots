@@ -76,7 +76,7 @@ export async function GET() {
     const { data, error } = await supabase
       .from("clinics")
       .select(
-        "name, logo_url, favicon_url, primary_color, secondary_color, heading_font, body_font, hero_image_url, tagline, cover_photo_url, template_id, section_visibility, phone, address",
+        "name, logo_url, favicon_url, primary_color, secondary_color, heading_font, body_font, hero_image_url, tagline, cover_photo_url, template_id, section_visibility, website_config, phone, address",
       )
       .eq("id", clinicId)
       .single();
@@ -95,6 +95,7 @@ export async function GET() {
         cover_photo_url: null,
         template_id: "modern",
         section_visibility: {},
+        website_config: null,
         phone: null,
         address: null,
       });

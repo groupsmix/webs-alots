@@ -1147,6 +1147,7 @@ export type Database = {
           tier: string
           type: string
           updated_at: string | null
+          website_config: Json | null
         }
         Insert: {
           address?: string | null
@@ -1180,6 +1181,7 @@ export type Database = {
           tier?: string
           type: string
           updated_at?: string | null
+          website_config?: Json | null
         }
         Update: {
           address?: string | null
@@ -1213,6 +1215,7 @@ export type Database = {
           tier?: string
           type?: string
           updated_at?: string | null
+          website_config?: Json | null
         }
         Relationships: [
           {
@@ -8635,6 +8638,7 @@ export type Clinic = {
   cover_photo_url: string | null;
   template_id: string | null;
   section_visibility: Record<string, boolean> | null;
+  website_config: Record<string, unknown> | null;
   phone: string | null;
   address: string | null;
   created_at: string;
