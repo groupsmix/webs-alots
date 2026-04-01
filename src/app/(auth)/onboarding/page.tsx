@@ -5,21 +5,17 @@ import {
   ArrowRight,
   Check,
   Building2,
-  CheckCircle2,
-  ExternalLink,
-  Plus,
-  Trash2,
-  Clock,
-  Palette,
-  Eye,
-  Rocket,
-  SkipForward,
   User,
-  Briefcase,
+  Palette,
+  Upload,
+  Rocket,
+  Loader2,
+  ImagePlus,
+  SkipForward,
 } from "lucide-react";
-import { useRouter } from "next/navigation";
-import { useState, useCallback } from "react";
+import { useState, useRef } from "react";
 import { ClinicTypeIcon } from "@/components/clinic-type-icon";
+import { CelebrationPage } from "@/components/onboarding/celebration-page";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -30,23 +26,18 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
 import {
   CLINIC_CATEGORIES,
   getTypesByCategory,
   type ClinicCategory,
   type ClinicTypeEntry,
 } from "@/lib/config/clinic-types";
-import {
-  getDefaultServices,
-  type DefaultService,
-} from "@/lib/config/default-services";
 import type { VerticalId } from "@/lib/config/verticals";
+import { MOROCCAN_CITIES } from "@/lib/morocco";
 import {
   getPresetsByVertical,
   type TemplatePreset,
 } from "@/lib/template-presets";
-import { templateList, type TemplateDefinition } from "@/lib/templates";
 import type { ClinicTypeCategory } from "@/lib/types/database";
 
 // ---------------------------------------------------------------------------
@@ -55,84 +46,42 @@ import type { ClinicTypeCategory } from "@/lib/types/database";
 
 type WizardStep = 1 | 2 | 3 | 4 | 5;
 
-interface DoctorProfile {
-  clinicName: string;
-  ownerName: string;
-  phone: string;
-  email: string;
-  city: string;
-  npiLicense: string;
-  selectedCategory: ClinicTypeCategory | null;
-  selectedType: ClinicTypeEntry | null;
-}
-
-interface ServiceEntry {
-  id: string;
-  name: string;
-  duration_minutes: number;
-  price: number;
-}
-
-interface DaySchedule {
-  enabled: boolean;
-  startTime: string;
-  endTime: string;
-  breakStart: string;
-  breakEnd: string;
-  hasBreak: boolean;
-}
-
-type WeekSchedule = Record<string, DaySchedule>;
-
-interface BrandingConfig {
-  primaryColor: string;
-  secondaryColor: string;
-  templateId: string;
+interface StepMeta {
+  key: WizardStep;
+  label: string;
+  sublabel: string;
+  icon: React.ElementType;
 }
 
 // ---------------------------------------------------------------------------
 // Constants
 // ---------------------------------------------------------------------------
 
-const DAYS = [
-  { key: "monday", label: "Lundi", labelAr: "\u0627\u0644\u0625\u062b\u0646\u064a\u0646" },
-  { key: "tuesday", label: "Mardi", labelAr: "\u0627\u0644\u062b\u0644\u0627\u062b\u0627\u0621" },
-  { key: "wednesday", label: "Mercredi", labelAr: "\u0627\u0644\u0623\u0631\u0628\u0639\u0627\u0621" },
-  { key: "thursday", label: "Jeudi", labelAr: "\u0627\u0644\u062e\u0645\u064a\u0633" },
-  { key: "friday", label: "Vendredi", labelAr: "\u0627\u0644\u062c\u0645\u0639\u0629" },
-  { key: "saturday", label: "Samedi", labelAr: "\u0627\u0644\u0633\u0628\u062a" },
-  { key: "sunday", label: "Dimanche", labelAr: "\u0627\u0644\u0623\u062d\u062f" },
+const STEP_META: StepMeta[] = [
+  { key: 1, label: "Vos infos", sublabel: "30 sec", icon: User },
+  {
+    key: 2,
+    label: "Votre activit\u00e9",
+    sublabel: "30 sec",
+    icon: Building2,
+  },
+  { key: 3, label: "Choisir un style", sublabel: "15 sec", icon: Palette },
+  { key: 4, label: "Votre logo", sublabel: "Optionnel", icon: Upload },
+  { key: 5, label: "Termin\u00e9 !", sublabel: "Instant", icon: Rocket },
 ];
 
-const DEFAULT_SCHEDULE: WeekSchedule = {
-  monday: { enabled: true, startTime: "09:00", endTime: "18:00", breakStart: "13:00", breakEnd: "14:00", hasBreak: true },
-  tuesday: { enabled: true, startTime: "09:00", endTime: "18:00", breakStart: "13:00", breakEnd: "14:00", hasBreak: true },
-  wednesday: { enabled: true, startTime: "09:00", endTime: "18:00", breakStart: "13:00", breakEnd: "14:00", hasBreak: true },
-  thursday: { enabled: true, startTime: "09:00", endTime: "18:00", breakStart: "13:00", breakEnd: "14:00", hasBreak: true },
-  friday: { enabled: true, startTime: "09:00", endTime: "18:00", breakStart: "13:00", breakEnd: "14:00", hasBreak: true },
-  saturday: { enabled: true, startTime: "09:00", endTime: "13:00", breakStart: "13:00", breakEnd: "14:00", hasBreak: false },
-  sunday: { enabled: false, startTime: "09:00", endTime: "13:00", breakStart: "13:00", breakEnd: "14:00", hasBreak: false },
+const CATEGORY_TO_VERTICAL: Record<string, VerticalId> = {
+  medical: "healthcare",
+  para_medical: "healthcare",
+  diagnostic: "healthcare",
+  pharmacy_retail: "healthcare",
+  clinics_centers: "healthcare",
+  dental: "healthcare",
+  beauty: "beauty",
+  restaurant: "restaurant",
+  fitness: "fitness",
+  veterinary: "veterinary",
 };
-
-const STEP_META: { key: WizardStep; label: string; icon: React.ElementType }[] = [
-  { key: 1, label: "Profil", icon: User },
-  { key: 2, label: "Services", icon: Briefcase },
-  { key: 3, label: "Horaires", icon: Clock },
-  { key: 4, label: "Branding", icon: Palette },
-  { key: 5, label: "Go Live", icon: Rocket },
-];
-
-const COLOR_PRESETS = [
-  "#1E4DA1", "#0F6E56", "#7C3AED", "#DC2626",
-  "#EA580C", "#0891B2", "#4F46E5", "#059669",
-  "#D97706", "#BE185D", "#6D28D9", "#0D9488",
-];
-
-let serviceIdCounter = 0;
-function nextServiceId(): string {
-  serviceIdCounter += 1;
-  return `svc-${serviceIdCounter}-${Date.now()}`;
-}
 
 // ---------------------------------------------------------------------------
 // Sub-components
@@ -146,7 +95,7 @@ function CategoryPicker({
   return (
     <div className="space-y-3">
       <p className="text-center text-sm text-muted-foreground mb-4">
-        Choisissez la cat\u00e9gorie de votre \u00e9tablissement
+        Choisissez la cat&eacute;gorie de votre &eacute;tablissement
       </p>
       <div className="grid gap-3 sm:grid-cols-2">
         {CLINIC_CATEGORIES.map((cat) => (
@@ -202,7 +151,7 @@ function TypePicker({
             {category.name_fr} / {category.name_ar}
           </p>
           <p className="text-xs text-muted-foreground">
-            Choisissez votre sp\u00e9cialit\u00e9
+            Choisissez votre sp&eacute;cialit&eacute;
           </p>
         </div>
         <div className="w-16" />
@@ -241,130 +190,167 @@ function TypePicker({
   );
 }
 
+function PresetCard({
+  preset,
+  selected,
+  onSelect,
+}: {
+  preset: TemplatePreset;
+  selected: boolean;
+  onSelect: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      className={`text-left rounded-xl border-2 p-4 transition-all hover:shadow-lg ${
+        selected
+          ? "border-primary bg-primary/5 ring-2 ring-primary/20"
+          : "border-border hover:border-primary/50"
+      }`}
+      onClick={onSelect}
+    >
+      <div className="flex gap-1 mb-3">
+        <div
+          className="h-2 flex-1 rounded-full"
+          style={{ backgroundColor: preset.theme.primaryColor }}
+        />
+        <div
+          className="h-2 flex-1 rounded-full"
+          style={{ backgroundColor: preset.theme.secondaryColor }}
+        />
+        <div
+          className="h-2 flex-1 rounded-full"
+          style={{ backgroundColor: preset.theme.accentColor }}
+        />
+      </div>
+      <div className="rounded-lg border bg-white overflow-hidden mb-3">
+        <div
+          className="h-16 flex items-end p-2"
+          style={{
+            background: `linear-gradient(135deg, ${preset.theme.primaryColor}, ${preset.theme.secondaryColor})`,
+          }}
+        >
+          <div className="space-y-1">
+            <div className="h-1.5 w-16 bg-white/80 rounded" />
+            <div className="h-1 w-10 bg-white/50 rounded" />
+          </div>
+        </div>
+        <div className="p-2 space-y-1.5">
+          <div className="flex gap-1">
+            <div className="h-4 w-4 rounded bg-muted" />
+            <div className="h-4 w-4 rounded bg-muted" />
+            <div className="h-4 w-4 rounded bg-muted" />
+          </div>
+          <div className="h-1 w-full bg-muted rounded" />
+          <div className="h-1 w-3/4 bg-muted rounded" />
+        </div>
+      </div>
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="font-medium text-sm">{preset.name}</p>
+          <p className="text-xs text-muted-foreground" dir="rtl">
+            {preset.nameAr}
+          </p>
+        </div>
+        {selected && (
+          <div className="h-6 w-6 rounded-full bg-primary flex items-center justify-center">
+            <Check className="h-3.5 w-3.5 text-primary-foreground" />
+          </div>
+        )}
+      </div>
+    </button>
+  );
+}
+
 // ---------------------------------------------------------------------------
 // Main Wizard
 // ---------------------------------------------------------------------------
 
 export default function OnboardingPage() {
-  const router = useRouter();
-
   const [currentStep, setCurrentStep] = useState<WizardStep>(1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [completed, setCompleted] = useState(false);
   const [createdSubdomain, setCreatedSubdomain] = useState<string | null>(null);
-  const [clinicId, setClinicId] = useState<string | null>(null);
 
-  // Step 1 sub-step navigation
-  const [profileSubStep, setProfileSubStep] = useState<
-    "category" | "type" | "form"
+  // Step 1: Your Info
+  const [ownerName, setOwnerName] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+
+  // Step 2: Your Business
+  const [businessSubStep, setBusinessSubStep] = useState<
+    "category" | "type" | "details"
   >("category");
+  const [selectedCategory, setSelectedCategory] =
+    useState<ClinicTypeCategory | null>(null);
+  const [selectedType, setSelectedType] = useState<ClinicTypeEntry | null>(
+    null,
+  );
+  const [clinicName, setClinicName] = useState("");
+  const [city, setCity] = useState("");
 
-  // Step 1: Profile
-  const [profile, setProfile] = useState<DoctorProfile>({
-    clinicName: "",
-    ownerName: "",
-    phone: "",
-    email: "",
-    city: "",
-    npiLicense: "",
-    selectedCategory: null,
-    selectedType: null,
-  });
+  // Step 3: Pick a Look
+  const [selectedPreset, setSelectedPreset] = useState<TemplatePreset | null>(
+    null,
+  );
 
-  // Step 2: Services
-  const [services, setServices] = useState<ServiceEntry[]>([]);
-
-  // Step 3: Working Hours
-  const [schedule, setSchedule] = useState<WeekSchedule>(DEFAULT_SCHEDULE);
-
-  // Step 4: Branding
-  const [branding, setBranding] = useState<BrandingConfig>({
-    primaryColor: "#1E4DA1",
-    secondaryColor: "#0F6E56",
-    templateId: "modern",
-  });
-  const [selectedPreset, setSelectedPreset] = useState<string | null>(null);
+  // Step 4: Upload Logo
+  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [logoPreview, setLogoPreview] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // --- Derived ---
-  const currentCategory = profile.selectedCategory
-    ? CLINIC_CATEGORIES.find((c) => c.key === profile.selectedCategory) ?? null
+  const currentCategoryMeta = selectedCategory
+    ? CLINIC_CATEGORIES.find((c) => c.key === selectedCategory) ?? null
     : null;
 
-  // --- Category / Type handlers ---
+  const detectedVertical: VerticalId | null = selectedCategory
+    ? (CATEGORY_TO_VERTICAL[selectedCategory] ?? null)
+    : null;
+
+  const availablePresets = detectedVertical
+    ? getPresetsByVertical(detectedVertical)
+    : [];
+
+  // --- Step 2 handlers ---
   function handleSelectCategory(cat: ClinicCategory) {
-    setProfile((p) => ({
-      ...p,
-      selectedCategory: cat.key,
-      selectedType: null,
-    }));
-    setProfileSubStep("type");
+    setSelectedCategory(cat.key);
+    setSelectedType(null);
+    setBusinessSubStep("type");
   }
 
   function handleSelectType(t: ClinicTypeEntry) {
-    setProfile((p) => ({ ...p, selectedType: t }));
-    const defaults = getDefaultServices(t.type_key, t.category);
-    setServices(
-      defaults.map((s: DefaultService) => ({ ...s, id: nextServiceId() })),
-    );
-    setProfileSubStep("form");
+    setSelectedType(t);
+    setBusinessSubStep("details");
   }
 
   function handleBackToCategory() {
-    setProfile((p) => ({
-      ...p,
-      selectedCategory: null,
-      selectedType: null,
-    }));
-    setProfileSubStep("category");
+    setSelectedCategory(null);
+    setSelectedType(null);
+    setBusinessSubStep("category");
   }
 
   function handleBackToType() {
-    setProfile((p) => ({ ...p, selectedType: null }));
-    setProfileSubStep("type");
+    setSelectedType(null);
+    setBusinessSubStep("type");
   }
 
-  // --- Service handlers ---
-  function addService() {
-    setServices((s) => [
-      ...s,
-      { id: nextServiceId(), name: "", duration_minutes: 30, price: 0 },
-    ]);
+  // --- Logo handler ---
+  function handleLogoChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setLogoFile(file);
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      setLogoPreview(ev.target?.result as string);
+    };
+    reader.readAsDataURL(file);
   }
 
-  function removeService(id: string) {
-    setServices((s) => s.filter((svc) => svc.id !== id));
-  }
-
-  function updateService(
-    id: string,
-    field: keyof Omit<ServiceEntry, "id">,
-    value: string | number,
-  ) {
-    setServices((s) =>
-      s.map((svc) => (svc.id === id ? { ...svc, [field]: value } : svc)),
-    );
-  }
-
-  // --- Schedule handler ---
-  const updateDay = useCallback(
-    (dayKey: string, field: keyof DaySchedule, value: string | boolean) => {
-      setSchedule((prev) => ({
-        ...prev,
-        [dayKey]: { ...prev[dayKey], [field]: value },
-      }));
-    },
-    [],
-  );
-
-  // --- Step 1: create clinic ---
-  async function handleCreateClinic() {
-    if (
-      !profile.selectedType ||
-      !profile.clinicName ||
-      !profile.ownerName ||
-      !profile.phone
-    ) {
+  // --- Create clinic and go live (Step 5) ---
+  async function handleGoLive() {
+    if (!selectedType || !clinicName || !ownerName || !phone) {
       setError("Veuillez remplir tous les champs obligatoires");
       return;
     }
@@ -373,82 +359,73 @@ export default function OnboardingPage() {
     setLoading(true);
 
     try {
-      const res = await fetch("/api/onboarding", {
+      // 1. Create clinic via onboarding API
+      const createRes = await fetch("/api/onboarding", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          clinic_type_key: profile.selectedType.type_key,
-          category: profile.selectedType.category,
-          clinic_name: profile.clinicName,
-          owner_name: profile.ownerName,
-          phone: profile.phone,
-          email: profile.email,
-          city: profile.city,
+          clinic_type_key: selectedType.type_key,
+          category: selectedType.category,
+          clinic_name: clinicName,
+          owner_name: ownerName,
+          phone,
+          email: email || undefined,
+          city: city || undefined,
         }),
       });
 
-      if (!res.ok) {
-        const data = await res.json().catch(() => null);
+      if (!createRes.ok) {
+        const data: { error?: string } | null = await createRes
+          .json()
+          .catch(() => null);
         throw new Error(data?.error ?? "Registration failed");
       }
 
-      const result = await res.json().catch(() => null);
-      setCreatedSubdomain(result?.subdomain ?? null);
-      setClinicId(result?.clinic_id ?? null);
-      setCurrentStep(2);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "An error occurred");
-    } finally {
-      setLoading(false);
-    }
-  }
+      const createResult: {
+        clinic_id?: string;
+        subdomain?: string | null;
+      } | null = await createRes.json().catch(() => null);
+      const newClinicId = createResult?.clinic_id;
+      const newSubdomain = createResult?.subdomain;
 
-  // --- Save wizard extended data ---
-  async function saveWizardData(goLive: boolean) {
-    if (!clinicId) return;
+      setCreatedSubdomain(newSubdomain ?? null);
 
-    setError(null);
-    setLoading(true);
+      // 2. Save wizard data + auto-seed + go live
+      if (newClinicId) {
+        // Upload logo if provided
+        if (logoFile) {
+          const formData = new FormData();
+          formData.append("file", logoFile);
+          formData.append("category", "logos");
+          formData.append("clinicId", newClinicId);
+          await fetch("/api/upload", {
+            method: "POST",
+            body: formData,
+          }).catch(() => {
+            // Logo upload failure is non-fatal
+          });
+        }
 
-    try {
-      const res = await fetch("/api/onboarding/wizard", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          clinic_id: clinicId,
-          services: services
-            .filter((s) => s.name.trim())
-            .map((s) => ({
-              name: s.name,
-              duration_minutes: s.duration_minutes,
-              price: s.price,
-            })),
-          schedule: Object.entries(schedule)
-            .filter(([, day]) => day.enabled)
-            .map(([dayKey, day]) => ({
-              day_of_week: DAYS.findIndex((d) => d.key === dayKey),
-              start_time: day.startTime,
-              end_time: day.endTime,
-              break_start: day.hasBreak ? day.breakStart : null,
-              break_end: day.hasBreak ? day.breakEnd : null,
-            })),
-          branding: {
-            primary_color: branding.primaryColor,
-            secondary_color: branding.secondaryColor,
-            template_id: branding.templateId,
-          },
-          go_live: goLive,
-        }),
-      });
+        const wizardRes = await fetch("/api/onboarding/wizard", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            clinic_id: newClinicId,
+            preset_id: selectedPreset?.id ?? null,
+            auto_seed: true,
+            go_live: true,
+          }),
+        });
 
-      if (!res.ok) {
-        const data = await res.json().catch(() => null);
-        throw new Error(data?.error ?? "Failed to save");
+        if (!wizardRes.ok) {
+          const data: { error?: string } | null = await wizardRes
+            .json()
+            .catch(() => null);
+          throw new Error(data?.error ?? "Failed to complete setup");
+        }
       }
 
-      if (goLive) {
-        setCompleted(true);
-      }
+      setCompleted(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : "An error occurred");
     } finally {
@@ -463,289 +440,297 @@ export default function OnboardingPage() {
   }
 
   function handleNext() {
+    if (currentStep === 1) {
+      if (!ownerName || !phone) {
+        setError("Veuillez remplir votre nom et t\u00e9l\u00e9phone");
+        return;
+      }
+    }
+    if (currentStep === 2) {
+      if (!selectedType || !clinicName) {
+        setError(
+          "Veuillez choisir votre sp\u00e9cialit\u00e9 et nommer votre \u00e9tablissement",
+        );
+        return;
+      }
+    }
     if (currentStep < 5) {
-      goToStep((currentStep + 1) as WizardStep);
+      setError(null);
+      setCurrentStep((currentStep + 1) as WizardStep);
     }
   }
 
   function handleBack() {
-    if (currentStep === 1) {
-      if (profileSubStep === "form") {
+    if (currentStep === 2) {
+      if (businessSubStep === "details") {
         handleBackToType();
-      } else if (profileSubStep === "type") {
-        handleBackToCategory();
+        return;
       }
-      return;
+      if (businessSubStep === "type") {
+        handleBackToCategory();
+        return;
+      }
     }
     if (currentStep > 1) {
-      goToStep((currentStep - 1) as WizardStep);
+      setError(null);
+      setCurrentStep((currentStep - 1) as WizardStep);
     }
   }
 
-  function handleSkip() {
-    handleNext();
-  }
-
   // ---------------------------------------------------------------------------
-  // Completion screen
+  // Celebration screen (Step 5 completed)
   // ---------------------------------------------------------------------------
-  if (completed) {
-    const clinicUrl = createdSubdomain
-      ? `https://${createdSubdomain}.oltigo.com`
-      : null;
+  if (completed && createdSubdomain) {
     return (
-      <div className="w-full max-w-lg mx-auto">
-        <Card>
-          <CardContent className="p-8 text-center">
-            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-green-100 mx-auto mb-4">
-              <CheckCircle2 className="h-8 w-8 text-green-600" />
-            </div>
-            <h2 className="text-2xl font-bold mb-2">
-              Votre site est en ligne !
-            </h2>
-            <p className="text-muted-foreground mb-6">
-              <strong>{profile.clinicName}</strong> est pr\u00eat \u00e0
-              recevoir des rendez-vous.
-            </p>
-            {clinicUrl && (
-              <div className="bg-muted/50 rounded-lg p-4 text-left text-sm mb-6">
-                <p className="font-semibold mb-2">
-                  Votre site est accessible :
-                </p>
-                <a
-                  href={clinicUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-primary underline font-mono flex items-center gap-1"
-                >
-                  {createdSubdomain}.oltigo.com
-                  <ExternalLink className="h-3 w-3" />
-                </a>
-              </div>
-            )}
-            <div className="space-y-3">
-              <Button
-                className="w-full"
-                size="lg"
-                onClick={() => router.push("/admin/dashboard")}
-              >
-                Acc\u00e9der au tableau de bord
-                <ArrowRight className="h-4 w-4 ml-1" />
-              </Button>
-              <p className="text-xs text-muted-foreground">
-                Un message WhatsApp de bienvenue a \u00e9t\u00e9 envoy\u00e9
-                \u00e0 {profile.phone}
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+      <CelebrationPage
+        clinicName={clinicName}
+        subdomain={createdSubdomain}
+        ownerName={ownerName}
+        phone={phone}
+      />
     );
   }
 
   // ---------------------------------------------------------------------------
   // Progress indicator
   // ---------------------------------------------------------------------------
+  const progressPercent = ((currentStep - 1) / (STEP_META.length - 1)) * 100;
+
   const progressIndicator = (
-    <div className="flex items-center justify-center gap-1 sm:gap-2 mb-6">
-      {STEP_META.map((s, i) => {
-        const StepIcon = s.icon;
-        const isCompleted = s.key < currentStep;
-        const isCurrent = s.key === currentStep;
-        return (
-          <div key={s.key} className="flex items-center gap-1 sm:gap-2">
-            <button
-              type="button"
-              onClick={() => isCompleted && goToStep(s.key)}
-              disabled={!isCompleted}
-              className={`flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-full text-sm font-medium transition-colors ${
-                isCompleted
-                  ? "bg-primary text-primary-foreground cursor-pointer hover:bg-primary/90"
-                  : isCurrent
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-muted text-muted-foreground cursor-default"
-              }`}
-            >
-              {isCompleted ? (
-                <Check className="h-4 w-4" />
-              ) : (
-                <StepIcon className="h-4 w-4" />
-              )}
-            </button>
-            <span
-              className={`text-xs sm:text-sm hidden sm:inline ${
-                isCurrent ? "font-medium" : "text-muted-foreground"
-              }`}
-            >
-              {s.label}
-            </span>
-            {i < STEP_META.length - 1 && (
-              <div
-                className={`w-4 sm:w-8 h-px ${
-                  isCompleted ? "bg-primary" : "bg-border"
+    <div className="mb-8">
+      <div className="h-1.5 bg-muted rounded-full overflow-hidden mb-4">
+        <div
+          className="h-full bg-primary rounded-full transition-all duration-500 ease-out"
+          style={{ width: `${progressPercent}%` }}
+        />
+      </div>
+      <div className="flex items-center justify-between">
+        {STEP_META.map((s) => {
+          const StepIcon = s.icon;
+          const isCompleted = s.key < currentStep;
+          const isCurrent = s.key === currentStep;
+          return (
+            <div key={s.key} className="flex flex-col items-center gap-1">
+              <button
+                type="button"
+                onClick={() => isCompleted && goToStep(s.key)}
+                disabled={!isCompleted}
+                className={`flex h-9 w-9 items-center justify-center rounded-full text-sm transition-all ${
+                  isCompleted
+                    ? "bg-primary text-primary-foreground cursor-pointer hover:bg-primary/90"
+                    : isCurrent
+                      ? "bg-primary text-primary-foreground ring-4 ring-primary/20"
+                      : "bg-muted text-muted-foreground cursor-default"
                 }`}
-              />
-            )}
-          </div>
-        );
-      })}
+              >
+                {isCompleted ? (
+                  <Check className="h-4 w-4" />
+                ) : (
+                  <StepIcon className="h-4 w-4" />
+                )}
+              </button>
+              <span
+                className={`text-xs hidden sm:block ${
+                  isCurrent
+                    ? "font-semibold text-primary"
+                    : "text-muted-foreground"
+                }`}
+              >
+                {s.label}
+              </span>
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 
   // ---------------------------------------------------------------------------
-  // Step 1: Profile
+  // Step 1: Your Info
   // ---------------------------------------------------------------------------
   const step1Content = (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <User className="h-5 w-5" />
+          Vos informations
+        </CardTitle>
+        <CardDescription>
+          Renseignez vos coordonn&eacute;es pour cr&eacute;er votre compte
+          administrateur.
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        {error && currentStep === 1 && (
+          <div className="mb-4 rounded-lg border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
+            {error}
+          </div>
+        )}
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="ownerName">Nom complet *</Label>
+            <Input
+              id="ownerName"
+              placeholder="Dr. Ahmed Tazi"
+              value={ownerName}
+              onChange={(e) => setOwnerName(e.target.value)}
+              autoFocus
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="email">Email</Label>
+            <Input
+              id="email"
+              type="email"
+              placeholder="contact@cabinet.ma"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="phone">T&eacute;l&eacute;phone *</Label>
+            <Input
+              id="phone"
+              type="tel"
+              placeholder="+212 6XX XX XX XX"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+            />
+          </div>
+        </div>
+        <div className="flex gap-2 mt-6">
+          <div className="flex-1" />
+          <Button onClick={handleNext} disabled={!ownerName || !phone}>
+            Continuer
+            <ArrowRight className="h-4 w-4 ml-1" />
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  );
+
+  // ---------------------------------------------------------------------------
+  // Step 2: Your Business
+  // ---------------------------------------------------------------------------
+  const step2Content = (
     <>
-      {profileSubStep === "category" && (
-        <CategoryPicker onSelect={handleSelectCategory} />
-      )}
-
-      {profileSubStep === "type" && currentCategory && (
-        <TypePicker
-          category={currentCategory}
-          selectedType={profile.selectedType}
-          onSelect={handleSelectType}
-          onBack={handleBackToCategory}
-        />
-      )}
-
-      {profileSubStep === "form" && profile.selectedType && (
+      {businessSubStep === "category" && (
         <Card>
-          <CardHeader className="pb-4">
-            <div className="flex items-center gap-2">
-              <Button variant="ghost" size="sm" onClick={handleBackToType}>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Building2 className="h-5 w-5" />
+              Votre activit&eacute;
+            </CardTitle>
+            <CardDescription>
+              Quel type d&apos;&eacute;tablissement souhaitez-vous cr&eacute;er
+              ?
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <CategoryPicker onSelect={handleSelectCategory} />
+            <div className="flex gap-2 mt-6">
+              <Button variant="outline" onClick={handleBack}>
                 <ArrowLeft className="h-4 w-4 mr-1" />
-                Changer de sp\u00e9cialit\u00e9
+                Retour
               </Button>
             </div>
-            <div className="flex items-center gap-3 mt-2">
+          </CardContent>
+        </Card>
+      )}
+
+      {businessSubStep === "type" && currentCategoryMeta && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Building2 className="h-5 w-5" />
+              Votre sp&eacute;cialit&eacute;
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <TypePicker
+              category={currentCategoryMeta}
+              selectedType={selectedType}
+              onSelect={handleSelectType}
+              onBack={handleBackToCategory}
+            />
+          </CardContent>
+        </Card>
+      )}
+
+      {businessSubStep === "details" && selectedType && (
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-2 mb-2">
+              <Button variant="ghost" size="sm" onClick={handleBackToType}>
+                <ArrowLeft className="h-4 w-4 mr-1" />
+                Changer de sp&eacute;cialit&eacute;
+              </Button>
+            </div>
+            <div className="flex items-center gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
                 <ClinicTypeIcon
-                  name={profile.selectedType.icon}
+                  name={selectedType.icon}
                   className="h-5 w-5 text-primary"
                 />
               </div>
               <div>
                 <CardTitle className="text-lg">
-                  {profile.selectedType.name_fr}
+                  {selectedType.name_fr}
                 </CardTitle>
                 <CardDescription dir="rtl">
-                  {profile.selectedType.name_ar}
+                  {selectedType.name_ar}
                 </CardDescription>
               </div>
             </div>
           </CardHeader>
           <CardContent>
-            {error && currentStep === 1 && (
+            {error && currentStep === 2 && (
               <div className="mb-4 rounded-lg border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
                 {error}
               </div>
             )}
-
             <div className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="clinicName">
-                  Nom de l&apos;\u00e9tablissement *
+                  Nom de l&apos;&eacute;tablissement *
                 </Label>
                 <Input
                   id="clinicName"
                   placeholder="ex: Cabinet Dr. Ahmed"
-                  value={profile.clinicName}
-                  onChange={(e) =>
-                    setProfile({ ...profile, clinicName: e.target.value })
-                  }
-                  required
+                  value={clinicName}
+                  onChange={(e) => setClinicName(e.target.value)}
+                  autoFocus
                 />
               </div>
-
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div className="space-y-2">
-                  <Label htmlFor="ownerName">
-                    Nom du docteur / responsable *
-                  </Label>
-                  <Input
-                    id="ownerName"
-                    placeholder="Dr. Ahmed Tazi"
-                    value={profile.ownerName}
-                    onChange={(e) =>
-                      setProfile({ ...profile, ownerName: e.target.value })
-                    }
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="npiLicense">N\u00b0 Ordre / Licence</Label>
-                  <Input
-                    id="npiLicense"
-                    placeholder="ex: 12345"
-                    value={profile.npiLicense}
-                    onChange={(e) =>
-                      setProfile({ ...profile, npiLicense: e.target.value })
-                    }
-                  />
-                </div>
-              </div>
-
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div className="space-y-2">
-                  <Label htmlFor="phone">T\u00e9l\u00e9phone *</Label>
-                  <Input
-                    id="phone"
-                    type="tel"
-                    placeholder="+212 6XX XX XX XX"
-                    value={profile.phone}
-                    onChange={(e) =>
-                      setProfile({ ...profile, phone: e.target.value })
-                    }
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder="contact@cabinet.ma"
-                    value={profile.email}
-                    onChange={(e) =>
-                      setProfile({ ...profile, email: e.target.value })
-                    }
-                  />
-                </div>
-              </div>
-
               <div className="space-y-2">
                 <Label htmlFor="city">Ville</Label>
-                <Input
+                <select
                   id="city"
-                  placeholder="Casablanca"
-                  value={profile.city}
-                  onChange={(e) =>
-                    setProfile({ ...profile, city: e.target.value })
-                  }
-                />
+                  value={city}
+                  onChange={(e) => setCity(e.target.value)}
+                  className="flex h-9 w-full rounded-lg border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                >
+                  <option value="">S&eacute;lectionnez une ville</option>
+                  {MOROCCAN_CITIES.map((c) => (
+                    <option key={c} value={c}>
+                      {c}
+                    </option>
+                  ))}
+                </select>
               </div>
-
+            </div>
+            <div className="flex gap-2 mt-6">
+              <Button variant="outline" onClick={handleBackToType}>
+                <ArrowLeft className="h-4 w-4 mr-1" />
+                Retour
+              </Button>
+              <div className="flex-1" />
               <Button
-                className="w-full"
-                size="lg"
-                disabled={
-                  loading ||
-                  !profile.clinicName ||
-                  !profile.ownerName ||
-                  !profile.phone
-                }
-                onClick={handleCreateClinic}
+                onClick={handleNext}
+                disabled={!clinicName || !selectedType}
               >
-                {loading ? (
-                  "Cr\u00e9ation en cours..."
-                ) : (
-                  <>
-                    Continuer
-                    <ArrowRight className="h-4 w-4 ml-1" />
-                  </>
-                )}
+                Continuer
+                <ArrowRight className="h-4 w-4 ml-1" />
               </Button>
             </div>
           </CardContent>
@@ -755,249 +740,51 @@ export default function OnboardingPage() {
   );
 
   // ---------------------------------------------------------------------------
-  // Step 2: Services
-  // ---------------------------------------------------------------------------
-  const step2Content = (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Briefcase className="h-5 w-5" />
-          Vos services
-        </CardTitle>
-        <CardDescription>
-          Services pr\u00e9-remplis selon votre sp\u00e9cialit\u00e9. Modifiez
-          les prix et dur\u00e9es, ou ajoutez de nouveaux services.
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        {error && currentStep === 2 && (
-          <div className="mb-4 rounded-lg border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
-            {error}
-          </div>
-        )}
-
-        <div className="space-y-3">
-          {services.map((svc) => (
-            <div
-              key={svc.id}
-              className="flex items-center gap-2 rounded-lg border p-3 bg-background"
-            >
-              <div className="flex-1 min-w-0">
-                <Input
-                  placeholder="Nom du service"
-                  value={svc.name}
-                  onChange={(e) =>
-                    updateService(svc.id, "name", e.target.value)
-                  }
-                  className="mb-2"
-                />
-                <div className="flex gap-2">
-                  <div className="flex items-center gap-1 flex-1">
-                    <Clock className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                    <Input
-                      type="number"
-                      min={5}
-                      max={480}
-                      value={svc.duration_minutes}
-                      onChange={(e) =>
-                        updateService(
-                          svc.id,
-                          "duration_minutes",
-                          parseInt(e.target.value) || 0,
-                        )
-                      }
-                      className="h-8 text-sm"
-                    />
-                    <span className="text-xs text-muted-foreground whitespace-nowrap">
-                      min
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-1 flex-1">
-                    <Input
-                      type="number"
-                      min={0}
-                      value={svc.price}
-                      onChange={(e) =>
-                        updateService(
-                          svc.id,
-                          "price",
-                          parseInt(e.target.value) || 0,
-                        )
-                      }
-                      className="h-8 text-sm"
-                    />
-                    <span className="text-xs text-muted-foreground whitespace-nowrap">
-                      MAD
-                    </span>
-                  </div>
-                </div>
-              </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="shrink-0 text-destructive hover:text-destructive"
-                onClick={() => removeService(svc.id)}
-              >
-                <Trash2 className="h-4 w-4" />
-              </Button>
-            </div>
-          ))}
-
-          <Button variant="outline" className="w-full" onClick={addService}>
-            <Plus className="h-4 w-4 mr-1" />
-            Ajouter un service
-          </Button>
-        </div>
-
-        <div className="flex gap-2 mt-6">
-          <Button variant="outline" onClick={handleBack}>
-            <ArrowLeft className="h-4 w-4 mr-1" />
-            Retour
-          </Button>
-          <Button variant="ghost" className="ml-auto" onClick={handleSkip}>
-            <SkipForward className="h-4 w-4 mr-1" />
-            Passer
-          </Button>
-          <Button onClick={handleNext}>
-            Continuer
-            <ArrowRight className="h-4 w-4 ml-1" />
-          </Button>
-        </div>
-      </CardContent>
-    </Card>
-  );
-
-  // ---------------------------------------------------------------------------
-  // Step 3: Working Hours
+  // Step 3: Pick a Look
   // ---------------------------------------------------------------------------
   const step3Content = (
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <Clock className="h-5 w-5" />
-          Horaires de travail
+          <Palette className="h-5 w-5" />
+          Choisissez un style
         </CardTitle>
         <CardDescription>
-          D\u00e9finissez vos jours et heures de disponibilit\u00e9. Les
-          patients pourront r\u00e9server en ligne pendant ces cr\u00e9neaux.
+          S&eacute;lectionnez le design qui correspond le mieux &agrave; votre
+          activit&eacute;. Vous pourrez le personnaliser plus tard.
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="space-y-3">
-          {DAYS.map((day) => {
-            const daySchedule = schedule[day.key];
-            return (
-              <div
-                key={day.key}
-                className={`rounded-lg border p-3 transition-colors ${
-                  daySchedule.enabled ? "bg-background" : "bg-muted/50"
-                }`}
-              >
-                <div className="flex items-center gap-3">
-                  <Switch
-                    checked={daySchedule.enabled}
-                    onCheckedChange={(checked) =>
-                      updateDay(day.key, "enabled", checked)
-                    }
-                  />
-                  <div className="w-24">
-                    <p
-                      className={`text-sm font-medium ${!daySchedule.enabled ? "text-muted-foreground" : ""}`}
-                    >
-                      {day.label}
-                    </p>
-                    <p className="text-xs text-muted-foreground" dir="rtl">
-                      {day.labelAr}
-                    </p>
-                  </div>
-
-                  {daySchedule.enabled && (
-                    <div className="flex flex-wrap items-center gap-2 flex-1">
-                      <div className="flex items-center gap-1">
-                        <Input
-                          type="time"
-                          value={daySchedule.startTime}
-                          onChange={(e) =>
-                            updateDay(day.key, "startTime", e.target.value)
-                          }
-                          className="h-8 w-28 text-sm"
-                        />
-                        <span className="text-muted-foreground text-sm">
-                          {"\u2014"}
-                        </span>
-                        <Input
-                          type="time"
-                          value={daySchedule.endTime}
-                          onChange={(e) =>
-                            updateDay(day.key, "endTime", e.target.value)
-                          }
-                          className="h-8 w-28 text-sm"
-                        />
-                      </div>
-
-                      <div className="flex items-center gap-2 ml-2">
-                        <label className="flex items-center gap-1.5 text-xs text-muted-foreground cursor-pointer">
-                          <input
-                            type="checkbox"
-                            checked={daySchedule.hasBreak}
-                            onChange={(e) =>
-                              updateDay(day.key, "hasBreak", e.target.checked)
-                            }
-                            className="rounded"
-                          />
-                          Pause
-                        </label>
-                        {daySchedule.hasBreak && (
-                          <div className="flex items-center gap-1">
-                            <Input
-                              type="time"
-                              value={daySchedule.breakStart}
-                              onChange={(e) =>
-                                updateDay(
-                                  day.key,
-                                  "breakStart",
-                                  e.target.value,
-                                )
-                              }
-                              className="h-7 w-24 text-xs"
-                            />
-                            <span className="text-muted-foreground text-xs">
-                              {"\u2014"}
-                            </span>
-                            <Input
-                              type="time"
-                              value={daySchedule.breakEnd}
-                              onChange={(e) =>
-                                updateDay(day.key, "breakEnd", e.target.value)
-                              }
-                              className="h-7 w-24 text-xs"
-                            />
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  )}
-
-                  {!daySchedule.enabled && (
-                    <p className="text-sm text-muted-foreground italic">
-                      Ferm\u00e9
-                    </p>
-                  )}
-                </div>
-              </div>
-            );
-          })}
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {availablePresets.slice(0, 6).map((preset) => (
+            <PresetCard
+              key={preset.id}
+              preset={preset}
+              selected={selectedPreset?.id === preset.id}
+              onSelect={() => setSelectedPreset(preset)}
+            />
+          ))}
         </div>
-
+        {availablePresets.length === 0 && (
+          <div className="text-center py-8 text-muted-foreground">
+            <Palette className="h-8 w-8 mx-auto mb-2 opacity-50" />
+            <p className="text-sm">
+              Un style par d&eacute;faut sera appliqu&eacute; automatiquement.
+            </p>
+          </div>
+        )}
         <div className="flex gap-2 mt-6">
           <Button variant="outline" onClick={handleBack}>
             <ArrowLeft className="h-4 w-4 mr-1" />
             Retour
           </Button>
-          <Button variant="ghost" className="ml-auto" onClick={handleSkip}>
-            <SkipForward className="h-4 w-4 mr-1" />
-            Passer
-          </Button>
+          <div className="flex-1" />
+          {!selectedPreset && (
+            <Button variant="ghost" onClick={handleNext}>
+              <SkipForward className="h-4 w-4 mr-1" />
+              Passer
+            </Button>
+          )}
           <Button onClick={handleNext}>
             Continuer
             <ArrowRight className="h-4 w-4 ml-1" />
@@ -1008,236 +795,78 @@ export default function OnboardingPage() {
   );
 
   // ---------------------------------------------------------------------------
-  // Step 4: Branding
+  // Step 4: Upload Logo
   // ---------------------------------------------------------------------------
-  // Derive the vertical from the selected category to filter presets
-  const CATEGORY_TO_VERTICAL: Record<string, VerticalId> = {
-    medical: "healthcare",
-    dental: "healthcare",
-    beauty: "beauty",
-    restaurant: "restaurant",
-    fitness: "fitness",
-    veterinary: "veterinary",
-  };
-  const detectedVertical: VerticalId | null = profile.selectedCategory
-    ? CATEGORY_TO_VERTICAL[profile.selectedCategory] ?? null
-    : null;
-  const availablePresets = detectedVertical
-    ? getPresetsByVertical(detectedVertical)
-    : [];
-
-  function handlePickPreset(preset: TemplatePreset) {
-    setSelectedPreset(preset.id);
-    setBranding({
-      primaryColor: preset.theme.primaryColor,
-      secondaryColor: preset.theme.secondaryColor,
-      templateId: preset.templateId,
-    });
-  }
-
   const step4Content = (
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <Palette className="h-5 w-5" />
-          Identit\u00e9 visuelle
+          <ImagePlus className="h-5 w-5" />
+          Ajoutez votre logo
         </CardTitle>
         <CardDescription>
-          Choisissez les couleurs et le style de votre site web.
+          Optionnel &mdash; vous pouvez ajouter ou modifier votre logo plus tard
+          depuis le tableau de bord.
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="space-y-6">
-          {/* Quick-start presets */}
-          {availablePresets.length > 0 && (
-            <div className="space-y-2">
-              <Label>D\u00e9marrage rapide \u2014 choisissez un preset</Label>
-              <div className="grid gap-3 sm:grid-cols-2">
-                {availablePresets.slice(0, 4).map((preset) => (
-                  <button
-                    key={preset.id}
-                    type="button"
-                    className={`text-left rounded-lg border-2 p-3 transition-all hover:shadow-md ${
-                      selectedPreset === preset.id
-                        ? "border-primary bg-primary/5"
-                        : "border-border hover:border-primary/50"
-                    }`}
-                    onClick={() => handlePickPreset(preset)}
-                  >
-                    <div className="flex items-center gap-2 mb-1">
-                      <div className="flex gap-1">
-                        <div
-                          className="h-5 w-5 rounded-full border"
-                          style={{ backgroundColor: preset.theme.primaryColor }}
-                        />
-                        <div
-                          className="h-5 w-5 rounded-full border"
-                          style={{ backgroundColor: preset.theme.secondaryColor }}
-                        />
-                      </div>
-                      <span className="font-medium text-sm">{preset.name}</span>
-                      {selectedPreset === preset.id && (
-                        <Check className="h-4 w-4 text-primary ml-auto" />
-                      )}
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      {preset.description}
-                    </p>
-                  </button>
-                ))}
-              </div>
-              <p className="text-xs text-muted-foreground text-center">
-                Ou personnalisez manuellement ci-dessous
-              </p>
+        <div className="flex flex-col items-center gap-4">
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            className="w-48 h-48 rounded-2xl border-2 border-dashed border-muted-foreground/30 hover:border-primary/50 transition-colors flex flex-col items-center justify-center gap-3 bg-muted/30 hover:bg-muted/50 cursor-pointer"
+          >
+            {logoPreview ? (
+              <img
+                src={logoPreview}
+                alt="Logo preview"
+                className="w-full h-full object-contain rounded-2xl p-2"
+              />
+            ) : (
+              <>
+                <Upload className="h-10 w-10 text-muted-foreground/50" />
+                <div className="text-center">
+                  <p className="text-sm font-medium text-muted-foreground">
+                    Cliquez pour t&eacute;l&eacute;charger
+                  </p>
+                  <p className="text-xs text-muted-foreground/70 mt-1">
+                    PNG, JPG ou SVG
+                  </p>
+                </div>
+              </>
+            )}
+          </button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/png,image/jpeg,image/svg+xml,image/webp"
+            className="hidden"
+            onChange={handleLogoChange}
+          />
+          {logoFile && (
+            <div className="flex items-center gap-2">
+              <Check className="h-4 w-4 text-green-600" />
+              <span className="text-sm text-green-700">{logoFile.name}</span>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setLogoFile(null);
+                  setLogoPreview(null);
+                }}
+              >
+                Supprimer
+              </Button>
             </div>
           )}
-
-          {/* Primary Color */}
-          <div className="space-y-2">
-            <Label>Couleur principale</Label>
-            <div className="flex flex-wrap gap-2">
-              {COLOR_PRESETS.map((color) => (
-                <button
-                  key={color}
-                  type="button"
-                  className={`h-8 w-8 rounded-full border-2 transition-all ${
-                    branding.primaryColor === color
-                      ? "border-foreground scale-110 ring-2 ring-offset-2 ring-primary"
-                      : "border-transparent hover:scale-105"
-                  }`}
-                  style={{ backgroundColor: color }}
-                  onClick={() =>
-                    setBranding({ ...branding, primaryColor: color })
-                  }
-                />
-              ))}
-              <div className="flex items-center gap-2">
-                <input
-                  type="color"
-                  value={branding.primaryColor}
-                  onChange={(e) =>
-                    setBranding({ ...branding, primaryColor: e.target.value })
-                  }
-                  className="h-8 w-8 rounded cursor-pointer border-0 p-0"
-                />
-                <span className="text-xs text-muted-foreground font-mono">
-                  {branding.primaryColor}
-                </span>
-              </div>
-            </div>
-          </div>
-
-          {/* Secondary Color */}
-          <div className="space-y-2">
-            <Label>Couleur secondaire</Label>
-            <div className="flex flex-wrap gap-2">
-              {COLOR_PRESETS.map((color) => (
-                <button
-                  key={`sec-${color}`}
-                  type="button"
-                  className={`h-8 w-8 rounded-full border-2 transition-all ${
-                    branding.secondaryColor === color
-                      ? "border-foreground scale-110 ring-2 ring-offset-2 ring-primary"
-                      : "border-transparent hover:scale-105"
-                  }`}
-                  style={{ backgroundColor: color }}
-                  onClick={() =>
-                    setBranding({ ...branding, secondaryColor: color })
-                  }
-                />
-              ))}
-              <div className="flex items-center gap-2">
-                <input
-                  type="color"
-                  value={branding.secondaryColor}
-                  onChange={(e) =>
-                    setBranding({
-                      ...branding,
-                      secondaryColor: e.target.value,
-                    })
-                  }
-                  className="h-8 w-8 rounded cursor-pointer border-0 p-0"
-                />
-                <span className="text-xs text-muted-foreground font-mono">
-                  {branding.secondaryColor}
-                </span>
-              </div>
-            </div>
-          </div>
-
-          {/* Template Selection */}
-          <div className="space-y-2">
-            <Label>Style de site</Label>
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              {templateList.map((tmpl: TemplateDefinition) => (
-                <button
-                  key={tmpl.id}
-                  type="button"
-                  className={`text-left rounded-lg border-2 p-3 transition-all hover:shadow-md ${
-                    branding.templateId === tmpl.id
-                      ? "border-primary bg-primary/5"
-                      : "border-border hover:border-primary/50"
-                  }`}
-                  onClick={() =>
-                    setBranding({ ...branding, templateId: tmpl.id })
-                  }
-                >
-                  <div className="flex items-center gap-2 mb-1">
-                    <div
-                      className={`h-6 w-6 rounded ${tmpl.wrapperClass} border flex items-center justify-center text-xs font-bold`}
-                    >
-                      {tmpl.name.charAt(0)}
-                    </div>
-                    <span className="font-medium text-sm">{tmpl.name}</span>
-                    {branding.templateId === tmpl.id && (
-                      <Check className="h-4 w-4 text-primary ml-auto" />
-                    )}
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    {tmpl.description}
-                  </p>
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Preview swatch */}
-          <div className="rounded-lg border p-4">
-            <p className="text-xs text-muted-foreground mb-2">
-              Aper\u00e7u des couleurs
-            </p>
-            <div className="flex gap-3 items-center">
-              <div
-                className="h-10 w-10 rounded-lg"
-                style={{ backgroundColor: branding.primaryColor }}
-              />
-              <div
-                className="h-10 w-10 rounded-lg"
-                style={{ backgroundColor: branding.secondaryColor }}
-              />
-              <div className="flex-1 space-y-1">
-                <div
-                  className="h-2 rounded-full w-3/4"
-                  style={{ backgroundColor: branding.primaryColor }}
-                />
-                <div
-                  className="h-2 rounded-full w-1/2"
-                  style={{
-                    backgroundColor: branding.secondaryColor,
-                    opacity: 0.6,
-                  }}
-                />
-              </div>
-            </div>
-          </div>
         </div>
-
         <div className="flex gap-2 mt-6">
           <Button variant="outline" onClick={handleBack}>
             <ArrowLeft className="h-4 w-4 mr-1" />
             Retour
           </Button>
-          <Button variant="ghost" className="ml-auto" onClick={handleSkip}>
+          <div className="flex-1" />
+          <Button variant="ghost" onClick={handleNext}>
             <SkipForward className="h-4 w-4 mr-1" />
             Passer
           </Button>
@@ -1251,24 +880,25 @@ export default function OnboardingPage() {
   );
 
   // ---------------------------------------------------------------------------
-  // Step 5: Preview & Go Live
+  // Step 5: Review & Go Live
   // ---------------------------------------------------------------------------
-  const generatedUrl = createdSubdomain
-    ? `${createdSubdomain}.oltigo.com`
-    : "votre-cabinet.oltigo.com";
-
-  const enabledDays = DAYS.filter((d) => schedule[d.key].enabled);
-  const activeServices = services.filter((s) => s.name.trim());
+  const generatedSubdomain = clinicName
+    .toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, "")
+    .trim()
+    .replace(/\s+/g, "-")
+    .replace(/--+/g, "-");
 
   const step5Content = (
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <Eye className="h-5 w-5" />
-          Aper\u00e7u &amp; Mise en ligne
+          <Rocket className="h-5 w-5" />
+          Pr&ecirc;t &agrave; lancer !
         </CardTitle>
         <CardDescription>
-          V\u00e9rifiez les informations avant de mettre votre site en ligne.
+          V&eacute;rifiez les informations et mettez votre site en ligne en un
+          clic.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -1277,150 +907,118 @@ export default function OnboardingPage() {
             {error}
           </div>
         )}
-
         <div className="space-y-4">
-          {/* URL Preview */}
-          <div className="rounded-lg border-2 border-primary/20 bg-primary/5 p-4 text-center">
+          <div className="rounded-xl border-2 border-primary/20 bg-primary/5 p-5 text-center">
             <p className="text-xs text-muted-foreground mb-1">
-              Votre site sera accessible \u00e0
+              Votre site sera accessible &agrave;
             </p>
-            <p className="text-lg font-bold text-primary font-mono">
-              {generatedUrl}
+            <p className="text-xl font-bold text-primary font-mono">
+              {generatedSubdomain || "votre-cabinet"}.oltigo.com
             </p>
           </div>
-
-          {/* Profile Summary */}
-          <div className="rounded-lg border p-4 space-y-2">
-            <h3 className="font-semibold text-sm flex items-center gap-2">
-              <User className="h-4 w-4" />
-              Profil
-            </h3>
-            <div className="grid grid-cols-2 gap-2 text-sm">
+          <div className="rounded-lg border p-4 space-y-3">
+            <div className="grid grid-cols-2 gap-3 text-sm">
               <div>
-                <span className="text-muted-foreground">
-                  \u00c9tablissement:
-                </span>{" "}
-                <span className="font-medium">{profile.clinicName}</span>
-              </div>
-              <div>
-                <span className="text-muted-foreground">Responsable:</span>{" "}
-                <span className="font-medium">{profile.ownerName}</span>
+                <span className="text-muted-foreground">Responsable</span>
+                <p className="font-medium">{ownerName}</p>
               </div>
               <div>
                 <span className="text-muted-foreground">
-                  T\u00e9l\u00e9phone:
-                </span>{" "}
-                <span className="font-medium">{profile.phone}</span>
+                  T&eacute;l&eacute;phone
+                </span>
+                <p className="font-medium">{phone}</p>
               </div>
-              {profile.city && (
-                <div>
-                  <span className="text-muted-foreground">Ville:</span>{" "}
-                  <span className="font-medium">{profile.city}</span>
-                </div>
-              )}
-              {profile.selectedType && (
+              <div>
+                <span className="text-muted-foreground">
+                  &Eacute;tablissement
+                </span>
+                <p className="font-medium">{clinicName}</p>
+              </div>
+              {selectedType && (
                 <div>
                   <span className="text-muted-foreground">
-                    Sp\u00e9cialit\u00e9:
-                  </span>{" "}
-                  <span className="font-medium">
-                    {profile.selectedType.name_fr}
+                    Sp&eacute;cialit&eacute;
                   </span>
+                  <p className="font-medium">{selectedType.name_fr}</p>
+                </div>
+              )}
+              {city && (
+                <div>
+                  <span className="text-muted-foreground">Ville</span>
+                  <p className="font-medium">{city}</p>
+                </div>
+              )}
+              {selectedPreset && (
+                <div>
+                  <span className="text-muted-foreground">Style</span>
+                  <div className="flex items-center gap-2 mt-0.5">
+                    <div
+                      className="h-4 w-4 rounded-full"
+                      style={{
+                        backgroundColor: selectedPreset.theme.primaryColor,
+                      }}
+                    />
+                    <span className="font-medium text-sm">
+                      {selectedPreset.name}
+                    </span>
+                  </div>
+                </div>
+              )}
+              {logoFile && (
+                <div>
+                  <span className="text-muted-foreground">Logo</span>
+                  <p className="font-medium text-green-700">
+                    <Check className="h-3 w-3 inline mr-1" />
+                    T&eacute;l&eacute;charg&eacute;
+                  </p>
                 </div>
               )}
             </div>
           </div>
-
-          {/* Services Summary */}
-          {activeServices.length > 0 && (
-            <div className="rounded-lg border p-4 space-y-2">
-              <h3 className="font-semibold text-sm flex items-center gap-2">
-                <Briefcase className="h-4 w-4" />
-                Services ({activeServices.length})
-              </h3>
-              <div className="space-y-1">
-                {activeServices.map((svc) => (
-                  <div key={svc.id} className="flex justify-between text-sm">
-                    <span>{svc.name}</span>
-                    <span className="text-muted-foreground">
-                      {svc.duration_minutes} min {"\u2014"} {svc.price} MAD
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Schedule Summary */}
-          {enabledDays.length > 0 && (
-            <div className="rounded-lg border p-4 space-y-2">
-              <h3 className="font-semibold text-sm flex items-center gap-2">
-                <Clock className="h-4 w-4" />
-                Horaires
-              </h3>
-              <div className="space-y-1">
-                {enabledDays.map((day) => {
-                  const s = schedule[day.key];
-                  return (
-                    <div
-                      key={day.key}
-                      className="flex justify-between text-sm"
-                    >
-                      <span>{day.label}</span>
-                      <span className="text-muted-foreground">
-                        {s.startTime} {"\u2014"} {s.endTime}
-                        {s.hasBreak &&
-                          ` (pause ${s.breakStart}\u2013${s.breakEnd})`}
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
-          {/* Branding Summary */}
-          <div className="rounded-lg border p-4 space-y-2">
-            <h3 className="font-semibold text-sm flex items-center gap-2">
-              <Palette className="h-4 w-4" />
-              Style
-            </h3>
-            <div className="flex items-center gap-3">
-              <div
-                className="h-6 w-6 rounded"
-                style={{ backgroundColor: branding.primaryColor }}
-              />
-              <div
-                className="h-6 w-6 rounded"
-                style={{ backgroundColor: branding.secondaryColor }}
-              />
-              <span className="text-sm text-muted-foreground">
-                Template:{" "}
-                {templateList.find(
-                  (t: TemplateDefinition) => t.id === branding.templateId,
-                )?.name ?? "Modern"}
-              </span>
-            </div>
+          <div className="rounded-lg bg-muted/50 p-4 space-y-2">
+            <p className="text-sm font-medium">
+              Ce qui sera cr&eacute;&eacute; automatiquement :
+            </p>
+            <ul className="text-xs text-muted-foreground space-y-1">
+              <li className="flex items-center gap-2">
+                <Check className="h-3 w-3 text-primary" />
+                Services par d&eacute;faut selon votre sp&eacute;cialit&eacute;
+              </li>
+              <li className="flex items-center gap-2">
+                <Check className="h-3 w-3 text-primary" />
+                Horaires de travail (Lun-Sam, 9h-18h)
+              </li>
+              <li className="flex items-center gap-2">
+                <Check className="h-3 w-3 text-primary" />
+                Contenu du site web (textes en FR/AR)
+              </li>
+              <li className="flex items-center gap-2">
+                <Check className="h-3 w-3 text-primary" />
+                Message WhatsApp de bienvenue
+              </li>
+            </ul>
           </div>
         </div>
-
         <div className="flex gap-2 mt-6">
-          <Button variant="outline" onClick={handleBack}>
+          <Button variant="outline" onClick={handleBack} disabled={loading}>
             <ArrowLeft className="h-4 w-4 mr-1" />
             Retour
           </Button>
           <Button
-            className="ml-auto"
+            className="flex-1"
             size="lg"
             disabled={loading}
-            onClick={() => saveWizardData(true)}
+            onClick={handleGoLive}
           >
             {loading ? (
-              "Mise en ligne..."
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                Mise en ligne...
+              </>
             ) : (
               <>
-                <Rocket className="h-4 w-4 mr-1" />
-                Mettre en ligne
+                <Rocket className="h-4 w-4 mr-2" />
+                Mettre en ligne maintenant
               </>
             )}
           </Button>
@@ -1434,7 +1032,6 @@ export default function OnboardingPage() {
   // ---------------------------------------------------------------------------
   return (
     <div className="w-full">
-      {/* Header */}
       <div className="text-center mb-6">
         <div className="flex items-center justify-center gap-2 mb-2">
           <div className="h-10 w-10 rounded-xl bg-primary flex items-center justify-center">
@@ -1442,17 +1039,13 @@ export default function OnboardingPage() {
           </div>
         </div>
         <h1 className="text-xl font-bold">
-          Cr\u00e9er votre \u00e9tablissement
+          Cr&eacute;er votre &eacute;tablissement
         </h1>
         <p className="text-sm text-muted-foreground">
-          Votre site sera en ligne en moins de 5 minutes
+          Votre site sera en ligne en moins de 2 minutes
         </p>
       </div>
-
-      {/* Progress indicator */}
       {progressIndicator}
-
-      {/* Step content */}
       {currentStep === 1 && step1Content}
       {currentStep === 2 && step2Content}
       {currentStep === 3 && step3Content}

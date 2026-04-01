@@ -143,6 +143,45 @@ export function clinicActivatedEmail(params: {
   return wrap("Oltigo", `Clinic "${clinicName}" Has Been Reactivated`, body);
 }
 
+// ---------- Onboarding welcome email ----------
+
+export function onboardingWelcomeEmail(params: {
+  clinicName: string;
+  adminName: string;
+  siteUrl: string;
+  dashboardUrl: string;
+}): { subject: string; html: string } {
+  const { clinicName, adminName, siteUrl, dashboardUrl } = params;
+  const body = `
+    <h2 style="margin:0 0 16px;font-size:18px;color:#1e293b;">Bienvenue sur Oltigo ! 🎉</h2>
+    <p style="font-size:14px;line-height:1.6;color:#475569;">
+      Bonjour ${escapeHtml(adminName)},
+    </p>
+    <p style="font-size:14px;line-height:1.6;color:#475569;">
+      Votre site <strong>${escapeHtml(clinicName)}</strong> est maintenant en ligne et pr&ecirc;t &agrave; recevoir des patients !
+    </p>
+    <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:16px;margin:16px 0;">
+      <p style="margin:0 0 8px;font-size:14px;font-weight:600;color:#166534;">Votre site web</p>
+      <a href="${escapeHtml(siteUrl)}" style="font-size:16px;color:#2563eb;text-decoration:none;font-family:monospace;">${escapeHtml(siteUrl)}</a>
+    </div>
+    <h3 style="margin:24px 0 12px;font-size:16px;color:#1e293b;">Pour bien d&eacute;marrer :</h3>
+    <ol style="font-size:14px;line-height:1.8;color:#475569;padding-left:20px;">
+      <li>Personnalisez vos services et tarifs depuis le tableau de bord</li>
+      <li>Ajoutez vos horaires de travail pr&eacute;cis</li>
+      <li>Personnalisez les couleurs et le logo de votre site</li>
+      <li>Partagez votre lien avec vos patients</li>
+    </ol>
+    <div style="text-align:center;margin:24px 0;">
+      <a href="${escapeHtml(dashboardUrl)}" style="display:inline-block;padding:12px 32px;background:#2563eb;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:600;font-size:14px;">
+        Acc&eacute;der au tableau de bord
+      </a>
+    </div>
+    <p style="font-size:12px;color:#94a3b8;">
+      Besoin d&apos;aide ? R&eacute;pondez &agrave; cet email ou contactez-nous sur WhatsApp.
+    </p>`;
+  return wrap("Oltigo", `Bienvenue ! Votre site "${clinicName}" est en ligne`, body);
+}
+
 // ---------- Payment failure notification ----------
 
 export function paymentFailedEmail(params: {
