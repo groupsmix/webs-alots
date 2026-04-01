@@ -65,9 +65,8 @@ export async function fetchClinicSubscription(clinicId: string): Promise<ClinicS
 
   if (clinicError || !clinic) return null;
 
-  const c = clinic as Record<string, unknown>;
-  const tierSlug = (c.tier as string) ?? "vitrine";
-  const systemType = (c.type as string) ?? "doctor";
+  const tierSlug = clinic.tier ?? "vitrine";
+  const systemType = clinic.type ?? "doctor";
 
   // Fetch pricing tier details
   const { data: tierData } = await supabase
@@ -94,9 +93,9 @@ export async function fetchClinicSubscription(clinicId: string): Promise<ClinicS
   }));
 
   const subStatus: ClinicSubscriptionView["status"] =
-    c.status === "active" ? "active"
-      : c.status === "suspended" ? "suspended"
-      : c.status === "trial" ? "trial"
+    clinic.status === "active" ? "active"
+      : clinic.status === "suspended" ? "suspended"
+      : clinic.status === "trial" ? "trial"
       : "cancelled";
 
   const now = new Date();
@@ -106,11 +105,9 @@ export async function fetchClinicSubscription(clinicId: string): Promise<ClinicS
   const latestPayment = payments[0];
   const amount = latestPayment?.amount ?? 0;
 
-  const t = tierData as Record<string, unknown> | null;
-
   return {
-    id: `sub-${c.id as string}`,
-    clinicId: c.id as string,
+    id: `sub-${clinic.id}`,
+    clinicId: clinic.id,
     tierSlug,
     tierName: TIER_NAMES[tierSlug] ?? tierSlug,
     status: subStatus,
@@ -120,19 +117,19 @@ export async function fetchClinicSubscription(clinicId: string): Promise<ClinicS
     amount,
     currency: "MAD",
     paymentMethod: "Carte bancaire",
-    autoRenew: c.status === "active",
+    autoRenew: clinic.status === "active",
     systemType,
     invoices,
-    tier: t ? {
-      slug: (t.slug as string) ?? "",
-      name: (t.name as string) ?? "",
-      description: (t.description as string) ?? "",
-      features: (t.features as { key: string; label: string; included: boolean; limit?: string }[]) ?? [],
-      limits: (t.limits as NonNullable<ClinicSubscriptionView["tier"]>["limits"]) ?? {
+    tier: tierData ? {
+      slug: tierData.slug ?? "",
+      name: tierData.name ?? "",
+      description: tierData.description ?? "",
+      features: (tierData.features as { key: string; label: string; included: boolean; limit?: string }[]) ?? [],
+      limits: (tierData.limits as NonNullable<ClinicSubscriptionView["tier"]>["limits"]) ?? {
         maxDoctors: 1, maxPatients: 0, maxAppointmentsPerMonth: 0,
         storageGB: 1, customDomain: false, apiAccess: false, whiteLabel: false,
       },
-      pricing: (t.pricing as Record<string, { monthly: number; yearly: number }>) ?? {},
+      pricing: (tierData.pricing as Record<string, { monthly: number; yearly: number }>) ?? {},
     } : null,
   };
 }

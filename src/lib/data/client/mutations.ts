@@ -25,7 +25,7 @@ export async function updateAppointmentStatus(
     "follow-up": "follow_up",
   };
   const dbStatus = STATUS_MAP[status] ?? status;
-  const updateData: Record<string, unknown> = { status: dbStatus };
+  const updateData: Database["public"]["Tables"]["appointments"]["Update"] = { status: dbStatus };
   if (dbStatus === "cancelled") {
     updateData.cancelled_at = new Date().toISOString();
   }
@@ -262,7 +262,7 @@ export async function updateTreatmentPlan(
   const supabase = createClient();
   const { error } = await supabase
     .from("treatment_plans")
-    .update({ ...data, updated_at: new Date().toISOString() } as Record<string, unknown>)
+    .update({ ...data, updated_at: new Date().toISOString() } as Database["public"]["Tables"]["treatment_plans"]["Update"])
     .eq("id", id);
   if (error) {
     logger.warn("Query failed", { context: "data/client", error });
@@ -309,7 +309,7 @@ export async function updateSterilizationEntry(
   },
 ): Promise<boolean> {
   const supabase = createClient();
-  const { error } = await supabase.from("sterilization_log").update(data as Record<string, unknown>).eq("id", id);
+  const { error } = await supabase.from("sterilization_log").update(data as Database["public"]["Tables"]["sterilization_log"]["Update"]).eq("id", id);
   if (error) {
     logger.warn("Query failed", { context: "data/client", error });
     return false;

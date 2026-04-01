@@ -10,6 +10,19 @@ type Json = Database["public"]["Tables"]["users"]["Row"]["metadata"];
 // Onboarding state (stored in user metadata)
 // ─────────────────────────────────────────────
 
+/** Shape of the `onboarding` sub-object inside user metadata (TS-01). */
+interface UserOnboardingMetadata {
+  has_completed_onboarding?: boolean;
+  tour_dismissed?: boolean;
+  completed_steps?: OnboardingStepId[];
+}
+
+/** Shape of the `metadata` JSONB column on the `users` table (TS-01). */
+interface UserMetadata {
+  onboarding?: UserOnboardingMetadata;
+  [key: string]: unknown;
+}
+
 export interface OnboardingState {
   hasCompletedOnboarding: boolean;
   tourDismissed: boolean;
@@ -86,13 +99,13 @@ export async function fetchOnboardingState(): Promise<OnboardingState> {
     .eq("id", user.id)
     .single();
 
-  const metadata = (data?.metadata ?? {}) as Record<string, unknown>;
-  const onboarding = (metadata.onboarding ?? {}) as Record<string, unknown>;
+  const metadata = (data?.metadata ?? {}) as UserMetadata;
+  const onboarding = metadata.onboarding ?? {};
 
   return {
-    hasCompletedOnboarding: (onboarding.has_completed_onboarding as boolean) ?? false,
-    tourDismissed: (onboarding.tour_dismissed as boolean) ?? false,
-    completedSteps: (onboarding.completed_steps as OnboardingStepId[]) ?? [],
+    hasCompletedOnboarding: onboarding.has_completed_onboarding ?? false,
+    tourDismissed: onboarding.tour_dismissed ?? false,
+    completedSteps: onboarding.completed_steps ?? [],
   };
 }
 
@@ -111,8 +124,8 @@ export async function updateOnboardingState(
     .eq("id", user.id)
     .single();
 
-  const metadata = (current?.metadata ?? {}) as Record<string, unknown>;
-  const onboarding = (metadata.onboarding ?? {}) as Record<string, unknown>;
+  const metadata = (current?.metadata ?? {}) as UserMetadata;
+  const onboarding: UserOnboardingMetadata = metadata.onboarding ?? {};
 
   // Merge updates
   if (updates.hasCompletedOnboarding !== undefined) {

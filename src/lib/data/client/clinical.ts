@@ -337,7 +337,10 @@ export async function fetchDashboardStats(clinicId: string): Promise<DashboardSt
 
   const totalRevenue = payments.reduce((s, p) => s + (p.amount ?? 0), 0);
   const avgRating = reviews.length > 0 ? reviews.reduce((s, r) => s + r.stars, 0) / reviews.length : 0;
-  const insuranceCount = insurancePatients.filter((p) => p.metadata && (p.metadata as Record<string, unknown>).insurance).length;
+  const insuranceCount = insurancePatients.filter((p) => {
+    if (!p.metadata || typeof p.metadata !== "object") return false;
+    return "insurance" in (p.metadata as object) && Boolean((p.metadata as { insurance?: unknown }).insurance);
+  }).length;
 
   return {
     totalPatients: patientCountRes.count ?? 0,
