@@ -14,6 +14,7 @@ import { logger } from "@/lib/logger";
 import { verifyEmailSendSchema, verifyEmailConfirmSchema } from "@/lib/validations";
 import { withValidation } from "@/lib/api-validate";
 import { apiError, apiNotFound, apiSuccess } from "@/lib/api-response";
+import { timingSafeEqual } from "@/lib/crypto-utils";
 
 /**
  * Generate a 6-digit numeric verification code.
@@ -75,10 +76,17 @@ export const POST = withValidation(verifyEmailSendSchema, async (data, request: 
   // via environment variables. See docs/email-setup.md for details.
   // await sendVerificationEmail(email, code);
 
+  // SEC-01: Until the email transport is configured, surface a clear
+  // warning so callers know verification codes are NOT being delivered.
+  const emailConfigured = false; // flip to true once sendVerificationEmail is wired up
+
   return apiSuccess({
     ok: true,
-    message: "Verification code sent. Check your email.",
+    message: emailConfigured
+      ? "Verification code sent. Check your email."
+      : "Verification code stored but email delivery is not yet configured. Contact support.",
     expiresInMinutes: 10,
+    _emailDelivered: emailConfigured,
   });
 });
 
@@ -124,7 +132,7 @@ export const PUT = withValidation(verifyEmailConfirmSchema, async (data, request
     return apiError("Verification code expired. Request a new one.", 410);
   }
 
-  if (verification.code !== code) {
+  if (!timingSafeEqual(verification.code, code)) {
     return apiError("Invalid verification code");
   }
 

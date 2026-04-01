@@ -31,12 +31,14 @@ const nextConfig: NextConfig = {
         ],
       },
       {
-        // Cache JS/CSS for 1 hour (with hashing, these are immutable)
-        source: "/:path*.(js|css)",
+        // Next.js uses content-hashed filenames for static chunks, so they
+        // are effectively immutable. Use a long max-age + immutable to avoid
+        // unnecessary revalidation on repeat visits (PERF-08).
+        source: "/_next/static/:path*",
         headers: [
           {
             key: "Cache-Control",
-            value: "public, max-age=3600, must-revalidate",
+            value: "public, max-age=31536000, immutable",
           },
         ],
       },
