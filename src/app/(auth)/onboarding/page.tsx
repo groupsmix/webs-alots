@@ -1,7 +1,5 @@
 "use client";
 
-import { useState, useCallback } from "react";
-import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
   ArrowRight,
@@ -19,6 +17,10 @@ import {
   User,
   Briefcase,
 } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useState, useCallback } from "react";
+import { ClinicTypeIcon } from "@/components/clinic-type-icon";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -28,9 +30,7 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
-import { ClinicTypeIcon } from "@/components/clinic-type-icon";
 import {
   CLINIC_CATEGORIES,
   getTypesByCategory,
@@ -41,6 +41,11 @@ import {
   getDefaultServices,
   type DefaultService,
 } from "@/lib/config/default-services";
+import type { VerticalId } from "@/lib/config/verticals";
+import {
+  getPresetsByVertical,
+  type TemplatePreset,
+} from "@/lib/template-presets";
 import { templateList, type TemplateDefinition } from "@/lib/templates";
 import type { ClinicTypeCategory } from "@/lib/types/database";
 
@@ -279,6 +284,7 @@ export default function OnboardingPage() {
     secondaryColor: "#0F6E56",
     templateId: "modern",
   });
+  const [selectedPreset, setSelectedPreset] = useState<string | null>(null);
 
   // --- Derived ---
   const currentCategory = profile.selectedCategory
@@ -1004,6 +1010,31 @@ export default function OnboardingPage() {
   // ---------------------------------------------------------------------------
   // Step 4: Branding
   // ---------------------------------------------------------------------------
+  // Derive the vertical from the selected category to filter presets
+  const CATEGORY_TO_VERTICAL: Record<string, VerticalId> = {
+    medical: "healthcare",
+    dental: "healthcare",
+    beauty: "beauty",
+    restaurant: "restaurant",
+    fitness: "fitness",
+    veterinary: "veterinary",
+  };
+  const detectedVertical: VerticalId | null = profile.selectedCategory
+    ? CATEGORY_TO_VERTICAL[profile.selectedCategory] ?? null
+    : null;
+  const availablePresets = detectedVertical
+    ? getPresetsByVertical(detectedVertical)
+    : [];
+
+  function handlePickPreset(preset: TemplatePreset) {
+    setSelectedPreset(preset.id);
+    setBranding({
+      primaryColor: preset.theme.primaryColor,
+      secondaryColor: preset.theme.secondaryColor,
+      templateId: preset.templateId,
+    });
+  }
+
   const step4Content = (
     <Card>
       <CardHeader>
@@ -1017,6 +1048,50 @@ export default function OnboardingPage() {
       </CardHeader>
       <CardContent>
         <div className="space-y-6">
+          {/* Quick-start presets */}
+          {availablePresets.length > 0 && (
+            <div className="space-y-2">
+              <Label>D\u00e9marrage rapide \u2014 choisissez un preset</Label>
+              <div className="grid gap-3 sm:grid-cols-2">
+                {availablePresets.slice(0, 4).map((preset) => (
+                  <button
+                    key={preset.id}
+                    type="button"
+                    className={`text-left rounded-lg border-2 p-3 transition-all hover:shadow-md ${
+                      selectedPreset === preset.id
+                        ? "border-primary bg-primary/5"
+                        : "border-border hover:border-primary/50"
+                    }`}
+                    onClick={() => handlePickPreset(preset)}
+                  >
+                    <div className="flex items-center gap-2 mb-1">
+                      <div className="flex gap-1">
+                        <div
+                          className="h-5 w-5 rounded-full border"
+                          style={{ backgroundColor: preset.theme.primaryColor }}
+                        />
+                        <div
+                          className="h-5 w-5 rounded-full border"
+                          style={{ backgroundColor: preset.theme.secondaryColor }}
+                        />
+                      </div>
+                      <span className="font-medium text-sm">{preset.name}</span>
+                      {selectedPreset === preset.id && (
+                        <Check className="h-4 w-4 text-primary ml-auto" />
+                      )}
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      {preset.description}
+                    </p>
+                  </button>
+                ))}
+              </div>
+              <p className="text-xs text-muted-foreground text-center">
+                Ou personnalisez manuellement ci-dessous
+              </p>
+            </div>
+          )}
+
           {/* Primary Color */}
           <div className="space-y-2">
             <Label>Couleur principale</Label>
