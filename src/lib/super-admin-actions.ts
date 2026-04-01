@@ -10,18 +10,18 @@
  * All operations require the authenticated user to have role = "super_admin".
  */
 
-import { createClient, createAdminClient } from "@/lib/supabase-server";
 import { requireRole } from "@/lib/auth";
-import { logger } from "@/lib/logger";
 import { STAFF_DEFAULT_PASSWORD } from "@/lib/constants";
 import { sendEmail } from "@/lib/email";
 import { staffWelcomeEmail, clinicSuspendedEmail, clinicActivatedEmail } from "@/lib/email-templates";
+import { logger } from "@/lib/logger";
+import { invalidateSubdomainCache } from "@/lib/subdomain-cache";
+import { createClient, createAdminClient } from "@/lib/supabase-server";
 import type {
   ClinicType,
   ClinicTier,
   Json,
 } from "@/lib/types/database";
-import { invalidateSubdomainCache } from "@/lib/subdomain-cache";
 
 /**
  * Server-side Supabase client scoped to super_admin operations.
@@ -830,6 +830,75 @@ const TIER_NAMES: Record<string, string> = {
   premium: "Premium",
   "saas-monthly": "SaaS Monthly",
 };
+
+// ---------- Revenue Stats ----------
+
+export interface RevenueStats {
+  mrr: number;
+  arr: number;
+  totalClinics: number;
+  activePaidClinics: number;
+  churnedThisMonth: number;
+  churnRate: number;
+  planBreakdown: Record<string, number>;
+  revenueByMonth: { month: string; revenue: number }[];
+}
+
+export async function fetchRevenueStats(): Promise<RevenueStats> {
+  const supabase = await rawClient();
+
+  const { data: clinics } = await supabase
+    .from("clinics")
+    .select("id, config, created_at");
+
+  const planBreakdown: Record<string, number> = {
+    free: 0,
+    starter: 0,
+    professional: 0,
+    enterprise: 0,
+  };
+
+  // Import plan prices inline to avoid circular dependency
+  const PLAN_PRICES: Record<string, number> = {
+    free: 0,
+    starter: 199,
+    professional: 499,
+    enterprise: 999,
+  };
+
+  if (clinics) {
+    for (const clinic of clinics) {
+      const config = clinic.config as Record<string, unknown> | null;
+      const plan = (config?.subscription_plan as string) ?? "free";
+      if (planBreakdown[plan] !== undefined) {
+        planBreakdown[plan]++;
+      } else {
+        planBreakdown.free++;
+      }
+    }
+  }
+
+  const activePaidClinics =
+    (planBreakdown.starter ?? 0) +
+    (planBreakdown.professional ?? 0) +
+    (planBreakdown.enterprise ?? 0);
+
+  const mrr =
+    (planBreakdown.starter ?? 0) * PLAN_PRICES.starter +
+    (planBreakdown.professional ?? 0) * PLAN_PRICES.professional +
+    (planBreakdown.enterprise ?? 0) * PLAN_PRICES.enterprise;
+
+  return {
+    mrr,
+    arr: mrr * 12,
+    totalClinics: clinics?.length ?? 0,
+    activePaidClinics,
+    churnedThisMonth: 0,
+    churnRate: 0,
+    planBreakdown,
+    revenueByMonth: [],
+  };
+}
 
 export async function fetchClientSubscriptions(): Promise<ClientSubscription[]> {
   const supabase = await rawClient();
