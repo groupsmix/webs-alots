@@ -2,9 +2,11 @@
 
 import { useState, useEffect } from "react";
 /**
- * Audit 5.2 — recharts is imported dynamically via next/dynamic on the
- * AnalyticsDashboard export (see bottom of file). This keeps the ~200 KB
- * recharts bundle out of the initial page load.
+ * Audit 5.2 — recharts is code-split because the pages that consume this
+ * component (admin/reports/page.tsx and doctor/analytics/page.tsx) load it
+ * via next/dynamic. This keeps the ~200 KB recharts + D3 bundle out of
+ * the initial page load — it is only fetched when the user navigates to
+ * the analytics/reports route.
  */
 import {
   BarChart, Bar, LineChart, Line, PieChart, Pie, Cell,
