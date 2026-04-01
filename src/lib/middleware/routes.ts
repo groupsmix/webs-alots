@@ -71,6 +71,27 @@ export const ROLE_DASHBOARD_MAP: Record<string, string> = {
   patient: "/patient/dashboard",
 };
 
+/**
+ * Determine whether a route is public (no middleware-level auth check).
+ *
+ * SECURITY NOTE — API routes and the "self-auth" pattern:
+ * All `/api/` routes are classified as public here because API route handlers
+ * are responsible for their own authentication (e.g., verifying session cookies,
+ * Bearer tokens, or API keys). This is intentional:
+ *
+ *   - API routes may need unauthenticated access (booking, branding, health check).
+ *   - Auth mechanisms vary per endpoint (cookie vs. Bearer vs. HMAC webhook sig).
+ *   - Middleware-level auth would force a single auth strategy on all API routes.
+ *
+ * **Important for contributors:** If you add a new API route under `/api/`,
+ * you MUST implement authentication in the route handler itself. There is no
+ * middleware safety net — an API route without explicit auth checks will be
+ * publicly accessible. Consider using `requireAuth()` or `requireRole()` helpers.
+ *
+ * Future improvement: consider inverting to a default-protected pattern with
+ * an explicit allowlist for public API routes (e.g., `/api/book`, `/api/branding`,
+ * `/api/health`) to reduce the risk of accidentally exposing new endpoints.
+ */
 export function isPublicRoute(pathname: string): boolean {
   return (
     PUBLIC_ROUTES.includes(pathname) ||
