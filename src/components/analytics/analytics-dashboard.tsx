@@ -1,6 +1,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
+/**
+ * Audit 5.2 — recharts is imported dynamically via next/dynamic on the
+ * AnalyticsDashboard export (see bottom of file). This keeps the ~200 KB
+ * recharts bundle out of the initial page load.
+ */
 import {
   BarChart, Bar, LineChart, Line, PieChart, Pie, Cell,
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip,

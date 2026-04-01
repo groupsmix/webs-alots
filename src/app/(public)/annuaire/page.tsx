@@ -9,6 +9,7 @@ import {
   getDirectoryCities,
   getDirectorySpecialties,
 } from "@/lib/data/directory";
+import { HreflangTags } from "@/components/hreflang-tags";
 
 const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://oltigo.com";
 
@@ -50,14 +51,26 @@ export default async function AnnuairePage() {
   const totalDoctors = cities.reduce((sum, c) => sum + c.count, 0);
   const totalCities = cities.length;
 
+  // Audit 7.7 — Use CollectionPage instead of MedicalBusiness for the
+  // directory listing page. MedicalBusiness describes a single clinic;
+  // CollectionPage correctly describes a directory/index of items.
   const jsonLd = {
     "@context": "https://schema.org",
-    "@type": "MedicalBusiness",
+    "@type": "CollectionPage",
     "@id": `${BASE_URL}/annuaire#directory`,
     name: "Annuaire Médical Oltigo — Maroc",
     url: `${BASE_URL}/annuaire`,
     description:
       "Annuaire médical complet au Maroc. Trouvez un médecin, dentiste ou spécialiste et prenez rendez-vous en ligne.",
+    isPartOf: {
+      "@type": "WebSite",
+      name: "Oltigo",
+      url: BASE_URL,
+    },
+    about: {
+      "@type": "MedicalSpecialty",
+      name: "General Practice",
+    },
     areaServed: {
       "@type": "Country",
       name: "Morocco",
@@ -71,6 +84,8 @@ export default async function AnnuairePage() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: safeJsonLdStringify(jsonLd) }}
       />
+      {/* Audit 7.6 — hreflang tags for multilingual SEO */}
+      <HreflangTags path="/annuaire" />
 
       {/* Hero */}
       <div className="text-center mb-12">

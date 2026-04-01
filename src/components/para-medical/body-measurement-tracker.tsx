@@ -6,11 +6,48 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
-  ResponsiveContainer, Legend,
-} from "recharts";
+import dynamic from "next/dynamic";
 import type { BodyMeasurement } from "@/lib/types/para-medical";
+
+interface ChartDataPoint {
+  date: string;
+  weight: number | null;
+  bmi: number | null;
+  bodyFat: number | null;
+}
+
+/** Audit 5.2 — dynamically import recharts */
+const LazyBodyChart = dynamic<{ chartData: ChartDataPoint[] }>(
+  () =>
+    import("recharts").then((mod) => {
+      const { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } = mod;
+      function Inner({ chartData }: { chartData: ChartDataPoint[] }) {
+        return (
+          <ResponsiveContainer width="100%" height={250}>
+            <LineChart data={chartData}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="date" tick={{ fontSize: 10 }} />
+              <YAxis yAxisId="weight" tick={{ fontSize: 10 }} />
+              <YAxis yAxisId="bmi" orientation="right" tick={{ fontSize: 10 }} />
+              <Tooltip />
+              <Legend />
+              <Line yAxisId="weight" type="monotone" dataKey="weight" stroke="#3b82f6" name="Weight (kg)" strokeWidth={2} dot={{ r: 3 }} />
+              <Line yAxisId="bmi" type="monotone" dataKey="bmi" stroke="#f59e0b" name="BMI" strokeWidth={2} dot={{ r: 3 }} />
+            </LineChart>
+          </ResponsiveContainer>
+        );
+      }
+      return { default: Inner };
+    }),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex items-center justify-center h-[250px] bg-muted/20 rounded-lg animate-pulse">
+        <span className="text-sm text-muted-foreground">Loading chart…</span>
+      </div>
+    ),
+  },
+);
 
 interface BodyMeasurementTrackerProps {
   measurements: BodyMeasurement[];
@@ -147,18 +184,7 @@ export function BodyMeasurementTracker({ measurements }: BodyMeasurementTrackerP
             <CardTitle className="text-sm">Weight & BMI History</CardTitle>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={250}>
-              <LineChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="date" tick={{ fontSize: 10 }} />
-                <YAxis yAxisId="weight" tick={{ fontSize: 10 }} />
-                <YAxis yAxisId="bmi" orientation="right" tick={{ fontSize: 10 }} />
-                <Tooltip />
-                <Legend />
-                <Line yAxisId="weight" type="monotone" dataKey="weight" stroke="#3b82f6" name="Weight (kg)" strokeWidth={2} dot={{ r: 3 }} />
-                <Line yAxisId="bmi" type="monotone" dataKey="bmi" stroke="#f59e0b" name="BMI" strokeWidth={2} dot={{ r: 3 }} />
-              </LineChart>
-            </ResponsiveContainer>
+            <LazyBodyChart chartData={chartData} />
           </CardContent>
         </Card>
       )}

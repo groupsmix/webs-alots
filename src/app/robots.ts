@@ -12,7 +12,8 @@ export default function robots(): MetadataRoute.Robots {
       {
         userAgent: "*",
         allow: ["/", "/about", "/services", "/contact", "/book", "/reviews", "/blog", "/blog/", "/location", "/how-to-book", "/testimonials"],
-        disallow: ["/admin/", "/super-admin/", "/doctor/", "/patient/", "/receptionist/", "/pharmacist/", "/api/", "/auth/"],
+        // Audit 7.5 — disallow annuaire management/edit routes from crawling
+        disallow: ["/admin/", "/super-admin/", "/doctor/", "/patient/", "/receptionist/", "/pharmacist/", "/api/", "/auth/", "/annuaire/manage/", "/annuaire/edit/", "/annuaire/admin/"],
       },
     ],
     sitemap: `${baseUrl}/sitemap.xml`,

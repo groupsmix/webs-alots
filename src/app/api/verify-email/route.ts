@@ -15,6 +15,8 @@ import { verifyEmailSendSchema, verifyEmailConfirmSchema } from "@/lib/validatio
 import { withValidation } from "@/lib/api-validate";
 import { apiError, apiNotFound, apiSuccess } from "@/lib/api-response";
 import { timingSafeEqual } from "@/lib/crypto-utils";
+import { sendEmail } from "@/lib/email";
+import { escapeHtml } from "@/lib/escape-html";
 
 /**
  * Generate a cryptographically secure 6-digit numeric verification code.
@@ -74,26 +76,38 @@ export const POST = withValidation(verifyEmailSendSchema, async (data, request: 
     return apiError("Verification service temporarily unavailable", 503);
   }
 
-  // Send the code via email (Resend, SendGrid, etc.)
-  // The email sending service should be configured separately.
   // SECURITY: Never log verification codes — they are sensitive credentials.
   logger.info("Email verification code generated", { context: "verify-email", email });
 
-  // Email service integration (Resend/SendGrid) should be configured
-  // via environment variables. See docs/email-setup.md for details.
-  // await sendVerificationEmail(email, code);
-
-  // SEC-01: Until the email transport is configured, surface a clear
-  // warning so callers know verification codes are NOT being delivered.
-  const emailConfigured = false; // flip to true once sendVerificationEmail is wired up
+  // Audit 6.1 — Send the verification code via the configured email provider
+  // (Resend or HTTP relay). Falls back gracefully when no provider is set.
+  const safeCode = escapeHtml(code);
+  const emailResult = await sendEmail({
+    to: email,
+    subject: "Your verification code — Oltigo",
+    html: `
+      <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;max-width:480px;margin:0 auto;padding:32px;">
+        <h2 style="margin:0 0 16px;color:#1e293b;">Email Verification</h2>
+        <p style="color:#475569;font-size:14px;line-height:1.6;">
+          Your verification code is:
+        </p>
+        <div style="background:#f1f5f9;border-radius:8px;padding:16px;text-align:center;margin:16px 0;">
+          <span style="font-size:32px;font-weight:700;letter-spacing:6px;color:#0f172a;">${safeCode}</span>
+        </div>
+        <p style="color:#94a3b8;font-size:12px;">
+          This code expires in 10 minutes. If you did not request this, please ignore this email.
+        </p>
+      </div>
+    `.trim(),
+  });
 
   return apiSuccess({
     ok: true,
-    message: emailConfigured
+    message: emailResult.success
       ? "Verification code sent. Check your email."
-      : "Verification code stored but email delivery is not yet configured. Contact support.",
+      : "Verification code stored but email delivery failed. Contact support.",
     expiresInMinutes: 10,
-    _emailDelivered: emailConfigured,
+    _emailDelivered: emailResult.success,
   });
 });
 

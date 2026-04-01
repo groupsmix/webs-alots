@@ -62,7 +62,10 @@ routes = [
 # Appointment reminders: every 30 minutes
 # Subscription renewal check: daily at 2am UTC
 [triggers]
-crons = ["*/30 * * * *", "*/5 * * * *", "0 2 * * *"]
+# Audit 8.8 — Changed second cron from every 5 min to every 15 min to
+# reduce unnecessary Worker invocations. Appointment reminders (*/30) and
+# daily subscription check (0 2 * * *) remain unchanged.
+crons = ["*/30 * * * *", "*/15 * * * *", "0 2 * * *"]
 
 # ---- Staging Environment ----
 # Deploy with: wrangler deploy --env staging
@@ -85,15 +88,21 @@ binding = "ASSETS"
 binding = "R2_BUCKET"
 bucket_name = "webs-alots-uploads-staging"
 
+# Audit 8.1 — Staging MUST use separate KV namespace IDs from production
+# to prevent data leakage between environments.
+# TODO: Create staging KV namespaces via:
+#   wrangler kv namespace create RATE_LIMIT_KV --env staging
+#   wrangler kv namespace create FEATURE_FLAGS_KV --env staging
+# Then replace the placeholder IDs below with the real ones.
 [[env.staging.kv_namespaces]]
 binding = "RATE_LIMIT_KV"
-id = "7ac37dff0a794542b0c766f38e73f105"
-preview_id = "7ac37dff0a794542b0c766f38e73f105"
+id = "STAGING_RATE_LIMIT_KV_ID_PLACEHOLDER"
+preview_id = "STAGING_RATE_LIMIT_KV_ID_PLACEHOLDER"
 
 [[env.staging.kv_namespaces]]
 binding = "FEATURE_FLAGS_KV"
-id = "610b3748bba545e2b083473b9023d66f"
-preview_id = "610b3748bba545e2b083473b9023d66f"
+id = "STAGING_FEATURE_FLAGS_KV_ID_PLACEHOLDER"
+preview_id = "STAGING_FEATURE_FLAGS_KV_ID_PLACEHOLDER"
 
 [env.staging.vars]
 ROOT_DOMAIN = "staging.oltigo.com"
@@ -106,6 +115,6 @@ NEXT_PUBLIC_PHONE_AUTH_ENABLED = "false"
 WHATSAPP_PROVIDER = "meta"
 
 # ---- Staging Cron Triggers ----
-# Same schedule as production
+# Audit 8.8 — Less aggressive schedule for staging (was */5, now */15)
 [env.staging.triggers]
-crons = ["*/30 * * * *", "*/5 * * * *", "0 2 * * *"]
+crons = ["*/30 * * * *", "*/15 * * * *", "0 2 * * *"]

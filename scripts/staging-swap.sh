@@ -32,30 +32,16 @@ log_warn()  { echo -e "${YELLOW}[WARN]${NC} $1"; }
 log_error() { echo -e "${RED}[ERROR]${NC} $1"; }
 
 # ---- Rollback Mode ----
+# Audit 8.5 — Use `wrangler rollback` for instant rollback instead of
+# rebuilding from main branch (which is slow and error-prone).
 if [[ "${1:-}" == "--rollback" ]]; then
   log_warn "Rolling back to previous production deployment..."
+  log_info "Using wrangler rollback for instant revert..."
 
-  if [[ ! -d "${BACKUP_DIR}" ]]; then
-    log_error "No backup found. Cannot rollback."
-    exit 1
-  fi
+  npx wrangler rollback --name "${PRODUCTION_NAME}"
 
-  LATEST_BACKUP=$(ls -t "${BACKUP_DIR}" | head -1)
-  if [[ -z "${LATEST_BACKUP}" ]]; then
-    log_error "No backup files found in ${BACKUP_DIR}/"
-    exit 1
-  fi
-
-  log_info "Restoring from backup: ${LATEST_BACKUP}"
-  log_info "Re-deploying production from the main branch..."
-
-  git stash 2>/dev/null || true
-  git checkout main
-  npm ci
-  npm run build:cf
-  npx wrangler deploy
-
-  log_info "Rollback complete. Production is restored to the main branch."
+  log_info "Rollback complete. Production has been reverted to the previous deployment."
+  log_info "Verify at: https://oltigo.com"
   exit 0
 fi
 

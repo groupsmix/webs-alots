@@ -1,10 +1,19 @@
 import type { MetadataRoute } from "next";
+import { headers } from "next/headers";
+import { getDirection, type Locale } from "@/lib/i18n";
 
 /**
  * Web App Manifest for PWA support.
  * Next.js serves this at /manifest.webmanifest automatically.
+ *
+ * Audit 7.8 — lang and dir are now resolved dynamically from the
+ * x-tenant-locale request header instead of being hardcoded to "fr" / "ltr".
  */
-export default function manifest(): MetadataRoute.Manifest {
+export default async function manifest(): Promise<MetadataRoute.Manifest> {
+  const h = await headers();
+  const locale: Locale = (h.get("x-tenant-locale") as Locale) || "fr";
+  const dir = getDirection(locale);
+
   return {
     name: "Oltigo — Gestion Médicale",
     short_name: "Oltigo",
@@ -16,8 +25,8 @@ export default function manifest(): MetadataRoute.Manifest {
     theme_color: "#0f172a",
     orientation: "portrait-primary",
     categories: ["health", "medical", "business"],
-    lang: "fr",
-    dir: "ltr",
+    lang: locale,
+    dir,
     prefer_related_applications: false,
     icons: [
       {

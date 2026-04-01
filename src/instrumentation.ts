@@ -23,6 +23,21 @@ export function register() {
     enforceEnvValidation();
   });
 
+  // Audit 8.4 — Warn when staging env uses the same Supabase URL as production.
+  // This catches misconfiguration where staging accidentally shares the
+  // production database.
+  if (process.env.ROOT_DOMAIN?.includes("staging")) {
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
+    if (supabaseUrl && !supabaseUrl.includes("staging")) {
+      console.warn(
+        "[STARTUP WARNING] Staging environment detected (ROOT_DOMAIN contains 'staging') " +
+        "but NEXT_PUBLIC_SUPABASE_URL does not appear to point to a staging Supabase project.\n" +
+        "Current value: " + supabaseUrl + "\n" +
+        "Ensure staging uses a separate Supabase project to avoid data leakage.",
+      );
+    }
+  }
+
   // CRITICAL-03: Enforce seed password rotation in production.
   // Migration 00019 creates seed users with the well-known password
   // "seed-password-change-me". In production, operators MUST either

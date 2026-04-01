@@ -84,3 +84,20 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
           echo '{"SUPABASE_SERVICE_ROLE_KEY":"${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}","RESEND_API_KEY":"${{ secrets.RESEND_API_KEY }}","BOOKING_TOKEN_SECRET":"${{ secrets.BOOKING_TOKEN_SECRET }}","CRON_SECRET":"${{ secrets.CRON_SECRET }}"}' | npx wrangler secret bulk --env staging
+
+      # Audit 8.6 — Post-deploy health check to verify the deployment is live
+      - name: Health Check
+        run: |
+          SITE_URL="${{ github.ref_name == 'staging' && 'https://staging.oltigo.com' || 'https://oltigo.com' }}"
+          echo "Running health check against ${SITE_URL}..."
+          for i in 1 2 3 4 5; do
+            STATUS=$(curl -s -o /dev/null -w '%{http_code}' --max-time 10 "${SITE_URL}" || echo "000")
+            if [ "$STATUS" -ge 200 ] && [ "$STATUS" -lt 400 ]; then
+              echo "Health check passed (HTTP ${STATUS})"
+              exit 0
+            fi
+            echo "Attempt ${i}: HTTP ${STATUS}, retrying in 10s..."
+            sleep 10
+          done
+          echo "Health check FAILED after 5 attempts"
+          exit 1

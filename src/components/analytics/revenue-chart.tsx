@@ -1,10 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import {
-  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip,
-  ResponsiveContainer,
-} from "recharts";
+import dynamic from "next/dynamic";
 import { TrendingUp } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -21,6 +18,42 @@ interface RevenueChartProps {
   monthlyData: RevenueDataPoint[];
   currency?: string;
 }
+
+/**
+ * Audit 5.2 — recharts loaded via next/dynamic to keep it out of the
+ * initial JS bundle (~200 KB parsed). The chart renders client-side only.
+ */
+const RevenueAreaChart = dynamic<{ data: RevenueDataPoint[]; currency: string }>(
+  () =>
+    import("recharts").then((mod) => {
+      const { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } = mod;
+      function Inner({ data, currency }: { data: RevenueDataPoint[]; currency: string }) {
+        return (
+          <ResponsiveContainer width="100%" height={300}>
+            <AreaChart data={data}>
+              <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
+              <XAxis dataKey="name" tick={{ fontSize: 11 }} />
+              <YAxis tick={{ fontSize: 11 }} />
+              <Tooltip
+                formatter={(value) => [`${Number(value).toLocaleString()} ${currency}`, "Revenue"]}
+                contentStyle={{ borderRadius: "8px", fontSize: "12px" }}
+              />
+              <Area type="monotone" dataKey="revenue" stroke="#2563eb" fill="#2563eb" fillOpacity={0.15} strokeWidth={2} />
+            </AreaChart>
+          </ResponsiveContainer>
+        );
+      }
+      return { default: Inner };
+    }),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex items-center justify-center h-[300px] bg-muted/20 rounded-lg animate-pulse">
+        <span className="text-sm text-muted-foreground">Loading chart…</span>
+      </div>
+    ),
+  },
+);
 
 export function RevenueChart({ dailyData, weeklyData, monthlyData, currency = "MAD" }: RevenueChartProps) {
   const [period, setPeriod] = useState<"daily" | "weekly" | "monthly">("daily");
@@ -51,25 +84,7 @@ export function RevenueChart({ dailyData, weeklyData, monthlyData, currency = "M
         </div>
       </CardHeader>
       <CardContent>
-        <ResponsiveContainer width="100%" height={300}>
-          <AreaChart data={data}>
-            <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
-            <XAxis dataKey="name" tick={{ fontSize: 11 }} />
-            <YAxis tick={{ fontSize: 11 }} />
-            <Tooltip
-              formatter={(value) => [`${Number(value).toLocaleString()} ${currency}`, "Revenue"]}
-              contentStyle={{ borderRadius: "8px", fontSize: "12px" }}
-            />
-            <Area
-              type="monotone"
-              dataKey="revenue"
-              stroke="#2563eb"
-              fill="#2563eb"
-              fillOpacity={0.15}
-              strokeWidth={2}
-            />
-          </AreaChart>
-        </ResponsiveContainer>
+        <RevenueAreaChart data={data} currency={currency} />
       </CardContent>
     </Card>
   );
