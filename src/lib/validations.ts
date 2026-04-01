@@ -400,6 +400,10 @@ export const brandingUpdateSchema = z.object({
   section_visibility: z.record(z.string(), z.boolean()).optional(),
 });
 
+export const applyPresetSchema = z.object({
+  presetId: z.string().min(1).max(100),
+});
+
 // ── Upload ──────────────────────────────────────────────────────────────
 
 export const uploadPresignedSchema = z.object({
