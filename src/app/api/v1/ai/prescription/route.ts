@@ -276,7 +276,7 @@ export const POST = withAuthValidation(
     // Merge patient DB data with any client-provided context
     const mergedContext = {
       age: data.patientContext?.age ?? patientMeta.age,
-      gender: data.patientContext?.gender ?? patientMeta.gender,
+      gender: (data.patientContext?.gender ?? patientMeta.gender) as "M" | "F" | undefined,
       allergies: data.patientContext?.allergies ?? patientMeta.allergies,
       currentMedications: data.patientContext?.currentMedications,
       chronicConditions: data.patientContext?.chronicConditions,

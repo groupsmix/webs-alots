@@ -25,7 +25,7 @@ export interface ChatbotClinicContext {
     phone?: string;
     email?: string;
     domain?: string;
-    config: Record<string, unknown>;
+    config: ClinicConfigJson | Record<string, unknown>;
   } | null;
   services: { name: string; price: number | null; category: string | null; duration_minutes: number }[];
   doctors: { name: string; phone: string | null; email: string | null }[];
