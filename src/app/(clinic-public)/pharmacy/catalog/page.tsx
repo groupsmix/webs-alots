@@ -1,12 +1,16 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
 import { Search, Filter, Loader2 } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useState, useMemo, useEffect } from "react";
+import { ProductDetailModal, type ProductInfo } from "@/components/public/product-detail-modal";
+import { ProductSidePanel } from "@/components/public/product-side-panel";
 import { useTenant } from "@/components/tenant-provider";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { createClient } from "@/lib/supabase-client";
+import { getTemplate, type ProductClickBehavior } from "@/lib/templates";
 
 /** Default currency when tenant config is not yet loaded. */
 const DEFAULT_CURRENCY = "MAD";
@@ -100,13 +104,79 @@ const categories = [
   { value: "supplements", label: "Supplements" },
 ];
 
+function toProductInfo(p: PublicPharmacyProduct): ProductInfo {
+  return {
+    id: p.id,
+    name: p.name,
+    genericName: p.genericName,
+    category: p.category,
+    description: p.description,
+    price: p.price,
+    currency: p.currency,
+    requiresPrescription: p.requiresPrescription,
+    stockQuantity: p.stockQuantity,
+    minimumStock: p.minimumStock,
+    manufacturer: p.manufacturer,
+    dosageForm: p.dosageForm,
+    strength: p.strength,
+    active: p.active,
+  };
+}
+
 export default function CatalogPage() {
   const tenant = useTenant();
+  const router = useRouter();
   const [query, setQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [allProducts, setAllProducts] = useState<PublicPharmacyProduct[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
+
+  // Product click behavior state
+  const [selectedProduct, setSelectedProduct] = useState<ProductInfo | null>(null);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [panelOpen, setPanelOpen] = useState(false);
+
+  // Determine click behavior from template (default: modal)
+  const [clickBehavior, setClickBehavior] = useState<ProductClickBehavior>("modal");
+
+  useEffect(() => {
+    async function loadTemplate() {
+      if (!tenant?.clinicId) return;
+      const supabase = createClient();
+      const { data } = await supabase
+        .from("clinics")
+        .select("template_id")
+        .eq("id", tenant.clinicId)
+        .maybeSingle();
+      if (data) {
+        const row = data as Record<string, unknown>;
+        const tmpl = getTemplate((row.template_id as string) ?? "modern");
+        setClickBehavior(tmpl.productClickBehavior);
+      }
+    }
+    loadTemplate();
+  }, [tenant?.clinicId]);
+
+  function handleProductClick(product: PublicPharmacyProduct) {
+    const info = toProductInfo(product);
+    switch (clickBehavior) {
+      case "modal":
+        setSelectedProduct(info);
+        setModalOpen(true);
+        break;
+      case "side-panel":
+        setSelectedProduct(info);
+        setPanelOpen(true);
+        break;
+      case "landing-page":
+        router.push(`/pharmacy/catalog/${product.id}`);
+        break;
+      case "new-tab":
+        window.open(`/pharmacy/catalog/${product.id}`, "_blank");
+        break;
+    }
+  }
 
   useEffect(() => {
     const controller = new AbortController();
@@ -195,7 +265,11 @@ export default function CatalogPage() {
         {filtered.map((product) => {
           const stock = getStockStatus(product);
           return (
-            <Card key={product.id} className="hover:shadow-md transition-shadow">
+            <Card
+              key={product.id}
+              className="hover:shadow-md transition-shadow cursor-pointer"
+              onClick={() => handleProductClick(product)}
+            >
               <CardContent className="pt-6">
                 <div className="flex items-start justify-between mb-3">
                   <Badge
@@ -251,6 +325,26 @@ export default function CatalogPage() {
       )}
         </>
       )}
+
+      {/* Product detail modal */}
+      <ProductDetailModal
+        product={selectedProduct}
+        open={modalOpen}
+        onClose={() => {
+          setModalOpen(false);
+          setSelectedProduct(null);
+        }}
+      />
+
+      {/* Product side panel */}
+      <ProductSidePanel
+        product={selectedProduct}
+        open={panelOpen}
+        onClose={() => {
+          setPanelOpen(false);
+          setSelectedProduct(null);
+        }}
+      />
     </div>
   );
 }
