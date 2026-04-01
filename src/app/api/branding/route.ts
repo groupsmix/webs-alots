@@ -6,21 +6,22 @@
  */
 
 import { revalidatePath } from "next/cache";
-import { createTenantClient } from "@/lib/supabase-server";
-import { getTenant, requireTenant } from "@/lib/tenant";
+import { apiError, apiInternalError, apiSuccess } from "@/lib/api-response";
+import { withAuthValidation } from "@/lib/api-validate";
+import { meetsWCAG_AA, WCAG_SAFE_DEFAULTS } from "@/lib/contrast";
+import { logger } from "@/lib/logger";
 import {
   uploadToR2,
   isR2Configured,
   buildUploadKey,
+  getResponsiveImageUrls,
 } from "@/lib/r2";
-import type { UserRole } from "@/lib/types/database";
-import { withAuth } from "@/lib/with-auth";
-import { logger } from "@/lib/logger";
-import { brandingUpdateSchema } from "@/lib/validations";
-import { withAuthValidation } from "@/lib/api-validate";
 import { invalidateAllSubdomainCaches } from "@/lib/subdomain-cache";
-import { apiError, apiInternalError, apiSuccess } from "@/lib/api-response";
-import { meetsWCAG_AA, WCAG_SAFE_DEFAULTS } from "@/lib/contrast";
+import { createTenantClient } from "@/lib/supabase-server";
+import { getTenant, requireTenant } from "@/lib/tenant";
+import type { UserRole } from "@/lib/types/database";
+import { brandingUpdateSchema } from "@/lib/validations";
+import { withAuth } from "@/lib/with-auth";
 
 const ADMIN_ROLES: UserRole[] = ["super_admin", "clinic_admin"];
 
@@ -240,5 +241,9 @@ export const POST = withAuth(async (request, { supabase }) => {
   // Invalidate subdomain cache so middleware picks up any config changes
   invalidateAllSubdomainCaches();
 
-  return apiSuccess({ url, key });
+  // L3-H2: Return Cloudflare Image Resizing thumbnails so the admin panel
+  // can display optimized previews immediately after upload.
+  const thumbnails = getResponsiveImageUrls(url);
+
+  return apiSuccess({ url, key, thumbnails });
 }, ADMIN_ROLES);
