@@ -72,6 +72,67 @@ supabase/
   functions/           # Supabase Edge Functions
 ```
 
+## Architecture
+
+> Addresses audit finding **L10-04**: architecture diagram.
+
+```mermaid
+graph TB
+    subgraph Clients
+        B[Browser]
+        M[Mobile Browser]
+    end
+
+    subgraph "Cloudflare Edge"
+        W[Cloudflare Workers<br/>Next.js via OpenNext]
+        IR[Image Resizing<br/>CDN Edge]
+        R2[R2 Object Storage<br/>Files & Backups]
+    end
+
+    subgraph "Supabase"
+        PG[(PostgreSQL<br/>+ RLS)]
+        AU[GoTrue Auth]
+        RT[Realtime]
+    end
+
+    subgraph "Notifications"
+        WA[WhatsApp<br/>Meta Cloud API]
+        TW[Twilio<br/>Fallback]
+        EM[Email<br/>Resend / SMTP]
+    end
+
+    subgraph "Payments"
+        CMI[CMI Gateway<br/>Moroccan Interbank]
+        ST[Stripe<br/>International]
+    end
+
+    subgraph "Monitoring"
+        SE[Sentry<br/>Error Tracking]
+        PL[Plausible<br/>Privacy-First Analytics]
+    end
+
+    B & M -->|HTTPS<br/>*.clinic.oltigo.com| W
+    W -->|PostgREST + RLS<br/>clinic_id scoping| PG
+    W -->|JWT Auth| AU
+    W -->|Subscriptions| RT
+    W -->|S3 API<br/>PHI encrypted AES-256-GCM| R2
+    W -->|Templates| WA
+    W -->|Fallback| TW
+    W -->|Transactional| EM
+    W -->|Webhooks| CMI & ST
+    W -->|DSN| SE
+    R2 -->|Edge transform| IR
+    B -.->|Script tag<br/>No cookies| PL
+```
+
+### Data Flow
+
+1. **Request** → Cloudflare Worker receives `clinicname.oltigo.com`
+2. **Middleware** → Extracts subdomain, resolves clinic, injects `x-tenant-*` headers, enforces CSRF + rate limits
+3. **RLS** → Every Supabase query is scoped by `clinic_id` (application-level + database-level)
+4. **PHI** → Patient files encrypted with AES-256-GCM before upload to R2
+5. **Images** → Served through Cloudflare Image Resizing at CDN edge (100px, 300px, 800px variants)
+
 ## Multi-Tenant Architecture
 
 All clinics share one Supabase project. Data isolation is enforced via **Row Level Security (RLS)** - every table has a `clinic_id` column and RLS policies automatically filter queries.
@@ -168,6 +229,7 @@ The middleware enforces Origin-header checks on all mutation requests (`POST`, `
 |---|---|
 | [WhatsApp Template Approval Guide](docs/whatsapp-template-approval.md) | How to submit and manage WhatsApp message templates for Meta Business API approval — includes all 10 Darija templates with variable mappings |
 | [Backup & Recovery Runbook](docs/backup-recovery-runbook.md) | Operational procedures for database backups, disaster recovery, and data restoration — includes RPO/RPT targets, incident response checklist, and DR drill guide |
+| [Plausible Analytics Privacy](docs/plausible-privacy.md) | Privacy & compliance documentation for Plausible analytics — explains what is/isn't tracked, Moroccan Law 09-08 compliance, GDPR status, and self-hosted option |
 | [API Docs (generated)](docs/api/) | Auto-generated TypeDoc API reference for `src/lib/` utilities (run `npm run docs:generate` to rebuild) |
 
 ## Deploy on Cloudflare Workers
