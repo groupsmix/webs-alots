@@ -1,0 +1,662 @@
+name: "One-Click Disaster Recovery"
+
+# ============================================================================
+# ONE-CLICK DISASTER RECOVERY
+# ============================================================================
+# This workflow rebuilds the ENTIRE infrastructure from scratch:
+#   1. Creates a new Supabase project (database + auth + storage)
+#   2. Runs all 59 migrations to rebuild the schema
+#   3. Creates Cloudflare R2 bucket for file storage
+#   4. Creates Cloudflare KV namespaces (rate limiting + feature flags)
+#   5. Builds and deploys the app to Cloudflare Workers
+#   6. Sets all Worker secrets automatically
+#   7. Runs a health check to verify the deployment
+#
+# PREREQUISITES (GitHub Secrets you must set ONCE, before running):
+#   - SUPABASE_ACCESS_TOKEN    : Personal access token from https://supabase.com/dashboard/account/tokens
+#   - SUPABASE_ORG_ID          : Your Supabase organization ID (from dashboard URL)
+#   - SUPABASE_DB_PASSWORD     : Strong password for the new database
+#   - CLOUDFLARE_API_TOKEN     : API token from https://dash.cloudflare.com/profile/api-tokens
+#   - CLOUDFLARE_ACCOUNT_ID    : Your Cloudflare account ID
+#   - CLOUDFLARE_ZONE_ID       : Zone ID for your domain (oltigo.com)
+#
+# OPTIONAL SECRETS (for full feature recovery):
+#   - RESEND_API_KEY           : Email notifications
+#   - BOOKING_TOKEN_SECRET     : Booking security (or auto-generated)
+#   - CRON_SECRET              : Cron job auth (or auto-generated)
+#   - WHATSAPP_ACCESS_TOKEN    : WhatsApp notifications
+#   - WHATSAPP_PHONE_NUMBER_ID : WhatsApp phone number
+#   - META_APP_SECRET          : WhatsApp webhook verification
+#   - STRIPE_SECRET_KEY        : Stripe payments
+#   - STRIPE_WEBHOOK_SECRET    : Stripe webhook verification
+#   - PHI_ENCRYPTION_KEY       : Patient data encryption (or auto-generated)
+#   - R2_BACKUP_BUCKET         : Backup bucket name
+# ============================================================================
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Environment to recover"
+        required: true
+        default: "production"
+        type: choice
+        options:
+          - production
+          - staging
+      supabase_region:
+        description: "Supabase region for new project"
+        required: true
+        default: "eu-central-1"
+        type: choice
+        options:
+          - eu-central-1
+          - us-east-1
+          - us-west-1
+          - ap-southeast-1
+          - ap-northeast-1
+      supabase_plan:
+        description: "Supabase plan"
+        required: true
+        default: "free"
+        type: choice
+        options:
+          - free
+          - pro
+      confirm_recovery:
+        description: "Type RECOVER to confirm (prevents accidental runs)"
+        required: true
+        type: string
+      restore_from_backup:
+        description: "Restore data from R2 backup? (requires R2 backup bucket)"
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+
+jobs:
+  # ---- Step 0: Validate confirmation ----
+  validate:
+    runs-on: ubuntu-latest
+    name: "0. Validate Confirmation"
+    steps:
+      - name: Check confirmation
+        if: inputs.confirm_recovery != 'RECOVER'
+        run: |
+          echo "::error::You must type RECOVER to confirm. This prevents accidental infrastructure rebuilds."
+          exit 1
+      - name: Log recovery start
+        run: |
+          echo "=========================================="
+          echo "  DISASTER RECOVERY INITIATED"
+          echo "=========================================="
+          echo "Environment:  ${{ inputs.environment }}"
+          echo "Region:       ${{ inputs.supabase_region }}"
+          echo "Plan:         ${{ inputs.supabase_plan }}"
+          echo "Restore data: ${{ inputs.restore_from_backup }}"
+          echo "Triggered by: ${{ github.actor }}"
+          echo "Timestamp:    $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
+          echo "=========================================="
+
+  # ---- Step 1: Create Supabase project ----
+  supabase:
+    runs-on: ubuntu-latest
+    name: "1. Supabase Project"
+    needs: validate
+    outputs:
+      project_id: ${{ steps.create.outputs.project_id }}
+      supabase_url: ${{ steps.wait.outputs.supabase_url }}
+      anon_key: ${{ steps.keys.outputs.anon_key }}
+      service_role_key: ${{ steps.keys.outputs.service_role_key }}
+      db_host: ${{ steps.wait.outputs.db_host }}
+    steps:
+      - name: Create Supabase project
+        id: create
+        run: |
+          ENV="${{ inputs.environment }}"
+          PROJECT_NAME="webs-alots"
+          if [ "$ENV" = "staging" ]; then
+            PROJECT_NAME="webs-alots-staging"
+          fi
+
+          echo "Creating Supabase project: ${PROJECT_NAME}..."
+
+          RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
+            "https://api.supabase.com/v1/projects" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_ACCESS_TOKEN }}" \
+            -H "Content-Type: application/json" \
+            -d "{
+              \"name\": \"${PROJECT_NAME}\",
+              \"organization_id\": \"${{ secrets.SUPABASE_ORG_ID }}\",
+              \"region\": \"${{ inputs.supabase_region }}\",
+              \"plan\": \"${{ inputs.supabase_plan }}\",
+              \"db_pass\": \"${{ secrets.SUPABASE_DB_PASSWORD }}\"
+            }")
+
+          HTTP_CODE=$(echo "$RESPONSE" | tail -1)
+          BODY=$(echo "$RESPONSE" | head -n -1)
+
+          if [ "$HTTP_CODE" -lt 200 ] || [ "$HTTP_CODE" -ge 300 ]; then
+            echo "::error::Failed to create Supabase project (HTTP ${HTTP_CODE}): ${BODY}"
+            exit 1
+          fi
+
+          PROJECT_ID=$(echo "$BODY" | jq -r '.id')
+          echo "project_id=${PROJECT_ID}" >> "$GITHUB_OUTPUT"
+          echo "Supabase project created: ${PROJECT_ID}"
+
+      - name: Wait for project to be ready
+        id: wait
+        run: |
+          PROJECT_ID="${{ steps.create.outputs.project_id }}"
+          echo "Waiting for project ${PROJECT_ID} to become active..."
+
+          for i in $(seq 1 60); do
+            RESPONSE=$(curl -s \
+              "https://api.supabase.com/v1/projects/${PROJECT_ID}" \
+              -H "Authorization: Bearer ${{ secrets.SUPABASE_ACCESS_TOKEN }}")
+
+            STATUS=$(echo "$RESPONSE" | jq -r '.status')
+            echo "Attempt ${i}/60: status = ${STATUS}"
+
+            if [ "$STATUS" = "ACTIVE_HEALTHY" ]; then
+              DB_HOST=$(echo "$RESPONSE" | jq -r '.database.host')
+              echo "supabase_url=https://${PROJECT_ID}.supabase.co" >> "$GITHUB_OUTPUT"
+              echo "db_host=${DB_HOST}" >> "$GITHUB_OUTPUT"
+              echo "Project is ready!"
+              exit 0
+            fi
+
+            sleep 10
+          done
+
+          echo "::error::Supabase project did not become ready within 10 minutes"
+          exit 1
+
+      - name: Retrieve API keys
+        id: keys
+        run: |
+          PROJECT_ID="${{ steps.create.outputs.project_id }}"
+
+          RESPONSE=$(curl -s \
+            "https://api.supabase.com/v1/projects/${PROJECT_ID}/api-keys" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_ACCESS_TOKEN }}")
+
+          ANON_KEY=$(echo "$RESPONSE" | jq -r '.[] | select(.name == "anon") | .api_key')
+          SERVICE_KEY=$(echo "$RESPONSE" | jq -r '.[] | select(.name == "service_role") | .api_key')
+
+          if [ -z "$ANON_KEY" ] || [ "$ANON_KEY" = "null" ]; then
+            echo "::error::Failed to retrieve API keys"
+            exit 1
+          fi
+
+          echo "::add-mask::${ANON_KEY}"
+          echo "::add-mask::${SERVICE_KEY}"
+          echo "anon_key=${ANON_KEY}" >> "$GITHUB_OUTPUT"
+          echo "service_role_key=${SERVICE_KEY}" >> "$GITHUB_OUTPUT"
+          echo "API keys retrieved successfully"
+
+  # ---- Step 2: Run database migrations ----
+  migrations:
+    runs-on: ubuntu-latest
+    name: "2. Database Migrations"
+    needs: supabase
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install PostgreSQL client
+        run: sudo apt-get update && sudo apt-get install -y postgresql-client
+
+      - name: Run all migrations
+        env:
+          DB_URL: "postgresql://postgres.${{ needs.supabase.outputs.project_id }}:${{ secrets.SUPABASE_DB_PASSWORD }}@aws-0-${{ inputs.supabase_region }}.pooler.supabase.com:6543/postgres"
+        run: |
+          echo "Running all migrations..."
+          MIGRATION_COUNT=0
+          FAILED=0
+
+          for migration in $(ls supabase/migrations/*.sql | sort); do
+            MIGRATION_NAME=$(basename "$migration")
+            echo "Running: ${MIGRATION_NAME}..."
+
+            if psql "${DB_URL}" -f "$migration" 2>&1; then
+              echo "  OK: ${MIGRATION_NAME}"
+              MIGRATION_COUNT=$((MIGRATION_COUNT + 1))
+            else
+              echo "::warning::Migration may have partial failure: ${MIGRATION_NAME}"
+              MIGRATION_COUNT=$((MIGRATION_COUNT + 1))
+              FAILED=$((FAILED + 1))
+            fi
+          done
+
+          echo ""
+          echo "=========================================="
+          echo "  Migrations complete"
+          echo "  Total: ${MIGRATION_COUNT}"
+          echo "  Warnings: ${FAILED}"
+          echo "=========================================="
+
+      - name: Run seed data (if exists)
+        env:
+          DB_URL: "postgresql://postgres.${{ needs.supabase.outputs.project_id }}:${{ secrets.SUPABASE_DB_PASSWORD }}@aws-0-${{ inputs.supabase_region }}.pooler.supabase.com:6543/postgres"
+        run: |
+          if [ -s supabase/seed.sql ]; then
+            echo "Running seed.sql..."
+            psql "${DB_URL}" -f supabase/seed.sql || true
+          else
+            echo "No seed data to apply (seed data is in migrations)"
+          fi
+
+  # ---- Step 3: Restore from backup (optional) ----
+  restore:
+    runs-on: ubuntu-latest
+    name: "3. Restore Data (optional)"
+    needs: [supabase, migrations]
+    if: inputs.restore_from_backup == true
+    steps:
+      - name: Install tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client
+          pip install awscli
+
+      - name: Configure R2 credentials
+        run: |
+          mkdir -p ~/.aws
+          cat > ~/.aws/credentials << EOF
+          [default]
+          aws_access_key_id=${{ secrets.R2_ACCESS_KEY_ID }}
+          aws_secret_access_key=${{ secrets.R2_SECRET_ACCESS_KEY }}
+          EOF
+          cat > ~/.aws/config << EOF
+          [default]
+          region=auto
+          EOF
+
+      - name: Find and download latest backup
+        run: |
+          R2_ENDPOINT="https://${{ secrets.CLOUDFLARE_ACCOUNT_ID }}.r2.cloudflarestorage.com"
+          BUCKET="${{ secrets.R2_BACKUP_BUCKET || 'webs-alots-backups' }}"
+
+          echo "Looking for latest backup in R2..."
+
+          for TYPE in daily weekly monthly; do
+            LATEST=$(aws s3 ls "s3://${BUCKET}/backups/${TYPE}/" \
+              --endpoint-url "${R2_ENDPOINT}" 2>/dev/null \
+              | sort -r | head -1 | awk '{print $4}')
+
+            if [ -n "${LATEST}" ]; then
+              echo "Found backup: backups/${TYPE}/${LATEST}"
+              aws s3 cp "s3://${BUCKET}/backups/${TYPE}/${LATEST}" \
+                /tmp/restore_backup.sql.gz \
+                --endpoint-url "${R2_ENDPOINT}"
+              echo "backup_found=true" >> "$GITHUB_ENV"
+              break
+            fi
+          done
+
+          if [ -z "${LATEST}" ]; then
+            echo "::warning::No backup found in R2. Skipping data restore."
+            echo "backup_found=false" >> "$GITHUB_ENV"
+          fi
+
+      - name: Restore backup to new project
+        if: env.backup_found == 'true'
+        env:
+          DB_URL: "postgresql://postgres.${{ needs.supabase.outputs.project_id }}:${{ secrets.SUPABASE_DB_PASSWORD }}@aws-0-${{ inputs.supabase_region }}.pooler.supabase.com:6543/postgres"
+        run: |
+          echo "Restoring backup data..."
+          gunzip -c /tmp/restore_backup.sql.gz \
+            | psql -v ON_ERROR_STOP=0 "${DB_URL}" 2>&1 \
+            | tail -30
+          echo "Data restore complete"
+
+  # ---- Step 4: Cloudflare resources (R2 + KV) ----
+  cloudflare:
+    runs-on: ubuntu-latest
+    name: "4. Cloudflare Resources"
+    needs: validate
+    outputs:
+      r2_bucket: ${{ steps.r2.outputs.bucket_name }}
+      rate_limit_kv_id: ${{ steps.kv_rate.outputs.kv_id }}
+      feature_flags_kv_id: ${{ steps.kv_flags.outputs.kv_id }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Create R2 bucket
+        id: r2
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          ENV="${{ inputs.environment }}"
+          BUCKET_NAME="webs-alots-uploads"
+          if [ "$ENV" = "staging" ]; then
+            BUCKET_NAME="webs-alots-uploads-staging"
+          fi
+
+          echo "Creating R2 bucket: ${BUCKET_NAME}..."
+
+          # Try to create — will fail gracefully if bucket already exists
+          npx wrangler r2 bucket create "${BUCKET_NAME}" 2>&1 || true
+
+          # Verify it exists
+          npx wrangler r2 bucket list 2>&1 | grep -q "${BUCKET_NAME}" && \
+            echo "R2 bucket ready: ${BUCKET_NAME}" || \
+            echo "::warning::Could not verify R2 bucket. It may need manual creation."
+
+          echo "bucket_name=${BUCKET_NAME}" >> "$GITHUB_OUTPUT"
+
+      - name: Create R2 backup bucket
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          BUCKET_NAME="${{ secrets.R2_BACKUP_BUCKET || 'webs-alots-backups' }}"
+          echo "Creating R2 backup bucket: ${BUCKET_NAME}..."
+          npx wrangler r2 bucket create "${BUCKET_NAME}" 2>&1 || true
+
+      - name: Create KV namespace (Rate Limiting)
+        id: kv_rate
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          ENV="${{ inputs.environment }}"
+          TITLE="RATE_LIMIT_KV"
+          if [ "$ENV" = "staging" ]; then
+            TITLE="RATE_LIMIT_KV_STAGING"
+          fi
+
+          echo "Creating KV namespace: ${TITLE}..."
+          OUTPUT=$(npx wrangler kv namespace create "${TITLE}" 2>&1) || true
+          echo "$OUTPUT"
+
+          # Extract the namespace ID from wrangler output
+          KV_ID=$(echo "$OUTPUT" | grep -oP 'id = "\K[^"]+' || echo "")
+
+          if [ -z "$KV_ID" ]; then
+            # Namespace may already exist — try to find it
+            KV_ID=$(npx wrangler kv namespace list 2>&1 | jq -r ".[] | select(.title | test(\"${TITLE}\")) | .id" || echo "")
+          fi
+
+          if [ -n "$KV_ID" ]; then
+            echo "KV namespace ready: ${KV_ID}"
+            echo "kv_id=${KV_ID}" >> "$GITHUB_OUTPUT"
+          else
+            echo "::warning::Could not create/find KV namespace for rate limiting"
+            echo "kv_id=PLACEHOLDER" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Create KV namespace (Feature Flags)
+        id: kv_flags
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          ENV="${{ inputs.environment }}"
+          TITLE="FEATURE_FLAGS_KV"
+          if [ "$ENV" = "staging" ]; then
+            TITLE="FEATURE_FLAGS_KV_STAGING"
+          fi
+
+          echo "Creating KV namespace: ${TITLE}..."
+          OUTPUT=$(npx wrangler kv namespace create "${TITLE}" 2>&1) || true
+          echo "$OUTPUT"
+
+          KV_ID=$(echo "$OUTPUT" | grep -oP 'id = "\K[^"]+' || echo "")
+
+          if [ -z "$KV_ID" ]; then
+            KV_ID=$(npx wrangler kv namespace list 2>&1 | jq -r ".[] | select(.title | test(\"${TITLE}\")) | .id" || echo "")
+          fi
+
+          if [ -n "$KV_ID" ]; then
+            echo "KV namespace ready: ${KV_ID}"
+            echo "kv_id=${KV_ID}" >> "$GITHUB_OUTPUT"
+          else
+            echo "::warning::Could not create/find KV namespace for feature flags"
+            echo "kv_id=PLACEHOLDER" >> "$GITHUB_OUTPUT"
+          fi
+
+  # ---- Step 5: Build & Deploy to Cloudflare Workers ----
+  deploy:
+    runs-on: ubuntu-latest
+    name: "5. Build & Deploy"
+    needs: [supabase, migrations, cloudflare]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate secrets (if not provided)
+        id: secrets
+        run: |
+          # Generate any missing secrets
+          BOOKING_SECRET="${{ secrets.BOOKING_TOKEN_SECRET }}"
+          if [ -z "$BOOKING_SECRET" ]; then
+            BOOKING_SECRET=$(openssl rand -hex 32)
+            echo "::notice::Generated new BOOKING_TOKEN_SECRET"
+          fi
+          echo "::add-mask::${BOOKING_SECRET}"
+          echo "booking_secret=${BOOKING_SECRET}" >> "$GITHUB_OUTPUT"
+
+          CRON_SECRET="${{ secrets.CRON_SECRET }}"
+          if [ -z "$CRON_SECRET" ]; then
+            CRON_SECRET=$(openssl rand -hex 32)
+            echo "::notice::Generated new CRON_SECRET"
+          fi
+          echo "::add-mask::${CRON_SECRET}"
+          echo "cron_secret=${CRON_SECRET}" >> "$GITHUB_OUTPUT"
+
+          PHI_KEY="${{ secrets.PHI_ENCRYPTION_KEY }}"
+          if [ -z "$PHI_KEY" ]; then
+            PHI_KEY=$(openssl rand -hex 32)
+            echo "::notice::Generated new PHI_ENCRYPTION_KEY"
+          fi
+          echo "::add-mask::${PHI_KEY}"
+          echo "phi_key=${PHI_KEY}" >> "$GITHUB_OUTPUT"
+
+      - name: Update wrangler.toml with new KV IDs
+        run: |
+          ENV="${{ inputs.environment }}"
+          RATE_KV="${{ needs.cloudflare.outputs.rate_limit_kv_id }}"
+          FLAGS_KV="${{ needs.cloudflare.outputs.feature_flags_kv_id }}"
+
+          if [ "$ENV" = "production" ]; then
+            # Update production KV namespace IDs
+            if [ -n "$RATE_KV" ] && [ "$RATE_KV" != "PLACEHOLDER" ]; then
+              sed -i "s/id = \"7ac37dff0a794542b0c766f38e73f105\"/id = \"${RATE_KV}\"/" wrangler.toml
+              sed -i "s/preview_id = \"7ac37dff0a794542b0c766f38e73f105\"/preview_id = \"${RATE_KV}\"/" wrangler.toml
+            fi
+            if [ -n "$FLAGS_KV" ] && [ "$FLAGS_KV" != "PLACEHOLDER" ]; then
+              sed -i "s/id = \"610b3748bba545e2b083473b9023d66f\"/id = \"${FLAGS_KV}\"/" wrangler.toml
+              sed -i "s/preview_id = \"610b3748bba545e2b083473b9023d66f\"/preview_id = \"${FLAGS_KV}\"/" wrangler.toml
+            fi
+          else
+            # Update staging KV namespace IDs
+            if [ -n "$RATE_KV" ] && [ "$RATE_KV" != "PLACEHOLDER" ]; then
+              sed -i "s/id = \"STAGING_RATE_LIMIT_KV_ID_PLACEHOLDER\"/id = \"${RATE_KV}\"/" wrangler.toml
+              sed -i "s/preview_id = \"STAGING_RATE_LIMIT_KV_ID_PLACEHOLDER\"/preview_id = \"${RATE_KV}\"/" wrangler.toml
+            fi
+            if [ -n "$FLAGS_KV" ] && [ "$FLAGS_KV" != "PLACEHOLDER" ]; then
+              sed -i "s/id = \"STAGING_FEATURE_FLAGS_KV_ID_PLACEHOLDER\"/id = \"${FLAGS_KV}\"/" wrangler.toml
+              sed -i "s/preview_id = \"STAGING_FEATURE_FLAGS_KV_ID_PLACEHOLDER\"/preview_id = \"${FLAGS_KV}\"/" wrangler.toml
+            fi
+          fi
+
+          echo "wrangler.toml updated with new KV namespace IDs"
+
+      - name: Build for Cloudflare
+        run: npm run build:cf
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ needs.supabase.outputs.supabase_url }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ needs.supabase.outputs.anon_key }}
+
+      - name: Deploy to Cloudflare Workers
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: ${{ inputs.environment == 'staging' && 'deploy --env staging' || 'deploy' }}
+
+      - name: Set Worker secrets
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          ENV="${{ inputs.environment }}"
+          ENV_FLAG=""
+          if [ "$ENV" = "staging" ]; then
+            ENV_FLAG="--env staging"
+          fi
+
+          # Build the secrets JSON — only include non-empty values
+          SECRETS_JSON="{"
+          SECRETS_JSON+="\"SUPABASE_SERVICE_ROLE_KEY\":\"${{ needs.supabase.outputs.service_role_key }}\""
+          SECRETS_JSON+=",\"BOOKING_TOKEN_SECRET\":\"${{ steps.secrets.outputs.booking_secret }}\""
+          SECRETS_JSON+=",\"CRON_SECRET\":\"${{ steps.secrets.outputs.cron_secret }}\""
+
+          RESEND_KEY="${{ secrets.RESEND_API_KEY }}"
+          if [ -n "$RESEND_KEY" ]; then
+            SECRETS_JSON+=",\"RESEND_API_KEY\":\"${RESEND_KEY}\""
+          fi
+
+          PHI_KEY="${{ steps.secrets.outputs.phi_key }}"
+          if [ -n "$PHI_KEY" ]; then
+            SECRETS_JSON+=",\"PHI_ENCRYPTION_KEY\":\"${PHI_KEY}\""
+          fi
+
+          WA_TOKEN="${{ secrets.WHATSAPP_ACCESS_TOKEN }}"
+          if [ -n "$WA_TOKEN" ]; then
+            SECRETS_JSON+=",\"WHATSAPP_ACCESS_TOKEN\":\"${WA_TOKEN}\""
+          fi
+
+          WA_PHONE="${{ secrets.WHATSAPP_PHONE_NUMBER_ID }}"
+          if [ -n "$WA_PHONE" ]; then
+            SECRETS_JSON+=",\"WHATSAPP_PHONE_NUMBER_ID\":\"${WA_PHONE}\""
+          fi
+
+          META_SECRET="${{ secrets.META_APP_SECRET }}"
+          if [ -n "$META_SECRET" ]; then
+            SECRETS_JSON+=",\"META_APP_SECRET\":\"${META_SECRET}\""
+          fi
+
+          STRIPE_KEY="${{ secrets.STRIPE_SECRET_KEY }}"
+          if [ -n "$STRIPE_KEY" ]; then
+            SECRETS_JSON+=",\"STRIPE_SECRET_KEY\":\"${STRIPE_KEY}\""
+          fi
+
+          STRIPE_WH="${{ secrets.STRIPE_WEBHOOK_SECRET }}"
+          if [ -n "$STRIPE_WH" ]; then
+            SECRETS_JSON+=",\"STRIPE_WEBHOOK_SECRET\":\"${STRIPE_WH}\""
+          fi
+
+          SECRETS_JSON+="}"
+
+          echo "${SECRETS_JSON}" | npx wrangler secret bulk ${ENV_FLAG}
+          echo "Worker secrets configured"
+
+  # ---- Step 6: Health check ----
+  verify:
+    runs-on: ubuntu-latest
+    name: "6. Verify Deployment"
+    needs: [deploy]
+    steps:
+      - name: Health check
+        run: |
+          ENV="${{ inputs.environment }}"
+          if [ "$ENV" = "staging" ]; then
+            SITE_URL="https://staging.oltigo.com"
+          else
+            SITE_URL="https://oltigo.com"
+          fi
+
+          echo "Running health check against ${SITE_URL}..."
+
+          for i in 1 2 3 4 5 6; do
+            STATUS=$(curl -s -o /dev/null -w '%{http_code}' --max-time 15 "${SITE_URL}" || echo "000")
+            if [ "$STATUS" -ge 200 ] && [ "$STATUS" -lt 400 ]; then
+              echo ""
+              echo "=========================================="
+              echo "  RECOVERY COMPLETE"
+              echo "=========================================="
+              echo "  Site:   ${SITE_URL}"
+              echo "  Status: HTTP ${STATUS}"
+              echo "=========================================="
+              exit 0
+            fi
+            echo "Attempt ${i}/6: HTTP ${STATUS}, retrying in 15s..."
+            sleep 15
+          done
+
+          echo "::warning::Health check did not get a successful response. The deployment may still be propagating (can take up to 5 minutes). Check ${SITE_URL} manually."
+
+  # ---- Step 7: Summary ----
+  summary:
+    runs-on: ubuntu-latest
+    name: "7. Recovery Summary"
+    needs: [supabase, cloudflare, deploy, verify]
+    if: always()
+    steps:
+      - name: Print recovery summary
+        run: |
+          ENV="${{ inputs.environment }}"
+          echo ""
+          echo "============================================================"
+          echo "  DISASTER RECOVERY SUMMARY"
+          echo "============================================================"
+          echo ""
+          echo "  Environment:    ${ENV}"
+          echo "  Timestamp:      $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
+          echo ""
+          echo "  --- Supabase ---"
+          echo "  Project ID:     ${{ needs.supabase.outputs.project_id }}"
+          echo "  URL:            ${{ needs.supabase.outputs.supabase_url }}"
+          echo "  Dashboard:      https://supabase.com/dashboard/project/${{ needs.supabase.outputs.project_id }}"
+          echo ""
+          echo "  --- Cloudflare ---"
+          echo "  R2 Bucket:      ${{ needs.cloudflare.outputs.r2_bucket }}"
+          echo "  Rate Limit KV:  ${{ needs.cloudflare.outputs.rate_limit_kv_id }}"
+          echo "  Feature Flags:  ${{ needs.cloudflare.outputs.feature_flags_kv_id }}"
+          echo ""
+          echo "  --- Site ---"
+          if [ "$ENV" = "staging" ]; then
+            echo "  URL:            https://staging.oltigo.com"
+          else
+            echo "  URL:            https://oltigo.com"
+          fi
+          echo ""
+          echo "  --- IMPORTANT: Update GitHub Secrets ---"
+          echo "  After recovery, update these GitHub secrets with"
+          echo "  the new Supabase values so CI/CD works correctly:"
+          echo ""
+          echo "  NEXT_PUBLIC_SUPABASE_URL = ${{ needs.supabase.outputs.supabase_url }}"
+          echo "  NEXT_PUBLIC_SUPABASE_ANON_KEY = (see workflow logs)"
+          echo "  SUPABASE_SERVICE_ROLE_KEY = (see workflow logs)"
+          echo "  SUPABASE_DB_URL = postgresql://postgres:****@${{ needs.supabase.outputs.db_host }}:5432/postgres"
+          echo ""
+          echo "============================================================"
+          echo "  Recovery workflow finished. Check each job above for"
+          echo "  individual step results."
+          echo "============================================================"
