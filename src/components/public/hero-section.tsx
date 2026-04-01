@@ -1,10 +1,22 @@
-import Link from "next/link";
 import Image from "next/image";
+import Link from "next/link";
 import { buttonVariants } from "@/components/ui/button";
 import { defaultWebsiteConfig } from "@/lib/website-config";
 
-export function HeroSection() {
-  const cfg = defaultWebsiteConfig.hero;
+interface HeroOverrides {
+  title?: string;
+  subtitle?: string;
+}
+
+interface HeroSectionProps {
+  overrides?: HeroOverrides;
+}
+
+export function HeroSection({ overrides }: HeroSectionProps) {
+  const cfg = {
+    ...defaultWebsiteConfig.hero,
+    ...overrides,
+  };
 
   return (
     <section className="relative bg-gradient-to-br from-primary/5 to-primary/10 py-24">

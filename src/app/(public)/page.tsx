@@ -1,18 +1,9 @@
+import { Star, ArrowRight } from "lucide-react";
 import type { Metadata } from "next";
-import { getTenant } from "@/lib/tenant";
+import Link from "next/link";
+import { notFound } from "next/navigation";
 import { LandingPage } from "@/components/landing/landing-page";
 import { HeroSection } from "@/components/public/hero-section";
-import { ServicesPreview } from "@/components/public/services-preview";
-import {
-  getPublicReviews,
-  getPublicAverageRating,
-  getPublicBranding,
-} from "@/lib/data/public";
-import { mergeSectionVisibility } from "@/lib/section-visibility";
-import { getTemplate } from "@/lib/templates";
-import { Star, ArrowRight } from "lucide-react";
-import Link from "next/link";
-import { Card, CardContent } from "@/components/ui/card";
 import {
   DoctorsSection,
   BookingSection,
@@ -22,9 +13,18 @@ import {
   BlogSection,
   LocationSection,
 } from "@/components/public/sections";
+import { ServicesPreview } from "@/components/public/services-preview";
+import { Card, CardContent } from "@/components/ui/card";
+import {
+  getPublicReviews,
+  getPublicAverageRating,
+  getPublicBranding,
+} from "@/lib/data/public";
 import { safeJsonLdStringify } from "@/lib/json-ld";
 import { logger } from "@/lib/logger";
-import { notFound } from "next/navigation";
+import { mergeSectionVisibility } from "@/lib/section-visibility";
+import { getTemplate } from "@/lib/templates";
+import { getTenant } from "@/lib/tenant";
 
 /** Default timeout (ms) for Supabase data-fetching on public pages. */
 const DATA_FETCH_TIMEOUT_MS = 10_000;
@@ -193,7 +193,18 @@ export default async function HomePage() {
         dangerouslySetInnerHTML={{ __html: safeJsonLdStringify(clinicSchema) }}
       />
       {/* Hero — always visible */}
-      {sections.hero && <HeroSection />}
+      {sections.hero && (
+        <HeroSection
+          overrides={
+            branding.websiteConfig
+              ? {
+                  title: (branding.websiteConfig as { hero?: { title?: string } }).hero?.title,
+                  subtitle: (branding.websiteConfig as { hero?: { subtitle?: string } }).hero?.subtitle,
+                }
+              : undefined
+          }
+        />
+      )}
 
       {/* Services */}
       {sections.services && <ServicesPreview />}

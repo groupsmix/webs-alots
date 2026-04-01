@@ -7,13 +7,13 @@
  * can swap from demo-data imports with minimal changes.
  */
 
-import { createClient, createTenantClient } from "@/lib/supabase-server";
-import { APPOINTMENT_STATUS } from "@/lib/types/database";
-import { getTenant, getClinicConfig } from "@/lib/tenant";
-import { getLocalDateStr } from "@/lib/utils";
 import { cacheLife } from "next/cache";
 import { cacheTag } from "next/cache";
 import { logger } from "@/lib/logger";
+import { createClient, createTenantClient } from "@/lib/supabase-server";
+import { getTenant, getClinicConfig } from "@/lib/tenant";
+import { APPOINTMENT_STATUS } from "@/lib/types/database";
+import { getLocalDateStr } from "@/lib/utils";
 
 // ── JSONB field types (TS-01 / TS-02: replace Record<string, unknown> casts) ──
 
@@ -100,6 +100,7 @@ export interface ClinicBranding {
   phone: string | null;
   address: string | null;
   email: string | null;
+  websiteConfig: Record<string, unknown> | null;
 }
 
 // ── Helpers ──
@@ -184,6 +185,7 @@ const DEFAULT_BRANDING: ClinicBranding = {
   phone: null,
   address: null,
   email: null,
+  websiteConfig: null,
 };
 
 /**
@@ -196,7 +198,7 @@ async function fetchBrandingFromDb(clinicId: string, fallbackName: string): Prom
 
   const { data, error } = await supabase
     .from("clinics")
-    .select("name, logo_url, favicon_url, primary_color, secondary_color, heading_font, body_font, hero_image_url, tagline, cover_photo_url, template_id, section_visibility, phone, address, owner_email, config")
+    .select("name, logo_url, favicon_url, primary_color, secondary_color, heading_font, body_font, hero_image_url, tagline, cover_photo_url, template_id, section_visibility, website_config, phone, address, owner_email, config")
     .eq("id", clinicId)
     .single();
 
@@ -223,6 +225,7 @@ async function fetchBrandingFromDb(clinicId: string, fallbackName: string): Prom
     phone: data.phone ?? cfg.phone ?? null,
     address: data.address ?? cfg.address ?? null,
     email: data.owner_email ?? cfg.email ?? null,
+    websiteConfig: (data.website_config as Record<string, unknown> | null) ?? null,
   };
 }
 

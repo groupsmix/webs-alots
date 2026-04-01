@@ -1,14 +1,15 @@
 "use client";
 
-import { useState, useCallback } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
   User, Palette, Stethoscope, Clock, UserPlus,
-  ChevronRight, ChevronLeft, Check, Loader2,
+  ChevronRight, ChevronLeft, Check, Loader2, Wand2,
 } from "lucide-react";
+import { useState, useCallback } from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { presetList, type TemplatePreset } from "@/lib/template-presets";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -125,6 +126,32 @@ export function SetupWizard({ clinicId, onComplete }: WizardProps) {
     secondary_color: "#0F6E56",
     description: "",
   });
+  const [selectedPreset, setSelectedPreset] = useState<string | null>(null);
+  const [applyingPreset, setApplyingPreset] = useState(false);
+
+  // Show a small selection of presets (first 4) for quick setup
+  const onboardingPresets = presetList.slice(0, 4);
+
+  async function handlePresetSelect(preset: TemplatePreset) {
+    setSelectedPreset(preset.id);
+    setApplyingPreset(true);
+    try {
+      const res = await fetch("/api/branding/apply-preset", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ presetId: preset.id }),
+      });
+      if (res.ok) {
+        setBranding((b) => ({
+          ...b,
+          primary_color: preset.theme.primaryColor,
+          secondary_color: preset.theme.secondaryColor,
+        }));
+      }
+    } finally {
+      setApplyingPreset(false);
+    }
+  }
 
   // Step 3: Services
   const [services, setServices] = useState<ServiceEntry[]>(
@@ -442,6 +469,64 @@ export function SetupWizard({ clinicId, onComplete }: WizardProps) {
           {/* Step 2: Clinic Branding */}
           {currentStep === 1 && (
             <div className="space-y-4">
+              {/* Quick preset picker */}
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Quick Start: Pick a preset</Label>
+                <p className="text-xs text-muted-foreground">
+                  Choose a preset to instantly set up your site&apos;s look, or customize manually below.
+                </p>
+                <div className="grid grid-cols-2 gap-2">
+                  {onboardingPresets.map((preset) => (
+                    <button
+                      key={preset.id}
+                      type="button"
+                      disabled={applyingPreset}
+                      onClick={() => handlePresetSelect(preset)}
+                      className={`rounded-lg border p-3 text-left transition-all hover:shadow-sm ${
+                        selectedPreset === preset.id
+                          ? "ring-2 ring-primary border-primary"
+                          : "hover:border-primary/50"
+                      }`}
+                    >
+                      <div className="flex items-center gap-2 mb-1">
+                        <Wand2 className="h-3.5 w-3.5 text-muted-foreground" />
+                        <span className="text-sm font-medium truncate">{preset.name}</span>
+                      </div>
+                      <div className="flex gap-1.5">
+                        <div
+                          className="h-4 w-4 rounded-full border"
+                          style={{ backgroundColor: preset.theme.primaryColor }}
+                        />
+                        <div
+                          className="h-4 w-4 rounded-full border"
+                          style={{ backgroundColor: preset.theme.secondaryColor }}
+                        />
+                        <div
+                          className="h-4 w-4 rounded-full border"
+                          style={{ backgroundColor: preset.theme.accentColor }}
+                        />
+                      </div>
+                      {selectedPreset === preset.id && (
+                        <p className="text-xs text-green-600 mt-1 flex items-center gap-1">
+                          <Check className="h-3 w-3" /> Applied
+                        </p>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <span className="w-full border-t" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-background px-2 text-muted-foreground">
+                    Or customize manually
+                  </span>
+                </div>
+              </div>
+
               <div className="space-y-1.5">
                 <Label htmlFor="brand-logo">URL du logo</Label>
                 <Input
