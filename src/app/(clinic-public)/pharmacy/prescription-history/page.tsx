@@ -50,7 +50,7 @@ async function fetchPrescriptionsClient(clinicId: string): Promise<PharmacyPresc
 
   if (error || !requests) return [];
 
-  const patientIds = [...new Set((requests as Record<string, unknown>[]).map((r) => r.patient_id as string))];
+  const patientIds = [...new Set(requests.map((r) => r.patient_id))];
   const { data: users } = await supabase
     .from("users")
     .select("id, name, phone")
@@ -60,28 +60,28 @@ async function fetchPrescriptionsClient(clinicId: string): Promise<PharmacyPresc
     ((users ?? []) as { id: string; name: string; phone: string | null }[]).map((u) => [u.id, u]),
   );
 
-  return requests.map((r: Record<string, unknown>) => {
-    const patient = userMap.get(r.patient_id as string);
-    let uiStatus = (r.status as string) ?? "pending";
+  return requests.map((r) => {
+    const patient = userMap.get(r.patient_id);
+    let uiStatus = r.status ?? "pending";
     if (uiStatus === "partial") uiStatus = "partially-ready";
 
     return {
-      id: r.id as string,
-      patientId: (r.patient_id as string) ?? "",
+      id: r.id,
+      patientId: r.patient_id ?? "",
       patientName: patient?.name ?? "Patient",
       patientPhone: patient?.phone ?? "",
-      imageUrl: (r.image_url as string) ?? "",
-      uploadedAt: (r.created_at as string) ?? "",
+      imageUrl: r.image_url ?? "",
+      uploadedAt: r.created_at ?? "",
       status: uiStatus as PharmacyPrescription["status"],
-      pharmacistNotes: (r.notes as string) ?? undefined,
-      items: ((r.items as PrescriptionItem[]) ?? []),
-      totalPrice: (r.total_price as number) ?? 0,
+      pharmacistNotes: r.notes ?? undefined,
+      items: [] as PrescriptionItem[],
+      totalPrice: 0,
       currency: DEFAULT_CURRENCY,
-      deliveryOption: ((r.delivery_option as string) ?? "pickup") as "pickup" | "delivery",
-      deliveryAddress: (r.delivery_address as string) ?? undefined,
-      isChronic: (r.is_chronic as boolean) ?? false,
-      refillReminderDate: (r.refill_reminder_date as string) ?? undefined,
-      whatsappNotified: (r.whatsapp_notified as boolean) ?? false,
+      deliveryOption: "pickup" as "pickup" | "delivery",
+      deliveryAddress: undefined,
+      isChronic: false,
+      refillReminderDate: undefined,
+      whatsappNotified: false,
     };
   });
 }

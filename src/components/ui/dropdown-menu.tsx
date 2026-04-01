@@ -35,7 +35,7 @@ function DropdownMenu({ children }: DropdownMenuProps) {
           return React.cloneElement(child, { onClick: () => setOpen(!open) })
         }
         if (React.isValidElement(child) && child.type === DropdownMenuContent) {
-          return open ? React.cloneElement(child, { onClose: () => setOpen(false) } as Record<string, unknown>) : null
+          return open ? React.cloneElement(child, { onClose: () => setOpen(false) } as { onClose: () => void }) : null
         }
         return child
       })}
@@ -74,7 +74,7 @@ function DropdownMenuContent({
     >
       {React.Children.map(children, (child) => {
         if (React.isValidElement(child) && child.type === DropdownMenuItem) {
-          return React.cloneElement(child, { onClose } as Record<string, unknown>)
+          return React.cloneElement(child, { onClose } as { onClose?: () => void })
         }
         return child
       })}

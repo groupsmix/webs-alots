@@ -30,6 +30,11 @@ import {
   type ActivityLog,
 } from "@/lib/super-admin-actions";
 
+/** Subset of the clinics.config JSONB column used in the dashboard. */
+interface ClinicConfigJson {
+  city?: string;
+}
+
 interface ClinicDetail {
   id: string;
   name: string;
@@ -78,13 +83,13 @@ export default function SuperAdminDashboardPage() {
       setOverdue(0);
 
       const mapped: ClinicDetail[] = stats.clinics.map((c) => {
-        const config = (c.config ?? {}) as Record<string, unknown>;
+        const config = (c.config ?? {}) as ClinicConfigJson;
         return {
           id: c.id,
           name: c.name,
           type: c.type as "doctor" | "dentist" | "pharmacy",
           plan: (c.tier as string) ?? "pro",
-          city: (config.city as string) ?? "",
+          city: config.city ?? "",
           monthlyRevenue: 0,
           status: (c.status === "inactive" ? "suspended" : c.status ?? "active") as "active" | "suspended" | "trial",
         };

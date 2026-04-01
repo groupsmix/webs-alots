@@ -44,7 +44,7 @@ export const POST = withAuth(async (_request, { supabase, profile }) => {
   const now = new Date().toISOString();
   const { error } = await (supabase
     .from("users")
-    .update({ deletion_requested_at: now } as Record<string, unknown>)
+    .update({ deletion_requested_at: now } as { deletion_requested_at: string })
     .eq("id", profile.id) as unknown as Promise<{ error: { message: string } | null }>);
 
   if (error) {
@@ -94,7 +94,7 @@ export const DELETE = withAuth(async (_request, { supabase, profile }) => {
   // Cancel deletion
   const { error } = await (supabase
     .from("users")
-    .update({ deletion_requested_at: null } as Record<string, unknown>)
+    .update({ deletion_requested_at: null } as { deletion_requested_at: null })
     .eq("id", profile.id) as unknown as Promise<{ error: { message: string } | null }>);
 
   if (error) {

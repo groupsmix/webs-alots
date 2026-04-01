@@ -98,7 +98,7 @@ export async function fetchChatbotContext(clinicId: string): Promise<ChatbotClin
           phone: clinicData.owner_phone ?? undefined,
           email: clinicData.owner_email ?? undefined,
           domain: clinicData.domain ?? undefined,
-          config: (clinicData.config as Record<string, unknown>) ?? {},
+          config: (clinicData.config as ClinicConfigJson) ?? {},
         }
       : null,
     services: (servicesRes.data ?? []).map((s) => ({

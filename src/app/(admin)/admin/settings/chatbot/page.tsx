@@ -125,13 +125,12 @@ export default function ChatbotSettingsPage() {
 
       if (controller.signal.aborted) return;
       if (configData) {
-        const row = configData as Record<string, unknown>;
         setConfig({
-          enabled: row.enabled as boolean,
-          intelligence: row.intelligence as ChatbotConfig["intelligence"],
+          enabled: configData.enabled ?? false,
+          intelligence: (configData.intelligence as ChatbotConfig["intelligence"]) ?? "basic",
           greeting:
-            (row.greeting as string) || "Bonjour ! Comment puis-je vous aider ?",
-          language: (row.language as string) || "fr",
+            configData.greeting || "Bonjour ! Comment puis-je vous aider ?",
+          language: configData.language || "fr",
         });
       }
 

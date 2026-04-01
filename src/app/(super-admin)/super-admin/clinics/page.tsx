@@ -22,6 +22,15 @@ import { logger } from "@/lib/logger";
 import { useToast } from "@/components/ui/toast";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
 
+/** Subset of the clinics.config JSONB column used in clinic management. */
+interface ClinicConfigJson {
+  city?: string;
+  ownerName?: string;
+  email?: string;
+  phone?: string;
+  domain?: string;
+}
+
 /** Anonymized user count range — avoids exposing exact patient numbers. */
 type UserCountRange = "0" | "1-50" | "51-200" | "200+";
 
@@ -121,23 +130,23 @@ export default function AllClinicsPage() {
     try {
       const clinics = await fetchClinics();
       const mapped: ClinicDetail[] = clinics.map((c) => {
-        const config = (c.config ?? {}) as Record<string, unknown>;
+        const config = (c.config ?? {}) as ClinicConfigJson;
         return {
           id: c.id,
           name: c.name,
           type: c.type as "doctor" | "dentist" | "pharmacy",
           plan: c.tier ?? "pro",
-          city: (config.city as string) ?? "",
+          city: config.city ?? "",
           userCountRange: "0" as UserCountRange,
           monthlyRevenue: 0,
           status: (c.status === "inactive" ? "suspended" : c.status ?? "active") as "active" | "suspended" | "trial",
-          ownerName: (config.ownerName as string) ?? "",
-          ownerEmail: (config.email as string) ?? "",
-          ownerPhone: (config.phone as string) ?? "",
+          ownerName: config.ownerName ?? "",
+          ownerEmail: config.email ?? "",
+          ownerPhone: config.phone ?? "",
           createdAt: c.created_at ?? "",
           doctorsCount: 0,
           appointmentsThisMonth: 0,
-          domain: (config.domain as string) ?? undefined,
+          domain: config.domain ?? undefined,
           lastLoginAt: "",
           features: {},
         };
