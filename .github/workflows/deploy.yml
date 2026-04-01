@@ -70,7 +70,10 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
-          echo '{"SUPABASE_SERVICE_ROLE_KEY":"${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}","RESEND_API_KEY":"${{ secrets.RESEND_API_KEY }}","BOOKING_TOKEN_SECRET":"${{ secrets.BOOKING_TOKEN_SECRET }}","CRON_SECRET":"${{ secrets.CRON_SECRET }}"}' | npx wrangler secret bulk
+          echo "${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" | npx wrangler secret put SUPABASE_SERVICE_ROLE_KEY
+          echo "${{ secrets.RESEND_API_KEY }}" | npx wrangler secret put RESEND_API_KEY
+          echo "${{ secrets.BOOKING_TOKEN_SECRET }}" | npx wrangler secret put BOOKING_TOKEN_SECRET
+          echo "${{ secrets.CRON_SECRET }}" | npx wrangler secret put CRON_SECRET
 
       - name: Deploy to Cloudflare Workers (Staging)
         if: github.ref_name == 'staging'
@@ -86,7 +89,10 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
-          echo '{"SUPABASE_SERVICE_ROLE_KEY":"${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}","RESEND_API_KEY":"${{ secrets.RESEND_API_KEY }}","BOOKING_TOKEN_SECRET":"${{ secrets.BOOKING_TOKEN_SECRET }}","CRON_SECRET":"${{ secrets.CRON_SECRET }}"}' | npx wrangler secret bulk --env staging
+          echo "${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" | npx wrangler secret put SUPABASE_SERVICE_ROLE_KEY --env staging
+          echo "${{ secrets.RESEND_API_KEY }}" | npx wrangler secret put RESEND_API_KEY --env staging
+          echo "${{ secrets.BOOKING_TOKEN_SECRET }}" | npx wrangler secret put BOOKING_TOKEN_SECRET --env staging
+          echo "${{ secrets.CRON_SECRET }}" | npx wrangler secret put CRON_SECRET --env staging
 
       # Audit 8.6 — Post-deploy health check to verify the deployment is live
       - name: Health Check
