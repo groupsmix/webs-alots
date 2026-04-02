@@ -1,22 +1,23 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
 import { Plus, Trash2, FileDown, Send, Sparkles, Check, Pencil, RefreshCw, AlertTriangle } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useState, useEffect, useCallback } from "react";
+import { AiSuggestionsPanel } from "@/components/dashboard/ai-suggestions-panel";
+import { DrugSearch, type DrugSelection } from "@/components/prescription/drug-search";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
+import { PageLoader } from "@/components/ui/page-loader";
 import {
   getCurrentUser,
   fetchPatients,
   type PatientView,
   type ClinicUser,
 } from "@/lib/data/client";
-import { downloadPrescriptionPDF } from "@/lib/prescription-pdf";
-import { PageLoader } from "@/components/ui/page-loader";
-import { DrugSearch, type DrugSelection } from "@/components/prescription/drug-search";
 import { generatePrescriptionNumber } from "@/lib/prescription-id";
+import { downloadPrescriptionPDF } from "@/lib/prescription-pdf";
 import {
   buildPrescriptionQRData,
   generatePrescriptionQRDataURL,
@@ -211,6 +212,40 @@ export function PrescriptionWriter() {
     }, 0);
   }, [preAiMedications, preAiNotes, handleAiGenerate]);
 
+  // Handler for accepting a single medication from AI suggestions panel
+  const handleAcceptSuggestion = useCallback(
+    (med: { name: string; dosage: string; frequency: string; duration: string; instructions: string }) => {
+      setMedications((prev) => [
+        ...prev,
+        {
+          _id: crypto.randomUUID(),
+          name: med.name,
+          dosage: med.dosage,
+          frequency: med.frequency,
+          duration: med.duration,
+          instructions: med.instructions,
+        },
+      ]);
+    },
+    [],
+  );
+
+  // Handler for accepting all medications from AI suggestions panel
+  const handleAcceptAllSuggestions = useCallback(
+    (meds: { name: string; dosage: string; frequency: string; duration: string; instructions: string }[]) => {
+      const newMeds = meds.map((m) => ({
+        _id: crypto.randomUUID(),
+        name: m.name,
+        dosage: m.dosage,
+        frequency: m.frequency,
+        duration: m.duration,
+        instructions: m.instructions,
+      }));
+      setMedications(newMeds);
+    },
+    [],
+  );
+
   // ── Medication helpers ──
 
   if (loading) {
@@ -304,7 +339,9 @@ export function PrescriptionWriter() {
   };
 
   return (
-    <div className="space-y-4">
+    <div className="flex gap-6">
+      {/* Main prescription form */}
+      <div className="flex-1 space-y-4 min-w-0">
       <Card>
         <CardHeader>
           <CardTitle className="text-base">Prescription Details</CardTitle>
@@ -565,6 +602,24 @@ export function PrescriptionWriter() {
           </div>
         </CardContent>
       </Card>
+    </div>
+
+      {/* AI Suggestions Panel — floating alongside */}
+      <div className="hidden lg:block w-80 shrink-0">
+        <div className="sticky top-6">
+          <AiSuggestionsPanel
+            diagnosis={diagnosis}
+            patientId={selectedPatient || undefined}
+            patientContext={patient ? {
+              age: patient.age || undefined,
+              gender: (patient.gender as "M" | "F") || undefined,
+              allergies: patient.allergies?.length ? patient.allergies : undefined,
+            } : undefined}
+            onAcceptMedication={handleAcceptSuggestion}
+            onAcceptAllMedications={handleAcceptAllSuggestions}
+          />
+        </div>
+      </div>
     </div>
   );
 }

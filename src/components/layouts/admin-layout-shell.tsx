@@ -1,21 +1,21 @@
 "use client";
 
-import { useState } from "react";
+import { LayoutDashboard, UserCog, Stethoscope, Settings, BarChart3, Star, Users, CalendarOff, Bell, Clock, UserCheck, Palette, Paintbrush, Menu, X, CreditCard, LayoutTemplate, ToggleRight, Building2, BedDouble, Monitor, Boxes, FileText, Brain } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, UserCog, Stethoscope, Settings, BarChart3, Star, Users, CalendarOff, Bell, Clock, UserCheck, Palette, Paintbrush, Menu, X, CreditCard, LayoutTemplate, ToggleRight, Building2, BedDouble, Monitor, Boxes, FileText } from "lucide-react";
-import { SignOutButton } from "@/components/sign-out-button";
-import { useClinicFeatures } from "@/lib/hooks/use-clinic-features";
-import type { ClinicFeatureKey } from "@/lib/features";
-import { OnboardingProvider, useOnboarding } from "@/components/onboarding/onboarding-provider";
+import { useState } from "react";
+import { MobileMenuOverlay } from "@/components/layouts/mobile-menu-overlay";
+import { useLocale } from "@/components/locale-switcher";
 import { GettingStartedChecklist } from "@/components/onboarding/getting-started-checklist";
+import { OnboardingProvider, useOnboarding } from "@/components/onboarding/onboarding-provider";
 import { OnboardingTour } from "@/components/onboarding/onboarding-tour";
 import { SessionTimeoutWarning } from "@/components/session-timeout-warning";
-import { signOut } from "@/lib/auth";
+import { SignOutButton } from "@/components/sign-out-button";
 import { AutoBreadcrumb } from "@/components/ui/auto-breadcrumb";
-import { useLocale } from "@/components/locale-switcher";
+import { signOut } from "@/lib/auth";
+import type { ClinicFeatureKey } from "@/lib/features";
+import { useClinicFeatures } from "@/lib/hooks/use-clinic-features";
 import { t } from "@/lib/i18n";
-import { MobileMenuOverlay } from "@/components/layouts/mobile-menu-overlay";
 
 interface NavItem {
   href: string;
@@ -48,6 +48,8 @@ const navItems: NavItem[] = [
   { href: "/admin/machines", label: "Dialysis Machines", icon: Monitor, requiredFeature: "dialysis_machines" },
   { href: "/admin/lab-materials", label: "Lab Materials", icon: Boxes, requiredFeature: "lab_materials" },
   { href: "/admin/lab-invoices", label: "Lab Invoices", icon: FileText, requiredFeature: "lab_invoices" },
+  // AI-powered features (Professional+ plan)
+  { href: "/admin/ai-manager", label: "AI Manager", icon: Brain, requiredFeature: "ai_manager" },
 ];
 
 function OnboardingChecklistSidebar() {

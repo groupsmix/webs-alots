@@ -85,7 +85,10 @@ export type ClinicFeatureKey =
   | "vision_tests"
   | "iop_tracking"
   // Store
-  | "public_catalog";
+  | "public_catalog"
+  // AI-powered features (Professional+ plan)
+  | "ai_manager"
+  | "ai_auto_suggest";
 
 /** A features_config object as stored in the DB. */
 export type FeaturesConfig = Partial<Record<ClinicFeatureKey, boolean>>;
