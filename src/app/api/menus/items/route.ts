@@ -70,7 +70,7 @@ export const POST = withAuthValidation(createMenuItemSchema, async (body, _reque
       price: body.price,
       photo_url: body.photo_url ?? null,
       is_available: body.is_available,
-      allergens: body.allergens ?? null,
+      allergens: body.allergens ?? [],
       is_halal: body.is_halal,
       sort_order: body.sort_order,
     })
