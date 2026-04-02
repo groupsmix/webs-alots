@@ -1,9 +1,13 @@
-import { logger } from "@/lib/logger";
 import { z } from "zod";
-import { withAuthValidation } from "@/lib/api-validate";
-import { sendTextMessage } from "@/lib/whatsapp";
-import { invalidateAllSubdomainCaches } from "@/lib/subdomain-cache";
 import { apiForbidden, apiSuccess } from "@/lib/api-response";
+import { withAuthValidation } from "@/lib/api-validate";
+import { getDefaultServices } from "@/lib/config/default-services";
+import { sendEmail } from "@/lib/email";
+import { onboardingWelcomeEmail } from "@/lib/email-templates";
+import { logger } from "@/lib/logger";
+import { invalidateAllSubdomainCaches } from "@/lib/subdomain-cache";
+import { TEMPLATE_PRESETS } from "@/lib/template-presets";
+import { sendTextMessage } from "@/lib/whatsapp";
 
 // ---------------------------------------------------------------------------
 // Validation
@@ -35,6 +39,8 @@ const wizardSchema = z.object({
   schedule: z.array(scheduleEntrySchema).optional().default([]),
   branding: brandingSchema.optional(),
   go_live: z.boolean().optional().default(false),
+  preset_id: z.string().max(100).nullable().optional(),
+  auto_seed: z.boolean().optional().default(false),
 });
 
 // ---------------------------------------------------------------------------
@@ -53,10 +59,27 @@ export const POST = withAuthValidation(wizardSchema, async (body, request, { sup
     }
 
     // ------------------------------------------------------------------
-    // 1. Upsert services
+    // 0. Resolve preset for auto-seeding
     // ------------------------------------------------------------------
-    if (body.services.length > 0) {
-      const serviceRows = body.services.map((s) => ({
+    const preset = body.preset_id ? TEMPLATE_PRESETS[body.preset_id] : null;
+
+    // ------------------------------------------------------------------
+    // 1. Upsert services (explicit or auto-seeded from preset)
+    // ------------------------------------------------------------------
+    let servicesToInsert = body.services;
+
+    if (servicesToInsert.length === 0 && body.auto_seed && preset) {
+      // Auto-seed services from the preset's defaultServices key
+      const defaults = getDefaultServices(preset.defaultServices);
+      servicesToInsert = defaults.map((s) => ({
+        name: s.name,
+        duration_minutes: s.duration_minutes,
+        price: s.price,
+      }));
+    }
+
+    if (servicesToInsert.length > 0) {
+      const serviceRows = servicesToInsert.map((s) => ({
         clinic_id: body.clinic_id,
         name: s.name,
         duration_minutes: s.duration_minutes,
@@ -78,12 +101,26 @@ export const POST = withAuthValidation(wizardSchema, async (body, request, { sup
     }
 
     // ------------------------------------------------------------------
-    // 2. Upsert schedule (time_slots)
+    // 2. Upsert schedule (time_slots) — explicit or auto-seeded
     // ------------------------------------------------------------------
-    if (body.schedule.length > 0) {
+    let scheduleToInsert = body.schedule;
+
+    if (scheduleToInsert.length === 0 && body.auto_seed) {
+      // Auto-seed Mon-Sat 9am-6pm schedule
+      scheduleToInsert = [
+        { day_of_week: 1, start_time: "09:00", end_time: "18:00", break_start: null, break_end: null },
+        { day_of_week: 2, start_time: "09:00", end_time: "18:00", break_start: null, break_end: null },
+        { day_of_week: 3, start_time: "09:00", end_time: "18:00", break_start: null, break_end: null },
+        { day_of_week: 4, start_time: "09:00", end_time: "18:00", break_start: null, break_end: null },
+        { day_of_week: 5, start_time: "09:00", end_time: "18:00", break_start: null, break_end: null },
+        { day_of_week: 6, start_time: "09:00", end_time: "13:00", break_start: null, break_end: null },
+      ];
+    }
+
+    if (scheduleToInsert.length > 0) {
       // time_slots requires doctor_id — use the profile.id of the
       // authenticated clinic admin who is also the initial doctor.
-      const slotRows = body.schedule.map((slot) => ({
+      const slotRows = scheduleToInsert.map((slot) => ({
         clinic_id: body.clinic_id,
         doctor_id: profile.id,
         day_of_week: slot.day_of_week,
@@ -105,20 +142,40 @@ export const POST = withAuthValidation(wizardSchema, async (body, request, { sup
     }
 
     // ------------------------------------------------------------------
-    // 3. Update branding
+    // 3. Update branding (explicit or auto-seeded from preset)
     // ------------------------------------------------------------------
-    if (body.branding) {
+    if (body.branding || (body.auto_seed && preset)) {
       const brandingUpdate: {
         primary_color?: string;
         secondary_color?: string;
         template_id?: string;
+        hero_title?: string;
+        hero_title_ar?: string;
+        hero_subtitle?: string;
+        hero_subtitle_ar?: string;
       } = {};
-      if (body.branding.primary_color)
+
+      if (body.branding?.primary_color)
         brandingUpdate.primary_color = body.branding.primary_color;
-      if (body.branding.secondary_color)
+      if (body.branding?.secondary_color)
         brandingUpdate.secondary_color = body.branding.secondary_color;
-      if (body.branding.template_id)
+      if (body.branding?.template_id)
         brandingUpdate.template_id = body.branding.template_id;
+
+      // Auto-seed branding from preset if not explicitly provided
+      if (body.auto_seed && preset) {
+        if (!brandingUpdate.primary_color)
+          brandingUpdate.primary_color = preset.theme.primaryColor;
+        if (!brandingUpdate.secondary_color)
+          brandingUpdate.secondary_color = preset.theme.secondaryColor;
+        if (!brandingUpdate.template_id)
+          brandingUpdate.template_id = preset.templateId;
+        // Set hero content from preset
+        brandingUpdate.hero_title = preset.hero.title;
+        brandingUpdate.hero_title_ar = preset.hero.titleAr;
+        brandingUpdate.hero_subtitle = preset.hero.subtitle;
+        brandingUpdate.hero_subtitle_ar = preset.hero.subtitleAr;
+      }
 
       if (Object.keys(brandingUpdate).length > 0) {
         const { error: brandError } = await supabase
@@ -139,7 +196,24 @@ export const POST = withAuthValidation(wizardSchema, async (body, request, { sup
     }
 
     // ------------------------------------------------------------------
-    // 4. Go live — send WhatsApp welcome message
+    // 3b. Auto-seed section visibility from preset
+    // ------------------------------------------------------------------
+    if (body.auto_seed && preset && Object.keys(preset.sections).length > 0) {
+      const { error: secError } = await supabase
+        .from("clinics")
+        .update({ section_visibility: preset.sections })
+        .eq("id", body.clinic_id);
+
+      if (secError) {
+        logger.warn("Failed to update section visibility", {
+          context: "onboarding/wizard",
+          error: secError,
+        });
+      }
+    }
+
+    // ------------------------------------------------------------------
+    // 4. Go live — send WhatsApp welcome message + welcome email
     // ------------------------------------------------------------------
     if (body.go_live) {
       // Fetch the clinic to get its subdomain and owner phone
@@ -149,15 +223,18 @@ export const POST = withAuthValidation(wizardSchema, async (body, request, { sup
         .eq("id", body.clinic_id)
         .single();
 
+      const siteUrl = clinic?.subdomain
+        ? `https://${clinic.subdomain}.oltigo.com`
+        : "https://oltigo.com";
+      const dashboardUrl = `${siteUrl}/admin`;
+      const name = clinic?.owner_name || clinic?.name || "Docteur";
+
+      // 4a. WhatsApp welcome message
       if (clinic?.phone) {
-        const siteUrl = clinic.subdomain
-          ? `https://${clinic.subdomain}.oltigo.com`
-          : "https://oltigo.com";
-        const name = clinic.owner_name || clinic.name || "Docteur";
         const message =
-          `Bienvenue sur Oltigo, ${name} ! 🎉\n\n` +
+          `Bienvenue sur Oltigo, ${name} ! \u{1F389}\n\n` +
           `Votre site est maintenant en ligne :\n${siteUrl}\n\n` +
-          `Vos patients peuvent prendre rendez-vous dès maintenant. ` +
+          `Vos patients peuvent prendre rendez-vous d\u00e8s maintenant. ` +
           `Bonne continuation !`;
 
         try {
@@ -168,6 +245,36 @@ export const POST = withAuthValidation(wizardSchema, async (body, request, { sup
             error: whatsappErr,
           });
           // Non-fatal — clinic is still live
+        }
+      }
+
+      // 4b. Welcome email with getting started guide
+      // Fetch the admin's email from the users table (profile only has id/role/clinic_id)
+      const { data: adminUser } = await supabase
+        .from("users")
+        .select("email")
+        .eq("id", profile.id)
+        .single();
+      const adminEmail = adminUser?.email;
+      if (adminEmail) {
+        try {
+          const emailContent = onboardingWelcomeEmail({
+            clinicName: clinic?.name || "Votre cabinet",
+            adminName: name,
+            siteUrl,
+            dashboardUrl,
+          });
+          await sendEmail({
+            to: adminEmail,
+            subject: emailContent.subject,
+            html: emailContent.html,
+          });
+        } catch (emailErr) {
+          logger.warn("Welcome email failed", {
+            context: "onboarding/wizard",
+            error: emailErr,
+          });
+          // Non-fatal
         }
       }
     }
