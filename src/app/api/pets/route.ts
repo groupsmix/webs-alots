@@ -1,72 +1,84 @@
 /**
- * Pet Profiles API — CRUD for veterinary pet profiles.
+ * Pet Profiles API (Veterinary Vertical)
  *
- * GET  /api/pets?ownerId=...  — List pets (optionally filtered by owner)
- * POST /api/pets              — Create a new pet profile
+ * CRUD operations for pet profiles in veterinary clinics.
+ * Each pet is linked to an owner (patient/client) and scoped to a clinic.
+ *
+ * GET    /api/pets?owner_id=...  — List pets for an owner (or all pets in clinic)
+ * POST   /api/pets               — Create a new pet profile
+ * PATCH  /api/pets               — Update an existing pet profile
+ * DELETE /api/pets?id=...        — Soft-delete a pet profile (sets is_active = false)
  */
 
-import { NextRequest } from "next/server";
-import { z } from "zod";
-import { apiSuccess, apiSupabaseError } from "@/lib/api-response";
+import { apiError, apiSuccess, apiInternalError, apiNotFound } from "@/lib/api-response";
 import { withAuthValidation } from "@/lib/api-validate";
-import { logAuditEvent } from "@/lib/audit-log";
 import { logger } from "@/lib/logger";
-import { withAuth, type AuthContext } from "@/lib/with-auth";
-
-const createPetSchema = z.object({
-  owner_id: z.string().uuid(),
-  name: z.string().min(1).max(200),
-  species: z.string().min(1).max(100),
-  breed: z.string().max(200).optional(),
-  weight_kg: z.number().positive().max(9999.99).optional(),
-  date_of_birth: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Expected YYYY-MM-DD").optional(),
-  photo_url: z.string().url().optional(),
-  notes: z.string().max(2000).optional(),
-});
+import { petProfileCreateSchema, petProfileUpdateSchema } from "@/lib/validations";
+import { withAuth } from "@/lib/with-auth";
 
 /**
- * GET /api/pets
- * Lists pet profiles for the current clinic.
- * Optionally filter by ownerId query param.
+ * GET /api/pets?owner_id=...
+ *
+ * List pet profiles. If owner_id is provided, filters to that owner's pets.
+ * Otherwise returns all pets for the authenticated user's clinic.
  */
-export const GET = withAuth(async (request: NextRequest, auth: AuthContext) => {
-  const clinicId = auth.profile.clinic_id;
-  if (!clinicId) {
-    return apiSuccess([]);
+export const GET = withAuth(async (request, { supabase, profile }) => {
+  try {
+    const ownerId = request.nextUrl.searchParams.get("owner_id");
+    const petId = request.nextUrl.searchParams.get("id");
+
+    // Single pet by ID
+    if (petId) {
+      const { data, error } = await supabase
+        .from("pet_profiles")
+        .select("*")
+        .eq("id", petId)
+        .eq("clinic_id", profile.clinic_id!)
+        .single();
+
+      if (error || !data) {
+        return apiNotFound("Pet profile not found");
+      }
+
+      return apiSuccess({ pet: data });
+    }
+
+    // List pets
+    let query = supabase
+      .from("pet_profiles")
+      .select("*")
+      .eq("clinic_id", profile.clinic_id!)
+      .eq("is_active", true)
+      .order("created_at", { ascending: false });
+
+    if (ownerId) {
+      query = query.eq("owner_id", ownerId);
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+      logger.warn("Failed to fetch pet profiles", { context: "pets", error });
+      return apiInternalError("Failed to fetch pet profiles");
+    }
+
+    return apiSuccess({ pets: data ?? [] });
+  } catch (err) {
+    logger.warn("Operation failed", { context: "pets", error: err });
+    return apiInternalError("Failed to process request");
   }
-
-  const ownerId = request.nextUrl.searchParams.get("ownerId");
-
-  let query = auth.supabase
-    .from("pet_profiles")
-    .select("*")
-    .eq("clinic_id", clinicId)
-    .order("created_at", { ascending: false });
-
-  if (ownerId) {
-    query = query.eq("owner_id", ownerId);
-  }
-
-  const { data, error } = await query;
-  if (error) return apiSupabaseError(error, "pets/list");
-
-  return apiSuccess(data);
-}, ["super_admin", "clinic_admin", "receptionist", "doctor", "patient"]);
+}, ["super_admin", "clinic_admin", "doctor", "receptionist", "patient"]);
 
 /**
  * POST /api/pets
+ *
  * Create a new pet profile.
  */
-export const POST = withAuthValidation(createPetSchema, async (body, _request, auth) => {
-  const clinicId = auth.profile.clinic_id;
-  if (!clinicId) {
-    return apiSupabaseError({ message: "No clinic context" }, "pets/create");
-  }
-
-  const { data, error } = await auth.supabase
+export const POST = withAuthValidation(petProfileCreateSchema, async (body, _request, { supabase, profile }) => {
+  const { data, error } = await supabase
     .from("pet_profiles")
     .insert({
-      clinic_id: clinicId,
+      clinic_id: profile.clinic_id!,
       owner_id: body.owner_id,
       name: body.name,
       species: body.species,
@@ -79,21 +91,72 @@ export const POST = withAuthValidation(createPetSchema, async (body, _request, a
     .select()
     .single();
 
-  if (error) return apiSupabaseError(error, "pets/create");
+  if (error) {
+    logger.warn("Failed to create pet profile", { context: "pets", error });
+    return apiInternalError("Failed to create pet profile");
+  }
 
-  await logAuditEvent({
-    supabase: auth.supabase,
-    action: "pet_profile.created",
-    type: "patient",
-    clinicId,
-    description: `Pet profile "${body.name}" (${body.species}) created for owner ${body.owner_id}`,
-  });
+  return apiSuccess({ pet: data }, 201);
+}, ["super_admin", "clinic_admin", "doctor", "receptionist"]);
 
-  logger.info("Pet profile created", {
-    context: "pets/create",
-    petId: data.id,
-    clinicId,
-  });
+/**
+ * PATCH /api/pets
+ *
+ * Update an existing pet profile.
+ */
+export const PATCH = withAuthValidation(petProfileUpdateSchema, async (body, _request, { supabase, profile }) => {
+  const { id, ...updates } = body;
 
-  return apiSuccess(data, 201);
-}, ["super_admin", "clinic_admin", "receptionist", "doctor"]);
+  const updatePayload: Record<string, unknown> = { updated_at: new Date().toISOString() };
+  const allowedKeys = [
+    "name", "species", "breed", "weight_kg",
+    "date_of_birth", "photo_url", "notes", "is_active",
+  ];
+
+  for (const key of allowedKeys) {
+    if (key in updates) {
+      updatePayload[key] = (updates as Record<string, unknown>)[key];
+    }
+  }
+
+  const { data, error } = await supabase
+    .from("pet_profiles")
+    .update(updatePayload)
+    .eq("id", id)
+    .eq("clinic_id", profile.clinic_id!)
+    .select()
+    .single();
+
+  if (error) {
+    logger.warn("Failed to update pet profile", { context: "pets", error });
+    return apiInternalError("Failed to update pet profile");
+  }
+
+  return apiSuccess({ pet: data });
+}, ["super_admin", "clinic_admin", "doctor", "receptionist"]);
+
+/**
+ * DELETE /api/pets?id=...
+ *
+ * Soft-delete a pet profile (sets is_active = false).
+ */
+export const DELETE = withAuth(async (request, { supabase, profile }) => {
+  const id = request.nextUrl.searchParams.get("id");
+
+  if (!id) {
+    return apiError("id query parameter is required");
+  }
+
+  const { error } = await supabase
+    .from("pet_profiles")
+    .update({ is_active: false, updated_at: new Date().toISOString() })
+    .eq("id", id)
+    .eq("clinic_id", profile.clinic_id!);
+
+  if (error) {
+    logger.warn("Failed to delete pet profile", { context: "pets", error });
+    return apiInternalError("Failed to delete pet profile");
+  }
+
+  return apiSuccess({ deleted: true });
+}, ["super_admin", "clinic_admin", "doctor"]);

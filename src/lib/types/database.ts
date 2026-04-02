@@ -4596,6 +4596,113 @@ export type Database = {
           },
         ]
       }
+      menu_items: {
+        Row: {
+          id: string
+          menu_id: string
+          clinic_id: string
+          category: string
+          name: string
+          description: string | null
+          price: number
+          photo_url: string | null
+          is_available: boolean
+          allergens: string[]
+          is_halal: boolean
+          sort_order: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          menu_id: string
+          clinic_id: string
+          category: string
+          name: string
+          description?: string | null
+          price: number
+          photo_url?: string | null
+          is_available?: boolean
+          allergens?: string[]
+          is_halal?: boolean
+          sort_order?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          menu_id?: string
+          clinic_id?: string
+          category?: string
+          name?: string
+          description?: string | null
+          price?: number
+          photo_url?: string | null
+          is_available?: boolean
+          allergens?: string[]
+          is_halal?: boolean
+          sort_order?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "menu_items_menu_id_fkey"
+            columns: ["menu_id"]
+            isOneToOne: false
+            referencedRelation: "menus"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "menu_items_clinic_id_fkey"
+            columns: ["clinic_id"]
+            isOneToOne: false
+            referencedRelation: "clinics"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      menus: {
+        Row: {
+          id: string
+          clinic_id: string
+          name: string
+          description: string | null
+          is_active: boolean
+          sort_order: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          clinic_id: string
+          name: string
+          description?: string | null
+          is_active?: boolean
+          sort_order?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          clinic_id?: string
+          name?: string
+          description?: string | null
+          is_active?: boolean
+          sort_order?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "menus_clinic_id_fkey"
+            columns: ["clinic_id"]
+            isOneToOne: false
+            referencedRelation: "clinics"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       mobility_tests: {
         Row: {
           clinic_id: string
@@ -5273,6 +5380,69 @@ export type Database = {
           {
             foreignKeyName: "payments_patient_id_fkey"
             columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pet_profiles: {
+        Row: {
+          id: string
+          clinic_id: string
+          owner_id: string
+          name: string
+          species: string
+          breed: string | null
+          weight_kg: number | null
+          date_of_birth: string | null
+          photo_url: string | null
+          notes: string | null
+          is_active: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          clinic_id: string
+          owner_id: string
+          name: string
+          species: string
+          breed?: string | null
+          weight_kg?: number | null
+          date_of_birth?: string | null
+          photo_url?: string | null
+          notes?: string | null
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          clinic_id?: string
+          owner_id?: string
+          name?: string
+          species?: string
+          breed?: string | null
+          weight_kg?: number | null
+          date_of_birth?: string | null
+          photo_url?: string | null
+          notes?: string | null
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pet_profiles_clinic_id_fkey"
+            columns: ["clinic_id"]
+            isOneToOne: false
+            referencedRelation: "clinics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pet_profiles_owner_id_fkey"
+            columns: ["owner_id"]
             isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]
@@ -6562,6 +6732,110 @@ export type Database = {
             columns: ["patient_id"]
             isOneToOne: false
             referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      restaurant_orders: {
+        Row: {
+          id: string
+          clinic_id: string
+          table_id: string | null
+          appointment_id: string | null
+          items: Json
+          subtotal: number
+          tax: number
+          total: number
+          status: string
+          notes: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          clinic_id: string
+          table_id?: string | null
+          appointment_id?: string | null
+          items: Json
+          subtotal: number
+          tax: number
+          total: number
+          status?: string
+          notes?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          clinic_id?: string
+          table_id?: string | null
+          appointment_id?: string | null
+          items?: Json
+          subtotal?: number
+          tax?: number
+          total?: number
+          status?: string
+          notes?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "restaurant_orders_clinic_id_fkey"
+            columns: ["clinic_id"]
+            isOneToOne: false
+            referencedRelation: "clinics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "restaurant_orders_table_id_fkey"
+            columns: ["table_id"]
+            isOneToOne: false
+            referencedRelation: "restaurant_tables"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      restaurant_tables: {
+        Row: {
+          id: string
+          clinic_id: string
+          name: string
+          capacity: number
+          zone: string | null
+          is_active: boolean
+          qr_code_url: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          clinic_id: string
+          name: string
+          capacity: number
+          zone?: string | null
+          is_active?: boolean
+          qr_code_url?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          clinic_id?: string
+          name?: string
+          capacity?: number
+          zone?: string | null
+          is_active?: boolean
+          qr_code_url?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "restaurant_tables_clinic_id_fkey"
+            columns: ["clinic_id"]
+            isOneToOne: false
+            referencedRelation: "clinics"
             referencedColumns: ["id"]
           },
         ]
@@ -10989,5 +11263,111 @@ export type NotificationLogEntry = {
   status: string;
   error_message: string | null;
   created_at: string;
+}
+
+// ── Veterinary Vertical ──────────────────────────────────────────────────
+
+export type PetSpecies =
+  | "dog"
+  | "cat"
+  | "bird"
+  | "rabbit"
+  | "hamster"
+  | "fish"
+  | "reptile"
+  | "horse"
+  | "cattle"
+  | "sheep"
+  | "goat"
+  | "other";
+
+export type PetProfile = {
+  id: string;
+  clinic_id: string;
+  owner_id: string;
+  name: string;
+  species: PetSpecies;
+  breed: string | null;
+  weight_kg: number | null;
+  date_of_birth: string | null;
+  photo_url: string | null;
+  notes: string | null;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+// ── Restaurant Vertical ─────────────────────────────────────────────────
+
+export type Menu = {
+  id: string;
+  clinic_id: string;
+  name: string;
+  description: string | null;
+  is_active: boolean;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export type MenuItem = {
+  id: string;
+  menu_id: string;
+  clinic_id: string;
+  category: string;
+  name: string;
+  description: string | null;
+  price: number;
+  photo_url: string | null;
+  is_available: boolean;
+  allergens: string[];
+  is_halal: boolean;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export type RestaurantTable = {
+  id: string;
+  clinic_id: string;
+  name: string;
+  capacity: number;
+  zone: string | null;
+  is_active: boolean;
+  qr_code_url: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export type RestaurantOrderStatus =
+  | "pending"
+  | "confirmed"
+  | "preparing"
+  | "ready"
+  | "served"
+  | "paid"
+  | "cancelled";
+
+export type RestaurantOrderItem = {
+  menu_item_id: string;
+  name: string;
+  quantity: number;
+  unit_price: number;
+  notes?: string;
+}
+
+export type RestaurantOrder = {
+  id: string;
+  clinic_id: string;
+  table_id: string | null;
+  appointment_id: string | null;
+  items: RestaurantOrderItem[];
+  subtotal: number;
+  tax: number;
+  total: number;
+  status: RestaurantOrderStatus;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
 }
 

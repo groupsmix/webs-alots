@@ -138,17 +138,17 @@ export const CLINIC_TYPES: ClinicTypeEntry[] = [
   { type_key: "aesthetic_clinic",  name_fr: "Clinique Esthétique",          name_ar: "عيادة التجميل",                  category: "clinics_centers", icon: "Sparkles" },
 
   // ---- VETERINARY ----
-  { type_key: "vet_general",       name_fr: "Vétérinaire Généraliste",      name_ar: "طبيب بيطري عام",                 category: "veterinary", icon: "PawPrint" },
-  { type_key: "vet_specialist",    name_fr: "Vétérinaire Spécialiste",      name_ar: "طبيب بيطري متخصص",               category: "veterinary", icon: "Stethoscope" },
-  { type_key: "vet_emergency",     name_fr: "Urgences Vétérinaires",        name_ar: "طوارئ بيطرية",                    category: "veterinary", icon: "Siren" },
-  { type_key: "pet_grooming",      name_fr: "Toilettage Animaux",           name_ar: "تنظيف الحيوانات",                 category: "veterinary", icon: "Scissors" },
+  { type_key: "vet_general",       name_fr: "Vétérinaire Généraliste",      name_ar: "طبيب بيطري عام",                 category: "veterinary", icon: "PawPrint",    vertical_id: "veterinary" },
+  { type_key: "vet_specialist",    name_fr: "Vétérinaire Spécialiste",      name_ar: "طبيب بيطري متخصص",               category: "veterinary", icon: "Stethoscope", vertical_id: "veterinary" },
+  { type_key: "vet_emergency",     name_fr: "Urgences Vétérinaires",        name_ar: "طوارئ بيطرية",                    category: "veterinary", icon: "Siren",       vertical_id: "veterinary" },
+  { type_key: "pet_grooming",      name_fr: "Toilettage Animaux",           name_ar: "تنظيف الحيوانات",                 category: "veterinary", icon: "Scissors",    vertical_id: "veterinary" },
 
   // ---- RESTAURANT ----
-  { type_key: "restaurant_traditional", name_fr: "Restaurant Traditionnel",  name_ar: "مطعم تقليدي",                     category: "restaurant", icon: "UtensilsCrossed" },
-  { type_key: "restaurant_fast_food",   name_fr: "Fast Food",                name_ar: "وجبات سريعة",                     category: "restaurant", icon: "Sandwich" },
-  { type_key: "restaurant_cafe",        name_fr: "Café & Salon de Thé",      name_ar: "مقهى وصالون شاي",                 category: "restaurant", icon: "Coffee" },
-  { type_key: "restaurant_patisserie",  name_fr: "Pâtisserie & Boulangerie", name_ar: "حلويات ومخبزة",                   category: "restaurant", icon: "CakeSlice" },
-  { type_key: "restaurant_traiteur",    name_fr: "Traiteur & Événementiel",  name_ar: "تموين ومناسبات",                  category: "restaurant", icon: "PartyPopper" },
+  { type_key: "restaurant_traditional", name_fr: "Restaurant Traditionnel",  name_ar: "مطعم تقليدي",                     category: "restaurant", icon: "UtensilsCrossed", vertical_id: "restaurant" },
+  { type_key: "restaurant_fast_food",   name_fr: "Fast Food",                name_ar: "وجبات سريعة",                     category: "restaurant", icon: "Sandwich",        vertical_id: "restaurant" },
+  { type_key: "restaurant_cafe",        name_fr: "Café & Salon de Thé",      name_ar: "مقهى وصالون شاي",                 category: "restaurant", icon: "Coffee",          vertical_id: "restaurant" },
+  { type_key: "restaurant_patisserie",  name_fr: "Pâtisserie & Boulangerie", name_ar: "حلويات ومخبزة",                   category: "restaurant", icon: "CakeSlice",       vertical_id: "restaurant" },
+  { type_key: "restaurant_traiteur",    name_fr: "Traiteur & Événementiel",  name_ar: "تموين ومناسبات",                  category: "restaurant", icon: "PartyPopper",     vertical_id: "restaurant" },
 ];
 
 /** Get all clinic types for a given category */

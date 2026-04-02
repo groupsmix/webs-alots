@@ -142,10 +142,12 @@ const TYPE_SERVICES: Record<string, DefaultService[]> = {
   psychology: PSYCHOLOGY_SERVICES,
   pharmacy: PHARMACY_SERVICES,
   parapharmacy: PHARMACY_SERVICES,
+  // Veterinary
   vet_general: VETERINARY_SERVICES,
   vet_specialist: VETERINARY_SERVICES,
   vet_emergency: VETERINARY_SERVICES,
   pet_grooming: VETERINARY_SERVICES,
+  // Restaurant
   restaurant_traditional: RESTAURANT_SERVICES,
   restaurant_fast_food: RESTAURANT_SERVICES,
   restaurant_cafe: RESTAURANT_SERVICES,

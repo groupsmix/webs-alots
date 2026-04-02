@@ -1,8 +1,9 @@
 /**
  * Veterinary vertical definition.
  *
- * Covers veterinary clinics, animal hospitals, and pet care.
+ * Covers veterinary clinics, animal hospitals, pet grooming, and pet care.
  * Terminology: patient → "animal" / "حيوان", client → "propriétaire" / "صاحب الحيوان"
+ * Unique feature: pet_profiles — tracks animal name, species, breed, weight, age.
  */
 
 import type { VerticalDefinition } from "@/lib/config/verticals";
@@ -21,6 +22,7 @@ export const veterinaryVertical: VerticalDefinition = {
     "stock",
     "pet_profiles",
     "website",
+    "consent_forms",
   ],
   defaultServices: [
     { name: "Consultation générale", duration_minutes: 30, price: 250 },
