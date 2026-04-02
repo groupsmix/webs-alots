@@ -503,6 +503,50 @@ export const waitingListDeleteSchema = z.object({
   entryId: z.string().min(1),
 });
 
+// ── Billing (Subscription) ───────────────────────────────────────────────
+
+export const subscriptionCheckoutSchema = z.object({
+  planId: z.enum(["starter", "professional", "enterprise"]),
+  successUrl: z.string().url().optional(),
+  cancelUrl: z.string().url().optional(),
+});
+
+export const subscriptionPortalSchema = z.object({
+  returnUrl: z.string().url().optional(),
+});
+
+/**
+ * Stripe subscription webhook event schema — validates the parsed JSON body
+ * after signature verification for defense-in-depth on subscription events.
+ */
+const subscriptionWebhookObjectSchema = z.object({
+  id: z.string().min(1),
+  metadata: z.record(z.string(), z.string()).optional(),
+  amount_total: z.number().optional(),
+  amount_paid: z.number().optional(),
+  currency: z.string().optional(),
+  payment_status: z.string().optional(),
+  customer_email: z.string().optional(),
+  customer: z.string().optional(),
+  subscription: z.string().optional(),
+  status: z.string().optional(),
+  current_period_end: z.number().optional(),
+  items: z.object({
+    data: z.array(z.object({
+      price: z.object({ id: z.string() }).optional(),
+    })),
+  }).optional(),
+});
+
+export const subscriptionWebhookEventSchema = z.object({
+  type: z.string().min(1),
+  data: z.object({
+    object: subscriptionWebhookObjectSchema,
+  }),
+});
+
+export type SubscriptionWebhookEvent = z.infer<typeof subscriptionWebhookEventSchema>;
+
 // ── Helper: parse with friendly error response ──────────────────────────
 
 /**
