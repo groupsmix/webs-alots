@@ -8271,6 +8271,273 @@ export type Database = {
           },
         ]
       }
+      /* ── Veterinary vertical ─────────────────────────── */
+      pet_profiles: {
+        Row: {
+          id: string
+          owner_id: string
+          clinic_id: string
+          name: string
+          species: string
+          breed: string | null
+          weight_kg: number | null
+          date_of_birth: string | null
+          photo_url: string | null
+          notes: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          owner_id: string
+          clinic_id: string
+          name: string
+          species: string
+          breed?: string | null
+          weight_kg?: number | null
+          date_of_birth?: string | null
+          photo_url?: string | null
+          notes?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          owner_id?: string
+          clinic_id?: string
+          name?: string
+          species?: string
+          breed?: string | null
+          weight_kg?: number | null
+          date_of_birth?: string | null
+          photo_url?: string | null
+          notes?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pet_profiles_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pet_profiles_clinic_id_fkey"
+            columns: ["clinic_id"]
+            isOneToOne: false
+            referencedRelation: "clinics"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      /* ── Restaurant vertical ─────────────────────────── */
+      menus: {
+        Row: {
+          id: string
+          clinic_id: string
+          name: string
+          description: string | null
+          is_active: boolean
+          sort_order: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          clinic_id: string
+          name: string
+          description?: string | null
+          is_active?: boolean
+          sort_order?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          clinic_id?: string
+          name?: string
+          description?: string | null
+          is_active?: boolean
+          sort_order?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "menus_clinic_id_fkey"
+            columns: ["clinic_id"]
+            isOneToOne: false
+            referencedRelation: "clinics"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      menu_items: {
+        Row: {
+          id: string
+          menu_id: string
+          clinic_id: string
+          category: string
+          name: string
+          description: string | null
+          price: number
+          photo_url: string | null
+          is_available: boolean
+          allergens: string[] | null
+          is_halal: boolean
+          sort_order: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          menu_id: string
+          clinic_id: string
+          category: string
+          name: string
+          description?: string | null
+          price: number
+          photo_url?: string | null
+          is_available?: boolean
+          allergens?: string[] | null
+          is_halal?: boolean
+          sort_order?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          menu_id?: string
+          clinic_id?: string
+          category?: string
+          name?: string
+          description?: string | null
+          price?: number
+          photo_url?: string | null
+          is_available?: boolean
+          allergens?: string[] | null
+          is_halal?: boolean
+          sort_order?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "menu_items_menu_id_fkey"
+            columns: ["menu_id"]
+            isOneToOne: false
+            referencedRelation: "menus"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "menu_items_clinic_id_fkey"
+            columns: ["clinic_id"]
+            isOneToOne: false
+            referencedRelation: "clinics"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      restaurant_tables: {
+        Row: {
+          id: string
+          clinic_id: string
+          name: string
+          capacity: number
+          zone: string | null
+          is_active: boolean
+          sort_order: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          clinic_id: string
+          name: string
+          capacity?: number
+          zone?: string | null
+          is_active?: boolean
+          sort_order?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          clinic_id?: string
+          name?: string
+          capacity?: number
+          zone?: string | null
+          is_active?: boolean
+          sort_order?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "restaurant_tables_clinic_id_fkey"
+            columns: ["clinic_id"]
+            isOneToOne: false
+            referencedRelation: "clinics"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      orders: {
+        Row: {
+          id: string
+          clinic_id: string
+          table_id: string | null
+          reservation_id: string | null
+          items: Json
+          total: number
+          status: string
+          notes: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          clinic_id: string
+          table_id?: string | null
+          reservation_id?: string | null
+          items?: Json
+          total?: number
+          status?: string
+          notes?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          clinic_id?: string
+          table_id?: string | null
+          reservation_id?: string | null
+          items?: Json
+          total?: number
+          status?: string
+          notes?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "orders_clinic_id_fkey"
+            columns: ["clinic_id"]
+            isOneToOne: false
+            referencedRelation: "clinics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_table_id_fkey"
+            columns: ["table_id"]
+            isOneToOne: false
+            referencedRelation: "restaurant_tables"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -8442,7 +8709,9 @@ export type ClinicTypeCategory =
   | "para_medical"
   | "diagnostic"
   | "pharmacy_retail"
-  | "clinics_centers";
+  | "clinics_centers"
+  | "veterinary"
+  | "restaurant";
 
 export type LabTestOrderStatus =
   | "pending"

@@ -107,6 +107,27 @@ const DEFAULT_GENERIC: DefaultService[] = [
   { name: "Suivi", duration_minutes: 20, price: 150 },
 ];
 
+const VETERINARY_SERVICES: DefaultService[] = [
+  { name: "Consultation générale", duration_minutes: 30, price: 250 },
+  { name: "Vaccination", duration_minutes: 15, price: 200 },
+  { name: "Stérilisation", duration_minutes: 90, price: 1200 },
+  { name: "Détartrage", duration_minutes: 30, price: 400 },
+  { name: "Toilettage", duration_minutes: 45, price: 150 },
+  { name: "Chirurgie", duration_minutes: 120, price: 2000 },
+  { name: "Radiologie", duration_minutes: 20, price: 350 },
+  { name: "Analyses", duration_minutes: 15, price: 300 },
+  { name: "Urgences", duration_minutes: 60, price: 500 },
+];
+
+const RESTAURANT_SERVICES: DefaultService[] = [
+  { name: "Réservation table 2 personnes", duration_minutes: 90, price: 0 },
+  { name: "Réservation table 4 personnes", duration_minutes: 90, price: 0 },
+  { name: "Réservation table 6+ personnes", duration_minutes: 120, price: 0 },
+  { name: "Événement privé", duration_minutes: 180, price: 0 },
+  { name: "Brunch", duration_minutes: 120, price: 0 },
+  { name: "Traiteur", duration_minutes: 0, price: 0 },
+];
+
 /** Type-key specific service defaults */
 const TYPE_SERVICES: Record<string, DefaultService[]> = {
   general_medicine: GP_SERVICES,
@@ -121,6 +142,15 @@ const TYPE_SERVICES: Record<string, DefaultService[]> = {
   psychology: PSYCHOLOGY_SERVICES,
   pharmacy: PHARMACY_SERVICES,
   parapharmacy: PHARMACY_SERVICES,
+  vet_general: VETERINARY_SERVICES,
+  vet_specialist: VETERINARY_SERVICES,
+  vet_emergency: VETERINARY_SERVICES,
+  pet_grooming: VETERINARY_SERVICES,
+  restaurant_traditional: RESTAURANT_SERVICES,
+  restaurant_fast_food: RESTAURANT_SERVICES,
+  restaurant_cafe: RESTAURANT_SERVICES,
+  restaurant_patisserie: RESTAURANT_SERVICES,
+  restaurant_traiteur: RESTAURANT_SERVICES,
 };
 
 /** Category-level fallback defaults */
@@ -130,6 +160,8 @@ const CATEGORY_SERVICES: Record<string, DefaultService[]> = {
   diagnostic: DEFAULT_DIAGNOSTIC,
   pharmacy_retail: PHARMACY_SERVICES,
   clinics_centers: DENTAL_SERVICES,
+  veterinary: VETERINARY_SERVICES,
+  restaurant: RESTAURANT_SERVICES,
 };
 
 /**
