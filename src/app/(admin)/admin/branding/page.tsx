@@ -1,6 +1,5 @@
 "use client";
 
-import { useRef, useState } from "react";
 import {
   AlertCircle,
   Palette,
@@ -12,7 +11,12 @@ import {
   Phone,
   MapPin,
   Clock,
+  Wand2,
+  Check,
+  Loader2,
 } from "lucide-react";
+import { useRef, useState } from "react";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -20,13 +24,13 @@ import {
   CardTitle,
   CardDescription,
 } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { PageLoader } from "@/components/ui/page-loader";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
-import { PageLoader } from "@/components/ui/page-loader";
 import { useAsyncData } from "@/lib/hooks/use-async-data";
+import { presetList, type TemplatePreset } from "@/lib/template-presets";
 
 interface BrandingState {
   name: string;
@@ -106,6 +110,9 @@ export default function BrandingPage() {
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
+  const [applyingPreset, setApplyingPreset] = useState<string | null>(null);
+  const [appliedPreset, setAppliedPreset] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState("presets");
 
   const logoRef = useRef<HTMLInputElement>(null);
   const faviconRef = useRef<HTMLInputElement>(null);
@@ -228,8 +235,12 @@ export default function BrandingPage() {
         </Button>
       </div>
 
-      <Tabs defaultValue="info">
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="mb-6 flex-wrap">
+          <TabsTrigger value="presets">
+            <Wand2 className="h-4 w-4 mr-2" />
+            Presets
+          </TabsTrigger>
           <TabsTrigger value="info">
             <Building2 className="h-4 w-4 mr-2" />
             Clinic Info
@@ -247,6 +258,43 @@ export default function BrandingPage() {
             Fonts
           </TabsTrigger>
         </TabsList>
+
+        {/* ── Presets Tab ── */}
+        <TabsContent value="presets">
+          <PresetsGrid
+            applyingPreset={applyingPreset}
+            appliedPreset={appliedPreset}
+            onApply={async (preset) => {
+              setApplyingPreset(preset.id);
+              try {
+                const res = await fetch("/api/branding/apply-preset", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ presetId: preset.id }),
+                });
+                if (res.ok) {
+                  setAppliedPreset(preset.id);
+                  setBranding((prev) => ({
+                    ...prev,
+                    primary_color: preset.theme.primaryColor,
+                    secondary_color: preset.theme.secondaryColor,
+                  }));
+                  setTimeout(() => setAppliedPreset(null), 3000);
+                }
+              } finally {
+                setApplyingPreset(null);
+              }
+            }}
+            onCustomize={(preset) => {
+              setBranding((prev) => ({
+                ...prev,
+                primary_color: preset.theme.primaryColor,
+                secondary_color: preset.theme.secondaryColor,
+              }));
+              setActiveTab("colors");
+            }}
+          />
+        </TabsContent>
 
         {/* ── Clinic Info Tab ── */}
         <TabsContent value="info">
@@ -693,6 +741,167 @@ export default function BrandingPage() {
           </Card>
         </TabsContent>
       </Tabs>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Presets Grid Sub-component
+// ---------------------------------------------------------------------------
+
+function PresetsGrid({
+  applyingPreset,
+  appliedPreset,
+  onApply,
+  onCustomize,
+}: {
+  applyingPreset: string | null;
+  appliedPreset: string | null;
+  onApply: (preset: TemplatePreset) => void;
+  onCustomize: (preset: TemplatePreset) => void;
+}) {
+  const [filterVertical, setFilterVertical] = useState<string>("all");
+
+  const verticals = [
+    { value: "all", label: "All Verticals" },
+    { value: "healthcare", label: "Healthcare" },
+    { value: "beauty", label: "Beauty" },
+    { value: "restaurant", label: "Restaurant" },
+    { value: "fitness", label: "Fitness" },
+    { value: "veterinary", label: "Veterinary" },
+  ];
+
+  const filtered =
+    filterVertical === "all"
+      ? presetList
+      : presetList.filter((p) => p.vertical === filterVertical);
+
+  return (
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            <Wand2 className="h-4 w-4" />
+            Template Presets
+          </CardTitle>
+          <CardDescription>
+            Pick a preset to instantly change your entire site&apos;s look and feel.
+            You can fine-tune colors and fonts afterwards.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {/* Vertical filter */}
+          <div className="flex gap-2 flex-wrap mb-6">
+            {verticals.map((v) => (
+              <button
+                key={v.value}
+                onClick={() => setFilterVertical(v.value)}
+                className={`inline-flex items-center rounded-lg px-3 py-1.5 text-sm transition-colors ${
+                  filterVertical === v.value
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-muted text-muted-foreground hover:bg-muted/80"
+                }`}
+              >
+                {v.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Preset grid */}
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {filtered.map((preset) => {
+              const isApplying = applyingPreset === preset.id;
+              const isApplied = appliedPreset === preset.id;
+
+              return (
+                <div
+                  key={preset.id}
+                  className={`rounded-xl border-2 p-4 transition-all ${
+                    isApplied
+                      ? "border-green-500 bg-green-50 dark:bg-green-900/20"
+                      : "border-border hover:border-primary/50 hover:shadow-md"
+                  }`}
+                >
+                  {/* Color swatches */}
+                  <div className="flex gap-2 mb-3">
+                    <div
+                      className="h-8 w-8 rounded-full border shadow-sm"
+                      style={{ backgroundColor: preset.theme.primaryColor }}
+                      title="Primary"
+                    />
+                    <div
+                      className="h-8 w-8 rounded-full border shadow-sm"
+                      style={{ backgroundColor: preset.theme.secondaryColor }}
+                      title="Secondary"
+                    />
+                    <div
+                      className="h-8 w-8 rounded-full border shadow-sm"
+                      style={{ backgroundColor: preset.theme.accentColor }}
+                      title="Accent"
+                    />
+                  </div>
+
+                  {/* Name & description */}
+                  <h3 className="font-semibold text-sm mb-0.5">{preset.name}</h3>
+                  <p className="text-xs text-muted-foreground mb-1" dir="rtl">
+                    {preset.nameAr}
+                  </p>
+                  <p className="text-xs text-muted-foreground mb-3 line-clamp-2">
+                    {preset.description}
+                  </p>
+
+                  {/* Template & vertical badges */}
+                  <div className="flex gap-1.5 mb-3">
+                    <span className="inline-flex items-center rounded-md bg-muted px-2 py-0.5 text-xs capitalize">
+                      {preset.templateId}
+                    </span>
+                    <span className="inline-flex items-center rounded-md bg-muted px-2 py-0.5 text-xs capitalize">
+                      {preset.vertical}
+                    </span>
+                  </div>
+
+                  {/* Action buttons */}
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      className="flex-1"
+                      disabled={isApplying || applyingPreset !== null}
+                      onClick={() => onApply(preset)}
+                    >
+                      {isApplying ? (
+                        <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />
+                      ) : isApplied ? (
+                        <Check className="h-3.5 w-3.5 mr-1" />
+                      ) : (
+                        <Wand2 className="h-3.5 w-3.5 mr-1" />
+                      )}
+                      {isApplied ? "Applied!" : isApplying ? "Applying..." : "Apply"}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => onCustomize(preset)}
+                    >
+                      <Palette className="h-3.5 w-3.5 mr-1" />
+                      Customize
+                    </Button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {filtered.length === 0 && (
+            <div className="text-center py-12">
+              <Wand2 className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
+              <p className="font-medium">No presets for this vertical</p>
+              <p className="text-sm text-muted-foreground">
+                Try selecting a different vertical filter
+              </p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }

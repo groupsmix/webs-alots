@@ -41,7 +41,16 @@ export type ClinicType =
   | "dermatologist"
   | "orthopedist"
   | "neurologist"
-  | "psychiatrist";
+  | "psychiatrist"
+  | "vet_general"
+  | "vet_specialist"
+  | "vet_emergency"
+  | "pet_grooming"
+  | "restaurant_traditional"
+  | "restaurant_fast_food"
+  | "restaurant_cafe"
+  | "restaurant_patisserie"
+  | "restaurant_traiteur";
 
 export type ClinicTier = "vitrine" | "cabinet" | "pro" | "premium" | "saas";
 

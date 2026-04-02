@@ -1,8 +1,9 @@
 import { NextRequest } from "next/server";
-import { verifyCronSecret } from "@/lib/cron-auth";
-import { processNotificationQueue } from "@/lib/notification-queue";
-import { logger } from "@/lib/logger";
 import { apiInternalError, apiSuccess } from "@/lib/api-response";
+import { verifyCronSecret } from "@/lib/cron-auth";
+import { logger } from "@/lib/logger";
+import { processNotificationQueue } from "@/lib/notification-queue";
+import { withSentryCron } from "@/lib/sentry-cron";
 
 /**
  * GET /api/cron/notifications
@@ -13,7 +14,7 @@ import { apiInternalError, apiSuccess } from "@/lib/api-response";
  * Called by the Cloudflare Worker scheduled handler every 5 minutes.
  * Protected by CRON_SECRET via Authorization: Bearer header.
  */
-export async function GET(request: NextRequest) {
+async function handler(request: NextRequest) {
   const authError = verifyCronSecret(request);
   if (authError) return authError;
 
@@ -32,3 +33,5 @@ export async function GET(request: NextRequest) {
     return apiInternalError("Failed to process notification queue");
   }
 }
+
+export const GET = withSentryCron("notifications-every-5m", "*/5 * * * *", handler);

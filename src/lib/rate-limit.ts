@@ -25,8 +25,8 @@
  *   if (!(await limiter.check(ip))) { // blocked }
  */
 
-import { NextRequest } from "next/server";
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
+import { NextRequest } from "next/server";
 import { logger } from "@/lib/logger";
 
 /**
@@ -594,6 +594,18 @@ export const aiDrugCheckLimiter = createRateLimiter({
   max: 100,
 });
 
+/** AI Manager (Smart Dashboard): 30 req / 24h per admin */
+export const aiManagerLimiter = createRateLimiter({
+  windowMs: 24 * 60 * 60_000,
+  max: 30,
+});
+
+/** AI Auto-Suggest (Prescription suggestions): 100 req / 24h per doctor */
+export const aiAutoSuggestLimiter = createRateLimiter({
+  windowMs: 24 * 60 * 60_000,
+  max: 100,
+});
+
 export interface RateLimitRule {
   /** URL prefix to match */
   prefix: string;
@@ -627,6 +639,8 @@ export const rateLimitRules: RateLimitRule[] = [
   { prefix: "/api/v1/ai/patient-summary", limiter: aiPatientSummaryLimiter, windowMs: 24 * 60 * 60_000, max: 30 },
   { prefix: "/api/v1/ai/drug-check", limiter: aiDrugCheckLimiter, windowMs: 24 * 60 * 60_000, max: 100 },
   { prefix: "/api/v1/ai/prescription", limiter: aiPrescriptionLimiter, windowMs: 24 * 60 * 60_000, max: 50 },
+  { prefix: "/api/ai/manager", limiter: aiManagerLimiter, windowMs: 24 * 60 * 60_000, max: 30 },
+  { prefix: "/api/ai/auto-suggest", limiter: aiAutoSuggestLimiter, windowMs: 24 * 60 * 60_000, max: 100 },
   { prefix: "/api/chat", limiter: chatLimiter, windowMs: 60_000, max: 15 },
   { prefix: "/api/webhooks", limiter: webhookLimiter, windowMs: 60_000, max: 100 },
   { prefix: "/api/branding", limiter: brandingLimiter, windowMs: 60_000, max: 20 },

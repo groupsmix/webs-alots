@@ -83,7 +83,20 @@ export type ClinicFeatureKey =
   | "pregnancy_tracking"
   | "ultrasound_records"
   | "vision_tests"
-  | "iop_tracking";
+  | "iop_tracking"
+  // Store
+  | "public_catalog"
+  // AI-powered features (Professional+ plan)
+  | "ai_manager"
+  | "ai_auto_suggest"
+  // Veterinary
+  | "pet_profiles"
+  | "website"
+  // Restaurant
+  | "menu_management"
+  | "table_management"
+  | "qr_ordering"
+  | "reservations";
 
 /** A features_config object as stored in the DB. */
 export type FeaturesConfig = Partial<Record<ClinicFeatureKey, boolean>>;
@@ -99,6 +112,26 @@ export const DEFAULT_FEATURES: FeaturesConfig = {
   imaging: true,
   departments: true,
   consent_forms: true,
+};
+
+/** Default features for veterinary clinics */
+export const VETERINARY_DEFAULT_FEATURES: FeaturesConfig = {
+  appointments: true,
+  prescriptions: true,
+  vaccination: true,
+  stock: true,
+  pet_profiles: true,
+  website: true,
+};
+
+/** Default features for restaurant businesses */
+export const RESTAURANT_DEFAULT_FEATURES: FeaturesConfig = {
+  appointments: true,
+  menu_management: true,
+  table_management: true,
+  qr_ordering: true,
+  reservations: true,
+  departments: true,
 };
 
 /**
