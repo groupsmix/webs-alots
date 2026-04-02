@@ -694,6 +694,99 @@ export const restaurantOrderUpdateSchema = z.object({
   notes: z.string().max(2000).nullable().optional(),
 });
 
+// ── Fitness Vertical ─────────────────────────────────────────────────────
+
+export const membershipPlanCreateSchema = z.object({
+  name: z.string().min(1).max(200),
+  description: z.string().max(2000).optional(),
+  duration_days: z.number().int().min(1).max(3650),
+  price: z.number().min(0).finite(),
+  currency: z.string().max(10).optional().default("MAD"),
+  max_classes: z.number().int().min(0).nullable().optional(),
+  features: z.array(z.string().max(200)).optional().default([]),
+  is_active: z.boolean().optional().default(true),
+  sort_order: z.number().int().optional().default(0),
+});
+
+export const membershipPlanUpdateSchema = z.object({
+  id: z.string().min(1),
+  name: z.string().min(1).max(200).optional(),
+  description: z.string().max(2000).nullable().optional(),
+  duration_days: z.number().int().min(1).max(3650).optional(),
+  price: z.number().min(0).finite().optional(),
+  max_classes: z.number().int().min(0).nullable().optional(),
+  features: z.array(z.string().max(200)).optional(),
+  is_active: z.boolean().optional(),
+  sort_order: z.number().int().optional(),
+});
+
+export const membershipCreateSchema = z.object({
+  member_id: z.string().min(1),
+  plan_id: z.string().min(1),
+  start_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Expected YYYY-MM-DD").optional(),
+  auto_renew: z.boolean().optional().default(false),
+  notes: z.string().max(2000).optional(),
+});
+
+export const membershipUpdateSchema = z.object({
+  id: z.string().min(1),
+  status: z.enum(["active", "expired", "cancelled", "frozen", "pending"]).optional(),
+  auto_renew: z.boolean().optional(),
+  notes: z.string().max(2000).nullable().optional(),
+});
+
+export const classCreateSchema = z.object({
+  name: z.string().min(1).max(200),
+  description: z.string().max(2000).optional(),
+  trainer_id: z.string().min(1).optional(),
+  day_of_week: z.number().int().min(0).max(6),
+  start_time: z.string().regex(/^\d{2}:\d{2}$/, "Expected HH:MM"),
+  duration_min: z.number().int().min(1).max(480),
+  max_capacity: z.number().int().min(1).max(500),
+  location: z.string().max(200).optional(),
+  is_recurring: z.boolean().optional().default(true),
+  is_active: z.boolean().optional().default(true),
+});
+
+export const classUpdateSchema = z.object({
+  id: z.string().min(1),
+  name: z.string().min(1).max(200).optional(),
+  description: z.string().max(2000).nullable().optional(),
+  trainer_id: z.string().min(1).nullable().optional(),
+  day_of_week: z.number().int().min(0).max(6).optional(),
+  start_time: z.string().regex(/^\d{2}:\d{2}$/, "Expected HH:MM").optional(),
+  duration_min: z.number().int().min(1).max(480).optional(),
+  max_capacity: z.number().int().min(1).max(500).optional(),
+  location: z.string().max(200).nullable().optional(),
+  is_recurring: z.boolean().optional(),
+  is_active: z.boolean().optional(),
+});
+
+export const classEnrollmentCreateSchema = z.object({
+  class_id: z.string().min(1),
+  member_id: z.string().min(1),
+  enrollment_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Expected YYYY-MM-DD").optional(),
+});
+
+export const classEnrollmentUpdateSchema = z.object({
+  id: z.string().min(1),
+  status: z.enum(["enrolled", "attended", "cancelled", "no_show"]).optional(),
+  checked_in_at: z.string().optional(),
+  checked_out_at: z.string().optional(),
+});
+
+export const progressTrackingCreateSchema = z.object({
+  member_id: z.string().min(1),
+  recorded_at: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Expected YYYY-MM-DD").optional(),
+  weight_kg: z.number().positive().max(500).optional(),
+  body_fat_pct: z.number().min(0).max(100).optional(),
+  muscle_mass_kg: z.number().positive().max(300).optional(),
+  bmi: z.number().positive().max(100).optional(),
+  notes: z.string().max(5000).optional(),
+  photo_urls: z.array(z.string().url().max(2000)).optional().default([]),
+  measurements: z.record(z.string(), z.unknown()).optional().default({}),
+});
+
 // ── Helper: parse with friendly error response ──────────────────────────
 
 /**

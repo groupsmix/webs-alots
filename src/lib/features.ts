@@ -96,7 +96,13 @@ export type ClinicFeatureKey =
   | "menu_management"
   | "table_management"
   | "qr_ordering"
-  | "reservations";
+  | "reservations"
+  // Fitness
+  | "memberships"
+  | "classes"
+  | "fitness_progress"
+  // Custom domain
+  | "custom_domain";
 
 /** A features_config object as stored in the DB. */
 export type FeaturesConfig = Partial<Record<ClinicFeatureKey, boolean>>;
@@ -121,6 +127,19 @@ export const VETERINARY_DEFAULT_FEATURES: FeaturesConfig = {
   vaccination: true,
   stock: true,
   pet_profiles: true,
+  website: true,
+};
+
+/** Default features for fitness businesses */
+export const FITNESS_DEFAULT_FEATURES: FeaturesConfig = {
+  appointments: true,
+  memberships: true,
+  classes: true,
+  fitness_progress: true,
+  exercise_programs: true,
+  meal_plans: true,
+  body_measurements: true,
+  progress_photos: true,
   website: true,
 };
 

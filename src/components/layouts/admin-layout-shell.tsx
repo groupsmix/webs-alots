@@ -1,6 +1,6 @@
 "use client";
 
-import { LayoutDashboard, UserCog, Stethoscope, Settings, BarChart3, Star, Users, CalendarOff, Bell, Clock, UserCheck, Palette, Paintbrush, Menu, X, CreditCard, LayoutTemplate, ToggleRight, Building2, BedDouble, Monitor, Boxes, FileText, Brain } from "lucide-react";
+import { LayoutDashboard, UserCog, Stethoscope, Settings, BarChart3, Star, Users, CalendarOff, Bell, Clock, UserCheck, Palette, Paintbrush, Menu, X, CreditCard, LayoutTemplate, ToggleRight, Building2, BedDouble, Monitor, Boxes, FileText, Brain, Dumbbell, UtensilsCrossed, PawPrint, Globe } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
@@ -50,6 +50,17 @@ const navItems: NavItem[] = [
   { href: "/admin/lab-invoices", label: "Lab Invoices", icon: FileText, requiredFeature: "lab_invoices" },
   // AI-powered features (Professional+ plan)
   { href: "/admin/ai-manager", label: "AI Manager", icon: Brain, requiredFeature: "ai_manager" },
+  // Fitness vertical
+  { href: "/admin/memberships", label: "Memberships", icon: Dumbbell, requiredFeature: "memberships" },
+  { href: "/admin/classes", label: "Classes", icon: Dumbbell, requiredFeature: "classes" },
+  { href: "/admin/progress", label: "Progress Tracking", icon: Dumbbell, requiredFeature: "fitness_progress" },
+  // Restaurant vertical
+  { href: "/admin/menu-management", label: "Menu Management", icon: UtensilsCrossed, requiredFeature: "menu_management" },
+  { href: "/admin/table-management", label: "Table Management", icon: UtensilsCrossed, requiredFeature: "table_management" },
+  // Veterinary vertical
+  { href: "/admin/pet-profiles", label: "Pet Profiles", icon: PawPrint, requiredFeature: "pet_profiles" },
+  // Custom domain
+  { href: "/admin/custom-domain", label: "Custom Domain", icon: Globe, requiredFeature: "custom_domain" },
 ];
 
 function OnboardingChecklistSidebar() {
