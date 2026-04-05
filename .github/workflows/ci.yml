@@ -4,19 +4,16 @@ on:
   pull_request:
     branches: [main, staging]
 
-env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-
 jobs:
   ci:
     runs-on: ubuntu-latest
     name: Lint, Type Check & Tests
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Setup Node.js 24
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: 24
           cache: npm
@@ -36,10 +33,6 @@ jobs:
       - name: Bundle size budget check
         run: |
           npm run build 2>&1 | tee build-output.txt
-          # Extract the total First Load JS size from the build output.
-          # Next.js prints "First Load JS shared by all  XX.X kB" — we check
-          # that the shared JS bundle stays under 250 kB (a generous budget
-          # that catches accidental large dependency additions).
           TOTAL_KB=$(grep -oP 'First Load JS shared by all\s+\K[0-9.]+' build-output.txt || echo "0")
           echo "First Load JS shared: ${TOTAL_KB} kB"
           if [ "$(echo "$TOTAL_KB > 250" | bc -l 2>/dev/null || echo 0)" = "1" ]; then
@@ -56,10 +49,10 @@ jobs:
     name: E2E Tests (Playwright)
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Setup Node.js 24
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: 24
           cache: npm
@@ -78,10 +71,6 @@ jobs:
 
       - name: Run E2E tests
         id: e2e
-        # E2E tests require real Supabase credentials for full coverage.
-        # Until SUPABASE_* secrets are configured, some tests will fail.
-        # We capture the exit code so the job still succeeds and reports
-        # failures as warnings instead of blocking the PR.
         run: |
           set +e
           npx playwright test --project=chromium
@@ -100,7 +89,7 @@ jobs:
           SEED_USERS_DELETED: "true"
 
       - name: Upload Playwright report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         if: always()
         with:
           name: playwright-report

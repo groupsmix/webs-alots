@@ -6,19 +6,16 @@ on:
       - main
       - staging
 
-env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-
 jobs:
   lint:
     runs-on: ubuntu-latest
     name: Lint Check
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Setup Node.js 24
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: 24
           cache: npm
@@ -42,10 +39,10 @@ jobs:
     environment: ${{ github.ref_name == 'staging' && 'staging' || 'production' }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Setup Node.js 24
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: 24
           cache: npm
@@ -58,7 +55,6 @@ jobs:
         env:
           NEXT_PUBLIC_SUPABASE_URL: ${{ github.ref_name == 'staging' && secrets.STAGING_SUPABASE_URL || secrets.NEXT_PUBLIC_SUPABASE_URL }}
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ github.ref_name == 'staging' && secrets.STAGING_SUPABASE_ANON_KEY || secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
-
 
       - name: Deploy to Cloudflare Workers (Production)
         if: github.ref_name == 'main'
@@ -97,7 +93,6 @@ jobs:
           echo "${{ secrets.BOOKING_TOKEN_SECRET }}" | npx wrangler secret put BOOKING_TOKEN_SECRET --env staging
           echo "${{ secrets.CRON_SECRET }}" | npx wrangler secret put CRON_SECRET --env staging
 
-      # Audit 8.6 — Post-deploy health check to verify the deployment is live
       - name: Health Check
         run: |
           SITE_URL="${{ github.ref_name == 'staging' && 'https://staging.oltigo.com' || 'https://oltigo.com' }}"

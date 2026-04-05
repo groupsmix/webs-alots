@@ -11,7 +11,7 @@ jobs:
     name: Validate Migrations
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Check migration file numbering
         run: |
@@ -24,7 +24,6 @@ jobs:
             basename=$(basename "$file")
             num=$(echo "$basename" | grep -oP '^\d+')
 
-            # Check for duplicate prefixes
             if [ "$num" = "$prev_num" ]; then
               echo "ERROR: Duplicate migration number $num found:"
               echo "  - Previous file with same number exists"
@@ -51,14 +50,12 @@ jobs:
           for file in supabase/migrations/*.sql; do
             basename=$(basename "$file")
 
-            # Check for unbalanced parentheses
             open=$(grep -o '(' "$file" | wc -l)
             close=$(grep -o ')' "$file" | wc -l)
             if [ "$open" != "$close" ]; then
               echo "WARNING: $basename has unbalanced parentheses (open: $open, close: $close)"
             fi
 
-            # Check for missing semicolons at end of statements
             if grep -qP 'CREATE TABLE|CREATE INDEX|ALTER TABLE|CREATE POLICY|DROP POLICY|INSERT INTO|UPDATE |DELETE FROM' "$file"; then
               echo "OK: $basename contains valid SQL statements"
             fi
