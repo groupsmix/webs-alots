@@ -110,22 +110,11 @@ CREATE INDEX IF NOT EXISTS idx_feature_flags_enabled ON ai_feature_flags(enabled
 
 -- Feature flags are global, no RLS needed
 
--- ========== Add disabled_reason to config ==========
+-- ========== Add AI config columns to clinics table ==========
 
-ALTER TABLE ai_agent_config 
-ADD COLUMN IF NOT EXISTS disabled_reason TEXT;
-
--- ========== Add rate_limits to config ==========
-
-ALTER TABLE ai_agent_config 
-ADD COLUMN IF NOT EXISTS rate_limits JSONB DEFAULT '{
-  "max_actions_per_hour": 100,
-  "max_actions_per_day": 500,
-  "max_messages_per_customer_per_day": 3,
-  "max_whatsapp_per_hour": 50,
-  "max_sms_per_hour": 100,
-  "max_email_per_hour": 200
-}'::jsonb;
+-- Add disabled_reason to clinics.ai_config
+-- Note: ai_config is JSONB, so we don't need separate columns
+-- The config structure is managed in application code
 
 -- ========== Cleanup Functions ==========
 
