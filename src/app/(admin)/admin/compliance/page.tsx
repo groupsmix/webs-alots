@@ -15,7 +15,7 @@ export const metadata = {
 };
 
 export default async function CompliancePage() {
-  const { tenant } = await requireTenant();
+  const tenant = await requireTenant();
   
   return (
     <div className="space-y-8">
