@@ -38,6 +38,31 @@ export const POST = withValidation(doctorUnavailabilitySchema, async (body, _req
 
     const { doctorId, clinicId, startDate, endDate, reason } = body;
 
+    // MED-15: Verify the authenticated user is the doctor being marked
+    // unavailable, or an admin of the same clinic. Without this check any
+    // authenticated user could mark any doctor unavailable, causing
+    // appointment cancellations and rebooking chaos.
+    const { data: callerProfile } = await supabase
+      .from("users")
+      .select("id, role, clinic_id")
+      .eq("auth_id", user.id)
+      .single();
+
+    if (!callerProfile) {
+      return apiUnauthorized();
+    }
+
+    const isDoctor = callerProfile.id === doctorId;
+    const isAdmin = ["clinic_admin", "super_admin"].includes(callerProfile.role);
+
+    if (!isDoctor && !isAdmin) {
+      return apiError("Only the doctor or a clinic admin can mark unavailability", 403);
+    }
+
+    if (callerProfile.role !== "super_admin" && callerProfile.clinic_id !== clinicId) {
+      return apiError("Clinic mismatch", 403);
+    }
+
     // 1. Record the unavailability in doctor_unavailability table
     // doctor_unavailability & rebooking_requests not yet in generated types — cast through unknown
     type UnavailRow = { id: string };

@@ -1,11 +1,11 @@
 import { NextRequest } from "next/server";
 import { apiError, apiSuccess, apiInternalError } from "@/lib/api-response";
 import { getPlanByPriceId, type PlanSlug } from "@/lib/config/subscription-plans";
-import { hmacSha256Hex, timingSafeEqual } from "@/lib/crypto-utils";
 import { logger } from "@/lib/logger";
 import { createAdminClient } from "@/lib/supabase-server";
 import { subscriptionWebhookEventSchema } from "@/lib/validations";
 import type { SubscriptionWebhookEvent } from "@/lib/validations";
+import { verifyStripeWebhook } from "@/lib/stripe-webhook";
 
 /**
  * POST /api/billing/webhook
@@ -47,9 +47,12 @@ export async function POST(request: NextRequest) {
       return apiError("Missing stripe-signature header");
     }
 
-    const isValid = await verifyStripeSignature(rawBody, signature, webhookSecret);
-    if (!isValid) {
-      return apiError("Invalid signature");
+    const verifyResult = await verifyStripeWebhook(rawBody, signature, webhookSecret, "billing/webhook");
+    if (verifyResult === "expired") {
+      return apiError("Webhook timestamp too old — possible replay attack", 400);
+    }
+    if (verifyResult === "invalid") {
+      return apiError("Invalid webhook signature", 400);
     }
 
     let event: SubscriptionWebhookEvent;
@@ -85,6 +88,30 @@ export async function POST(request: NextRequest) {
             metadata: session.metadata,
           });
           break;
+        }
+
+        // HIGH-06: Verify the Stripe customer in the webhook actually belongs
+        // to the clinic in the metadata. Without this check, an attacker who
+        // controls a Stripe account could craft a checkout session with an
+        // arbitrary clinic_id in metadata and upgrade any clinic for free.
+        if (stripeCustomerId) {
+          const { data: clinicRecord } = await supabase
+            .from("clinics")
+            .select("config")
+            .eq("id", clinicId)
+            .single();
+
+          const storedCustomerId = clinicRecord?.config?.stripe_customer_id as string | undefined;
+          // Allow if no customer is stored yet (first checkout) OR if it matches
+          if (storedCustomerId && storedCustomerId !== stripeCustomerId) {
+            logger.error("Stripe customer mismatch in billing webhook — possible metadata injection", {
+              context: "billing/webhook",
+              clinicId,
+              expectedCustomer: storedCustomerId,
+              receivedCustomer: stripeCustomerId,
+            });
+            break;
+          }
         }
 
         logger.info("Subscription checkout completed", {
@@ -283,41 +310,5 @@ export async function POST(request: NextRequest) {
   } catch (err) {
     logger.warn("Operation failed", { context: "billing/webhook", error: err });
     return apiInternalError("Failed to process webhook");
-  }
-}
-
-/**
- * Verify Stripe webhook signature using HMAC-SHA256.
- * Implements Stripe's signature verification without requiring the Stripe SDK.
- */
-async function verifyStripeSignature(
-  payload: string,
-  signatureHeader: string,
-  secret: string,
-): Promise<boolean> {
-  try {
-    const parts = signatureHeader.split(",");
-    let timestamp = "";
-    let signature = "";
-
-    for (const part of parts) {
-      const [key, value] = part.split("=");
-      if (key === "t") timestamp = value;
-      if (key === "v1") signature = value;
-    }
-
-    if (!timestamp || !signature) return false;
-
-    // Check timestamp tolerance (5 minutes)
-    const now = Math.floor(Date.now() / 1000);
-    if (Math.abs(now - parseInt(timestamp, 10)) > 300) return false;
-
-    const signedPayload = `${timestamp}.${payload}`;
-    const expectedSignature = await hmacSha256Hex(secret, signedPayload);
-
-    return timingSafeEqual(expectedSignature, signature);
-  } catch (err) {
-    logger.warn("Signature verification failed", { context: "billing/webhook", error: err });
-    return false;
   }
 }

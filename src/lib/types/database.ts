@@ -5322,6 +5322,7 @@ export type Database = {
           appointment_id: string | null
           clinic_id: string
           created_at: string | null
+          gateway_refund_id: string | null
           gateway_session_id: string | null
           id: string
           method: string | null
@@ -5337,6 +5338,7 @@ export type Database = {
           appointment_id?: string | null
           clinic_id: string
           created_at?: string | null
+          gateway_refund_id?: string | null
           gateway_session_id?: string | null
           id?: string
           method?: string | null
@@ -5352,6 +5354,7 @@ export type Database = {
           appointment_id?: string | null
           clinic_id?: string
           created_at?: string | null
+          gateway_refund_id?: string | null
           gateway_session_id?: string | null
           id?: string
           method?: string | null
@@ -9089,6 +9092,7 @@ export type Payment = {
   reference: string | null;
   payment_type: PaymentType;
   gateway_session_id: string | null;
+  gateway_refund_id: string | null;
   refunded_amount: number;
   created_at: string;
 }

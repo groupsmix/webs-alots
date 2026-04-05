@@ -16,17 +16,35 @@ const MOROCCO_COUNTRY_CODE = "+212";
 /**
  * Validates a Moroccan phone number.
  * Accepts formats: 0612345678, +212612345678, 212612345678, 06 12 34 56 78
+ * MED-12: Accepts both mobile (6/7) and landline (5) numbers.
+ * Use isValidMoroccanMobile() when you need mobile-only validation
+ * (e.g. for WhatsApp/SMS delivery).
  */
 export function isValidMoroccanPhone(phone: string): boolean {
   const cleaned = phone.replace(/[\s\-().]/g, "");
-  // +212 format
   if (cleaned.startsWith("+212") || cleaned.startsWith("212")) {
     const local = cleaned.startsWith("+212") ? cleaned.slice(4) : cleaned.slice(3);
     return /^[5-7]\d{8}$/.test(local);
   }
-  // Local format 0X XX XX XX XX
   if (cleaned.startsWith("0")) {
     return /^0[5-7]\d{8}$/.test(cleaned);
+  }
+  return false;
+}
+
+/**
+ * Validates a Moroccan MOBILE phone number (6xx or 7xx only).
+ * MED-12: Use this for WhatsApp/SMS delivery — landlines (5xx) cannot
+ * receive WhatsApp messages and will cause silent delivery failures.
+ */
+export function isValidMoroccanMobile(phone: string): boolean {
+  const cleaned = phone.replace(/[\s\-().]/g, "");
+  if (cleaned.startsWith("+212") || cleaned.startsWith("212")) {
+    const local = cleaned.startsWith("+212") ? cleaned.slice(4) : cleaned.slice(3);
+    return /^[67]\d{8}$/.test(local);
+  }
+  if (cleaned.startsWith("0")) {
+    return /^0[67]\d{8}$/.test(cleaned);
   }
   return false;
 }

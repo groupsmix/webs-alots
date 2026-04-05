@@ -57,7 +57,8 @@ function enforceMaxSize(): void {
 
 /**
  * Add or update an entry in the subdomain cache.
- * Enforces the maximum cache size before inserting.
+ * Enforces the maximum cache size before inserting and runs
+ * request-count-based TTL eviction as a Cloudflare Workers fallback.
  */
 export function setSubdomainCache(subdomain: string, clinic: CachedClinic): void {
   // If the key already exists, delete it first so re-insertion moves it
@@ -68,6 +69,13 @@ export function setSubdomainCache(subdomain: string, clinic: CachedClinic): void
     enforceMaxSize();
   }
   subdomainCache.set(subdomain, clinic);
+
+  // Request-count-based eviction: runs every EVICTION_INTERVAL_REQUESTS
+  // writes so stale entries are pruned even when setInterval doesn't fire.
+  _writeCount++;
+  if (_writeCount % EVICTION_INTERVAL_REQUESTS === 0) {
+    evictExpiredEntries();
+  }
 }
 
 /**
@@ -86,8 +94,13 @@ export function invalidateAllSubdomainCaches(): void {
   subdomainCache.clear();
 }
 
-// Periodically evict expired entries every 30 seconds to prevent
-// stale entries from accumulating in memory.
+// Periodically evict expired entries.
+// In Node.js / local dev we use setInterval (reliable, long-lived process).
+// In Cloudflare Workers setInterval is unreliable across isolate boundaries,
+// so we also evict on every N-th write via a request counter as a fallback.
+const EVICTION_INTERVAL_REQUESTS = 50;
+let _writeCount = 0;
+
 if (typeof setInterval !== "undefined") {
   setInterval(evictExpiredEntries, 30_000);
 }

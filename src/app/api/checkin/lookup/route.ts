@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { createTenantClient } from "@/lib/supabase-server";
 import { apiSuccess, apiError, apiInternalError } from "@/lib/api-response";
 import { logger } from "@/lib/logger";
+import { requireTenant } from "@/lib/tenant";
 
 /**
  * GET /api/checkin/lookup?phone=...&clinicId=...
@@ -14,6 +15,22 @@ export async function GET(request: NextRequest) {
 
   if (!phone || !clinicId) {
     return apiError("Missing phone or clinicId", 400);
+  }
+
+  // HIGH-08: Validate that the clinicId query param matches the tenant
+  // derived from the subdomain. The query param is attacker-controlled.
+  try {
+    const tenant = await requireTenant();
+    if (tenant.clinicId !== clinicId) {
+      logger.warn("Check-in lookup tenant mismatch", {
+        context: "api/checkin/lookup",
+        requestClinicId: clinicId,
+        tenantClinicId: tenant.clinicId,
+      });
+      return apiError("Invalid clinic context", 403);
+    }
+  } catch {
+    return apiError("Unable to resolve clinic context", 400);
   }
 
   try {

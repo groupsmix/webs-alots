@@ -3,10 +3,9 @@
  *
  * Issues a booking verification token after validating the patient's
  * phone number.  The token is an HMAC-SHA256 signature of the phone
- * number and an expiry timestamp, matching the format expected by
- * `verifyBookingToken` in the main booking route.
+ * number, an expiry timestamp, and a random nonce.
  *
- * Token format: "phone:expiryTimestamp:signature"
+ * Token format: "phone:expiryTimestamp:nonce:signature"
  *
  * NOTE: Full OTP verification (Twilio SMS) is deferred.  Currently
  * this endpoint issues a token for any syntactically valid phone
@@ -33,17 +32,15 @@ export const POST = withValidation(bookingVerifySchema, async (data, _request: N
 
   const { phone } = data;
 
-  const secret = process.env.BOOKING_TOKEN_SECRET;
-  if (!secret) {
-    logger.error(
-      "BOOKING_TOKEN_SECRET is not configured — cannot issue booking tokens",
-      { context: "booking/verify" },
-    );
-    return apiError("Booking verification is not available. Contact the clinic.", 503);
-  }
+  // CRITICAL-02 FIX: Import validated secret from config instead of
+  // checking at runtime. The app now fails at startup if the secret
+  // is missing, so this code path is guaranteed to have a valid secret.
+  const { BOOKING_TOKEN_SECRET: secret } = await import("@/lib/config");
 
-  // Build the token: phone:expiryTimestamp:hmacSignature
+  // Build the token: phone:expiryTimestamp:nonce:hmacSignature
+  // The nonce prevents predictable tokens when phone + window are known.
   const expiry = Date.now() + TOKEN_TTL_MS;
+  const nonce = crypto.randomUUID();
   const encoder = new TextEncoder();
   const key = await crypto.subtle.importKey(
     "raw",
@@ -52,13 +49,13 @@ export const POST = withValidation(bookingVerifySchema, async (data, _request: N
     false,
     ["sign"],
   );
-  const sigData = encoder.encode(`${phone}:${expiry}`);
+  const sigData = encoder.encode(`${phone}:${expiry}:${nonce}`);
   const sig = await crypto.subtle.sign("HMAC", key, sigData);
   const signature = Array.from(new Uint8Array(sig))
     .map((b) => b.toString(16).padStart(2, "0"))
     .join("");
 
-  const token = `${phone}:${expiry}:${signature}`;
+  const token = `${phone}:${expiry}:${nonce}:${signature}`;
 
   return apiSuccess({
     token,

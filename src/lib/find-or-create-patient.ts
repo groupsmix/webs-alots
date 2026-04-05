@@ -16,6 +16,7 @@
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/types/database";
+import { logger } from "@/lib/logger";
 
 interface FindOrCreatePatientOptions {
   phone?: string;
@@ -26,7 +27,11 @@ interface FindOrCreatePatientOptions {
  * Resolve a patient ID — if the incoming ID looks like a temporary placeholder
  * (prefixed with "patient-"), find or create the patient in the database.
  *
- * Prefers phone-based lookup over name-based to avoid name collisions.
+ * HIGH-07 FIX: Removed name-based lookup entirely. Phone or email is now
+ * REQUIRED to prevent name collision issues (e.g., multiple patients named
+ * "Mohammed Ahmed" in the same clinic). If neither is provided, we create
+ * a new patient record rather than risk assigning medical data to the wrong
+ * person.
  *
  * @returns The resolved patient ID, or `null` if creation failed.
  */
@@ -41,8 +46,17 @@ export async function findOrCreatePatient(
     return patientId;
   }
 
-  // Prefer phone-based lookup (unique per clinic) over name-based
-  // to avoid assigning appointments to the wrong patient when names collide.
+  // HIGH-07 FIX: Phone or email is REQUIRED. Name-only lookup is too risky
+  // in healthcare contexts where multiple patients may share the same name.
+  if (!options?.phone && !options?.email) {
+    logger.error("findOrCreatePatient: phone or email is required to prevent name collision", {
+      context: "find-or-create-patient",
+      clinicId,
+    });
+    return null;
+  }
+
+  // Prefer phone-based lookup (unique per clinic) over email
   if (options?.phone) {
     const { data: byPhone } = await supabase
       .from("users")
@@ -58,24 +72,23 @@ export async function findOrCreatePatient(
     }
   }
 
-  // Fall back to name-based lookup when phone is not provided.
-  // Only reuse an existing record when exactly ONE patient matches
-  // to avoid silently attributing data to the wrong person when
-  // multiple patients share the same name (common in many cultures).
-  const { data: byName } = await supabase
-    .from("users")
-    .select("id")
-    .eq("clinic_id", clinicId)
-    .eq("name", patientName)
-    .eq("role", "patient")
-    .limit(2); // fetch up to 2 to detect ambiguity
+  // Email-based lookup as secondary option
+  if (options?.email) {
+    const { data: byEmail } = await supabase
+      .from("users")
+      .select("id")
+      .eq("clinic_id", clinicId)
+      .eq("email", options.email)
+      .eq("role", "patient")
+      .limit(1)
+      .single();
 
-  if (byName && byName.length === 1) {
-    return byName[0].id;
+    if (byEmail) {
+      return byEmail.id;
+    }
   }
-  // If 0 or 2+ matches, fall through to create a new patient record
-  // so we don't accidentally merge distinct individuals.
 
+  // No existing patient found — create new record
   const { data: newPatient } = await supabase
     .from("users")
     .insert({

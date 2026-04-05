@@ -1,7 +1,8 @@
 import { createClient } from "@/lib/supabase-server";
 import { requireTenant } from "@/lib/tenant";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { t } from "@/lib/i18n";
+import { t, type Locale } from "@/lib/i18n";
+import { headers } from "next/headers";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
 
 /**
@@ -24,6 +25,7 @@ async function getPatientTimeline(
   supabase: Awaited<ReturnType<typeof createClient>>,
   clinicId: string,
   userId: string,
+  locale: Locale,
 ): Promise<TimelineEvent[]> {
   const events: TimelineEvent[] = [];
 
@@ -42,7 +44,7 @@ async function getPatientTimeline(
         id: `appt-${appt.id}`,
         type: "appointment",
         date: appt.appointment_date ?? "",
-        title: `${t("fr", "nav.appointments")} — ${appt.status}`,
+        title: `${t(locale, "nav.appointments")} — ${appt.status}`,
         description: appt.notes ?? `${appt.start_time ?? ""}`,
       });
     }
@@ -63,7 +65,7 @@ async function getPatientTimeline(
         id: `rx-${rx.id}`,
         type: "prescription",
         date: rx.created_at?.split("T")[0] ?? "",
-        title: t("fr", "prescription.title"),
+        title: t(locale, "prescription.title"),
         description: rx.notes ?? "",
       });
     }
@@ -78,13 +80,15 @@ async function getPatientTimeline(
 export default async function MedicalTimelinePage() {
   const tenant = await requireTenant();
   const supabase = await createClient();
+  const h = await headers();
+  const locale: Locale = (h.get("x-tenant-locale") as Locale) || "fr";
 
   // Get the current user's profile
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
     return (
       <div className="p-6 text-center text-muted-foreground">
-        {t("fr", "auth.genericError")}
+        {t(locale, "auth.genericError")}
       </div>
     );
   }
@@ -99,12 +103,12 @@ export default async function MedicalTimelinePage() {
   if (!profile) {
     return (
       <div className="p-6 text-center text-muted-foreground">
-        {t("fr", "auth.genericError")}
+        {t(locale, "auth.genericError")}
       </div>
     );
   }
 
-  const timeline = await getPatientTimeline(supabase, tenant.clinicId, profile.id);
+  const timeline = await getPatientTimeline(supabase, tenant.clinicId, profile.id, locale);
 
   const typeColors: Record<string, string> = {
     appointment: "bg-blue-100 text-blue-800",
@@ -114,12 +118,12 @@ export default async function MedicalTimelinePage() {
   return (
     <div className="space-y-6">
       <Breadcrumb items={[{ label: "Patient", href: "/patient/dashboard" }, { label: "Medical Timeline" }]} />
-      <h1 className="text-2xl font-bold">{t("fr", "carnet.title")}</h1>
+      <h1 className="text-2xl font-bold">{t(locale, "carnet.title")}</h1>
 
       {timeline.length === 0 ? (
         <Card>
           <CardContent className="p-8 text-center text-muted-foreground">
-            {t("fr", "directory.noResults")}
+            {t(locale, "directory.noResults")}
           </CardContent>
         </Card>
       ) : (

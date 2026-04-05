@@ -146,12 +146,17 @@ export async function processNotificationQueue(): Promise<ProcessResult> {
     const { createAdminClient } = await import("@/lib/supabase-server");
     const supabase = createAdminClient() as UntypedClient;
 
-    // Fetch pending items ready for processing
+    // MED-09: Claim items atomically using a status filter + immediate update
+    // to prevent duplicate processing when multiple workers run concurrently.
+    // We first fetch candidates, then immediately mark them 'processing' in a
+    // single UPDATE ... WHERE status IN ('pending','failed') so a second worker
+    // racing on the same rows will find them already 'processing' and skip them.
+    const now = new Date().toISOString();
     const { data: items, error: fetchError } = await supabase
       .from("notification_queue")
       .select("id, clinic_id, channel, recipient, body, trigger_type, status, attempts, max_attempts, next_retry_at, last_error, metadata, created_at, sent_at")
       .in("status", ["pending", "failed"])
-      .lte("next_retry_at", new Date().toISOString())
+      .lte("next_retry_at", now)
       .order("next_retry_at", { ascending: true })
       .limit(BATCH_SIZE);
 
@@ -165,15 +170,23 @@ export async function processNotificationQueue(): Promise<ProcessResult> {
       return result;
     }
 
-    // Claim items by marking them as 'processing'
+    // Claim items atomically: only update rows that are STILL pending/failed.
+    // Any row already claimed by another worker will have status='processing'
+    // and will be excluded by the WHERE clause, preventing duplicate delivery.
     const itemIds = items.map((item) => item.id);
-    await supabase
+    const { data: claimed } = await supabase
       .from("notification_queue")
-      .update({ status: "processing", updated_at: new Date().toISOString() })
-      .in("id", itemIds);
+      .update({ status: "processing", updated_at: now })
+      .in("id", itemIds)
+      .in("status", ["pending", "failed"]) // re-check status to avoid race
+      .select("id");
 
-    // Process each item
-    for (const item of items as QueuedNotification[]) {
+    // Only process rows we successfully claimed
+    const claimedIds = new Set((claimed ?? []).map((r: { id: string }) => r.id));
+    const claimedItems = (items as QueuedNotification[]).filter((item) => claimedIds.has(item.id));
+
+    // Process each claimed item
+    for (const item of claimedItems) {
       result.processed++;
 
       try {

@@ -58,11 +58,13 @@ export function slugify(input: string): string {
 
 /**
  * Generate a candidate subdomain from a clinic name.
- * Appends a short numeric suffix to reduce collision probability.
+ * Appends a 6-digit random suffix to reduce collision probability.
+ * MED-08: Increased from 4-digit (9,000 values) to 6-digit (900,000 values)
+ * to reduce birthday-paradox collisions for popular clinic name prefixes.
  */
 export function generateSubdomain(clinicName: string): string {
   const base = slugify(clinicName);
-  // 4-digit random suffix
-  const suffix = Math.floor(1000 + Math.random() * 9000).toString();
+  // 6-digit random suffix: 100,000–999,999 (900,000 possible values)
+  const suffix = Math.floor(100000 + Math.random() * 900000).toString();
   return `${base}-${suffix}`;
 }

@@ -11,6 +11,9 @@ import { type MoroccanPaymentMethod } from "@/lib/morocco";
 /** Default deposit settings when tenant config is not loaded. */
 const DEFAULT_DEPOSIT_PERCENTAGE = 20;
 
+/** Methods that require online gateway redirect (CMI, generic online). */
+const ONLINE_METHODS = new Set<MoroccanPaymentMethod | string>(["cmi", "online"]);
+
 interface PaymentStepProps {
   appointmentId: string;
   patientId: string;
@@ -26,6 +29,13 @@ interface PaymentStepProps {
  *
  * Optional payment/deposit step during booking flow.
  * Supports deposit or full payment before confirming the appointment.
+ *
+ * Behaviour per payment method:
+ *   - Offline methods (cash, check, etc.): Records a PENDING payment and
+ *     notifies staff. Staff confirms manually via the admin payment UI.
+ *   - Online methods (cmi, online): Records a PENDING payment and redirects
+ *     the patient to the real payment gateway. Confirmation happens via
+ *     the gateway callback webhook, not client-side.
  */
 export function PaymentStep({
   appointmentId,
@@ -47,12 +57,16 @@ export function PaymentStep({
   const depositAmount = fixedDeposit ?? Math.round(servicePrice * (depositPercentage / 100));
   const paymentAmount = paymentType === "deposit" ? depositAmount : servicePrice;
 
+  const isOnlineMethod = ONLINE_METHODS.has(method);
+
   const handlePayment = async () => {
     setIsProcessing(true);
     setError(null);
 
     try {
-      // Initiate payment
+      // Step 1: Record the payment as PENDING in the database.
+      // For offline methods this is the final step — staff confirms later.
+      // For online methods this creates the record before gateway redirect.
       const initRes = await fetch("/api/booking/payment/initiate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -73,20 +87,27 @@ export function PaymentStep({
         return;
       }
 
-      // Simulate payment gateway confirmation
-      const confirmRes = await fetch("/api/booking/payment/confirm", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ paymentId: initData.paymentId }),
-      });
-
-      const confirmData = await confirmRes.json();
-
-      if (!confirmRes.ok) {
-        setError(confirmData.error ?? "Payment confirmation failed");
+      if (isOnlineMethod) {
+        // Step 2 (online only): Redirect to real payment gateway.
+        // Confirmation will be handled server-side by the gateway callback
+        // webhook (POST /api/payments/cmi/callback or POST /api/payments/webhook).
+        if (initData.checkoutUrl) {
+          window.location.href = initData.checkoutUrl;
+          return;
+        }
+        // Gateway URL not returned — surface a clear error instead of
+        // silently failing or performing a fake confirmation.
+        logger.warn("Online payment initiated but no checkout URL returned", {
+          context: "payment-step",
+          paymentId: initData.paymentId,
+          method,
+        });
+        setError("Unable to redirect to payment gateway. Please contact the clinic.");
         return;
       }
 
+      // Step 2 (offline): Payment recorded as pending.
+      // Staff will confirm receipt and mark it as completed.
       setPaymentSuccess(true);
       onPaymentComplete(initData.paymentId);
     } catch (err) {

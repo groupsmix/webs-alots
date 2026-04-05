@@ -98,7 +98,10 @@ export function withAuth(
             clinicId: profile.clinic_id,
             error: tenantErr,
           });
-          // Continue — RLS via get_user_clinic_id() still protects
+          return NextResponse.json(
+            { error: "Tenant isolation failed" },
+            { status: 500 },
+          );
         }
       }
 

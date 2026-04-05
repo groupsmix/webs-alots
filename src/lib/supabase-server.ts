@@ -48,22 +48,17 @@ export async function createClient() {
 }
 
 /**
- * Create a Supabase server client with tenant context set.
- *
- * Passes the clinic_id as a custom HTTP header (`x-clinic-id`) on every
- * request so that PostgREST makes it available in PostgreSQL as
- * `current_setting('request.header.x-clinic-id', true)`.  RLS policies
- * read this header to scope anonymous queries to the correct tenant.
- *
- * The old `set_tenant_context` RPC is kept as a best-effort fallback
- * for any code paths that run within a single PostgREST transaction
- * (e.g. SECURITY DEFINER functions).
- *
- * @param clinicId - The clinic UUID to scope all operations to
- * @throws Error if clinicId is missing/invalid
+ * HIGH-01 FIX: Validate tenant context before returning the client.
+ * If the application layer has set x-clinic-id header but the value is
+ * invalid (empty, malformed UUID, or NULL), reject the request immediately
+ * to prevent RLS bypass attempts.
  */
 export async function createTenantClient(clinicId: string) {
   if (!clinicId || !isValidClinicId(clinicId)) {
+    logger.error("createTenantClient: invalid or missing clinicId", {
+      context: "supabase-server",
+      clinicId,
+    });
     throw new Error(`createTenantClient: invalid clinicId: ${clinicId}`);
   }
 

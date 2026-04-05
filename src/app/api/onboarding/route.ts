@@ -2,6 +2,7 @@ import { withAuth as _withAuth } from "@/lib/with-auth";
 import { onboardingSchema } from "@/lib/validations";
 import { withAuthValidation } from "@/lib/api-validate";
 import { apiError, apiForbidden, apiInternalError, apiSuccess } from "@/lib/api-response";
+import { logger } from "@/lib/logger";
 /**
  * POST /api/onboarding
  *
@@ -118,7 +119,12 @@ export const POST = withAuthValidation(onboardingSchema, async (body, request, {
         .single();
 
       if (clinicError || !clinic) {
-        void clinicError;
+        logger.error("Failed to create clinic during onboarding", {
+          context: "onboarding",
+          userId: user.id,
+          clinicName: body.clinic_name,
+          error: clinicError,
+        });
         return apiInternalError("Failed to create clinic");
       }
       clinicId = clinic.id;
@@ -135,7 +141,12 @@ export const POST = withAuthValidation(onboardingSchema, async (body, request, {
     });
 
     if (userError) {
-      void userError;
+      logger.error("Failed to create admin user during onboarding", {
+        context: "onboarding",
+        userId: user.id,
+        clinicId,
+        error: userError,
+      });
 
       // If this is a unique constraint violation on auth_id, the user
       // was already created (concurrent retry) — treat as success.
@@ -154,7 +165,11 @@ export const POST = withAuthValidation(onboardingSchema, async (body, request, {
         .eq("id", clinicId);
 
       if (deleteError) {
-        void deleteError;
+        logger.error("Failed to roll back orphaned clinic after user insert failure", {
+          context: "onboarding",
+          clinicId,
+          error: deleteError,
+        });
       }
 
       return apiInternalError("Failed to create admin user. Please try again.");

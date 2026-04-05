@@ -5,6 +5,7 @@ import { STAFF_ROLES } from "@/lib/auth-roles";
 import { paymentConfirmSchema } from "@/lib/validations";
 import { withAuthValidation } from "@/lib/api-validate";
 import { apiError, apiInternalError, apiNotFound, apiSuccess } from "@/lib/api-response";
+import { logger } from "@/lib/logger";
 /**
  * POST /api/booking/payment/confirm
  *
@@ -31,23 +32,32 @@ export const POST = withAuthValidation(paymentConfirmSchema, async (body, reques
       return apiError("Payment is not in pending state");
     }
 
-    // Mark payment as completed
+    // Mark payment as completed — scoped to clinic_id to prevent
+    // cross-tenant state mutation (CRITICAL: tenant isolation fix).
     const { error: updateError } = await supabase
       .from("payments")
       .update({ status: "completed" })
-      .eq("id", body.paymentId);
+      .eq("id", body.paymentId)
+      .eq("clinic_id", clinicId);
 
     if (updateError) {
-      void updateError;
+      logger.error("Failed to confirm payment", {
+        context: "booking/payment/confirm",
+        paymentId: body.paymentId,
+        clinicId,
+        error: updateError,
+      });
       return apiInternalError("Failed to confirm payment");
     }
 
-    // Also confirm the associated appointment if it is still scheduled
+    // Also confirm the associated appointment if it is still scheduled —
+    // scoped to clinic_id to prevent cross-tenant appointment mutation.
     if (payment.appointment_id) {
       await supabase
         .from("appointments")
         .update({ status: APPOINTMENT_STATUS.CONFIRMED })
         .eq("id", payment.appointment_id)
+        .eq("clinic_id", clinicId)
         .in("status", [APPOINTMENT_STATUS.PENDING, APPOINTMENT_STATUS.SCHEDULED]);
     }
 

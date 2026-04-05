@@ -57,18 +57,28 @@ import { hexToBytes } from "@/lib/crypto-utils";
 
 // ── Key Management ──
 
-/** Cached CryptoKey promise — the key doesn't change at runtime. */
-let _cachedKey: Promise<CryptoKey | null> | undefined;
+/**
+ * Cached CryptoKey and the hex string it was derived from.
+ * Re-importing is triggered automatically when the env var changes
+ * (e.g. after a key rotation and worker restart / hot-reload).
+ */
+let _cachedKey: CryptoKey | null = null;
+let _cachedKeyHex = "";
 
 /**
  * Derive a CryptoKey from the hex-encoded master key in environment.
- * The result is cached so that repeated encrypt/decrypt calls avoid
- * re-importing the same raw key via crypto.subtle.importKey().
+ * The result is cached by key hex so that repeated encrypt/decrypt calls
+ * avoid re-importing the same raw key via crypto.subtle.importKey().
+ * If the PHI_ENCRYPTION_KEY env var changes (key rotation), the cache
+ * is invalidated automatically on the next call.
  * Returns null if PHI_ENCRYPTION_KEY is not configured.
  */
-function getEncryptionKey(): Promise<CryptoKey | null> {
-  if (_cachedKey !== undefined) return _cachedKey;
-  _cachedKey = importEncryptionKey();
+async function getEncryptionKey(): Promise<CryptoKey | null> {
+  const hexKey = process.env.PHI_ENCRYPTION_KEY ?? "";
+  if (_cachedKey && _cachedKeyHex === hexKey) return _cachedKey;
+  // Key changed or not yet imported — re-import
+  _cachedKey = await importEncryptionKey();
+  _cachedKeyHex = hexKey;
   return _cachedKey;
 }
 

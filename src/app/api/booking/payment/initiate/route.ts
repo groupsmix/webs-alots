@@ -5,6 +5,7 @@ import { STAFF_ROLES } from "@/lib/auth-roles";
 import { paymentInitiateSchema } from "@/lib/validations";
 import { withAuthValidation } from "@/lib/api-validate";
 import { apiError, apiInternalError, apiNotFound, apiSuccess } from "@/lib/api-response";
+import { logger } from "@/lib/logger";
 /**
  * POST /api/booking/payment/initiate
  *
@@ -74,7 +75,12 @@ export const POST = withAuthValidation(paymentInitiateSchema, async (body, reque
       if (insertError?.code === "23505") {
         return apiError("A payment already exists for this appointment", 409);
       }
-      void insertError;
+      logger.error("Payment insert failed", {
+        context: "booking/payment/initiate",
+        appointmentId: body.appointmentId,
+        clinicId,
+        error: insertError,
+      });
       return apiInternalError("Failed to initiate payment");
     }
 

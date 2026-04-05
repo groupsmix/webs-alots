@@ -10,7 +10,7 @@
 
 import { type NextRequest } from "next/server";
 import { z } from "zod";
-import { apiSuccess, apiError } from "@/lib/api-response";
+import { apiSuccess, apiError, apiRateLimited } from "@/lib/api-response";
 import { withAuthValidation } from "@/lib/api-validate";
 import { logAuditEvent } from "@/lib/audit-log";
 import {
@@ -20,6 +20,7 @@ import {
   isValidSubdomain,
 } from "@/lib/cloudflare-dns";
 import { withAuth, type AuthContext } from "@/lib/with-auth";
+import { apiMutationLimiter, extractClientIp } from "@/lib/rate-limit";
 
 // ── Schemas ──
 
@@ -64,8 +65,16 @@ export const GET = withAuth(
 
 export const POST = withAuthValidation(
   provisionDnsSchema,
-  async (body, _request, auth) => {
+  async (body, request, auth) => {
     const clinicId = auth.profile.clinic_id;
+
+    // MED-16: Rate limit DNS provisioning to prevent quota exhaustion.
+    // 10 provisions per hour per user is generous for legitimate use.
+    const ip = extractClientIp(request);
+    const allowed = await apiMutationLimiter.check(`dns-provision:${auth.profile.id ?? ip}`);
+    if (!allowed) {
+      return apiRateLimited("Too many DNS provisioning requests. Please try again later.");
+    }
 
     const result = await provisionSubdomain(body.slug);
     if (!result.success) {

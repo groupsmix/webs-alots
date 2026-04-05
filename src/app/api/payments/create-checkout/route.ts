@@ -4,8 +4,10 @@ import { withAuthValidation } from "@/lib/api-validate";
 import { apiError, apiSuccess } from "@/lib/api-response";
 
 /**
- * HIGH-03: Validate that a redirect URL is same-origin to prevent open redirects.
- * Falls back to a safe default if the URL is invalid or cross-origin.
+ * HIGH-05: Validate that a redirect URL is same-origin AND starts with an
+ * allowed path prefix to prevent open redirect attacks. An attacker could
+ * register a subdomain like evil.oltigo.com and pass it as successUrl —
+ * origin-only checks would pass but the user would land on a phishing page.
  */
 function validateRedirectUrl(
   url: string | undefined,
@@ -17,6 +19,11 @@ function validateRedirectUrl(
   try {
     const parsed = new URL(url);
     if (parsed.origin !== origin) return fallback;
+    // Restrict to known safe path prefixes
+    const allowedPrefixes = ["/patient/", "/admin/", "/doctor/", "/book"];
+    if (!allowedPrefixes.some((prefix) => parsed.pathname.startsWith(prefix))) {
+      return fallback;
+    }
     return url;
   } catch {
     return fallback;

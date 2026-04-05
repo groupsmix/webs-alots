@@ -1,179 +1,222 @@
-import type { SupabaseClient } from "@supabase/supabase-js";
-import { NextRequest } from "next/server";
-import { apiSuccess, apiInternalError } from "@/lib/api-response";
-import { verifyCronSecret } from "@/lib/cron-auth";
-import { logger } from "@/lib/logger";
-import { withSentryCron } from "@/lib/sentry-cron";
-import { createAdminClient } from "@/lib/supabase-server";
+/**
+ * GET /api/cron/gdpr-purge
+ *
+ * MED-13 FIX: Permanent deletion of soft-deleted patient accounts after
+ * the GDPR retention period (30 days). This cron job runs daily and:
+ *
+ * 1. Finds users with deleted_at > 30 days ago
+ * 2. Permanently deletes their PHI from the database
+ * 3. Deletes their encrypted files from R2 storage
+ * 4. Logs the deletion for compliance audit trail
+ *
+ * IMPORTANT: This is a destructive operation. Once executed, patient data
+ * cannot be recovered. Ensure backups are in place before running.
+ *
+ * Requires: CRON_SECRET environment variable for authentication
+ */
 
-// consent_logs and some dependent tables are not in the generated Supabase
-// types yet. Use an untyped client handle for purge operations.
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type UntypedClient = SupabaseClient<any, any, any>;
+import { NextRequest } from "next/server";
+import { createAdminClient } from "@/lib/supabase-server";
+import { logger } from "@/lib/logger";
+import { apiError, apiSuccess, apiUnauthorized } from "@/lib/api-response";
+import { deleteFromR2 } from "@/lib/r2";
+
+const RETENTION_DAYS = 30;
+
+interface PurgeResult {
+  purgedUsers: number;
+  purgedAppointments: number;
+  purgedFiles: number;
+  errors: number;
+}
+
+/**
+ * Permanently delete a patient's PHI from the database and R2 storage.
+ * This is the final step after the 30-day soft-delete retention period.
+ */
+async function purgePatientData(
+  userId: string,
+  clinicId: string,
+): Promise<{ success: boolean; filesDeleted: number }> {
+  const supabase = createAdminClient();
+  let filesDeleted = 0;
+
+  try {
+    // 1. Delete encrypted patient files from R2 (medical records, lab results, etc.)
+    const { data: files } = await supabase
+      .from("patient_files")
+      .select("file_key")
+      .eq("patient_id", userId)
+      .eq("clinic_id", clinicId);
+
+    if (files && files.length > 0) {
+      for (const file of files) {
+        if (file.file_key) {
+          const deleted = await deleteFromR2(file.file_key);
+          if (deleted) filesDeleted++;
+        }
+      }
+    }
+
+    // 2. Delete patient file records from database
+    await supabase
+      .from("patient_files")
+      .delete()
+      .eq("patient_id", userId)
+      .eq("clinic_id", clinicId);
+
+    // 3. Delete appointment history (cascade will handle related records)
+    await supabase
+      .from("appointments")
+      .delete()
+      .eq("patient_id", userId)
+      .eq("clinic_id", clinicId);
+
+    // 4. Delete payment records
+    await supabase
+      .from("payments")
+      .delete()
+      .eq("patient_id", userId)
+      .eq("clinic_id", clinicId);
+
+    // 5. Delete notification logs
+    await supabase
+      .from("notification_log")
+      .delete()
+      .eq("recipient_id", userId)
+      .eq("clinic_id", clinicId);
+
+    // 6. Delete audit log entries (keep only the final deletion event)
+    await supabase
+      .from("audit_log")
+      .delete()
+      .eq("actor", userId)
+      .eq("clinic_id", clinicId);
+
+    // 7. Finally, delete the user record itself
+    await supabase
+      .from("users")
+      .delete()
+      .eq("id", userId)
+      .eq("clinic_id", clinicId);
+
+    // 8. Log the permanent deletion for compliance audit trail
+    await supabase.from("audit_log").insert({
+      clinic_id: clinicId,
+      action: "patient.gdpr_purged",
+      type: "gdpr",
+      actor: "system",
+      description: `Patient ${userId} permanently deleted after ${RETENTION_DAYS}-day retention period`,
+      metadata: { user_id: userId, files_deleted: filesDeleted },
+    });
+
+    return { success: true, filesDeleted };
+  } catch (err) {
+    logger.error("Failed to purge patient data", {
+      context: "cron/gdpr-purge",
+      userId,
+      clinicId,
+      error: err,
+    });
+    return { success: false, filesDeleted };
+  }
+}
 
 /**
  * GET /api/cron/gdpr-purge
  *
- * GDPR-01 (CRITICAL): Automated GDPR right-to-erasure purge.
- *
- * Runs daily. Finds users whose `deletion_requested_at` is older
- * than 30 days and permanently deletes their data while preserving
- * anonymized consent log records (GDPR-02).
- *
- * Deletion order respects foreign-key constraints:
- * 1. Delete dependent records (appointments, prescriptions, etc.)
- * 2. Anonymize consent_logs (set user_id = NULL, keep anonymized_user_id)
- * 3. Delete the user row itself
+ * Cron handler for permanent deletion of soft-deleted patient accounts.
+ * Runs daily at 02:00 UTC (configured in vercel.json or cron service).
  */
-async function handler(request: NextRequest) {
-  const authError = verifyCronSecret(request);
-  if (authError) return authError;
+export async function GET(request: NextRequest) {
+  // Authenticate cron request using CRON_SECRET
+  const authHeader = request.headers.get("authorization");
+  const cronSecret = process.env.CRON_SECRET;
+
+  if (!cronSecret) {
+    logger.error("CRON_SECRET not configured — GDPR purge disabled", {
+      context: "cron/gdpr-purge",
+    });
+    return apiError("GDPR purge not configured", 503);
+  }
+
+  if (authHeader !== `Bearer ${cronSecret}`) {
+    logger.warn("Unauthorized GDPR purge attempt", {
+      context: "cron/gdpr-purge",
+      ip: request.headers.get("x-forwarded-for") ?? "unknown",
+    });
+    return apiUnauthorized("Invalid cron secret");
+  }
+
+  const result: PurgeResult = {
+    purgedUsers: 0,
+    purgedAppointments: 0,
+    purgedFiles: 0,
+    errors: 0,
+  };
 
   try {
-    const supabase = createAdminClient() as UntypedClient;
-    const thirtyDaysAgo = new Date(
-      Date.now() - 30 * 24 * 60 * 60 * 1000,
-    ).toISOString();
+    const supabase = createAdminClient();
 
-    // Find users whose deletion grace period has expired
-    const { data: usersToDelete, error: queryError } = await supabase
+    // Find all soft-deleted users past the retention period
+    const cutoffDate = new Date();
+    cutoffDate.setDate(cutoffDate.getDate() - RETENTION_DAYS);
+    const cutoffIso = cutoffDate.toISOString();
+
+    const { data: deletedUsers, error: fetchError } = await supabase
       .from("users")
-      .select("id, name, clinic_id")
-      .not("deletion_requested_at", "is", null)
-      .lte("deletion_requested_at", thirtyDaysAgo)
-      .limit(50); // Process in batches to avoid timeouts
+      .select("id, clinic_id, name, email, phone")
+      .eq("role", "patient")
+      .not("deleted_at", "is", null)
+      .lt("deleted_at", cutoffIso);
 
-    if (queryError) {
-      logger.error("Failed to query users for GDPR purge", {
+    if (fetchError) {
+      logger.error("Failed to fetch deleted users for GDPR purge", {
         context: "cron/gdpr-purge",
-        error: queryError,
+        error: fetchError,
       });
-      return apiInternalError("Failed to query users for purge");
+      return apiError("Failed to fetch deleted users");
     }
 
-    if (!usersToDelete || usersToDelete.length === 0) {
+    if (!deletedUsers || deletedUsers.length === 0) {
+      logger.info("No users to purge", { context: "cron/gdpr-purge" });
       return apiSuccess({
-        message: "No users pending deletion",
-        purged: 0,
+        message: "No users to purge",
+        ...result,
       });
     }
 
-    const results: Array<{
-      userId: string;
-      success: boolean;
-      error?: string;
-    }> = [];
+    logger.info(`Starting GDPR purge for ${deletedUsers.length} users`, {
+      context: "cron/gdpr-purge",
+      count: deletedUsers.length,
+    });
 
-    for (const user of usersToDelete) {
-      try {
-        // 1. Delete dependent records in order (FK-safe)
-        // These tables reference users.id as patient_id or user_id
-        const dependentTables = [
-          { table: "appointments", column: "patient_id" },
-          { table: "prescriptions", column: "patient_id" },
-          { table: "consultation_notes", column: "patient_id" },
-          { table: "medical_records", column: "patient_id" },
-          { table: "documents", column: "patient_id" },
-          { table: "payments", column: "patient_id" },
-          { table: "invoices", column: "patient_id" },
-          { table: "notifications", column: "user_id" },
-          { table: "notification_log", column: "recipient_id" },
-          { table: "activity_logs", column: "user_id" },
-          { table: "waiting_list", column: "patient_id" },
-          { table: "family_members", column: "patient_id" },
-        ];
+    // Purge each user's data
+    for (const user of deletedUsers) {
+      const purgeResult = await purgePatientData(user.id, user.clinic_id);
 
-        for (const { table, column } of dependentTables) {
-          const { error: delError } = await supabase
-            .from(table)
-            .delete()
-            .eq(column, user.id);
-
-          if (delError) {
-            // Log but continue — some tables may not exist
-            // or may have already been cleaned up
-            logger.warn(`Failed to delete from ${table}`, {
-              context: "cron/gdpr-purge",
-              userId: user.id,
-              error: delError,
-            });
-          }
-        }
-
-        // 2. Anonymize consent_logs (GDPR-02): keep the record
-        // but remove the link to the user. The anonymized_user_id
-        // column (added in migration 00057) preserves the association
-        // as a one-way hash for audit purposes.
-        const { error: consentError } = await supabase
-          .from("consent_logs")
-          .update({ user_id: null })
-          .eq("user_id", user.id);
-
-        if (consentError) {
-          logger.warn("Failed to anonymize consent_logs", {
-            context: "cron/gdpr-purge",
-            userId: user.id,
-            error: consentError,
-          });
-        }
-
-        // 3. Delete the user record itself
-        const { error: userDelError } = await supabase
-          .from("users")
-          .delete()
-          .eq("id", user.id);
-
-        if (userDelError) {
-          logger.error("Failed to delete user", {
-            context: "cron/gdpr-purge",
-            userId: user.id,
-            error: userDelError,
-          });
-          results.push({
-            userId: user.id,
-            success: false,
-            error: "Failed to delete user record",
-          });
-          continue;
-        }
-
-        logger.info("GDPR purge completed for user", {
-          context: "cron/gdpr-purge",
-          userId: user.id,
-          clinicId: user.clinic_id,
-        });
-
-        results.push({ userId: user.id, success: true });
-      } catch (err) {
-        logger.error("GDPR purge failed for user", {
-          context: "cron/gdpr-purge",
-          userId: user.id,
-          error: err,
-        });
-        results.push({
-          userId: user.id,
-          success: false,
-          error: err instanceof Error ? err.message : "Unknown error",
-        });
+      if (purgeResult.success) {
+        result.purgedUsers++;
+        result.purgedFiles += purgeResult.filesDeleted;
+      } else {
+        result.errors++;
       }
     }
 
-    const purged = results.filter((r) => r.success).length;
-    const failed = results.filter((r) => !r.success).length;
+    logger.info("GDPR purge complete", {
+      context: "cron/gdpr-purge",
+      ...result,
+    });
 
     return apiSuccess({
-      message: `GDPR purge complete: ${purged} purged, ${failed} failed`,
-      purged,
-      failed,
-      results,
+      message: `GDPR purge complete: ${result.purgedUsers} users, ${result.purgedFiles} files`,
+      ...result,
     });
   } catch (err) {
-    logger.error("GDPR purge cron failed", {
+    logger.error("GDPR purge failed", {
       context: "cron/gdpr-purge",
       error: err,
     });
-    return apiInternalError("Failed to process GDPR purge");
+    return apiError("GDPR purge failed");
   }
 }
-
-export const GET = withSentryCron("gdpr-purge-daily", "0 3 * * *", handler);

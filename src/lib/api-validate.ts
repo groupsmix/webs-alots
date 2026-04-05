@@ -24,7 +24,11 @@
  */
 
 import { type NextRequest, NextResponse } from "next/server";
-import { type ZodType } from "zod";
+import { type z, type ZodType } from "zod";
+
+// Zod v4 compatibility: ZodType<T> uses output as second generic param.
+// This helper extracts the inferred output type from any Zod schema.
+type Infer<S extends ZodType> = z.infer<S>;
 import { safeParse } from "@/lib/validations";
 import { apiValidationError, apiInternalError } from "@/lib/api-response";
 import { logger } from "@/lib/logger";
@@ -39,9 +43,9 @@ import type { UserRole } from "@/lib/types/database";
  * - Catches unhandled errors and returns a 500
  * - Logs errors with structured context
  */
-export function withValidation<T>(
-  schema: ZodType<T>,
-  handler: (data: T, request: NextRequest) => Promise<NextResponse | Response>,
+export function withValidation<S extends ZodType>(
+  schema: S,
+  handler: (data: Infer<S>, request: NextRequest) => Promise<NextResponse | Response>,
 ): (request: NextRequest) => Promise<NextResponse | Response> {
   return async (request: NextRequest): Promise<NextResponse | Response> => {
     let body: unknown;
@@ -57,7 +61,7 @@ export function withValidation<T>(
     }
 
     try {
-      return await handler(result.data, request);
+      return await handler(result.data as Infer<S>, request);
     } catch (err) {
       logger.error("Unhandled API route error", {
         context: `api${request.nextUrl.pathname}`,
@@ -80,9 +84,9 @@ export function withValidation<T>(
  * - Catches unhandled errors and returns a 500
  * - Logs errors with structured context
  */
-export function withAuthValidation<T>(
-  schema: ZodType<T>,
-  handler: (data: T, request: NextRequest, auth: AuthContext) => Promise<NextResponse>,
+export function withAuthValidation<S extends ZodType>(
+  schema: S,
+  handler: (data: Infer<S>, request: NextRequest, auth: AuthContext) => Promise<NextResponse>,
   allowedRoles: UserRole[] | null,
 ): (request: NextRequest) => Promise<NextResponse> {
   return withAuth(async (request: NextRequest, auth: AuthContext) => {
@@ -99,7 +103,7 @@ export function withAuthValidation<T>(
     }
 
     try {
-      return await handler(result.data, request, auth);
+      return await handler(result.data as Infer<S>, request, auth);
     } catch (err) {
       logger.error("Unhandled API route error", {
         context: `api${request.nextUrl.pathname}`,

@@ -11,6 +11,7 @@ import type { TemplateVariables } from "@/lib/notifications";
 import { STAFF_ROLES } from "@/lib/auth-roles";
 import type { UserRole } from "@/lib/types/database";
 import { apiError, apiForbidden, apiInternalError, apiNotFound, apiSuccess } from "@/lib/api-response";
+import { refundStripePayment } from "@/lib/stripe-webhook";
 
 const CANCEL_ROLES: UserRole[] = [...STAFF_ROLES, "patient"];
 /**
@@ -69,6 +70,55 @@ export const POST = withAuthValidation(bookingCancelSchema, async (body, request
 
     if (updateError) {
       return apiInternalError("Failed to cancel appointment");
+    }
+
+    // MED-03: Refund deposit if one was collected for this appointment.
+    // Failure to refund is non-fatal — the cancellation still succeeds
+    // and the refund can be retried manually from the admin panel.
+    try {
+      const { data: depositPayment } = await supabase
+        .from("payments")
+        .select("id, amount, reference, status")
+        .eq("clinic_id", clinicId)
+        .eq("appointment_id", body.appointmentId)
+        .eq("payment_type", "deposit")
+        .eq("status", "completed")
+        .maybeSingle();
+
+      if (depositPayment?.reference) {
+        const refundResult = await refundStripePayment(
+          depositPayment.reference,
+          depositPayment.amount,
+          "requested_by_customer",
+        );
+
+        if (refundResult.ok) {
+          // Mark the payment as refunded in the database
+          await supabase
+            .from("payments")
+            .update({ status: "refunded", refunded_amount: depositPayment.amount })
+            .eq("id", depositPayment.id);
+
+          logger.info("Deposit refunded on cancellation", {
+            context: "booking/cancel",
+            appointmentId: body.appointmentId,
+            refundId: refundResult.refundId,
+            amount: depositPayment.amount,
+          });
+        } else {
+          logger.warn("Deposit refund failed — manual action required", {
+            context: "booking/cancel",
+            appointmentId: body.appointmentId,
+            error: refundResult.error,
+          });
+        }
+      }
+    } catch (refundErr) {
+      logger.warn("Unexpected error during deposit refund", {
+        context: "booking/cancel",
+        appointmentId: body.appointmentId,
+        error: refundErr,
+      });
     }
 
     // RACE-02: Promote the first waiting-list entry for the freed slot

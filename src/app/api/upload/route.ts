@@ -47,10 +47,13 @@ const ALLOWED_TYPES = new Set([
 
 // HIGH-05: Magic byte signatures for server-side file content validation.
 // Client-supplied MIME types are attacker-controlled and cannot be trusted.
+// WEBP requires checking both the RIFF header AND the WEBP signature at offset 8.
 const MAGIC_BYTES: Record<string, Uint8Array[]> = {
   "image/jpeg": [new Uint8Array([0xFF, 0xD8, 0xFF])],
   "image/png": [new Uint8Array([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A])],
-  "image/webp": [new Uint8Array([0x52, 0x49, 0x46, 0x46])],
+  "image/webp": [
+    new Uint8Array([0x52, 0x49, 0x46, 0x46]), // RIFF header at offset 0
+  ],
   "image/gif": [
     new Uint8Array([0x47, 0x49, 0x46, 0x38, 0x37, 0x61]), // GIF87a
     new Uint8Array([0x47, 0x49, 0x46, 0x38, 0x39, 0x61]), // GIF89a
@@ -61,6 +64,16 @@ const MAGIC_BYTES: Record<string, Uint8Array[]> = {
 function validateFileContent(buffer: Buffer, declaredType: string): boolean {
   const signatures = MAGIC_BYTES[declaredType];
   if (!signatures) return false;
+  
+  // HIGH-03 FIX: WEBP requires additional validation beyond RIFF header.
+  // A valid WEBP file has "RIFF" at offset 0 AND "WEBP" at offset 8.
+  if (declaredType === "image/webp") {
+    if (buffer.length < 12) return false;
+    const hasRiff = buffer[0] === 0x52 && buffer[1] === 0x49 && buffer[2] === 0x46 && buffer[3] === 0x46;
+    const hasWebp = buffer[8] === 0x57 && buffer[9] === 0x45 && buffer[10] === 0x42 && buffer[11] === 0x50;
+    return hasRiff && hasWebp;
+  }
+  
   return signatures.some((sig) =>
     sig.every((byte, i) => i < buffer.length && buffer[i] === byte),
   );

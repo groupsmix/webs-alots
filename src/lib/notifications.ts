@@ -406,23 +406,36 @@ function sleep(ms: number): Promise<void> {
 }
 
 /**
- * Retry a function with exponential backoff.
+ * Retry a function with exponential backoff and an overall timeout.
  *
  * Callers don't need to worry about transient failures — the helper
  * retries up to `maxRetries` times with exponentially increasing
  * delays (1s, 2s, 4s …). If all attempts fail the last error is
- * re-thrown so the caller can handle it.
+ * re-thrown so the caller can handle it.  An optional `timeoutMs`
+ * caps the total wall-clock time; if the deadline passes the most
+ * recent error (or a timeout error) is thrown immediately.
  */
 async function withRetry<T>(
   fn: () => Promise<T>,
   maxRetries = 3,
+  timeoutMs = 30_000,
 ): Promise<T> {
+  const deadline = Date.now() + timeoutMs;
+  let lastError: unknown;
   for (let i = 0; i < maxRetries; i++) {
+    if (Date.now() >= deadline) {
+      throw lastError ?? new Error("withRetry: overall timeout exceeded");
+    }
     try {
       return await fn();
     } catch (e) {
+      lastError = e;
       if (i === maxRetries - 1) throw e;
-      await sleep(Math.pow(2, i) * 1000);
+      const delay = Math.pow(2, i) * 1000;
+      if (Date.now() + delay >= deadline) {
+        throw lastError;
+      }
+      await sleep(delay);
     }
   }
   // Unreachable but satisfies the type checker

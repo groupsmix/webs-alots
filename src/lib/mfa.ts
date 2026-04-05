@@ -298,10 +298,35 @@ export async function generateBackupCodes(): Promise<{
     codes.push(code);
   }
 
-  // Store hashed codes in user metadata
-  const { createHash } = await import("crypto");
-  const hashedCodes = codes.map((code) =>
-    createHash("sha256").update(code.replaceAll("-", "")).digest("hex"),
+  // MED-05: Use PBKDF2 (Web Crypto API) instead of SHA-256 for backup code
+  // hashing. SHA-256 is too fast — an attacker with DB access could brute-force
+  // 8-char hex codes (32 bits of entropy) in seconds. PBKDF2 with 100k iterations
+  // makes offline brute-force ~100,000x slower.
+  // Web Crypto is used instead of bcrypt because this runs on Cloudflare Workers
+  // (edge runtime) where Node.js crypto modules are not available.
+  const encoder = new TextEncoder();
+  const hashedCodes = await Promise.all(
+    codes.map(async (code) => {
+      const normalizedCode = code.replaceAll("-", "");
+      const keyMaterial = await crypto.subtle.importKey(
+        "raw",
+        encoder.encode(normalizedCode),
+        "PBKDF2",
+        false,
+        ["deriveBits"],
+      );
+      // Use a fixed salt derived from the clinic context (backup codes are
+      // already high-entropy random values; the salt prevents rainbow tables)
+      const salt = encoder.encode(`oltigo-mfa-backup-${user.id}`);
+      const derivedBits = await crypto.subtle.deriveBits(
+        { name: "PBKDF2", hash: "SHA-256", salt, iterations: 100_000 },
+        keyMaterial,
+        256,
+      );
+      return Array.from(new Uint8Array(derivedBits))
+        .map((b) => b.toString(16).padStart(2, "0"))
+        .join("");
+    }),
   );
 
   const { error } = await supabase.auth.updateUser({
@@ -359,10 +384,25 @@ export async function verifyBackupCode(
     return { error: "mfa.noBackupCodes" };
   }
 
-  const { createHash } = await import("crypto");
-  const inputHash = createHash("sha256")
-    .update(code.replaceAll("-", "").toUpperCase())
-    .digest("hex");
+  // MED-05: Use PBKDF2 to match the hashing used in generateBackupCodes.
+  const encoder = new TextEncoder();
+  const normalizedCode = code.replaceAll("-", "").toUpperCase();
+  const keyMaterial = await crypto.subtle.importKey(
+    "raw",
+    encoder.encode(normalizedCode),
+    "PBKDF2",
+    false,
+    ["deriveBits"],
+  );
+  const salt = encoder.encode(`oltigo-mfa-backup-${user.id}`);
+  const derivedBits = await crypto.subtle.deriveBits(
+    { name: "PBKDF2", hash: "SHA-256", salt, iterations: 100_000 },
+    keyMaterial,
+    256,
+  );
+  const inputHash = Array.from(new Uint8Array(derivedBits))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
 
   const matchIndex = storedHashes.findIndex((h) => h === inputHash);
   if (matchIndex === -1) {

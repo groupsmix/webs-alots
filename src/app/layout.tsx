@@ -42,16 +42,15 @@ export const viewport: Viewport = {
 };
 
 /**
- * SEO-01: Locale-aware metadata via i18n instead of hardcoded French.
+ * SEO-01: Locale-aware metadata resolved from the tenant locale header.
  *
- * The locale is defaulted to "fr" for now (same as the layout). When
- * per-tenant locale headers are added (see TODO in RootLayout), this
- * will automatically pick up the correct language.
+ * Reads the same `x-tenant-locale` header injected by middleware that
+ * RootLayout uses, so title / description / og tags match the actual
+ * language served to the user.
  */
 export async function generateMetadata(): Promise<Metadata> {
-  // Default locale — will be dynamically resolved once per-tenant locale
-  // headers are available (see TODO in RootLayout below).
-  const locale = "fr" as Locale;
+  const h = await headers();
+  const locale: Locale = (h.get("x-tenant-locale") as Locale) || "fr";
 
   return {
     manifest: "/manifest.webmanifest",

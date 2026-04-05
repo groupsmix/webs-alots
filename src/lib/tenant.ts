@@ -90,6 +90,13 @@ export interface TenantClinicConfig {
   };
 }
 
+// ── Tenant clinic config cache ───────────────────────────────────────
+// getClinicConfig is called on every authenticated API request via
+// requireTenantWithConfig(). Cache results for 5 minutes to avoid a
+// DB round-trip on every request while keeping config reasonably fresh.
+const _configCache = new Map<string, { config: TenantClinicConfig; cachedAt: number }>();
+const CONFIG_CACHE_TTL_MS = 5 * 60 * 1000;
+
 /**
  * Fetch tenant-specific clinic configuration from the DB.
  *
@@ -98,10 +105,17 @@ export interface TenantClinicConfig {
  * This ensures each tenant can have its own timezone, currency,
  * working hours, and booking settings.
  *
+ * Results are cached in memory for 5 minutes to avoid a DB hit on
+ * every authenticated request.
+ *
  * Use in API routes and server-side logic instead of accessing
  * clinicConfig directly for these business-critical settings.
  */
 export async function getClinicConfig(clinicId: string): Promise<TenantClinicConfig> {
+  const cached = _configCache.get(clinicId);
+  if (cached && Date.now() - cached.cachedAt < CONFIG_CACHE_TTL_MS) {
+    return cached.config;
+  }
   // Dynamic import to avoid circular dependency
   const { createTenantClient } = await import("@/lib/supabase-server");
   const supabase = await createTenantClient(clinicId);
@@ -130,7 +144,7 @@ export async function getClinicConfig(clinicId: string): Promise<TenantClinicCon
   const dbConfig = (data?.config ?? {}) as ClinicDbConfig;
 
   // Merge DB config with static defaults (DB takes precedence)
-  return {
+  const result: TenantClinicConfig = {
     timezone: dbConfig.timezone ?? clinicConfig.timezone ?? DEFAULT_TIMEZONE,
     currency: dbConfig.currency ?? clinicConfig.currency ?? "MAD",
     workingHours: dbConfig.workingHours ?? clinicConfig.workingHours,
@@ -145,6 +159,9 @@ export async function getClinicConfig(clinicId: string): Promise<TenantClinicCon
       maxRecurringWeeks: dbConfig.maxRecurringWeeks ?? clinicConfig.booking.maxRecurringWeeks,
     },
   };
+
+  _configCache.set(clinicId, { config: result, cachedAt: Date.now() });
+  return result;
 }
 
 /**

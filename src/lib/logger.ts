@@ -146,12 +146,16 @@ export const logger = {
   warn(message: string, meta?: LogMeta): void {
     emit("warn", message, meta);
     // Forward warnings to Sentry as breadcrumbs for context on future errors
-    void captureSentryBreadcrumb("warning", message, meta);
+    captureSentryBreadcrumb("warning", message, meta).catch((err) => {
+      console.error(JSON.stringify({ level: "error", message: "Sentry breadcrumb failed", error: String(err) }));
+    });
   },
   error(message: string, meta?: LogMeta): void {
     emit("error", message, meta);
     // Forward errors to Sentry for external monitoring and alerting
-    void captureSentryError(message, meta);
+    captureSentryError(message, meta).catch((err) => {
+      console.error(JSON.stringify({ level: "error", message: "Sentry capture failed", error: String(err) }));
+    });
   },
   /**
    * Register an external log transport.

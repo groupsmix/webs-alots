@@ -43,8 +43,8 @@ const bookingRequestSchema = z.object({
 });
 /**
  * Verify a booking token issued after OTP verification.
- * Tokens are HMAC-SHA256 signatures of the phone number + expiry timestamp.
- * Format: "phone:expiryTimestamp:signature"
+ * Tokens are HMAC-SHA256 signatures of the phone number + expiry timestamp + nonce.
+ * Format: "phone:expiryTimestamp:nonce:signature"
  */
 async function verifyBookingToken(token: string): Promise<boolean> {
   const secret = process.env.BOOKING_TOKEN_SECRET;
@@ -57,9 +57,9 @@ async function verifyBookingToken(token: string): Promise<boolean> {
   }
 
   const parts = token.split(":");
-  if (parts.length !== 3) return false;
+  if (parts.length !== 4) return false;
 
-  const [phone, expiryStr, signature] = parts;
+  const [phone, expiryStr, nonce, signature] = parts;
   const expiry = parseInt(expiryStr, 10);
   if (isNaN(expiry) || Date.now() > expiry) return false;
 
@@ -72,7 +72,7 @@ async function verifyBookingToken(token: string): Promise<boolean> {
     false,
     ["sign"],
   );
-  const data = encoder.encode(`${phone}:${expiryStr}`);
+  const data = encoder.encode(`${phone}:${expiryStr}:${nonce}`);
   const sig = await crypto.subtle.sign("HMAC", key, data);
   const expectedSig = Array.from(new Uint8Array(sig))
     .map((b) => b.toString(16).padStart(2, "0"))
@@ -276,65 +276,42 @@ export const POST = withValidation(bookingRequestSchema, async (body, request: N
     const slotStart = `${body.date}T${body.time}:00`;
     const slotEnd = `${body.date}T${endTime}:00`;
 
+    // CRITICAL-03 FIX: Use atomic booking function to prevent race conditions.
+    // The book_slot_atomic RPC performs SELECT FOR UPDATE + INSERT in a single
+    // transaction, guaranteeing that maxPerSlot is never exceeded even under
+    // high concurrency (migration 00066).
+    const maxPerSlot = tenantConfig.booking.maxPerSlot;
     const { data: appointment, error: apptError } = await supabase
-      .from("appointments")
-      .insert({
-        clinic_id: clinicId,
-        patient_id: patientId,
-        doctor_id: body.doctorId,
-        service_id: body.serviceId,
-        appointment_date: body.date,
-        start_time: body.time,
-        end_time: endTime,
-        slot_start: slotStart,
-        slot_end: slotEnd,
-        status: initialStatus,
-        is_first_visit: body.isFirstVisit,
-        insurance_flag: body.hasInsurance,
-        booking_source: BOOKING_SOURCE.ONLINE,
-        notes: body.patient.reason ?? null,
-        is_emergency: false,
+      .rpc("book_slot_atomic", {
+        p_clinic_id: clinicId,
+        p_patient_id: patientId,
+        p_doctor_id: body.doctorId,
+        p_service_id: body.serviceId,
+        p_appointment_date: body.date,
+        p_start_time: body.time,
+        p_end_time: endTime,
+        p_slot_start: slotStart,
+        p_slot_end: slotEnd,
+        p_status: initialStatus,
+        p_is_first_visit: body.isFirstVisit,
+        p_insurance_flag: body.hasInsurance,
+        p_booking_source: BOOKING_SOURCE.ONLINE,
+        p_notes: body.patient.reason ?? null,
+        p_is_emergency: false,
+        p_max_per_slot: maxPerSlot,
       })
-      .select("id")
       .single();
 
     if (apptError || !appointment) {
-      // Handle unique constraint violation (double-booking race condition)
-      if (apptError?.code === "23505") {
+      // Handle slot full error from atomic function
+      if (apptError?.message?.includes("slot is full")) {
         return apiError("This slot has already been booked. Please choose another time.", 409);
       }
-      // Production: error logged via audit trail; no console output
+      logger.warn("Atomic booking failed", {
+        context: "booking/route",
+        error: apptError,
+      });
       return apiInternalError("Failed to create booking");
-    }
-
-    // ── DI-HIGH-02: Post-insert maxPerSlot enforcement ──────────────
-    // The pre-insert availability check (validateBookingRequest) is
-    // subject to a TOCTOU race when maxPerSlot > 1.  After inserting we
-    // count how many active bookings now exist for this slot.  If the
-    // count exceeds maxPerSlot the just-inserted row lost the race and
-    // must be rolled back.  This guarantees the cap is never exceeded.
-    const maxPerSlot = tenantConfig.booking.maxPerSlot;
-    const { count: slotCount } = await supabase
-      .from("appointments")
-      .select("id", { count: "exact", head: true })
-      .eq("clinic_id", clinicId)
-      .eq("doctor_id", body.doctorId)
-      .eq("appointment_date", body.date)
-      .eq("start_time", body.time)
-      .in("status", [
-        APPOINTMENT_STATUS.CONFIRMED,
-        APPOINTMENT_STATUS.PENDING,
-        APPOINTMENT_STATUS.RESCHEDULED,
-      ]);
-
-    if (slotCount !== null && slotCount > maxPerSlot) {
-      // Roll back the appointment that lost the race
-      await supabase
-        .from("appointments")
-        .delete()
-        .eq("id", appointment.id);
-
-      return apiError("This slot has just been fully booked. Please choose another time.", 409);
     }
 
     // Audit log for healthcare compliance

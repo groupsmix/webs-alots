@@ -7,9 +7,10 @@ import { apiError, apiInternalError, apiNotFound, apiSuccess } from "@/lib/api-r
  * GET /api/clinic-features?type_key=general_medicine
  *
  * Returns the features_config for a given clinic type key.
- * S4: Protected — requires authentication.
+ * Protected — requires authentication.
+ * MED-14: Only returns features for the authenticated user's own clinic type.
  */
-export const GET = withAuth(async (request: NextRequest) => {
+export const GET = withAuth(async (request: NextRequest, { supabase, profile }) => {
   try {
     const typeKey = request.nextUrl.searchParams.get("type_key");
 
@@ -17,7 +18,19 @@ export const GET = withAuth(async (request: NextRequest) => {
       return apiError("type_key query parameter is required");
     }
 
-    const supabase = await createClient();
+    // MED-14: Validate the requested type_key matches the authenticated user's
+    // clinic type. Prevents cross-clinic feature enumeration.
+    if (profile.role !== "super_admin" && profile.clinic_id) {
+      const { data: clinic } = await supabase
+        .from("clinics")
+        .select("clinic_type_key")
+        .eq("id", profile.clinic_id)
+        .single();
+
+      if (clinic?.clinic_type_key && clinic.clinic_type_key !== typeKey) {
+        return apiError("Cannot query features for a different clinic type", 403);
+      }
+    }
 
     const { data, error } = await supabase
       .from("clinic_types")

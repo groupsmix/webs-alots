@@ -123,11 +123,49 @@ interface LookupCache {
 }
 let _lookupCache: Map<string, LookupCache> = new Map();
 
+/**
+ * Maximum number of clinic entries to keep in the lookup cache.
+ * Prevents unbounded memory growth when a single Worker isolate serves
+ * many tenants (e.g. admin super-tenant browsing many clinics).
+ */
+const MAX_LOOKUP_CACHE_SIZE = 100;
+
+/**
+ * Evict entries from the lookup cache that have exceeded the TTL.
+ * Called on every `ensureLookups()` call to keep memory bounded.
+ */
+function evictExpiredLookups(): void {
+  const now = Date.now();
+  for (const [key, value] of _lookupCache) {
+    if (now - value.builtAt >= CACHE_TTL_MS) {
+      _lookupCache.delete(key);
+    }
+  }
+}
+
+/**
+ * Enforce the maximum lookup cache size using LRU-style eviction.
+ * Removes the oldest entry (first in insertion order) when full.
+ */
+function enforceLookupCacheMaxSize(): void {
+  while (_lookupCache.size >= MAX_LOOKUP_CACHE_SIZE) {
+    const oldest = _lookupCache.keys().next().value;
+    if (oldest !== undefined) {
+      _lookupCache.delete(oldest);
+    } else {
+      break;
+    }
+  }
+}
+
 /** Expose the current user map for internal mappers (read-only). */
 export let _activeUserMap: Map<string, { name: string; phone: string; email: string }> | null = null;
 export let _activeServiceMap: Map<string, { name: string; price: number }> | null = null;
 
 export async function ensureLookups(clinicId: string): Promise<void> {
+  // Evict stale entries on every call to keep memory bounded.
+  evictExpiredLookups();
+
   const existing = _lookupCache.get(clinicId);
   if (existing && Date.now() - existing.builtAt < CACHE_TTL_MS) {
     _activeUserMap = existing.userMap;
@@ -151,6 +189,8 @@ export async function ensureLookups(clinicId: string): Promise<void> {
       { name: s.name, price: s.price },
     ]),
   );
+  // Enforce max-size before inserting the new entry.
+  enforceLookupCacheMaxSize();
   _lookupCache.set(clinicId, { userMap, serviceMap, builtAt: Date.now() });
   _activeUserMap = userMap;
   _activeServiceMap = serviceMap;

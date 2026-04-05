@@ -124,6 +124,21 @@ export async function middleware(request: NextRequest) {
   const csrfResult = validateCsrf(request, hostname, cspHeaderValue, withSecurityHeaders);
   if (csrfResult) return csrfResult;
 
+  // --- Cron route authentication: CRON_SECRET Bearer token required ---
+  // Cron routes are CSRF-exempt (external scheduler), so we enforce a
+  // Bearer token here as the sole authentication layer.
+  if (pathname.startsWith("/api/cron/")) {
+    const cronSecret = process.env.CRON_SECRET;
+    const authHeader = request.headers.get("authorization");
+    const token = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : null;
+    if (!cronSecret || !token || token !== cronSecret) {
+      return withSecurityHeaders(
+        NextResponse.json({ error: "Unauthorized" }, { status: 401 }),
+        cspHeaderValue,
+      );
+    }
+  }
+
   // --- Fast path for lightweight API routes (health checks, etc.) ---
   if (LIGHTWEIGHT_API_PATHS.has(pathname)) {
     const lightResponse = NextResponse.next({
@@ -143,6 +158,15 @@ export async function middleware(request: NextRequest) {
       rateLimitResponse.headers.set("X-RateLimit-Reset", rateLimitInfo.reset.toString());
     }
     return rateLimitResponse;
+  }
+
+  // Forward rate limit headers on successful (non-limited) API responses
+  // so clients can implement proactive backoff before hitting 429.
+  const rateLimitHeaders: Record<string, string> = {};
+  if (rateLimitInfo) {
+    rateLimitHeaders["X-RateLimit-Limit"] = rateLimitInfo.limit.toString();
+    rateLimitHeaders["X-RateLimit-Remaining"] = rateLimitInfo.remaining.toString();
+    rateLimitHeaders["X-RateLimit-Reset"] = rateLimitInfo.reset.toString();
   }
 
   // If Supabase is not configured, allow all requests through
@@ -173,6 +197,11 @@ export async function middleware(request: NextRequest) {
   // Note: Real rate-limit state is enforced by the rate limiter above.
   // These placeholder headers are omitted to avoid misleading API consumers.
 
+  // Declared before createServerClient so the setAll cookie callback can
+  // safely reference it during token-refresh without hitting the temporal
+  // dead zone of a later `let` declaration.
+  let resolvedClinic: CachedClinic | undefined;
+
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
@@ -202,9 +231,6 @@ export async function middleware(request: NextRequest) {
   );
 
   // --- Resolve clinic from subdomain (with in-memory cache) ---
-  // Track resolved clinic so tenant headers can be re-applied if setAll
-  // recreates supabaseResponse during token refresh.
-  let resolvedClinic: CachedClinic | undefined;
   if (subdomain) {
     let clinic: CachedClinic | undefined;
     const cached = subdomainCache.get(subdomain);
@@ -346,6 +372,13 @@ export async function middleware(request: NextRequest) {
       const dashboardPath =
         ROLE_DASHBOARD_MAP[profile.role] || "/patient/dashboard";
       return secureRedirect(new URL(dashboardPath, request.url));
+    }
+  }
+
+  // Apply rate limit headers to the final response for API routes
+  if (pathname.startsWith("/api/")) {
+    for (const [k, v] of Object.entries(rateLimitHeaders)) {
+      supabaseResponse.headers.set(k, v);
     }
   }
 
