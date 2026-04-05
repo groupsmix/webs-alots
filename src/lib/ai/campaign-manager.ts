@@ -6,7 +6,7 @@
 
 import { logger } from '@/lib/logger';
 import { createTenantClient } from '@/lib/supabase-server';
-import { buildCustomerContext } from './context-engine';
+import { buildAIContext } from './context-engine';
 import type { AICampaign, CustomerContext } from './types';
 
 // ========== Campaign Types ==========
@@ -292,13 +292,9 @@ async function getTargetCustomers(
     const { data: users } = await query;
     if (!users) return [];
 
-    const customers: CustomerContext[] = [];
-    for (const user of users) {
-      const context = await buildCustomerContext(businessId, user.id);
-      if (context.segment === target.segment) {
-        customers.push(context);
-      }
-    }
+    // Build context for all customers at once
+    const aiContext = await buildAIContext(businessId);
+    const customers = aiContext.customers.filter(c => c.segment === target.segment);
 
     return customers.slice(0, target.estimated_size || 1000);
   }
@@ -313,13 +309,8 @@ async function getTargetCustomers(
   if (!users) return [];
 
   // Build customer contexts
-  const customers: CustomerContext[] = [];
-  for (const user of users) {
-    const context = await buildCustomerContext(businessId, user.id);
-    customers.push(context);
-  }
-
-  return customers;
+  const aiContext = await buildAIContext(businessId);
+  return aiContext.customers.slice(0, target.estimated_size || 1000);
 }
 
 /**

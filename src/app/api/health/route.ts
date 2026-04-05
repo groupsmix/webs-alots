@@ -7,7 +7,7 @@
 import { NextResponse } from 'next/server';
 import { getHealthStatus } from '@/lib/monitoring';
 
-export const runtime = 'edge';
+// Removed runtime = 'edge' due to incompatibility with useCache experiment
 
 export async function GET() {
   try {
