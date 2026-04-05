@@ -3,6 +3,11 @@
 import { useState, useEffect } from 'react';
 import { Bell, Check, CheckCheck, AlertCircle, Info, TrendingUp, AlertTriangle } from 'lucide-react';
 
+interface NotificationMetadata {
+  action_id?: string;
+  [key: string]: unknown;
+}
+
 interface Notification {
   id: string;
   type: 'action_approval' | 'daily_summary' | 'insight' | 'performance_alert' | 'anomaly';
@@ -11,7 +16,7 @@ interface Notification {
   message: string;
   read: boolean;
   created_at: string;
-  metadata?: any;
+  metadata?: NotificationMetadata;
 }
 
 export function AINotificationsPanel({ businessId }: { businessId: string }) {

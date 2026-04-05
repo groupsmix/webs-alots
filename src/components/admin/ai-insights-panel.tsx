@@ -3,6 +3,10 @@
 import { useState, useEffect } from 'react';
 import { Lightbulb, TrendingUp, Users, Calendar, DollarSign, Clock, CheckCircle, XCircle } from 'lucide-react';
 
+interface InsightMetadata {
+  [key: string]: unknown;
+}
+
 interface Insight {
   id: string;
   type: 'opportunity' | 'risk' | 'trend' | 'recommendation';
@@ -14,7 +18,7 @@ interface Insight {
   acted_upon: boolean;
   action_taken?: string;
   created_at: string;
-  metadata?: any;
+  metadata?: InsightMetadata;
 }
 
 export function AIInsightsPanel({ businessId }: { businessId: string }) {

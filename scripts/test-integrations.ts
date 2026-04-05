@@ -5,9 +5,9 @@
  * Run with: npx tsx scripts/test-integrations.ts
  */
 
-import { sendWhatsAppMessage, sendSMS, sendEmail } from '../src/lib/integrations/messaging';
+import { sendEmail, sendSMS, sendWhatsAppMessage } from '../src/lib/integrations/messaging';
 import { createAppointment } from '../src/lib/integrations/booking';
-import { updateServicePrice, createPromotion } from '../src/lib/integrations/pricing';
+import { createPromotion, updateServicePrice } from '../src/lib/integrations/pricing';
 
 const TEST_BUSINESS_ID = process.env.TEST_BUSINESS_ID || 'test-business-123';
 const TEST_PHONE = process.env.TEST_PHONE || '+212600000000';

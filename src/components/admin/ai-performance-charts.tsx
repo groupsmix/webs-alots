@@ -21,9 +21,21 @@ interface AIPerformanceChartsProps {
   businessId: string;
 }
 
+interface PerformanceStats {
+  total_actions: number;
+  successful: number;
+  failed: number;
+  pending: number;
+  total_revenue_impact: number;
+  total_time_saved: number;
+  total_customers_affected: number;
+  by_type?: Record<string, number>;
+  by_risk_level?: Record<string, number>;
+}
+
 export function AIPerformanceCharts({ businessId }: AIPerformanceChartsProps) {
   const [loading, setLoading] = useState(true);
-  const [stats, setStats] = useState<any>(null);
+  const [stats, setStats] = useState<PerformanceStats | null>(null);
   const [timeRange, setTimeRange] = useState<'7d' | '30d' | '90d'>('30d');
 
   useEffect(() => {
@@ -68,7 +80,7 @@ export function AIPerformanceCharts({ businessId }: AIPerformanceChartsProps) {
       {/* Time Range Selector */}
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-semibold">Performance Analytics</h3>
-        <Tabs value={timeRange} onValueChange={(v: any) => setTimeRange(v)}>
+        <Tabs value={timeRange} onValueChange={(v: string) => setTimeRange(v)}>
           <TabsList>
             <TabsTrigger value="7d">7 Days</TabsTrigger>
             <TabsTrigger value="30d">30 Days</TabsTrigger>
@@ -115,7 +127,7 @@ export function AIPerformanceCharts({ businessId }: AIPerformanceChartsProps) {
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
-              {Object.entries(stats.by_type || {}).map(([type, count]: [string, any]) => (
+              {Object.entries(stats.by_type || {}).map(([type, count]: [string, number]) => (
                 <div key={type} className="flex items-center justify-between">
                   <span className="text-sm">{formatActionType(type)}</span>
                   <div className="flex items-center gap-2">
@@ -141,7 +153,7 @@ export function AIPerformanceCharts({ businessId }: AIPerformanceChartsProps) {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {Object.entries(stats.by_risk_level || {}).map(([level, count]: [string, any]) => {
+              {Object.entries(stats.by_risk_level || {}).map(([level, count]: [string, number]) => {
                 const colors = {
                   low: 'bg-green-500',
                   medium: 'bg-yellow-500',

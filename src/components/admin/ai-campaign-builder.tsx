@@ -16,14 +16,33 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Loader2, Plus, Play, Pause, Trash2 } from 'lucide-react';
 
+interface Campaign {
+  id: string;
+  name: string;
+  type: string;
+  status: 'draft' | 'scheduled' | 'running' | 'paused' | 'completed' | 'cancelled';
+  results?: {
+    messages_sent: number;
+    messages_delivered: number;
+    bookings: number;
+    revenue: number;
+  };
+}
+
+interface Template {
+  id: string;
+  name: string;
+  type: string;
+}
+
 interface AICampaignBuilderProps {
   businessId: string;
 }
 
 export function AICampaignBuilder({ businessId }: AICampaignBuilderProps) {
   const [loading, setLoading] = useState(true);
-  const [campaigns, setCampaigns] = useState<any[]>([]);
-  const [templates, setTemplates] = useState<any[]>([]);
+  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
+  const [templates, setTemplates] = useState<Template[]>([]);
   const [showBuilder, setShowBuilder] = useState(false);
 
   useEffect(() => {
@@ -125,7 +144,7 @@ function CampaignForm({
   onSuccess 
 }: { 
   businessId: string; 
-  templates: any[]; 
+  templates: Template[]; 
   onClose: () => void; 
   onSuccess: () => void;
 }) {
@@ -301,7 +320,7 @@ function CampaignCard({
   businessId, 
   onUpdate 
 }: { 
-  campaign: any; 
+  campaign: Campaign; 
   businessId: string; 
   onUpdate: () => void;
 }) {

@@ -5,15 +5,15 @@
  */
 
 import { Metadata } from 'next';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { AIDashboard } from '@/components/admin/ai-dashboard';
-import { AISettings } from '@/components/admin/ai-settings';
+import { requireTenant } from '@/lib/tenant';
 import { AIApprovalQueue } from '@/components/admin/ai-approval-queue';
-import { AINotificationsPanel } from '@/components/admin/ai-notifications-panel';
+import { AIDashboard } from '@/components/admin/ai-dashboard';
 import { AIHealthScore } from '@/components/admin/ai-health-score';
 import { AIInsightsPanel } from '@/components/admin/ai-insights-panel';
 import { AILearningMetrics } from '@/components/admin/ai-learning-metrics';
-import { requireTenant } from '@/lib/tenant';
+import { AINotificationsPanel } from '@/components/admin/ai-notifications-panel';
+import { AISettings } from '@/components/admin/ai-settings';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 export const metadata: Metadata = {
   title: 'AI Revenue Agent | Admin',

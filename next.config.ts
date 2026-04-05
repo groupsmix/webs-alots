@@ -1,3 +1,4 @@
+import { withSentryConfig } from "@sentry/nextjs";
 import type { NextConfig } from "next";
 import withBundleAnalyzer from "@next/bundle-analyzer";
 
@@ -94,7 +95,6 @@ const nextConfig: NextConfig = {
 // Sentry wraps the Next.js config for source-map upload and error tunneling.
 // The NEXT_PUBLIC_SENTRY_DSN env var activates it; without the DSN the wrapper
 // is a transparent pass-through.
-import { withSentryConfig } from "@sentry/nextjs";
 
 export default withSentryConfig(withAnalyzer(nextConfig), {
   // Suppress noisy source-map upload logs in CI.

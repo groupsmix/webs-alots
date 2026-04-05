@@ -28,10 +28,27 @@ interface AIDashboardProps {
   businessId: string;
 }
 
+interface DashboardStats {
+  revenue?: {
+    generated: number;
+    roi: number;
+  };
+  actions?: {
+    total: number;
+    success_rate: number;
+  };
+  time_saved?: {
+    total_minutes: number;
+  };
+  customers?: {
+    reengaged: number;
+  };
+}
+
 export function AIDashboard({ businessId }: AIDashboardProps) {
   const [loading, setLoading] = useState(true);
   const [analyzing, setAnalyzing] = useState(false);
-  const [stats, setStats] = useState<any>(null);
+  const [stats, setStats] = useState<DashboardStats | null>(null);
   const [recentActions, setRecentActions] = useState<AIAction[]>([]);
   const [insights, setInsights] = useState<AIInsight[]>([]);
 
