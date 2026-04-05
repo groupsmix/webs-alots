@@ -1,0 +1,120 @@
+name: AI Revenue Agent Tests
+
+on:
+  pull_request:
+    paths:
+      - 'src/lib/ai/**'
+      - 'src/lib/integrations/**'
+      - 'src/app/api/ai/**'
+      - 'src/components/admin/ai-*.tsx'
+  push:
+    branches: [main, staging]
+    paths:
+      - 'src/lib/ai/**'
+      - 'src/lib/integrations/**'
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  ai-unit-tests:
+    runs-on: ubuntu-latest
+    name: AI Unit Tests
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run AI unit tests
+        run: npm run test -- src/lib/ai/__tests__
+
+      - name: Run integration tests
+        run: npm run test -- src/lib/integrations/__tests__
+
+  ai-e2e-tests:
+    runs-on: ubuntu-latest
+    name: AI E2E Tests
+    needs: ai-unit-tests
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright
+        run: npx playwright install --with-deps chromium
+
+      - name: Build application
+        run: npm run build
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: placeholder
+          AI_AGENT_ENABLED: false
+
+      - name: Run AI E2E tests
+        run: npx playwright test e2e/ai-revenue-agent.spec.ts
+        env:
+          CI: true
+          E2E_BASE_URL: http://localhost:3000
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co' }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder' }}
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ai-test-results
+          path: playwright-report/
+          retention-days: 7
+
+  ai-security-scan:
+    runs-on: ubuntu-latest
+    name: AI Security Scan
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run security audit
+        run: npm audit --audit-level=moderate
+
+      - name: Check for secrets in code
+        run: |
+          echo "Scanning for hardcoded secrets..."
+          if grep -r "sk-" src/lib/ai/ --include="*.ts" --include="*.tsx"; then
+            echo "ERROR: Found potential API keys in code"
+            exit 1
+          fi
+          echo "No secrets found"
+
+      - name: Validate AI safety rules
+        run: |
+          echo "Validating AI safety layer..."
+          if ! grep -q "SAFETY_RULES" src/lib/ai/safety-layer.ts; then
+            echo "ERROR: Safety rules not found"
+            exit 1
+          fi
+          echo "Safety rules validated"
