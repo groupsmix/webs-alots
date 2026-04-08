@@ -14,11 +14,11 @@ import {
   LocationSection,
 } from "@/components/public/sections";
 import { ServicesPreview } from "@/components/public/services-preview";
-import { Card, CardContent } from "@/components/ui/card";
 import {
   getPublicReviews,
   getPublicAverageRating,
   getPublicBranding,
+  getPublicServices,
 } from "@/lib/data/public";
 import { safeJsonLdStringify } from "@/lib/json-ld";
 import { logger } from "@/lib/logger";
@@ -100,9 +100,6 @@ export async function generateMetadata(): Promise<Metadata> {
     },
   };
 }
-
-const linkBtnOutline =
-  "inline-flex items-center justify-center rounded-lg border border-border bg-background px-2.5 py-1.5 text-sm font-medium hover:bg-muted hover:text-foreground transition-colors";
 
 export default async function HomePage() {
   const tenant = await getTenant();
@@ -207,91 +204,116 @@ export default async function HomePage() {
       )}
 
       {/* Services */}
-      {sections.services && <ServicesPreview />}
+      {sections.services && <ServicesPreview services={await getPublicServices()} />}
 
       {/* Doctors / Team */}
       {sections.doctors && <DoctorsSection />}
 
       {/* Reviews */}
       {sections.reviews && topReviews.length > 0 && (
-        <section className="py-16">
-          <div className="container mx-auto px-4">
-            <div className="text-center mb-12">
-              <h2 className="text-3xl font-bold mb-4">
+        <section className="py-24 relative overflow-hidden">
+          {/* Background elements */}
+          <div className="absolute inset-0 gradient-mesh opacity-30" />
+          
+          <div className="container mx-auto px-4 relative z-10">
+            <div className="text-center mb-16">
+              <h2 className="text-4xl md:text-5xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-foreground via-primary to-accent">
                 Ce que disent nos patients
               </h2>
-              <p className="text-sm text-muted-foreground mb-2">Meilleurs avis</p>
-              <div className="flex items-center justify-center gap-2">
-                <span className="text-3xl font-bold">{avgRating}</span>
-                <div className="flex gap-0.5" role="img" aria-label={`${avgRating} out of 5 stars`}>
-                  {Array.from({ length: 5 }).map((_, i) => (
-                    <Star
-                      key={i}
-                      aria-hidden="true"
-                      className={`h-5 w-5 ${
-                        i < Math.round(avgRating)
-                          ? "fill-yellow-400 text-yellow-400"
-                          : "fill-muted text-muted"
-                      }`}
-                    />
-                  ))}
+              <p className="text-sm text-muted-foreground mb-6">Meilleurs avis</p>
+              
+              {/* Rating display with glassmorphism */}
+              <div className="inline-flex items-center gap-4 glass-card px-8 py-4 shadow-medium">
+                <span className="text-5xl font-bold bg-clip-text text-transparent bg-gradient-to-br from-primary to-accent">{avgRating}</span>
+                <div>
+                  <div className="flex gap-1 mb-1" role="img" aria-label={`${avgRating} out of 5 stars`}>
+                    {Array.from({ length: 5 }).map((_, i) => (
+                      <Star
+                        key={i}
+                        aria-hidden="true"
+                        className={`h-6 w-6 ${
+                          i < Math.round(avgRating)
+                            ? "fill-yellow-400 text-yellow-400"
+                            : "fill-muted text-muted"
+                        }`}
+                      />
+                    ))}
+                  </div>
+                  <span className="text-sm text-muted-foreground">
+                    ({reviews.length} avis)
+                  </span>
                 </div>
-                <span className="text-sm text-muted-foreground">
-                  ({reviews.length} avis)
-                </span>
               </div>
             </div>
-            {/* Rating distribution */}
+            
+            {/* Rating distribution with modern styling */}
             {reviews.length > 0 && (
-              <div className="mx-auto mb-10 max-w-xs space-y-1.5">
-                {[5, 4, 3, 2, 1].map((star) => {
-                  const count = reviews.filter((r) => r.rating === star).length;
-                  const pct = Math.round((count / reviews.length) * 100);
-                  return (
-                    <div key={star} className="flex items-center gap-2 text-sm">
-                      <span className="w-6 text-right font-medium">{star}<span className="text-yellow-400">&#9733;</span></span>
-                      <div className="flex-1 h-2 rounded-full bg-muted overflow-hidden">
-                        <div
-                          className="h-full rounded-full bg-yellow-400"
-                          style={{ width: `${pct}%` }}
-                        />
+              <div className="mx-auto mb-12 max-w-md glass-card p-6 shadow-medium">
+                <div className="space-y-3">
+                  {[5, 4, 3, 2, 1].map((star) => {
+                    const count = reviews.filter((r) => r.rating === star).length;
+                    const pct = Math.round((count / reviews.length) * 100);
+                    return (
+                      <div key={star} className="flex items-center gap-3 text-sm">
+                        <span className="w-8 text-right font-semibold">{star}<span className="text-yellow-400 ml-1">★</span></span>
+                        <div className="flex-1 h-3 rounded-full bg-muted overflow-hidden shadow-inner">
+                          <div
+                            className="h-full rounded-full bg-gradient-to-r from-yellow-400 to-yellow-500 transition-all duration-500 shadow-soft"
+                            style={{ width: `${pct}%` }}
+                          />
+                        </div>
+                        <span className="w-12 text-xs text-muted-foreground font-medium">{count} avis</span>
                       </div>
-                      <span className="w-8 text-xs text-muted-foreground">{count}</span>
-                    </div>
-                  );
-                })}
+                    );
+                  })}
+                </div>
               </div>
             )}
 
-            <div className="grid gap-6 md:grid-cols-3 max-w-4xl mx-auto">
-              {topReviews.map((review) => (
-                <Card key={review.id}>
-                  <CardContent className="pt-6">
-                    <div className="flex gap-0.5 mb-3" role="img" aria-label={`${review.rating} out of 5 stars`}>
-                      {Array.from({ length: 5 }).map((_, i) => (
-                        <Star
-                          key={i}
-                          aria-hidden="true"
-                          className={`h-4 w-4 ${
-                            i < review.rating
-                              ? "fill-yellow-400 text-yellow-400"
-                              : "fill-muted text-muted"
-                          }`}
-                        />
-                      ))}
+            {/* Review cards with glassmorphism */}
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 max-w-6xl mx-auto">
+              {topReviews.map((review, idx) => (
+                <div
+                  key={review.id}
+                  className="glass-card p-6 shadow-medium hover:shadow-strong transition-all duration-300 hover:scale-105 group"
+                  style={{ animationDelay: `${idx * 100}ms` }}
+                >
+                  {/* Stars */}
+                  <div className="flex gap-1 mb-4" role="img" aria-label={`${review.rating} out of 5 stars`}>
+                    {Array.from({ length: 5 }).map((_, i) => (
+                      <Star
+                        key={i}
+                        aria-hidden="true"
+                        className={`h-5 w-5 transition-transform group-hover:scale-110 ${
+                          i < review.rating
+                            ? "fill-yellow-400 text-yellow-400"
+                            : "fill-muted text-muted"
+                        }`}
+                        style={{ transitionDelay: `${i * 50}ms` }}
+                      />
+                    ))}
+                  </div>
+                  
+                  {/* Comment */}
+                  <p className="text-sm text-muted-foreground mb-4 leading-relaxed italic">
+                    &ldquo;{review.comment}&rdquo;
+                  </p>
+                  
+                  {/* Patient name with accent */}
+                  <div className="flex items-center gap-2">
+                    <div className="h-8 w-8 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center text-white font-bold text-sm shadow-soft">
+                      {review.patientName.charAt(0).toUpperCase()}
                     </div>
-                    <p className="text-sm text-muted-foreground mb-4">
-                      &ldquo;{review.comment}&rdquo;
-                    </p>
-                    <p className="text-sm font-medium">{review.patientName}</p>
-                  </CardContent>
-                </Card>
+                    <p className="text-sm font-semibold">{review.patientName}</p>
+                  </div>
+                </div>
               ))}
             </div>
-            <div className="mt-10 text-center">
-              <Link href="/reviews" className={linkBtnOutline}>
+            
+            <div className="mt-12 text-center">
+              <Link href="/reviews" className="btn-primary inline-flex items-center gap-2">
                 Voir tous les avis
-                <ArrowRight className="ml-2 h-4 w-4" />
+                <ArrowRight className="h-5 w-5" />
               </Link>
             </div>
           </div>
