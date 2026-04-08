@@ -28,6 +28,7 @@ export async function GET(req: NextRequest) {
 
     const supabase = await createTenantClient(businessId);
 
+    // @ts-expect-error - ai_actions table exists in migration but not in generated types yet
     let query = supabase
       .from('ai_actions')
       .select('*')
@@ -66,6 +67,7 @@ export async function POST(req: NextRequest) {
     const supabase = await createTenantClient(clinicId);
 
     // Get action
+    // @ts-expect-error - ai_actions table exists in migration but not in generated types yet
     const { data: action, error: fetchError } = await supabase
       .from('ai_actions')
       .select('*')
@@ -83,6 +85,7 @@ export async function POST(req: NextRequest) {
 
     if (approve) {
       // Approve and execute
+      // @ts-expect-error - ai_actions table exists in migration but not in generated types yet
       const { error: updateError } = await supabase
         .from('ai_actions')
         .update({
@@ -110,6 +113,7 @@ export async function POST(req: NextRequest) {
 
     } else {
       // Reject
+      // @ts-expect-error - ai_actions table exists in migration but not in generated types yet
       const { error: updateError } = await supabase
         .from('ai_actions')
         .update({

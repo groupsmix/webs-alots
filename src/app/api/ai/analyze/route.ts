@@ -67,6 +67,7 @@ export async function POST(req: NextRequest) {
 
     // Store actions
     for (const action of decision.actions) {
+      // @ts-expect-error - ai_actions table exists in migration but not in generated types yet
       const { error: actionError } = await supabase
         .from('ai_actions')
         .insert({
