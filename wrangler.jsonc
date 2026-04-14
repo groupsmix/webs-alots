@@ -1,0 +1,71 @@
+// Wrangler config for @opennextjs/cloudflare Workers deployment.
+// Deploy via: npx opennextjs-cloudflare build && npx opennextjs-cloudflare deploy
+{
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "affilite-mix",
+	"main": "custom-worker.ts",
+	"compatibility_date": "2026-03-17",
+	"compatibility_flags": [
+		"nodejs_compat",
+		"global_fetch_strictly_public"
+	],
+	"assets": {
+		"directory": ".open-next/assets",
+		"binding": "ASSETS"
+	},
+	"services": [
+		{
+			// Self-reference service binding, the service name must match the worker name
+			// see https://opennext.js.org/cloudflare/caching
+			"binding": "WORKER_SELF_REFERENCE",
+			"service": "affilite-mix"
+		}
+	],
+	// KV namespace for distributed rate limiting
+	// Create with: wrangler kv:namespace create RATE_LIMIT_KV
+	// Then replace the id below with the real namespace ID
+	"kv_namespaces": [
+		{
+			"binding": "RATE_LIMIT_KV",
+			"id": "7ac37dff0a794542b0c766f38e73f105"
+		}
+	],
+	// R2 incremental cache — create the bucket in the Cloudflare dashboard first
+	"r2_buckets": [
+		{
+			"binding": "NEXT_INC_CACHE_R2_BUCKET",
+			"bucket_name": "next-inc-cache"
+		}
+	],
+	// ═════════════════════════════════════════════════════════════════
+	// DOMAIN ROUTING - Dashboard Managed
+	// ═════════════════════════════════════════════════════════════════
+	// 
+	// ADD/REMOVE DOMAINS WITHOUT CODE CHANGES:
+	// 1. Go to Cloudflare Dashboard → Workers & Pages → affilite-mix
+	// 2. Settings → Triggers → Add Custom Domain
+	// 3. Enter your domain (e.g., "cryptoranked.xyz" or "crypto.wristnerd.xyz")
+	// 4. Set DNS record (A or CNAME) pointing to the worker
+	// 5. Update the domain in your Supabase sites table
+	//
+	// ROUTES EXPLAINED:
+	// - "*.wristnerd.xyz" catches ALL subdomains (arabictools, crypto, etc.)
+	// - Add standalone domains (cryptoranked.xyz) via Dashboard → Custom Domains
+	// - The middleware resolves domain → site_id via DB lookup
+	//
+	"routes": [
+		// Catch-all for wristnerd.xyz subdomains (dashboard managed via sites table)
+		{ "pattern": "*.wristnerd.xyz", "custom_domain": true },
+		// Root domain
+		{ "pattern": "wristnerd.xyz", "custom_domain": true }
+		// NOTE: Add other standalone domains (e.g., cryptoranked.xyz) via Cloudflare Dashboard
+		// Settings → Triggers → Add Custom Domain (no code change needed!)
+	],
+	// Cron triggers — publish scheduled content & archive expired products
+	// Runs every 5 minutes. The worker will POST to /api/cron/publish
+	// with the CRON_SECRET from environment variables.
+	// Set CRON_SECRET via: wrangler secret put CRON_SECRET
+	"triggers": {
+		"crons": ["*/5 * * * *"]
+	}
+}

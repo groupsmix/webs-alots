@@ -1,0 +1,66 @@
+@import "tailwindcss";
+
+/* Ensure Tailwind v4 scans all source directories for class names (3.33) */
+@source "../app";
+@source "../lib";
+@source "../config";
+@source "../components";
+
+:root {
+  --color-primary: #1e293b;
+  --color-secondary: #3b82f6;
+  --color-accent: #10b981;
+  --color-accent-text: #10b981;
+  --font-heading: var(--font-inter), "Inter", sans-serif;
+  --font-body: var(--font-inter), "Inter", sans-serif;
+}
+
+body {
+  font-family: var(--font-body);
+  color: var(--color-primary);
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: var(--font-heading);
+}
+
+/* Print styles — hide non-essential UI, show content at full width */
+@media print {
+  header,
+  footer,
+  nav,
+  [role="dialog"],
+  [role="progressbar"],
+  .fixed {
+    display: none !important;
+  }
+
+  body {
+    font-size: 12pt;
+    color: #000;
+    background: #fff;
+  }
+
+  main {
+    width: 100% !important;
+    max-width: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  a[href]::after {
+    content: " (" attr(href) ")";
+    font-size: 0.8em;
+    color: #666;
+  }
+
+  a[href^="#"]::after,
+  a[href^="javascript:"]::after {
+    content: "";
+  }
+}

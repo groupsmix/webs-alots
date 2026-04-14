@@ -1,0 +1,238 @@
+import type { SiteDefinition } from "@/config/site-definition";
+import type { ContentRow, ProductRow } from "@/types/database";
+import { parseDocument, DomUtils } from "htmlparser2";
+import type { Element, Text, ChildNode } from "domhandler";
+
+interface JsonLdProps {
+  data: Record<string, unknown>;
+}
+
+export function JsonLd({ data }: JsonLdProps) {
+  return (
+    <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(data) }} />
+  );
+}
+
+/** Organization schema for homepage */
+export function organizationJsonLd(site: SiteDefinition) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    name: site.name,
+    url: `https://${site.domain}`,
+    description: site.brand.description,
+    contactPoint: {
+      "@type": "ContactPoint",
+      email: site.brand.contactEmail,
+      contactType: "customer support",
+    },
+  };
+}
+
+/** WebSite schema for homepage */
+export function webSiteJsonLd(site: SiteDefinition) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    name: site.name,
+    url: `https://${site.domain}`,
+    description: site.brand.description,
+    inLanguage: site.language,
+  };
+}
+
+/** BreadcrumbList schema */
+export function breadcrumbJsonLd(site: SiteDefinition, items: { name: string; path: string }[]) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: items.map((item, i) => ({
+      "@type": "ListItem",
+      position: i + 1,
+      name: item.name,
+      item: `https://${site.domain}${item.path}`,
+    })),
+  };
+}
+
+/** Article schema for content pages */
+export function articleJsonLd(site: SiteDefinition, content: ContentRow) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    headline: content.title,
+    description: content.excerpt || content.title,
+    datePublished: content.created_at,
+    dateModified: content.updated_at || content.created_at,
+    author: content.author
+      ? { "@type": "Person", name: content.author }
+      : { "@type": "Organization", name: site.name },
+    publisher: {
+      "@type": "Organization",
+      name: site.name,
+      url: `https://${site.domain}`,
+    },
+    mainEntityOfPage: {
+      "@type": "WebPage",
+      "@id": `https://${site.domain}/${content.type}/${content.slug}`,
+    },
+    inLanguage: site.language,
+  };
+}
+
+/** Review schema for review-type content */
+export function reviewJsonLd(site: SiteDefinition, content: ContentRow, product?: ProductRow) {
+  const base: Record<string, unknown> = {
+    "@context": "https://schema.org",
+    "@type": "Review",
+    headline: content.title,
+    description: content.excerpt || content.title,
+    datePublished: content.created_at,
+    dateModified: content.updated_at || content.created_at,
+    author: content.author
+      ? { "@type": "Person", name: content.author }
+      : { "@type": "Organization", name: site.name },
+    publisher: {
+      "@type": "Organization",
+      name: site.name,
+      url: `https://${site.domain}`,
+    },
+    inLanguage: site.language,
+  };
+
+  if (product) {
+    base.itemReviewed = {
+      "@type": "Product",
+      name: product.name,
+      ...(product.image_url ? { image: product.image_url } : {}),
+      ...(product.description ? { description: product.description } : {}),
+    };
+    if (product.score !== null) {
+      base.reviewRating = {
+        "@type": "Rating",
+        ratingValue: product.score,
+        bestRating: 10,
+        worstRating: 0,
+      };
+    }
+  } else {
+    // Always include itemReviewed per schema.org spec — fall back to a
+    // generic Thing using the content title when no product is linked.
+    base.itemReviewed = {
+      "@type": "Thing",
+      name: content.title,
+    };
+  }
+
+  return base;
+}
+
+/** Recursively extract plain text from a DOM node */
+function getTextContent(node: ChildNode): string {
+  if (node.type === "text") return (node as Text).data;
+  if (node.type === "tag") {
+    return (node as Element).children.map(getTextContent).join("");
+  }
+  return "";
+}
+
+const HEADING_TAGS = new Set(["h2", "h3", "h4"]);
+
+/**
+ * FAQ schema — extracts Q&A pairs from HTML content.
+ * Uses htmlparser2 to robustly parse HTML and find heading+content pairs
+ * where the heading text ends with "?". Handles nested markup, varied
+ * heading levels (h2-h4), and whitespace between elements.
+ */
+export function faqJsonLd(html: string): Record<string, unknown> | null {
+  const doc = parseDocument(html);
+  const topLevel = DomUtils.getChildren(doc);
+  const pairs: { question: string; answer: string }[] = [];
+
+  for (let i = 0; i < topLevel.length; i++) {
+    const node = topLevel[i];
+    if (node.type !== "tag") continue;
+    const el = node as Element;
+
+    if (!HEADING_TAGS.has(el.tagName)) continue;
+
+    const headingText = getTextContent(el).trim();
+    if (!headingText.endsWith("?")) continue;
+
+    // Collect all sibling content until the next heading as the answer
+    const answerParts: string[] = [];
+    for (let j = i + 1; j < topLevel.length; j++) {
+      const sibling = topLevel[j];
+      if (sibling.type === "tag" && HEADING_TAGS.has((sibling as Element).tagName)) break;
+      const text = getTextContent(sibling).trim();
+      if (text) answerParts.push(text);
+    }
+
+    const answer = answerParts.join(" ");
+    if (answer) {
+      pairs.push({ question: headingText, answer });
+    }
+  }
+
+  if (pairs.length === 0) return null;
+
+  return {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: pairs.map((pair) => ({
+      "@type": "Question",
+      name: pair.question,
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: pair.answer,
+      },
+    })),
+  };
+}
+
+/** Product schema */
+export function productJsonLd(site: SiteDefinition, product: ProductRow) {
+  const data: Record<string, unknown> = {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    name: product.name,
+    description: product.description || product.name,
+    url: `https://${site.domain}`,
+  };
+
+  if (product.image_url) {
+    data.image = product.image_url;
+  }
+
+  if (product.price) {
+    data.offers = {
+      "@type": "Offer",
+      price: product.price.replace(/[^0-9.]/g, "") || undefined,
+      priceCurrency: product.price_currency || "USD",
+      availability: "https://schema.org/InStock",
+      url: product.affiliate_url || undefined,
+    };
+  }
+
+  if (product.score !== null) {
+    data.review = {
+      "@type": "Review",
+      reviewRating: {
+        "@type": "Rating",
+        ratingValue: product.score,
+        bestRating: 10,
+        worstRating: 0,
+      },
+      author: { "@type": "Organization", name: site.name },
+    };
+  }
+
+  if (product.merchant) {
+    data.brand = {
+      "@type": "Brand",
+      name: product.merchant,
+    };
+  }
+
+  return data;
+}

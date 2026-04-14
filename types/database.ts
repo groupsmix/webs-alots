@@ -1,0 +1,279 @@
+/** Database row types matching the actual Supabase schema */
+
+export interface SiteRow {
+  id: string;
+  slug: string;
+  name: string;
+  domain: string;
+  language: string;
+  direction: "ltr" | "rtl";
+  is_active: boolean;
+
+  // Monetization
+  monetization_type: "affiliate" | "ads" | "both";
+  est_revenue_per_click: number;
+  ad_config: Record<string, unknown>;
+
+  // Theming
+  theme: Record<string, unknown>;
+  logo_url: string | null;
+  favicon_url: string | null;
+
+  // Navigation
+  nav_items: { label: string; href: string; icon?: string }[];
+  footer_nav: { label: string; href: string; icon?: string }[];
+
+  // Features
+  features: Record<string, boolean>;
+
+  // SEO
+  meta_title: string | null;
+  meta_description: string | null;
+  og_image_url: string | null;
+
+  // Social links
+  social_links: Record<string, string>;
+
+  // Custom CSS overrides
+  custom_css: string | null;
+
+  created_at: string;
+  updated_at: string;
+}
+
+export type TaxonomyType = "general" | "budget" | "occasion" | "recipient" | "brand";
+
+export interface CategoryRow {
+  id: string;
+  site_id: string;
+  name: string;
+  slug: string;
+  description: string;
+  taxonomy_type: TaxonomyType;
+  created_at: string;
+}
+
+export interface ProductRow {
+  id: string;
+  site_id: string;
+  name: string;
+  slug: string;
+  description: string;
+  affiliate_url: string;
+  image_url: string;
+  image_alt: string;
+  price: string;
+  price_amount: number | null;
+  price_currency: string;
+  merchant: string;
+  score: number | null;
+  featured: boolean;
+  status: "draft" | "active" | "archived";
+  category_id: string | null;
+  cta_text: string;
+  deal_text: string;
+  deal_expires_at: string | null;
+  pros: string;
+  cons: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ContentRow {
+  id: string;
+  site_id: string;
+  title: string;
+  slug: string;
+  body: string;
+  excerpt: string;
+  featured_image: string;
+  type: "article" | "review" | "comparison" | "guide" | "blog";
+  status: "draft" | "review" | "published" | "scheduled" | "archived";
+  category_id: string | null;
+  tags: string[];
+  author: string | null;
+  publish_at: string | null;
+  meta_title: string | null;
+  meta_description: string | null;
+  og_image: string | null;
+  body_previous: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ContentProductRow {
+  content_id: string;
+  product_id: string;
+  role: "hero" | "featured" | "related" | "vs-left" | "vs-right";
+}
+
+export interface PageRow {
+  id: string;
+  site_id: string;
+  slug: string;
+  title: string;
+  body: string;
+  is_published: boolean;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AffiliateClickRow {
+  id: string;
+  site_id: string;
+  product_name: string;
+  affiliate_url: string;
+  content_slug: string;
+  referrer: string;
+  created_at: string;
+}
+
+export type AdPlacementType = "sidebar" | "in_content" | "header" | "footer" | "between_posts";
+export type AdProvider = "adsense" | "carbon" | "ethicalads" | "custom";
+
+export interface AdPlacementRow {
+  id: string;
+  site_id: string;
+  name: string;
+  placement_type: AdPlacementType;
+  provider: AdProvider;
+  ad_code: string | null;
+  config: Record<string, unknown>;
+  is_active: boolean;
+  priority: number;
+  created_at: string;
+}
+
+export interface AdImpressionRow {
+  id: string;
+  site_id: string;
+  ad_placement_id: string;
+  page_path: string;
+  impression_date: string;
+  count: number;
+  created_at: string;
+}
+
+// ── Module Registry ────────────────────────────────────────────────────
+
+export interface SiteModuleRow {
+  id: string;
+  site_id: string;
+  module_key: string;
+  is_enabled: boolean;
+  config: Record<string, unknown>;
+  created_at: string;
+  updated_at: string;
+}
+
+// ── Site Feature Flags ─────────────────────────────────────────────────
+
+export interface SiteFeatureFlagRow {
+  id: string;
+  site_id: string;
+  flag_key: string;
+  is_enabled: boolean;
+  description: string;
+  created_at: string;
+  updated_at: string;
+}
+
+// ── Roles & Permissions ────────────────────────────────────────────────
+
+export type RoleName =
+  | "owner"
+  | "super_admin"
+  | "admin"
+  | "editor"
+  | "author"
+  | "moderator"
+  | "seo_manager"
+  | "translator"
+  | "analyst";
+
+export interface RoleRow {
+  id: string;
+  name: RoleName;
+  label: string;
+  description: string;
+  is_system: boolean;
+  created_at: string;
+}
+
+export type PermissionFeature =
+  | "content"
+  | "products"
+  | "categories"
+  | "seo"
+  | "analytics"
+  | "integrations"
+  | "users"
+  | "settings"
+  | "themes"
+  | "modules"
+  | "scheduling"
+  | "publishing";
+
+export type PermissionAction =
+  | "view"
+  | "create"
+  | "edit"
+  | "publish"
+  | "delete"
+  | "manage"
+  | "approve"
+  | "configure";
+
+export interface PermissionRow {
+  id: string;
+  feature: PermissionFeature;
+  action: PermissionAction;
+  description: string;
+}
+
+export interface RolePermissionRow {
+  role_id: string;
+  permission_id: string;
+}
+
+export interface UserSiteRoleRow {
+  id: string;
+  user_id: string;
+  site_id: string;
+  role_id: string;
+  created_at: string;
+}
+
+// ── Integrations ───────────────────────────────────────────────────────
+
+export type IntegrationCategory =
+  | "affiliate_network"
+  | "analytics"
+  | "email"
+  | "storage"
+  | "bot_protection"
+  | "search"
+  | "cdn"
+  | "other";
+
+export interface IntegrationProviderRow {
+  id: string;
+  key: string;
+  name: string;
+  category: IntegrationCategory;
+  description: string;
+  config_schema: Record<string, unknown>;
+  is_builtin: boolean;
+  created_at: string;
+}
+
+export interface SiteIntegrationRow {
+  id: string;
+  site_id: string;
+  provider_key: string;
+  is_enabled: boolean;
+  config: Record<string, unknown>;
+  created_at: string;
+  updated_at: string;
+}

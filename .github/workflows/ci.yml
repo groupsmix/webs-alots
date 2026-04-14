@@ -1,0 +1,40 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+env:
+  NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
+  NEXT_PUBLIC_SUPABASE_ANON_KEY: placeholder
+  SUPABASE_SERVICE_ROLE_KEY: placeholder
+  JWT_SECRET: ci-test-secret
+  NEXT_PUBLIC_TURNSTILE_SITE_KEY: ""
+  TURNSTILE_SECRET_KEY: ""
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Security audit
+        run: npm audit --audit-level=high
+      - run: npm run lint
+      - run: npm test
+      - run: npm run typecheck
+      - run: npm run build
+      # E2E tests (Playwright) — uncomment once a test environment is available.
+      # Requires a running server (or E2E_BASE_URL pointing to a preview deploy).
+      # - name: Install Playwright browsers
+      #   run: npx playwright install --with-deps chromium
+      # - name: Run E2E tests
+      #   run: npx playwright test
+      #   env:
+      #     CI: "true"
+      #     E2E_BASE_URL: http://localhost:3000

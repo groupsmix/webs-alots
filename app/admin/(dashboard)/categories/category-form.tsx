@@ -1,0 +1,181 @@
+"use client";
+
+import { useState, useEffect, useRef } from "react";
+import { useRouter } from "next/navigation";
+import type { CategoryRow } from "@/types/database";
+import { fetchWithCsrf } from "@/lib/fetch-csrf";
+import { toast } from "sonner";
+
+interface CategoryFormProps {
+  category?: CategoryRow;
+}
+
+export function CategoryForm({ category }: CategoryFormProps) {
+  const router = useRouter();
+  const isEdit = !!category;
+  const isDirtyRef = useRef(false);
+
+  useEffect(() => {
+    const handler = (e: BeforeUnloadEvent) => {
+      if (isDirtyRef.current) {
+        e.preventDefault();
+      }
+    };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, []);
+
+  function markDirty() {
+    isDirtyRef.current = true;
+  }
+
+  const [name, setName] = useState(category?.name ?? "");
+  const [slug, setSlug] = useState(category?.slug ?? "");
+  const [description, setDescription] = useState(category?.description ?? "");
+  const [taxonomyType, setTaxonomyType] = useState<
+    "general" | "budget" | "occasion" | "recipient" | "brand"
+  >(category?.taxonomy_type ?? "general");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+
+  function autoSlug(value: string) {
+    return value
+      .toLowerCase()
+      .replace(/[^a-z0-9\u0600-\u06FF]+/g, "-")
+      .replace(/^-|-$/g, "");
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setSaving(true);
+    setError("");
+
+    const payload = { name, slug, description, taxonomy_type: taxonomyType };
+
+    const res = isEdit
+      ? await fetchWithCsrf("/api/admin/categories", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id: category.id, ...payload }),
+        })
+      : await fetchWithCsrf("/api/admin/categories", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+
+    if (res.ok) {
+      toast.success(isEdit ? "Category updated" : "Category created");
+      isDirtyRef.current = false;
+      router.push("/admin/categories");
+      router.refresh();
+    } else {
+      const data = await res.json();
+      const msg = data.error ?? "Failed to save";
+      setError(msg);
+      toast.error(msg);
+    }
+    setSaving(false);
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="max-w-lg space-y-4">
+      {error && (
+        <div role="alert" aria-live="polite" className="rounded bg-red-50 p-3 text-sm text-red-600">
+          {error}
+        </div>
+      )}
+
+      <div>
+        <label htmlFor="cat-name" className="mb-1 block text-sm font-medium text-gray-700">
+          Name
+        </label>
+        <input
+          id="cat-name"
+          type="text"
+          value={name}
+          onChange={(e) => {
+            setName(e.target.value);
+            if (!isEdit) setSlug(autoSlug(e.target.value));
+            markDirty();
+          }}
+          className="w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+          required
+        />
+      </div>
+
+      <div>
+        <label htmlFor="cat-slug" className="mb-1 block text-sm font-medium text-gray-700">
+          Slug
+        </label>
+        <input
+          id="cat-slug"
+          type="text"
+          value={slug}
+          onChange={(e) => {
+            setSlug(e.target.value);
+            markDirty();
+          }}
+          className="w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+          required
+        />
+      </div>
+
+      <div>
+        <label htmlFor="cat-taxonomy" className="mb-1 block text-sm font-medium text-gray-700">
+          Taxonomy Type
+        </label>
+        <select
+          id="cat-taxonomy"
+          value={taxonomyType}
+          onChange={(e) => {
+            setTaxonomyType(e.target.value as typeof taxonomyType);
+            markDirty();
+          }}
+          className="w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+          required
+        >
+          <option value="general">General</option>
+          <option value="budget">Budget</option>
+          <option value="occasion">Occasion</option>
+          <option value="recipient">Recipient</option>
+          <option value="brand">Brand</option>
+        </select>
+      </div>
+
+      <div>
+        <label htmlFor="cat-description" className="mb-1 block text-sm font-medium text-gray-700">
+          Description
+        </label>
+        <textarea
+          id="cat-description"
+          value={description}
+          onChange={(e) => {
+            setDescription(e.target.value);
+            markDirty();
+          }}
+          rows={3}
+          placeholder="Category description shown on the public category page"
+          className="w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+        />
+      </div>
+
+      <div className="flex gap-3 pt-2">
+        <button
+          type="submit"
+          disabled={saving}
+          className="rounded-md bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-800 disabled:opacity-50"
+        >
+          {saving ? "Saving..." : isEdit ? "Update" : "Create"}
+        </button>
+        <button
+          type="button"
+          onClick={() => router.push("/admin/categories")}
+          className="rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+        >
+          Cancel
+        </button>
+      </div>
+    </form>
+  );
+}
