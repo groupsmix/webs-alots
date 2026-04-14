@@ -94,7 +94,7 @@ async function setupSupabaseAuth() {
     // We'll try to use the Gotrue admin API if available, otherwise provide manual instructions
     
     console.log('   ℹ️  Redirect URLs need to be configured via Supabase Dashboard');
-    console.log('   (Supabase doesn't expose this via public API for security)');
+    console.log('   (Supabase does not expose this via public API for security)');
     console.log('');
     
     // Alternative: Try to use the REST API to at least verify connection
