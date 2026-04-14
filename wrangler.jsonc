@@ -57,12 +57,14 @@
 		// ── Custom Domains (auto-provision DNS, no wildcards allowed) ──
 		{ "pattern": "wristnerd.xyz", "custom_domain": true },
 		{ "pattern": "arabictools.wristnerd.xyz", "custom_domain": true },
-		{ "pattern": "crypto.wristnerd.xyz", "custom_domain": true },
-		// ── Wildcard route (catches any new subdomain added via dashboard) ──
-		// Requires the wristnerd.xyz zone to be on Cloudflare with DNS active
-		{ "pattern": "*.wristnerd.xyz" }
-		// NOTE: Add standalone domains (e.g., cryptoranked.xyz) via Cloudflare Dashboard
-		// Workers & Pages → affilite-mix → Settings → Triggers → Add Custom Domain
+		{ "pattern": "crypto.wristnerd.xyz", "custom_domain": true }
+		// ── To add more domains (wildcards or standalone): ──────────────
+		// Option A: Cloudflare Dashboard → Workers & Pages → affilite-mix
+		//           → Settings → Triggers → Add Custom Domain
+		// Option B: Add a Worker Route for wildcards:
+		//           → Settings → Triggers → Add Route → *.wristnerd.xyz/*
+		// Option C: Add another { "pattern": "newdomain.xyz", "custom_domain": true } here
+		// The middleware resolves any domain → site_id via DB lookup
 	],
 	// Cron triggers — publish scheduled content & archive expired products
 	// Runs every 5 minutes. The worker will POST to /api/cron/publish
