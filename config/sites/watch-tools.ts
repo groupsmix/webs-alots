@@ -3,7 +3,7 @@ import { defineSite } from "../define-site";
 export const watchToolsSite = defineSite({
   id: "watch-tools",
   name: "WristNerd",
-  domain: "wristnerd.site",
+  domain: "wristnerd.xyz",
   aliases: ["watch.localhost"],
   niche: "Watch Gift Guides & Reviews",
   description:
