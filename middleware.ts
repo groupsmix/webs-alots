@@ -35,7 +35,7 @@ function nicheNotFoundResponse(): NextResponse {
 
 /**
  * Middleware: resolves domain → site_id and injects x-site-id header.
- * Supports wildcard subdomain routing — any *.writnerd.site subdomain
+ * Supports wildcard subdomain routing — any *.wristnerd.xyz subdomain
  * is automatically resolved via DB lookup.
  * Also handles CSRF protection for state-changing API routes.
  */

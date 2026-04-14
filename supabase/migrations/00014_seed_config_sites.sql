@@ -4,7 +4,7 @@
 
 -- Arabic Tools
 UPDATE sites SET
-  domain = 'arabictools.wristnerd.site',
+  domain = 'arabictools.wristnerd.xyz',
   is_active = true,
   monetization_type = 'affiliate',
   est_revenue_per_click = 0.35,
@@ -18,7 +18,7 @@ WHERE slug = 'arabic-tools';
 
 -- Crypto Tools
 UPDATE sites SET
-  domain = 'crypto.wristnerd.site',
+  domain = 'crypto.wristnerd.xyz',
   is_active = true,
   monetization_type = 'affiliate',
   est_revenue_per_click = 0.35,
@@ -35,7 +35,7 @@ INSERT INTO sites (slug, name, domain, language, direction, is_active, monetizat
 VALUES (
   'watch-tools',
   'WristNerd',
-  'wristnerd.site',
+  'wristnerd.xyz',
   'en',
   'ltr',
   true,

@@ -65,16 +65,16 @@ describe("middleware site resolution", () => {
 
 describe("wildcard subdomain resolution", () => {
   it("identifies wildcard subdomains of known parent domains", () => {
-    expect(isWildcardSubdomain("coffee.writnerd.site")).toBe(true);
-    expect(isWildcardSubdomain("tech.writnerd.site")).toBe(true);
+    expect(isWildcardSubdomain("coffee.wristnerd.xyz")).toBe(true);
+    expect(isWildcardSubdomain("tech.wristnerd.xyz")).toBe(true);
   });
 
   it("rejects bare parent domain as wildcard", () => {
-    expect(isWildcardSubdomain("writnerd.site")).toBe(false);
+    expect(isWildcardSubdomain("wristnerd.xyz")).toBe(false);
   });
 
   it("rejects nested subdomains (only single-level wildcards)", () => {
-    expect(isWildcardSubdomain("a.b.writnerd.site")).toBe(false);
+    expect(isWildcardSubdomain("a.b.wristnerd.xyz")).toBe(false);
   });
 
   it("rejects unknown parent domains", () => {
@@ -82,14 +82,14 @@ describe("wildcard subdomain resolution", () => {
   });
 
   it("extracts subdomain correctly", () => {
-    expect(extractSubdomain("coffee.writnerd.site", "writnerd.site")).toBe("coffee");
-    expect(extractSubdomain("writnerd.site", "writnerd.site")).toBeNull();
-    expect(extractSubdomain("a.b.writnerd.site", "writnerd.site")).toBeNull();
-    expect(extractSubdomain("other.example.com", "writnerd.site")).toBeNull();
+    expect(extractSubdomain("coffee.wristnerd.xyz", "wristnerd.xyz")).toBe("coffee");
+    expect(extractSubdomain("wristnerd.xyz", "wristnerd.xyz")).toBeNull();
+    expect(extractSubdomain("a.b.wristnerd.xyz", "wristnerd.xyz")).toBeNull();
+    expect(extractSubdomain("other.example.com", "wristnerd.xyz")).toBeNull();
   });
 
   it("WILDCARD_PARENT_DOMAINS contains expected domains", () => {
-    expect(WILDCARD_PARENT_DOMAINS).toContain("writnerd.site");
+    expect(WILDCARD_PARENT_DOMAINS).toContain("wristnerd.xyz");
   });
 });
 

@@ -383,14 +383,14 @@ CREATE TRIGGER sites_updated_at
 -- ═══════════════════════════════════════════════════════
 
 INSERT INTO sites (slug, name, domain, language, direction)
-VALUES ('arabic-tools', 'Arabic Tools', 'arabictools.wristnerd.site', 'ar', 'rtl');
+VALUES ('arabic-tools', 'Arabic Tools', 'arabictools.wristnerd.xyz', 'ar', 'rtl');
 
 -- ═══════════════════════════════════════════════════════
 -- SEED: crypto-tools site
 -- ═══════════════════════════════════════════════════════
 
 INSERT INTO sites (slug, name, domain, language, direction)
-VALUES ('crypto-tools', 'Crypto Tools', 'crypto.wristnerd.site', 'en', 'ltr');
+VALUES ('crypto-tools', 'Crypto Tools', 'crypto.wristnerd.xyz', 'en', 'ltr');
 
 -- Crypto categories
 WITH crypto AS (SELECT id FROM sites WHERE slug = 'crypto-tools')
@@ -479,7 +479,7 @@ INSERT INTO content (site_id, title, slug, body, excerpt, type, status, category
 -- ═══════════════════════════════════════════════════════
 
 INSERT INTO sites (slug, name, domain, language, direction)
-VALUES ('watch-tools', 'WristNerd', 'wristnerd.site', 'en', 'ltr');
+VALUES ('watch-tools', 'WristNerd', 'wristnerd.xyz', 'en', 'ltr');
 
 -- Watch-tools taxonomy categories (budget)
 WITH watch AS (SELECT id FROM sites WHERE slug = 'watch-tools')

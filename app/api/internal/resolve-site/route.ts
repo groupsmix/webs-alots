@@ -16,7 +16,7 @@ const INTERNAL_HEADER = "x-internal-token";
 const INTERNAL_TOKEN = "__affilite_internal__";
 
 /**
- * GET /api/internal/resolve-site?domain=foo.writnerd.site
+ * GET /api/internal/resolve-site?domain=foo.wristnerd.xyz
  *
  * Internal endpoint used by middleware to resolve wildcard subdomains
  * to their database site record. Guarded by a shared internal header

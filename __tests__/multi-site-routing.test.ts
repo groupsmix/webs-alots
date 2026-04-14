@@ -169,8 +169,8 @@ describe("wildcard subdomain edge cases", () => {
   });
 
   it("extractSubdomain handles empty inputs", () => {
-    expect(extractSubdomain("", "writnerd.site")).toBeNull();
-    expect(extractSubdomain("coffee.writnerd.site", "")).toBeNull();
+    expect(extractSubdomain("", "wristnerd.xyz")).toBeNull();
+    expect(extractSubdomain("coffee.wristnerd.xyz", "")).toBeNull();
   });
 
   it("handles case-sensitive domain matching", () => {

@@ -127,5 +127,5 @@ WHERE slug = 'crypto-tools';
 
 -- Update WristNerd domain
 UPDATE sites
-SET domain = 'wristnerd.site'
+SET domain = 'wristnerd.xyz'
 WHERE slug = 'watch-tools';

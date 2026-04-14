@@ -131,7 +131,7 @@ ON CONFLICT (slug) DO UPDATE SET
  * Known wildcard parent domains.
  * Any subdomain of these is eligible for automatic DB-based resolution.
  */
-export const WILDCARD_PARENT_DOMAINS = ["writnerd.site"];
+export const WILDCARD_PARENT_DOMAINS = ["wristnerd.xyz"];
 
 /** Lookup site by id */
 export function getSiteById(id: string): SiteDefinition | undefined {
@@ -140,7 +140,7 @@ export function getSiteById(id: string): SiteDefinition | undefined {
 
 /**
  * Extract subdomain from a hostname given a parent domain.
- * e.g. extractSubdomain("coffee.writnerd.site", "writnerd.site") → "coffee"
+ * e.g. extractSubdomain("coffee.wristnerd.xyz", "wristnerd.xyz") → "coffee"
  * Returns null if hostname doesn't match the parent or is the bare parent.
  */
 export function extractSubdomain(hostname: string, parentDomain: string): string | null {

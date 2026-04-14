@@ -495,7 +495,7 @@ export function SiteManager() {
                       type="text"
                       value={form.domain}
                       onChange={(e) => setForm({ ...form, domain: e.target.value })}
-                      placeholder="my-niche.writnerd.site"
+                      placeholder="my-niche.wristnerd.xyz"
                       className={inputCls}
                       required
                     />
