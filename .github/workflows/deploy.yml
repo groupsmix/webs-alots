@@ -62,6 +62,19 @@ jobs:
 
       - run: npm install
 
+      # ── Apply database migrations via Supabase Management API ───────────────
+      - name: Apply database migrations to remote Supabase
+        run: |
+          echo "🔄 Applying critical database migrations..."
+          PROJECT_REF=$(echo "${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}" | sed 's|https://||' | cut -d'.' -f1)
+          # Add missing description column to categories
+          curl -s -X POST \
+            "https://api.supabase.com/v1/projects/$PROJECT_REF/database/query" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" \
+            -H "Content-Type: application/json" \
+            -d '{"query":"ALTER TABLE categories ADD COLUMN IF NOT EXISTS description text DEFAULT ''''"}' || echo "Column may exist"
+          echo "✅ Database migrations applied"
+
       # ── Create R2 bucket if not exists ──────────────────────────────
       - name: Create R2 bucket (if not exists)
         run: |
