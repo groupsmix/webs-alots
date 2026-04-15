@@ -22,7 +22,7 @@ const MinimalHomepage = dynamic(() =>
 export async function generateMetadata(): Promise<Metadata> {
   const site = await getCurrentSite();
   return {
-    title: `${site.name} — ${site.brand.niche}`,
+    title: site.name,
     description: site.brand.description,
     alternates: {
       canonical: `https://${site.domain}/`,

@@ -1,15 +1,24 @@
 import type { MetadataRoute } from "next";
-import { getCurrentSite } from "@/lib/site-context";
+import { allSites } from "@/config/sites";
+
+const DEFAULT_DOMAIN = allSites[0]?.domain ?? "wristnerd.xyz";
 
 export default async function robots(): Promise<MetadataRoute.Robots> {
-  const site = await getCurrentSite();
+  let domain = DEFAULT_DOMAIN;
+  try {
+    const { getCurrentSite } = await import("@/lib/site-context");
+    const site = await getCurrentSite();
+    domain = site.domain;
+  } catch {
+    // Fallback to first configured domain when DB/site context is unavailable
+  }
 
   return {
     rules: {
       userAgent: "*",
       allow: "/",
-      disallow: [...new Set(["/admin/", "/api/", ...site.seo.robotsDisallow])],
+      disallow: ["/admin/", "/api/"],
     },
-    sitemap: `https://${site.domain}/sitemap.xml`,
+    sitemap: `https://${domain}/sitemap.xml`,
   };
 }

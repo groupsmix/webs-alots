@@ -33,13 +33,13 @@ export async function generateMetadata({ params }: CategoryPageProps): Promise<M
   const description = `Browse ${category.name} on ${site.name}`;
 
   return {
-    title: `${category.name} — ${site.name}`,
+    title: category.name,
     description,
     alternates: {
       canonical: url,
     },
     openGraph: {
-      title: `${category.name} — ${site.name}`,
+      title: category.name,
       description,
       url,
       siteName: site.name,
@@ -48,7 +48,7 @@ export async function generateMetadata({ params }: CategoryPageProps): Promise<M
     },
     twitter: {
       card: "summary",
-      title: `${category.name} — ${site.name}`,
+      title: category.name,
       description,
     },
   };

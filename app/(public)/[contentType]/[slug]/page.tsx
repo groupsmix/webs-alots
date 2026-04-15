@@ -77,13 +77,13 @@ export async function generateMetadata({
   const ogImages = ogImageUrl ? [{ url: ogImageUrl, width: 1200, height: 630 }] : undefined;
 
   return {
-    title: `${metaTitle} — ${site.name}`,
+    title: metaTitle,
     description: metaDesc,
     alternates: {
       canonical: url,
     },
     openGraph: {
-      title: `${metaTitle} — ${site.name}`,
+      title: metaTitle,
       description: metaDesc || content.title,
       url,
       siteName: site.name,
@@ -96,7 +96,7 @@ export async function generateMetadata({
     },
     twitter: {
       card: "summary_large_image",
-      title: `${metaTitle} — ${site.name}`,
+      title: metaTitle,
       description: metaDesc || content.title,
       images: ogImages,
     },

@@ -23,11 +23,11 @@ export async function generateMetadata(): Promise<Metadata> {
   const url = `https://${site.domain}/affiliate-disclosure`;
 
   return {
-    title: `${title} — ${site.name}`,
+    title,
     description,
     alternates: { canonical: url },
     openGraph: {
-      title: `${title} — ${site.name}`,
+      title,
       description,
       url,
       siteName: site.name,
@@ -64,9 +64,7 @@ export default async function AffiliateDisclosurePage() {
       />
 
       <header className="mb-8">
-        <h1 className="mb-2 text-3xl font-bold">
-          {isAr ? "إفصاح الشراكة" : disclosurePage.title}
-        </h1>
+        <h1 className="mb-2 text-3xl font-bold">{isAr ? "إفصاح الشراكة" : disclosurePage.title}</h1>
         <p className="text-gray-600">
           {isAr
             ? "تعرّف على كيفية عمل روابط الشراكة التابعة على موقعنا وسياستنا التحريرية."
@@ -161,8 +159,8 @@ export default async function AffiliateDisclosurePage() {
             </>
           ) : (
             <>
-              If you have any questions about our affiliate relationships or
-              editorial policy, please{" "}
+              If you have any questions about our affiliate relationships or editorial policy,
+              please{" "}
               {site.pages.contact ? (
                 <Link
                   href="/contact"

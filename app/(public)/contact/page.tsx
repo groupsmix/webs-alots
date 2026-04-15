@@ -22,11 +22,11 @@ export async function generateMetadata(): Promise<Metadata> {
   const url = `https://${site.domain}/contact`;
 
   return {
-    title: `${title} — ${site.name}`,
+    title,
     description,
     alternates: { canonical: url },
     openGraph: {
-      title: `${title} — ${site.name}`,
+      title,
       description,
       url,
       siteName: site.name,
@@ -56,20 +56,13 @@ export default async function ContactPage() {
       <JsonLd data={breadcrumbs} />
 
       <Breadcrumbs
-        items={[
-          { label: site.name, href: "/" },
-          { label: isAr ? "اتصل بنا" : contactPage.title },
-        ]}
+        items={[{ label: site.name, href: "/" }, { label: isAr ? "اتصل بنا" : contactPage.title }]}
       />
 
       <header className="mb-8">
-        <h1 className="mb-2 text-3xl font-bold">
-          {isAr ? "اتصل بنا" : contactPage.title}
-        </h1>
+        <h1 className="mb-2 text-3xl font-bold">{isAr ? "اتصل بنا" : contactPage.title}</h1>
         <p className="text-gray-600">
-          {isAr
-            ? "تواصل معنا لأي استفسارات أو اقتراحات أو فرص تعاون."
-            : contactPage.description}
+          {isAr ? "تواصل معنا لأي استفسارات أو اقتراحات أو فرص تعاون." : contactPage.description}
         </p>
       </header>
 
@@ -121,28 +114,18 @@ export default async function ContactPage() {
               ? "اقتراحات لمنتجات أو مواضيع لتغطيتها"
               : "Suggestions for products or topics to cover"}
           </li>
+          <li>{isAr ? "استفسارات الشراكة والتعاون" : "Partnership and collaboration inquiries"}</li>
           <li>
-            {isAr
-              ? "استفسارات الشراكة والتعاون"
-              : "Partnership and collaboration inquiries"}
+            {isAr ? "تصحيحات أو ملاحظات على محتوانا" : "Corrections or feedback on our content"}
           </li>
-          <li>
-            {isAr
-              ? "تصحيحات أو ملاحظات على محتوانا"
-              : "Corrections or feedback on our content"}
-          </li>
-          <li>
-            {isAr
-              ? `أسئلة عامة حول ${site.name}`
-              : `General questions about ${site.name}`}
-          </li>
+          <li>{isAr ? `أسئلة عامة حول ${site.name}` : `General questions about ${site.name}`}</li>
         </ul>
 
         <h2>{isAr ? "وقت الاستجابة" : "Response Time"}</h2>
         <p>
           {isAr
-            ? "نسعى للرد على جميع الرسائل خلال يوم إلى يومي عمل. للأمور العاجلة، يرجى كتابة \"عاجل\" في عنوان الرسالة."
-            : "We aim to respond to all emails within 1-2 business days. For urgent matters, please include \"URGENT\" in the subject line."}
+            ? 'نسعى للرد على جميع الرسائل خلال يوم إلى يومي عمل. للأمور العاجلة، يرجى كتابة "عاجل" في عنوان الرسالة.'
+            : 'We aim to respond to all emails within 1-2 business days. For urgent matters, please include "URGENT" in the subject line.'}
         </p>
       </div>
     </div>

@@ -4,7 +4,7 @@ import type { Metadata } from "next";
 export async function generateMetadata(): Promise<Metadata> {
   const site = await getCurrentSite();
   return {
-    title: `${site.language === "ar" ? "شروط الاستخدام" : "Terms of Use"} — ${site.name}`,
+    title: site.language === "ar" ? "شروط الاستخدام" : "Terms of Use",
   };
 }
 
@@ -14,9 +14,7 @@ export default async function TermsPage() {
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-12">
-      <h1 className="mb-6 text-3xl font-bold">
-        {isAr ? "شروط الاستخدام" : "Terms of Use"}
-      </h1>
+      <h1 className="mb-6 text-3xl font-bold">{isAr ? "شروط الاستخدام" : "Terms of Use"}</h1>
       <div className="prose prose-gray max-w-none">
         <p>
           {isAr

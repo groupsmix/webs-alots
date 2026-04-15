@@ -8,7 +8,7 @@ export async function generateMetadata(): Promise<Metadata> {
   const url = `https://${site.domain}/privacy`;
 
   return {
-    title: `${title} — ${site.name}`,
+    title,
     description: isAr
       ? `سياسة الخصوصية لموقع ${site.name} — كيف نجمع بياناتك ونستخدمها ونحميها.`
       : `Privacy policy for ${site.name} — how we collect, use, and protect your information.`,

@@ -44,11 +44,11 @@ export async function generateTaxonomyMetadata(
   const description = `Browse ${category.name} — ${config.label} on ${site.name}`;
 
   return {
-    title: `${category.name} — ${site.name}`,
+    title: category.name,
     description,
     alternates: { canonical: url },
     openGraph: {
-      title: `${category.name} — ${site.name}`,
+      title: category.name,
       description,
       url,
       siteName: site.name,
@@ -57,7 +57,7 @@ export async function generateTaxonomyMetadata(
     },
     twitter: {
       card: "summary",
-      title: `${category.name} — ${site.name}`,
+      title: category.name,
       description,
     },
   };

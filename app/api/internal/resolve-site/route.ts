@@ -13,7 +13,7 @@ const RESOLVE_SITE_RATE_LIMIT = { maxRequests: 60, windowMs: 60 * 1000 };
  * header acts as a lightweight guard against direct public enumeration.
  */
 const INTERNAL_HEADER = "x-internal-token";
-const INTERNAL_TOKEN = "__affilite_internal__";
+const INTERNAL_TOKEN = process.env.INTERNAL_API_TOKEN ?? "__affilite_internal__";
 
 /**
  * GET /api/internal/resolve-site?domain=foo.wristnerd.xyz

@@ -19,7 +19,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     if (!page || !page.is_published) return {};
 
     return {
-      title: `${page.title} | ${site.name}`,
+      title: page.title,
     };
   } catch {
     return {};
