@@ -88,13 +88,13 @@ function siteDefinitionFromDbRow(row: SiteRow): SiteDefinition {
  * Resolves the database UUID so that site.id can be used directly in DAL queries.
  *
  * For sites defined in static config (config/sites/), uses the config and
- * overrides the id with the database UUID.
+ * overrides the id with the database UUID if available.
  *
  * For DB-only sites (created via admin panel), constructs a SiteDefinition
  * from the database row with sensible defaults.
  *
- * Falls back to the first registered site if headers are not available
- * (e.g., during static generation at build time).
+ * Falls back to the static config site if headers are not available
+ * (e.g., during static generation at build time) or if DB lookup fails.
  */
 export async function getCurrentSite(): Promise<SiteDefinition> {
   let siteSlug: string | null = null;
@@ -124,21 +124,30 @@ export async function getCurrentSite(): Promise<SiteDefinition> {
   // 1. Try static config first (fast, no DB call for known sites)
   const site = getSiteById(siteSlug);
   if (site) {
-    const dbSiteId = await resolveDbSiteId(siteSlug);
-    return { ...site, id: dbSiteId };
+    // Try to get DB UUID, but don't fail if DB is not available
+    try {
+      const dbSiteId = await resolveDbSiteId(siteSlug);
+      return { ...site, id: dbSiteId };
+    } catch {
+      // DB not available or site not in DB yet - use static config
+      return site;
+    }
   }
 
   // 2. Fall back to DB lookup for DB-only sites (created via admin panel)
-  const dbSite = await resolveDbSiteBySlug(siteSlug);
-  if (dbSite) {
-    return siteDefinitionFromDbRow(dbSite);
+  try {
+    const dbSite = await resolveDbSiteBySlug(siteSlug);
+    if (dbSite) {
+      return siteDefinitionFromDbRow(dbSite);
+    }
+  } catch {
+    // DB lookup failed
   }
 
-  // 3. Last resort: return first registered site
+  // 3. Last resort: return first registered site without DB override
   const fallback = allSites[0];
   if (fallback) {
-    const dbSiteId = await resolveDbSiteId(fallback.id);
-    return { ...fallback, id: dbSiteId };
+    return fallback;
   }
 
   throw new Error(`Site not found: ${siteSlug}`);
