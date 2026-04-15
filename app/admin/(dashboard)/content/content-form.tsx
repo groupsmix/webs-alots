@@ -576,7 +576,9 @@ export function ContentForm({
           {isEdit && slug && (
             <button
               type="button"
-              onClick={handlePreview}
+              onClick={() => {
+                void handlePreview();
+              }}
               disabled={generatingPreview}
               className="inline-flex items-center rounded-md border border-blue-300 bg-blue-50 px-4 py-2 text-sm font-medium text-blue-700 hover:bg-blue-100 disabled:opacity-50"
             >
