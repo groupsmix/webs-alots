@@ -173,7 +173,7 @@ export function GiftFinderQuiz({ productLabel, productLabelPlural }: GiftFinderQ
     if (lastAnswers) {
       setShowResults(false);
       setError(null);
-      fetchResults(lastAnswers);
+      void fetchResults(lastAnswers);
     }
   };
 
@@ -189,7 +189,7 @@ export function GiftFinderQuiz({ productLabel, productLabelPlural }: GiftFinderQ
         setAnimatingStep(false);
       }, 200);
     } else {
-      fetchResults(newAnswers as Answers);
+      void fetchResults(newAnswers as Answers);
     }
   };
 

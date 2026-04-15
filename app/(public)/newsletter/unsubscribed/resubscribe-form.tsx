@@ -64,7 +64,12 @@ export function ResubscribeForm({ siteId, siteName, isAr }: ResubscribeFormProps
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex gap-2">
+    <form
+      onSubmit={(e) => {
+        void handleSubmit(e);
+      }}
+      className="flex gap-2"
+    >
       <input
         type="email"
         value={email}
