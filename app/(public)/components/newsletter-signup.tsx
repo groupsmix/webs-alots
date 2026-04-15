@@ -99,7 +99,12 @@ export function NewsletterSignup({ siteLanguage = "en" }: NewsletterSignupProps)
           ? "احصل على أحدث المراجعات والعروض الحصرية مباشرة في بريدك."
           : "Get the latest reviews and exclusive deals delivered to your inbox."}
       </p>
-      <form onSubmit={handleSubmit} className="flex flex-col gap-2">
+      <form
+        onSubmit={(e) => {
+          void handleSubmit(e);
+        }}
+        className="flex flex-col gap-2"
+      >
         <div className="flex gap-2">
           <input
             type="email"
