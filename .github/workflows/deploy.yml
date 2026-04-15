@@ -63,21 +63,27 @@ jobs:
       - run: npm install
 
       # ── Apply database migrations via Supabase CLI ─────────────────────────────
-      - name: Setup Supabase CLI and apply migrations
+      - name: Install Supabase CLI
         run: |
-          echo "🔄 Setting up Supabase CLI..."
-          npm install -g supabase
+          echo "🔄 Installing Supabase CLI..."
+          # Install via official method (Linux binary)
+          curl -fsSL https://github.com/supabase/cli/releases/latest/download/supabase_linux_amd64.tar.gz -o /tmp/supabase.tar.gz
+          tar xzf /tmp/supabase.tar.gz -C /tmp
+          mv /tmp/supabase /usr/local/bin/supabase
+          chmod +x /usr/local/bin/supabase
+          supabase --version
 
-          echo "🔄 Linking to Supabase project..."
+      - name: Apply database migrations
+        run: |
+          echo "🔄 Applying database migrations..."
           PROJECT_REF=$(echo "${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}" | sed 's|https://||' | cut -d'.' -f1)
           echo "Project ref: $PROJECT_REF"
 
-          # Link the project (accept default project)
-          echo "y" | npx supabase link --project-ref "$PROJECT_REF" 2>&1 || echo "Link may have issues"
+          # Link the project
+          echo "y" | supabase link --project-ref "$PROJECT_REF" --access-token "${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" 2>&1 || echo "Link may have issues"
 
-          echo "🔄 Applying database migrations..."
-          # Push the schema - this applies pending migrations
-          npx supabase db push --db-url "postgresql://postgres:${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}@$PROJECT_REF.db.supabase.co:5432/postgres" --yes 2>&1 || echo "Migration may have issues"
+          # Push migrations
+          supabase db push --db-url "postgresql://postgres:${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}@$PROJECT_REF.db.supabase.co:5432/postgres" --yes 2>&1 || echo "Migration may have issues"
 
           echo "✅ Database migrations complete"
 
