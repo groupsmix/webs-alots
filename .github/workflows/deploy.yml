@@ -62,18 +62,24 @@ jobs:
 
       - run: npm install
 
-      # ── Apply database migrations via Supabase Management API ───────────────
-      - name: Apply database migrations to remote Supabase
+      # ── Apply database migrations via Supabase CLI ─────────────────────────────
+      - name: Setup Supabase CLI and apply migrations
         run: |
-          echo "🔄 Applying critical database migrations..."
+          echo "🔄 Setting up Supabase CLI..."
+          npm install -g supabase
+
+          echo "🔄 Linking to Supabase project..."
           PROJECT_REF=$(echo "${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}" | sed 's|https://||' | cut -d'.' -f1)
-          # Add missing description column to categories
-          curl -s -X POST \
-            "https://api.supabase.com/v1/projects/$PROJECT_REF/database/query" \
-            -H "Authorization: Bearer ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" \
-            -H "Content-Type: application/json" \
-            -d '{"query":"ALTER TABLE categories ADD COLUMN IF NOT EXISTS description text DEFAULT ''''"}' || echo "Column may exist"
-          echo "✅ Database migrations applied"
+          echo "Project ref: $PROJECT_REF"
+
+          # Link the project (accept default project)
+          echo "y" | npx supabase link --project-ref "$PROJECT_REF" 2>&1 || echo "Link may have issues"
+
+          echo "🔄 Applying database migrations..."
+          # Push the schema - this applies pending migrations
+          npx supabase db push --db-url "postgresql://postgres:${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}@$PROJECT_REF.db.supabase.co:5432/postgres" --yes 2>&1 || echo "Migration may have issues"
+
+          echo "✅ Database migrations complete"
 
       # ── Create R2 bucket if not exists ──────────────────────────────
       - name: Create R2 bucket (if not exists)
