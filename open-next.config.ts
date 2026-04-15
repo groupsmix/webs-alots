@@ -1,10 +1,7 @@
 // default open-next.config.ts file created by @opennextjs/cloudflare
 import { defineCloudflareConfig } from "@opennextjs/cloudflare";
-import r2IncrementalCache from "@opennextjs/cloudflare/overrides/incremental-cache/r2-incremental-cache";
 
 export default defineCloudflareConfig({
-	// R2 incremental caching enabled.
-	// Prerequisite: Create an R2 bucket named "next-inc-cache" in the Cloudflare dashboard.
-	// The r2_buckets binding is already configured in wrangler.jsonc.
-	incrementalCache: r2IncrementalCache,
+  // Incremental cache disabled for debugging - re-enable once site works
+  // incrementalCache: r2IncrementalCache,
 });
