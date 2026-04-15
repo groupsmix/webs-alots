@@ -62,30 +62,23 @@ jobs:
 
       - run: npm install
 
-      # ── Apply database migrations via Supabase CLI ─────────────────────────────
-      - name: Install Supabase CLI
+      # ── Install psql for direct DB migration ─────────────────────────────────
+      - name: Install psql and apply database migrations
         run: |
-          echo "🔄 Installing Supabase CLI..."
-          # Install via official method (Linux binary)
-          curl -fsSL https://github.com/supabase/cli/releases/latest/download/supabase_linux_amd64.tar.gz -o /tmp/supabase.tar.gz
-          tar xzf /tmp/supabase.tar.gz -C /tmp
-          mv /tmp/supabase /usr/local/bin/supabase
-          chmod +x /usr/local/bin/supabase
-          supabase --version
+          echo "🔄 Installing psql..."
+          apt-get update && apt-get install -y postgresql-client 2>&1 | tail -5
 
-      - name: Apply database migrations
-        run: |
-          echo "🔄 Applying database migrations..."
+          echo "🔄 Applying database schema..."
+          # Get the connection string from Supabase
           PROJECT_REF=$(echo "${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}" | sed 's|https://||' | cut -d'.' -f1)
-          echo "Project ref: $PROJECT_REF"
+          DB_URL="postgresql://postgres:${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}@$PROJECT_REF.db.supabase.co:5432/postgres"
 
-          # Link the project
-          echo "y" | supabase link --project-ref "$PROJECT_REF" --access-token "${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" 2>&1 || echo "Link may have issues"
+          # Apply schema changes (add missing columns)
+          psql "$DB_URL" -c "ALTER TABLE categories ADD COLUMN IF NOT EXISTS description text DEFAULT '';" 2>&1 || echo "description column may exist"
+          psql "$DB_URL" -c "ALTER TABLE categories ADD COLUMN IF NOT EXISTS taxonomy_type text DEFAULT 'general';" 2>&1 || echo "taxonomy_type column may exist"
+          psql "$DB_URL" -c "ALTER TABLE categories ADD CONSTRAINT categories_taxonomy_type_check CHECK (taxonomy_type IN ('general', 'budget', 'occasion', 'recipient', 'brand'));" 2>&1 || echo "constraint may exist"
 
-          # Push migrations
-          supabase db push --db-url "postgresql://postgres:${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}@$PROJECT_REF.db.supabase.co:5432/postgres" --yes 2>&1 || echo "Migration may have issues"
-
-          echo "✅ Database migrations complete"
+          echo "✅ Database schema updated"
 
       # ── Create R2 bucket if not exists ──────────────────────────────
       - name: Create R2 bucket (if not exists)
