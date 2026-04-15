@@ -1,10 +1,11 @@
-import { headers } from "next/headers";
-import { getSiteById } from "@/config/sites";
+import { headers, cookies } from "next/headers";
+import { getSiteById, allSites } from "@/config/sites";
 import type { SiteDefinition } from "@/config/site-definition";
 import { resolveDbSiteId, resolveDbSiteBySlug } from "@/lib/dal/site-resolver";
 import type { SiteRow } from "@/types/database";
 
 const SITE_HEADER = "x-site-id";
+const SITE_COOKIE = "x-site-id";
 
 /**
  * Construct a SiteDefinition from a database SiteRow.
@@ -91,13 +92,33 @@ function siteDefinitionFromDbRow(row: SiteRow): SiteDefinition {
  *
  * For DB-only sites (created via admin panel), constructs a SiteDefinition
  * from the database row with sensible defaults.
+ *
+ * Falls back to the first registered site if headers are not available
+ * (e.g., during static generation at build time).
  */
 export async function getCurrentSite(): Promise<SiteDefinition> {
-  const headerList = await headers();
-  const siteSlug = headerList.get(SITE_HEADER);
+  let siteSlug: string | null = null;
 
+  try {
+    const headerList = await headers();
+    siteSlug = headerList.get(SITE_HEADER);
+  } catch {
+    // Headers not available (e.g., during build time static generation)
+  }
+
+  // Fallback to cookie if header not available
   if (!siteSlug) {
-    throw new Error("x-site-id header missing — is middleware running?");
+    try {
+      const cookieStore = await cookies();
+      siteSlug = cookieStore.get(SITE_COOKIE)?.value ?? null;
+    } catch {
+      // Cookies not available either
+    }
+  }
+
+  // Fallback to default site from env or first registered site
+  if (!siteSlug) {
+    siteSlug = process.env.NEXT_PUBLIC_DEFAULT_SITE ?? allSites[0]?.id ?? "watch-tools";
   }
 
   // 1. Try static config first (fast, no DB call for known sites)
@@ -113,7 +134,14 @@ export async function getCurrentSite(): Promise<SiteDefinition> {
     return siteDefinitionFromDbRow(dbSite);
   }
 
-  throw new Error(`Site not found in config or database: ${siteSlug}`);
+  // 3. Last resort: return first registered site
+  const fallback = allSites[0];
+  if (fallback) {
+    const dbSiteId = await resolveDbSiteId(fallback.id);
+    return { ...fallback, id: dbSiteId };
+  }
+
+  throw new Error(`Site not found: ${siteSlug}`);
 }
 
 /**
