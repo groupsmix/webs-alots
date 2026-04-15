@@ -1,6 +1,6 @@
 # ═══════════════════════════════════════════════════════════════════════════════
 # ONE-CLICK DOMAIN SETUP
-# 
+#
 # This workflow automatically:
 # 1. Adds custom domains to your Cloudflare Worker (wristnerd.xyz, arabictools, crypto)
 # 2. Adds wildcard route (*.wristnerd.xyz) to catch all future subdomains
@@ -9,7 +9,7 @@
 #
 # USAGE:
 # 1. Go to GitHub → Actions → "Setup Domains" → Run workflow
-# 2. Click "Run workflow" 
+# 2. Click "Run workflow"
 # 3. Everything happens automatically!
 #
 # REQUIRED SECRETS:
@@ -25,9 +25,9 @@ on:
   workflow_dispatch:
     inputs:
       domains:
-        description: 'Comma-separated list of domains to setup (optional - uses defaults if empty)'
+        description: "Comma-separated list of domains to setup (optional - uses defaults if empty)"
         required: false
-        default: ''
+        default: ""
         type: string
 
 jobs:
@@ -42,7 +42,7 @@ jobs:
           node-version: 22
           cache: npm
 
-      - run: npm ci
+      - run: npm install
 
       # ═══════════════════════════════════════════════════════════════════════
       # STEP 1: Add Custom Domains to Cloudflare Worker
@@ -181,10 +181,10 @@ jobs:
           SQL=$(cat <<'EOF'
           -- Update wristnerd domain
           UPDATE sites SET domain = 'wristnerd.xyz' WHERE slug = 'watch-tools';
-          
+
           -- Update arabic-tools domain  
           UPDATE sites SET domain = 'arabictools.wristnerd.xyz' WHERE slug = 'arabic-tools';
-          
+
           -- Verify updates
           SELECT slug, name, domain, is_active 
           FROM sites 
@@ -238,10 +238,10 @@ jobs:
       - name: Verify Domains
         run: |
           echo "🔍 Verifying domains..."
-          
+
           # Wait a moment for DNS propagation
           sleep 5
-          
+
           # Test wristnerd.xyz
           echo -n "Testing wristnerd.xyz... "
           if curl -s -o /dev/null -w "%{http_code}" --max-time 10 https://wristnerd.xyz/api/health | grep -q "200\|401\|403"; then
@@ -249,7 +249,7 @@ jobs:
           else
             echo "⏳ May need more time to propagate"
           fi
-          
+
           # Test arabictools subdomain
           echo -n "Testing arabictools.wristnerd.xyz... "
           if curl -s -o /dev/null -w "%{http_code}" --max-time 10 https://arabictools.wristnerd.xyz/api/health | grep -q "200\|401\|403"; then

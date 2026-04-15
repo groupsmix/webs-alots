@@ -38,7 +38,7 @@ jobs:
           node-version: 22
           cache: npm
 
-      - run: npm ci
+      - run: npm install
 
       - name: Build OpenNext bundle
         run: npx @opennextjs/cloudflare build

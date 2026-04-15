@@ -2,7 +2,7 @@
 # AUTO-DEPLOY TO CLOUDFLARE WORKERS
 #
 # This workflow automatically deploys your site when you push to main.
-# 
+#
 # TO DEPLOY:
 # 1. Push code to main branch → Auto deploys!
 # 2. Or go to GitHub → Actions → "Deploy to Cloudflare" → Run workflow
@@ -71,7 +71,7 @@ jobs:
           node-version: 22
           cache: npm
 
-      - run: npm ci
+      - run: npm install
 
       # Fail fast if required secrets are missing
       - name: Verify required secrets
