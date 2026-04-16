@@ -7,9 +7,10 @@ on:
         description: "Site slug to test (watch-tools, crypto-tools, arabic-tools, ai-compared)"
         required: false
         default: "watch-tools"
-  push:
-    branches: [main]
-  pull_request:
+  # Disable on push for now - run manually to avoid blocking deploys
+  # push:
+  #   branches: [main]
+  # pull_request:
 
 concurrency:
   group: e2e-${{ github.ref }}
