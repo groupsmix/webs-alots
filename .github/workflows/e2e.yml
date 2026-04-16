@@ -74,6 +74,9 @@ jobs:
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
 
+      - name: Install wait-on
+        run: npm install -g wait-on
+
       - name: Build application
         run: npm run build
         env:
@@ -84,16 +87,26 @@ jobs:
           NEXT_PUBLIC_DEFAULT_SITE: ${{ env.SITE_SLUG }}
 
       - name: Start application
-        run: npm start &
+        run: |
+          echo "Starting Next.js server..."
+          npm start > server.log 2>&1 &
+          echo $! > server.pid
+          sleep 2
+          echo "Server PID: $(cat server.pid)"
         env:
           NEXT_PUBLIC_SUPABASE_URL: ${{ env.SUPABASE_URL }}
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ env.SUPABASE_ANON_KEY }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ env.SUPABASE_SERVICE_ROLE_KEY }}
           JWT_SECRET: ci-test-secret-jwt-at-least-32-chars-long
           NEXT_PUBLIC_DEFAULT_SITE: ${{ env.SITE_SLUG }}
+          PORT: 3000
+          HOSTNAME: 0.0.0.0
 
       - name: Wait for application to be ready
-        run: npx wait-on http://localhost:3000 --timeout 60000
+        run: |
+          echo "Waiting for server..."
+          wait-on http://localhost:3000 --timeout 60000 || (echo "Server failed to start"; cat server.log; exit 1)
+          echo "Server is ready!"
 
       - name: Run E2E tests
         run: npx playwright test
