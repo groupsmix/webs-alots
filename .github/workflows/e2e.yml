@@ -16,7 +16,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  SITE_SLUG: ${{ inputs.site_slug || 'watch-tools' }}
+  SITE_SLUG: ${{ github.event.inputs.site_slug || 'watch-tools' }}
 
 jobs:
   e2e:
