@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/admin-guard";
 import { createProduct, bulkCreateProducts } from "@/lib/dal/products";
 import { recordAuditEvent } from "@/lib/audit-log";
@@ -161,7 +161,7 @@ export async function POST(request: NextRequest) {
     const created = results.filter((r) => r.status === "created").length;
     const errors = results.filter((r) => r.status === "error").length;
 
-    recordAuditEvent({
+    void recordAuditEvent({
       site_id: guard.dbSiteId,
       actor: guard.session.email ?? "admin",
       action: "bulk_import",

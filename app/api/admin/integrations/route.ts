@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import { getAdminSession } from "@/lib/auth";
 import {
   listIntegrationProviders,
@@ -105,7 +105,7 @@ export async function POST(request: NextRequest) {
       config: (body.config as Record<string, unknown>) ?? {},
     });
 
-    recordAuditEvent({
+    void recordAuditEvent({
       site_id,
       actor: session.email ?? "admin",
       action: is_enabled ? "enable_integration" : "disable_integration",
@@ -146,7 +146,7 @@ export async function DELETE(request: NextRequest) {
   try {
     await deleteSiteIntegration(siteId, providerKey);
 
-    recordAuditEvent({
+    void recordAuditEvent({
       site_id: siteId,
       actor: session.email ?? "admin",
       action: "delete_integration",

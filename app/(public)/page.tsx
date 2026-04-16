@@ -50,11 +50,11 @@ export default async function HomePage() {
   const site = await getCurrentSite();
   const [recentContent, featuredProducts, categories, productCount, reviewCount] =
     await Promise.all([
-      getRecentContent(site.id, 6),
-      listFeaturedProducts(site.id, 6),
-      listCategoriesWithProductCount(site.id),
-      countProducts({ siteId: site.id, status: "active" }),
-      countPublishedContent(site.id, "review"),
+      getRecentContent(site.id, 6).catch(() => []),
+      listFeaturedProducts(site.id, 6).catch(() => []),
+      listCategoriesWithProductCount(site.id).catch(() => []),
+      countProducts({ siteId: site.id, status: "active" }).catch(() => 0),
+      countPublishedContent(site.id, "review").catch(() => 0),
     ]);
 
   // Render homepage based on template preset

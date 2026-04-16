@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import { getAdminSession } from "@/lib/auth";
 import {
   listSiteFeatureFlags,
@@ -89,7 +89,7 @@ export async function POST(request: NextRequest) {
       description: (body.description as string) ?? "",
     });
 
-    recordAuditEvent({
+    void recordAuditEvent({
       site_id,
       actor: session.email ?? "admin",
       action: is_enabled ? "enable_feature_flag" : "disable_feature_flag",
@@ -136,7 +136,7 @@ export async function PATCH(request: NextRequest) {
   try {
     const results = await bulkUpsertFeatureFlags(site_id, flags);
 
-    recordAuditEvent({
+    void recordAuditEvent({
       site_id,
       actor: session.email ?? "admin",
       action: "bulk_update_feature_flags",
@@ -177,7 +177,7 @@ export async function DELETE(request: NextRequest) {
   try {
     await deleteFeatureFlag(siteId, flagKey);
 
-    recordAuditEvent({
+    void recordAuditEvent({
       site_id: siteId,
       actor: session.email ?? "admin",
       action: "delete_feature_flag",

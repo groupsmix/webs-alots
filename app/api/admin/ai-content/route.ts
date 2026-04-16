@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/admin-guard";
 import { listAIDrafts, createAIDraft, updateAIDraft, deleteAIDraft } from "@/lib/dal/ai-drafts";
 import { generateContent } from "@/lib/ai/content-generator";
@@ -90,7 +90,7 @@ export async function POST(request: NextRequest) {
       meta_description: result.metaDescription,
     });
 
-    recordAuditEvent({
+    void recordAuditEvent({
       site_id: dbSiteId,
       actor: session.email ?? session.userId ?? "admin",
       action: "create",
@@ -157,7 +157,7 @@ export async function PATCH(request: NextRequest) {
         draft.status = "published";
       }
 
-      recordAuditEvent({
+      void recordAuditEvent({
         site_id: dbSiteId,
         actor: session.email ?? session.userId ?? "admin",
         action: action === "publish" ? "publish" : "approve",
@@ -175,7 +175,7 @@ export async function PATCH(request: NextRequest) {
         reviewed_by: session.email ?? session.userId ?? "admin",
       });
 
-      recordAuditEvent({
+      void recordAuditEvent({
         site_id: dbSiteId,
         actor: session.email ?? session.userId ?? "admin",
         action: "reject",
@@ -226,7 +226,7 @@ export async function DELETE(request: NextRequest) {
   try {
     await deleteAIDraft(dbSiteId, id);
 
-    recordAuditEvent({
+    void recordAuditEvent({
       site_id: dbSiteId,
       actor: session.email ?? session.userId ?? "admin",
       action: "delete",

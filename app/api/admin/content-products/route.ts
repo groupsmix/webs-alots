@@ -23,8 +23,8 @@ export async function PUT(request: NextRequest) {
 
   try {
     await setLinkedProducts(parsed.data.content_id, dbSiteId, parsed.data.links);
-    revalidateTag("content");
-    recordAuditEvent({
+    void revalidateTag("content");
+    void recordAuditEvent({
       site_id: dbSiteId,
       actor: session.email ?? session.userId ?? "admin",
       action: "update",

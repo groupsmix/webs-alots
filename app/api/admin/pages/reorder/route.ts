@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/admin-guard";
 import { reorderPages } from "@/lib/dal/pages";
 import { recordAuditEvent } from "@/lib/audit-log";
@@ -24,7 +24,7 @@ export async function PUT(request: NextRequest) {
 
     await reorderPages(body.pages);
 
-    recordAuditEvent({
+    void recordAuditEvent({
       site_id: dbSiteId,
       actor: session.email ?? session.userId ?? "admin",
       action: "reorder",

@@ -67,8 +67,8 @@ export async function POST(request: NextRequest) {
       cons: data.cons ?? "",
     });
 
-    revalidateTag("products");
-    recordAuditEvent({
+    void revalidateTag("products");
+    void recordAuditEvent({
       site_id: dbSiteId,
       actor: session.email ?? session.userId ?? "admin",
       action: "create",
@@ -100,8 +100,8 @@ export async function PATCH(request: NextRequest) {
   const { id, ...updates } = parsed.data;
   try {
     const product = await updateProduct(dbSiteId, id, updates);
-    revalidateTag("products");
-    recordAuditEvent({
+    void revalidateTag("products");
+    void recordAuditEvent({
       site_id: dbSiteId,
       actor: session.email ?? session.userId ?? "admin",
       action: "update",
@@ -137,8 +137,8 @@ export async function DELETE(request: NextRequest) {
 
   try {
     await deleteProduct(dbSiteId, id);
-    revalidateTag("products");
-    recordAuditEvent({
+    void revalidateTag("products");
+    void recordAuditEvent({
       site_id: dbSiteId,
       actor: session.email ?? session.userId ?? "admin",
       action: "delete",

@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/admin-guard";
 import {
   listNicheTemplates,
@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
       social_links: (bodyOrError.social_links as Record<string, string>) ?? {},
     });
 
-    recordAuditEvent({
+    void recordAuditEvent({
       site_id: dbSiteId,
       actor: session.email ?? session.userId ?? "admin",
       action: "create",
@@ -84,7 +84,7 @@ export async function DELETE(request: NextRequest) {
   try {
     await deleteNicheTemplate(id as string);
 
-    recordAuditEvent({
+    void recordAuditEvent({
       site_id: dbSiteId,
       actor: session.email ?? session.userId ?? "admin",
       action: "delete",

@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/admin-guard";
 import {
   listAffiliateNetworks,
@@ -70,7 +70,7 @@ export async function POST(request: NextRequest) {
       config,
     });
 
-    recordAuditEvent({
+    void recordAuditEvent({
       site_id: dbSiteId,
       actor: session.email ?? session.userId ?? "admin",
       action: "create",
@@ -108,7 +108,7 @@ export async function DELETE(request: NextRequest) {
   try {
     await deleteAffiliateNetwork(dbSiteId, id);
 
-    recordAuditEvent({
+    void recordAuditEvent({
       site_id: dbSiteId,
       actor: session.email ?? session.userId ?? "admin",
       action: "delete",

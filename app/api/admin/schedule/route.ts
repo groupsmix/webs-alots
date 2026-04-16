@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/admin-guard";
 import {
   listScheduledJobs,
@@ -87,7 +87,7 @@ export async function POST(request: NextRequest) {
           : {},
     });
 
-    recordAuditEvent({
+    void recordAuditEvent({
       site_id: dbSiteId,
       actor: session.email ?? session.userId ?? "admin",
       action: "create",
@@ -122,7 +122,7 @@ export async function DELETE(request: NextRequest) {
 
   try {
     await cancelScheduledJob(dbSiteId, delBodyOrError.id as string);
-    recordAuditEvent({
+    void recordAuditEvent({
       site_id: dbSiteId,
       actor: session.email ?? session.userId ?? "admin",
       action: "cancel",

@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import { getAdminSession } from "@/lib/auth";
 import { allSites } from "@/config/sites";
 import { listSites, createSite, updateSite, deleteSite } from "@/lib/dal/sites";
@@ -148,7 +148,7 @@ export async function POST(request: NextRequest) {
       social_links: body.social_links as Record<string, string> | undefined,
       custom_css: body.custom_css as string | null | undefined,
     });
-    recordAuditEvent({
+    void recordAuditEvent({
       site_id: site.id,
       actor: session.email ?? "admin",
       action: "create",
@@ -229,7 +229,7 @@ export async function PATCH(request: NextRequest) {
 
   try {
     const site = await updateSite(id, updates);
-    recordAuditEvent({
+    void recordAuditEvent({
       site_id: id,
       actor: session.email ?? "admin",
       action: "update",
@@ -267,7 +267,7 @@ export async function DELETE(request: NextRequest) {
 
   try {
     await deleteSite(id);
-    recordAuditEvent({
+    void recordAuditEvent({
       site_id: id,
       actor: session.email ?? "admin",
       action: "delete",

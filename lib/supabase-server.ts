@@ -42,10 +42,12 @@ function getSupabaseUrl(): string {
  * to avoid stale connections or memory leaks in edge runtimes.
  */
 export function getServiceClient(): SupabaseClient<Database> {
-  return createClient<Database>(
-    getSupabaseUrl(),
-    requireEnvInProduction("SUPABASE_SERVICE_ROLE_KEY", ""),
-  );
+  const url = getSupabaseUrl();
+  const key = requireEnvInProduction("SUPABASE_SERVICE_ROLE_KEY", "");
+  if (!url || !key) {
+    return createClient<Database>("https://placeholder.supabase.co", "placeholder-key");
+  }
+  return createClient<Database>(url, key);
 }
 
 /**
@@ -54,8 +56,10 @@ export function getServiceClient(): SupabaseClient<Database> {
  * to provide defense-in-depth security.
  */
 export function getAnonClient(): SupabaseClient<Database> {
-  return createClient<Database>(
-    getSupabaseUrl(),
-    requireEnvInProduction("NEXT_PUBLIC_SUPABASE_ANON_KEY", ""),
-  );
+  const url = getSupabaseUrl();
+  const key = requireEnvInProduction("NEXT_PUBLIC_SUPABASE_ANON_KEY", "");
+  if (!url || !key) {
+    return createClient<Database>("https://placeholder.supabase.co", "placeholder-key");
+  }
+  return createClient<Database>(url, key);
 }

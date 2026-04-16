@@ -7,7 +7,7 @@ import type { ContentRow, ProductRow } from "@/types/database";
 import { captureException } from "@/lib/sentry";
 
 /**
- * POST /api/cron/publish — Publish scheduled content & products, archive expired items.
+ * POST /api/cron/publish â€” Publish scheduled content & products, archive expired items.
  *
  * ## Production Setup (Cloudflare Pages)
  *
@@ -27,7 +27,7 @@ import { captureException } from "@/lib/sentry";
  *   -H "Authorization: Bearer YOUR_CRON_SECRET"
  * ```
  *
- * Secured via CRON_SECRET env var — pass it in the Authorization header:
+ * Secured via CRON_SECRET env var â€” pass it in the Authorization header:
  *   Authorization: Bearer <CRON_SECRET>
  */
 export async function POST(request: NextRequest) {
@@ -76,7 +76,7 @@ export async function POST(request: NextRequest) {
     results.published_content = 0;
   }
 
-  // 2. Archive expired content (published with deal_expires_at in the past — future field)
+  // 2. Archive expired content (published with deal_expires_at in the past â€” future field)
   // Currently content doesn't have deal_expires_at, so this is a no-op placeholder
 
   // 3. Archive expired products (active with deal_expires_at <= now)
@@ -115,8 +115,8 @@ export async function POST(request: NextRequest) {
     results.archived_products = 0;
   }
 
-  revalidateTag("content");
-  revalidateTag("products");
+  void revalidateTag("content");
+  void revalidateTag("products");
 
   // Ping search engines if any content was published
   if ((results.published_content as number) > 0) {

@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import { getAdminSession } from "@/lib/auth";
 import {
   listRoles,
@@ -108,7 +108,7 @@ export async function POST(request: NextRequest) {
       role_id: role.id,
     });
 
-    recordAuditEvent({
+    void recordAuditEvent({
       site_id,
       actor: session.email ?? "admin",
       action: "assign_role",
@@ -149,7 +149,7 @@ export async function DELETE(request: NextRequest) {
   try {
     await removeUserSiteRole(userId, siteId);
 
-    recordAuditEvent({
+    void recordAuditEvent({
       site_id: siteId,
       actor: session.email ?? "admin",
       action: "remove_role",

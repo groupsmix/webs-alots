@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/admin-guard";
 import { getUploadUrl, isR2Configured } from "@/lib/r2";
 import { recordAuditEvent } from "@/lib/audit-log";
@@ -63,7 +63,7 @@ export async function POST(request: NextRequest) {
       contentType,
       typeof fileSize === "number" ? fileSize : undefined,
     );
-    recordAuditEvent({
+    void recordAuditEvent({
       site_id: dbSiteId,
       actor: session.email ?? session.userId ?? "admin",
       action: "upload",

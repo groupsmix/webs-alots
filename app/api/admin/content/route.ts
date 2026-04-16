@@ -73,8 +73,8 @@ export async function POST(request: NextRequest) {
       body_previous: null,
     });
 
-    revalidateTag("content");
-    recordAuditEvent({
+    void revalidateTag("content");
+    void recordAuditEvent({
       site_id: dbSiteId,
       actor: session.email ?? session.userId ?? "admin",
       action: "create",
@@ -124,8 +124,8 @@ export async function PATCH(request: NextRequest) {
       id,
       updates as Parameters<typeof updateContent>[2],
     );
-    revalidateTag("content");
-    recordAuditEvent({
+    void revalidateTag("content");
+    void recordAuditEvent({
       site_id: dbSiteId,
       actor: session.email ?? session.userId ?? "admin",
       action: "update",
@@ -171,8 +171,8 @@ export async function DELETE(request: NextRequest) {
 
   try {
     await deleteContent(dbSiteId, id);
-    revalidateTag("content");
-    recordAuditEvent({
+    void revalidateTag("content");
+    void recordAuditEvent({
       site_id: dbSiteId,
       actor: session.email ?? session.userId ?? "admin",
       action: "delete",

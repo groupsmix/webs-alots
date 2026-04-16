@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/admin-guard";
 import { shareContent, unshareContent, listSharedTargets } from "@/lib/dal/shared-content";
 import { recordAuditEvent } from "@/lib/audit-log";
@@ -42,7 +42,7 @@ export async function POST(request: NextRequest) {
   try {
     const shared = await shareContent(content_id as string, dbSiteId, target_site_id as string);
 
-    recordAuditEvent({
+    void recordAuditEvent({
       site_id: dbSiteId,
       actor: session.email ?? session.userId ?? "admin",
       action: "share",
@@ -76,7 +76,7 @@ export async function DELETE(request: NextRequest) {
   try {
     await unshareContent(content_id as string, target_site_id as string);
 
-    recordAuditEvent({
+    void recordAuditEvent({
       site_id: dbSiteId,
       actor: session.email ?? session.userId ?? "admin",
       action: "unshare",

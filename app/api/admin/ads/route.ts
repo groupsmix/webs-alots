@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/admin-guard";
 import { listAdPlacements, createAdPlacement } from "@/lib/dal/ad-placements";
 import { recordAuditEvent } from "@/lib/audit-log";
@@ -75,7 +75,7 @@ export async function POST(request: NextRequest) {
       priority: priority ?? 0,
     });
 
-    recordAuditEvent({
+    void recordAuditEvent({
       site_id: dbSiteId,
       actor: session.email ?? session.userId ?? "admin",
       action: "create",

@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/admin-guard";
 import { listPages, createPage } from "@/lib/dal/pages";
 import { sanitizeHtml } from "@/lib/sanitize-html";
@@ -47,7 +47,7 @@ export async function POST(request: NextRequest) {
       sort_order: (bodyOrError.sort_order as number) ?? 0,
     });
 
-    recordAuditEvent({
+    void recordAuditEvent({
       site_id: dbSiteId,
       actor: session.email ?? session.userId ?? "admin",
       action: "create",

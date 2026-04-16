@@ -49,8 +49,8 @@ export async function POST(request: NextRequest) {
       taxonomy_type: parsed.data.taxonomy_type,
     });
 
-    revalidateTag("categories");
-    recordAuditEvent({
+    void revalidateTag("categories");
+    void recordAuditEvent({
       site_id: dbSiteId,
       actor: session.email ?? session.userId ?? "admin",
       action: "create",
@@ -82,8 +82,8 @@ export async function PATCH(request: NextRequest) {
   const { id, ...updates } = parsed.data;
   try {
     const category = await updateCategory(dbSiteId, id, updates);
-    revalidateTag("categories");
-    recordAuditEvent({
+    void revalidateTag("categories");
+    void recordAuditEvent({
       site_id: dbSiteId,
       actor: session.email ?? session.userId ?? "admin",
       action: "update",
@@ -119,8 +119,8 @@ export async function DELETE(request: NextRequest) {
 
   try {
     await deleteCategory(dbSiteId, id);
-    revalidateTag("categories");
-    recordAuditEvent({
+    void revalidateTag("categories");
+    void recordAuditEvent({
       site_id: dbSiteId,
       actor: session.email ?? session.userId ?? "admin",
       action: "delete",

@@ -6,12 +6,12 @@ const VALID_TAGS = ["content", "products", "categories"] as const;
 type ValidTag = (typeof VALID_TAGS)[number];
 
 /**
- * POST /api/revalidate — On-demand cache revalidation webhook.
+ * POST /api/revalidate â€” On-demand cache revalidation webhook.
  *
  * Call this after admin content changes to propagate updates immediately
  * instead of waiting for the ISR revalidation interval (1 hour).
  *
- * Secured via CRON_SECRET env var — pass it in the Authorization header:
+ * Secured via CRON_SECRET env var â€” pass it in the Authorization header:
  *   Authorization: Bearer <CRON_SECRET>
  *
  * Body (optional):
@@ -29,19 +29,19 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     if (Array.isArray(body.tags) && body.tags.length > 0) {
-      const requested = body.tags.filter((t: unknown): t is ValidTag =>
-        typeof t === "string" && VALID_TAGS.includes(t as ValidTag),
+      const requested = body.tags.filter(
+        (t: unknown): t is ValidTag => typeof t === "string" && VALID_TAGS.includes(t as ValidTag),
       );
       if (requested.length > 0) {
         tagsToRevalidate = requested;
       }
     }
   } catch {
-    // No body or invalid JSON — revalidate all tags
+    // No body or invalid JSON â€” revalidate all tags
   }
 
   for (const tag of tagsToRevalidate) {
-    revalidateTag(tag);
+    void revalidateTag(tag);
   }
 
   return NextResponse.json({

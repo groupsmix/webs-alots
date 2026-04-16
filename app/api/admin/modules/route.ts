@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import { getAdminSession } from "@/lib/auth";
 import { listSiteModules, upsertSiteModule, bulkUpsertSiteModules } from "@/lib/dal/modules";
 import { recordAuditEvent } from "@/lib/audit-log";
@@ -106,7 +106,7 @@ export async function POST(request: NextRequest) {
       config: (body.config as Record<string, unknown>) ?? {},
     });
 
-    recordAuditEvent({
+    void recordAuditEvent({
       site_id,
       actor: session.email ?? "admin",
       action: is_enabled ? "enable_module" : "disable_module",
@@ -153,7 +153,7 @@ export async function PATCH(request: NextRequest) {
   try {
     const results = await bulkUpsertSiteModules(site_id, modules);
 
-    recordAuditEvent({
+    void recordAuditEvent({
       site_id,
       actor: session.email ?? "admin",
       action: "bulk_update_modules",
