@@ -23,6 +23,13 @@ function normalizeCategoryRows(rows: unknown[] | null): CategoryRow[] {
 
 /** List all categories for a site, ordered by name */
 export async function listCategories(siteId: string): Promise<CategoryRow[]> {
+  // Return empty if Supabase is not configured (placeholder URL)
+  if (
+    !process.env.NEXT_PUBLIC_SUPABASE_URL ||
+    process.env.NEXT_PUBLIC_SUPABASE_URL.includes("placeholder")
+  ) {
+    return [];
+  }
   const sb = getServiceClient();
   let result: { data: unknown[] | null; error: { message?: string } | null } = (await sb
     .from(TABLE)
@@ -66,6 +73,13 @@ export async function listCategoriesByTaxonomy(
   taxonomyType: TaxonomyType,
 ): Promise<CategoryRow[]> {
   const sb = getAnonClient();
+  // Return empty if Supabase is not configured (placeholder URL)
+  if (
+    !process.env.NEXT_PUBLIC_SUPABASE_URL ||
+    process.env.NEXT_PUBLIC_SUPABASE_URL.includes("placeholder")
+  ) {
+    return [];
+  }
   let result: { data: unknown[] | null; error: { message?: string } | null } = (await sb
     .from(TABLE)
     .select(FULL_COLUMNS)
@@ -130,6 +144,13 @@ export async function listCategoriesWithProductCount(
   siteId: string,
 ): Promise<(CategoryRow & { product_count: number })[]> {
   const sb = getAnonClient();
+  // Return empty if Supabase is not configured (placeholder URL)
+  if (
+    !process.env.NEXT_PUBLIC_SUPABASE_URL ||
+    process.env.NEXT_PUBLIC_SUPABASE_URL.includes("placeholder")
+  ) {
+    return [];
+  }
 
   let catsResult: { data: unknown[] | null; error: { message?: string } | null } = (await sb
     .from(TABLE)

@@ -45,6 +45,13 @@ export async function listProducts(opts: ListProductsOptions): Promise<ProductRo
 export async function countProducts(
   opts: Omit<ListProductsOptions, "limit" | "offset">,
 ): Promise<number> {
+  // Return 0 if Supabase is not configured (placeholder URL)
+  if (
+    !process.env.NEXT_PUBLIC_SUPABASE_URL ||
+    process.env.NEXT_PUBLIC_SUPABASE_URL.includes("placeholder")
+  ) {
+    return 0;
+  }
   const sb = getServiceClient();
   let query = sb
     .from(TABLE)
@@ -141,6 +148,13 @@ export async function listActiveProducts(
   siteId: string,
   categorySlug?: string,
 ): Promise<ProductRow[]> {
+  // Return empty if Supabase is not configured (placeholder URL)
+  if (
+    !process.env.NEXT_PUBLIC_SUPABASE_URL ||
+    process.env.NEXT_PUBLIC_SUPABASE_URL.includes("placeholder")
+  ) {
+    return [];
+  }
   const sb = getAnonClient();
 
   // When filtering by category, use !inner join to require a matching category.
@@ -205,6 +219,13 @@ export async function searchProducts(
 
 /** List featured products for a site */
 export async function listFeaturedProducts(siteId: string, limit = 6): Promise<ProductRow[]> {
+  // Return empty if Supabase is not configured (placeholder URL)
+  if (
+    !process.env.NEXT_PUBLIC_SUPABASE_URL ||
+    process.env.NEXT_PUBLIC_SUPABASE_URL.includes("placeholder")
+  ) {
+    return [];
+  }
   const sb = getAnonClient();
   const { data, error } = await sb
     .from(TABLE)

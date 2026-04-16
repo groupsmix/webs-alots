@@ -152,6 +152,13 @@ export async function listPublishedContent(
   offset = 0,
 ): Promise<ContentRow[]> {
   const sb = getAnonClient();
+  // Return empty if Supabase is not configured (placeholder URL)
+  if (
+    !process.env.NEXT_PUBLIC_SUPABASE_URL ||
+    process.env.NEXT_PUBLIC_SUPABASE_URL.includes("placeholder")
+  ) {
+    return [];
+  }
   let query = sb
     .from(TABLE)
     .select(LIST_COLUMNS)
@@ -175,6 +182,13 @@ export async function getRecentContent(siteId: string, limit = 6): Promise<Conte
 
 /** Count published content for pagination */
 export async function countPublishedContent(siteId: string, contentType?: string): Promise<number> {
+  // Return 0 if Supabase is not configured (placeholder URL)
+  if (
+    !process.env.NEXT_PUBLIC_SUPABASE_URL ||
+    process.env.NEXT_PUBLIC_SUPABASE_URL.includes("placeholder")
+  ) {
+    return 0;
+  }
   const sb = getAnonClient();
   let query = sb
     .from(TABLE)
