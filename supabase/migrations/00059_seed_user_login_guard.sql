@@ -20,7 +20,7 @@ CREATE OR REPLACE FUNCTION block_seed_user_login()
 RETURNS TRIGGER AS $$
 BEGIN
   -- Only enforce in production (set via app.environment config var)
-  IF current_setting('app.environment', true) = 'production' THEN
+  IF current_setting('app.environment', true) IS NULL OR current_setting('app.environment', true) = '' OR current_setting('app.environment', true) = 'production' OR current_setting('app.environment', true) = 'staging' THEN
     IF NEW.id IN (
       'a0000000-0000-0000-0000-000000000001',
       'a0000000-0000-0000-0000-000000000002',
