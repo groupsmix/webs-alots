@@ -7,15 +7,15 @@
  */
 
 import {
-  CNSS_TARIFFS,
-  getCNSSTariffByCode,
-  searchCNSSTariffs,
-} from "./cnss-tariffs";
-import {
   CNOPS_TARIFFS,
   getCNOPSTariffByCode,
   searchCNOPSTariffs,
 } from "./cnops-tariffs";
+import {
+  CNSS_TARIFFS,
+  getCNSSTariffByCode,
+  searchCNSSTariffs,
+} from "./cnss-tariffs";
 import type { MoroccanInsuranceType, PatientInsurance } from "./morocco";
 
 // ---- Types ----

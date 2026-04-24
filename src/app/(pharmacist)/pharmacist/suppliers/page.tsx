@@ -1,17 +1,17 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import {
   Plus, Phone, Mail, MapPin, Star, Clock,
   Truck, ShoppingCart, Package,
 } from "lucide-react";
+import { useState, useEffect } from "react";
 import { useTenant } from "@/components/tenant-provider";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { PageLoader } from "@/components/ui/page-loader";
 import { fetchSuppliers, fetchPurchaseOrders } from "@/lib/data/client";
 import type { SupplierView, PurchaseOrderView } from "@/lib/data/client";
-import { PageLoader } from "@/components/ui/page-loader";
 
 export default function SuppliersPage() {
   const tenant = useTenant();

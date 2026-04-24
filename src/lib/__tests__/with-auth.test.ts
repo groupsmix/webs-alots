@@ -1,16 +1,16 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import { createClient } from "@/lib/supabase-server";
+import { withAuth, type AuthContext } from "../with-auth";
 
-// Mock supabase-server before importing the module
 vi.mock("@/lib/supabase-server", () => ({
   createClient: vi.fn(),
 }));
 
-import { withAuth, type AuthContext } from "../with-auth";
-import { createClient } from "@/lib/supabase-server";
-
-function createMockRequest(): { headers: Map<string, string> } {
+function createMockRequest(): { headers: Map<string, string>; method: string; nextUrl: { pathname: string } } {
   return {
     headers: new Map(),
+    method: "GET",
+    nextUrl: { pathname: "/api/test" },
   };
 }
 

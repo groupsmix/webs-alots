@@ -1,12 +1,20 @@
 "use client";
 
+import { Plus, Pencil, Trash2, Settings } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
-import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { logger } from "@/lib/logger";
-import { Badge } from "@/components/ui/badge";
 import {
   Select,
   SelectContent,
@@ -15,16 +23,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import { Plus, Pencil, Trash2, Settings } from "lucide-react";
+import { logger } from "@/lib/logger";
 import type { CustomFieldDefinition } from "@/lib/types/custom-fields";
-import { Breadcrumb } from "@/components/ui/breadcrumb";
 
 const ENTITY_TYPES = [
   { value: "appointment", label: "Rendez-vous" },

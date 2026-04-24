@@ -1,13 +1,13 @@
+import { apiForbidden, apiNotFound, apiSuccess } from "@/lib/api-response";
+import { withAuthValidation } from "@/lib/api-validate";
+import { STAFF_ROLES } from "@/lib/auth-roles";
 import {
   dispatchNotification,
   defaultNotificationTemplates,
   type NotificationTrigger,
   type TemplateVariables,
 } from "@/lib/notifications";
-import { STAFF_ROLES } from "@/lib/auth-roles";
 import { notificationTriggerSchema } from "@/lib/validations";
-import { withAuthValidation } from "@/lib/api-validate";
-import { apiForbidden, apiNotFound, apiSuccess } from "@/lib/api-response";
 /**
  * POST /api/notifications/trigger
  *

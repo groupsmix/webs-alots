@@ -6,8 +6,8 @@ import {
   MonitorSmartphone,
   Zap,
 } from "lucide-react";
-import { useLandingLocale } from "./landing-locale-provider";
 import type { TranslationKey } from "@/lib/i18n";
+import { useLandingLocale } from "./landing-locale-provider";
 
 const features: readonly { icon: typeof CalendarDays; titleKey: TranslationKey; descKey: TranslationKey }[] = [
   {

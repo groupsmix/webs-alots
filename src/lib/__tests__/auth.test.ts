@@ -1,41 +1,6 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
-
-// Mock next/headers
-vi.mock("next/headers", () => ({
-  headers: vi.fn(),
-}));
-
-// Mock next/navigation
-vi.mock("next/navigation", () => ({
-  redirect: vi.fn((url: string) => {
-    throw new Error(`REDIRECT:${url}`);
-  }),
-}));
-
-// Mock supabase-server
-vi.mock("@/lib/supabase-server", () => ({
-  createClient: vi.fn(),
-}));
-
-// Mock rate-limit
-vi.mock("@/lib/rate-limit", () => ({
-  loginLimiter: { check: vi.fn().mockResolvedValue(true) },
-  accountLockoutLimiter: { check: vi.fn().mockResolvedValue(true) },
-  otpSendLimiter: { check: vi.fn().mockResolvedValue(true) },
-  passwordResetLimiter: { check: vi.fn().mockResolvedValue(true) },
-}));
-
-// Mock logger
-vi.mock("@/lib/logger", () => ({
-  logger: {
-    debug: vi.fn(),
-    info: vi.fn(),
-    warn: vi.fn(),
-    error: vi.fn(),
-  },
-}));
-
 import { headers } from "next/headers";
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { loginLimiter, accountLockoutLimiter } from "@/lib/rate-limit";
 import { createClient } from "@/lib/supabase-server";
 import {
   signInWithPassword,
@@ -44,7 +9,36 @@ import {
   requireAuth,
   requireRole,
 } from "../auth";
-import { loginLimiter, accountLockoutLimiter } from "@/lib/rate-limit";
+
+vi.mock("next/headers", () => ({
+  headers: vi.fn(),
+}));
+
+vi.mock("next/navigation", () => ({
+  redirect: vi.fn((url: string) => {
+    throw new Error(`REDIRECT:${url}`);
+  }),
+}));
+
+vi.mock("@/lib/supabase-server", () => ({
+  createClient: vi.fn(),
+}));
+
+vi.mock("@/lib/rate-limit", () => ({
+  loginLimiter: { check: vi.fn().mockResolvedValue(true) },
+  accountLockoutLimiter: { check: vi.fn().mockResolvedValue(true) },
+  otpSendLimiter: { check: vi.fn().mockResolvedValue(true) },
+  passwordResetLimiter: { check: vi.fn().mockResolvedValue(true) },
+}));
+
+vi.mock("@/lib/logger", () => ({
+  logger: {
+    debug: vi.fn(),
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+  },
+}));
 
 function createMockHeaders(values: Record<string, string> = {}) {
   return {

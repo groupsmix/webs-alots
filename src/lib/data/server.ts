@@ -9,10 +9,10 @@
  * RLS policies provide an additional security layer.
  */
 
-import { createClient } from "@/lib/supabase-server";
-import type { Database } from "@/lib/types/database";
 import { logger } from "@/lib/logger";
 import { invalidateAllSubdomainCaches } from "@/lib/subdomain-cache";
+import { createClient } from "@/lib/supabase-server";
+import type { Database } from "@/lib/types/database";
 import { getLocalDateStr } from "@/lib/utils";
 
 type TableName = keyof Database["public"]["Tables"];

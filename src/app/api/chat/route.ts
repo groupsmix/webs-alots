@@ -1,12 +1,11 @@
 import { NextRequest } from "next/server";
-import { fetchChatbotContext, buildSystemPrompt, getBasicResponse } from "@/lib/chatbot-data";
-import { requireTenant } from "@/lib/tenant";
-import { createClient } from "@/lib/supabase-server";
-import { chatLimiter, extractClientIp } from "@/lib/rate-limit";
-import { logger } from "@/lib/logger";
-import { chatRequestSchema } from "@/lib/validations";
-import { withValidation } from "@/lib/api-validate";
 import { apiSuccess, apiError, apiRateLimited } from "@/lib/api-response";
+import { withValidation } from "@/lib/api-validate";
+import { fetchChatbotContext, buildSystemPrompt, getBasicResponse } from "@/lib/chatbot-data";
+import { logger } from "@/lib/logger";
+import { createClient } from "@/lib/supabase-server";
+import { requireTenant } from "@/lib/tenant";
+import { chatRequestSchema } from "@/lib/validations";
 /**
  * POST /api/chat
  *
@@ -57,15 +56,6 @@ function sanitizeUserInput(text: string): string {
 }
 
 export const POST = withValidation(chatRequestSchema, async (body, request: NextRequest) => {
-    // Defence-in-depth: per-IP rate limit for the chat endpoint.
-    // The middleware also applies chatLimiter, but checking here guards
-    // against deployment configs that skip the middleware layer.
-    const clientIp = extractClientIp(request);
-    const allowed = await chatLimiter.check(`chat:${clientIp}`);
-    if (!allowed) {
-      return apiRateLimited();
-    }
-
     // Resolve clinic ID strictly from tenant context (middleware headers)
     const tenant = await requireTenant();
     const clinicId = tenant.clinicId;

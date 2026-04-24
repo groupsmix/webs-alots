@@ -1,5 +1,8 @@
 import { NextRequest } from "next/server";
-import { requireTenantWithConfig } from "@/lib/tenant";
+import { z } from "zod";
+import { apiError, apiForbidden, apiInternalError, apiRateLimited, apiSuccess, apiUnauthorized } from "@/lib/api-response";
+import { withValidation } from "@/lib/api-validate";
+import { logAuditEvent } from "@/lib/audit-log";
 import {
   getPublicGeneratedSlots,
   getPublicAvailableSlots,
@@ -8,20 +11,17 @@ import {
   getPublicServices,
   getPublicSpecialties,
 } from "@/lib/data/public";
+import { logger } from "@/lib/logger";
+import { dispatchNotification } from "@/lib/notifications";
+import type { TemplateVariables } from "@/lib/notifications";
+import { bookingLimiter, extractClientIp } from "@/lib/rate-limit";
 import { createTenantClient } from "@/lib/supabase-server";
+import { requireTenantWithConfig } from "@/lib/tenant";
+import { computeEndTime } from "@/lib/timezone";
 import { APPOINTMENT_STATUS, BOOKING_SOURCE } from "@/lib/types/database";
-import { logAuditEvent } from "@/lib/audit-log";
 // findOrCreatePatient is used by authenticated routes (recurring, emergency-slot, etc.)
 // For the anonymous booking flow we use the booking_find_or_create_patient RPC instead
 // (SECURITY DEFINER function that bypasses users-table RLS).
-import { computeEndTime } from "@/lib/timezone";
-import { logger } from "@/lib/logger";
-import { bookingLimiter, extractClientIp } from "@/lib/rate-limit";
-import { withValidation } from "@/lib/api-validate";
-import { dispatchNotification } from "@/lib/notifications";
-import type { TemplateVariables } from "@/lib/notifications";
-import { z } from "zod";
-import { apiError, apiForbidden, apiInternalError, apiRateLimited, apiSuccess, apiUnauthorized } from "@/lib/api-response";
 
 const bookingRequestSchema = z.object({
   specialtyId: z.string().min(1),

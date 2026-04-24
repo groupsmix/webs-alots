@@ -2,6 +2,9 @@
 
 import { useState, useEffect } from "react";
 import { CertificateGenerator } from "@/components/medical/certificate-generator";
+import { useTenant } from "@/components/tenant-provider";
+import { Breadcrumb } from "@/components/ui/breadcrumb";
+import { PageLoader } from "@/components/ui/page-loader";
 import {
   getCurrentUser,
   fetchMedicalCertificates,
@@ -10,9 +13,6 @@ import {
   type MedicalCertificateView,
   type PatientView,
 } from "@/lib/data/client";
-import { PageLoader } from "@/components/ui/page-loader";
-import { Breadcrumb } from "@/components/ui/breadcrumb";
-import { useTenant } from "@/components/tenant-provider";
 
 export default function DoctorCertificatesPage() {
   const tenant = useTenant();

@@ -28,6 +28,13 @@ jobs:
       R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
       R2_BACKUP_BUCKET: ${{ secrets.R2_BACKUP_BUCKET }}
     steps:
+      # Audit 3.11: Health check the DB connection before attempting backup
+      - name: Health check database connection
+        run: |
+          if ! psql "${SUPABASE_DB_URL}" -c "SELECT 1;" > /dev/null 2>&1; then
+            echo "::error::Database connection failed. SUPABASE_DB_URL may be invalid or rotated."
+            exit 1
+          fi
       - name: Checkout
         uses: actions/checkout@v4
 
@@ -75,13 +82,26 @@ jobs:
             fi
           fi
 
-      - name: Create database dump
+      - name: Create database dump and encrypt
+        env:
+          BACKUP_GPG_KEY: ${{ secrets.BACKUP_GPG_KEY }}
         run: |
           TIMESTAMP=$(date +%Y%m%d_%H%M%S)
           BACKUP_TYPE="${{ steps.backup_type.outputs.type }}"
-          FILENAME="backup_${BACKUP_TYPE}_${TIMESTAMP}.sql.gz"
+          FILENAME="backup_${BACKUP_TYPE}_${TIMESTAMP}.sql.gz.gpg"
 
-          echo "Creating backup: ${FILENAME}"
+          echo "Creating encrypted backup: ${FILENAME}"
+
+          if [ -z "$BACKUP_GPG_KEY" ]; then
+            echo "::error::BACKUP_GPG_KEY secret is not set. Cannot encrypt backup."
+            exit 1
+          fi
+
+          # Import the GPG public key
+          echo "$BACKUP_GPG_KEY" | gpg --import
+
+          # Extract the recipient key ID from the imported key
+          RECIPIENT=$(gpg --list-keys --with-colons | grep "^pub" | head -n 1 | cut -d: -f5)
 
           pg_dump "${SUPABASE_DB_URL}" \
             --no-owner \
@@ -89,13 +109,13 @@ jobs:
             --clean \
             --if-exists \
             --format=plain \
-            | gzip > "/tmp/${FILENAME}"
+            | gzip | gpg --encrypt --recipient "$RECIPIENT" --trust-model always > "/tmp/${FILENAME}"
 
           echo "filename=${FILENAME}" >> $GITHUB_ENV
           echo "filepath=/tmp/${FILENAME}" >> $GITHUB_ENV
 
           SIZE=$(du -h "/tmp/${FILENAME}" | cut -f1)
-          echo "Backup size: ${SIZE}"
+          echo "Encrypted backup size: ${SIZE}"
 
       - name: Upload to R2
         run: |

@@ -1,12 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import dynamic from "next/dynamic";
 import { TrendingUp } from "lucide-react";
+import dynamic from "next/dynamic";
+import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
+import { PageLoader } from "@/components/ui/page-loader";
 import { getCurrentUser } from "@/lib/data/client";
 import type { TherapySessionNote } from "@/lib/types/para-medical";
-import { PageLoader } from "@/components/ui/page-loader";
 
 const MoodChart = dynamic(
   () => import("./mood-chart").then((m) => m.MoodChart),

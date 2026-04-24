@@ -1,10 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import { User, Phone, Calendar, FileText, Pill, ClipboardList, AlertCircle } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useState, useEffect } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { DataMask } from "@/components/ui/data-mask";
+import { PageLoader } from "@/components/ui/page-loader";
 import {
   getCurrentUser,
   fetchPatients,
@@ -14,8 +16,6 @@ import {
   type PrescriptionView,
   type AppointmentView,
 } from "@/lib/data/client";
-import { PageLoader } from "@/components/ui/page-loader";
-import { DataMask } from "@/components/ui/data-mask";
 import { formatDisplayDate } from "@/lib/utils";
 
 type TabKey = "overview" | "history" | "prescriptions" | "notes";

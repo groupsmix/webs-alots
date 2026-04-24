@@ -1,10 +1,10 @@
-import type { Metadata } from "next";
-import Link from "next/link";
-import { Card, CardContent } from "@/components/ui/card";
 import {
   Smile, Phone, Clock, MapPin, ArrowRight, Star,
   Shield, CalendarCheck, AlertTriangle,
 } from "lucide-react";
+import type { Metadata } from "next";
+import Link from "next/link";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   getPublicServices,
   getPublicBranding,

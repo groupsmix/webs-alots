@@ -1,7 +1,7 @@
 "use client";
 
-import { fetchRows, ensureLookups, _activeUserMap, _activeServiceMap } from "./_core";
 import { getLocalDateStr } from "@/lib/utils";
+import { fetchRows, ensureLookups, _activeUserMap, _activeServiceMap } from "./_core";
 
 // ─────────────────────────────────────────────
 // Appointments  (maps to demo-data Appointment)

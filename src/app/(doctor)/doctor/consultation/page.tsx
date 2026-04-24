@@ -1,15 +1,18 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
 import { FileEdit, CheckCircle, XCircle, Save, Eye, EyeOff, Plus, CloudOff, Cloud, Loader2, Printer } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useState, useEffect, useCallback } from "react";
+import { useTenant } from "@/components/tenant-provider";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { PageLoader } from "@/components/ui/page-loader";
 import { Textarea } from "@/components/ui/textarea";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
   getCurrentUser,
   fetchDoctorAppointments,
@@ -20,10 +23,7 @@ import {
   type AppointmentView,
   type ConsultationNoteView,
 } from "@/lib/data/client";
-import { PageLoader } from "@/components/ui/page-loader";
 import { useOfflineDrafts } from "@/lib/hooks/use-offline-drafts";
-import { Breadcrumb } from "@/components/ui/breadcrumb";
-import { useTenant } from "@/components/tenant-provider";
 
 interface ConsultationNote {
   id: string;

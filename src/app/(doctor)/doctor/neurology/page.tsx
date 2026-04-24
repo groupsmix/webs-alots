@@ -1,26 +1,26 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import {
   Brain, Plus, FileText, Save, Activity,
   AlertTriangle, ClipboardList,
 } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useState, useEffect } from "react";
 import { Badge } from "@/components/ui/badge";
+import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import { PageLoader } from "@/components/ui/page-loader";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
 import { getCurrentUser } from "@/lib/data/client";
 import {
   fetchEEGRecords, createEEGRecord,
   fetchNeuroExams, createNeuroExam,
   type EEGRecordView, type NeuroExamView,
 } from "@/lib/data/specialists";
-import { PageLoader } from "@/components/ui/page-loader";
-import { Breadcrumb } from "@/components/ui/breadcrumb";
 
 const NEURO_EXAM_SECTIONS = [
   { key: "mentalStatus", label: "Mental Status", fields: ["Orientation", "Attention", "Memory", "Language", "Calculation"] },

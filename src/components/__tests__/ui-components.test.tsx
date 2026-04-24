@@ -8,12 +8,12 @@
  * 3. User interactions (click, keyboard, focus)
  * 4. Edge cases (empty data, loading states, errors)
  */
-import { describe, it, expect } from "vitest";
 import { render, screen } from "@testing-library/react";
-import { Skeleton } from "@/components/ui/skeleton";
-import { EmptyState } from "@/components/ui/empty-state";
-import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { SearchIcon } from "lucide-react";
+import { describe, it, expect } from "vitest";
+import { Breadcrumb } from "@/components/ui/breadcrumb";
+import { EmptyState } from "@/components/ui/empty-state";
+import { Skeleton } from "@/components/ui/skeleton";
 
 describe("Skeleton", () => {
   it("renders with default classes", () => {

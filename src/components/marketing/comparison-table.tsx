@@ -1,7 +1,7 @@
 "use client";
 
-import Link from "next/link";
 import { ArrowRight, Check, X, Minus } from "lucide-react";
+import Link from "next/link";
 import {
   COMPETITORS,
   COMPARISON_FEATURES,

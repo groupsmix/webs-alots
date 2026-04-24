@@ -1,11 +1,19 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import { Calendar, Users, UserPlus, Clock, CreditCard, FileText, Phone, MessageCircle, CheckCircle } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useState, useEffect } from "react";
+import { CashRegister } from "@/components/receptionist/cash-register";
+import { EndOfDayReportButton } from "@/components/receptionist/end-of-day-report-button";
+import { ManualBookingDialog } from "@/components/receptionist/manual-booking-dialog";
+import { PaymentDialog } from "@/components/receptionist/payment-dialog";
+import { QuickPatientRegistration } from "@/components/receptionist/quick-patient-registration";
+import { RealtimeWaitingRoom } from "@/components/receptionist/realtime-waiting-room";
+import { WalkInDialog } from "@/components/receptionist/walk-in-dialog";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { PageLoader } from "@/components/ui/page-loader";
 import {
   getCurrentUser,
   fetchTodayAppointments,
@@ -14,14 +22,6 @@ import {
   type AppointmentView,
   type PatientView,
 } from "@/lib/data/client";
-import { ManualBookingDialog } from "@/components/receptionist/manual-booking-dialog";
-import { WalkInDialog } from "@/components/receptionist/walk-in-dialog";
-import { PaymentDialog } from "@/components/receptionist/payment-dialog";
-import { PageLoader } from "@/components/ui/page-loader";
-import { QuickPatientRegistration } from "@/components/receptionist/quick-patient-registration";
-import { CashRegister } from "@/components/receptionist/cash-register";
-import { EndOfDayReportButton } from "@/components/receptionist/end-of-day-report-button";
-import { RealtimeWaitingRoom } from "@/components/receptionist/realtime-waiting-room";
 
 const statusVariant: Record<string, "default" | "success" | "warning" | "destructive" | "secondary" | "outline"> = {
   scheduled: "outline",

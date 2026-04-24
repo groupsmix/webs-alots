@@ -8,9 +8,9 @@
  * DELETE /api/patient/delete-account — Cancel pending deletion
  */
 
-import { withAuth } from "@/lib/with-auth";
-import { logger } from "@/lib/logger";
 import { apiForbidden, apiInternalError, apiSuccess } from "@/lib/api-response";
+import { logger } from "@/lib/logger";
+import { withAuth } from "@/lib/with-auth";
 
 export const POST = withAuth(async (_request, { supabase, profile }) => {
   // Fetch deletion status

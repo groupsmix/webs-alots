@@ -1,6 +1,6 @@
-import { createClient } from "@/lib/supabase-server";
 import { NextResponse } from "next/server";
 import { isSeedUserBlocked } from "@/lib/seed-guard";
+import { createClient } from "@/lib/supabase-server";
 
 /**
  * Validate that a redirect path is a safe, same-origin relative path.

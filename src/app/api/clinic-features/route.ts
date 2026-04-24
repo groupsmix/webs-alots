@@ -1,8 +1,8 @@
 import { NextRequest } from "next/server";
+import { apiError, apiInternalError, apiNotFound, apiSuccess } from "@/lib/api-response";
+import { logger } from "@/lib/logger";
 import { createClient } from "@/lib/supabase-server";
 import { withAuth } from "@/lib/with-auth";
-import { logger } from "@/lib/logger";
-import { apiError, apiInternalError, apiNotFound, apiSuccess } from "@/lib/api-response";
 /**
  * GET /api/clinic-features?type_key=general_medicine
  *

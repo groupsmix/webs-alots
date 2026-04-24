@@ -1,9 +1,9 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { CustomFieldRenderer } from "./custom-field-renderer";
-import type { CustomFieldDefinition } from "@/lib/types/custom-fields";
 import { logger } from "@/lib/logger";
+import type { CustomFieldDefinition } from "@/lib/types/custom-fields";
+import { CustomFieldRenderer } from "./custom-field-renderer";
 
 interface CustomFieldsFormProps {
   clinicTypeKey: string;

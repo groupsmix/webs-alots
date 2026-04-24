@@ -1,8 +1,8 @@
-import { createClient } from "@/lib/supabase-server";
-import { requireTenant } from "@/lib/tenant";
+import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { t } from "@/lib/i18n";
-import { Breadcrumb } from "@/components/ui/breadcrumb";
+import { createClient } from "@/lib/supabase-server";
+import { requireTenant } from "@/lib/tenant";
 
 /**
  * Patient Medical Timeline

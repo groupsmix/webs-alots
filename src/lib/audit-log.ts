@@ -11,8 +11,8 @@
  */
 
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { Database, Json } from "@/lib/types/database";
 import { logger } from "@/lib/logger";
+import type { Database, Json } from "@/lib/types/database";
 
 /** Audit event categories for structured filtering. */
 export type AuditEventType =

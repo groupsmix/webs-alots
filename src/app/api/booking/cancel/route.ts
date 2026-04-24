@@ -1,16 +1,16 @@
-import { withAuth } from "@/lib/with-auth";
-import { requireTenantWithConfig } from "@/lib/tenant";
-import { APPOINTMENT_STATUS } from "@/lib/types/database";
-import { logAuditEvent } from "@/lib/audit-log";
-import { clinicDateTime } from "@/lib/timezone";
-import { logger } from "@/lib/logger";
-import { bookingCancelSchema } from "@/lib/validations";
+import { apiError, apiForbidden, apiInternalError, apiNotFound, apiSuccess } from "@/lib/api-response";
 import { withAuthValidation } from "@/lib/api-validate";
+import { logAuditEvent } from "@/lib/audit-log";
+import { STAFF_ROLES } from "@/lib/auth-roles";
+import { logger } from "@/lib/logger";
 import { dispatchNotification } from "@/lib/notifications";
 import type { TemplateVariables } from "@/lib/notifications";
-import { STAFF_ROLES } from "@/lib/auth-roles";
+import { requireTenantWithConfig } from "@/lib/tenant";
+import { clinicDateTime } from "@/lib/timezone";
+import { APPOINTMENT_STATUS } from "@/lib/types/database";
 import type { UserRole } from "@/lib/types/database";
-import { apiError, apiForbidden, apiInternalError, apiNotFound, apiSuccess } from "@/lib/api-response";
+import { bookingCancelSchema } from "@/lib/validations";
+import { withAuth } from "@/lib/with-auth";
 
 const CANCEL_ROLES: UserRole[] = [...STAFF_ROLES, "patient"];
 /**

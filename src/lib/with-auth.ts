@@ -14,14 +14,14 @@
  * containing the authenticated Supabase client, user, and profile.
  */
 
-import { NextResponse, type NextRequest } from "next/server";
-import { createClient } from "@/lib/supabase-server";
-import type { UserRole } from "@/lib/types/database";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { Database } from "@/lib/types/database";
 import type { User } from "@supabase/supabase-js";
+import { NextResponse, type NextRequest } from "next/server";
 import { logger } from "@/lib/logger";
+import { createClient } from "@/lib/supabase-server";
 import { setTenantContext, logTenantContext } from "@/lib/tenant-context";
+import type { UserRole } from "@/lib/types/database";
+import type { Database } from "@/lib/types/database";
 
 export interface AuthContext {
   supabase: SupabaseClient<Database>;
@@ -106,6 +106,21 @@ export function withAuth(
         userId: profile.id,
         role: profile.role,
       });
+
+      // Audit Gap: Add structured request-path logging on success paths for PHI reads.
+      // We log the API access here so that every authenticated API request is recorded.
+      // This is crucial for Moroccan Law 09-08 / GDPR compliance to audit read operations.
+      if (request.method === "GET") {
+        logger.info(`API Read Access: ${request.method} ${request.nextUrl.pathname}`, {
+          context: "audit-read",
+          userId: profile.id,
+          role: profile.role,
+          clinicId: profile.clinic_id,
+          path: request.nextUrl.pathname,
+          method: request.method,
+          ip: request.headers.get("x-real-ip") || request.headers.get("x-forwarded-for") || "unknown"
+        });
+      }
 
       return handler(request, {
         supabase,

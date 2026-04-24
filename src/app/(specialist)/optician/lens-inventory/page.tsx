@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import { Package } from "lucide-react";
+import { useState, useEffect } from "react";
 import { LensInventoryManager } from "@/components/para-medical/lens-inventory-manager";
+import { PageLoader } from "@/components/ui/page-loader";
 import { getCurrentUser } from "@/lib/data/client";
 import type { LensInventoryItem } from "@/lib/types/para-medical";
-import { PageLoader } from "@/components/ui/page-loader";
 
 export default function LensInventoryPage() {
   const [items, setItems] = useState<LensInventoryItem[]>([]);

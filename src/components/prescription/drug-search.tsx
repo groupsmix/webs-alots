@@ -8,10 +8,10 @@
  * When a drug is selected, auto-populates dosage form and strength.
  */
 
-import { useState, useRef, useEffect, useCallback } from "react";
 import { Search, Pill, ChevronDown } from "lucide-react";
-import { Input } from "@/components/ui/input";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import { searchDrugs, CATEGORY_LABELS, type DCIDrug } from "@/lib/dci-drug-database";
 
 // ---- Types ----

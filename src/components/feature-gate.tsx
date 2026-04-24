@@ -1,11 +1,11 @@
 "use client";
 
-import { useClinicFeatures } from "@/lib/hooks/use-clinic-features";
-import type { ClinicFeatureKey } from "@/lib/features";
 import { ShieldAlert, ArrowLeft } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
 import Link from "next/link";
 import { useLocale } from "@/components/locale-switcher";
+import { Card, CardContent } from "@/components/ui/card";
+import type { ClinicFeatureKey } from "@/lib/features";
+import { useClinicFeatures } from "@/lib/hooks/use-clinic-features";
 import { t } from "@/lib/i18n";
 
 interface FeatureGateProps {

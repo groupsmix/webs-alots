@@ -1,16 +1,16 @@
 "use client";
 
-import Link from "next/link";
 import { Calendar, FileText, Clock, Bell, Pill, CreditCard, Users, MessageSquare, ArrowRight, Activity } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import Link from "next/link";
+import { useLocale } from "@/components/locale-switcher";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ErrorBoundary } from "@/components/ui/error-boundary";
-import { useLocale } from "@/components/locale-switcher";
+import type { PatientDashboardData } from "@/lib/data/server";
 import { t } from "@/lib/i18n";
 import { formatDisplayDate } from "@/lib/utils";
-import type { PatientDashboardData } from "@/lib/data/server";
 
 const quickLinkDefs = [
   { icon: Calendar, labelKey: "patient.myAppointments" as const, descKey: "patient.myAppointmentsDesc" as const, href: "/patient/appointments" },

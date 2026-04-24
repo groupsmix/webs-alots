@@ -1,8 +1,10 @@
 "use client";
 
+import { ArrowLeft, Heart, Mail, Check } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
-import { ArrowLeft, Heart, Mail, Check } from "lucide-react";
+import { useLocale } from "@/components/locale-switcher";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -13,10 +15,8 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Button } from "@/components/ui/button";
 import { resetPassword } from "@/lib/auth";
 import { t, type TranslationKey } from "@/lib/i18n";
-import { useLocale } from "@/components/locale-switcher";
 
 export default function ForgotPasswordPage() {
   const [locale] = useLocale();

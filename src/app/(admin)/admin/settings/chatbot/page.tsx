@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { createBrowserClient } from "@supabase/ssr";
 import {
   Bot,
   Plus,
@@ -13,15 +13,15 @@ import {
   Sparkles,
   Power,
 } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useState, useEffect } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { PageLoader } from "@/components/ui/page-loader";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
-import { createBrowserClient } from "@supabase/ssr";
-import { PageLoader } from "@/components/ui/page-loader";
 
 interface ChatbotConfig {
   enabled: boolean;

@@ -1,9 +1,9 @@
+import { Award, Languages, GraduationCap, Briefcase } from "lucide-react";
 import type { Metadata } from "next";
 import Image from "next/image";
-import { Award, Languages, GraduationCap, Briefcase } from "lucide-react";
-import { defaultWebsiteConfig } from "@/lib/website-config";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { defaultWebsiteConfig } from "@/lib/website-config";
 
 export const metadata: Metadata = {
   title: "À propos — Notre Médecin",

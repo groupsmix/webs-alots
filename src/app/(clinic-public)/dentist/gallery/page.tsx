@@ -1,9 +1,9 @@
-import type { Metadata } from "next";
 import { Camera, Calendar, Shield } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
+import type { Metadata } from "next";
+import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button-variants";
-import Link from "next/link";
+import { Card, CardContent } from "@/components/ui/card";
 import { getPublicBranding } from "@/lib/data/public";
 import { createClient } from "@/lib/supabase-server";
 import { requireTenant } from "@/lib/tenant";

@@ -1,12 +1,12 @@
 "use client";
 
-import { useState } from "react";
-import Image from "next/image";
 import {
   Glasses, Search, AlertTriangle, Package,
 } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
+import Image from "next/image";
+import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import type { FrameCatalogItem } from "@/lib/types/para-medical";
 

@@ -1,7 +1,7 @@
-import type { Metadata } from "next";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Clock, Droplets, AlertTriangle, FlaskConical } from "lucide-react";
+import type { Metadata } from "next";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
 import { getPublicLabTests, getLabTestCategories } from "@/lib/data/lab-public";
 
 export const metadata: Metadata = {

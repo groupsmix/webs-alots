@@ -1,8 +1,8 @@
 "use client";
 
 import { Star, TrendingUp, MessageSquare } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export interface ReviewStats {
   averageRating: number;

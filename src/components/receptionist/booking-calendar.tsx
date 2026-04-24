@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
 import { ChevronLeft, ChevronRight, Plus, User, Clock, GripVertical, Phone, MessageCircle } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
+import { useState, useCallback, useEffect } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { PageLoader } from "@/components/ui/page-loader";
 import {
   getCurrentUser,
   fetchAppointments,
@@ -14,7 +15,6 @@ import {
 } from "@/lib/data/client";
 import { ManualBookingDialog } from "./manual-booking-dialog";
 import { WalkInDialog } from "./walk-in-dialog";
-import { PageLoader } from "@/components/ui/page-loader";
 
 /** Default working hours when tenant config is not yet loaded. */
 const DEFAULT_WORKING_HOURS: Record<number, { open: string; close: string; enabled: boolean }> = {

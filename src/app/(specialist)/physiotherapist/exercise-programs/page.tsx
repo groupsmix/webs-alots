@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import { Dumbbell } from "lucide-react";
+import { useState, useEffect } from "react";
 import { ExerciseProgramBuilder } from "@/components/para-medical/exercise-program-builder";
+import { PageLoader } from "@/components/ui/page-loader";
 import { getCurrentUser } from "@/lib/data/client";
 import type { ExerciseProgram } from "@/lib/types/para-medical";
-import { PageLoader } from "@/components/ui/page-loader";
 
 export default function ExerciseProgramsPage() {
   const [programs, setPrograms] = useState<ExerciseProgram[]>([]);

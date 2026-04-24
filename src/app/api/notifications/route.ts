@@ -1,3 +1,7 @@
+import { apiForbidden, apiInternalError, apiSuccess } from "@/lib/api-response";
+import { withAuthValidation } from "@/lib/api-validate";
+import { STAFF_ROLES } from "@/lib/auth-roles";
+import { logger } from "@/lib/logger";
 import {
   dispatchNotification,
   type NotificationTrigger,
@@ -5,12 +9,8 @@ import {
   type TemplateVariables,
 } from "@/lib/notifications";
 import type { NotificationChannel as DBNotificationChannel } from "@/lib/types/database";
-import { withAuth } from "@/lib/with-auth";
-import { STAFF_ROLES } from "@/lib/auth-roles";
-import { logger } from "@/lib/logger";
 import { notificationDispatchSchema } from "@/lib/validations";
-import { withAuthValidation } from "@/lib/api-validate";
-import { apiForbidden, apiInternalError, apiSuccess } from "@/lib/api-response";
+import { withAuth } from "@/lib/with-auth";
 /**
  * POST /api/notifications
  *

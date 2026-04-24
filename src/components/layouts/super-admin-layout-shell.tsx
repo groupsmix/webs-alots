@@ -1,8 +1,5 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
-import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
 import {
   LayoutDashboard,
   Building2,
@@ -22,9 +19,16 @@ import {
   Search,
   Plus,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
+import { useState, useEffect, useRef, useCallback } from "react";
+import { CommandPalette, type CommandPaletteItem } from "@/components/command-palette";
+import { ImpersonationBanner } from "@/components/impersonation-banner";
+import { LocaleSwitcher } from "@/components/locale-switcher";
+import { SignOutButton } from "@/components/sign-out-button";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -33,13 +37,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuLabel,
 } from "@/components/ui/dropdown-menu";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { SignOutButton } from "@/components/sign-out-button";
-import { LocaleSwitcher } from "@/components/locale-switcher";
-import { ImpersonationBanner } from "@/components/impersonation-banner";
-import { CommandPalette, type CommandPaletteItem } from "@/components/command-palette";
-import { createClient } from "@/lib/supabase-client";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { logger } from "@/lib/logger";
+import { createClient } from "@/lib/supabase-client";
 import { fetchClinics } from "@/lib/super-admin-actions";
 
 const navItems = [

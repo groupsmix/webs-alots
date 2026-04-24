@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import { ClipboardList } from "lucide-react";
+import { useState, useEffect } from "react";
 import { PhysioSessionTracker } from "@/components/para-medical/physio-session-tracker";
+import { PageLoader } from "@/components/ui/page-loader";
 import { getCurrentUser } from "@/lib/data/client";
 import type { PhysioSession } from "@/lib/types/para-medical";
-import { PageLoader } from "@/components/ui/page-loader";
 
 export default function PhysioSessionsPage() {
   const [sessions, setSessions] = useState<PhysioSession[]>([]);

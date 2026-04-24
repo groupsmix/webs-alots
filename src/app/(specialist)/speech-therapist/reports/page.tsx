@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import { FileText } from "lucide-react";
+import { useState, useEffect } from "react";
 import { SpeechProgressReports } from "@/components/para-medical/speech-progress-reports";
+import { PageLoader } from "@/components/ui/page-loader";
 import { getCurrentUser } from "@/lib/data/client";
 import type { SpeechProgressReport } from "@/lib/types/para-medical";
-import { PageLoader } from "@/components/ui/page-loader";
 
 export default function SpeechReportsPage() {
   const [reports, setReports] = useState<SpeechProgressReport[]>([]);

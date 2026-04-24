@@ -1,21 +1,21 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { logger } from "@/lib/logger";
 import { Calendar, Clock, User, MapPin, X, RefreshCw, AlertTriangle } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
+import { useState, useEffect } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { PageLoader } from "@/components/ui/page-loader";
+import { isCancellableStatus } from "@/lib/booking-utils";
 import {
   getCurrentUser,
   fetchPatientAppointments,
   type AppointmentView,
 } from "@/lib/data/client";
-import { isCancellableStatus } from "@/lib/booking-utils";
+import { logger } from "@/lib/logger";
 import type { AppointmentStatus } from "@/lib/types/database";
-import { RescheduleDialog } from "./reschedule-dialog";
-import { PageLoader } from "@/components/ui/page-loader";
 import { formatDisplayDate } from "@/lib/utils";
+import { RescheduleDialog } from "./reschedule-dialog";
 
 const statusVariant: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
   scheduled: "default",

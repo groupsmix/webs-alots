@@ -1,10 +1,10 @@
-import type { Metadata } from "next";
 import { Star } from "lucide-react";
-import { getPublicReviews, getPublicAverageRating } from "@/lib/data/public";
-import { defaultWebsiteConfig } from "@/lib/website-config";
-import { safeJsonLdStringify } from "@/lib/json-ld";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import type { Metadata } from "next";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { getPublicReviews, getPublicAverageRating } from "@/lib/data/public";
+import { safeJsonLdStringify } from "@/lib/json-ld";
+import { defaultWebsiteConfig } from "@/lib/website-config";
 
 export const metadata: Metadata = {
   title: "Avis Patients",

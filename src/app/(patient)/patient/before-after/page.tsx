@@ -2,13 +2,13 @@
 
 import { useState, useEffect } from "react";
 import { BeforeAfterGallery } from "@/components/dental/before-after-gallery";
+import { Breadcrumb } from "@/components/ui/breadcrumb";
+import { PageLoader } from "@/components/ui/page-loader";
 import {
   getCurrentUser,
   fetchBeforeAfterPhotos,
   type BeforeAfterPhotoView,
 } from "@/lib/data/client";
-import { PageLoader } from "@/components/ui/page-loader";
-import { Breadcrumb } from "@/components/ui/breadcrumb";
 
 export default function PatientBeforeAfterPage() {
   const [myPhotos, setMyPhotos] = useState<BeforeAfterPhotoView[]>([]);

@@ -1,12 +1,12 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
 import { MessageCircle, X, Send, Trash2, Bot } from "lucide-react";
+import { useState, useRef, useEffect } from "react";
+import { useTenant } from "@/components/tenant-provider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useChatbot } from "./chatbot-provider";
-import { useTenant } from "@/components/tenant-provider";
 
 /** Quick-action suggestions based on clinic type */
 function getQuickActions(clinicType?: string): string[] {

@@ -6,8 +6,8 @@ import {
   Globe,
   ShieldCheck,
 } from "lucide-react";
-import { useLandingLocale } from "./landing-locale-provider";
 import type { TranslationKey } from "@/lib/i18n";
+import { useLandingLocale } from "./landing-locale-provider";
 
 const items: readonly { icon: typeof CalendarCheck; key: TranslationKey }[] = [
   { icon: CalendarCheck, key: "landing.trustAppointments" },

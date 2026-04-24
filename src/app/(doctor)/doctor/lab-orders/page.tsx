@@ -2,10 +2,10 @@
 
 import { useState, useEffect } from "react";
 import { LabOrdersPanel } from "@/components/dental/lab-orders-panel";
+import { Breadcrumb } from "@/components/ui/breadcrumb";
+import { PageLoader } from "@/components/ui/page-loader";
 import { getCurrentUser, fetchLabOrders, createLabOrder } from "@/lib/data/client";
 import type { LabOrder } from "@/lib/types/dental";
-import { PageLoader } from "@/components/ui/page-loader";
-import { Breadcrumb } from "@/components/ui/breadcrumb";
 
 export default function DoctorLabOrdersPage() {
   const [orders, setOrders] = useState<LabOrder[]>([]);

@@ -1,20 +1,20 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import { CreditCard, Check, Clock, Search } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useState, useEffect } from "react";
+import { PaymentDialog } from "@/components/receptionist/payment-dialog";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { PageLoader } from "@/components/ui/page-loader";
 import {
   getCurrentUser,
   fetchTodayAppointments,
   fetchInvoices,
   type InvoiceView,
 } from "@/lib/data/client";
-import { PaymentDialog } from "@/components/receptionist/payment-dialog";
-import { PageLoader } from "@/components/ui/page-loader";
 
 interface PaymentEntry {
   id: string;

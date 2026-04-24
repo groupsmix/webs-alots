@@ -11,9 +11,9 @@
  */
 
 import { type NextRequest } from "next/server";
-import { createClient } from "@/lib/supabase-server";
 import { sha256Hex, timingSafeEqual } from "@/lib/crypto-utils";
 import { logger } from "@/lib/logger";
+import { createClient } from "@/lib/supabase-server";
 
 export async function authenticateApiKey(
   request: NextRequest,

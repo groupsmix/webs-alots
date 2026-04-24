@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import dynamic from "next/dynamic";
 import { Scale } from "lucide-react";
+import dynamic from "next/dynamic";
+import { useState, useEffect } from "react";
 import { getCurrentUser } from "@/lib/data/client";
 
 const BodyMeasurementTracker = dynamic(

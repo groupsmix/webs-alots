@@ -13,14 +13,14 @@
  */
 
 import { type NextRequest } from "next/server";
-import { withAuthValidation } from "@/lib/api-validate";
-import { aiDrugCheckRequestSchema, aiDrugCheckOverrideSchema } from "@/lib/validations";
 import { apiSuccess, apiError, apiRateLimited, apiInternalError } from "@/lib/api-response";
-import { aiDrugCheckLimiter } from "@/lib/rate-limit";
-import { logger } from "@/lib/logger";
+import { withAuthValidation } from "@/lib/api-validate";
 import { checkAllInteractions, type InteractionAlert } from "@/lib/check-interactions";
-import type { AuthContext } from "@/lib/with-auth";
+import { logger } from "@/lib/logger";
+import { aiDrugCheckLimiter } from "@/lib/rate-limit";
 import type { PatientMetadata } from "@/lib/types/patient-metadata";
+import { aiDrugCheckRequestSchema, aiDrugCheckOverrideSchema } from "@/lib/validations";
+import type { AuthContext } from "@/lib/with-auth";
 
 // ── Types ──
 

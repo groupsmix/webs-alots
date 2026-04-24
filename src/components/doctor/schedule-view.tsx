@@ -1,17 +1,17 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import { Clock, User, CheckCircle2, XCircle, ArrowRight } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useState, useEffect } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { PageLoader } from "@/components/ui/page-loader";
 import {
   getCurrentUser,
   fetchAppointments,
   type AppointmentView,
 } from "@/lib/data/client";
 import { EmergencySlotCreator } from "./emergency-slot-creator";
-import { PageLoader } from "@/components/ui/page-loader";
 
 type ViewMode = "timeline" | "list";
 

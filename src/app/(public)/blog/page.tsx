@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
-import { getAllPosts, getCategories } from "@/lib/blog";
 import { BlogSearch } from "@/components/blog/blog-search";
+import { getAllPosts, getCategories } from "@/lib/blog";
 
 export const metadata: Metadata = {
   title: "Blog Sante — Articles et Conseils Medicaux",

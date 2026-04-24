@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useLandingLocale } from "./landing-locale-provider";
 import type { TranslationKey } from "@/lib/i18n";
+import { useLandingLocale } from "./landing-locale-provider";
 
 const links: readonly { key: TranslationKey; href: string }[] = [
   { key: "landing.footerAbout", href: "/about" },

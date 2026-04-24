@@ -1,21 +1,21 @@
 "use client";
 
-import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { ChevronLeft, ChevronRight, Check, Stethoscope, User, Clock, Phone, Loader2, MessageCircle } from "lucide-react";
-import { fetchDoctors, fetchServices, type DoctorView, type ServiceView } from "@/lib/data/client";
+import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { useTenant } from "@/components/tenant-provider";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { useToast } from "@/components/ui/toast";
+import { fetchDoctors, fetchServices, type DoctorView, type ServiceView } from "@/lib/data/client";
+import { useFormValidation, commonRules } from "@/lib/hooks/use-form-validation";
+import { t } from "@/lib/i18n";
+import { logger } from "@/lib/logger";
+import { formatDisplayDate } from "@/lib/utils";
 import { BookingCalendar } from "./calendar";
 import { TimeSlotPicker } from "./time-slots";
-import { logger } from "@/lib/logger";
-import { t } from "@/lib/i18n";
-import { useFormValidation, commonRules } from "@/lib/hooks/use-form-validation";
-import { formatDisplayDate } from "@/lib/utils";
-import { useToast } from "@/components/ui/toast";
 
 /** Defaults used until tenant booking config is loaded from the DB. */
 const DEFAULT_SLOT_DURATION = 30;

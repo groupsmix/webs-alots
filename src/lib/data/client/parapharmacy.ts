@@ -1,10 +1,10 @@
 "use client";
 
-import { fetchRows } from "./_core";
-import { createClient } from "@/lib/supabase-client";
 import { logger } from "@/lib/logger";
+import { createClient } from "@/lib/supabase-client";
 import type { Database } from "@/lib/types/database";
 import { getLocalDateStr } from "@/lib/utils";
+import { fetchRows } from "./_core";
 import type { ProductView, ProductRaw, StockRaw } from "./pharmacy";
 
 // Parapharmacy — Mutations

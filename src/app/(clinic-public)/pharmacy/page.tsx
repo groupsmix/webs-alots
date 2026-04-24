@@ -1,11 +1,11 @@
-import type { Metadata } from "next";
-import Link from "next/link";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import {
   Pill, Search, Upload, Truck, Heart, Syringe, Shield,
   Clock, MapPin, Phone, ArrowRight, Star, ShoppingBag,
 } from "lucide-react";
+import type { Metadata } from "next";
+import Link from "next/link";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   getPublicPharmacyProducts,
   getPublicPharmacyServices,

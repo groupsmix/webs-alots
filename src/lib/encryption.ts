@@ -52,8 +52,8 @@
  * re-encrypted. Keep a secure backup of both keys during the transition.
  */
 
-import { logger } from "@/lib/logger";
 import { hexToBytes } from "@/lib/crypto-utils";
+import { logger } from "@/lib/logger";
 
 // ── Key Management ──
 

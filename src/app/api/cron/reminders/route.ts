@@ -30,6 +30,16 @@ async function handler(request: NextRequest) {
 
   try {
     const supabase = await createClient();
+    // Quick check to see if there are any active clinics to avoid unnecessary DB queries
+    const { count: activeClinicsCount } = await supabase
+      .from("clinics")
+      .select("id", { count: "exact", head: true })
+      .eq("status", "active");
+
+    if (!activeClinicsCount) {
+      return apiSuccess({ message: "No active clinics found, skipping cron", sent: 0 });
+    }
+
     const now = new Date();
 
     // Calculate time windows

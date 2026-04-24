@@ -7,13 +7,13 @@
  * POST /api/consent — Log a consent event
  */
 
-import { NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
-import { extractClientIp } from "@/lib/rate-limit";
-import { logger } from "@/lib/logger";
-import { consentSchema } from "@/lib/validations";
-import { withValidation } from "@/lib/api-validate";
+import { NextRequest } from "next/server";
 import { apiError, apiSuccess } from "@/lib/api-response";
+import { withValidation } from "@/lib/api-validate";
+import { logger } from "@/lib/logger";
+import { extractClientIp } from "@/lib/rate-limit";
+import { consentSchema } from "@/lib/validations";
 
 export const POST = withValidation(consentSchema, async (data, request: NextRequest) => {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;

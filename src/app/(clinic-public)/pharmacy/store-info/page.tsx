@@ -1,10 +1,10 @@
-import type { Metadata } from "next";
 import {
   Clock, MapPin, Phone, Mail, Truck, Store,
   ShieldCheck, CreditCard,
 } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import type { Metadata } from "next";
 import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getPublicBranding, isPublicCurrentlyOnDuty, getPublicNextOnDuty } from "@/lib/data/public";
 
 export const metadata: Metadata = {

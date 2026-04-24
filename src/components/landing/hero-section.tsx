@@ -1,14 +1,14 @@
 "use client";
 
-import Link from "next/link";
 import {
   CalendarCheck,
   Users,
   Globe,
   ArrowRight,
 } from "lucide-react";
-import { useLandingLocale } from "./landing-locale-provider";
+import Link from "next/link";
 import type { TranslationKey } from "@/lib/i18n";
+import { useLandingLocale } from "./landing-locale-provider";
 
 const pills: readonly { icon: typeof CalendarCheck; key: TranslationKey }[] = [
   { icon: CalendarCheck, key: "landing.pillAppointments" },
