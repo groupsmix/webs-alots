@@ -28,7 +28,7 @@ test.describe('RTL (Arabic) Layout Smoke Tests', () => {
     
     // The layout should apply RTL classes
     const body = page.locator('body');
-    await expect(body).toHaveClass(/rtl/);
+    await expect(page.locator('html')).toHaveClass(/rtl/);
     
     // Verify some known Arabic text is visible
     await expect(page.getByText('تسجيل الدخول', { exact: false })).toBeVisible();
