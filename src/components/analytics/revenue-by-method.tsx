@@ -1,8 +1,10 @@
 "use client";
 
-import dynamic from "next/dynamic";
 import { CreditCard } from "lucide-react";
+import dynamic from "next/dynamic";
+import { useLocale } from "@/components/locale-switcher";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { formatCurrency, formatNumber } from "@/lib/utils";
 
 const METHOD_COLORS: Record<string, string> = {
   cash: "#16a34a",
@@ -41,7 +43,7 @@ const LazyBarChart = dynamic<{ data: PaymentMethodData[]; currency: string; colo
               <Tooltip
                 formatter={(value, _name, props) => {
                   const entry = (props as { payload: PaymentMethodData }).payload;
-                  return [`${Number(value).toLocaleString()} ${currency} (${entry.percentage}%)`, "Revenue"];
+                  return [`${formatNumber(Number(value), "fr")} ${currency} (${entry.percentage}%)`, "Revenue"];
                 }}
                 contentStyle={{ borderRadius: "8px", fontSize: "12px" }}
               />
@@ -67,6 +69,8 @@ const LazyBarChart = dynamic<{ data: PaymentMethodData[]; currency: string; colo
 );
 
 export function RevenueByMethod({ data, currency = "MAD" }: RevenueByMethodProps) {
+  const [locale] = useLocale();
+
   if (data.length === 0) {
     return (
       <Card>

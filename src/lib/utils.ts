@@ -1,6 +1,6 @@
 import { clsx, type ClassValue } from "clsx"
-import { twMerge } from "tailwind-merge"
 import { formatInTimeZone } from "date-fns-tz"
+import { twMerge } from "tailwind-merge"
 import { DEFAULT_TIMEZONE } from "@/lib/constants"
 import type { Locale } from "@/lib/i18n"
 
@@ -25,7 +25,7 @@ export function getLocalDateStr(
 
 // ── Consistent date formatting (Issue 30) ──
 
-const LOCALE_MAP: Record<Locale, string> = {
+export const LOCALE_MAP: Record<Locale, string> = {
   fr: "fr-FR",
   ar: "ar-MA",
   en: "en-US",
@@ -121,4 +121,26 @@ function formatRelativeTime(date: Date, locale: Locale): string {
     month: "2-digit",
     year: "numeric",
   }).format(date);
+}
+
+export function formatNumber(
+  value: number,
+  locale: Locale = "fr",
+  options?: Intl.NumberFormatOptions
+): string {
+  const intlLocale = LOCALE_MAP[locale];
+  return new Intl.NumberFormat(intlLocale, options).format(value);
+}
+
+export function formatCurrency(
+  value: number,
+  locale: Locale = "fr",
+  currency: string = "MAD"
+): string {
+  const intlLocale = LOCALE_MAP[locale];
+  return new Intl.NumberFormat(intlLocale, {
+    style: "currency",
+    currency: currency,
+    maximumFractionDigits: 2,
+  }).format(value);
 }

@@ -1,12 +1,14 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import { Users, Calendar, TrendingDown, DollarSign, Activity, Clock, UserCheck, AlertTriangle } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { fetchDashboardStats, fetchTodayAppointments, type DashboardStats } from "@/lib/data/client";
+import { useState, useEffect } from "react";
+import { useLocale } from "@/components/locale-switcher";
 import { useTenant } from "@/components/tenant-provider";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { fetchDashboardStats, fetchTodayAppointments, type DashboardStats } from "@/lib/data/client";
 import { logger } from "@/lib/logger";
+import { formatCurrency, formatNumber } from "@/lib/utils";
 
 /**
  * ClinicStats
@@ -14,6 +16,8 @@ import { logger } from "@/lib/logger";
  * Key metrics cards: patient count, no-show rate, booking sources, busiest hours.
  */
 export function ClinicStats() {
+  const [locale] = useLocale();
+
   const [dashData, setDashData] = useState<DashboardStats | null>(null);
   const [todayCount, setTodayCount] = useState(0);
   const tenant = useTenant();
@@ -47,7 +51,7 @@ export function ClinicStats() {
     { title: "Total Patients", value: totalPatients.toString(), icon: Users, change: "+12%", trend: "up" as const },
     { title: "Today's Bookings", value: todayCount.toString(), icon: Calendar, change: `${completedAppts} completed`, trend: "neutral" as const },
     { title: "No-Show Rate", value: `${noShowRate}%`, icon: TrendingDown, change: noShowRate > 10 ? "High" : "Normal", trend: noShowRate > 10 ? ("down" as const) : ("up" as const) },
-    { title: "Revenue (MTD)", value: `${revenue.toLocaleString()} MAD`, icon: DollarSign, change: "+8%", trend: "up" as const },
+    { title: "Revenue (MTD)", value: formatCurrency(revenue, typeof locale !== "undefined" ? locale : "fr", "MAD"), icon: DollarSign, change: "+8%", trend: "up" as const },
   ];
 
   const bookingSources = [

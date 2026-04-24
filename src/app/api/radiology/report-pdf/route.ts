@@ -8,13 +8,14 @@
  * Returns: { pdfUrl }
  */
 
-import { uploadToR2, isR2Configured, buildUploadKey } from "@/lib/r2";
-import { updateRadiologyOrderPdfUrl } from "@/lib/data/server";
-import { STAFF_ROLES } from "@/lib/auth-roles";
-import { escapeHtml } from "@/lib/escape-html";
-import { radiologyReportPdfSchema } from "@/lib/validations";
-import { withAuthValidation } from "@/lib/api-validate";
 import { apiError, apiInternalError, apiSuccess } from "@/lib/api-response";
+import { withAuthValidation } from "@/lib/api-validate";
+import { STAFF_ROLES } from "@/lib/auth-roles";
+import { updateRadiologyOrderPdfUrl } from "@/lib/data/server";
+import { escapeHtml } from "@/lib/escape-html";
+import { uploadToR2, isR2Configured, buildUploadKey } from "@/lib/r2";
+import { formatCurrency, formatNumber, formatDisplayDate } from "@/lib/utils";
+import { radiologyReportPdfSchema } from "@/lib/validations";
 
 function generateReportHtml(data: {
   patientName: string;
@@ -85,10 +86,7 @@ export const POST = withAuthValidation(radiologyReportPdfSchema, async (body, re
       return apiError("Report content is required (findings, impression, or reportText)");
     }
 
-    const generatedAt = new Date().toLocaleString("en-US", {
-      dateStyle: "long",
-      timeStyle: "short",
-    });
+    const generatedAt = formatDisplayDate(new Date(), "fr", "datetime");
 
     const html = generateReportHtml({
       patientName,

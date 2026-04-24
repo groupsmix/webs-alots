@@ -1,13 +1,15 @@
 "use client";
 
-import { useState } from "react";
 import { CreditCard, Calculator, Calendar, MessageCircle } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useState } from "react";
+import { useLocale } from "@/components/locale-switcher";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { formatDisplayDate } from "@/lib/utils";
+import { formatCurrency, formatNumber } from "@/lib/utils";
 
 interface InstallmentFormProps {
   patientName?: string;
@@ -30,6 +32,8 @@ export function InstallmentForm({
   defaultTotal = 0,
   onSubmit,
 }: InstallmentFormProps) {
+  const [locale] = useLocale();
+
   const [data, setData] = useState<InstallmentFormData>({
     totalAmount: defaultTotal,
     downPayment: 0,
@@ -75,7 +79,7 @@ export function InstallmentForm({
           <CreditCard className="h-8 w-8 mx-auto text-green-600 mb-3" />
           <p className="text-sm font-medium">Installment plan created!</p>
           <p className="text-xs text-muted-foreground mt-1">
-            {data.numberOfInstallments} monthly payments of ~{monthlyAmount.toLocaleString()} MAD
+            {data.numberOfInstallments} monthly payments of ~{formatCurrency(monthlyAmount, typeof locale !== "undefined" ? locale : "fr", "MAD")}
           </p>
         </CardContent>
       </Card>
@@ -163,15 +167,15 @@ export function InstallmentForm({
           </div>
           <div className="grid grid-cols-3 gap-2 text-center mb-3">
             <div>
-              <p className="text-lg font-bold">{data.totalAmount.toLocaleString()}</p>
+              <p className="text-lg font-bold">{formatNumber(data.totalAmount, typeof locale !== "undefined" ? locale : "fr")}</p>
               <p className="text-[10px] text-muted-foreground">Total (MAD)</p>
             </div>
             <div>
-              <p className="text-lg font-bold text-blue-600">{data.downPayment.toLocaleString()}</p>
+              <p className="text-lg font-bold text-blue-600">{formatNumber(data.downPayment, typeof locale !== "undefined" ? locale : "fr")}</p>
               <p className="text-[10px] text-muted-foreground">Down Payment</p>
             </div>
             <div>
-              <p className="text-lg font-bold text-primary">{monthlyAmount.toLocaleString()}</p>
+              <p className="text-lg font-bold text-primary">{formatNumber(monthlyAmount, typeof locale !== "undefined" ? locale : "fr")}</p>
               <p className="text-[10px] text-muted-foreground">~Monthly (MAD)</p>
             </div>
           </div>
@@ -189,7 +193,7 @@ export function InstallmentForm({
                 <div key={s.month} className="flex items-center justify-between rounded border p-2 text-sm">
                   <span className="text-muted-foreground">Month {s.month}</span>
                   <span className="text-xs text-muted-foreground">{formatDisplayDate(s.date, "fr", "short")}</span>
-                  <span className="font-medium">{s.amount.toLocaleString()} MAD</span>
+                  <span className="font-medium">{formatCurrency(s.amount, typeof locale !== "undefined" ? locale : "fr", "MAD")}</span>
                 </div>
               ))}
             </div>

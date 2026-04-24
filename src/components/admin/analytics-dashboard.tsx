@@ -9,9 +9,11 @@ import {
   BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid,
   Tooltip, ResponsiveContainer, Cell,
 } from "recharts";
+import { useLocale } from "@/components/locale-switcher";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { formatCurrency, LOCALE_MAP } from "@/lib/utils";
 
 // ── Types ──────────────────────────────────────────────────────────────
 
@@ -82,10 +84,6 @@ function daysAgo(n: number): Date {
   const d = new Date();
   d.setDate(d.getDate() - n);
   return startOfDay(d);
-}
-
-function formatMAD(amount: number): string {
-  return `${amount.toLocaleString("fr-MA")} MAD`;
 }
 
 function pctChange(current: number, previous: number): number {
@@ -160,6 +158,9 @@ export function AnalyticsDashboard({
   totalPatients,
 }: AnalyticsDashboardProps) {
   const [activeTab, setActiveTab] = useState("today");
+  const [locale] = useLocale();
+
+  const formatMAD = (amount: number) => formatCurrency(amount, locale, "MAD");
 
   const now = new Date();
   const today = startOfDay(now);
@@ -323,7 +324,7 @@ export function AnalyticsDashboard({
       const rev = parsedPayments
         .filter((p) => isWithinRange(p._date, mStart, mEnd) && p.status === "completed")
         .reduce((s, p) => s + p.amount, 0);
-      const monthName = mStart.toLocaleString("fr-FR", { month: "short" });
+      const monthName = new Intl.DateTimeFormat(LOCALE_MAP[locale], { month: "short" }).format(mStart);
       months.push({ name: monthName, revenue: rev });
     }
     return months;
@@ -338,7 +339,7 @@ export function AnalyticsDashboard({
       const count = parsedAppointments.filter(
         (a) => a.is_first_visit && isWithinRange(a._date, mStart, mEnd),
       ).length;
-      const monthName = mStart.toLocaleString("fr-FR", { month: "short" });
+      const monthName = new Intl.DateTimeFormat(LOCALE_MAP[locale], { month: "short" }).format(mStart);
       months.push({ name: monthName, newPatients: count });
     }
     return months;

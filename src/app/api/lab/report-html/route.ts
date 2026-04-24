@@ -8,13 +8,14 @@
  * Returns: { pdfUrl }
  */
 
-import { uploadToR2, isR2Configured, buildUploadKey } from "@/lib/r2";
-import { updateLabOrderPdfUrl } from "@/lib/data/server";
-import { STAFF_ROLES } from "@/lib/auth-roles";
-import { escapeHtml } from "@/lib/escape-html";
-import { labReportSchema } from "@/lib/validations";
-import { withAuthValidation } from "@/lib/api-validate";
 import { apiError, apiInternalError, apiSuccess } from "@/lib/api-response";
+import { withAuthValidation } from "@/lib/api-validate";
+import { STAFF_ROLES } from "@/lib/auth-roles";
+import { updateLabOrderPdfUrl } from "@/lib/data/server";
+import { escapeHtml } from "@/lib/escape-html";
+import { uploadToR2, isR2Configured, buildUploadKey } from "@/lib/r2";
+import { formatCurrency, formatNumber, formatDisplayDate } from "@/lib/utils";
+import { labReportSchema } from "@/lib/validations";
 
 interface LabResultItem {
   testName: string;
@@ -123,10 +124,7 @@ export const POST = withAuthValidation(labReportSchema, async (body, request, { 
       return apiError("User must belong to a clinic");
     }
 
-    const generatedAt = new Date().toLocaleString("en-US", {
-      dateStyle: "long",
-      timeStyle: "short",
-    });
+    const generatedAt = formatDisplayDate(new Date(), "fr", "datetime");
 
     const html = generateLabReportHtml({
       patientName,

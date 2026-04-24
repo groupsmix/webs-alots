@@ -9,6 +9,9 @@
  * professional-looking report.
  */
 
+import type { Locale } from "@/lib/i18n";
+import { formatCurrency, formatNumber } from "@/lib/utils";
+
 export interface RevenueReportData {
   clinicName: string;
   period: string;
@@ -28,8 +31,11 @@ export interface RevenueReportData {
  * Open a new window with a printable revenue report.
  * The user can then use Ctrl+P to save as PDF.
  */
-export function generateRevenueReport(data: RevenueReportData): void {
-  const html = buildReportHTML(data);
+export function generateRevenueReport(
+  data: RevenueReportData,
+  locale: Locale = "fr"
+): void {
+  const html = buildReportHTML(data, locale);
   const printWindow = window.open("", "_blank");
   if (!printWindow) {
     alert("Please allow pop-ups to generate the PDF report.");
@@ -43,34 +49,34 @@ export function generateRevenueReport(data: RevenueReportData): void {
   }, 500);
 }
 
-function buildReportHTML(data: RevenueReportData): string {
+function buildReportHTML(data: RevenueReportData, locale: Locale): string {
   const { clinicName, period, generatedAt, currency } = data;
 
   const doctorRows = data.revenueByDoctor
     .map(
       (d) =>
-        `<tr><td>${d.doctorName}</td><td class="num">${d.revenue.toLocaleString()} ${currency}</td><td class="num">${d.patients}</td></tr>`,
+        `<tr><td>${d.doctorName}</td><td class="num">${formatCurrency(d.revenue, locale, currency)}</td><td class="num">${formatNumber(d.patients, locale)}</td></tr>`,
     )
     .join("");
 
   const serviceRows = data.revenueByService
     .map(
       (s) =>
-        `<tr><td>${s.serviceName}</td><td class="num">${s.revenue.toLocaleString()} ${currency}</td><td class="num">${s.count}</td></tr>`,
+        `<tr><td>${s.serviceName}</td><td class="num">${formatCurrency(s.revenue, locale, currency)}</td><td class="num">${formatNumber(s.count, locale)}</td></tr>`,
     )
     .join("");
 
   const methodRows = data.revenueByMethod
     .map(
       (m) =>
-        `<tr><td>${m.method}</td><td class="num">${m.revenue.toLocaleString()} ${currency}</td><td class="num">${m.count}</td><td class="num">${m.percentage}%</td></tr>`,
+        `<tr><td>${m.method}</td><td class="num">${formatCurrency(m.revenue, locale, currency)}</td><td class="num">${formatNumber(m.count, locale)}</td><td class="num">${formatNumber(m.percentage, locale)}%</td></tr>`,
     )
     .join("");
 
   const monthlyRows = data.monthlyBreakdown
     .map(
       (m) =>
-        `<tr><td>${m.month}</td><td class="num">${m.revenue.toLocaleString()} ${currency}</td><td class="num">${m.patients}</td><td class="num">${m.appointments}</td></tr>`,
+        `<tr><td>${m.month}</td><td class="num">${formatCurrency(m.revenue, locale, currency)}</td><td class="num">${formatNumber(m.patients, locale)}</td><td class="num">${formatNumber(m.appointments, locale)}</td></tr>`,
     )
     .join("");
 
@@ -112,7 +118,7 @@ function buildReportHTML(data: RevenueReportData): string {
 
   <div class="kpi-grid">
     <div class="kpi">
-      <div class="kpi-value">${data.totalRevenue.toLocaleString()} ${currency}</div>
+      <div class="kpi-value">${formatCurrency(data.totalRevenue, locale, currency)}</div>
       <div class="kpi-label">Total Revenue</div>
     </div>
     <div class="kpi">
@@ -120,7 +126,7 @@ function buildReportHTML(data: RevenueReportData): string {
       <div class="kpi-label">Patients Seen</div>
     </div>
     <div class="kpi">
-      <div class="kpi-value">${data.averagePerPatient.toLocaleString()} ${currency}</div>
+      <div class="kpi-value">${formatCurrency(data.averagePerPatient, locale, currency)}</div>
       <div class="kpi-label">Avg per Patient</div>
     </div>
     <div class="kpi">

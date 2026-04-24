@@ -1,18 +1,20 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
   Clock, Check, Eye, AlertCircle, Package, Truck,
   Search, Phone, MessageCircle, RefreshCw, X, ClipboardList,
 } from "lucide-react";
+import { useState, useEffect } from "react";
+import { useLocale } from "@/components/locale-switcher";
 import { useTenant } from "@/components/tenant-provider";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { PageLoader } from "@/components/ui/page-loader";
 import { fetchPrescriptionRequests } from "@/lib/data/client";
 import type { PharmacyPrescriptionView } from "@/lib/data/client";
-import { PageLoader } from "@/components/ui/page-loader";
+import { formatCurrency, formatNumber, formatDisplayDate } from "@/lib/utils";
 
 type PrescriptionStatus = "pending" | "reviewing" | "partially-ready" | "ready" | "picked-up" | "delivered" | "rejected";
 
@@ -29,6 +31,8 @@ const statusConfig: Record<PrescriptionStatus, { label: string; color: string; i
 const statusFilters: PrescriptionStatus[] = ["pending", "reviewing", "partially-ready", "ready", "picked-up", "delivered"];
 
 export default function PrescriptionsPage() {
+  const [locale] = useLocale();
+
   const tenant = useTenant();
   const [allPrescriptions, setAllPrescriptions] = useState<PharmacyPrescriptionView[]>([]);
   const [loading, setLoading] = useState(true);
@@ -137,7 +141,7 @@ export default function PrescriptionsPage() {
                         <Phone className="h-3 w-3" /> {rx.patientPhone}
                       </span>
                       <span className="flex items-center gap-1">
-                        <Clock className="h-3 w-3" /> {new Date(rx.uploadedAt).toLocaleString()}
+                        <Clock className="h-3 w-3" /> {formatDisplayDate(new Date(rx.uploadedAt), typeof locale !== "undefined" ? locale : "fr", "datetime")}
                       </span>
                       <span className="flex items-center gap-1">
                         {rx.deliveryOption === "delivery" ? <Truck className="h-3 w-3" /> : <Package className="h-3 w-3" />}

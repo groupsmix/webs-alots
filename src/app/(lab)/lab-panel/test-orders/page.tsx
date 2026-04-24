@@ -1,35 +1,39 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import {
-  Dialog, DialogContent, DialogDescription, DialogFooter,
-  DialogHeader, DialogTitle, DialogTrigger,
-} from "@/components/ui/dialog";
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from "@/components/ui/select";
 import {
   Search, Filter, ChevronDown, FlaskConical, Plus,
   Clock, CheckCircle, Loader2, UserPlus, ArrowRight,
 } from "lucide-react";
+import { useState, useEffect, useCallback } from "react";
+import { useLocale } from "@/components/locale-switcher";
 import { useTenant } from "@/components/tenant-provider";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import {
+  Dialog, DialogContent, DialogDescription, DialogFooter,
+  DialogHeader, DialogTitle, DialogTrigger,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { PageLoader } from "@/components/ui/page-loader";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import {
   fetchLabTestOrders, fetchLabTestCatalog, fetchPatients,
   createLabTestOrder, updateLabOrderStatus, assignLabTechnician,
 } from "@/lib/data/client";
 import type { LabTestOrderView, LabTestCatalogView, PatientView } from "@/lib/data/client";
-import { PageLoader } from "@/components/ui/page-loader";
+import { formatCurrency, formatNumber } from "@/lib/utils";
 
 const statusOptions = ["all", "pending", "sample_collected", "in_progress", "completed", "validated", "cancelled"] as const;
 const priorityOptions = ["normal", "urgent", "stat"] as const;
 
 export default function TestOrdersPage() {
+  const [locale] = useLocale();
+
   const tenant = useTenant();
   const [orders, setOrders] = useState<LabTestOrderView[]>([]);
   const [catalog, setCatalog] = useState<LabTestCatalogView[]>([]);

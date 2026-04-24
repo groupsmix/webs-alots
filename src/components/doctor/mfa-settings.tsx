@@ -1,19 +1,23 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
 import { ShieldCheck, ShieldOff, Key, AlertTriangle, Copy, Check, Download } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
+import { useLocale } from "@/components/locale-switcher";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { t, type TranslationKey } from "@/lib/i18n";
 import {
   getMFAFactors,
   unenrollMFA,
   generateBackupCodes,
 } from "@/lib/mfa";
+import { formatDisplayDate } from "@/lib/utils";
 
 export function MFASettings() {
   const router = useRouter();
+  const [locale] = useLocale();
   const [mfaEnabled, setMfaEnabled] = useState(false);
   const [factorId, setFactorId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -42,7 +46,7 @@ export function MFASettings() {
 
     const result = await unenrollMFA(factorId);
     if (result.error) {
-      setError("Impossible de désactiver la 2FA. Veuillez réessayer.");
+      setError(t(locale, "mfa.disableError" as TranslationKey) || "Impossible de désactiver la 2FA.");
       setDisabling(false);
       return;
     }
@@ -58,7 +62,7 @@ export function MFASettings() {
 
     const result = await generateBackupCodes();
     if (result.error || !result.codes) {
-      setError("Impossible de générer les codes de secours.");
+      setError(t(locale, "mfa.generateError" as TranslationKey) || "Impossible de générer les codes de secours.");
       setGeneratingCodes(false);
       return;
     }
@@ -82,7 +86,7 @@ export function MFASettings() {
       "",
       ...backupCodes,
       "",
-      `Générés le: ${new Date().toLocaleString("fr-FR")}`,
+      `Générés le: ${formatDisplayDate(new Date(), locale, "datetime")}`,
     ].join("\n");
 
     const blob = new Blob([codesText], { type: "text/plain" });
@@ -128,17 +132,17 @@ export function MFASettings() {
             </div>
             <div>
               <CardTitle className="text-base">
-                Authentification à deux facteurs (2FA)
+                { t(locale, "mfa.settings") }
               </CardTitle>
               <CardDescription>
                 {mfaEnabled
-                  ? "Votre compte est protégé par la 2FA."
-                  : "Ajoutez une couche de sécurité supplémentaire à votre compte."}
+                  ? t(locale, "mfa.enabled")
+                  : t(locale, "mfa.settingsDesc")}
               </CardDescription>
             </div>
           </div>
           <Badge variant={mfaEnabled ? "success" : "secondary"}>
-            {mfaEnabled ? "Activée" : "Désactivée"}
+            {mfaEnabled ? t(locale, "mfa.enabled") : t(locale, "mfa.disabled")}
           </Badge>
         </div>
       </CardHeader>
@@ -160,8 +164,8 @@ export function MFASettings() {
               >
                 <Key className="h-4 w-4 mr-1" />
                 {generatingCodes
-                  ? "Génération..."
-                  : "Regénérer les codes de secours"}
+                  ? t(locale, "action.generating" as TranslationKey) || "Génération..."
+                  : t(locale, "mfa.regenerateBackupCodes")}
               </Button>
               <Button
                 variant="destructive"
@@ -170,7 +174,7 @@ export function MFASettings() {
                 disabled={disabling}
               >
                 <ShieldOff className="h-4 w-4 mr-1" />
-                {disabling ? "Désactivation..." : "Désactiver la 2FA"}
+                {disabling ? t(locale, "action.disabling" as TranslationKey) || "Désactivation..." : t(locale, "mfa.disable")}
               </Button>
             </div>
 
@@ -179,7 +183,7 @@ export function MFASettings() {
                 <div className="flex items-center gap-2 text-amber-600">
                   <AlertTriangle className="h-4 w-4" />
                   <p className="text-sm font-medium">
-                    Sauvegardez ces codes maintenant
+                    { t(locale, "mfa.backupCodes") }
                   </p>
                 </div>
                 <div className="grid grid-cols-2 gap-2">
@@ -203,7 +207,7 @@ export function MFASettings() {
                     ) : (
                       <Copy className="h-3 w-3 mr-1" />
                     )}
-                    {backupCopied ? "Copié" : "Copier"}
+                    {backupCopied ? t(locale, "action.copied" as TranslationKey) || "Copié" : t(locale, "action.copy" as TranslationKey) || "Copier"}
                   </Button>
                   <Button
                     variant="outline"
@@ -211,7 +215,7 @@ export function MFASettings() {
                     onClick={handleDownloadBackupCodes}
                   >
                     <Download className="h-3 w-3 mr-1" />
-                    Télécharger
+                    { t(locale, "mfa.downloadCodes") }
                   </Button>
                 </div>
               </div>
@@ -222,7 +226,7 @@ export function MFASettings() {
             onClick={() => router.push("/setup-2fa")}
           >
             <ShieldCheck className="h-4 w-4 mr-1" />
-            Activer la 2FA
+            { t(locale, "mfa.enable") }
           </Button>
         )}
       </CardContent>

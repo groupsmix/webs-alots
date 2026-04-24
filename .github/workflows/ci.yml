@@ -76,17 +76,22 @@ jobs:
       - name: Run E2E tests
         id: e2e
         # E2E tests require real Supabase credentials for full coverage.
-        # Until SUPABASE_* secrets are configured, some tests will fail.
-        # We capture the exit code so the job still succeeds and reports
-        # failures as warnings instead of blocking the PR.
+        # If secrets are configured, failures will block the PR.
+        # If secrets are missing, failures are reported as warnings.
         run: |
           set +e
           npx playwright test --project=chromium
           EXIT_CODE=$?
           set -e
           echo "exit_code=$EXIT_CODE" >> "$GITHUB_OUTPUT"
+          
           if [ "$EXIT_CODE" != "0" ]; then
-            echo "::warning::Some E2E tests failed (exit $EXIT_CODE). See playwright-report artifact for details."
+            if [ "${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}" != "" ]; then
+              echo "::error::E2E tests failed (exit $EXIT_CODE) while secrets are configured. Blocking PR."
+              exit 1
+            else
+              echo "::warning::Some E2E tests failed (exit $EXIT_CODE) due to missing secrets. See playwright-report artifact for details."
+            fi
           fi
         env:
           CI: true

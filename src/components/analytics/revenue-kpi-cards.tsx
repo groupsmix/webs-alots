@@ -1,8 +1,10 @@
 "use client";
 
 import { TrendingUp, Users, DollarSign, XCircle } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
+import { useLocale } from "@/components/locale-switcher";
 import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
+import { formatCurrency, formatNumber } from "@/lib/utils";
 
 export interface RevenueKPIs {
   totalRevenue: number;
@@ -30,6 +32,8 @@ function ChangeIndicator({ value, inverted = false }: { value: number; inverted?
 }
 
 export function RevenueKPICards({ kpis }: { kpis: RevenueKPIs }) {
+  const [locale] = useLocale();
+
   const currency = kpis.currency ?? "MAD";
 
   return (
@@ -40,7 +44,7 @@ export function RevenueKPICards({ kpis }: { kpis: RevenueKPIs }) {
             <DollarSign className="h-5 w-5 text-green-600" />
             <ChangeIndicator value={kpis.revenueChange} />
           </div>
-          <p className="text-2xl font-bold">{kpis.totalRevenue.toLocaleString()} {currency}</p>
+          <p className="text-2xl font-bold">{formatNumber(kpis.totalRevenue, typeof locale !== "undefined" ? locale : "fr")} {currency}</p>
           <p className="text-xs text-muted-foreground">Total Revenue</p>
         </CardContent>
       </Card>
@@ -61,7 +65,7 @@ export function RevenueKPICards({ kpis }: { kpis: RevenueKPIs }) {
           <div className="flex items-center justify-between mb-2">
             <TrendingUp className="h-5 w-5 text-purple-600" />
           </div>
-          <p className="text-2xl font-bold">{kpis.averagePerPatient.toLocaleString()} {currency}</p>
+          <p className="text-2xl font-bold">{formatNumber(kpis.averagePerPatient, typeof locale !== "undefined" ? locale : "fr")} {currency}</p>
           <p className="text-xs text-muted-foreground">Avg per Patient</p>
         </CardContent>
       </Card>

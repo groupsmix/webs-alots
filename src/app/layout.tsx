@@ -1,16 +1,16 @@
 import type { Metadata, Viewport } from "next";
-import { headers } from "next/headers";
 import { Geist, Geist_Mono, Noto_Sans_Arabic } from "next/font/google";
+import { headers } from "next/headers";
 import "./globals.css";
-import { getTenant } from "@/lib/tenant";
+import { OfflineIndicator } from "@/components/offline-indicator";
+import { PerformanceMonitor } from "@/components/performance-monitor";
+import { PlausibleScript } from "@/components/plausible-script";
+import { ServiceWorkerRegister } from "@/components/sw-register";
 import { TenantProvider } from "@/components/tenant-provider";
 import { ThemeProvider } from "@/components/theme-provider";
 import { ToastProvider } from "@/components/ui/toast";
-import { OfflineIndicator } from "@/components/offline-indicator";
-import { PerformanceMonitor } from "@/components/performance-monitor";
-import { ServiceWorkerRegister } from "@/components/sw-register";
-import { PlausibleScript } from "@/components/plausible-script";
 import { getDirection, t, type Locale, type TranslationKey } from "@/lib/i18n";
+import { getTenant } from "@/lib/tenant";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -51,7 +51,9 @@ export const viewport: Viewport = {
 export async function generateMetadata(): Promise<Metadata> {
   // Default locale — will be dynamically resolved once per-tenant locale
   // headers are available (see TODO in RootLayout below).
-  const locale = "fr" as Locale;
+  const cookieStore = await import("next/headers").then(m => m.cookies());
+  const preferredLocale = cookieStore.get("preferred-locale")?.value as Locale;
+  const locale = preferredLocale || ("fr" as Locale);
 
   return {
     manifest: "/manifest.webmanifest",
@@ -114,7 +116,9 @@ export default async function RootLayout({
   // The middleware can set x-tenant-locale from the clinic's DB config JSONB.
   // Falls back to "fr" (the Moroccan default) when no header is present.
   const h = await headers();
-  const locale: Locale = (h.get("x-tenant-locale") as Locale) || "fr";
+  const cookieStore = await import("next/headers").then(m => m.cookies());
+  const preferredLocale = cookieStore.get("preferred-locale")?.value as Locale;
+  const locale: Locale = preferredLocale || (h.get("x-tenant-locale") as Locale) || "fr";
   const dir = getDirection(locale);
 
   return (

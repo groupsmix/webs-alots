@@ -1,14 +1,16 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import {
   ShoppingBag, AlertTriangle, Clock, Package,
   ArrowRight, DollarSign,
 } from "lucide-react";
 import Link from "next/link";
+import { useState, useEffect } from "react";
+import { useLocale } from "@/components/locale-switcher";
 import { useTenant } from "@/components/tenant-provider";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
+import { PageLoader } from "@/components/ui/page-loader";
 import {
   fetchParapharmacyProducts,
   fetchParapharmacyCategories,
@@ -16,9 +18,11 @@ import {
   getOutOfStockProducts,
 } from "@/lib/data/client";
 import type { ProductView, ParapharmacyCategoryView } from "@/lib/data/client";
-import { PageLoader } from "@/components/ui/page-loader";
+import { formatCurrency, formatNumber } from "@/lib/utils";
 
 export default function ParapharmacyDashboardPage() {
+  const [locale] = useLocale();
+
   const tenant = useTenant();
   const [products, setProducts] = useState<ProductView[]>([]);
   const [categories, setCategories] = useState<ParapharmacyCategoryView[]>([]);
@@ -131,7 +135,7 @@ export default function ParapharmacyDashboardPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Inventory Value</p>
-                <p className="text-3xl font-bold">{totalValue.toLocaleString()} <span className="text-sm font-normal">MAD</span></p>
+                <p className="text-3xl font-bold">{formatNumber(totalValue, typeof locale !== "undefined" ? locale : "fr")} <span className="text-sm font-normal">MAD</span></p>
               </div>
               <div className="h-12 w-12 rounded-lg bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 flex items-center justify-center">
                 <DollarSign className="h-6 w-6" />

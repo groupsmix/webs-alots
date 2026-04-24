@@ -1,15 +1,17 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import {
   Search, Package, Plus, Filter,
   ArrowUpDown, ShoppingCart,
 } from "lucide-react";
+import { useState, useEffect, useMemo } from "react";
+import { useLocale } from "@/components/locale-switcher";
 import { useTenant } from "@/components/tenant-provider";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { PageLoader } from "@/components/ui/page-loader";
 import {
   fetchProducts,
   searchProductsLocal,
@@ -17,7 +19,7 @@ import {
   getExpiryStatus,
 } from "@/lib/data/client";
 import type { ProductView } from "@/lib/data/client";
-import { PageLoader } from "@/components/ui/page-loader";
+import { formatCurrency, formatNumber } from "@/lib/utils";
 
 const categories = [
   { value: "all", label: "All" },
@@ -37,6 +39,8 @@ const stockFilters = [
 ];
 
 export default function StockPage() {
+  const [locale] = useLocale();
+
   const tenant = useTenant();
   const [allProducts, setAllProducts] = useState<ProductView[]>([]);
   const [loading, setLoading] = useState(true);
@@ -118,7 +122,7 @@ export default function StockPage() {
         <Card>
           <CardContent className="pt-4 pb-4">
             <p className="text-sm text-muted-foreground">Total Stock Value</p>
-            <p className="text-2xl font-bold">{totalValue.toLocaleString()} <span className="text-sm font-normal">MAD</span></p>
+            <p className="text-2xl font-bold">{formatNumber(totalValue, typeof locale !== "undefined" ? locale : "fr")} <span className="text-sm font-normal">MAD</span></p>
           </CardContent>
         </Card>
         <Card>

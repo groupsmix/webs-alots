@@ -1,6 +1,5 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import {
   BedDouble,
   UserPlus,
@@ -10,15 +9,18 @@ import {
   Activity,
   TrendingUp,
 } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useState, useEffect } from "react";
+import { useLocale } from "@/components/locale-switcher";
+import { useTenant } from "@/components/tenant-provider";
 import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { PageLoader } from "@/components/ui/page-loader";
 import {
   fetchClinicCenterDashboardKPIs,
   type ClinicCenterDashboardKPIs,
 } from "@/lib/data/client";
-import { useTenant } from "@/components/tenant-provider";
-import { PageLoader } from "@/components/ui/page-loader";
 import { logger } from "@/lib/logger";
+import { formatCurrency, formatNumber } from "@/lib/utils";
 
 /**
  * ClinicCenterDashboardKPIs
@@ -30,6 +32,8 @@ import { logger } from "@/lib/logger";
  *  - Revenue by department
  */
 export function ClinicCenterDashboardKPIsComponent() {
+  const [locale] = useLocale();
+
   const [data, setData] = useState<ClinicCenterDashboardKPIs | null>(null);
   const [loading, setLoading] = useState(true);
   const tenant = useTenant();
@@ -234,7 +238,7 @@ export function ClinicCenterDashboardKPIsComponent() {
                 Revenue by Department
               </CardTitle>
               <Badge variant="outline" className="text-xs">
-                Total: {totalDeptRevenue.toLocaleString()} MAD
+                Total: {formatCurrency(totalDeptRevenue, typeof locale !== "undefined" ? locale : "fr", "MAD")}
               </Badge>
             </div>
           </CardHeader>
@@ -247,7 +251,7 @@ export function ClinicCenterDashboardKPIsComponent() {
                   <div key={dept.departmentId}>
                     <div className="flex items-center justify-between text-sm mb-1">
                       <span>{dept.departmentName}</span>
-                      <span className="font-medium">{dept.revenue.toLocaleString()} MAD</span>
+                      <span className="font-medium">{formatCurrency(dept.revenue, typeof locale !== "undefined" ? locale : "fr", "MAD")}</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">

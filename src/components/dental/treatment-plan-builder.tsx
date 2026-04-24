@@ -1,17 +1,19 @@
 "use client";
 
-import { useState } from "react";
 import {
   ClipboardList, Plus, CheckCircle, Clock, Circle, Trash2,
   ChevronDown, ChevronUp, DollarSign,
 } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useState } from "react";
+import { useLocale } from "@/components/locale-switcher";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import type { TreatmentPlan, TreatmentStep } from "@/lib/types/dental";
 import { formatDisplayDate } from "@/lib/utils";
+import { formatCurrency, formatNumber } from "@/lib/utils";
 
 const STATUS_ICON = {
   pending: Circle,
@@ -40,6 +42,8 @@ export function TreatmentPlanBuilder({
   onAddStep,
   onDeleteStep,
 }: TreatmentPlanBuilderProps) {
+  const [locale] = useLocale();
+
   const [expandedPlan, setExpandedPlan] = useState<string | null>(plans[0]?.id ?? null);
   const [newStepDesc, setNewStepDesc] = useState("");
   const [newStepCost, setNewStepCost] = useState("");
@@ -127,7 +131,7 @@ export function TreatmentPlanBuilder({
                             <p className={`text-sm font-medium ${step.status === "completed" ? "line-through text-muted-foreground" : ""}`}>
                               Step {step.step}: {step.description}
                             </p>
-                            <span className="text-xs font-medium whitespace-nowrap">{step.cost.toLocaleString()} MAD</span>
+                            <span className="text-xs font-medium whitespace-nowrap">{formatCurrency(step.cost, typeof locale !== "undefined" ? locale : "fr", "MAD")}</span>
                           </div>
                           {step.date && (
                             <p className="text-xs text-muted-foreground mt-0.5">{formatDisplayDate(step.date, "fr", "short")}</p>
@@ -180,15 +184,15 @@ export function TreatmentPlanBuilder({
                   </div>
                   <div className="grid grid-cols-3 gap-2 text-center">
                     <div>
-                      <p className="text-lg font-bold">{plan.totalCost.toLocaleString()}</p>
+                      <p className="text-lg font-bold">{formatNumber(plan.totalCost, typeof locale !== "undefined" ? locale : "fr")}</p>
                       <p className="text-[10px] text-muted-foreground">Total (MAD)</p>
                     </div>
                     <div>
-                      <p className="text-lg font-bold text-green-600">{paidAmount.toLocaleString()}</p>
+                      <p className="text-lg font-bold text-green-600">{formatNumber(paidAmount, typeof locale !== "undefined" ? locale : "fr")}</p>
                       <p className="text-[10px] text-muted-foreground">Completed</p>
                     </div>
                     <div>
-                      <p className="text-lg font-bold text-orange-600">{(plan.totalCost - paidAmount).toLocaleString()}</p>
+                      <p className="text-lg font-bold text-orange-600">{formatNumber((plan.totalCost - paidAmount), typeof locale !== "undefined" ? locale : "fr")}</p>
                       <p className="text-[10px] text-muted-foreground">Remaining</p>
                     </div>
                   </div>

@@ -7,8 +7,9 @@
  * Persists the choice in localStorage and applies RTL direction for Arabic.
  */
 
-import { useState, useEffect, useCallback } from "react";
+import Cookies from "js-cookie";
 import { Globe } from "lucide-react";
+import { useState, useEffect, useCallback } from "react";
 import { type Locale, isRTL, getDirection } from "@/lib/i18n";
 
 const LOCALE_STORAGE_KEY = "preferred-locale";
@@ -26,7 +27,7 @@ interface LocaleSwitcherProps {
 
 function getStoredLocale(): Locale {
   if (typeof window === "undefined") return "fr";
-  const stored = localStorage.getItem(LOCALE_STORAGE_KEY);
+  const stored = Cookies.get(LOCALE_STORAGE_KEY) || localStorage.getItem(LOCALE_STORAGE_KEY);
   if (stored === "fr" || stored === "ar" || stored === "en") return stored;
   return "fr";
 }
@@ -42,6 +43,7 @@ export function useLocale(): [Locale, (l: Locale) => void] {
     setLocaleState(l);
     if (typeof window !== "undefined") {
       localStorage.setItem(LOCALE_STORAGE_KEY, l);
+      Cookies.set(LOCALE_STORAGE_KEY, l, { expires: 365, path: "/" });
     }
     applyDirection(l);
   }, []);

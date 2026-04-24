@@ -1,19 +1,23 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import {
   Plus, Receipt, DollarSign, CreditCard, Banknote,
   Shield, Gift,
 } from "lucide-react";
+import { useState, useEffect, useMemo } from "react";
+import { useLocale } from "@/components/locale-switcher";
 import { useTenant } from "@/components/tenant-provider";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { PageLoader } from "@/components/ui/page-loader";
 import { fetchDailySales } from "@/lib/data/client";
 import type { DailySaleView } from "@/lib/data/client";
-import { PageLoader } from "@/components/ui/page-loader";
+import { formatCurrency, formatNumber } from "@/lib/utils";
 
 export default function SalesPage() {
+  const [locale] = useLocale();
+
   const tenant = useTenant();
   const [allSales, setAllSales] = useState<DailySaleView[]>([]);
   const [loading, setLoading] = useState(true);
@@ -96,7 +100,7 @@ export default function SalesPage() {
               <DollarSign className="h-4 w-4" />
               <p className="text-sm">Total Revenue</p>
             </div>
-            <p className="text-2xl font-bold text-emerald-600">{totalRevenue.toLocaleString()} <span className="text-sm font-normal">MAD</span></p>
+            <p className="text-2xl font-bold text-emerald-600">{formatNumber(totalRevenue, typeof locale !== "undefined" ? locale : "fr")} <span className="text-sm font-normal">MAD</span></p>
           </CardContent>
         </Card>
         <Card>
@@ -114,7 +118,7 @@ export default function SalesPage() {
               <Banknote className="h-4 w-4" />
               <p className="text-sm">Cash</p>
             </div>
-            <p className="text-2xl font-bold">{cashSales.reduce((s, sale) => s + sale.total, 0).toLocaleString()} <span className="text-sm font-normal">MAD</span></p>
+            <p className="text-2xl font-bold">{formatNumber(cashSales.reduce((s, sale) => s + sale.total, 0), typeof locale !== "undefined" ? locale : "fr")} <span className="text-sm font-normal">MAD</span></p>
           </CardContent>
         </Card>
         <Card>
@@ -123,7 +127,7 @@ export default function SalesPage() {
               <CreditCard className="h-4 w-4" />
               <p className="text-sm">Card</p>
             </div>
-            <p className="text-2xl font-bold">{cardSales.reduce((s, sale) => s + sale.total, 0).toLocaleString()} <span className="text-sm font-normal">MAD</span></p>
+            <p className="text-2xl font-bold">{formatNumber(cardSales.reduce((s, sale) => s + sale.total, 0), typeof locale !== "undefined" ? locale : "fr")} <span className="text-sm font-normal">MAD</span></p>
           </CardContent>
         </Card>
         <Card>
@@ -132,7 +136,7 @@ export default function SalesPage() {
               <Gift className="h-4 w-4" />
               <p className="text-sm">Points Earned</p>
             </div>
-            <p className="text-2xl font-bold text-purple-600">{totalPoints.toLocaleString()}</p>
+            <p className="text-2xl font-bold text-purple-600">{formatNumber(totalPoints, typeof locale !== "undefined" ? locale : "fr")}</p>
           </CardContent>
         </Card>
       </div>

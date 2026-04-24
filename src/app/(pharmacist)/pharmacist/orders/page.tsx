@@ -1,17 +1,19 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import {
   Plus, Truck, Check, Package,
   Send, X, FileText,
 } from "lucide-react";
+import { useState, useEffect } from "react";
+import { useLocale } from "@/components/locale-switcher";
 import { useTenant } from "@/components/tenant-provider";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { PageLoader } from "@/components/ui/page-loader";
 import { fetchPurchaseOrders, fetchSuppliers } from "@/lib/data/client";
 import type { PurchaseOrderView, SupplierView } from "@/lib/data/client";
-import { PageLoader } from "@/components/ui/page-loader";
+import { formatCurrency, formatNumber } from "@/lib/utils";
 
 type OrderStatus = "draft" | "sent" | "confirmed" | "shipped" | "delivered" | "cancelled";
 
@@ -25,6 +27,8 @@ const statusConfig: Record<OrderStatus, { label: string; color: string; icon: Re
 };
 
 export default function OrdersPage() {
+  const [locale] = useLocale();
+
   const tenant = useTenant();
   const [allOrders, setAllOrders] = useState<PurchaseOrderView[]>([]);
   const [allSuppliers, setAllSuppliers] = useState<SupplierView[]>([]);
@@ -95,7 +99,7 @@ export default function OrdersPage() {
           <CardContent className="pt-4 pb-4">
             <p className="text-sm text-muted-foreground">Total Value (Active)</p>
             <p className="text-2xl font-bold">
-              {allOrders.filter((o) => o.status !== "cancelled" && o.status !== "delivered").reduce((sum, o) => sum + o.totalAmount, 0).toLocaleString()} <span className="text-sm font-normal">MAD</span>
+              {formatNumber(allOrders.filter((o) => o.status !== "cancelled" && o.status !== "delivered").reduce((sum, o) => sum + o.totalAmount, 0), typeof locale !== "undefined" ? locale : "fr")} <span className="text-sm font-normal">MAD</span>
             </p>
           </CardContent>
         </Card>
@@ -155,7 +159,7 @@ export default function OrdersPage() {
                           <span>{item.productName}</span>
                           <span className="text-right">{item.quantity}</span>
                           <span className="text-right">{item.unitPrice} MAD</span>
-                          <span className="text-right font-medium">{(item.quantity * item.unitPrice).toLocaleString()} MAD</span>
+                          <span className="text-right font-medium">{formatCurrency((item.quantity * item.unitPrice), typeof locale !== "undefined" ? locale : "fr", "MAD")}</span>
                         </div>
                       ))}
                     </div>
@@ -168,7 +172,7 @@ export default function OrdersPage() {
                   {/* Actions */}
                   <div className="flex flex-col gap-2 min-w-[160px]">
                     <div className="text-right mb-2">
-                      <p className="text-2xl font-bold text-emerald-600">{order.totalAmount.toLocaleString()} MAD</p>
+                      <p className="text-2xl font-bold text-emerald-600">{formatCurrency(order.totalAmount, typeof locale !== "undefined" ? locale : "fr", "MAD")}</p>
                       <p className="text-xs text-muted-foreground">{order.items.length} item{order.items.length > 1 ? "s" : ""}</p>
                     </div>
                     {order.status === "draft" && (

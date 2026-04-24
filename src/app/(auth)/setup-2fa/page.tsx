@@ -1,8 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
 import { ShieldCheck, Copy, Check, ArrowLeft, AlertTriangle, Download } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
+import { useLocale } from "@/components/locale-switcher";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -13,18 +15,20 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Button } from "@/components/ui/button";
+import { t, type TranslationKey } from "@/lib/i18n";
 import {
   enrollMFA,
   verifyMFAEnrollment,
   generateBackupCodes,
 } from "@/lib/mfa";
 import type { MFAEnrollment } from "@/lib/mfa";
+import { formatDisplayDate } from "@/lib/utils";
 
 type Step = "loading" | "qr" | "verify" | "backup" | "done";
 
 export default function Setup2FAPage() {
   const router = useRouter();
+  const [locale] = useLocale();
   const [step, setStep] = useState<Step>("loading");
   const [enrollment, setEnrollment] = useState<MFAEnrollment | null>(null);
   const [code, setCode] = useState("");
@@ -56,7 +60,7 @@ export default function Setup2FAPage() {
 
     const result = await verifyMFAEnrollment(enrollment.factorId, code);
     if (result.error) {
-      setError("Code invalide. Veuillez réessayer.");
+      setError(t(locale, "mfa.invalidCode"));
       setLoading(false);
       return;
     }
@@ -94,7 +98,7 @@ export default function Setup2FAPage() {
       "",
       ...backupCodes,
       "",
-      `Générés le: ${new Date().toLocaleString("fr-FR")}`,
+      `Générés le: ${formatDisplayDate(new Date(), locale, "datetime")}`,
     ].join("\n");
 
     const blob = new Blob([codesText], { type: "text/plain" });
@@ -112,7 +116,7 @@ export default function Setup2FAPage() {
         <Card>
           <CardContent className="py-12 text-center">
             <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full mx-auto mb-4" />
-            <p className="text-muted-foreground">Configuration de la 2FA...</p>
+            <p className="text-muted-foreground">{ t(locale, "mfa.setupTitle") + "..." }</p>
           </CardContent>
         </Card>
       </div>
@@ -127,12 +131,8 @@ export default function Setup2FAPage() {
             <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-amber-100 dark:bg-amber-900/30">
               <AlertTriangle className="h-6 w-6 text-amber-600" />
             </div>
-            <CardTitle className="text-xl">Codes de secours</CardTitle>
-            <CardDescription>
-              Sauvegardez ces codes en lieu sûr. Ils vous permettront de vous
-              connecter si vous perdez l&apos;accès à votre application
-              d&apos;authentification.
-            </CardDescription>
+            <CardTitle className="text-xl">{ t(locale, "mfa.backupCodes") }</CardTitle>
+            <CardDescription>{ t(locale, "mfa.backupCodesDesc") }</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="bg-muted rounded-lg p-4">
@@ -159,7 +159,7 @@ export default function Setup2FAPage() {
                 ) : (
                   <Copy className="h-4 w-4 mr-1" />
                 )}
-                {backupCopied ? "Copié" : "Copier"}
+                {backupCopied ? t(locale, "action.copied" as TranslationKey) || "Copié" : t(locale, "action.copy" as TranslationKey) || "Copier"}
               </Button>
               <Button
                 variant="outline"
@@ -167,22 +167,17 @@ export default function Setup2FAPage() {
                 onClick={handleDownloadBackupCodes}
               >
                 <Download className="h-4 w-4 mr-1" />
-                Télécharger
+                {t(locale, "mfa.downloadCodes")}
               </Button>
             </div>
 
-            <p className="text-xs text-muted-foreground text-center">
-              Chaque code ne peut être utilisé qu&apos;une seule fois. Vous pouvez
-              en générer de nouveaux depuis les paramètres.
-            </p>
+            <p className="text-xs text-muted-foreground text-center">{ t(locale, "mfa.backupCodesDesc") }</p>
           </CardContent>
           <CardFooter>
             <Button
               className="w-full"
               onClick={() => router.push("/doctor/dashboard")}
-            >
-              J&apos;ai sauvegardé mes codes
-            </Button>
+            >{ t(locale, "mfa.goToDashboard") }</Button>
           </CardFooter>
         </Card>
       </div>
@@ -197,14 +192,9 @@ export default function Setup2FAPage() {
             <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/30">
               <ShieldCheck className="h-6 w-6 text-green-600" />
             </div>
-            <h2 className="text-xl font-bold mb-2">2FA activée</h2>
-            <p className="text-muted-foreground mb-6">
-              Votre compte est maintenant protégé par l&apos;authentification à
-              deux facteurs.
-            </p>
-            <Button onClick={() => router.push("/doctor/dashboard")}>
-              Continuer vers le tableau de bord
-            </Button>
+            <h2 className="text-xl font-bold mb-2">{ t(locale, "mfa.enabled") }</h2>
+            <p className="text-muted-foreground mb-6">{ t(locale, "mfa.setupCompleteDesc") }</p>
+            <Button onClick={() => router.push("/doctor/dashboard")}>{ t(locale, "mfa.goToDashboard") }</Button>
           </CardContent>
         </Card>
       </div>
@@ -219,25 +209,21 @@ export default function Setup2FAPage() {
             <ShieldCheck className="h-5 w-5 text-primary-foreground" />
           </div>
         </div>
-        <h1 className="text-xl font-bold">
-          Configurer l&apos;authentification à deux facteurs
-        </h1>
-        <p className="text-sm text-muted-foreground">
-          Protégez votre compte avec une application d&apos;authentification
-        </p>
+        <h1 className="text-xl font-bold">{ t(locale, "mfa.setupTitle") }</h1>
+        <p className="text-sm text-muted-foreground">{ t(locale, "mfa.setupDesc") }</p>
       </div>
 
       <Card>
         <CardHeader className="text-center pb-4">
           <CardTitle className="text-lg">
             {step === "qr"
-              ? "1. Scannez le QR code"
-              : "2. Entrez le code de vérification"}
+              ? t(locale, "mfa.scanQR")
+              : t(locale, "mfa.verifyTitle")}
           </CardTitle>
           <CardDescription>
             {step === "qr"
-              ? "Utilisez Google Authenticator, Authy, ou une autre application TOTP."
-              : "Entrez le code à 6 chiffres affiché dans votre application."}
+              ? t(locale, "mfa.setupDesc")
+              : t(locale, "mfa.verifyDesc")}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -266,7 +252,7 @@ export default function Setup2FAPage() {
                   />
                 ) : (
                   <div className="bg-white p-4 rounded-lg text-sm text-muted-foreground">
-                    QR code indisponible. Utilisez le code manuel ci-dessous.
+                    {t(locale, "mfa.manualEntry")}
                   </div>
                 )}
               </div>
@@ -274,7 +260,7 @@ export default function Setup2FAPage() {
               {/* Manual entry */}
               <div className="space-y-2">
                 <p className="text-xs text-muted-foreground text-center">
-                  Ou entrez ce code manuellement :
+                  {t(locale, "mfa.manualEntry")}
                 </p>
                 <div className="flex items-center gap-2">
                   <code className="flex-1 text-xs font-mono bg-muted rounded px-3 py-2 text-center break-all">
@@ -298,7 +284,7 @@ export default function Setup2FAPage() {
                 className="w-full"
                 onClick={() => setStep("verify")}
               >
-                Suivant
+                {t(locale, "action.next" as TranslationKey) || "Suivant"}
               </Button>
             </div>
           )}
@@ -311,7 +297,7 @@ export default function Setup2FAPage() {
                 </div>
               )}
               <div className="space-y-2">
-                <Label htmlFor="totp-code">Code de vérification</Label>
+                <Label htmlFor="totp-code">{t(locale, "mfa.code")}</Label>
                 <Input
                   id="totp-code"
                   placeholder="000000"
@@ -328,7 +314,7 @@ export default function Setup2FAPage() {
                 className="w-full"
                 disabled={loading || code.length !== 6}
               >
-                {loading ? "Vérification..." : "Vérifier et activer"}
+                {loading ? t(locale, "mfa.verifying" as TranslationKey) : t(locale, "mfa.verify" as TranslationKey)}
               </Button>
               <Button
                 type="button"
@@ -341,7 +327,7 @@ export default function Setup2FAPage() {
                 }}
               >
                 <ArrowLeft className="h-4 w-4 mr-1" />
-                Retour au QR code
+                {t(locale, "action.back" as TranslationKey) || "Retour"}
               </Button>
             </form>
           )}
@@ -352,7 +338,7 @@ export default function Setup2FAPage() {
             className="text-sm text-muted-foreground"
             onClick={() => router.back()}
           >
-            Annuler
+            {t(locale, "action.cancel" as TranslationKey) || "Annuler"}
           </Button>
         </CardFooter>
       </Card>

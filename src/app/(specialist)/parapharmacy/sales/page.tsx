@@ -1,23 +1,25 @@
 "use client";
 
+import { Search, Receipt, DollarSign, Plus, Minus, ShoppingCart, Loader2, Trash2 } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
-import { Card, CardContent } from "@/components/ui/card";
+import { useLocale } from "@/components/locale-switcher";
+import { useTenant } from "@/components/tenant-provider";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   Dialog, DialogContent, DialogDescription, DialogFooter,
   DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { PageLoader } from "@/components/ui/page-loader";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { Search, Receipt, DollarSign, Plus, Minus, ShoppingCart, Loader2, Trash2 } from "lucide-react";
-import { useTenant } from "@/components/tenant-provider";
 import { fetchDailySales, fetchParapharmacyProducts, createParapharmacySale } from "@/lib/data/client";
 import type { DailySaleView, ProductView } from "@/lib/data/client";
-import { PageLoader } from "@/components/ui/page-loader";
+import { formatCurrency, formatNumber } from "@/lib/utils";
 
 interface CartItem {
   productId: string;
@@ -27,6 +29,8 @@ interface CartItem {
 }
 
 export default function ParapharmacySalesPage() {
+  const [locale] = useLocale();
+
   const tenant = useTenant();
   const [sales, setSales] = useState<DailySaleView[]>([]);
   const [products, setProducts] = useState<ProductView[]>([]);
@@ -171,7 +175,7 @@ export default function ParapharmacySalesPage() {
             <DollarSign className="h-4 w-4 text-emerald-600" />
             <div>
               <p className="text-xs text-muted-foreground">Today&apos;s Revenue</p>
-              <p className="font-semibold">{todayRevenue.toLocaleString()} MAD</p>
+              <p className="font-semibold">{formatCurrency(todayRevenue, typeof locale !== "undefined" ? locale : "fr", "MAD")}</p>
             </div>
           </div>
         </Card>

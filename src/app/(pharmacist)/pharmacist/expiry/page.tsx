@@ -1,15 +1,19 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { AlertTriangle, Check, Clock, X } from "lucide-react";
+import { useState, useEffect, useMemo } from "react";
+import { useLocale } from "@/components/locale-switcher";
 import { useTenant } from "@/components/tenant-provider";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
+import { PageLoader } from "@/components/ui/page-loader";
 import { fetchProducts, getExpiryStatus } from "@/lib/data/client";
 import type { ProductView } from "@/lib/data/client";
-import { PageLoader } from "@/components/ui/page-loader";
+import { formatCurrency, formatNumber } from "@/lib/utils";
 
 export default function ExpiryTrackerPage() {
+  const [locale] = useLocale();
+
   const tenant = useTenant();
   const [allProducts, setAllProducts] = useState<ProductView[]>([]);
   const [loading, setLoading] = useState(true);
@@ -173,7 +177,7 @@ export default function ExpiryTrackerPage() {
                       </td>
                       <td className="py-3 px-2">{product.stockQuantity}</td>
                       <td className="py-3 px-2 font-medium">
-                        {(product.price * product.stockQuantity).toLocaleString()} MAD
+                        {formatCurrency((product.price * product.stockQuantity), typeof locale !== "undefined" ? locale : "fr", "MAD")}
                       </td>
                     </tr>
                   );

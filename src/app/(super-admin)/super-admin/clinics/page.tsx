@@ -1,26 +1,28 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
 import {
   LogIn, Search, Ban, CheckCircle, Eye, Filter,
   Building2, Mail, Phone, MapPin, Calendar, Users, TrendingUp,
   Loader2, UserPlus, ChevronLeft, ChevronRight, Download,
 } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useState, useEffect, useCallback } from "react";
+import { useLocale } from "@/components/locale-switcher";
 import { Badge } from "@/components/ui/badge";
+import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
-import { fetchClinics, updateClinicStatus } from "@/lib/super-admin-actions";
+import { useToast } from "@/components/ui/toast";
 import { exportToCSV } from "@/lib/export-data";
 import { logger } from "@/lib/logger";
-import { useToast } from "@/components/ui/toast";
-import { Breadcrumb } from "@/components/ui/breadcrumb";
+import { fetchClinics, updateClinicStatus } from "@/lib/super-admin-actions";
+import { formatCurrency, formatNumber } from "@/lib/utils";
 
 /** Subset of the clinics.config JSONB column used in clinic management. */
 interface ClinicConfigJson {
@@ -107,6 +109,8 @@ function ClinicsTableSkeleton() {
 }
 
 export default function AllClinicsPage() {
+  const [locale] = useLocale();
+
   const router = useRouter();
   const { addToast } = useToast();
   const [search, setSearch] = useState("");
@@ -308,7 +312,7 @@ export default function AllClinicsPage() {
                     <td className="py-3 px-4 capitalize text-muted-foreground">{clinic.type}</td>
                     <td className="py-3 px-4 text-muted-foreground hidden lg:table-cell">{clinic.city}</td>
                     <td className="py-3 px-4 text-muted-foreground">{clinic.userCountRange}</td>
-                    <td className="py-3 px-4 hidden lg:table-cell">{clinic.monthlyRevenue.toLocaleString()} MAD</td>
+                    <td className="py-3 px-4 hidden lg:table-cell">{formatCurrency(clinic.monthlyRevenue, typeof locale !== "undefined" ? locale : "fr", "MAD")}</td>
                     <td className="py-3 px-4">
                       <Badge variant={clinic.plan === "premium" ? "default" : clinic.plan === "standard" ? "secondary" : "outline"}>{clinic.plan}</Badge>
                     </td>
@@ -373,7 +377,7 @@ export default function AllClinicsPage() {
             <div className="space-y-4 py-4">
               <div className="grid grid-cols-3 gap-3">
                 <Card><CardContent className="p-3 text-center"><Users className="h-4 w-4 mx-auto mb-1 text-purple-600" /><p className="text-lg font-bold">{detail.userCountRange}</p><p className="text-[10px] text-muted-foreground">Users</p></CardContent></Card>
-                <Card><CardContent className="p-3 text-center"><TrendingUp className="h-4 w-4 mx-auto mb-1 text-green-600" /><p className="text-lg font-bold">{detail.monthlyRevenue.toLocaleString()}</p><p className="text-[10px] text-muted-foreground">Revenue (MAD)</p></CardContent></Card>
+                <Card><CardContent className="p-3 text-center"><TrendingUp className="h-4 w-4 mx-auto mb-1 text-green-600" /><p className="text-lg font-bold">{formatNumber(detail.monthlyRevenue, typeof locale !== "undefined" ? locale : "fr")}</p><p className="text-[10px] text-muted-foreground">Revenue (MAD)</p></CardContent></Card>
                 <Card><CardContent className="p-3 text-center"><Calendar className="h-4 w-4 mx-auto mb-1 text-blue-600" /><p className="text-lg font-bold">{detail.appointmentsThisMonth}</p><p className="text-[10px] text-muted-foreground">Appts/Month</p></CardContent></Card>
               </div>
               <Separator />
@@ -492,7 +496,7 @@ export default function AllClinicsPage() {
             </DialogHeader>
             <div className="rounded-lg border p-4 bg-muted/50">
               <p className="text-sm font-medium">{suspendClinic.name}</p>
-              <p className="text-xs text-muted-foreground">{suspendClinic.userCountRange} users &middot; {suspendClinic.monthlyRevenue.toLocaleString()} MAD/mo</p>
+              <p className="text-xs text-muted-foreground">{suspendClinic.userCountRange} users &middot; {formatCurrency(suspendClinic.monthlyRevenue, typeof locale !== "undefined" ? locale : "fr", "MAD")}/mo</p>
             </div>
             {suspendClinic.status !== "suspended" && (
               <div className="space-y-2">
