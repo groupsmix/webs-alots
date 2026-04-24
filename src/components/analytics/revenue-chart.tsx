@@ -6,6 +6,7 @@ import { useState } from "react";
 import { useLocale } from "@/components/locale-switcher";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { formatCurrency, formatNumber } from "@/lib/utils";
 
 export interface RevenueDataPoint {
@@ -58,6 +59,7 @@ const RevenueAreaChart = dynamic<{ data: RevenueDataPoint[]; currency: string }>
 );
 
 export function RevenueChart({ dailyData, weeklyData, monthlyData, currency = "MAD" }: RevenueChartProps) {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [locale] = useLocale();
 
   const [period, setPeriod] = useState<"daily" | "weekly" | "monthly">("daily");

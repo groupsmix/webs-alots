@@ -103,6 +103,7 @@ export async function POST(request: NextRequest) {
 
     // 4. Create the clinic and user profile atomically (Audit 5.6 Fix)
     // Cast to any since register_new_clinic is not yet in the generated types
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: clinicId, error: rpcError } = await (supabase.rpc as any)("register_new_clinic", {
       p_clinic_name: data.clinic_name,
       p_subdomain: subdomain,

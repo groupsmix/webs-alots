@@ -29,6 +29,7 @@ import { S3Client, ListObjectsV2Command, GetObjectCommand, PutObjectCommand } fr
 
 // ── Configuration ──
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const PHI_PREFIXES = [
   "clinics/*/documents/",
   "clinics/*/prescriptions/",

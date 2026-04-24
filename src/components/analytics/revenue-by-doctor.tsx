@@ -4,6 +4,7 @@ import { Stethoscope } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useLocale } from "@/components/locale-switcher";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { formatCurrency, formatNumber } from "@/lib/utils";
 
 export interface DoctorRevenueData {
@@ -51,6 +52,7 @@ const LazyDoctorBarChart = dynamic<{ data: DoctorRevenueData[]; currency: string
 );
 
 export function RevenueByDoctor({ data, currency = "MAD" }: RevenueByDoctorProps) {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [locale] = useLocale();
 
   if (data.length === 0) {

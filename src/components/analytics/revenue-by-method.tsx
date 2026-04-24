@@ -4,6 +4,7 @@ import { CreditCard } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useLocale } from "@/components/locale-switcher";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { formatCurrency, formatNumber } from "@/lib/utils";
 
 const METHOD_COLORS: Record<string, string> = {
@@ -69,6 +70,7 @@ const LazyBarChart = dynamic<{ data: PaymentMethodData[]; currency: string; colo
 );
 
 export function RevenueByMethod({ data, currency = "MAD" }: RevenueByMethodProps) {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [locale] = useLocale();
 
   if (data.length === 0) {

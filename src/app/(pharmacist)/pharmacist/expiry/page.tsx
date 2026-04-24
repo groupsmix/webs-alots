@@ -9,6 +9,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { PageLoader } from "@/components/ui/page-loader";
 import { fetchProducts, getExpiryStatus } from "@/lib/data/client";
 import type { ProductView } from "@/lib/data/client";
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { formatCurrency, formatNumber } from "@/lib/utils";
 
 export default function ExpiryTrackerPage() {

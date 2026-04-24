@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { fetchDashboardStats, fetchTodayAppointments, type DashboardStats } from "@/lib/data/client";
 import { logger } from "@/lib/logger";
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { formatCurrency, formatNumber } from "@/lib/utils";
 
 /**

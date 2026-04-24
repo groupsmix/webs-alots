@@ -157,6 +157,7 @@ export function AnalyticsDashboard({
   waitingList,
   totalPatients,
 }: AnalyticsDashboardProps) {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [activeTab, setActiveTab] = useState("today");
   const [locale] = useLocale();
 

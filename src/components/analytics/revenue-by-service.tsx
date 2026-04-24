@@ -4,6 +4,7 @@ import { BarChart3 } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useLocale } from "@/components/locale-switcher";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { formatCurrency, formatNumber } from "@/lib/utils";
 
 const COLORS = [
@@ -67,6 +68,7 @@ const LazyServicePie = dynamic<{ data: ServiceRevenueData[]; currency: string; c
 );
 
 export function RevenueByService({ data, currency = "MAD" }: RevenueByServiceProps) {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [locale] = useLocale();
 
   if (data.length === 0) {

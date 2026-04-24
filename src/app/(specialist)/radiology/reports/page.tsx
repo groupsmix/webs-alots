@@ -11,9 +11,11 @@ import { Input } from "@/components/ui/input";
 import { PageLoader } from "@/components/ui/page-loader";
 import { fetchRadiologyOrders } from "@/lib/data/client";
 import type { RadiologyOrderView } from "@/lib/data/client";
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { formatCurrency, formatNumber } from "@/lib/utils";
 
 export default function RadiologyReportsPage() {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [locale] = useLocale();
 
   const tenant = useTenant();

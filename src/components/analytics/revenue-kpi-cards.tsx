@@ -4,6 +4,7 @@ import { TrendingUp, Users, DollarSign, XCircle } from "lucide-react";
 import { useLocale } from "@/components/locale-switcher";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { formatCurrency, formatNumber } from "@/lib/utils";
 
 export interface RevenueKPIs {

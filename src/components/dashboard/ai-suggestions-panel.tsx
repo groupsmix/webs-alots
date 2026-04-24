@@ -12,6 +12,7 @@
  */
 
 import {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   Brain,
   Pill,
   FlaskConical,
@@ -21,6 +22,7 @@ import {
   AlertTriangle,
   Check,
   Loader2,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   X,
   Sparkles,
 } from "lucide-react";

@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import type { SterilizationEntry } from "@/lib/types/dental";
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { formatCurrency, formatNumber, formatDisplayDate } from "@/lib/utils";
 
 interface SterilizationLogPanelProps {

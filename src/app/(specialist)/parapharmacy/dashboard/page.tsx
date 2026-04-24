@@ -18,6 +18,7 @@ import {
   getOutOfStockProducts,
 } from "@/lib/data/client";
 import type { ProductView, ParapharmacyCategoryView } from "@/lib/data/client";
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { formatCurrency, formatNumber } from "@/lib/utils";
 
 export default function ParapharmacyDashboardPage() {

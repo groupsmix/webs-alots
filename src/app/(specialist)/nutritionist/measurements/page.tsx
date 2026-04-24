@@ -3,6 +3,7 @@
 import { Scale } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useState, useEffect } from "react";
+// eslint-disable-next-line import/order
 import { getCurrentUser } from "@/lib/data/client";
 
 const BodyMeasurementTracker = dynamic(
@@ -10,6 +11,7 @@ const BodyMeasurementTracker = dynamic(
   { ssr: false, loading: () => <div className="h-[400px] animate-pulse bg-muted rounded-lg" /> },
 );
 import type { BodyMeasurement } from "@/lib/types/para-medical";
+// eslint-disable-next-line import/order
 import { PageLoader } from "@/components/ui/page-loader";
 
 export default function MeasurementsPage() {

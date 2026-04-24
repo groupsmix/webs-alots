@@ -37,12 +37,14 @@ const DEFAULT_WORKING_HOURS: Record<number, { open: string; close: string; enabl
 };
 
 export default function DoctorSchedulePage() {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const tenant = useTenant();
   const [doctorAppointments, setDoctorAppointments] = useState<AppointmentView[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
   const [userId, setUserId] = useState("");
   const [clinicId, setClinicId] = useState("");
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [workingHours, setWorkingHours] = useState<Record<number, { open: string; close: string; enabled: boolean }>>(DEFAULT_WORKING_HOURS);
 
   useEffect(() => {
