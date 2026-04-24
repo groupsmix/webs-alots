@@ -47,3 +47,6 @@ next-env.d.ts
 
 # Database dumps
 full_backup.sql
+lint.txt
+lint.txt
+*.log

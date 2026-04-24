@@ -1,6 +1,9 @@
 "use client";
 
+import { Palette, Type, ImageIcon, Eye, Save, RotateCcw, Plus, Trash2, Clock } from "lucide-react";
 import { useState } from "react";
+import { Breadcrumb } from "@/components/ui/breadcrumb";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -9,16 +12,13 @@ import {
   CardDescription,
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Palette, Type, ImageIcon, Eye, Save, RotateCcw, Plus, Trash2, Clock } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
 import {
   defaultWebsiteConfig,
   type WebsiteConfig,
 } from "@/lib/website-config";
-import { Breadcrumb } from "@/components/ui/breadcrumb";
 
 export default function WebsiteEditorPage() {
   const [config, setConfig] = useState<WebsiteConfig>(defaultWebsiteConfig);

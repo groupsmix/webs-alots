@@ -1,9 +1,9 @@
 import type { MetadataRoute } from "next";
-import { createAdminClient } from "@/lib/supabase-server";
 import { getAllPosts } from "@/lib/blog";
-import { logger } from "@/lib/logger";
-import { DIRECTORY_CITIES, TOP_CITY_SPECIALTY_COMBOS } from "@/lib/directory-constants";
 import { getDirectoryDoctors } from "@/lib/data/directory";
+import { DIRECTORY_CITIES, TOP_CITY_SPECIALTY_COMBOS } from "@/lib/directory-constants";
+import { logger } from "@/lib/logger";
+import { createAdminClient } from "@/lib/supabase-server";
 
 /**
  * Dynamic sitemap for public-facing pages.

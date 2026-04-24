@@ -1,17 +1,17 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import {
   ClipboardList, AlertTriangle, Clock, FlaskConical,
   ArrowRight, CheckCircle, Hourglass,
 } from "lucide-react";
 import Link from "next/link";
+import { useState, useEffect } from "react";
 import { useTenant } from "@/components/tenant-provider";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
+import { PageLoader } from "@/components/ui/page-loader";
 import { fetchLabTestOrders } from "@/lib/data/client";
 import type { LabTestOrderView } from "@/lib/data/client";
-import { PageLoader } from "@/components/ui/page-loader";
 
 export default function LabDashboardPage() {
   const tenant = useTenant();

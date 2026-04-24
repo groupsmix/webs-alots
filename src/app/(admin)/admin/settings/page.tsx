@@ -1,17 +1,17 @@
 "use client";
 
-import { useState } from "react";
 import { CreditCard, MessageCircle, Calendar, Save, Edit, Ban, Building2, Phone, MapPin, Globe, RefreshCw, Languages, Monitor, Star } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useState } from "react";
+import { useTenant } from "@/components/tenant-provider";
 import { Badge } from "@/components/ui/badge";
+import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Breadcrumb } from "@/components/ui/breadcrumb";
-import { useTenant } from "@/components/tenant-provider";
+import { Textarea } from "@/components/ui/textarea";
 
 /** Defaults used until the tenant settings are fetched from the DB. */
 const DEFAULT_CURRENCY = "MAD";

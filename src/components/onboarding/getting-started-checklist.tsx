@@ -1,12 +1,12 @@
 "use client";
 
-import { useState } from "react";
-import Link from "next/link";
 import {
   Settings, Stethoscope, UserCog, Clock, Palette,
   CheckCircle2, Circle, ChevronDown, ChevronUp, Rocket,
   RotateCcw, X,
 } from "lucide-react";
+import Link from "next/link";
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   ONBOARDING_STEPS,

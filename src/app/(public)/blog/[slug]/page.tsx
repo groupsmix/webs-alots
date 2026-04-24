@@ -1,7 +1,7 @@
-import type { Metadata } from "next";
-import { notFound } from "next/navigation";
-import Link from "next/link";
 import { ArrowLeft, Clock, Calendar, Tag, User } from "lucide-react";
+import type { Metadata } from "next";
+import Link from "next/link";
+import { notFound } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { getAllPosts, getPostBySlug, BLOG_CATEGORIES } from "@/lib/blog";
 import { safeJsonLdStringify } from "@/lib/json-ld";

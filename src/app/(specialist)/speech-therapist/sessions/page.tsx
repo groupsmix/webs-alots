@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import { ClipboardList } from "lucide-react";
+import { useState, useEffect } from "react";
 import { SpeechSessionTracker } from "@/components/para-medical/speech-session-tracker";
+import { PageLoader } from "@/components/ui/page-loader";
 import { getCurrentUser } from "@/lib/data/client";
 import type { SpeechSession } from "@/lib/types/para-medical";
-import { PageLoader } from "@/components/ui/page-loader";
 
 export default function SpeechSessionsPage() {
   const [sessions, setSessions] = useState<SpeechSession[]>([]);

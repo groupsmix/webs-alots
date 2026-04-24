@@ -1,13 +1,16 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import { Search, User, Phone, Calendar, FileText, Pill, AlertCircle } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { useState, useEffect } from "react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { Breadcrumb } from "@/components/ui/breadcrumb";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { DataMask } from "@/components/ui/data-mask";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { PageLoader } from "@/components/ui/page-loader";
 import {
   getCurrentUser,
   fetchPatients,
@@ -19,9 +22,6 @@ import {
   type PrescriptionView,
   type ConsultationNoteView,
 } from "@/lib/data/client";
-import { PageLoader } from "@/components/ui/page-loader";
-import { Breadcrumb } from "@/components/ui/breadcrumb";
-import { DataMask } from "@/components/ui/data-mask";
 
 type Patient = PatientView;
 

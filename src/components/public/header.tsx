@@ -1,12 +1,12 @@
 "use client";
 
-import Link from "next/link";
-import Image from "next/image";
 import { Menu, X } from "lucide-react";
-import { useState } from "react";
+import Image from "next/image";
+import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { buttonVariants } from "@/components/ui/button";
+import { useState } from "react";
 import { useLocale } from "@/components/locale-switcher";
+import { buttonVariants } from "@/components/ui/button";
 import { t, type TranslationKey } from "@/lib/i18n";
 
 interface NavLink {

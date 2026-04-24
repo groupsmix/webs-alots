@@ -1,17 +1,17 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import { Calendar, Clock } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useState, useEffect } from "react";
 import { Badge } from "@/components/ui/badge";
+import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { PageLoader } from "@/components/ui/page-loader";
 import {
   getCurrentUser,
   fetchTimeSlots,
   type TimeSlotView,
 } from "@/lib/data/client";
-import { PageLoader } from "@/components/ui/page-loader";
-import { Breadcrumb } from "@/components/ui/breadcrumb";
 
 const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];

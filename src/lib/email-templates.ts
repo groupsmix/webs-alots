@@ -8,8 +8,6 @@ import { escapeHtml } from "@/lib/escape-html";
 import type { Locale } from "@/lib/i18n";
 import { formatCurrency } from "@/lib/utils";
 
-const LOGO_URL = "https://app.webs-alots.com/logo.png";
-
 function wrap(brandName: string, subject: string, bodyHtml: string): { subject: string; html: string } {
   const safeBrand = escapeHtml(brandName);
   const html = `<!DOCTYPE html>

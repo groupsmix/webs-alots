@@ -1,8 +1,8 @@
 "use client";
 
 import { Building2, Users, BedDouble, Calendar, TrendingUp, Activity } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
 
 interface DepartmentStats {
   id: string;

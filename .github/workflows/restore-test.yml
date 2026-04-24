@@ -1,0 +1,85 @@
+name: Monthly Database Restore Drill
+
+on:
+  schedule:
+    - cron: '0 4 1 * *' # Run at 04:00 on the 1st of every month
+  workflow_dispatch:
+
+jobs:
+  restore-drill:
+    runs-on: ubuntu-latest
+    name: Restore Backup to Scratch DB
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Fetch Latest Encrypted Backup
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          AWS_REGION: auto
+          R2_BUCKET: ${{ secrets.R2_BUCKET }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          aws s3api list-objects-v2 --bucket "$R2_BUCKET" \
+            --endpoint-url "https://${CLOUDFLARE_ACCOUNT_ID}.r2.cloudflarestorage.com" \
+            --query "sort_by(Contents, &LastModified)[-1].Key" \
+            --output text > latest_key.txt
+          
+          LATEST_KEY=$(cat latest_key.txt)
+          echo "Latest backup key: $LATEST_KEY"
+          
+          if [[ "$LATEST_KEY" == "None" || -z "$LATEST_KEY" ]]; then
+            echo "::error::No backups found in R2 bucket."
+            exit 1
+          fi
+
+          aws s3 cp "s3://${R2_BUCKET}/${LATEST_KEY}" latest_backup.sql.gz.gpg \
+            --endpoint-url "https://${CLOUDFLARE_ACCOUNT_ID}.r2.cloudflarestorage.com"
+
+      - name: Decrypt and Decompress Backup
+        env:
+          BACKUP_GPG_PRIVATE_KEY: ${{ secrets.BACKUP_GPG_PRIVATE_KEY }}
+        run: |
+          if [ -z "$BACKUP_GPG_PRIVATE_KEY" ]; then
+            echo "::error::BACKUP_GPG_PRIVATE_KEY secret is not set. Cannot decrypt backup."
+            exit 1
+          fi
+          
+          # Import the private key to decrypt the backup
+          echo "$BACKUP_GPG_PRIVATE_KEY" | gpg --import --batch --yes
+          
+          gpg --decrypt --batch --yes latest_backup.sql.gz.gpg > latest_backup.sql.gz
+          gunzip latest_backup.sql.gz
+
+      - name: Spin up local Supabase
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+      
+      - name: Start Supabase Stack
+        run: supabase start
+
+      - name: Restore Backup to Local DB
+        run: |
+          # Apply the decrypted dump to the local Supabase postgres container
+          psql -h localhost -p 5432 -U postgres -d postgres -f latest_backup.sql
+        env:
+          PGPASSWORD: postgres
+
+      - name: Run Smoke Query
+        run: |
+          # Verify that the clinics table exists and has rows
+          COUNT=$(psql -h localhost -p 5432 -U postgres -d postgres -t -c "SELECT count(*) FROM clinics;")
+          echo "Clinics count: $COUNT"
+          if [ "$COUNT" -eq 0 ]; then
+            echo "::warning::Restore succeeded, but clinics table is empty. This may be expected if the production DB is new."
+          else
+            echo "Smoke query passed. $COUNT clinics restored successfully."
+          fi
+        env:
+          PGPASSWORD: postgres
+
+      - name: Teardown
+        if: always()
+        run: supabase stop

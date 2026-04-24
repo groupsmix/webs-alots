@@ -1,7 +1,5 @@
 "use client";
 
-import { logger } from "@/lib/logger";
-import { t } from "@/lib/i18n";
 import {
   createContext,
   useContext,
@@ -11,6 +9,8 @@ import {
   useEffect,
   type ReactNode,
 } from "react";
+import { t } from "@/lib/i18n";
+import { logger } from "@/lib/logger";
 
 export interface ChatMessage {
   id: string;

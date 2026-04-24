@@ -13,8 +13,8 @@
  */
 
 import { escapeHtml } from "./escape-html";
-import { formatMADFormal } from "./morocco";
 import type { InsuranceTariffType } from "./insurance-billing";
+import { formatMADFormal } from "./morocco";
 
 // ---- Types ----
 

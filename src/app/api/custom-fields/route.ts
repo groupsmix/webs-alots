@@ -1,9 +1,9 @@
-import { withAuth } from "@/lib/with-auth";
-import { logger } from "@/lib/logger";
-import { customFieldCreateSchema, customFieldUpdateSchema } from "@/lib/validations";
-import { withAuthValidation } from "@/lib/api-validate";
-import type { Json } from "@/lib/types/database";
 import { apiError, apiForbidden, apiInternalError, apiSuccess } from "@/lib/api-response";
+import { withAuthValidation } from "@/lib/api-validate";
+import { logger } from "@/lib/logger";
+import type { Json } from "@/lib/types/database";
+import { customFieldCreateSchema, customFieldUpdateSchema } from "@/lib/validations";
+import { withAuth } from "@/lib/with-auth";
 /**
  * GET /api/custom-fields?clinic_type_key=...&entity_type=...
  *

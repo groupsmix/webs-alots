@@ -1,10 +1,10 @@
+import { apiError, apiInternalError, apiNotFound, apiSuccess } from "@/lib/api-response";
+import { withAuthValidation } from "@/lib/api-validate";
 import { logAuditEvent } from "@/lib/audit-log";
+import { STAFF_ROLES } from "@/lib/auth-roles";
 import { requireTenant } from "@/lib/tenant";
 import { APPOINTMENT_STATUS } from "@/lib/types/database";
-import { STAFF_ROLES } from "@/lib/auth-roles";
 import { paymentConfirmSchema } from "@/lib/validations";
-import { withAuthValidation } from "@/lib/api-validate";
-import { apiError, apiInternalError, apiNotFound, apiSuccess } from "@/lib/api-response";
 /**
  * POST /api/booking/payment/confirm
  *

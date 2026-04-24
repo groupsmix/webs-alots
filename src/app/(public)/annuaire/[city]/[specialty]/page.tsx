@@ -1,20 +1,20 @@
-import type { Metadata } from "next";
-import Link from "next/link";
 import { MapPin, Stethoscope, Calendar, Phone } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { buttonVariants } from "@/components/ui/button-variants";
-import { safeJsonLdStringify } from "@/lib/json-ld";
-import { notFound } from "next/navigation";
+import type { Metadata } from "next";
 import Image from "next/image";
+import Link from "next/link";
+import { notFound } from "next/navigation";
+import { HreflangTags } from "@/components/hreflang-tags";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { buttonVariants } from "@/components/ui/button-variants";
+import { Card, CardContent } from "@/components/ui/card";
+import { getDirectoryDoctorsByCityAndSpecialty } from "@/lib/data/directory";
 import {
   getCityBySlug,
   getSpecialtyBySlug,
   TOP_CITY_SPECIALTY_COMBOS,
 } from "@/lib/directory-constants";
-import { getDirectoryDoctorsByCityAndSpecialty } from "@/lib/data/directory";
-import { HreflangTags } from "@/components/hreflang-tags";
+import { safeJsonLdStringify } from "@/lib/json-ld";
 
 const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://oltigo.com";
 const ROOT_DOMAIN = process.env.ROOT_DOMAIN ?? "oltigo.com";

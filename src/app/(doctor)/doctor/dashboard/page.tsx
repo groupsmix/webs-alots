@@ -1,6 +1,6 @@
+import { DoctorDashboardView } from "@/components/doctor/doctor-dashboard-view";
 import { requireAuth } from "@/lib/auth";
 import { getDoctorDashboardData } from "@/lib/data/server";
-import { DoctorDashboardView } from "@/components/doctor/doctor-dashboard-view";
 
 export default async function DoctorDashboardPage() {
   const profile = await requireAuth();

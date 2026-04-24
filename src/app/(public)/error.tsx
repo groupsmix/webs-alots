@@ -1,10 +1,10 @@
 "use client";
 
-import Link from "next/link";
 import { Home } from "lucide-react";
-import { t } from "@/lib/i18n";
-import { useLocale } from "@/components/locale-switcher";
+import Link from "next/link";
 import ClinicErrorBoundary from "@/components/error-boundaries/clinic-error-boundary";
+import { useLocale } from "@/components/locale-switcher";
+import { t } from "@/lib/i18n";
 
 export default function PublicError({
   error,

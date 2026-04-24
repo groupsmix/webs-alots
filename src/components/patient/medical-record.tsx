@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import { Activity, Pill, FileText, Stethoscope, AlertTriangle, TrendingUp } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useState, useEffect } from "react";
 import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { PageLoader } from "@/components/ui/page-loader";
 import {
   getCurrentUser,
   fetchPatientAppointments,
@@ -13,7 +14,6 @@ import {
   type AppointmentView,
   type PrescriptionView,
 } from "@/lib/data/client";
-import { PageLoader } from "@/components/ui/page-loader";
 import { formatDisplayDate } from "@/lib/utils";
 
 /**

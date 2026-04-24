@@ -10,11 +10,11 @@
  */
 
 import { NextRequest } from "next/server";
-import { apiSuccess } from "@/lib/api-response";
-import { invalidateSubdomainCache } from "@/lib/subdomain-cache";
-import { withAuthValidation } from "@/lib/api-validate";
 import { z } from "zod";
+import { apiSuccess } from "@/lib/api-response";
+import { withAuthValidation } from "@/lib/api-validate";
 import { logger } from "@/lib/logger";
+import { invalidateSubdomainCache } from "@/lib/subdomain-cache";
 
 const cacheInvalidateSchema = z.object({
   subdomain: z.string().min(1).max(100),

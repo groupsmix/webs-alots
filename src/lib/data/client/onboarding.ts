@@ -1,8 +1,8 @@
 "use client";
 
 import { createClient } from "@/lib/supabase-client";
-import { getCurrentUser } from "./_core";
 import type { Database } from "@/lib/types/database";
+import { getCurrentUser } from "./_core";
 
 type Json = Database["public"]["Tables"]["users"]["Row"]["metadata"];
 

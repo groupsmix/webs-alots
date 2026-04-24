@@ -1,11 +1,11 @@
 "use client";
 
-import { useState } from "react";
 import {
   CheckCircle, XCircle, TrendingDown, TrendingUp,
 } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
+import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
 import type { PhysioSession } from "@/lib/types/para-medical";
 
 interface PhysioSessionTrackerProps {

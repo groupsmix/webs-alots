@@ -6,8 +6,8 @@
  * Psychiatrist, Neurologist, and remaining specialists.
  */
 
-import { createClient } from "@/lib/supabase-client";
 import { logger } from "@/lib/logger";
+import { createClient } from "@/lib/supabase-client";
 import type { Database } from "@/lib/types/database";
 
 type TableName = keyof Database["public"]["Tables"];

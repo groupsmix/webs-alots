@@ -1,17 +1,20 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
 import {
   Check, X, Search, Filter, Crown, Building2,
   Stethoscope, Pill, ChevronDown, ChevronUp,
   DollarSign, Users, Zap, Settings,
 } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useState, useEffect, useCallback } from "react";
 import { Badge } from "@/components/ui/badge";
+import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Switch } from "@/components/ui/switch";
+import { CardSkeleton } from "@/components/ui/loading-skeleton";
 import { Separator } from "@/components/ui/separator";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Switch } from "@/components/ui/switch";
 import {
   systemTypeLabels,
   tierColors,
@@ -19,9 +22,6 @@ import {
   type TierSlug,
 } from "@/lib/config/pricing";
 import { logger } from "@/lib/logger";
-import { Breadcrumb } from "@/components/ui/breadcrumb";
-import { CardSkeleton } from "@/components/ui/loading-skeleton";
-import { Skeleton } from "@/components/ui/skeleton";
 import {
   fetchClientSubscriptions,
   fetchPricingTiers,

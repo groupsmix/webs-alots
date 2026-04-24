@@ -1,20 +1,20 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
 import {
   User, Clock, ArrowUp, ArrowDown, CheckCircle2, XCircle, Bell,
   UserPlus, Phone, MessageCircle, Timer, Stethoscope
 } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { useState, useCallback, useEffect } from "react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { PageLoader } from "@/components/ui/page-loader";
 import {
   getCurrentUser,
   fetchTodayAppointments,
   fetchPatients,
 } from "@/lib/data/client";
 import { WalkInDialog } from "./walk-in-dialog";
-import { PageLoader } from "@/components/ui/page-loader";
 
 interface WaitingPatient {
   id: string;

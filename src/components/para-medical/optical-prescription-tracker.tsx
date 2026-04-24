@@ -1,12 +1,12 @@
 "use client";
 
-import { useState } from "react";
 import {
   Eye, Clock, CheckCircle, Package, Truck,
   ChevronDown, ChevronUp, AlertCircle,
 } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { OpticalPrescription } from "@/lib/types/para-medical";
 
 const STATUS_VARIANT: Record<string, "default" | "secondary" | "success" | "outline" | "destructive"> = {

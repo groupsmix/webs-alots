@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
 import { Phone, CheckCircle, Clock, ArrowLeft, Loader2 } from "lucide-react";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { useTenant } from "@/components/tenant-provider";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { useTenant } from "@/components/tenant-provider";
 
 type KioskStep = "phone" | "appointments" | "confirming" | "confirmed" | "not-found" | "disabled";
 

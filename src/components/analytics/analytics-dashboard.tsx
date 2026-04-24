@@ -1,5 +1,9 @@
 "use client";
 
+import {
+  Users, TrendingUp, Calendar, XCircle, Globe, Footprints,
+  Star, Clock, RefreshCw, BarChart3, Download,
+} from "lucide-react";
 import { useState, useEffect } from "react";
 /**
  * Audit 5.2 — recharts is code-split because the pages that consume this
@@ -13,13 +17,10 @@ import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip,
   Legend, ResponsiveContainer,
 } from "recharts";
-import {
-  Users, TrendingUp, Calendar, XCircle, Globe, Footprints,
-  Star, Clock, RefreshCw, BarChart3, Download,
-} from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { PageLoader } from "@/components/ui/page-loader";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
   getCurrentUser,
@@ -28,7 +29,6 @@ import {
   type AnalyticsPeriod,
 } from "@/lib/data/client";
 import { exportToCSV } from "@/lib/export-data";
-import { PageLoader } from "@/components/ui/page-loader";
 
 const COLORS = [
   "#2563eb", "#7c3aed", "#db2777", "#ea580c",

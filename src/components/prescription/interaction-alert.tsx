@@ -10,7 +10,6 @@
  * Used in the prescription form — triggered on every medication add/change.
  */
 
-import { useState, useCallback } from "react";
 import {
   AlertTriangle,
   ShieldAlert,
@@ -20,9 +19,10 @@ import {
   ChevronUp,
   CheckCircle2,
 } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { useState, useCallback } from "react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { InteractionAlert } from "@/lib/check-interactions";
 

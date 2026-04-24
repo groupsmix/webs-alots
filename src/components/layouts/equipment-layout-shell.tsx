@@ -1,14 +1,14 @@
 "use client";
 
-import { useState, createContext, useContext, useCallback } from "react";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
 import {
   LayoutDashboard, Package, HandCoins, Wrench,
   Menu, X, Stethoscope, Languages,
 } from "lucide-react";
-import { SignOutButton } from "@/components/sign-out-button";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { useState, createContext, useContext, useCallback } from "react";
 import { FeatureGate } from "@/components/feature-gate";
+import { SignOutButton } from "@/components/sign-out-button";
 
 export type EquipmentLocale = "fr" | "ar";
 

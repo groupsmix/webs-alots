@@ -1,5 +1,5 @@
-import { defaultWebsiteConfig } from "@/lib/website-config";
 import { safeJsonLdStringify } from "@/lib/json-ld";
+import { defaultWebsiteConfig } from "@/lib/website-config";
 
 interface MedicalBusinessSchemaProps {
   /** Override clinic name */

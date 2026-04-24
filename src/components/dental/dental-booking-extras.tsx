@@ -1,12 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import { Stethoscope, Clock, Shield } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
-import { fetchDentalTreatmentTypes, type DentalTreatmentTypeView } from "@/lib/data/client";
+import { useState, useEffect } from "react";
 import { useTenant } from "@/components/tenant-provider";
+import { Badge } from "@/components/ui/badge";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import { fetchDentalTreatmentTypes, type DentalTreatmentTypeView } from "@/lib/data/client";
 import { logger } from "@/lib/logger";
 
 interface DentalBookingExtrasProps {

@@ -1,7 +1,7 @@
 "use client";
 
-import { fetchRows, ensureLookups, _activeUserMap, _activeServiceMap } from "./_core";
 import { createClient } from "@/lib/supabase-client";
+import { fetchRows, ensureLookups, _activeUserMap, _activeServiceMap } from "./_core";
 
 // ─────────────────────────────────────────────
 // Waiting List

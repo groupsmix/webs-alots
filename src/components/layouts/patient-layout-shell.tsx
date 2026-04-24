@@ -1,8 +1,5 @@
 "use client";
 
-import { useState } from "react";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
   Calendar,
@@ -20,16 +17,19 @@ import {
   Camera,
   CreditCard as CreditCardIcon,
 } from "lucide-react";
-import { SignOutButton } from "@/components/sign-out-button";
-import { Button } from "@/components/ui/button";
-import { useLocale } from "@/components/locale-switcher";
-import { t, type TranslationKey } from "@/lib/i18n";
-import { SessionTimeoutWarning } from "@/components/session-timeout-warning";
-import { signOut } from "@/lib/auth";
-import { AutoBreadcrumb } from "@/components/ui/auto-breadcrumb";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { useState } from "react";
+import { MobileMenuOverlay } from "@/components/layouts/mobile-menu-overlay";
 import { MobileTabBar } from "@/components/layouts/mobile-tab-bar";
 import type { MobileTabItem } from "@/components/layouts/mobile-tab-bar";
-import { MobileMenuOverlay } from "@/components/layouts/mobile-menu-overlay";
+import { useLocale } from "@/components/locale-switcher";
+import { SessionTimeoutWarning } from "@/components/session-timeout-warning";
+import { SignOutButton } from "@/components/sign-out-button";
+import { AutoBreadcrumb } from "@/components/ui/auto-breadcrumb";
+import { Button } from "@/components/ui/button";
+import { signOut } from "@/lib/auth";
+import { t, type TranslationKey } from "@/lib/i18n";
 
 interface NavItem {
   href: string;

@@ -1,10 +1,10 @@
-import type { Metadata } from "next";
 import { Phone, Mail, MapPin, MessageCircle } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
-import { defaultWebsiteConfig } from "@/lib/website-config";
-import { safeJsonLdStringify } from "@/lib/json-ld";
+import type { Metadata } from "next";
 import Link from "next/link";
 import { ContactForm } from "@/components/public/contact-form";
+import { Card, CardContent } from "@/components/ui/card";
+import { safeJsonLdStringify } from "@/lib/json-ld";
+import { defaultWebsiteConfig } from "@/lib/website-config";
 
 export const metadata: Metadata = {
   title: "Contact — Nous Joindre",

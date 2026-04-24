@@ -1,9 +1,9 @@
-import type { Metadata } from "next";
 import { CreditCard, Calendar, Info, CheckCircle } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import type { Metadata } from "next";
+import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button-variants";
-import Link from "next/link";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getPublicServices } from "@/lib/data/public";
 import { requireTenantWithConfig } from "@/lib/tenant";
 

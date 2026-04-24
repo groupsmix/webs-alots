@@ -1,17 +1,18 @@
 "use client";
 
+import { Search, Package, ChevronDown, Plus, Pencil, Trash2, Wrench } from "lucide-react";
+import Link from "next/link";
 import { useState, useEffect, useCallback } from "react";
-import { Card, CardContent } from "@/components/ui/card";
+import { useTenant } from "@/components/tenant-provider";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
-import { Search, Package, ChevronDown, Plus, Pencil, Trash2, Wrench } from "lucide-react";
-import Link from "next/link";
-import { useTenant } from "@/components/tenant-provider";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { PageLoader } from "@/components/ui/page-loader";
 import {
   fetchEquipmentInventory,
   createEquipmentItem,
@@ -19,9 +20,8 @@ import {
   deleteEquipmentItem,
 } from "@/lib/data/client";
 import type { EquipmentItemView } from "@/lib/data/client";
-import { useEquipmentLocale } from "../layout";
 import { useEquipmentI18n } from "@/lib/hooks/use-equipment-i18n";
-import { PageLoader } from "@/components/ui/page-loader";
+import { useEquipmentLocale } from "../layout";
 
 const conditionColors: Record<string, string> = {
   new: "bg-emerald-100 text-emerald-700 border-0",

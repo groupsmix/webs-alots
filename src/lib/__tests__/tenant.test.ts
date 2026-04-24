@@ -1,12 +1,10 @@
+import { headers } from "next/headers";
 import { describe, it, expect, vi } from "vitest";
+import { getTenant, TENANT_HEADERS } from "../tenant";
 
-// Mock next/headers
 vi.mock("next/headers", () => ({
   headers: vi.fn(),
 }));
-
-import { getTenant, TENANT_HEADERS } from "../tenant";
-import { headers } from "next/headers";
 
 describe("TENANT_HEADERS", () => {
   it("defines all required header names", () => {

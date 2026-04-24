@@ -7,7 +7,6 @@
  * Each section can be toggled, reordered, and has editable content.
  */
 
-import { useState, useCallback } from "react";
 import {
   GripVertical,
   Eye,
@@ -17,6 +16,7 @@ import {
   Settings,
   Save,
 } from "lucide-react";
+import { useState, useCallback } from "react";
 
 // ---- Types ----
 

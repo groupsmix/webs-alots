@@ -1,7 +1,5 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import Link from "next/link";
 import {
   Building2,
   Users,
@@ -13,15 +11,17 @@ import {
   Clock,
   UserPlus,
 } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { logger } from "@/lib/logger";
+import Link from "next/link";
+import { useState, useEffect, useCallback } from "react";
 import { useLocale } from "@/components/locale-switcher";
-import { t } from "@/lib/i18n";
+import { Badge } from "@/components/ui/badge";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CardSkeleton } from "@/components/ui/loading-skeleton";
 import { Skeleton } from "@/components/ui/skeleton";
+import { t } from "@/lib/i18n";
+import { logger } from "@/lib/logger";
 import {
   fetchDashboardStats,
   fetchAnnouncements,

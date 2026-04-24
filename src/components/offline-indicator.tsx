@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import { WifiOff } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { useState, useEffect } from "react";
 import { useLocale } from "@/components/locale-switcher";
 import { t } from "@/lib/i18n";
+import { cn } from "@/lib/utils";
 
 export function OfflineIndicator() {
   const [locale] = useLocale();

@@ -1,15 +1,15 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
 import { Search, FileStack, Copy } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { useState, useEffect } from "react";
 import { useTenant } from "@/components/tenant-provider";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { PageLoader } from "@/components/ui/page-loader";
 import { fetchRadiologyTemplates } from "@/lib/data/client";
 import type { RadiologyTemplateView } from "@/lib/data/client";
-import { PageLoader } from "@/components/ui/page-loader";
 
 export default function RadiologyTemplatesPage() {
   const tenant = useTenant();

@@ -1,15 +1,15 @@
-import { withAuth } from "@/lib/with-auth";
-import { requireTenant } from "@/lib/tenant";
-import { findOrCreatePatient } from "@/lib/find-or-create-patient";
-import { logAuditEvent } from "@/lib/audit-log";
-import { WAITING_LIST_STATUS } from "@/lib/types/database";
-import { logger } from "@/lib/logger";
-import { waitingListSchema, waitingListDeleteSchema } from "@/lib/validations";
-import { withAuthValidation } from "@/lib/api-validate";
-import { STAFF_ROLES } from "@/lib/auth-roles";
-import type { UserRole } from "@/lib/types/database";
 import { apiError, apiForbidden, apiInternalError, apiRateLimited, apiSuccess } from "@/lib/api-response";
+import { withAuthValidation } from "@/lib/api-validate";
+import { logAuditEvent } from "@/lib/audit-log";
+import { STAFF_ROLES } from "@/lib/auth-roles";
+import { findOrCreatePatient } from "@/lib/find-or-create-patient";
+import { logger } from "@/lib/logger";
 import { waitingListLimiter, extractClientIp } from "@/lib/rate-limit";
+import { requireTenant } from "@/lib/tenant";
+import { WAITING_LIST_STATUS } from "@/lib/types/database";
+import type { UserRole } from "@/lib/types/database";
+import { waitingListSchema, waitingListDeleteSchema } from "@/lib/validations";
+import { withAuth } from "@/lib/with-auth";
 
 const WAITING_LIST_ROLES: UserRole[] = [...STAFF_ROLES, "patient"];
 /**

@@ -8,9 +8,9 @@
  * backups either as downloadable JSON or to a configured storage bucket.
  */
 
+import { logger } from "@/lib/logger";
 import { createClient } from "@/lib/supabase-server";
 import type { Database } from "@/lib/types/database";
-import { logger } from "@/lib/logger";
 
 // ---- Types ----
 

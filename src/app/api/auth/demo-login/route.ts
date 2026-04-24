@@ -9,13 +9,13 @@
 
 import { NextRequest } from "next/server";
 import { z } from "zod";
-import { createAdminClient } from "@/lib/supabase-server";
-import { DEMO_USERS, DEMO_CLINIC_ID } from "@/lib/demo";
 import { apiError, apiSuccess, apiValidationError, apiInternalError, apiForbidden, apiRateLimited } from "@/lib/api-response";
-import { safeParse } from "@/lib/validations";
+import { DEMO_USERS, DEMO_CLINIC_ID } from "@/lib/demo";
 import { logger } from "@/lib/logger";
 import { loginLimiter, extractClientIp } from "@/lib/rate-limit";
+import { createAdminClient } from "@/lib/supabase-server";
 import { createClient } from "@/lib/supabase-server";
+import { safeParse } from "@/lib/validations";
 
 const demoLoginSchema = z.object({
   email: z.string().email(),
@@ -70,16 +70,16 @@ export async function POST(request: NextRequest) {
     const supabase = createAdminClient();
 
     // Ensure the demo auth user exists (idempotent)
-    const { data: existingUsers } = await supabase.auth.admin.listUsers();
-    const existingUser = existingUsers?.users?.find(
-      (u) => u.email?.toLowerCase() === email.toLowerCase(),
-    );
+    // We query the public "users" table by email to find the auth_id.
+    const { data: existingUserProfile } = await supabase
+      .from("users")
+      .select("auth_id")
+      .ilike("email", email)
+      .maybeSingle();
 
-    let userId: string;
+    let userId = existingUserProfile?.auth_id;
 
-    if (existingUser) {
-      userId = existingUser.id;
-    } else {
+    if (!userId) {
       // Create the demo auth user
       const demoUser = Object.values(DEMO_USERS).find((u) => u.email === email);
       const { data: newUser, error: createError } = await supabase.auth.admin.createUser({
@@ -126,7 +126,9 @@ export async function POST(request: NextRequest) {
       return apiInternalError("Impossible de générer le lien de connexion démo");
     }
 
-    // Return the token hash and verification type for client-side verification
+    // Return the token hash and verification type for client-side verification.
+    // Explicitly exclude the raw action_link from the response to prevent caching/leakage
+    // of an immediate session-granting URL over the wire.
     const url = new URL(linkData.properties.action_link);
     const tokenHash = url.searchParams.get("token_hash") ?? url.hash;
     const type = url.searchParams.get("type") ?? "magiclink";
@@ -134,7 +136,6 @@ export async function POST(request: NextRequest) {
     return apiSuccess({
       token_hash: tokenHash,
       type,
-      redirect_url: linkData.properties.action_link,
       user_id: userId,
     });
   } catch (err) {

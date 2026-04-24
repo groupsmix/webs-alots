@@ -1,19 +1,19 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import {
   Package, HandCoins, Wrench, Clock,
   ArrowRight, AlertTriangle, CheckCircle, Bell,
 } from "lucide-react";
 import Link from "next/link";
+import { useState, useEffect } from "react";
 import { useTenant } from "@/components/tenant-provider";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
+import { PageLoader } from "@/components/ui/page-loader";
 import { fetchEquipmentInventory, fetchEquipmentRentals, fetchEquipmentMaintenance } from "@/lib/data/client";
 import type { EquipmentItemView, EquipmentRentalView, EquipmentMaintenanceView } from "@/lib/data/client";
-import { useEquipmentLocale } from "../layout";
 import { useEquipmentI18n } from "@/lib/hooks/use-equipment-i18n";
-import { PageLoader } from "@/components/ui/page-loader";
+import { useEquipmentLocale } from "../layout";
 
 export default function EquipmentDashboardPage() {
   const { locale } = useEquipmentLocale();

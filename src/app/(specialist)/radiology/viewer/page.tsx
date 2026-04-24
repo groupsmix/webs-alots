@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { ExternalLink as ExternalLinkIcon, Monitor, Info, FileImage, Scan } from "lucide-react";
-import { ExternalLink } from "@/components/ui/external-link";
+import { useState, useEffect } from "react";
 import { useTenant } from "@/components/tenant-provider";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
+import { ExternalLink } from "@/components/ui/external-link";
 import { fetchRadiologyOrders } from "@/lib/data/client";
 import type { RadiologyOrderView } from "@/lib/data/client";
 

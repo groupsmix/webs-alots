@@ -40,11 +40,11 @@ export const BLOG_CATEGORIES: Record<BlogCategory, string> = {
 
 // ── Post registry ──
 
-import post1 from "@/content/blog/logiciel-gestion-cabinet-medical-maroc";
+import post5 from "@/content/blog/cnss-cnops-gerer-assurances-cabinet";
 import post2 from "@/content/blog/gestion-cabinet-dentaire-outils";
+import post1 from "@/content/blog/logiciel-gestion-cabinet-medical-maroc";
 import post3 from "@/content/blog/prise-rendez-vous-en-ligne-maroc";
 import post4 from "@/content/blog/whatsapp-medecins-communication-patient";
-import post5 from "@/content/blog/cnss-cnops-gerer-assurances-cabinet";
 
 const ALL_POSTS: BlogPost[] = [post1, post2, post3, post4, post5];
 

@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import { useState, useCallback } from "react";
 import { CommandPalette } from "@/components/command-palette";
-import { usePatientSearch } from "@/lib/hooks/use-patient-search";
-import { useKeyboardShortcuts } from "@/lib/hooks/use-keyboard-shortcuts";
 import { useTenant } from "@/components/tenant-provider";
+import { useKeyboardShortcuts } from "@/lib/hooks/use-keyboard-shortcuts";
+import { usePatientSearch } from "@/lib/hooks/use-patient-search";
 
 /**
  * Command-palette wrapper that searches patients by name, phone, or CIN

@@ -1,8 +1,10 @@
 "use client";
 
+import { Phone, ShieldCheck, ArrowLeft, Heart, Mail, Lock, Key } from "lucide-react";
 import Link from "next/link";
 import { useState, useEffect, useCallback } from "react";
-import { Phone, ShieldCheck, ArrowLeft, Heart, Mail, Lock, Key } from "lucide-react";
+import { useLocale } from "@/components/locale-switcher";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -13,12 +15,10 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Button } from "@/components/ui/button";
 import { signInWithOTP, verifyOTP, signInWithPassword } from "@/lib/auth";
-import { createClient } from "@/lib/supabase-client";
-import { logger } from "@/lib/logger";
 import { t, type TranslationKey } from "@/lib/i18n";
-import { useLocale } from "@/components/locale-switcher";
+import { logger } from "@/lib/logger";
+import { createClient } from "@/lib/supabase-client";
 const PHONE_AUTH_ENABLED = process.env.NEXT_PUBLIC_PHONE_AUTH_ENABLED === "true";
 
 export default function LoginPage() {

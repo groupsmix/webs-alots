@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useContext, useState, useEffect, useCallback } from "react";
+import { getCurrentUser } from "@/lib/data/client";
 import {
   fetchOnboardingState,
   autoDetectCompletedSteps,
@@ -11,7 +12,6 @@ import {
   type OnboardingState,
   type OnboardingStepId,
 } from "@/lib/data/client/onboarding";
-import { getCurrentUser } from "@/lib/data/client";
 
 interface OnboardingContextValue {
   state: OnboardingState | null;

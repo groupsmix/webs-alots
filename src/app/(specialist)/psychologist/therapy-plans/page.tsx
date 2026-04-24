@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import { Target } from "lucide-react";
+import { useState, useEffect } from "react";
 import { TherapyPlanView } from "@/components/para-medical/therapy-plan-view";
+import { PageLoader } from "@/components/ui/page-loader";
 import { getCurrentUser } from "@/lib/data/client";
 import type { TherapyPlan } from "@/lib/types/para-medical";
-import { PageLoader } from "@/components/ui/page-loader";
 
 export default function TherapyPlansPage() {
   const [plans, setPlans] = useState<TherapyPlan[]>([]);

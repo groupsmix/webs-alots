@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Clock, Check, Package, Truck, AlertCircle, RefreshCw, Eye, Loader2 } from "lucide-react";
+import { useState, useEffect } from "react";
 import { useTenant } from "@/components/tenant-provider";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
 import { createClient } from "@/lib/supabase-client";
 
 /** Default currency when tenant config is not yet loaded. */

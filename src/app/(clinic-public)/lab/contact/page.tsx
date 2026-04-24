@@ -1,6 +1,6 @@
+import { Phone, Mail, MapPin, Clock } from "lucide-react";
 import type { Metadata } from "next";
 import { Card, CardContent } from "@/components/ui/card";
-import { Phone, Mail, MapPin, Clock } from "lucide-react";
 
 export const metadata: Metadata = {
   title: "Contact — Laboratoire",

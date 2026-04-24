@@ -1,10 +1,12 @@
 "use client";
 
-import { useRef, useState, useEffect, useCallback } from "react";
 import { Printer, FileText, Calendar, Users, CreditCard, Clock, Download } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { useRef, useState, useEffect, useCallback } from "react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { DataMask } from "@/components/ui/data-mask";
+import { PageLoader } from "@/components/ui/page-loader";
 import {
   getCurrentUser,
   fetchTodayAppointments,
@@ -17,8 +19,6 @@ import {
   type InvoiceView,
 } from "@/lib/data/client";
 import { exportAppointments, exportInvoices } from "@/lib/export-data";
-import { PageLoader } from "@/components/ui/page-loader";
-import { DataMask } from "@/components/ui/data-mask";
 
 const statusVariant: Record<string, "default" | "success" | "warning" | "destructive" | "secondary" | "outline"> = {
   scheduled: "outline",

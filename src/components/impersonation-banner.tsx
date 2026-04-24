@@ -8,12 +8,12 @@
  * with an option to end the session.
  */
 
-import { useState } from "react";
-import { logger } from "@/lib/logger";
 import { AlertTriangle, X } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { useState } from "react";
 import { useLocale } from "@/components/locale-switcher";
+import { Button } from "@/components/ui/button";
 import { t } from "@/lib/i18n";
+import { logger } from "@/lib/logger";
 
 function getCookie(name: string): string | null {
   if (typeof document === "undefined") return null;

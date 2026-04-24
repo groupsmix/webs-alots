@@ -1,8 +1,8 @@
 "use client";
 
-import { ensureLookups, _activeServiceMap } from "./_core";
 import { createClient } from "@/lib/supabase-client";
 import { getLocalDateStr } from "@/lib/utils";
+import { ensureLookups, _activeServiceMap } from "./_core";
 
 // ─────────────────────────────────────────────
 // Analytics (computed from real data)

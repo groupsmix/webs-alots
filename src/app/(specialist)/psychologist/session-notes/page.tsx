@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import { Brain } from "lucide-react";
+import { useState, useEffect } from "react";
 import { TherapySessionNotes } from "@/components/para-medical/therapy-session-notes";
+import { PageLoader } from "@/components/ui/page-loader";
 import { getCurrentUser } from "@/lib/data/client";
 import type { TherapySessionNote } from "@/lib/types/para-medical";
-import { PageLoader } from "@/components/ui/page-loader";
 
 export default function SessionNotesPage() {
   const [sessions, setSessions] = useState<TherapySessionNote[]>([]);

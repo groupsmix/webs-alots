@@ -7,9 +7,9 @@
  * - 1-3 stars: captures feedback privately, notifies clinic admin
  */
 
-import { sendInteractiveMessage, sendTextMessage } from "@/lib/whatsapp";
-import { dispatchNotification } from "@/lib/notifications";
 import { logger } from "@/lib/logger";
+import { dispatchNotification } from "@/lib/notifications";
+import { sendInteractiveMessage, sendTextMessage } from "@/lib/whatsapp";
 
 interface FeedbackFlowParams {
   appointmentId: string;

@@ -2,13 +2,13 @@
 
 import { useState, useEffect } from "react";
 import { TreatmentPlanBuilder } from "@/components/dental/treatment-plan-builder";
+import { Breadcrumb } from "@/components/ui/breadcrumb";
+import { PageLoader } from "@/components/ui/page-loader";
 import {
   getCurrentUser,
   fetchTreatmentPlans,
   type TreatmentPlanView,
 } from "@/lib/data/client";
-import { PageLoader } from "@/components/ui/page-loader";
-import { Breadcrumb } from "@/components/ui/breadcrumb";
 
 export default function PatientTreatmentPlanPage() {
   const [myPlans, setMyPlans] = useState<TreatmentPlanView[]>([]);
