@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import {
   Bell,
   Search,
@@ -14,13 +13,12 @@ import {
   Save,
   AlertTriangle,
 } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useState } from "react";
+import { useLocale } from "@/components/locale-switcher";
 import { Badge } from "@/components/ui/badge";
+import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Switch } from "@/components/ui/switch";
-import { Textarea } from "@/components/ui/textarea";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -28,6 +26,10 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Textarea } from "@/components/ui/textarea";
 import {
   demoNotificationLog,
   defaultNotificationTemplates,
@@ -37,7 +39,7 @@ import {
   type NotificationTemplate,
   type NotificationTrigger,
 } from "@/lib/notifications";
-import { Breadcrumb } from "@/components/ui/breadcrumb";
+import { formatCurrency, formatNumber, formatDisplayDate } from "@/lib/utils";
 
 // ---- Status & Channel Badges ----
 
@@ -57,6 +59,8 @@ const channelConfig: Record<string, { color: string; label: string }> = {
 };
 
 export default function AdminNotificationsPage() {
+  const [locale] = useLocale();
+
   const [logs] = useState<NotificationLogEntry[]>(demoNotificationLog);
   const [templates, setTemplates] = useState<NotificationTemplate[]>(defaultNotificationTemplates);
   const [search, setSearch] = useState("");
@@ -264,7 +268,7 @@ export default function AdminNotificationsPage() {
                           <span>To: <strong>{log.recipientName}</strong> ({log.recipientRole})</span>
                           <span className="flex items-center gap-1">
                             <Clock className="h-3 w-3" />
-                            {new Date(log.createdAt).toLocaleString()}
+                            {formatDisplayDate(new Date(log.createdAt), typeof locale !== "undefined" ? locale : "fr", "datetime")}
                           </span>
                         </div>
                         {log.error && (

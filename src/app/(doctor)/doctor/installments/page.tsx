@@ -1,18 +1,22 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { InstallmentTracker } from "@/components/installments/installment-tracker";
 import { InstallmentForm } from "@/components/installments/installment-form";
+import { InstallmentTracker } from "@/components/installments/installment-tracker";
+import { useLocale } from "@/components/locale-switcher";
+import { Breadcrumb } from "@/components/ui/breadcrumb";
+import { PageLoader } from "@/components/ui/page-loader";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
   getCurrentUser,
   fetchInstallmentPlans,
   type InstallmentPlanView,
 } from "@/lib/data/client";
-import { PageLoader } from "@/components/ui/page-loader";
-import { Breadcrumb } from "@/components/ui/breadcrumb";
+import { formatCurrency, formatNumber } from "@/lib/utils";
 
 export default function DoctorInstallmentsPage() {
+  const [locale] = useLocale();
+
   const [plans, setPlans] = useState<InstallmentPlanView[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
@@ -82,7 +86,7 @@ export default function DoctorInstallmentsPage() {
       "",
       `Patient: ${plan.patientName}`,
       `Treatment: ${plan.treatmentTitle}`,
-      `Amount: ${inst.amount.toLocaleString()} ${plan.currency}`,
+      `Amount: ${formatNumber(inst.amount, typeof locale !== "undefined" ? locale : "fr")} ${plan.currency}`,
       `Date Paid: ${inst.paidDate}`,
       `Receipt ID: ${inst.receiptId || inst.id}`,
       "",

@@ -1,18 +1,18 @@
 "use server";
 
-import { createClient } from "@/lib/supabase-server";
-import { redirect } from "next/navigation";
 import { headers } from "next/headers";
+import { redirect } from "next/navigation";
+import { logAuthEvent } from "@/lib/audit-log";
+import { logger } from "@/lib/logger";
+import { ROLE_DASHBOARD_MAP } from "@/lib/middleware/routes";
 import {
   loginLimiter,
   accountLockoutLimiter,
   otpSendLimiter,
   passwordResetLimiter,
 } from "@/lib/rate-limit";
-import { logger } from "@/lib/logger";
-import { logAuthEvent } from "@/lib/audit-log";
-import { ROLE_DASHBOARD_MAP } from "@/lib/middleware/routes";
 import { isSeedUserBlocked } from "@/lib/seed-guard";
+import { createClient } from "@/lib/supabase-server";
 
 /**
  * Phone auth feature flag.
@@ -171,7 +171,7 @@ export async function signInWithPassword(
  */
 export async function signInWithOTP(phone: string): Promise<{ error: string | null }> {
   if (!isPhoneAuthEnabled()) {
-    return { error: "Phone authentication is not currently available." };
+    return { error: "auth.phoneDisabled" };
   }
 
   // Per-phone rate limit: 3 OTP sends per 60 seconds (prevents SMS pumping)
@@ -204,7 +204,7 @@ export async function verifyOTP(
   token: string,
 ): Promise<{ error: string | null }> {
   if (!isPhoneAuthEnabled()) {
-    return { error: "Phone authentication is not currently available." };
+    return { error: "auth.phoneDisabled" };
   }
 
   const supabase = await createClient();
@@ -245,7 +245,7 @@ export async function registerPatient(data: {
   insurance?: string;
 }): Promise<{ error: string | null }> {
   if (!isPhoneAuthEnabled()) {
-    return { error: "Phone registration is not currently available." };
+    return { error: "auth.phoneDisabled" };
   }
 
   const supabase = await createClient();

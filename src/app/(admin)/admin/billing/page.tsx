@@ -1,21 +1,23 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
 import {
   CreditCard, Receipt, Download, CheckCircle, Clock,
   AlertTriangle, ArrowUpRight, Crown, Shield, Zap,
   Check, X,
 } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Loader2 } from "lucide-react";
+import { useState, useEffect, useCallback } from "react";
+import { useLocale } from "@/components/locale-switcher";
+import { useTenant } from "@/components/tenant-provider";
 import { Badge } from "@/components/ui/badge";
+import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from "@/components/ui/dialog";
-import { Loader2 } from "lucide-react";
+import { Separator } from "@/components/ui/separator";
 import { tierColors, type TierSlug } from "@/lib/config/pricing";
-import { useTenant } from "@/components/tenant-provider";
 import {
   fetchClinicSubscription,
   type ClinicSubscriptionView,
@@ -25,9 +27,11 @@ import {
   fetchPricingTiers,
   type PricingTierRow,
 } from "@/lib/super-admin-actions";
-import { Breadcrumb } from "@/components/ui/breadcrumb";
+import { formatCurrency, formatNumber } from "@/lib/utils";
 
 export default function ClientBillingPage() {
+  const [locale] = useLocale();
+
   const tenant = useTenant();
   const [upgradeOpen, setUpgradeOpen] = useState(false);
   const [selectedUpgrade, setSelectedUpgrade] = useState<TierSlug | null>(null);
@@ -121,7 +125,7 @@ export default function ClientBillingPage() {
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <div>
               <p className="text-xs text-muted-foreground mb-1">Montant</p>
-              <p className="text-lg font-bold">{currentSub.amount.toLocaleString()} MAD</p>
+              <p className="text-lg font-bold">{formatCurrency(currentSub.amount, typeof locale !== "undefined" ? locale : "fr", "MAD")}</p>
               <p className="text-xs text-muted-foreground">/ {currentSub.billingCycle === "monthly" ? "mois" : "an"}</p>
             </div>
             <div>
@@ -184,13 +188,13 @@ export default function ClientBillingPage() {
                 <div className="rounded-lg border p-3">
                   <p className="text-xs text-muted-foreground">Patients max</p>
                   <p className="text-lg font-bold">
-                    {currentTier.limits.maxPatients === -1 ? "Illimité" : currentTier.limits.maxPatients.toLocaleString()}
+                    {currentTier.limits.maxPatients === -1 ? "Illimité" : formatNumber(currentTier.limits.maxPatients, typeof locale !== "undefined" ? locale : "fr")}
                   </p>
                 </div>
                 <div className="rounded-lg border p-3">
                   <p className="text-xs text-muted-foreground">RDV / mois</p>
                   <p className="text-lg font-bold">
-                    {currentTier.limits.maxAppointmentsPerMonth === -1 ? "Illimité" : currentTier.limits.maxAppointmentsPerMonth.toLocaleString()}
+                    {currentTier.limits.maxAppointmentsPerMonth === -1 ? "Illimité" : formatNumber(currentTier.limits.maxAppointmentsPerMonth, typeof locale !== "undefined" ? locale : "fr")}
                   </p>
                 </div>
                 <div className="rounded-lg border p-3">
@@ -220,7 +224,7 @@ export default function ClientBillingPage() {
                     <div className="flex items-center gap-3">
                       {statusIcon(inv.status)}
                       <div>
-                        <p className="text-sm font-medium">{inv.amount.toLocaleString()} MAD</p>
+                        <p className="text-sm font-medium">{formatCurrency(inv.amount, typeof locale !== "undefined" ? locale : "fr", "MAD")}</p>
                         <p className="text-xs text-muted-foreground">{inv.date}</p>
                       </div>
                     </div>
@@ -274,7 +278,7 @@ export default function ClientBillingPage() {
                         </div>
                       </div>
                       <div className="text-right">
-                        <p className="text-sm font-bold">{price.toLocaleString()} MAD</p>
+                        <p className="text-sm font-bold">{formatCurrency(price, typeof locale !== "undefined" ? locale : "fr", "MAD")}</p>
                         <p className="text-[10px] text-muted-foreground">/ mois</p>
                         {!isCurrent && (
                           <Button
@@ -315,13 +319,13 @@ export default function ClientBillingPage() {
                   <div>
                     <p className="text-sm text-muted-foreground">Plan actuel</p>
                     <p className="font-medium">{currentSub.tierName}</p>
-                    <p className="text-sm text-muted-foreground">{currentSub.amount.toLocaleString()} MAD/mois</p>
+                    <p className="text-sm text-muted-foreground">{formatCurrency(currentSub.amount, typeof locale !== "undefined" ? locale : "fr", "MAD")}/mois</p>
                   </div>
                   <ArrowUpRight className="h-5 w-5 text-muted-foreground" />
                   <div className="text-right">
                     <p className="text-sm text-muted-foreground">Nouveau plan</p>
                     <p className="font-medium">{upgradeTier.name}</p>
-                    <p className="text-sm font-bold text-primary">{newPrice.toLocaleString()} MAD/mois</p>
+                    <p className="text-sm font-bold text-primary">{formatCurrency(newPrice, typeof locale !== "undefined" ? locale : "fr", "MAD")}/mois</p>
                   </div>
                 </div>
                 {currentTier && (

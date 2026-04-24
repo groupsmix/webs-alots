@@ -1,13 +1,15 @@
 "use client";
 
-import { useState } from "react";
 import { Package, Plus, Sparkles, Users } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useState } from "react";
+import { useLocale } from "@/components/locale-switcher";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { formatCurrency, formatNumber } from "@/lib/utils";
 
 interface PackageView {
   id: string;
@@ -40,6 +42,8 @@ interface TreatmentPackagesProps {
 }
 
 export function TreatmentPackages({ packages, patientPackages = [], editable = false, onAddPackage, onRecordSession }: TreatmentPackagesProps) {
+  const [locale] = useLocale();
+
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ name: "", description: "", totalSessions: "6", price: "", discountPercent: "0" });
 
@@ -130,7 +134,7 @@ export function TreatmentPackages({ packages, patientPackages = [], editable = f
                   {pkg.description && <p className="text-xs text-muted-foreground mb-3">{pkg.description}</p>}
                   <div className="flex items-center justify-between text-xs">
                     <div>
-                      <span className="text-lg font-bold">{pkg.price.toLocaleString()}</span>
+                      <span className="text-lg font-bold">{formatNumber(pkg.price, typeof locale !== "undefined" ? locale : "fr")}</span>
                       <span className="text-muted-foreground"> MAD</span>
                       {pkg.discountPercent > 0 && (
                         <Badge variant="success" className="ml-1 text-[10px]">-{pkg.discountPercent}%</Badge>

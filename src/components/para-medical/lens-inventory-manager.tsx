@@ -1,13 +1,15 @@
 "use client";
 
-import { useState } from "react";
 import {
   Search, AlertTriangle, Package,
 } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
+import { useState } from "react";
+import { useLocale } from "@/components/locale-switcher";
 import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import type { LensInventoryItem } from "@/lib/types/para-medical";
+import { formatCurrency, formatNumber } from "@/lib/utils";
 
 const TYPE_LABELS: Record<string, string> = {
   single_vision: "Single Vision",
@@ -22,6 +24,8 @@ interface LensInventoryManagerProps {
 }
 
 export function LensInventoryManager({ items }: LensInventoryManagerProps) {
+  const [locale] = useLocale();
+
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState<string | null>(null);
 
@@ -56,7 +60,7 @@ export function LensInventoryManager({ items }: LensInventoryManagerProps) {
         </Card>
         <Card>
           <CardContent className="p-4 text-center">
-            <p className="text-2xl font-bold">{totalValue.toLocaleString()}</p>
+            <p className="text-2xl font-bold">{formatNumber(totalValue, typeof locale !== "undefined" ? locale : "fr")}</p>
             <p className="text-xs text-muted-foreground">Inventory Value (MAD)</p>
           </CardContent>
         </Card>

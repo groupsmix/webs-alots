@@ -1,10 +1,12 @@
 "use client";
 
-import { useState } from "react";
-import dynamic from "next/dynamic";
 import { TrendingUp } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import dynamic from "next/dynamic";
+import { useState } from "react";
+import { useLocale } from "@/components/locale-switcher";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { formatCurrency, formatNumber } from "@/lib/utils";
 
 export interface RevenueDataPoint {
   name: string;
@@ -35,7 +37,7 @@ const RevenueAreaChart = dynamic<{ data: RevenueDataPoint[]; currency: string }>
               <XAxis dataKey="name" tick={{ fontSize: 11 }} />
               <YAxis tick={{ fontSize: 11 }} />
               <Tooltip
-                formatter={(value) => [`${Number(value).toLocaleString()} ${currency}`, "Revenue"]}
+                formatter={(value) => [`${formatNumber(Number(value), "fr")} ${currency}`, "Revenue"]}
                 contentStyle={{ borderRadius: "8px", fontSize: "12px" }}
               />
               <Area type="monotone" dataKey="revenue" stroke="#2563eb" fill="#2563eb" fillOpacity={0.15} strokeWidth={2} />
@@ -56,6 +58,8 @@ const RevenueAreaChart = dynamic<{ data: RevenueDataPoint[]; currency: string }>
 );
 
 export function RevenueChart({ dailyData, weeklyData, monthlyData, currency = "MAD" }: RevenueChartProps) {
+  const [locale] = useLocale();
+
   const [period, setPeriod] = useState<"daily" | "weekly" | "monthly">("daily");
 
   const data = period === "daily" ? dailyData : period === "weekly" ? weeklyData : monthlyData;

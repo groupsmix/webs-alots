@@ -1,9 +1,5 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
   ClipboardList, AlertTriangle,
   Clock, DollarSign, ArrowRight,
@@ -11,7 +7,13 @@ import {
   Package, Pill, BarChart3,
 } from "lucide-react";
 import Link from "next/link";
+import { useState, useEffect, useMemo } from "react";
+import { useLocale } from "@/components/locale-switcher";
 import { useTenant } from "@/components/tenant-provider";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
+import { PageLoader } from "@/components/ui/page-loader";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
   fetchProducts,
   fetchPrescriptionRequests,
@@ -29,7 +31,7 @@ import type {
   PurchaseOrderView,
   LoyaltyMemberView,
 } from "@/lib/data/client";
-import { PageLoader } from "@/components/ui/page-loader";
+import { formatCurrency, formatNumber } from "@/lib/utils";
 
 // ── Date helpers ──
 
@@ -51,6 +53,8 @@ function toDateStr(d: Date): string {
 }
 
 export default function PharmacistDashboardPage() {
+  const [locale] = useLocale();
+
   const tenant = useTenant();
   const [products, setProducts] = useState<ProductView[]>([]);
   const [prescriptions, setPrescriptions] = useState<PharmacyPrescriptionView[]>([]);
@@ -171,7 +175,7 @@ export default function PharmacistDashboardPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Today&apos;s Sales</p>
-                <p className="text-3xl font-bold">{todayRevenue.toLocaleString()} <span className="text-sm font-normal">MAD</span></p>
+                <p className="text-3xl font-bold">{formatNumber(todayRevenue, typeof locale !== "undefined" ? locale : "fr")} <span className="text-sm font-normal">MAD</span></p>
                 <p className="text-xs text-muted-foreground mt-1">{todaySales.length} transaction{todaySales.length !== 1 ? "s" : ""}</p>
               </div>
               <div className="h-12 w-12 rounded-lg bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 flex items-center justify-center">
@@ -257,7 +261,7 @@ export default function PharmacistDashboardPage() {
 
         <TabsContent value="daily">
           <div className="grid gap-4 md:grid-cols-4">
-            <Card><CardContent className="p-4"><p className="text-xs text-muted-foreground">Revenue</p><p className="text-2xl font-bold">{todayRevenue.toLocaleString()} MAD</p></CardContent></Card>
+            <Card><CardContent className="p-4"><p className="text-xs text-muted-foreground">Revenue</p><p className="text-2xl font-bold">{formatCurrency(todayRevenue, typeof locale !== "undefined" ? locale : "fr", "MAD")}</p></CardContent></Card>
             <Card><CardContent className="p-4"><p className="text-xs text-muted-foreground">Transactions</p><p className="text-2xl font-bold">{todaySales.length}</p></CardContent></Card>
             <Card><CardContent className="p-4"><p className="text-xs text-muted-foreground">With Prescription</p><p className="text-2xl font-bold text-blue-600">{todaySales.filter(s => s.hasPrescription).length}</p></CardContent></Card>
             <Card><CardContent className="p-4"><p className="text-xs text-muted-foreground">Avg. Basket</p><p className="text-2xl font-bold">{todaySales.length > 0 ? Math.round(todayRevenue / todaySales.length).toLocaleString() : 0} MAD</p></CardContent></Card>
@@ -266,7 +270,7 @@ export default function PharmacistDashboardPage() {
 
         <TabsContent value="weekly">
           <div className="grid gap-4 md:grid-cols-4">
-            <Card><CardContent className="p-4"><p className="text-xs text-muted-foreground">Revenue</p><p className="text-2xl font-bold">{weekRevenue.toLocaleString()} MAD</p></CardContent></Card>
+            <Card><CardContent className="p-4"><p className="text-xs text-muted-foreground">Revenue</p><p className="text-2xl font-bold">{formatCurrency(weekRevenue, typeof locale !== "undefined" ? locale : "fr", "MAD")}</p></CardContent></Card>
             <Card><CardContent className="p-4"><p className="text-xs text-muted-foreground">Transactions</p><p className="text-2xl font-bold">{weekSales.length}</p></CardContent></Card>
             <Card><CardContent className="p-4"><p className="text-xs text-muted-foreground">With Prescription</p><p className="text-2xl font-bold text-blue-600">{weekSales.filter(s => s.hasPrescription).length}</p></CardContent></Card>
             <Card><CardContent className="p-4"><p className="text-xs text-muted-foreground">Avg. Basket</p><p className="text-2xl font-bold">{weekSales.length > 0 ? Math.round(weekRevenue / weekSales.length).toLocaleString() : 0} MAD</p></CardContent></Card>
@@ -275,7 +279,7 @@ export default function PharmacistDashboardPage() {
 
         <TabsContent value="monthly">
           <div className="grid gap-4 md:grid-cols-4">
-            <Card><CardContent className="p-4"><p className="text-xs text-muted-foreground">Revenue</p><p className="text-2xl font-bold">{monthRevenue.toLocaleString()} MAD</p></CardContent></Card>
+            <Card><CardContent className="p-4"><p className="text-xs text-muted-foreground">Revenue</p><p className="text-2xl font-bold">{formatCurrency(monthRevenue, typeof locale !== "undefined" ? locale : "fr", "MAD")}</p></CardContent></Card>
             <Card><CardContent className="p-4"><p className="text-xs text-muted-foreground">Transactions</p><p className="text-2xl font-bold">{monthSales.length}</p></CardContent></Card>
             <Card><CardContent className="p-4"><p className="text-xs text-muted-foreground">With Prescription</p><p className="text-2xl font-bold text-blue-600">{monthSales.filter(s => s.hasPrescription).length}</p></CardContent></Card>
             <Card><CardContent className="p-4"><p className="text-xs text-muted-foreground">Avg. Basket</p><p className="text-2xl font-bold">{monthSales.length > 0 ? Math.round(monthRevenue / monthSales.length).toLocaleString() : 0} MAD</p></CardContent></Card>
@@ -307,7 +311,7 @@ export default function PharmacistDashboardPage() {
                       <p className="font-medium text-sm truncate">{product.name}</p>
                       <p className="text-xs text-muted-foreground">{product.qty} units sold</p>
                     </div>
-                    <p className="font-semibold text-sm">{product.revenue.toLocaleString()} MAD</p>
+                    <p className="font-semibold text-sm">{formatCurrency(product.revenue, typeof locale !== "undefined" ? locale : "fr", "MAD")}</p>
                   </div>
                 ))
               )}
@@ -480,7 +484,7 @@ export default function PharmacistDashboardPage() {
                     <p className="text-xs text-muted-foreground">{order.items.length} item{order.items.length > 1 ? "s" : ""} - Expected: {order.expectedDelivery}</p>
                   </div>
                   <div className="text-right">
-                    <p className="font-semibold text-sm">{order.totalAmount.toLocaleString()} MAD</p>
+                    <p className="font-semibold text-sm">{formatCurrency(order.totalAmount, typeof locale !== "undefined" ? locale : "fr", "MAD")}</p>
                     <Badge className={
                       order.status === "shipped" ? "bg-blue-100 text-blue-700 border-0 text-xs" :
                       order.status === "confirmed" ? "bg-emerald-100 text-emerald-700 border-0 text-xs" :

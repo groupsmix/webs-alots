@@ -1,10 +1,12 @@
 "use client";
 
-import { useState } from "react";
 import { TrendingUp, DollarSign, ArrowUpRight, ArrowDownRight } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useState } from "react";
+import { useLocale } from "@/components/locale-switcher";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { formatCurrency, formatNumber } from "@/lib/utils";
 
 type Period = "daily" | "weekly" | "monthly";
 
@@ -14,6 +16,8 @@ type Period = "daily" | "weekly" | "monthly";
  * Displays daily/weekly/monthly revenue charts for the clinic admin.
  */
 export function RevenueChart() {
+  const [locale] = useLocale();
+
   const [period, setPeriod] = useState<Period>("weekly");
 
   const data: Record<Period, { labels: string[]; values: number[]; total: number; change: number }> = {
@@ -63,7 +67,7 @@ export function RevenueChart() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Total Revenue</p>
-                <p className="text-2xl font-bold">{currentData.total.toLocaleString()} MAD</p>
+                <p className="text-2xl font-bold">{formatCurrency(currentData.total, typeof locale !== "undefined" ? locale : "fr", "MAD")}</p>
               </div>
               <div className="h-10 w-10 rounded-full bg-green-100 dark:bg-green-900 flex items-center justify-center">
                 <DollarSign className="h-5 w-5 text-green-600" />
@@ -84,7 +88,7 @@ export function RevenueChart() {
         <Card>
           <CardContent className="pt-4 pb-4">
             <p className="text-sm text-muted-foreground">Average per Day</p>
-            <p className="text-2xl font-bold">{Math.round(currentData.total / currentData.labels.length).toLocaleString()} MAD</p>
+            <p className="text-2xl font-bold">{formatCurrency(Math.round(currentData.total / currentData.labels.length), typeof locale !== "undefined" ? locale : "fr", "MAD")}</p>
             <p className="text-xs text-muted-foreground mt-2">Across {currentData.labels.length} periods</p>
           </CardContent>
         </Card>
@@ -148,7 +152,7 @@ export function RevenueChart() {
                 <div key={service.name}>
                   <div className="flex items-center justify-between text-sm mb-1">
                     <span>{service.name}</span>
-                    <span className="font-medium">{service.revenue.toLocaleString()} MAD</span>
+                    <span className="font-medium">{formatCurrency(service.revenue, typeof locale !== "undefined" ? locale : "fr", "MAD")}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
@@ -172,7 +176,7 @@ export function RevenueChart() {
                 <div key={pm.method}>
                   <div className="flex items-center justify-between text-sm mb-1">
                     <span>{pm.method}</span>
-                    <span className="font-medium">{pm.amount.toLocaleString()} MAD ({pm.percentage}%)</span>
+                    <span className="font-medium">{formatCurrency(pm.amount, typeof locale !== "undefined" ? locale : "fr", "MAD")} ({pm.percentage}%)</span>
                   </div>
                   <div className="h-3 bg-muted rounded-full overflow-hidden">
                     <div className="h-full bg-primary/70 rounded-full" style={{ width: `${pm.percentage}%` }} />
@@ -184,7 +188,7 @@ export function RevenueChart() {
               <h4 className="text-sm font-medium mb-3">Collection Summary</h4>
               <div className="grid grid-cols-2 gap-3">
                 <div className="text-center p-3 border rounded-lg">
-                  <p className="text-lg font-bold text-green-600">{(currentData.total * 0.88).toLocaleString()} MAD</p>
+                  <p className="text-lg font-bold text-green-600">{formatCurrency((currentData.total * 0.88), typeof locale !== "undefined" ? locale : "fr", "MAD")}</p>
                   <p className="text-xs text-muted-foreground">Collected</p>
                 </div>
                 <div className="text-center p-3 border rounded-lg">

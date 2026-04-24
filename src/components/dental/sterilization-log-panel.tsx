@@ -1,13 +1,15 @@
 "use client";
 
-import { useState } from "react";
 import { ShieldCheck, Plus, AlertTriangle, Clock } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useState } from "react";
+import { useLocale } from "@/components/locale-switcher";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import type { SterilizationEntry } from "@/lib/types/dental";
+import { formatCurrency, formatNumber, formatDisplayDate } from "@/lib/utils";
 
 interface SterilizationLogPanelProps {
   entries: SterilizationEntry[];
@@ -15,6 +17,8 @@ interface SterilizationLogPanelProps {
 }
 
 export function SterilizationLogPanel({ entries, onAddEntry }: SterilizationLogPanelProps) {
+  const [locale] = useLocale();
+
   const [showAddForm, setShowAddForm] = useState(false);
   const [newEntry, setNewEntry] = useState({
     toolName: "",
@@ -141,11 +145,11 @@ export function SterilizationLogPanel({ entries, onAddEntry }: SterilizationLogP
                       </Badge>
                     </div>
                     <div className="text-xs text-muted-foreground mt-1 space-y-0.5">
-                      <p>By: {entry.sterilizedBy} &middot; {new Date(entry.sterilizedAt).toLocaleString()}</p>
+                      <p>By: {entry.sterilizedBy} &middot; {formatDisplayDate(new Date(entry.sterilizedAt), typeof locale !== "undefined" ? locale : "fr", "datetime")}</p>
                       {entry.nextDue && (
                         <p className={`flex items-center gap-1 ${overdue ? "text-red-500 font-medium" : ""}`}>
                           <Clock className="h-3 w-3" />
-                          Next due: {new Date(entry.nextDue).toLocaleString()}
+                          Next due: {formatDisplayDate(new Date(entry.nextDue), typeof locale !== "undefined" ? locale : "fr", "datetime")}
                           {overdue && " (OVERDUE)"}
                         </p>
                       )}

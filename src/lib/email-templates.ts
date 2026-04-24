@@ -5,6 +5,10 @@
  */
 
 import { escapeHtml } from "@/lib/escape-html";
+import type { Locale } from "@/lib/i18n";
+import { formatCurrency } from "@/lib/utils";
+
+const LOGO_URL = "https://app.webs-alots.com/logo.png";
 
 function wrap(brandName: string, subject: string, bodyHtml: string): { subject: string; html: string } {
   const safeBrand = escapeHtml(brandName);
@@ -189,15 +193,16 @@ export function paymentFailedEmail(params: {
   recipientName: string;
   amount: number;
   currency: string;
+  locale?: Locale;
 }): { subject: string; html: string } {
-  const { clinicName, recipientName, amount, currency } = params;
+  const { clinicName, recipientName, amount, currency, locale = "fr" } = params;
   const body = `
     <h2 style="margin:0 0 16px;font-size:18px;color:#dc2626;">Payment Failed</h2>
     <p style="font-size:14px;line-height:1.6;color:#475569;">
       Hello ${escapeHtml(recipientName)},
     </p>
     <p style="font-size:14px;line-height:1.6;color:#475569;">
-      A payment of <strong>${amount.toLocaleString()} ${escapeHtml(currency)}</strong> for clinic
+      A payment of <strong>${formatCurrency(amount, locale, currency)}</strong> for clinic
       <strong>${escapeHtml(clinicName)}</strong> has failed.
     </p>
     <p style="font-size:14px;line-height:1.6;color:#475569;">

@@ -1,12 +1,15 @@
 "use client";
 
+import {
+  Search, Filter, ChevronDown, Scan, Plus,
+  FileText, Loader2,
+} from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
-import { Card, CardContent } from "@/components/ui/card";
+import { useLocale } from "@/components/locale-switcher";
+import { useTenant } from "@/components/tenant-provider";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -16,6 +19,9 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { PageLoader } from "@/components/ui/page-loader";
 import {
   Select,
   SelectContent,
@@ -23,20 +29,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Search, Filter, ChevronDown, Scan, Plus,
-  FileText, Loader2,
-} from "lucide-react";
-import { useTenant } from "@/components/tenant-provider";
+import { Textarea } from "@/components/ui/textarea";
 import { fetchRadiologyOrders, fetchRadiologyTemplates } from "@/lib/data/client";
 import type { RadiologyOrderView, RadiologyTemplateView } from "@/lib/data/client";
-import { PageLoader } from "@/components/ui/page-loader";
+import { formatCurrency, formatNumber } from "@/lib/utils";
 
 const statusOptions = ["all", "pending", "scheduled", "in_progress", "images_ready", "reported", "validated", "cancelled"] as const;
 const modalityOptions = ["xray", "ct", "mri", "ultrasound", "mammography", "pet", "fluoroscopy", "other"] as const;
 const priorityOptions = ["normal", "urgent", "stat"] as const;
 
 export default function RadiologyOrdersPage() {
+  const [locale] = useLocale();
+
   const tenant = useTenant();
   const [orders, setOrders] = useState<RadiologyOrderView[]>([]);
   const [templates, setTemplates] = useState<RadiologyTemplateView[]>([]);

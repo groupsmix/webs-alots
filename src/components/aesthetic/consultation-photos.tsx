@@ -1,14 +1,16 @@
 "use client";
 
-import { useState } from "react";
-import Image from "next/image";
 import { Camera, Plus, MapPin, StickyNote } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import Image from "next/image";
+import { useState } from "react";
+import { useLocale } from "@/components/locale-switcher";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { formatCurrency, formatNumber, formatDisplayDate } from "@/lib/utils";
 
 interface PhotoView {
   id: string;
@@ -28,6 +30,8 @@ interface ConsultationPhotosProps {
 }
 
 export function ConsultationPhotos({ photos, editable = false, onAddPhoto }: ConsultationPhotosProps) {
+  const [locale] = useLocale();
+
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ bodyArea: "", notes: "" });
   const [selectedPhoto, setSelectedPhoto] = useState<PhotoView | null>(null);
@@ -156,7 +160,7 @@ export function ConsultationPhotos({ photos, editable = false, onAddPhoto }: Con
                       </div>
                     </div>
                   )}
-                  <p className="text-xs text-muted-foreground">Taken: {new Date(selectedPhoto.takenAt).toLocaleString()}</p>
+                  <p className="text-xs text-muted-foreground">Taken: {formatDisplayDate(new Date(selectedPhoto.takenAt), typeof locale !== "undefined" ? locale : "fr", "datetime")}</p>
                 </CardContent>
               </Card>
             </div>

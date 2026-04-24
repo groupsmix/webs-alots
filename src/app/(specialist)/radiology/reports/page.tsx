@@ -1,17 +1,21 @@
 "use client";
 
+import { Search, FileText, Download, Scan, Loader2 } from "lucide-react";
 import { useState, useEffect } from "react";
-import { Card, CardContent } from "@/components/ui/card";
+import { useLocale } from "@/components/locale-switcher";
+import { useTenant } from "@/components/tenant-provider";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Search, FileText, Download, Scan, Loader2 } from "lucide-react";
-import { useTenant } from "@/components/tenant-provider";
+import { PageLoader } from "@/components/ui/page-loader";
 import { fetchRadiologyOrders } from "@/lib/data/client";
 import type { RadiologyOrderView } from "@/lib/data/client";
-import { PageLoader } from "@/components/ui/page-loader";
+import { formatCurrency, formatNumber } from "@/lib/utils";
 
 export default function RadiologyReportsPage() {
+  const [locale] = useLocale();
+
   const tenant = useTenant();
   const [orders, setOrders] = useState<RadiologyOrderView[]>([]);
   const [loading, setLoading] = useState(true);

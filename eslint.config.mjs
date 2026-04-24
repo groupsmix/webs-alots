@@ -2,6 +2,7 @@ import { defineConfig, globalIgnores } from "eslint/config";
 import nextVitals from "eslint-config-next/core-web-vitals";
 import nextTs from "eslint-config-next/typescript";
 import reactHooksPlugin from "eslint-plugin-react-hooks";
+import i18nextPlugin from "eslint-plugin-i18next";
 
 const eslintConfig = defineConfig([
   ...nextVitals,
@@ -17,6 +18,7 @@ const eslintConfig = defineConfig([
   {
     plugins: {
       "react-hooks": reactHooksPlugin,
+      "i18next": i18nextPlugin,
     },
     rules: {
       "react-hooks/set-state-in-effect": "warn",
@@ -46,8 +48,29 @@ const eslintConfig = defineConfig([
         "newlines-between": "never",
         "alphabetize": { "order": "asc", "caseInsensitive": true },
       }],
+      // i18n rules to catch hardcoded literal strings in UI
+      "i18next/no-literal-string": ["warn", {
+        "markupOnly": true,
+        "ignoreAttribute": ["data-testid", "className", "type", "id", "name", "value", "htmlFor", "role", "href", "target", "rel", "src", "alt", "variant", "size", "key", "placeholder"],
+      }],
     },
   },
+  {
+    // Enforce no-literal-string strictly on the fully translated auth/2fa folders
+    files: [
+      "src/app/(auth)/setup-2fa/**/*.{ts,tsx}",
+      "src/components/doctor/mfa-settings.tsx",
+      "src/app/(auth)/login/**/*.{ts,tsx}",
+      "src/app/(auth)/register/**/*.{ts,tsx}",
+      "src/app/(auth)/forgot-password/**/*.{ts,tsx}"
+    ],
+    rules: {
+      "i18next/no-literal-string": ["error", {
+        "markupOnly": true,
+        "ignoreAttribute": ["data-testid", "className", "type", "id", "name", "value", "htmlFor", "role", "href", "target", "rel", "src", "alt", "variant", "size", "key", "placeholder"],
+      }],
+    }
+  }
 ]);
 
 export default eslintConfig;

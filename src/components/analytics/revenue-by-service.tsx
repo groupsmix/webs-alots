@@ -1,8 +1,10 @@
 "use client";
 
-import dynamic from "next/dynamic";
 import { BarChart3 } from "lucide-react";
+import dynamic from "next/dynamic";
+import { useLocale } from "@/components/locale-switcher";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { formatCurrency, formatNumber } from "@/lib/utils";
 
 const COLORS = [
   "#2563eb", "#7c3aed", "#db2777", "#ea580c",
@@ -44,7 +46,7 @@ const LazyServicePie = dynamic<{ data: ServiceRevenueData[]; currency: string; c
                 ))}
               </Pie>
               <Tooltip
-                formatter={(value) => [`${Number(value).toLocaleString()} ${currency}`, "Revenue"]}
+                formatter={(value) => [`${formatNumber(Number(value), "fr")} ${currency}`, "Revenue"]}
                 contentStyle={{ borderRadius: "8px", fontSize: "12px" }}
               />
               <Legend />
@@ -65,6 +67,8 @@ const LazyServicePie = dynamic<{ data: ServiceRevenueData[]; currency: string; c
 );
 
 export function RevenueByService({ data, currency = "MAD" }: RevenueByServiceProps) {
+  const [locale] = useLocale();
+
   if (data.length === 0) {
     return (
       <Card>

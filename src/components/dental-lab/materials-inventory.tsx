@@ -1,12 +1,14 @@
 "use client";
 
-import { useState } from "react";
 import { Boxes, Plus, AlertTriangle, Package } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useState } from "react";
+import { useLocale } from "@/components/locale-switcher";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { formatCurrency, formatNumber } from "@/lib/utils";
 
 interface MaterialView {
   id: string;
@@ -29,6 +31,8 @@ interface MaterialsInventoryProps {
 }
 
 export function MaterialsInventory({ materials, editable = false, onAdd, onRestock }: MaterialsInventoryProps) {
+  const [locale] = useLocale();
+
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ name: "", category: "", quantity: "0", unit: "pcs", minThreshold: "5", unitCost: "", supplier: "" });
   const [restockId, setRestockId] = useState<string | null>(null);
@@ -88,7 +92,7 @@ export function MaterialsInventory({ materials, editable = false, onAdd, onResto
         </Card>
         <Card>
           <CardContent className="p-3 text-center">
-            <p className="text-xl font-bold">{totalValue.toLocaleString()}</p>
+            <p className="text-xl font-bold">{formatNumber(totalValue, typeof locale !== "undefined" ? locale : "fr")}</p>
             <p className="text-xs text-muted-foreground">Total Value (MAD)</p>
           </CardContent>
         </Card>

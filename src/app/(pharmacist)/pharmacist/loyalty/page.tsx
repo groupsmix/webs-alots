@@ -1,19 +1,21 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
   Gift, Search, Users, Star, Crown, Award, Medal,
   TrendingUp, Plus, CreditCard, Cake, UserPlus,
   ArrowDown, ArrowUp, History,
 } from "lucide-react";
+import { useState, useEffect } from "react";
+import { useLocale } from "@/components/locale-switcher";
 import { useTenant } from "@/components/tenant-provider";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { PageLoader } from "@/components/ui/page-loader";
 import { fetchLoyaltyMembers, fetchLoyaltyTransactions, getPointsValue } from "@/lib/data/client";
 import type { LoyaltyMemberView, LoyaltyTransactionView } from "@/lib/data/client";
-import { PageLoader } from "@/components/ui/page-loader";
+import { formatCurrency, formatNumber } from "@/lib/utils";
 
 type LoyaltyTier = "bronze" | "silver" | "gold" | "platinum";
 type TransactionType = "earned" | "redeemed" | "birthday_bonus" | "referral_bonus" | "expired";
@@ -34,6 +36,8 @@ const transactionTypeConfig: Record<TransactionType, { label: string; color: str
 };
 
 export default function LoyaltyPage() {
+  const [locale] = useLocale();
+
   const tenant = useTenant();
   const [allMembers, setAllMembers] = useState<LoyaltyMemberView[]>([]);
   const [allTransactions, setAllTransactions] = useState<LoyaltyTransactionView[]>([]);
@@ -113,7 +117,7 @@ export default function LoyaltyPage() {
               <TrendingUp className="h-4 w-4" />
               <p className="text-sm">Points Issued</p>
             </div>
-            <p className="text-2xl font-bold text-emerald-600">{totalPointsIssued.toLocaleString()}</p>
+            <p className="text-2xl font-bold text-emerald-600">{formatNumber(totalPointsIssued, typeof locale !== "undefined" ? locale : "fr")}</p>
           </CardContent>
         </Card>
         <Card>
@@ -122,7 +126,7 @@ export default function LoyaltyPage() {
               <Gift className="h-4 w-4" />
               <p className="text-sm">Points Redeemed</p>
             </div>
-            <p className="text-2xl font-bold text-purple-600">{totalRedeemed.toLocaleString()}</p>
+            <p className="text-2xl font-bold text-purple-600">{formatNumber(totalRedeemed, typeof locale !== "undefined" ? locale : "fr")}</p>
           </CardContent>
         </Card>
         <Card>
@@ -226,7 +230,7 @@ export default function LoyaltyPage() {
                       <Gift className="h-5 w-5" />
                       <span className="text-xs opacity-80">Pharmacie Centrale</span>
                     </div>
-                    <p className="text-2xl font-bold mb-1">{member.availablePoints.toLocaleString()} <span className="text-sm font-normal">pts</span></p>
+                    <p className="text-2xl font-bold mb-1">{formatNumber(member.availablePoints, typeof locale !== "undefined" ? locale : "fr")} <span className="text-sm font-normal">pts</span></p>
                     <p className="text-xs opacity-80">= {getPointsValue(member.availablePoints)} MAD discount</p>
                     <div className="flex items-center justify-between mt-3">
                       <span className="text-xs">{member.patientName}</span>
@@ -236,15 +240,15 @@ export default function LoyaltyPage() {
 
                   <div className="grid grid-cols-3 gap-2 text-center mb-3">
                     <div>
-                      <p className="text-sm font-bold text-emerald-600">{member.totalPoints.toLocaleString()}</p>
+                      <p className="text-sm font-bold text-emerald-600">{formatNumber(member.totalPoints, typeof locale !== "undefined" ? locale : "fr")}</p>
                       <p className="text-xs text-muted-foreground">Total</p>
                     </div>
                     <div>
-                      <p className="text-sm font-bold text-purple-600">{member.redeemedPoints.toLocaleString()}</p>
+                      <p className="text-sm font-bold text-purple-600">{formatNumber(member.redeemedPoints, typeof locale !== "undefined" ? locale : "fr")}</p>
                       <p className="text-xs text-muted-foreground">Redeemed</p>
                     </div>
                     <div>
-                      <p className="text-sm font-bold">{member.totalPurchases.toLocaleString()}</p>
+                      <p className="text-sm font-bold">{formatNumber(member.totalPurchases, typeof locale !== "undefined" ? locale : "fr")}</p>
                       <p className="text-xs text-muted-foreground">Purchases</p>
                     </div>
                   </div>

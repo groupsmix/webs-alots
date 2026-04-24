@@ -1,21 +1,23 @@
 "use client";
 
-import { useState } from "react";
 import {
   Edit, Trash2, Copy, Eye, Search, Filter,
   FileText, FileSpreadsheet, FileCheck, FilePlus,
 } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useState } from "react";
+import { useLocale } from "@/components/locale-switcher";
 import { Badge } from "@/components/ui/badge";
+import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { useToast } from "@/components/ui/toast";
+import { formatCurrency, formatNumber } from "@/lib/utils";
 
 interface Template {
   id: string;
@@ -45,6 +47,8 @@ type TypeFilter = "all" | "prescription" | "invoice" | "report" | "certificate" 
 type ClinicTypeFilter = "all" | "doctor" | "dentist" | "pharmacy";
 
 export default function TemplateManagerPage() {
+  const [locale] = useLocale();
+
   const { addToast } = useToast();
   const [templates, setTemplates] = useState<Template[]>(initialTemplates);
   const [search, setSearch] = useState("");
@@ -178,7 +182,7 @@ export default function TemplateManagerPage() {
         <Card><CardContent className="p-4"><p className="text-xs text-muted-foreground mb-1">Total Templates</p><p className="text-2xl font-bold">{templates.length}</p></CardContent></Card>
         <Card><CardContent className="p-4"><p className="text-xs text-muted-foreground mb-1">Active</p><p className="text-2xl font-bold text-green-600">{templates.filter((t) => t.active).length}</p></CardContent></Card>
         <Card><CardContent className="p-4"><p className="text-xs text-muted-foreground mb-1">Template Types</p><p className="text-2xl font-bold">6</p></CardContent></Card>
-        <Card><CardContent className="p-4"><p className="text-xs text-muted-foreground mb-1">Total Usage</p><p className="text-2xl font-bold">{templates.reduce((sum, t) => sum + t.usageCount, 0).toLocaleString()}</p></CardContent></Card>
+        <Card><CardContent className="p-4"><p className="text-xs text-muted-foreground mb-1">Total Usage</p><p className="text-2xl font-bold">{formatNumber(templates.reduce((sum, t) => sum + t.usageCount, 0), typeof locale !== "undefined" ? locale : "fr")}</p></CardContent></Card>
       </div>
 
       {/* Filters */}
@@ -226,7 +230,7 @@ export default function TemplateManagerPage() {
                 <Badge variant="outline" className="text-[10px] capitalize">{tpl.clinicType === "all" ? "All Clinics" : tpl.clinicType}</Badge>
               </div>
               <div className="flex items-center justify-between text-xs text-muted-foreground">
-                <span>Used {tpl.usageCount.toLocaleString()} times</span>
+                <span>Used {formatNumber(tpl.usageCount, typeof locale !== "undefined" ? locale : "fr")} times</span>
                 <span>Updated {tpl.updatedAt}</span>
               </div>
               <Separator />
@@ -318,7 +322,7 @@ export default function TemplateManagerPage() {
               <div className="flex items-center gap-4 text-xs text-muted-foreground">
                 <span>Created: {previewItem.createdAt}</span>
                 <span>Updated: {previewItem.updatedAt}</span>
-                <span>Used: {previewItem.usageCount.toLocaleString()} times</span>
+                <span>Used: {formatNumber(previewItem.usageCount, typeof locale !== "undefined" ? locale : "fr")} times</span>
               </div>
             </div>
             <DialogFooter>
@@ -339,7 +343,7 @@ export default function TemplateManagerPage() {
             </DialogHeader>
             <div className="rounded-lg border p-4 bg-muted/50">
               <p className="text-sm font-medium">{deleteItem.name}</p>
-              <p className="text-xs text-muted-foreground mt-1">{deleteItem.type} &middot; Used {deleteItem.usageCount.toLocaleString()} times</p>
+              <p className="text-xs text-muted-foreground mt-1">{deleteItem.type} &middot; Used {formatNumber(deleteItem.usageCount, typeof locale !== "undefined" ? locale : "fr")} times</p>
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setDeleteOpen(false)}>Cancel</Button>

@@ -2,15 +2,19 @@
 
 import { useState, useEffect } from "react";
 import { InstallmentTracker } from "@/components/installments/installment-tracker";
+import { useLocale } from "@/components/locale-switcher";
+import { Breadcrumb } from "@/components/ui/breadcrumb";
+import { PageLoader } from "@/components/ui/page-loader";
 import {
   getCurrentUser,
   fetchInstallmentPlans,
   type InstallmentPlanView,
 } from "@/lib/data/client";
-import { PageLoader } from "@/components/ui/page-loader";
-import { Breadcrumb } from "@/components/ui/breadcrumb";
+import { formatCurrency, formatNumber } from "@/lib/utils";
 
 export default function PatientPaymentPlanPage() {
+  const [locale] = useLocale();
+
   const [myPlans, setMyPlans] = useState<InstallmentPlanView[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
@@ -60,7 +64,7 @@ export default function PatientPaymentPlanPage() {
       "",
       `Patient: ${plan.patientName}`,
       `Treatment: ${plan.treatmentTitle}`,
-      `Amount: ${inst.amount.toLocaleString()} ${plan.currency}`,
+      `Amount: ${formatNumber(inst.amount, typeof locale !== "undefined" ? locale : "fr")} ${plan.currency}`,
       `Date Paid: ${inst.paidDate}`,
       `Receipt ID: ${inst.receiptId || inst.id}`,
       "",

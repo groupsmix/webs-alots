@@ -1,8 +1,10 @@
 "use client";
 
-import dynamic from "next/dynamic";
 import { Stethoscope } from "lucide-react";
+import dynamic from "next/dynamic";
+import { useLocale } from "@/components/locale-switcher";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { formatCurrency, formatNumber } from "@/lib/utils";
 
 export interface DoctorRevenueData {
   doctorName: string;
@@ -28,7 +30,7 @@ const LazyDoctorBarChart = dynamic<{ data: DoctorRevenueData[]; currency: string
               <XAxis type="number" tick={{ fontSize: 11 }} />
               <YAxis dataKey="doctorName" type="category" tick={{ fontSize: 11 }} width={100} />
               <Tooltip
-                formatter={(value) => [`${Number(value).toLocaleString()} ${currency}`, "Revenue"]}
+                formatter={(value) => [`${formatNumber(Number(value), "fr")} ${currency}`, "Revenue"]}
                 contentStyle={{ borderRadius: "8px", fontSize: "12px" }}
               />
               <Bar dataKey="revenue" fill="#7c3aed" radius={[0, 4, 4, 0]} />
@@ -49,6 +51,8 @@ const LazyDoctorBarChart = dynamic<{ data: DoctorRevenueData[]; currency: string
 );
 
 export function RevenueByDoctor({ data, currency = "MAD" }: RevenueByDoctorProps) {
+  const [locale] = useLocale();
+
   if (data.length === 0) {
     return (
       <Card>
