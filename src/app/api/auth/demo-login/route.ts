@@ -134,7 +134,7 @@ export async function POST(request: NextRequest) {
     return apiSuccess({
       token_hash: tokenHash,
       type,
-      redirect_url: linkData.properties.action_link,
+      user_id: userId,
       user_id: userId,
     });
   } catch (err) {
