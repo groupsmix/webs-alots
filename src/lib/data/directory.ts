@@ -150,7 +150,8 @@ function specialtyToSlug(specialty: string): string {
 
 async function fetchDirectoryDoctors(): Promise<DirectoryDoctor[]> {
   try {
-    const supabase = await createClient();
+    const { createAdminClient } = await import("@/lib/supabase-server");
+    const supabase = createAdminClient();
 
     // Fetch all doctors from active clinics
     const { data: doctors, error: doctorsError } = await supabase
