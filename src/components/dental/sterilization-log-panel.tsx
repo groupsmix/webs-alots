@@ -150,6 +150,7 @@ export function SterilizationLogPanel({ entries, onAddEntry }: SterilizationLogP
                         <p className={`flex items-center gap-1 ${overdue ? "text-red-500 font-medium" : ""}`}>
                           <Clock className="h-3 w-3" />
                           Next due: {formatDisplayDate(new Date(entry.nextDue), typeof locale !== "undefined" ? locale : "fr", "datetime")}
+                          {overdue && " (OVERDUE)"}
                         </p>
                       )}
                       {entry.notes && <p className="italic">{entry.notes}</p>}
