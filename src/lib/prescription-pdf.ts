@@ -11,7 +11,6 @@
  */
 
 import { escapeHtml } from "@/lib/escape-html";
-import { logger } from "@/lib/logger";
 import {
   translateFrequency,
   translateInstruction,
@@ -19,6 +18,7 @@ import {
   translateGender,
   getArabicLabel,
 } from "@/lib/prescription-arabic";
+import { logger } from "@/lib/logger";
 
 interface PrescriptionMedication {
   name: string;

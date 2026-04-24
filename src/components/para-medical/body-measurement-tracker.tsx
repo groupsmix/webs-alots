@@ -1,12 +1,12 @@
 "use client";
 
-import { Scale, TrendingUp, TrendingDown, Minus, Calculator } from "lucide-react";
-import dynamic from "next/dynamic";
 import { useState, useMemo } from "react";
-import { Badge } from "@/components/ui/badge";
+import { Scale, TrendingUp, TrendingDown, Minus, Calculator } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import dynamic from "next/dynamic";
 import type { BodyMeasurement } from "@/lib/types/para-medical";
 
 interface ChartDataPoint {

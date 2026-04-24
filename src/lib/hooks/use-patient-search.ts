@@ -1,11 +1,11 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { createClient } from "@/lib/supabase-client";
 import type { CommandPaletteItem } from "@/components/command-palette";
 import { CommandIcons } from "@/components/command-palette";
 import { logger } from "@/lib/logger";
 import { maskPhone, maskCIN } from "@/lib/mask";
-import { createClient } from "@/lib/supabase-client";
 
 /**
  * Hook that performs a debounced Supabase patient search and returns

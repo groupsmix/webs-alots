@@ -1,8 +1,8 @@
 "use client";
 
 import { ExternalLink as ExternalLinkIcon, Lock } from "lucide-react";
-import { ExternalLink } from "@/components/ui/external-link";
 import { useLandingLocale } from "./landing-locale-provider";
+import { ExternalLink } from "@/components/ui/external-link";
 
 export function DemoSection() {
   const { t } = useLandingLocale();

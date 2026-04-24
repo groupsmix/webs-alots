@@ -1,16 +1,16 @@
 "use client";
 
+import { useState, useMemo } from "react";
 import {
   Shield, FileText, Download, TrendingUp,
   Clock, CheckCircle, AlertTriangle, Search,
   Filter,
 } from "lucide-react";
-import { useState, useMemo } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { EmptyState } from "@/components/ui/empty-state";
 import { Input } from "@/components/ui/input";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
   Select,
   SelectContent,
@@ -19,9 +19,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import type { InsuranceTariffType } from "@/lib/insurance-billing";
+import { EmptyState } from "@/components/ui/empty-state";
 import { formatMADFormal } from "@/lib/morocco";
+import type { InsuranceTariffType } from "@/lib/insurance-billing";
 
 // ---- Types ----
 

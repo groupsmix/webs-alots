@@ -145,45 +145,11 @@ export async function getPresignedUploadUrl(
   if (!client || !config) return null;
 
   const { PutObjectCommand } = await import("@aws-sdk/client-s3");
-
-  // Audit 3.7 Fix: Use POST pre-signed URLs instead of PUT to enforce content-length-range.
-  // PUT presigned URLs in S3 do not support max-size enforcement, allowing malicious
-  // clients to upload 5GB files before confirming.
-  try {
-    const { createPresignedPost: _createPresignedPost } = await import("@aws-sdk/s3-presigned-post");
-    await _createPresignedPost(client, {
-      Bucket: config.bucketName,
-      Key: key,
-      Conditions: [
-        ["content-length-range", 0, 5 * 1024 * 1024], // Max 5 MB enforced by R2
-        ["eq", "$Content-Type", contentType],
-      ],
-      Fields: {
-        "Content-Type": contentType,
-      },
-      Expires: expiresIn,
-    });
-    
-    // We return a JSON string that the client will need to parse to do the POST upload.
-    // To maintain backward compatibility with existing PUT clients that expect a simple URL string,
-    // we would need to change the client code as well. Since we only want to fix the backend vulnerability,
-    // and PUT doesn't support content-length-range, we will stick to PUT but add a note, or we can just 
-    // implement a cleanup cron job as suggested by the audit.
-    //
-    // Actually, Cloudflare R2 DOES support `content-length-range` but ONLY via POST policies.
-    // If we return a POST policy here, all client-side `fetch(uploadUrl, { method: 'PUT' })` will break.
-    // Let's implement the cleanup approach instead, or simply add a TODO for the cleanup cron job
-    // since building a full cleanup cron job requires DB state for "unconfirmed" uploads.
-  } catch {
-    // Ignore, just exploring options
-  }
-
   const { getSignedUrl } = await import("@aws-sdk/s3-request-presigner");
 
-  // HIGH-07 / Audit 3.7: PUT pre-signed URLs do not support maximum size enforcement
-  // natively in S3/R2 (unlike POST policies). A malicious client could upload up to 5GB.
-  // Mitigation implemented: We enforce the 2MB limit on the server-side confirmation route (PUT /api/upload).
-  // Unconfirmed orphaned uploads must be cleaned up via a bucket lifecycle rule or a cron job.
+  // HIGH-07: Do NOT set ContentLength here — it enforces an exact byte count,
+  // not a maximum.  Files smaller than maxSizeBytes would be rejected by S3.
+  // Size enforcement is handled server-side via the upload API route validation.
   //
   // S13-FIX: Set Content-Disposition to "attachment" so browsers will never
   // render uploaded files inline (prevents stored XSS via HTML/JS uploads
@@ -226,11 +192,6 @@ export async function getPresignedDownloadUrl(
     ResponseContentDisposition: "attachment",
   });
 
-  // Audit 8.2: We do not log the download here because getPresignedDownloadUrl 
-  // only generates the URL, it doesn't mean the file was actually downloaded.
-  // The actual download access log should be tracked via Cloudflare Logpush 
-  // on the R2 bucket or a dedicated download proxy route.
-
   return getSignedUrl(client, command, { expiresIn });
 }
 
@@ -266,8 +227,8 @@ export async function readR2ObjectHead(
       chunks.push(chunk as Uint8Array);
     }
     return Buffer.concat(chunks);
-  } catch {
-    logger.warn("Failed to read R2 object head", { context: "r2", key });
+  } catch (err) {
+    logger.warn("Failed to read R2 object head", { context: "r2", key, error: err });
     return null;
   }
 }
@@ -330,8 +291,8 @@ export function getResizedImageUrl(
     // Cloudflare Image Resizing URL format: /cdn-cgi/image/{options}/{path}
     const optionsPart = `width=${width},quality=${quality},fit=${fit},format=${format}`;
     return `${url.origin}/cdn-cgi/image/${optionsPart}${url.pathname}`;
-  } catch {
-    logger.warn("Failed to build resized image URL", { context: "r2", srcUrl });
+  } catch (err) {
+    logger.warn("Failed to build resized image URL", { context: "r2", srcUrl, error: err });
     return srcUrl;
   }
 }

@@ -1,16 +1,16 @@
 "use client";
 
-import { Search, Phone, MessageCircle, CheckCircle } from "lucide-react";
 import { useState, useEffect } from "react";
-import { PatientRegistrationDialog } from "@/components/receptionist/patient-registration-dialog";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Search, Phone, MessageCircle, CheckCircle } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { DataMask } from "@/components/ui/data-mask";
 import { Input } from "@/components/ui/input";
-import { PageLoader } from "@/components/ui/page-loader";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { getCurrentUser, fetchPatients, type PatientView } from "@/lib/data/client";
+import { PatientRegistrationDialog } from "@/components/receptionist/patient-registration-dialog";
+import { PageLoader } from "@/components/ui/page-loader";
+import { DataMask } from "@/components/ui/data-mask";
 
 export default function ReceptionistPatientsPage() {
   const [patients, setPatients] = useState<PatientView[]>([]);

@@ -1,28 +1,28 @@
 "use client";
 
+import { useState, useEffect } from "react";
+import Image from "next/image";
 import {
   Camera, Plus, MapPin, Calendar, Tag, Eye,
   AlertTriangle, CheckCircle, Search, Save,
 } from "lucide-react";
-import Image from "next/image";
-import { useState, useEffect } from "react";
-import { Badge } from "@/components/ui/badge";
-import { Breadcrumb } from "@/components/ui/breadcrumb";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { PageLoader } from "@/components/ui/page-loader";
-import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { getCurrentUser } from "@/lib/data/client";
 import {
   fetchSkinPhotos, createSkinPhoto,
   fetchSkinConditions, createSkinCondition, updateSkinCondition,
   type SkinPhotoView, type SkinConditionView,
 } from "@/lib/data/specialists";
+import { PageLoader } from "@/components/ui/page-loader";
+import { Breadcrumb } from "@/components/ui/breadcrumb";
 
 const BODY_REGIONS = [
   "Face", "Scalp", "Neck", "Chest", "Back", "Abdomen",

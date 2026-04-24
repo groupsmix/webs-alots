@@ -1,14 +1,14 @@
+import type { Metadata } from "next";
+import Image from "next/image";
 import {
   Award, Languages, GraduationCap, Briefcase, Stethoscope,
   MapPin, Phone, Mail, Calendar,
 } from "lucide-react";
-import type { Metadata } from "next";
-import Image from "next/image";
-import Link from "next/link";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
-import { buttonVariants } from "@/components/ui/button-variants";
 import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { buttonVariants } from "@/components/ui/button-variants";
+import Link from "next/link";
 import { getPublicDoctors, getPublicBranding } from "@/lib/data/public";
 import { requireTenantWithConfig } from "@/lib/tenant";
 

@@ -1,7 +1,7 @@
-import { apiError, apiForbidden, apiInternalError, apiSuccess } from "@/lib/api-response";
-import { withAuthValidation } from "@/lib/api-validate";
-import { onboardingSchema } from "@/lib/validations";
 import { withAuth as _withAuth } from "@/lib/with-auth";
+import { onboardingSchema } from "@/lib/validations";
+import { withAuthValidation } from "@/lib/api-validate";
+import { apiError, apiForbidden, apiInternalError, apiSuccess } from "@/lib/api-response";
 /**
  * POST /api/onboarding
  *

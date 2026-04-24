@@ -7,8 +7,8 @@
  * used by all domain-specific data modules.
  */
 
-import { logger } from "@/lib/logger";
 import { createClient, createTenantClient } from "@/lib/supabase-client";
+import { logger } from "@/lib/logger";
 import type { Database } from "@/lib/types/database";
 
 /**

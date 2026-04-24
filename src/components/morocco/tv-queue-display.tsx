@@ -1,10 +1,10 @@
 "use client";
 
-import { Clock, Bell, Stethoscope, Users, Maximize } from "lucide-react";
 import { useState, useEffect, useCallback, useRef } from "react";
-import { HealthTipsWidget } from "@/components/morocco/health-tips";
-import { PrayerTimesWidget } from "@/components/morocco/prayer-times";
+import { Clock, Bell, Stethoscope, Users, Maximize } from "lucide-react";
 import { formatDisplayDate } from "@/lib/utils";
+import { PrayerTimesWidget } from "@/components/morocco/prayer-times";
+import { HealthTipsWidget } from "@/components/morocco/health-tips";
 
 interface QueuePatient {
   id: string;

@@ -1,5 +1,8 @@
 "use client";
 
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { useState, useCallback } from "react";
 import {
   LayoutDashboard, Users, Calendar, Pill, FileEdit, Clock,
   MessageCircle, CalendarClock, BarChart3, ClipboardList,
@@ -9,25 +12,22 @@ import {
   Ruler, Syringe, Baby, Image, Eye,
   Menu, X, ChevronDown, Search, Stethoscope, Pin,
 } from "lucide-react";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { useState, useCallback } from "react";
-import { MobileMenuOverlay } from "@/components/layouts/mobile-menu-overlay";
-import { MobileTabBar } from "@/components/layouts/mobile-tab-bar";
-import type { MobileTabItem } from "@/components/layouts/mobile-tab-bar";
-import { useLocale } from "@/components/locale-switcher";
-import { PatientSearchPalette } from "@/components/patient-search-palette";
-import { SessionTimeoutWarning } from "@/components/session-timeout-warning";
-import { SignOutButton } from "@/components/sign-out-button";
-import { useTenant } from "@/components/tenant-provider";
-import { AutoBreadcrumb } from "@/components/ui/auto-breadcrumb";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { signOut } from "@/lib/auth";
-import type { ClinicFeatureKey } from "@/lib/features";
+import { SignOutButton } from "@/components/sign-out-button";
 import { useClinicFeatures, SPECIALTY_FEATURES } from "@/lib/hooks/use-clinic-features";
+import { useTenant } from "@/components/tenant-provider";
+import { useLocale } from "@/components/locale-switcher";
 import { t } from "@/lib/i18n";
 import type { TranslationKey } from "@/lib/i18n";
+import { SessionTimeoutWarning } from "@/components/session-timeout-warning";
+import { PatientSearchPalette } from "@/components/patient-search-palette";
+import { signOut } from "@/lib/auth";
+import type { ClinicFeatureKey } from "@/lib/features";
+import { AutoBreadcrumb } from "@/components/ui/auto-breadcrumb";
+import { MobileTabBar } from "@/components/layouts/mobile-tab-bar";
+import type { MobileTabItem } from "@/components/layouts/mobile-tab-bar";
+import { MobileMenuOverlay } from "@/components/layouts/mobile-menu-overlay";
 
 interface NavItem {
   href: string;

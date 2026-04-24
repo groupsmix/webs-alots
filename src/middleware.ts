@@ -11,8 +11,18 @@
  */
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { extractSubdomain } from "@/lib/subdomain";
+import { TENANT_HEADERS } from "@/lib/tenant";
 import { DEMO_SUBDOMAIN, shouldBlockDemoRequest } from "@/lib/demo";
+import { isSeedUserBlocked } from "@/lib/seed-guard";
 import { generateTraceId, TRACE_ID_HEADER } from "@/lib/logger";
+import { subdomainCache, SUBDOMAIN_CACHE_TTL_MS, setSubdomainCache } from "@/lib/subdomain-cache";
+import {
+  buildCsp,
+  withSecurityHeaders,
+  secureRedirect,
+  applyAllSecurityHeaders,
+} from "@/lib/middleware/security-headers";
 import { validateCsrf } from "@/lib/middleware/csrf";
 import { applyRateLimit } from "@/lib/middleware/rate-limiting";
 import {
@@ -22,16 +32,6 @@ import {
   ROLE_ROUTE_MAP,
   ROLE_DASHBOARD_MAP,
 } from "@/lib/middleware/routes";
-import {
-  buildCsp,
-  withSecurityHeaders,
-  secureRedirect,
-  applyAllSecurityHeaders,
-} from "@/lib/middleware/security-headers";
-import { isSeedUserBlocked } from "@/lib/seed-guard";
-import { extractSubdomain } from "@/lib/subdomain";
-import { subdomainCache, SUBDOMAIN_CACHE_TTL_MS, setSubdomainCache } from "@/lib/subdomain-cache";
-import { TENANT_HEADERS } from "@/lib/tenant";
 
 // ── Subdomain → clinic resolution cache ──────────────────────────
 // Cache is now shared via @/lib/subdomain-cache so API routes can
@@ -326,13 +326,9 @@ export async function middleware(request: NextRequest) {
   if (user && isProtectedRoute(pathname) && profile) {
     const allowedPrefix = ROLE_ROUTE_MAP[profile.role];
 
-    // Super admin and doctor can access their routes, but MUST complete MFA if configured
-    if (profile.role === "super_admin" || profile.role === "doctor") {
-      const { data: aalData } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
-      if (aalData?.currentLevel === "aal1" && aalData?.nextLevel === "aal2") {
-        return secureRedirect(new URL("/login?mfa=required", request.url));
-      }
-      if (profile.role === "super_admin") return supabaseResponse;
+    // Super admin can access everything
+    if (profile.role === "super_admin") {
+      return supabaseResponse;
     }
 
     // Enforce 2FA for clinic_admin role: if admin has MFA factors but

@@ -1,11 +1,11 @@
 "use client";
 
-import { Calculator } from "lucide-react";
 import { useState } from "react";
-import { Badge } from "@/components/ui/badge";
+import { Calculator } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
 
 function getBMICategory(bmi: number): { label: string; color: string } {
   if (bmi < 18.5) return { label: "Underweight", color: "text-blue-600" };

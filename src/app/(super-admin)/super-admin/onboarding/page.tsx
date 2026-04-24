@@ -1,5 +1,7 @@
 "use client";
 
+import { useState } from "react";
+import Link from "next/link";
 import {
   Building2,
   Users,
@@ -10,31 +12,10 @@ import {
   CheckCircle2,
   AlertCircle,
 } from "lucide-react";
-import Link from "next/link";
-import { useState } from "react";
-import {
-  OnboardingStepClinic,
-  type ClinicFormData,
-} from "@/components/super-admin/onboarding-step-clinic";
-import {
-  OnboardingStepServices,
-  type ServiceFormData,
-} from "@/components/super-admin/onboarding-step-services";
-import {
-  OnboardingStepStaff,
-  type UserFormData,
-} from "@/components/super-admin/onboarding-step-staff";
-import {
-  OnboardingStepTimeSlots,
-  type DoctorTimeSlots,
-  type TimeSlotFormData,
-} from "@/components/super-admin/onboarding-step-timeslots";
-import { Breadcrumb } from "@/components/ui/breadcrumb";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { useToast } from "@/components/ui/toast";
-import { STAFF_DEFAULT_PASSWORD } from "@/lib/constants";
+import { Breadcrumb } from "@/components/ui/breadcrumb";
 import {
   createClinic,
   createUser,
@@ -43,6 +24,25 @@ import {
   type CreateUserInput,
   type CreateServiceInput,
 } from "@/lib/super-admin-actions";
+import { STAFF_DEFAULT_PASSWORD } from "@/lib/constants";
+import { useToast } from "@/components/ui/toast";
+import {
+  OnboardingStepClinic,
+  type ClinicFormData,
+} from "@/components/super-admin/onboarding-step-clinic";
+import {
+  OnboardingStepStaff,
+  type UserFormData,
+} from "@/components/super-admin/onboarding-step-staff";
+import {
+  OnboardingStepServices,
+  type ServiceFormData,
+} from "@/components/super-admin/onboarding-step-services";
+import {
+  OnboardingStepTimeSlots,
+  type DoctorTimeSlots,
+  type TimeSlotFormData,
+} from "@/components/super-admin/onboarding-step-timeslots";
 
 // ---------- Constants ----------
 

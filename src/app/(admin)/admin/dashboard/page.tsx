@@ -1,6 +1,6 @@
-import { AdminDashboardView } from "@/components/admin/admin-dashboard-view";
 import { requireAuth } from "@/lib/auth";
 import { getDashboardStats } from "@/lib/data/server";
+import { AdminDashboardView } from "@/components/admin/admin-dashboard-view";
 
 export default async function AdminDashboardPage() {
   const profile = await requireAuth();

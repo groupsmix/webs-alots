@@ -1,8 +1,8 @@
 "use client";
 
+import { ensureLookups, fetchRows, _activeUserMap } from "./_core";
 import { createClient } from "@/lib/supabase-client";
 import { getLocalDateStr } from "@/lib/utils";
-import { ensureLookups, fetchRows, _activeUserMap } from "./_core";
 
 // Lab Dashboard KPIs (Task 36)
 // ─────────────────────────────────────────────

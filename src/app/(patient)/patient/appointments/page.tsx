@@ -1,19 +1,19 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { Calendar, Clock, User, MapPin, X, RefreshCw, AlertTriangle, Repeat, Plus } from "lucide-react";
 import Link from "next/link";
-import { useState, useEffect } from "react";
-import { RescheduleDialog } from "@/components/patient/reschedule-dialog";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { PageLoader } from "@/components/ui/page-loader";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   getCurrentUser,
   fetchPatientAppointments,
   type AppointmentView,
 } from "@/lib/data/client";
+import { RescheduleDialog } from "@/components/patient/reschedule-dialog";
+import { PageLoader } from "@/components/ui/page-loader";
 import { logger } from "@/lib/logger";
 
 const statusColors: Record<string, string> = {

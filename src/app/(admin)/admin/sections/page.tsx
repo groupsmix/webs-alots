@@ -1,10 +1,7 @@
 "use client";
 
-import { AlertCircle, Loader2, Save, ToggleLeft, ToggleRight } from "lucide-react";
 import { useState } from "react";
-import { Badge } from "@/components/ui/badge";
-import { Breadcrumb } from "@/components/ui/breadcrumb";
-import { Button } from "@/components/ui/button";
+import { AlertCircle, Loader2, Save, ToggleLeft, ToggleRight } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -12,7 +9,8 @@ import {
   CardTitle,
   CardDescription,
 } from "@/components/ui/card";
-import { useAsyncData } from "@/lib/hooks/use-async-data";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import {
   sectionDefinitions,
   defaultSectionVisibility,
@@ -20,6 +18,8 @@ import {
   type SectionVisibility,
   type SectionKey,
 } from "@/lib/section-visibility";
+import { useAsyncData } from "@/lib/hooks/use-async-data";
+import { Breadcrumb } from "@/components/ui/breadcrumb";
 
 export default function SectionsPage() {
   const { data: initialData, loading, error } = useAsyncData(

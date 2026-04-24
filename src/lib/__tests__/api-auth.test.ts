@@ -1,8 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { sha256Hex, timingSafeEqual } from "@/lib/crypto-utils";
-import { createClient } from "@/lib/supabase-server";
-import { authenticateApiKey } from "../api-auth";
 
+// Mock dependencies
 vi.mock("@/lib/supabase-server", () => ({
   createClient: vi.fn(),
 }));
@@ -11,6 +9,10 @@ vi.mock("@/lib/crypto-utils", () => ({
   sha256Hex: vi.fn(),
   timingSafeEqual: vi.fn(),
 }));
+
+import { authenticateApiKey } from "../api-auth";
+import { createClient } from "@/lib/supabase-server";
+import { sha256Hex, timingSafeEqual } from "@/lib/crypto-utils";
 
 function createMockRequest(authHeader?: string): { headers: { get: (name: string) => string | null } } {
   return {

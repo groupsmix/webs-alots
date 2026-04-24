@@ -1,19 +1,23 @@
-import { headers } from "next/headers";
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { createTenantClient } from "@/lib/supabase-server";
-import { requireTenant, getClinicConfig } from "../tenant";
 
+// Mock next/headers
 vi.mock("next/headers", () => ({
   headers: vi.fn(),
 }));
 
+// Mock tenant-context
 vi.mock("@/lib/tenant-context", () => ({
   logTenantContext: vi.fn(),
 }));
 
+// Mock supabase-server (needed by getClinicConfig)
 vi.mock("@/lib/supabase-server", () => ({
   createTenantClient: vi.fn(),
 }));
+
+import { headers } from "next/headers";
+import { requireTenant, getClinicConfig } from "../tenant";
+import { createTenantClient } from "@/lib/supabase-server";
 
 function createMockHeaders(values: Record<string, string> = {}) {
   return {

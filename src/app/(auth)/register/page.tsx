@@ -1,10 +1,8 @@
 "use client";
 
-import { UserPlus, ShieldCheck, ArrowLeft, Heart } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
-import { useLocale } from "@/components/locale-switcher";
-import { Button } from "@/components/ui/button";
+import { UserPlus, ShieldCheck, ArrowLeft, Heart } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -15,6 +13,11 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
+import { registerPatient, verifyOTP } from "@/lib/auth";
+import { logger } from "@/lib/logger";
+import { t, type TranslationKey } from "@/lib/i18n";
+import { useLocale } from "@/components/locale-switcher";
 import {
   Select,
   SelectTrigger,
@@ -22,9 +25,6 @@ import {
   SelectContent,
   SelectItem,
 } from "@/components/ui/select";
-import { registerPatient, verifyOTP } from "@/lib/auth";
-import { t, type TranslationKey } from "@/lib/i18n";
-import { logger } from "@/lib/logger";
 
 const PHONE_AUTH_ENABLED = process.env.NEXT_PUBLIC_PHONE_AUTH_ENABLED === "true";
 

@@ -15,11 +15,11 @@
  */
 
 import { NextRequest } from "next/server";
-import { z } from "zod";
-import { apiError, apiSuccess } from "@/lib/api-response";
+import { requireTenantWithConfig } from "@/lib/tenant";
 import { withValidation } from "@/lib/api-validate";
 import { logger } from "@/lib/logger";
-import { requireTenantWithConfig } from "@/lib/tenant";
+import { z } from "zod";
+import { apiError, apiSuccess } from "@/lib/api-response";
 const bookingVerifySchema = z.object({
   phone: z.string().min(6).max(30),
 });

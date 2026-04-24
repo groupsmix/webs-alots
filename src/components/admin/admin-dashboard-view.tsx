@@ -1,16 +1,16 @@
 "use client";
 
 import { Users, Calendar, CreditCard, Star, Activity } from "lucide-react";
-import { ClinicCenterDashboardKPIsComponent } from "@/components/admin/clinic-center-dashboard-kpis";
-import { LabDashboardKPIsComponent } from "@/components/admin/lab-dashboard-kpis";
-import { useLocale } from "@/components/locale-switcher";
-import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/empty-state";
+import { LabDashboardKPIsComponent } from "@/components/admin/lab-dashboard-kpis";
+import { ClinicCenterDashboardKPIsComponent } from "@/components/admin/clinic-center-dashboard-kpis";
 import { ErrorBoundary } from "@/components/ui/error-boundary";
-import type { DashboardStats, RecentActivityItem } from "@/lib/data/server";
+import { useLocale } from "@/components/locale-switcher";
 import { t } from "@/lib/i18n";
 import { formatDisplayDate } from "@/lib/utils";
+import type { DashboardStats, RecentActivityItem } from "@/lib/data/server";
 
 const activityVariant: Record<string, "default" | "success" | "warning" | "destructive"> = {
   booking: "default",

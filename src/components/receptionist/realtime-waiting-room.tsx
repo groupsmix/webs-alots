@@ -1,10 +1,10 @@
 "use client";
 
-import { Clock, Phone, MessageCircle, UserCheck } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Clock, Phone, MessageCircle, UserCheck } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import {
   createClient,
   fetchTodayAppointments,

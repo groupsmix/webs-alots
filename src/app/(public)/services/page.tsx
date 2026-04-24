@@ -1,11 +1,11 @@
-import { Clock, CreditCard } from "lucide-react";
 import type { Metadata } from "next";
+import { Clock, CreditCard } from "lucide-react";
 import Link from "next/link";
+import { getPublicServices } from "@/lib/data/public";
+import { defaultWebsiteConfig } from "@/lib/website-config";
+import { safeJsonLdStringify } from "@/lib/json-ld";
 import { buttonVariants } from "@/components/ui/button-variants";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { getPublicServices } from "@/lib/data/public";
-import { safeJsonLdStringify } from "@/lib/json-ld";
-import { defaultWebsiteConfig } from "@/lib/website-config";
 
 export const metadata: Metadata = {
   title: "Nos Services — Cabinet Médical",

@@ -1,14 +1,14 @@
 "use client";
 
-import { Search, History, FlaskConical, TrendingUp, TrendingDown, Minus } from "lucide-react";
 import { useState, useEffect } from "react";
-import { useTenant } from "@/components/tenant-provider";
-import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { PageLoader } from "@/components/ui/page-loader";
+import { Search, History, FlaskConical, TrendingUp, TrendingDown, Minus } from "lucide-react";
+import { useTenant } from "@/components/tenant-provider";
 import { fetchPatients, fetchPatientLabOrders, fetchLabTestResults } from "@/lib/data/client";
 import type { PatientView, LabTestOrderView, LabTestResultView } from "@/lib/data/client";
+import { PageLoader } from "@/components/ui/page-loader";
 
 function FlagBadge({ flag }: { flag: string }) {
   const color =

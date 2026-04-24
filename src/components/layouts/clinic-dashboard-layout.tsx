@@ -1,14 +1,14 @@
 "use client";
 
-import { Menu, X } from "lucide-react";
-import type { LucideIcon } from "lucide-react";
+import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { Menu, X } from "lucide-react";
+import { SignOutButton } from "@/components/sign-out-button";
 import { FeatureGate } from "@/components/feature-gate";
 import { MobileTabBar } from "@/components/layouts/mobile-tab-bar";
 import type { MobileTabItem } from "@/components/layouts/mobile-tab-bar";
-import { SignOutButton } from "@/components/sign-out-button";
+import type { LucideIcon } from "lucide-react";
 import type { ClinicFeatureKey } from "@/lib/features";
 
 export interface DashboardNavItem {

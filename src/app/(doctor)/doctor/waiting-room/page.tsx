@@ -1,18 +1,18 @@
 "use client";
 
-import { Clock, ArrowRight, CheckCircle, AlertTriangle, User } from "lucide-react";
 import { useState, useEffect } from "react";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
-import { Breadcrumb } from "@/components/ui/breadcrumb";
-import { Button } from "@/components/ui/button";
+import { Clock, ArrowRight, CheckCircle, AlertTriangle, User } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
-import { PageLoader } from "@/components/ui/page-loader";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   getCurrentUser,
   fetchWaitingRoom,
   type WaitingRoomEntry,
 } from "@/lib/data/client";
+import { PageLoader } from "@/components/ui/page-loader";
+import { Breadcrumb } from "@/components/ui/breadcrumb";
 
 export default function WaitingRoomPage() {
   const [entries, setEntries] = useState<WaitingRoomEntry[]>([]);

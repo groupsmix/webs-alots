@@ -1,8 +1,8 @@
 "use client";
 
 import { Package, AlertTriangle, TrendingDown } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import type { MaterialStock } from "@/lib/types/dental";
 
 interface MaterialStockAlertProps {

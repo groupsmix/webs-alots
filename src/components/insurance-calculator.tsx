@@ -8,8 +8,8 @@
  * Moroccan insurance systems.
  */
 
-import { Calculator, Shield, FileText } from "lucide-react";
 import { useState, useMemo } from "react";
+import { Calculator, Shield, FileText } from "lucide-react";
 
 // ---- Types ----
 

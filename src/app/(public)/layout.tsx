@@ -1,11 +1,11 @@
-import { AnalyticsScript } from "@/components/analytics-script";
-import { Chatbot } from "@/components/chatbot";
-import { CookieConsent } from "@/components/cookie-consent";
-import { DemoBanner } from "@/components/demo-banner";
-import { PublicFooter } from "@/components/public/footer";
 import { PublicHeader } from "@/components/public/header";
+import { PublicFooter } from "@/components/public/footer";
 import { getPublicBranding, type ClinicBranding } from "@/lib/data/public";
 import { getTenant } from "@/lib/tenant";
+import { AnalyticsScript } from "@/components/analytics-script";
+import { CookieConsent } from "@/components/cookie-consent";
+import { Chatbot } from "@/components/chatbot";
+import { DemoBanner } from "@/components/demo-banner";
 
 export default async function PublicLayout({
   children,

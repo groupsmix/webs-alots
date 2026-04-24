@@ -1,10 +1,10 @@
-import { Star, Quote, Calendar } from "lucide-react";
 import type { Metadata } from "next";
-import Link from "next/link";
+import { Star, Quote, Calendar } from "lucide-react";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button-variants";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import Link from "next/link";
 import { getPublicReviews, getPublicAverageRating, getPublicBranding } from "@/lib/data/public";
 
 export const metadata: Metadata = {

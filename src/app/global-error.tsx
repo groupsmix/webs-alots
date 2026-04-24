@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect } from "react";
-import { useLocale } from "@/components/locale-switcher";
-import { t } from "@/lib/i18n";
 import { logger } from "@/lib/logger";
+import { t } from "@/lib/i18n";
+import { useLocale } from "@/components/locale-switcher";
 
 /**
  * Global error boundary — catches errors thrown inside the root layout

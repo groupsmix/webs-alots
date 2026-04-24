@@ -1,15 +1,15 @@
-import { Search, MapPin, Stethoscope, ArrowRight } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
-import { HreflangTags } from "@/components/hreflang-tags";
-import { Badge } from "@/components/ui/badge";
+import { Search, MapPin, Stethoscope, ArrowRight } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { safeJsonLdStringify } from "@/lib/json-ld";
+import { DIRECTORY_CITIES, DIRECTORY_SPECIALTIES } from "@/lib/directory-constants";
 import {
   getDirectoryCities,
   getDirectorySpecialties,
 } from "@/lib/data/directory";
-import { DIRECTORY_CITIES, DIRECTORY_SPECIALTIES } from "@/lib/directory-constants";
-import { safeJsonLdStringify } from "@/lib/json-ld";
+import { HreflangTags } from "@/components/hreflang-tags";
 
 const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://oltigo.com";
 

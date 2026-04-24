@@ -7,8 +7,8 @@
  * and after 30s shows a retry button.
  */
 
-import { Loader2, RefreshCw, AlertCircle } from "lucide-react";
 import { useState, useEffect } from "react";
+import { Loader2, RefreshCw, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 

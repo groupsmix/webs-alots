@@ -1,8 +1,8 @@
 import Link from "next/link";
-import { t, type Locale } from "@/lib/i18n";
 import { defaultWebsiteConfig } from "@/lib/website-config";
-import { CookieSettingsLink } from "./cookie-settings-link";
+import { t, type Locale } from "@/lib/i18n";
 import { CopyrightYear } from "./copyright-year";
+import { CookieSettingsLink } from "./cookie-settings-link";
 
 interface PublicFooterProps {
   clinicName?: string;

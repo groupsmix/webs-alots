@@ -15,6 +15,8 @@
  *   />
  */
 
+import { useState, useRef, useEffect, useCallback } from "react";
+import { logger } from "@/lib/logger";
 import {
   Video,
   VideoOff,
@@ -26,8 +28,6 @@ import {
   Maximize2,
   Minimize2,
 } from "lucide-react";
-import { useState, useRef, useEffect, useCallback } from "react";
-import { logger } from "@/lib/logger";
 
 interface VideoConsultationProps {
   roomId: string;

@@ -11,11 +11,11 @@
  * Returns: { id, url, key }
  */
 
-import { apiError, apiInternalError, apiSuccess } from "@/lib/api-response";
-import { STAFF_ROLES } from "@/lib/auth-roles";
-import { createRadiologyImage } from "@/lib/data/server";
 import { uploadToR2, isR2Configured, buildUploadKey } from "@/lib/r2";
+import { createRadiologyImage } from "@/lib/data/server";
 import { withAuth } from "@/lib/with-auth";
+import { STAFF_ROLES } from "@/lib/auth-roles";
+import { apiError, apiInternalError, apiSuccess } from "@/lib/api-response";
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB (aligned with main upload route)
 
 const ALLOWED_TYPES = new Set([

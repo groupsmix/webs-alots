@@ -1,26 +1,26 @@
 "use client";
 
-import { Search, ShoppingBag, Plus, Pencil, Trash2, Loader2 } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
-import { useTenant } from "@/components/tenant-provider";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
 import {
   Dialog, DialogContent, DialogDescription, DialogFooter,
   DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { PageLoader } from "@/components/ui/page-loader";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
+import { Search, ShoppingBag, Plus, Pencil, Trash2, Loader2 } from "lucide-react";
+import { useTenant } from "@/components/tenant-provider";
 import {
   fetchParapharmacyProducts, fetchParapharmacyCategories, getStockStatus,
   createParapharmacyProduct, updateParapharmacyProduct, deleteParapharmacyProduct,
 } from "@/lib/data/client";
 import type { ProductView, ParapharmacyCategoryView } from "@/lib/data/client";
+import { PageLoader } from "@/components/ui/page-loader";
 
 const defaultForm = {
   name: "",

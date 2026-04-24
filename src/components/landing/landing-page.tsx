@@ -1,16 +1,16 @@
 "use client";
 
-import { CookieConsent } from "@/components/cookie-consent";
+import { LandingLocaleProvider } from "./landing-locale-provider";
+import { LandingHeader } from "./landing-header";
+import { HeroSection } from "./hero-section";
+import { TrustSection } from "./trust-section";
+import { FeaturesSection } from "./features-section";
+import { HowItWorksSection } from "./how-it-works-section";
+import { DemoSection } from "./demo-section";
 import { ComparisonSection } from "@/components/marketing/comparison-table";
 import { CtaSection } from "./cta-section";
-import { DemoSection } from "./demo-section";
-import { FeaturesSection } from "./features-section";
-import { HeroSection } from "./hero-section";
-import { HowItWorksSection } from "./how-it-works-section";
 import { LandingFooter } from "./landing-footer";
-import { LandingHeader } from "./landing-header";
-import { LandingLocaleProvider } from "./landing-locale-provider";
-import { TrustSection } from "./trust-section";
+import { CookieConsent } from "@/components/cookie-consent";
 
 /**
  * SaaS landing page shown on the root domain (oltigo.com).

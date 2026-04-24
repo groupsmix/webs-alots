@@ -6,6 +6,7 @@
  * Only active clinics and doctors with `is_listed = true` are included.
  */
 
+import { createClient } from "@/lib/supabase-server";
 import { cacheLife, cacheTag } from "next/cache";
 import { logger } from "@/lib/logger";
 
@@ -149,11 +150,7 @@ function specialtyToSlug(specialty: string): string {
 
 async function fetchDirectoryDoctors(): Promise<DirectoryDoctor[]> {
   try {
-    // We cannot use the standard `createClient` here because `cookies()` is not allowed 
-    // inside a "use cache" directive in Next.js 15+. We must use the admin client or a 
-    // standalone client that doesn't read cookies, since the directory is public anyway.
-    const { createAdminClient } = await import("@/lib/supabase-server");
-    const supabase = createAdminClient();
+    const supabase = await createClient();
 
     // Fetch all doctors from active clinics
     const { data: doctors, error: doctorsError } = await supabase

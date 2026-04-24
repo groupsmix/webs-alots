@@ -1,13 +1,13 @@
-import { apiError, apiInternalError, apiNotFound, apiSuccess } from "@/lib/api-response";
-import { withAuthValidation } from "@/lib/api-validate";
-import { logAuditEvent } from "@/lib/audit-log";
-import { STAFF_ROLES } from "@/lib/auth-roles";
-import { findOrCreatePatient } from "@/lib/find-or-create-patient";
-import { requireTenant } from "@/lib/tenant";
-import { computeEndTime } from "@/lib/timezone";
-import { APPOINTMENT_STATUS, BOOKING_SOURCE } from "@/lib/types/database";
-import { emergencySlotSchema } from "@/lib/validations";
 import { withAuth } from "@/lib/with-auth";
+import { requireTenant } from "@/lib/tenant";
+import { findOrCreatePatient } from "@/lib/find-or-create-patient";
+import { APPOINTMENT_STATUS, BOOKING_SOURCE } from "@/lib/types/database";
+import { logAuditEvent } from "@/lib/audit-log";
+import { computeEndTime } from "@/lib/timezone";
+import { STAFF_ROLES } from "@/lib/auth-roles";
+import { emergencySlotSchema } from "@/lib/validations";
+import { withAuthValidation } from "@/lib/api-validate";
+import { apiError, apiInternalError, apiNotFound, apiSuccess } from "@/lib/api-response";
 /**
  * POST /api/booking/emergency-slot
  *

@@ -32,15 +32,12 @@ export async function POST(request: NextRequest) {
 
     if (report) {
       // Log CSP violation for security monitoring
-      // Elevated to error with alert: true to ensure Sentry catches it
-      // and triggers a dashboard/alert rule (Audit 3.4 Fix)
-      logger.error("CSP violation detected", {
+      logger.warn("CSP violation detected", {
         context: "csp-report",
         blockedUri: report["blocked-uri"],
         violatedDirective: report["violated-directive"],
         documentUri: report["document-uri"],
         referrer: report["referrer"],
-        alert: true,
       });
     }
 

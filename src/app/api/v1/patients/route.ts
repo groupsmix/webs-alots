@@ -8,15 +8,15 @@
  */
 
 import { NextRequest } from "next/server";
+import { createTenantClient } from "@/lib/supabase-server";
 import { authenticateApiKey } from "@/lib/api-auth";
-import { apiSuccess, apiError, apiInternalError } from "@/lib/api-response";
-import { withValidation } from "@/lib/api-validate";
 import { getCorsHeaders, handlePreflight } from "@/lib/cors";
 import { logger } from "@/lib/logger";
-import { createTenantClient } from "@/lib/supabase-server";
-import { logTenantContext } from "@/lib/tenant-context";
 import type { TablesInsert } from "@/lib/types/database";
 import { v1PatientCreateSchema } from "@/lib/validations";
+import { logTenantContext } from "@/lib/tenant-context";
+import { withValidation } from "@/lib/api-validate";
+import { apiSuccess, apiError, apiInternalError } from "@/lib/api-response";
 
 /** Handle CORS preflight requests. */
 export function OPTIONS(request: NextRequest) {

@@ -1,9 +1,9 @@
 "use client";
 
-import { Clock } from "lucide-react";
 import { useState, useEffect, useCallback, useRef } from "react";
-import { useLocale } from "@/components/locale-switcher";
+import { Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useLocale } from "@/components/locale-switcher";
 import { t } from "@/lib/i18n";
 
 interface SessionTimeoutWarningProps {

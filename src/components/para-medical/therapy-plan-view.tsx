@@ -1,13 +1,13 @@
 "use client";
 
+import { useState } from "react";
 import {
   Target, CheckCircle, Circle, Clock, ChevronDown, ChevronUp,
   RotateCcw,
 } from "lucide-react";
-import { useState } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { TherapyPlan, TherapyGoal } from "@/lib/types/para-medical";
 
 const STATUS_VARIANT: Record<string, "default" | "secondary" | "success" | "outline"> = {

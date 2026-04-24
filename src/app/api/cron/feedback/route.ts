@@ -21,13 +21,6 @@ async function handler(request: NextRequest) {
 
   try {
     const supabase = await createClient();
-
-    // Audit 7.1: Short-circuit if there are no active clinics to save DB compute
-    const { count } = await supabase.from("clinics").select("*", { count: "exact", head: true }).eq("status", "active");
-    if (!count || count === 0) {
-      return apiSuccess({ message: "No active clinics, skipping cron", sent: 0 });
-    }
-
     const now = new Date();
     const twoHoursAgo = new Date(now.getTime() - 2 * 60 * 60 * 1000);
 

@@ -8,9 +8,9 @@
  * Queue states: pending → processing → sent | failed → dead_letter
  */
 
-import type { SupabaseClient } from "@supabase/supabase-js";
 import { logger } from "@/lib/logger";
 import type { NotificationTrigger, NotificationChannel } from "./notifications";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
 // The notification_queue table is created by migration 00050 but its types
 // aren't in the generated Supabase schema yet. We use an untyped client

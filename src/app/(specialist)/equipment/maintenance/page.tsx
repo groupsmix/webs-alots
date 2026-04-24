@@ -1,24 +1,24 @@
 "use client";
 
-import { Search, Wrench, ChevronDown, CalendarClock, Plus, Pencil, Trash2, AlertTriangle } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
-import { useTenant } from "@/components/tenant-provider";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { PageLoader } from "@/components/ui/page-loader";
+import { Search, Wrench, ChevronDown, CalendarClock, Plus, Pencil, Trash2, AlertTriangle } from "lucide-react";
+import { useTenant } from "@/components/tenant-provider";
 import {
   fetchEquipmentMaintenance, fetchEquipmentInventory,
   createEquipmentMaintenance, updateEquipmentMaintenance, deleteEquipmentMaintenance,
 } from "@/lib/data/client";
 import type { EquipmentMaintenanceView, EquipmentItemView } from "@/lib/data/client";
-import { useEquipmentI18n } from "@/lib/hooks/use-equipment-i18n";
 import { useEquipmentLocale } from "../layout";
+import { useEquipmentI18n } from "@/lib/hooks/use-equipment-i18n";
+import { PageLoader } from "@/components/ui/page-loader";
 
 const STATUS_OPTIONS = ["all", "scheduled", "in_progress", "completed", "cancelled"] as const;
 const TYPE_OPTIONS = ["routine", "repair", "calibration", "inspection", "cleaning"] as const;

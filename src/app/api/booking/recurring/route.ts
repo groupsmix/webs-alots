@@ -1,13 +1,13 @@
-import { apiError, apiInternalError, apiNotFound, apiSuccess } from "@/lib/api-response";
-import { withAuthValidation } from "@/lib/api-validate";
-import { STAFF_ROLES } from "@/lib/auth-roles";
+import { requireTenantWithConfig } from "@/lib/tenant";
 import { getPublicServices } from "@/lib/data/public";
 import { findOrCreatePatient } from "@/lib/find-or-create-patient";
-import { requireTenantWithConfig } from "@/lib/tenant";
-import { computeEndTime } from "@/lib/timezone";
 import { APPOINTMENT_STATUS, BOOKING_SOURCE } from "@/lib/types/database";
 import type { TablesInsert } from "@/lib/types/database";
+import { computeEndTime } from "@/lib/timezone";
+import { STAFF_ROLES } from "@/lib/auth-roles";
 import { recurringSchema } from "@/lib/validations";
+import { withAuthValidation } from "@/lib/api-validate";
+import { apiError, apiInternalError, apiNotFound, apiSuccess } from "@/lib/api-response";
 function addInterval(date: Date, pattern: "weekly" | "biweekly" | "monthly"): Date {
   const next = new Date(date);
   if (pattern === "weekly") {

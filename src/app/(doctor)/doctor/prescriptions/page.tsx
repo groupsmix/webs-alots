@@ -1,15 +1,13 @@
 "use client";
 
-import { Plus, Download, Pill, Trash2, Save, FileDown } from "lucide-react";
 import { useState, useEffect } from "react";
-import { Badge } from "@/components/ui/badge";
-import { Breadcrumb } from "@/components/ui/breadcrumb";
-import { Button } from "@/components/ui/button";
+import { Plus, Download, Pill, Trash2, Save, FileDown } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { PageLoader } from "@/components/ui/page-loader";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
   getCurrentUser,
   fetchPrescriptions,
@@ -18,6 +16,8 @@ import {
   type PrescriptionView,
   type PatientView,
 } from "@/lib/data/client";
+import { PageLoader } from "@/components/ui/page-loader";
+import { Breadcrumb } from "@/components/ui/breadcrumb";
 
 type Prescription = PrescriptionView;
 

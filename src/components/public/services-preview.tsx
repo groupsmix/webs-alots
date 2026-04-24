@@ -1,5 +1,5 @@
-import { ArrowRight, Stethoscope } from "lucide-react";
 import Link from "next/link";
+import { ArrowRight, Stethoscope } from "lucide-react";
 import { getPublicServices } from "@/lib/data/public";
 
 const linkBtnOutline =

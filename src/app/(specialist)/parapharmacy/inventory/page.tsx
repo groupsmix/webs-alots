@@ -1,14 +1,14 @@
 "use client";
 
-import { Search, Package, AlertTriangle } from "lucide-react";
 import { useState, useEffect } from "react";
-import { useTenant } from "@/components/tenant-provider";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { PageLoader } from "@/components/ui/page-loader";
+import { Button } from "@/components/ui/button";
+import { Search, Package, AlertTriangle } from "lucide-react";
+import { useTenant } from "@/components/tenant-provider";
 import { fetchParapharmacyProducts, getStockStatus, getExpiryStatus } from "@/lib/data/client";
 import type { ProductView } from "@/lib/data/client";
+import { PageLoader } from "@/components/ui/page-loader";
 
 export default function ParapharmacyInventoryPage() {
   const tenant = useTenant();

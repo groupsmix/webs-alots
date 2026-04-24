@@ -1,4 +1,4 @@
-import fs from 'fs';
+const fs = require('fs');
 
 const content = fs.readFileSync('src/lib/i18n.ts', 'utf8');
 

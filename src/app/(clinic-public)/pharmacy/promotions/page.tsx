@@ -1,16 +1,16 @@
 "use client";
 
+import { useState, useEffect, useMemo } from "react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import {
   Tag, Search, Percent, Star, ShoppingBag, ArrowRight,
   Loader2, Sparkles,
 } from "lucide-react";
-import Link from "next/link";
-import { useState, useEffect, useMemo } from "react";
 import { useTenant } from "@/components/tenant-provider";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { createClient } from "@/lib/supabase-client";
+import Link from "next/link";
 
 /** Default currency when tenant config is not yet loaded. */
 const DEFAULT_CURRENCY = "MAD";

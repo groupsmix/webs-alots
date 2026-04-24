@@ -8,15 +8,15 @@
  * PUT  /api/verify-email — Verify the code
  */
 
-import { createServerClient } from "@supabase/ssr";
 import { NextRequest } from "next/server";
-import { apiError, apiNotFound, apiSuccess } from "@/lib/api-response";
+import { createServerClient } from "@supabase/ssr";
+import { logger } from "@/lib/logger";
+import { verifyEmailSendSchema, verifyEmailConfirmSchema } from "@/lib/validations";
 import { withValidation } from "@/lib/api-validate";
+import { apiError, apiNotFound, apiSuccess } from "@/lib/api-response";
 import { timingSafeEqual } from "@/lib/crypto-utils";
 import { sendEmail } from "@/lib/email";
 import { escapeHtml } from "@/lib/escape-html";
-import { logger } from "@/lib/logger";
-import { verifyEmailSendSchema, verifyEmailConfirmSchema } from "@/lib/validations";
 
 /**
  * Generate a cryptographically secure 6-digit numeric verification code.

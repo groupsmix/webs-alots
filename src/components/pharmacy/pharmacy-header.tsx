@@ -1,7 +1,7 @@
 "use client";
 
-import { Menu, X, Pill } from "lucide-react";
 import Link from "next/link";
+import { Menu, X, Pill } from "lucide-react";
 import { useState } from "react";
 import { buttonVariants } from "@/components/ui/button";
 

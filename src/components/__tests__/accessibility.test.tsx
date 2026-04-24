@@ -1,12 +1,12 @@
+import { describe, it, expect, vi } from "vitest";
 import { render } from "@testing-library/react";
 import { axe, toHaveNoViolations } from "jest-axe";
-import { SearchIcon } from "lucide-react";
-import { describe, it, expect, vi } from "vitest";
 import LoginPage from "@/app/(auth)/login/page";
-import { BookingForm } from "@/components/booking/booking-form";
 import { ContactForm } from "@/components/public/contact-form";
+import { BookingForm } from "@/components/booking/booking-form";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { EmptyState } from "@/components/ui/empty-state";
+import { SearchIcon } from "lucide-react";
 
 expect.extend(toHaveNoViolations);
 

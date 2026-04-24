@@ -1,15 +1,15 @@
 "use client";
 
+import { useState } from "react";
 import {
   MapPin, Plus, Trash2, Building2, Star,
   Phone, Clock, Check,
 } from "lucide-react";
-import { useState } from "react";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
 import type { CabinetLocation } from "@/lib/morocco";
 import { MOROCCAN_CITIES } from "@/lib/morocco";
 

@@ -1,8 +1,8 @@
 "use client";
 
-import { logger } from "@/lib/logger";
-import { createClient } from "@/lib/supabase-client";
 import { fetchRows, ensureLookups, _activeUserMap } from "./_core";
+import { createClient } from "@/lib/supabase-client";
+import { logger } from "@/lib/logger";
 
 // OPHTHALMOLOGIST — Vision Tests
 // ─────────────────────────────────────────────

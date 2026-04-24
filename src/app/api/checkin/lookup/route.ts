@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
+import { createTenantClient } from "@/lib/supabase-server";
 import { apiSuccess, apiError, apiInternalError } from "@/lib/api-response";
 import { logger } from "@/lib/logger";
-import { createTenantClient } from "@/lib/supabase-server";
 
 /**
  * GET /api/checkin/lookup?phone=...&clinicId=...

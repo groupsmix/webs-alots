@@ -7,8 +7,8 @@ import {
   CalendarCheck,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
-import type { TranslationKey } from "@/lib/i18n";
 import { useLandingLocale } from "./landing-locale-provider";
+import type { TranslationKey } from "@/lib/i18n";
 
 const steps: readonly { number: string; titleKey: TranslationKey; descKey: TranslationKey; icon: LucideIcon }[] = [
   {

@@ -16,8 +16,8 @@
  */
 
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { logger } from "@/lib/logger";
 import type { Database } from "@/lib/types/database";
+import { logger } from "@/lib/logger";
 
 /**
  * Validate that a clinic_id looks like a valid UUID.

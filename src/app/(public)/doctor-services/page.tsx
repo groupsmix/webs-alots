@@ -1,9 +1,9 @@
-import { Clock, CreditCard, Calendar, Stethoscope } from "lucide-react";
 import type { Metadata } from "next";
-import Link from "next/link";
+import { Clock, CreditCard, Calendar, Stethoscope } from "lucide-react";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button-variants";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import Link from "next/link";
 import { getPublicServices, getPublicBranding } from "@/lib/data/public";
 
 export const metadata: Metadata = {

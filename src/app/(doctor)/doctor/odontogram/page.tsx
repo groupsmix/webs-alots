@@ -1,13 +1,13 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { OdontogramChart } from "@/components/dental/odontogram-chart";
-import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { PageLoader } from "@/components/ui/page-loader";
+import { OdontogramChart } from "@/components/dental/odontogram-chart";
 import { getCurrentUser, fetchPatients, fetchOdontogram, upsertOdontogramEntry, type PatientView, type OdontogramView } from "@/lib/data/client";
 import type { ToothStatus, OdontogramEntry } from "@/lib/types/dental";
+import { PageLoader } from "@/components/ui/page-loader";
+import { Breadcrumb } from "@/components/ui/breadcrumb";
 
 export default function DoctorOdontogramPage() {
   const [patients, setPatients] = useState<PatientView[]>([]);

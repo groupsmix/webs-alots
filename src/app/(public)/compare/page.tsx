@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
-import { LandingFooter } from "@/components/landing/landing-footer";
-import { LandingHeader } from "@/components/landing/landing-header";
 import { LandingLocaleProvider } from "@/components/landing/landing-locale-provider";
+import { LandingHeader } from "@/components/landing/landing-header";
+import { LandingFooter } from "@/components/landing/landing-footer";
 import { FullComparisonTable } from "@/components/marketing/comparison-table";
 
 export const metadata: Metadata = {

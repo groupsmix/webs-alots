@@ -1,16 +1,16 @@
 "use client";
 
-import { Calendar, Clock, RefreshCw } from "lucide-react";
 import { useState, useEffect } from "react";
-import { BookingCalendar } from "@/components/booking/calendar";
-import { TimeSlotPicker } from "@/components/booking/time-slots";
-import { useTenant } from "@/components/tenant-provider";
-import { Badge } from "@/components/ui/badge";
+import { logger } from "@/lib/logger";
+import { Calendar, Clock, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { fetchAvailableSlots, fetchGeneratedSlots, fetchSlotBookingCounts } from "@/lib/data/client";
-import { logger } from "@/lib/logger";
+import { Badge } from "@/components/ui/badge";
+import { BookingCalendar } from "@/components/booking/calendar";
+import { TimeSlotPicker } from "@/components/booking/time-slots";
 import { formatDisplayDate } from "@/lib/utils";
+import { useTenant } from "@/components/tenant-provider";
+import { fetchAvailableSlots, fetchGeneratedSlots, fetchSlotBookingCounts } from "@/lib/data/client";
 
 interface RescheduleAppointment {
   id: string;

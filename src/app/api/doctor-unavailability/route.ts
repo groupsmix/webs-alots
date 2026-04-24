@@ -1,3 +1,11 @@
+import { createClient } from "@/lib/supabase-server";
+import { sendInteractiveMessage } from "@/lib/whatsapp";
+import {
+  findAlternativeSlots,
+  buildBookedSlotsSet,
+} from "@/lib/find-alternative-slots";
+import { getClinicConfig } from "@/lib/tenant";
+import { logger } from "@/lib/logger";
 import {
   apiSuccess,
   apiError,
@@ -5,15 +13,7 @@ import {
   apiUnauthorized,
 } from "@/lib/api-response";
 import { withValidation } from "@/lib/api-validate";
-import {
-  findAlternativeSlots,
-  buildBookedSlotsSet,
-} from "@/lib/find-alternative-slots";
-import { logger } from "@/lib/logger";
-import { createClient } from "@/lib/supabase-server";
-import { getClinicConfig } from "@/lib/tenant";
 import { doctorUnavailabilitySchema } from "@/lib/validations";
-import { sendInteractiveMessage } from "@/lib/whatsapp";
 
 /**
  * POST /api/doctor-unavailability

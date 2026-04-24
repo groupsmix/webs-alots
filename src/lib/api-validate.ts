@@ -25,11 +25,11 @@
 
 import { type NextRequest, NextResponse } from "next/server";
 import { type ZodType } from "zod";
+import { safeParse } from "@/lib/validations";
 import { apiValidationError, apiInternalError } from "@/lib/api-response";
 import { logger } from "@/lib/logger";
-import type { UserRole } from "@/lib/types/database";
-import { safeParse } from "@/lib/validations";
 import { withAuth, type AuthContext } from "@/lib/with-auth";
+import type { UserRole } from "@/lib/types/database";
 
 /**
  * Wrap an API route handler with Zod request body validation.

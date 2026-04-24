@@ -1,11 +1,11 @@
 import { NextRequest } from "next/server";
-import { apiError, apiSuccess, apiInternalError } from "@/lib/api-response";
-import { assertClinicId } from "@/lib/assert-tenant";
-import { hmacSha256Hex, timingSafeEqual } from "@/lib/crypto-utils";
-import { logger } from "@/lib/logger";
 import { createClient } from "@/lib/supabase-server";
-import { setTenantContext, logTenantContext } from "@/lib/tenant-context";
+import { hmacSha256Hex, timingSafeEqual } from "@/lib/crypto-utils";
 import { APPOINTMENT_STATUS, PAYMENT_STATUS } from "@/lib/types/database";
+import { logger } from "@/lib/logger";
+import { assertClinicId } from "@/lib/assert-tenant";
+import { setTenantContext, logTenantContext } from "@/lib/tenant-context";
+import { apiError, apiSuccess, apiInternalError } from "@/lib/api-response";
 import { stripeWebhookEventSchema } from "@/lib/validations";
 import type { StripeWebhookEvent } from "@/lib/validations";
 
@@ -88,21 +88,6 @@ export async function POST(request: NextRequest) {
             break;
           }
           logTenantContext(clinicId, "payments/webhook:checkout.completed");
-          
-          // Audit 3.8 Fix: Webhook Deduplication / Replay Protection
-          // We check if this exact Stripe event ID has already been processed to
-          // prevent duplicate processing in case of Stripe retries.
-          const { data: existingPayment } = await supabase
-            .from("payments")
-            .select("id")
-            .eq("reference", session.id)
-            .maybeSingle();
-
-          if (existingPayment) {
-            logger.info(`Stripe webhook event already processed: ${session.id}`, { context: "payments/webhook" });
-            break; // Skip processing since it's already handled
-          }
-
           await supabase.from("payments").upsert(
             {
               clinic_id: clinicId,

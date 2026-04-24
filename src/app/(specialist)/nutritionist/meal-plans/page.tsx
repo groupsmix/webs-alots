@@ -1,11 +1,11 @@
 "use client";
 
-import { Apple } from "lucide-react";
 import { useState, useEffect } from "react";
+import { Apple } from "lucide-react";
 import { MealPlanBuilder } from "@/components/para-medical/meal-plan-builder";
-import { PageLoader } from "@/components/ui/page-loader";
 import { getCurrentUser } from "@/lib/data/client";
 import type { MealPlan } from "@/lib/types/para-medical";
+import { PageLoader } from "@/components/ui/page-loader";
 
 export default function MealPlansPage() {
   const [plans, setPlans] = useState<MealPlan[]>([]);

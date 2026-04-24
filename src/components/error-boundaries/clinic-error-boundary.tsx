@@ -1,12 +1,12 @@
 "use client";
 
-import { AlertTriangle, RefreshCw } from "lucide-react";
 import { useEffect } from "react";
-import { useLocale } from "@/components/locale-switcher";
+import { AlertTriangle, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { t } from "@/lib/i18n";
 import { logger } from "@/lib/logger";
+import { t } from "@/lib/i18n";
+import { useLocale } from "@/components/locale-switcher";
 
 /**
  * Shared error boundary for all route groups.

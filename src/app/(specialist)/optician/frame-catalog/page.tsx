@@ -1,11 +1,11 @@
 "use client";
 
-import { Glasses } from "lucide-react";
 import { useState, useEffect } from "react";
+import { Glasses } from "lucide-react";
 import { FrameCatalog } from "@/components/para-medical/frame-catalog";
-import { PageLoader } from "@/components/ui/page-loader";
 import { getCurrentUser } from "@/lib/data/client";
 import type { FrameCatalogItem } from "@/lib/types/para-medical";
+import { PageLoader } from "@/components/ui/page-loader";
 
 export default function FrameCatalogPage() {
   const [frames, setFrames] = useState<FrameCatalogItem[]>([]);

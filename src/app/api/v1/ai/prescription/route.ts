@@ -12,14 +12,14 @@
  */
 
 import { type NextRequest } from "next/server";
-import { apiSuccess, apiError, apiRateLimited, apiInternalError } from "@/lib/api-response";
 import { withAuthValidation } from "@/lib/api-validate";
-import { DCI_DRUG_DATABASE, CATEGORY_LABELS } from "@/lib/dci-drug-database";
-import { logger } from "@/lib/logger";
-import { aiPrescriptionLimiter } from "@/lib/rate-limit";
-import type { PatientMetadata } from "@/lib/types/patient-metadata";
 import { aiPrescriptionRequestSchema } from "@/lib/validations";
+import { apiSuccess, apiError, apiRateLimited, apiInternalError } from "@/lib/api-response";
+import { aiPrescriptionLimiter } from "@/lib/rate-limit";
+import { logger } from "@/lib/logger";
+import { DCI_DRUG_DATABASE, CATEGORY_LABELS } from "@/lib/dci-drug-database";
 import type { AuthContext } from "@/lib/with-auth";
+import type { PatientMetadata } from "@/lib/types/patient-metadata";
 
 // ── Types ──
 

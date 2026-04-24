@@ -1,11 +1,11 @@
 "use client";
 
+import { useState } from "react";
 import {
   CheckCircle, XCircle, Target, Clock,
 } from "lucide-react";
-import { useState } from "react";
-import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import type { SpeechSession } from "@/lib/types/para-medical";
 
 interface SpeechSessionTrackerProps {

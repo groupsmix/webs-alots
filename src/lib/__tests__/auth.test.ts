@@ -1,29 +1,23 @@
-import { headers } from "next/headers";
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { loginLimiter, accountLockoutLimiter } from "@/lib/rate-limit";
-import { createClient } from "@/lib/supabase-server";
-import {
-  signInWithPassword,
-  signOut,
-  getUserProfile,
-  requireAuth,
-  requireRole,
-} from "../auth";
 
+// Mock next/headers
 vi.mock("next/headers", () => ({
   headers: vi.fn(),
 }));
 
+// Mock next/navigation
 vi.mock("next/navigation", () => ({
   redirect: vi.fn((url: string) => {
     throw new Error(`REDIRECT:${url}`);
   }),
 }));
 
+// Mock supabase-server
 vi.mock("@/lib/supabase-server", () => ({
   createClient: vi.fn(),
 }));
 
+// Mock rate-limit
 vi.mock("@/lib/rate-limit", () => ({
   loginLimiter: { check: vi.fn().mockResolvedValue(true) },
   accountLockoutLimiter: { check: vi.fn().mockResolvedValue(true) },
@@ -31,6 +25,7 @@ vi.mock("@/lib/rate-limit", () => ({
   passwordResetLimiter: { check: vi.fn().mockResolvedValue(true) },
 }));
 
+// Mock logger
 vi.mock("@/lib/logger", () => ({
   logger: {
     debug: vi.fn(),
@@ -39,6 +34,17 @@ vi.mock("@/lib/logger", () => ({
     error: vi.fn(),
   },
 }));
+
+import { headers } from "next/headers";
+import { createClient } from "@/lib/supabase-server";
+import {
+  signInWithPassword,
+  signOut,
+  getUserProfile,
+  requireAuth,
+  requireRole,
+} from "../auth";
+import { loginLimiter, accountLockoutLimiter } from "@/lib/rate-limit";
 
 function createMockHeaders(values: Record<string, string> = {}) {
   return {

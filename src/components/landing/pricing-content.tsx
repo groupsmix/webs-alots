@@ -1,10 +1,10 @@
 "use client";
 
-import { Check, ArrowRight } from "lucide-react";
 import Link from "next/link";
-import type { TranslationKey } from "@/lib/i18n";
+import { Check, ArrowRight } from "lucide-react";
 import { SUBSCRIPTION_PLANS } from "@/lib/subscription-billing";
 import { useLandingLocale } from "./landing-locale-provider";
+import type { TranslationKey } from "@/lib/i18n";
 
 function FormatLimit({
   value,

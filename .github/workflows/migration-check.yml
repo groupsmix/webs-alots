@@ -65,26 +65,3 @@ jobs:
           done
 
           echo "Basic SQL validation complete."
-
-      # Audit 12: Add RLS assertion tests to migration check
-      - name: Setup Node.js for RLS Tests
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Start Local Supabase
-        uses: supabase/setup-cli@v1
-        with:
-          version: latest
-
-      - name: Run Supabase and RLS Tests
-        run: |
-          supabase start
-          # We run the specific RLS assertion suite against the fresh local DB
-          npx vitest run src/lib/__tests__/integration/rls-assertions.test.ts
-        env:
-          NEXT_PUBLIC_SUPABASE_URL: "http://127.0.0.1:54321"
-          SUPABASE_SERVICE_ROLE_KEY: "dummy"

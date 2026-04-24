@@ -1,20 +1,19 @@
 "use client";
 
-import { Plus, Baby, CheckCircle, AlertCircle, Clock } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
-import { Badge } from "@/components/ui/badge";
-import { Breadcrumb } from "@/components/ui/breadcrumb";
-import { Button } from "@/components/ui/button";
+import { Plus, Baby, CheckCircle, AlertCircle, Clock } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { PageLoader } from "@/components/ui/page-loader";
 import {
   Select,
   SelectContent,
@@ -23,7 +22,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Textarea } from "@/components/ui/textarea";
 import {
   getCurrentUser,
   fetchMilestones,
@@ -33,7 +31,9 @@ import {
   type MilestoneView,
   type PatientView,
 } from "@/lib/data/client";
+import { PageLoader } from "@/components/ui/page-loader";
 import { useOfflineDrafts } from "@/lib/hooks/use-offline-drafts";
+import { Breadcrumb } from "@/components/ui/breadcrumb";
 
 const MILESTONE_TEMPLATES: Record<string, { milestone: string; expectedAgeMonths: number }[]> = {
   motor: [

@@ -1,14 +1,14 @@
 "use client";
 
-import { Star, MessageSquare } from "lucide-react";
 import { useEffect, useState } from "react";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
-import { Breadcrumb } from "@/components/ui/breadcrumb";
-import { Button } from "@/components/ui/button";
+import { Star, MessageSquare } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
-import { PageLoader } from "@/components/ui/page-loader";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { getCurrentUser, fetchReviews, type ReviewView } from "@/lib/data/client";
+import { PageLoader } from "@/components/ui/page-loader";
+import { Breadcrumb } from "@/components/ui/breadcrumb";
 
 function StarRating({ rating }: { rating: number }) {
   return (

@@ -1,7 +1,7 @@
-import { Heart, Droplet, Syringe, MessageCircle, Cross, Scale, Truck, Pill } from "lucide-react";
 import type { Metadata } from "next";
-import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Heart, Droplet, Syringe, MessageCircle, Cross, Scale, Truck, Pill } from "lucide-react";
 import { getPublicPharmacyServices } from "@/lib/data/public";
 
 export const metadata: Metadata = {

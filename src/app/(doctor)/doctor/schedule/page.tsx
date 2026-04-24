@@ -1,18 +1,18 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { MarkUnavailableDialog } from "@/components/doctor/mark-unavailable-dialog";
-import { RebookingStatus } from "@/components/doctor/rebooking-status";
-import { useTenant } from "@/components/tenant-provider";
-import { Badge } from "@/components/ui/badge";
-import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { PageLoader } from "@/components/ui/page-loader";
+import { Badge } from "@/components/ui/badge";
+import { useTenant } from "@/components/tenant-provider";
 import {
   getCurrentUser,
   fetchDoctorAppointments,
   type AppointmentView,
 } from "@/lib/data/client";
+import { PageLoader } from "@/components/ui/page-loader";
+import { Breadcrumb } from "@/components/ui/breadcrumb";
+import { MarkUnavailableDialog } from "@/components/doctor/mark-unavailable-dialog";
+import { RebookingStatus } from "@/components/doctor/rebooking-status";
 
 const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 

@@ -8,7 +8,6 @@
  * - Print-ready format
  */
 
-import { escapeHtml } from "./escape-html";
 import {
   calculateTVA,
   formatMAD,
@@ -18,6 +17,7 @@ import {
   type PatientInsurance,
   calculateResteACharge,
 } from "./morocco";
+import { escapeHtml } from "./escape-html";
 
 
 // ---- Invoice Types ----

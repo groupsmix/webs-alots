@@ -1,10 +1,10 @@
+import type { Metadata } from "next";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import {
   MapPin, Phone, Clock, Car, Accessibility,
   FlaskConical,
 } from "lucide-react";
-import type { Metadata } from "next";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
 import { getPublicCollectionPoints } from "@/lib/data/lab-public";
 
 export const metadata: Metadata = {

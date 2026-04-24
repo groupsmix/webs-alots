@@ -1,6 +1,5 @@
 "use client";
 
-import { Search, X, User, Phone, CreditCard } from "lucide-react";
 import {
   useState,
   useEffect,
@@ -8,9 +7,10 @@ import {
   useRef,
   type ReactNode,
 } from "react";
+import { Search, X, User, Phone, CreditCard } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { useLocale } from "@/components/locale-switcher";
 import { t } from "@/lib/i18n";
-import { cn } from "@/lib/utils";
 
 export interface CommandPaletteItem {
   id: string;

@@ -1,9 +1,9 @@
 "use client";
 
-import { logger } from "@/lib/logger";
-import { createClient } from "@/lib/supabase-client";
-import type { Database } from "@/lib/types/database";
 import { clearLookupCache, type ClientBookingConfig } from "./_core";
+import { createClient } from "@/lib/supabase-client";
+import { logger } from "@/lib/logger";
+import type { Database } from "@/lib/types/database";
 import { fetchTimeSlots } from "./clinical";
 import { fetchServices } from "./services";
 

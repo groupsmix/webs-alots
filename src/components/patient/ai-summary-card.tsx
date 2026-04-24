@@ -8,12 +8,12 @@
  * alerts, and trends. Supports caching, loading skeleton, and refresh.
  */
 
-import { Brain, ChevronDown, ChevronUp, RefreshCw, AlertTriangle, Clock } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Brain, ChevronDown, ChevronUp, RefreshCw, AlertTriangle, Clock } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Badge } from "@/components/ui/badge";
 
 // ── Types ──
 

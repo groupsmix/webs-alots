@@ -1,7 +1,7 @@
 "use client";
 
-import { ArrowRight } from "lucide-react";
 import Link from "next/link";
+import { ArrowRight } from "lucide-react";
 import { useLandingLocale } from "./landing-locale-provider";
 
 export function CtaSection() {

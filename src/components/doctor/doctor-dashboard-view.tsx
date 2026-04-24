@@ -1,17 +1,24 @@
 "use client";
 
+import { useState, useMemo, useEffect, useCallback } from "react";
 import {
   Calendar, Clock, CheckCircle, XCircle, Activity,
   TrendingUp, BarChart3, Search, ArrowRight,
   DollarSign, CalendarClock, Stethoscope,
 } from "lucide-react";
-import { useState, useMemo, useEffect, useCallback } from "react";
-import { useLocale } from "@/components/locale-switcher";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { updateAppointmentStatus } from "@/lib/data/client";
+import { useOptimisticUpdate } from "@/lib/hooks/use-optimistic-update";
+import { EmptyState } from "@/components/ui/empty-state";
 import { DataMask } from "@/components/ui/data-mask";
+import { logger } from "@/lib/logger";
+import { getLocalDateStr, formatDisplayDate } from "@/lib/utils";
+import { useToast } from "@/components/ui/toast";
 import {
   Dialog,
   DialogContent,
@@ -20,21 +27,14 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
-import { EmptyState } from "@/components/ui/empty-state";
-import { Input } from "@/components/ui/input";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { useToast } from "@/components/ui/toast";
-import { updateAppointmentStatus } from "@/lib/data/client";
+import { useLocale } from "@/components/locale-switcher";
+import { t } from "@/lib/i18n";
 import type {
   DoctorAppointmentView,
   DoctorPatientView,
   DoctorWaitingRoomEntry,
   DoctorInvoiceView,
 } from "@/lib/data/server";
-import { useOptimisticUpdate } from "@/lib/hooks/use-optimistic-update";
-import { t } from "@/lib/i18n";
-import { logger } from "@/lib/logger";
-import { getLocalDateStr, formatDisplayDate } from "@/lib/utils";
 
 // ── Date helpers ──
 

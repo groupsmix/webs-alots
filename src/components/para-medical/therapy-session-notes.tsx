@@ -1,12 +1,12 @@
 "use client";
 
+import { useState } from "react";
 import {
   Brain, Lock, Shield, AlertTriangle, Calendar,
   ChevronDown, ChevronUp, Clock,
 } from "lucide-react";
-import { useState } from "react";
-import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import type { TherapySessionNote } from "@/lib/types/para-medical";
 
 const RISK_COLORS: Record<string, string> = {

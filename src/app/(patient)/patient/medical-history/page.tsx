@@ -1,10 +1,9 @@
 "use client";
 
-import { Activity, Pill, FileText, Stethoscope, AlertTriangle, TrendingUp } from "lucide-react";
 import { useState, useEffect } from "react";
-import { Badge } from "@/components/ui/badge";
-import { Breadcrumb } from "@/components/ui/breadcrumb";
+import { Activity, Pill, FileText, Stethoscope, AlertTriangle, TrendingUp } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { PageLoader } from "@/components/ui/page-loader";
 import {
   getCurrentUser,
@@ -15,6 +14,7 @@ import {
   type PrescriptionView,
   type ConsultationNoteView,
 } from "@/lib/data/client";
+import { Breadcrumb } from "@/components/ui/breadcrumb";
 
 const vitals = [
   { label: "Blood Pressure", value: "120/80 mmHg", icon: Activity, trend: "stable", color: "text-blue-600" },

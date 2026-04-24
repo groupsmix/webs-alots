@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import {
   FlaskConical,
   Clock,
@@ -9,12 +10,11 @@ import {
   CalendarCheck,
   Activity,
 } from "lucide-react";
-import { useState, useEffect } from "react";
-import { useTenant } from "@/components/tenant-provider";
-import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { PageLoader } from "@/components/ui/page-loader";
+import { Badge } from "@/components/ui/badge";
 import { fetchLabDashboardKPIs, type LabDashboardKPIs } from "@/lib/data/client";
+import { useTenant } from "@/components/tenant-provider";
+import { PageLoader } from "@/components/ui/page-loader";
 import { logger } from "@/lib/logger";
 
 /**

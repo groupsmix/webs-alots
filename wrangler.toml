@@ -94,16 +94,15 @@ bucket_name = "webs-alots-uploads-staging"
 #   wrangler kv namespace create RATE_LIMIT_KV --env staging
 #   wrangler kv namespace create FEATURE_FLAGS_KV --env staging
 # Then replace the placeholder IDs below with the real ones.
-# Uncomment and configure with actual staging KV IDs before deploying to staging
-# [[env.staging.kv_namespaces]]
-# binding = "RATE_LIMIT_KV"
-# id = "STAGING_RATE_LIMIT_KV_ID_PLACEHOLDER"
-# preview_id = "STAGING_RATE_LIMIT_KV_ID_PLACEHOLDER"
+[[env.staging.kv_namespaces]]
+binding = "RATE_LIMIT_KV"
+id = "STAGING_RATE_LIMIT_KV_ID_PLACEHOLDER"
+preview_id = "STAGING_RATE_LIMIT_KV_ID_PLACEHOLDER"
 
-# [[env.staging.kv_namespaces]]
-# binding = "FEATURE_FLAGS_KV"
-# id = "STAGING_FEATURE_FLAGS_KV_ID_PLACEHOLDER"
-# preview_id = "STAGING_FEATURE_FLAGS_KV_ID_PLACEHOLDER"
+[[env.staging.kv_namespaces]]
+binding = "FEATURE_FLAGS_KV"
+id = "STAGING_FEATURE_FLAGS_KV_ID_PLACEHOLDER"
+preview_id = "STAGING_FEATURE_FLAGS_KV_ID_PLACEHOLDER"
 
 [env.staging.vars]
 ROOT_DOMAIN = "staging.oltigo.com"

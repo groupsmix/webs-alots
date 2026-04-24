@@ -9,9 +9,9 @@
  * the download path knows to decrypt before serving.
  */
 
+import { uploadToR2, deleteFromR2 } from "@/lib/r2";
 import { encryptBuffer, decryptBuffer, isEncryptionConfigured } from "@/lib/encryption";
 import { logger } from "@/lib/logger";
-import { uploadToR2, deleteFromR2 } from "@/lib/r2";
 
 /**
  * Encrypt a file and upload the ciphertext to R2.

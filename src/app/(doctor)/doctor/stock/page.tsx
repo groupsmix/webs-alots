@@ -2,9 +2,9 @@
 
 import { useState, useEffect } from "react";
 import { MaterialStockAlert } from "@/components/dental/material-stock-alert";
-import { Breadcrumb } from "@/components/ui/breadcrumb";
-import { PageLoader } from "@/components/ui/page-loader";
 import { getCurrentUser, fetchProducts, type ProductView } from "@/lib/data/client";
+import { PageLoader } from "@/components/ui/page-loader";
+import { Breadcrumb } from "@/components/ui/breadcrumb";
 
 export default function DoctorStockPage() {
   const [stock, setStock] = useState<ProductView[]>([]);

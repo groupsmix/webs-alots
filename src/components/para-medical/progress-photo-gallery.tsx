@@ -1,10 +1,10 @@
 "use client";
 
-import { Camera, Calendar, ChevronLeft, ChevronRight } from "lucide-react";
-import Image from "next/image";
 import { useState } from "react";
-import { Badge } from "@/components/ui/badge";
+import Image from "next/image";
+import { Camera, Calendar, ChevronLeft, ChevronRight } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import type { ProgressPhoto } from "@/lib/types/para-medical";
 
 interface ProgressPhotoGalleryProps {

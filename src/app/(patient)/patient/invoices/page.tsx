@@ -1,17 +1,17 @@
 "use client";
 
-import { Download, CreditCard, Eye, FileText, CheckCircle2 } from "lucide-react";
 import { useState, useEffect } from "react";
-import { Badge } from "@/components/ui/badge";
-import { Breadcrumb } from "@/components/ui/breadcrumb";
-import { Button } from "@/components/ui/button";
+import { Download, CreditCard, Eye, FileText, CheckCircle2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { PageLoader } from "@/components/ui/page-loader";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   getCurrentUser,
   fetchInvoices,
   type InvoiceView,
 } from "@/lib/data/client";
+import { PageLoader } from "@/components/ui/page-loader";
+import { Breadcrumb } from "@/components/ui/breadcrumb";
 
 const statusVariant: Record<string, "success" | "warning" | "destructive"> = {
   paid: "success",

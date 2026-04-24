@@ -1,5 +1,5 @@
-import { MapPin, Clock } from "lucide-react";
 import type { Metadata } from "next";
+import { MapPin, Clock } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { defaultWebsiteConfig } from "@/lib/website-config";
 

@@ -1,20 +1,20 @@
 "use client";
 
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { useState } from "react";
 import {
   LayoutDashboard, Users, Clock, CalendarDays, CreditCard, FileText,
   Menu, X, ClipboardList,
 } from "lucide-react";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { SignOutButton } from "@/components/sign-out-button";
+import { SessionTimeoutWarning } from "@/components/session-timeout-warning";
+import { signOut } from "@/lib/auth";
+import { AutoBreadcrumb } from "@/components/ui/auto-breadcrumb";
+import { PatientSearchPalette } from "@/components/patient-search-palette";
 import { MobileTabBar } from "@/components/layouts/mobile-tab-bar";
 import type { MobileTabItem } from "@/components/layouts/mobile-tab-bar";
-import { PatientSearchPalette } from "@/components/patient-search-palette";
-import { SessionTimeoutWarning } from "@/components/session-timeout-warning";
-import { SignOutButton } from "@/components/sign-out-button";
-import { AutoBreadcrumb } from "@/components/ui/auto-breadcrumb";
-import { Button } from "@/components/ui/button";
-import { signOut } from "@/lib/auth";
 
 const navItems = [
   { href: "/receptionist/dashboard", label: "Dashboard", icon: LayoutDashboard },

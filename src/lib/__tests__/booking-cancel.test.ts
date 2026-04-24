@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
-import type { AppointmentStatus } from "@/lib/types/database";
-import { isCancellableStatus, NON_CANCELLABLE_STATUSES } from "../booking-utils";
 import { clinicDateTime } from "../timezone";
+import { isCancellableStatus, NON_CANCELLABLE_STATUSES } from "../booking-utils";
+import type { AppointmentStatus } from "@/lib/types/database";
 
 // Test the server-side cancellation logic used in /api/booking/cancel
 // We test the timezone-aware cancellation window check that the route performs.

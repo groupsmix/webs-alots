@@ -1,12 +1,12 @@
 "use client";
 
-import { Moon, Sun, Clock, Calendar, Check } from "lucide-react";
 import { useState } from "react";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Moon, Sun, Clock, Calendar, Check } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
 import {
   DEFAULT_RAMADAN_HOURS,
   type RamadanConfig,

@@ -1,8 +1,8 @@
 "use client";
 
-import { useTenant } from "@/components/tenant-provider";
 import { ChatbotProvider } from "./chatbot-provider";
 import { ChatbotWidget } from "./chatbot-widget";
+import { useTenant } from "@/components/tenant-provider";
 
 /**
  * Self-contained chatbot wrapper.

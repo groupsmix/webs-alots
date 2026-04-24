@@ -1,11 +1,11 @@
 "use client";
 
-import { Camera } from "lucide-react";
 import { useState, useEffect } from "react";
+import { Camera } from "lucide-react";
 import { ProgressPhotoGallery } from "@/components/para-medical/progress-photo-gallery";
-import { PageLoader } from "@/components/ui/page-loader";
 import { getCurrentUser } from "@/lib/data/client";
 import type { ProgressPhoto } from "@/lib/types/para-medical";
+import { PageLoader } from "@/components/ui/page-loader";
 
 export default function ProgressPhotosPage() {
   const [photos, setPhotos] = useState<ProgressPhoto[]>([]);

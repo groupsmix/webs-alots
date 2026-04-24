@@ -1,9 +1,9 @@
 "use client";
 
-import { Search, X } from "lucide-react";
 import { useState, useRef, useEffect, useCallback } from "react";
-import { Input } from "@/components/ui/input";
+import { Search, X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Input } from "@/components/ui/input";
 
 interface SearchInputProps {
   placeholder?: string;

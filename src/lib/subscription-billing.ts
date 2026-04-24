@@ -6,9 +6,9 @@
  * payment processing when configured.
  */
 
-import { assertClinicId } from "@/lib/assert-tenant";
-import { logger } from "@/lib/logger";
 import { createTenantClient } from "@/lib/supabase-server";
+import { logger } from "@/lib/logger";
+import { assertClinicId } from "@/lib/assert-tenant";
 import { logTenantContext } from "@/lib/tenant-context";
 
 // ---- Types ----

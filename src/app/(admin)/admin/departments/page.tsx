@@ -1,10 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { DepartmentDashboard } from "@/components/polyclinic/department-dashboard";
 import { DepartmentManagement } from "@/components/polyclinic/department-management";
-import { Breadcrumb } from "@/components/ui/breadcrumb";
+import { DepartmentDashboard } from "@/components/polyclinic/department-dashboard";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Breadcrumb } from "@/components/ui/breadcrumb";
 
 export default function AdminDepartmentsPage() {
   const [departments] = useState<Parameters<typeof DepartmentManagement>[0]["departments"]>([]);

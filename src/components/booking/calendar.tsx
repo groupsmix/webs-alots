@@ -1,10 +1,10 @@
 "use client";
 
-import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useState, useCallback, useRef, useEffect } from "react";
-import { useTenant } from "@/components/tenant-provider";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tooltip } from "@/components/ui/tooltip";
+import { useTenant } from "@/components/tenant-provider";
 
 /** Default working hours when tenant config is not yet loaded. */
 const DEFAULT_WORKING_HOURS: Record<number, { open: string; close: string; enabled: boolean }> = {

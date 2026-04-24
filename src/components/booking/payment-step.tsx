@@ -1,10 +1,10 @@
 "use client";
 
-import { CreditCard, DollarSign, Shield, CheckCircle2, Smartphone, Building2, Banknote, FileText } from "lucide-react";
 import { useState } from "react";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { CreditCard, DollarSign, Shield, CheckCircle2, Smartphone, Building2, Banknote, FileText } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { logger } from "@/lib/logger";
 import { type MoroccanPaymentMethod } from "@/lib/morocco";
 

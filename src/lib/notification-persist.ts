@@ -5,9 +5,9 @@
  * so they appear in the user's notification feed.
  */
 
-import { logger } from "@/lib/logger";
 import { createClient } from "@/lib/supabase-server";
 import type { NotificationTrigger } from "./notifications";
+import { logger } from "@/lib/logger";
 
 interface InsertNotificationParams {
   userId: string;

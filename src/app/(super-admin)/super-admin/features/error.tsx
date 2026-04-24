@@ -1,11 +1,11 @@
 "use client";
 
-import { AlertTriangle, RefreshCw, ArrowLeft } from "lucide-react";
-import Link from "next/link";
 import { useEffect } from "react";
+import { AlertTriangle, RefreshCw, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { logger } from "@/lib/logger";
+import Link from "next/link";
 
 export default function PageError({
   error,

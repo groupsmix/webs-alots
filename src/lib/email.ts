@@ -16,8 +16,8 @@
  * supported as fallbacks for backward compatibility.
  */
 
-import { escapeHtml } from "@/lib/escape-html";
 import { logger } from "@/lib/logger";
+import { escapeHtml } from "@/lib/escape-html";
 
 
 const RESEND_API_URL = "https://api.resend.com/emails";

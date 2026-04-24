@@ -1,11 +1,9 @@
 "use client";
 
-import { Download, FileText } from "lucide-react";
-import dynamic from "next/dynamic";
 import { useState, useEffect } from "react";
-import { Badge } from "@/components/ui/badge";
+import { Download, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { PageLoader } from "@/components/ui/page-loader";
+import { Badge } from "@/components/ui/badge";
 import {
   getCurrentUser,
   fetchRevenueAnalytics,
@@ -14,8 +12,7 @@ import {
   type FeedbackStatsData,
   type AnalyticsPeriod,
 } from "@/lib/data/client";
-import { exportToCSV } from "@/lib/export-data";
-import { generateRevenueReport } from "@/lib/revenue-report-pdf";
+import dynamic from "next/dynamic";
 import type { RevenueDataPoint } from "./revenue-chart";
 
 const RevenueChart = dynamic(
@@ -36,6 +33,9 @@ const RevenueByMethod = dynamic(
 );
 import { RevenueKPICards } from "./revenue-kpi-cards";
 import { ReviewStatsWidget } from "./review-stats-widget";
+import { generateRevenueReport } from "@/lib/revenue-report-pdf";
+import { exportToCSV } from "@/lib/export-data";
+import { PageLoader } from "@/components/ui/page-loader";
 
 const PERIOD_LABELS: Record<AnalyticsPeriod, string> = {
   week: "This Week",

@@ -2,10 +2,10 @@
 
 import { useState, useEffect } from "react";
 import { SterilizationLogPanel } from "@/components/dental/sterilization-log-panel";
-import { Breadcrumb } from "@/components/ui/breadcrumb";
-import { PageLoader } from "@/components/ui/page-loader";
 import { getCurrentUser, fetchSterilizationLog, createSterilizationEntry } from "@/lib/data/client";
 import type { SterilizationEntry } from "@/lib/types/dental";
+import { PageLoader } from "@/components/ui/page-loader";
+import { Breadcrumb } from "@/components/ui/breadcrumb";
 
 export default function DoctorSterilizationPage() {
   const [log, setLog] = useState<SterilizationEntry[]>([]);

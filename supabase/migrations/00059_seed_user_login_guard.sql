@@ -18,14 +18,9 @@
 -- List of seed user IDs from migration 00019
 CREATE OR REPLACE FUNCTION block_seed_user_login()
 RETURNS TRIGGER AS $$
-DECLARE
-  env_setting text;
 BEGIN
-  -- Check environment, defaulting to 'production' if not explicitly set to something else (like 'development' or 'local')
-  -- This ensures fail-closed security: if the operator forgets to set app.environment, it defaults to safe (blocking seeds).
-  env_setting := current_setting('app.environment', true);
-  
-  IF env_setting IS NULL OR env_setting = '' OR env_setting = 'production' OR env_setting = 'staging' THEN
+  -- Only enforce in production (set via app.environment config var)
+  IF current_setting('app.environment', true) = 'production' THEN
     IF NEW.id IN (
       'a0000000-0000-0000-0000-000000000001',
       'a0000000-0000-0000-0000-000000000002',

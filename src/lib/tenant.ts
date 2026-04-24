@@ -11,8 +11,8 @@
 
 import { headers } from "next/headers";
 import { clinicConfig } from "@/config/clinic.config";
-import { DEFAULT_TIMEZONE } from "@/lib/constants";
 import { logTenantContext } from "@/lib/tenant-context";
+import { DEFAULT_TIMEZONE } from "@/lib/constants";
 
 /** Minimal tenant info passed via request headers from middleware. */
 export interface TenantInfo {

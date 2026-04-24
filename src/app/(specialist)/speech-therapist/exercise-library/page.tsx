@@ -1,11 +1,11 @@
 "use client";
 
-import { BookOpen } from "lucide-react";
 import { useState, useEffect } from "react";
+import { BookOpen } from "lucide-react";
 import { SpeechExerciseLibrary } from "@/components/para-medical/speech-exercise-library";
-import { PageLoader } from "@/components/ui/page-loader";
 import { getCurrentUser } from "@/lib/data/client";
 import type { SpeechExercise } from "@/lib/types/para-medical";
+import { PageLoader } from "@/components/ui/page-loader";
 
 export default function ExerciseLibraryPage() {
   const [exercises, setExercises] = useState<SpeechExercise[]>([]);

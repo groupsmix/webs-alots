@@ -1,13 +1,13 @@
 "use client";
 
-import { Clock, X, Bell } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
+import { logger } from "@/lib/logger";
+import { Clock, X, Bell } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { PageLoader } from "@/components/ui/page-loader";
 import type { WaitingListView } from "@/lib/data/client";
-import { logger } from "@/lib/logger";
+import { PageLoader } from "@/components/ui/page-loader";
 
 interface WaitingListStatusProps {
   patientId: string;

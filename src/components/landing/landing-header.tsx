@@ -1,12 +1,12 @@
 "use client";
 
-import { Menu, X, Moon, Sun } from "lucide-react";
 import Link from "next/link";
 import { useState, useEffect } from "react";
+import { Menu, X, Moon, Sun } from "lucide-react";
 import { LocaleSwitcher } from "@/components/locale-switcher";
 import { useTheme } from "@/components/theme-provider";
-import type { TranslationKey } from "@/lib/i18n";
 import { useLandingLocale } from "./landing-locale-provider";
+import type { TranslationKey } from "@/lib/i18n";
 
 const navLinks: readonly { key: TranslationKey; href: string; sectionId?: string }[] = [
   { key: "landing.navFeatures", href: "/#fonctionnalites", sectionId: "fonctionnalites" },

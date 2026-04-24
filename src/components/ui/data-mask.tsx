@@ -1,9 +1,9 @@
 "use client";
 
-import { Eye, EyeOff } from "lucide-react";
 import { useState } from "react";
-import { mask, getMaskLevel, type MaskLevel } from "@/lib/mask";
+import { Eye, EyeOff } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { mask, getMaskLevel, type MaskLevel } from "@/lib/mask";
 
 interface DataMaskProps {
   /** The sensitive value to mask */

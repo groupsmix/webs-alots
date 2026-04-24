@@ -8,11 +8,11 @@
  * Can be printed or downloaded as SVG/PNG.
  */
 
+import { useState, useMemo, useCallback, useRef } from "react";
+import { logger } from "@/lib/logger";
 import { Download, Printer, Copy, Check, QrCode } from "lucide-react";
 import QRCodeLib from "qrcode";
-import { useState, useMemo, useCallback, useRef } from "react";
 import { escapeHtml } from "@/lib/escape-html";
-import { logger } from "@/lib/logger";
 
 interface QrCodeGeneratorProps {
   url: string;
