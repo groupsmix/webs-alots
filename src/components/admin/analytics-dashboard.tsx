@@ -328,7 +328,7 @@ export function AnalyticsDashboard({
       months.push({ name: monthName, revenue: rev });
     }
     return months;
-  }, [parsedPayments, now]);
+  }, [parsedPayments, now, locale]);
 
   // Patient growth (new first-visit patients per month, last 6 months)
   const patientGrowthData = useMemo(() => {
@@ -343,7 +343,7 @@ export function AnalyticsDashboard({
       months.push({ name: monthName, newPatients: count });
     }
     return months;
-  }, [parsedAppointments, now]);
+  }, [parsedAppointments, now, locale]);
 
   // Retention rate (returning vs new) — this month
   const thisMonthAppts = useMemo(

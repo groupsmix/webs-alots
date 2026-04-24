@@ -124,7 +124,7 @@ export const POST = withAuthValidation(labReportSchema, async (body, request, { 
       return apiError("User must belong to a clinic");
     }
 
-    const generatedAt = formatDisplayDate(new Date(), "fr", "datetime");
+    const generatedAt = formatDisplayDate(new Date(), "en", "datetime");
 
     const html = generateLabReportHtml({
       patientName,

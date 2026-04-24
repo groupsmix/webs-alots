@@ -86,7 +86,7 @@ export const POST = withAuthValidation(radiologyReportPdfSchema, async (body, re
       return apiError("Report content is required (findings, impression, or reportText)");
     }
 
-    const generatedAt = formatDisplayDate(new Date(), "fr", "datetime");
+    const generatedAt = formatDisplayDate(new Date(), "en", "datetime");
 
     const html = generateReportHtml({
       patientName,
