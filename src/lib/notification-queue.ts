@@ -5,7 +5,8 @@
  * Messages are enqueued as "pending" and processed by a cron job.
  * Failed sends are retried with exponential backoff up to max_attempts.
  *
- * Queue states: pending → processing → sent | failed → dead_letter
+ * Queue states: pending → processing → sent | failed (terminal: dead-lettered
+ * via next_attempt_at = far future when attempts >= max_attempts)
  */
 
 import type { SupabaseClient } from "@supabase/supabase-js";
@@ -23,16 +24,15 @@ export interface QueuedNotification {
   clinic_id: string;
   channel: NotificationChannel;
   recipient: string;
-  body: string;
-  trigger_type: NotificationTrigger;
-  status: "pending" | "processing" | "sent" | "failed" | "dead_letter";
+  template_id: string | null;
+  payload: unknown;
+  status: "pending" | "processing" | "sent" | "failed";
   attempts: number;
   max_attempts: number;
-  next_retry_at: string;
-  last_error: string | null;
-  metadata: Record<string, string>;
+  next_attempt_at: string;
+  error_message: string | null;
   created_at: string;
-  sent_at: string | null;
+  updated_at: string;
 }
 
 interface EnqueueParams {
@@ -59,9 +59,6 @@ const BASE_RETRY_DELAY_MS = 30_000;
 
 /** Maximum number of items to process per cron invocation. */
 const BATCH_SIZE = 50;
-
-/** Default max attempts before dead-lettering a notification. */
-const BATCH_MAX_ATTEMPTS = 5;
 
 /** Far-future timestamp so dead-lettered items are never picked up again. */
 const DEAD_LETTER_NEXT_ATTEMPT = "9999-12-31T23:59:59Z";
@@ -154,7 +151,6 @@ export async function processNotificationQueue(): Promise<ProcessResult> {
       .select("id, clinic_id, channel, recipient, payload, status, attempts, max_attempts, next_attempt_at, error_message, created_at")
       .in("status", ["pending", "failed"])
       .lte("next_attempt_at", new Date().toISOString())
-      .lt("attempts", BATCH_MAX_ATTEMPTS)
       .order("next_attempt_at", { ascending: true })
       .limit(BATCH_SIZE);
 

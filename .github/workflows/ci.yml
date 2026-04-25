@@ -89,6 +89,13 @@ jobs:
           E2E_BASE_URL: http://localhost:3000
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co' }}
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder' }}
+          # Stubs satisfying the production startup health check
+          # (src/lib/env.ts). E2E runs `next start` in NODE_ENV=production,
+          # which requires these variables to be present.
+          BOOKING_TOKEN_SECRET: ci-e2e-booking-token-secret-placeholder
+          ROOT_DOMAIN: localhost
+          NEXT_PUBLIC_SITE_URL: http://localhost:3000
+          CRON_SECRET: ci-e2e-cron-secret-placeholder
           SEED_PASSWORDS_ROTATED: "true"
           SEED_USERS_DELETED: "true"
 
