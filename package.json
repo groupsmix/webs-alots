@@ -74,7 +74,7 @@
     "typedoc": "^0.28.18",
     "typescript": "^5",
     "vitest": "^4.1.0",
-    "wrangler": "^4.76.0"
+    "wrangler": "^4.85.0"
   },
   "lint-staged": {
     "*.{ts,tsx}": [
