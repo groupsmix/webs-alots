@@ -413,11 +413,13 @@ function createMemoryRateLimiter(options: RateLimiterOptions): RateLimiter {
       // know the rate-limit state was reset (all previous counters lost).
       if (!coldStartWarned) {
         coldStartWarned = true;
-        logger.warn(
-          "In-memory rate limiter active — counters are not shared across isolates and will reset on cold starts. " +
-          "Configure RATE_LIMIT_BACKEND=kv or RATE_LIMIT_BACKEND=supabase for production use.",
-          { context: "rate-limit" },
-        );
+        if (process.env.NODE_ENV !== "test") {
+          logger.warn(
+            "In-memory rate limiter active — counters are not shared across isolates and will reset on cold starts. " +
+            "Configure RATE_LIMIT_BACKEND=kv or RATE_LIMIT_BACKEND=supabase for production use.",
+            { context: "rate-limit" },
+          );
+        }
       }
 
       prune(now);
@@ -453,13 +455,17 @@ export function createRateLimiter(options: RateLimiterOptions): RateLimiter {
   if (shouldUseSupabase()) {
     return createSupabaseRateLimiter(options);
   }
-  logger.warn(
-    "Rate limiter falling back to in-memory backend. " +
-    "This is unsuitable for production serverless deployments — " +
-    "counters reset on cold starts and are not shared across isolates. " +
-    "Set RATE_LIMIT_BACKEND=kv or configure NEXT_PUBLIC_SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY.",
-    { context: "rate-limit" },
-  );
+
+  // Only log the warning if not running in a test environment
+  if (process.env.NODE_ENV !== "test") {
+    logger.warn(
+      "Rate limiter falling back to in-memory backend. " +
+      "This is unsuitable for production serverless deployments — " +
+      "counters reset on cold starts and are not shared across isolates. " +
+      "Set RATE_LIMIT_BACKEND=kv or configure NEXT_PUBLIC_SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY.",
+      { context: "rate-limit" },
+    );
+  }
   return createMemoryRateLimiter(options);
 }
 

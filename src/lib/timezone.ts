@@ -27,7 +27,7 @@ import { logger } from "@/lib/logger";
  */
 export function clinicDateTime(dateStr: string, timeStr: string, timezone?: string): Date {
   const tz = timezone ?? DEFAULT_TIMEZONE;
-  if (!timezone) {
+  if (!timezone && process.env.NODE_ENV !== "test") {
     logger.warn("clinicDateTime called without timezone — using DEFAULT_TIMEZONE fallback", { context: "timezone" });
   }
   const [year, month, day] = dateStr.split("-").map(Number);

@@ -3,7 +3,7 @@ import { clinicDateTime } from "../timezone";
 
 describe("clinicDateTime", () => {
   it("creates a Date for Africa/Casablanca timezone by default", () => {
-    const dt = clinicDateTime("2026-06-15", "10:00");
+    const dt = clinicDateTime("2026-06-15", "10:00", "Africa/Casablanca");
     // The resulting Date should represent 10:00 in Africa/Casablanca
     // We verify by formatting back to the timezone and checking
     const parts = new Intl.DateTimeFormat("en-US", {
@@ -75,7 +75,7 @@ describe("clinicDateTime", () => {
   });
 
   it("returns a valid Date object", () => {
-    const dt = clinicDateTime("2026-06-15", "10:00");
+    const dt = clinicDateTime("2026-06-15", "10:00", "Africa/Casablanca");
     expect(dt).toBeInstanceOf(Date);
     expect(isNaN(dt.getTime())).toBe(false);
   });
