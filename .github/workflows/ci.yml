@@ -4,16 +4,20 @@ on:
   pull_request:
     branches: [main, staging]
 
+# Least-privilege permissions (only what each job needs)
+permissions:
+  contents: read
+
 jobs:
   ci:
     runs-on: ubuntu-latest
     name: Lint, Type Check & Tests
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
 
       - name: Setup Node.js
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
@@ -56,10 +60,10 @@ jobs:
     name: E2E Tests (Playwright)
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
 
       - name: Setup Node.js
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
@@ -103,7 +107,7 @@ jobs:
           SEED_USERS_DELETED: "true"
 
       - name: Upload Playwright report
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@v4
         if: always()
         with:
           name: playwright-report

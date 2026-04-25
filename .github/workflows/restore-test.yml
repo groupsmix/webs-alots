@@ -5,13 +5,17 @@ on:
     - cron: '0 4 1 * *' # Run at 04:00 on the 1st of every month
   workflow_dispatch:
 
+# Least-privilege permissions
+permissions:
+  contents: read
+
 jobs:
   restore-drill:
     runs-on: ubuntu-latest
     name: Restore Backup to Scratch DB
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
 
       - name: Fetch Latest Encrypted Backup
         env:
