@@ -6,6 +6,10 @@ on:
     - cron: "0 */6 * * *"
   workflow_dispatch:
 
+# Least-privilege permissions
+permissions:
+  contents: read
+
 jobs:
   check:
     runs-on: ubuntu-latest
@@ -43,7 +47,7 @@ jobs:
     steps:
 
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
 
       - name: Install AWS CLI
         run: pip install awscli

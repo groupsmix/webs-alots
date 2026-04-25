@@ -8,16 +8,20 @@ on:
         required: true
         type: string
 
+# Least-privilege permissions
+permissions:
+  contents: read
+
 jobs:
   rotate-key:
     runs-on: ubuntu-latest
     name: Rotate PHI Key in R2
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
 
       - name: Setup Node.js
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm

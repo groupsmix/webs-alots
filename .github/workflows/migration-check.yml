@@ -5,13 +5,17 @@ on:
     paths:
       - 'supabase/migrations/**'
 
+# Least-privilege permissions
+permissions:
+  contents: read
+
 jobs:
   validate-migrations:
     runs-on: ubuntu-latest
     name: Validate Migrations
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
 
       - name: Check migration file numbering
         run: |
@@ -68,7 +72,7 @@ jobs:
 
       # Audit 12: Add RLS assertion tests to migration check
       - name: Setup Node.js for RLS Tests
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@v4
         with:
           node-version: 22
 
