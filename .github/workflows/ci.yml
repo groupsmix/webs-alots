@@ -82,22 +82,8 @@ jobs:
 
       - name: Run E2E tests
         id: e2e
-        # E2E tests are currently advisory while pre-existing failures
-        # (Next.js 16 `headers() inside "use cache"` errors and
-        # SUPABASE_SERVICE_ROLE_KEY not being available to the build env)
-        # are tracked and fixed in dedicated PRs. Failures upload a report
-        # artifact but do not block PR merges.
-        # TODO: re-enable hard-blocking once the failing routes are fixed.
         run: |
-          set +e
           npx playwright test --project=chromium
-          EXIT_CODE=$?
-          set -e
-          echo "exit_code=$EXIT_CODE" >> "$GITHUB_OUTPUT"
-
-          if [ "$EXIT_CODE" != "0" ]; then
-            echo "::warning::Some E2E tests failed (exit $EXIT_CODE). See playwright-report artifact for details. Failures are advisory while pre-existing app bugs are fixed."
-          fi
         env:
           CI: true
           E2E_BASE_URL: http://localhost:3000

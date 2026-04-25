@@ -51,46 +51,50 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   }
 
   // Dynamic clinic subdomain pages
-  try {
-    // Use admin client (service role) so the sitemap query works without
-    // authentication cookies. Googlebot won't have session cookies, so the
-    // cookie-based createClient() would fail silently on RLS-protected tables.
-    const supabase = createAdminClient();
-    const { data: clinics } = await supabase
-      .from("clinics")
-      .select("subdomain, updated_at")
-      .eq("status", "active")
-      .not("subdomain", "is", null);
+  if (process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    try {
+      // Use admin client (service role) so the sitemap query works without
+      // authentication cookies. Googlebot won't have session cookies, so the
+      // cookie-based createClient() would fail silently on RLS-protected tables.
+      const supabase = createAdminClient();
+      const { data: clinics } = await supabase
+        .from("clinics")
+        .select("subdomain, updated_at")
+        .eq("status", "active")
+        .not("subdomain", "is", null);
 
-    if (clinics) {
-      const clinicPublicPages = [
-        "/",
-        "/services",
-        "/about",
-        "/book",
-        "/reviews",
-        "/contact",
-      ];
+      if (clinics) {
+        const clinicPublicPages = [
+          "/",
+          "/services",
+          "/about",
+          "/book",
+          "/reviews",
+          "/contact",
+        ];
 
-      for (const clinic of clinics) {
-        if (!clinic.subdomain) continue;
-        const clinicBase = `https://${clinic.subdomain}.${rootDomain}`;
-        const modified = clinic.updated_at
-          ? new Date(clinic.updated_at)
-          : now;
+        for (const clinic of clinics) {
+          if (!clinic.subdomain) continue;
+          const clinicBase = `https://${clinic.subdomain}.${rootDomain}`;
+          const modified = clinic.updated_at
+            ? new Date(clinic.updated_at)
+            : now;
 
-        for (const page of clinicPublicPages) {
-          entries.push({
-            url: `${clinicBase}${page}`,
-            lastModified: modified,
-            changeFrequency: "weekly",
-            priority: page === "/" ? 0.9 : 0.7,
-          });
+          for (const page of clinicPublicPages) {
+            entries.push({
+              url: `${clinicBase}${page}`,
+              lastModified: modified,
+              changeFrequency: "weekly",
+              priority: page === "/" ? 0.9 : 0.7,
+            });
+          }
         }
       }
+    } catch (err) {
+      logger.warn("Failed to fetch clinic subdomains for sitemap", { context: "sitemap", error: err });
     }
-  } catch (err) {
-    logger.warn("Failed to fetch clinic subdomains for sitemap", { context: "sitemap", error: err });
+  } else {
+    logger.info("Skipping dynamic sitemap generation: Supabase credentials missing (expected in dev/build)", { context: "sitemap" });
   }
 
   // ── Doctor Directory pages ──
@@ -124,18 +128,20 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   }
 
   // Individual doctor profile pages
-  try {
-    const doctors = await getDirectoryDoctors();
-    for (const doctor of doctors) {
-      entries.push({
-        url: `${baseUrl}/annuaire/${doctor.slug}`,
-        lastModified: now,
-        changeFrequency: "weekly",
-        priority: 0.6,
-      });
+  if (process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    try {
+      const doctors = await getDirectoryDoctors();
+      for (const doctor of doctors) {
+        entries.push({
+          url: `${baseUrl}/annuaire/${doctor.slug}`,
+          lastModified: now,
+          changeFrequency: "weekly",
+          priority: 0.6,
+        });
+      }
+    } catch (err) {
+      logger.warn("Failed to fetch directory doctors for sitemap", { context: "sitemap", error: err });
     }
-  } catch (err) {
-    logger.warn("Failed to fetch directory doctors for sitemap", { context: "sitemap", error: err });
   }
 
   return entries;

@@ -148,6 +148,12 @@ function specialtyToSlug(specialty: string): string {
 // ── Data fetching ──
 
 async function fetchDirectoryDoctors(): Promise<DirectoryDoctor[]> {
+  // Audit 8: Short-circuit if env is missing to avoid noisy stack traces during build/dev
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    logger.info("Skipping directory fetch: Supabase credentials missing (expected in dev/build)", { context: "directory" });
+    return [];
+  }
+
   try {
     // We cannot use the standard `createClient` here because `cookies()` is not allowed 
     // inside a "use cache" directive in Next.js 15+. We must use the admin client or a 

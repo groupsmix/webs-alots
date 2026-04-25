@@ -21,6 +21,8 @@ export interface BackupManifest {
   clinicName: string;
   tables: BackupTableInfo[];
   totalRecords: number;
+  truncated?: boolean;
+  truncatedAt?: number;
 }
 
 interface BackupTableInfo {
@@ -81,29 +83,59 @@ export async function createBackup(
   const data: Record<string, Record<string, unknown>[]> = {};
   const tables: BackupTableInfo[] = [];
   let totalRecords = 0;
+  let isTruncated = false;
+  let truncatedAtRecord = 0;
 
-  // Process tables sequentially to avoid loading all tables into memory
-  // at once. Each table is fetched, counted, and stored before moving
-  // to the next one.
+  // Hard cap for total bytes to prevent lambda OOM during JSON serialization
+  const MAX_TOTAL_RECORDS = 50_000;
+
   for (const table of BACKUP_TABLES) {
-    const { data: rows, error } = await supabase
-      .from(table)
-      .select("*")
-      .eq("clinic_id", clinicId)
-      .order("created_at", { ascending: false })
-      .limit(MAX_ROWS_PER_TABLE);
+    let tableRows: Record<string, unknown>[] = [];
+    let hasMore = true;
+    let offset = 0;
+    const limit = 1000; // Fetch in chunks
 
-    if (error) {
-      logger.warn("Backup: failed to fetch table", { context: "backup", table, error });
-      data[table] = [];
-      tables.push({ name: table, recordCount: 0 });
-      continue;
+    while (hasMore) {
+      // If we exceed the safety cap, abort fetching further rows
+      if (totalRecords + tableRows.length >= MAX_TOTAL_RECORDS) {
+        isTruncated = true;
+        truncatedAtRecord = totalRecords + tableRows.length;
+        hasMore = false;
+        break;
+      }
+
+      const { data: chunk, error } = await supabase
+        .from(table)
+        .select("*")
+        .eq("clinic_id", clinicId)
+        .order("created_at", { ascending: false })
+        .range(offset, offset + limit - 1);
+
+      if (error) {
+        logger.warn("Backup: failed to fetch table chunk", { context: "backup", table, error });
+        break;
+      }
+
+      if (!chunk || chunk.length === 0) {
+        hasMore = false;
+      } else {
+        tableRows = tableRows.concat(chunk);
+        offset += limit;
+        if (chunk.length < limit) {
+          hasMore = false; // Last page
+        }
+      }
     }
 
-    data[table] = (rows ?? []) as Record<string, unknown>[];
-    const count = data[table].length;
+    data[table] = tableRows;
+    const count = tableRows.length;
     tables.push({ name: table, recordCount: count });
     totalRecords += count;
+
+    if (isTruncated) {
+      logger.warn("Backup truncated due to size limits", { context: "backup", clinicId, truncatedAtRecord });
+      break; // Stop processing further tables
+    }
   }
 
   const manifest: BackupManifest = {
@@ -114,6 +146,11 @@ export async function createBackup(
     tables,
     totalRecords,
   };
+
+  if (isTruncated) {
+    manifest.truncated = true;
+    manifest.truncatedAt = truncatedAtRecord;
+  }
 
   return { manifest, data };
 }
@@ -183,11 +220,12 @@ export async function restoreBackup(
   }
 
   // Guard against excessively large payloads that could cause OOM
-  if (json.length > MAX_RESTORE_PAYLOAD_BYTES) {
+  const byteLength = Buffer.byteLength(json, "utf8");
+  if (byteLength > MAX_RESTORE_PAYLOAD_BYTES) {
     return {
       success: false,
       restored: [],
-      errors: [`Backup payload too large (${(json.length / 1024 / 1024).toFixed(1)} MB). Maximum allowed: ${MAX_RESTORE_PAYLOAD_BYTES / 1024 / 1024} MB.`],
+      errors: [`Backup payload too large (${(byteLength / 1024 / 1024).toFixed(1)} MB). Maximum allowed: ${MAX_RESTORE_PAYLOAD_BYTES / 1024 / 1024} MB.`],
       warnings: [],
     };
   }

@@ -10,13 +10,11 @@
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { logger } from "@/lib/logger";
+import type { Database } from "@/lib/types/database-extended";
 import type { NotificationTrigger, NotificationChannel } from "./notifications";
 
-// The notification_queue table is created by migration 00050 but its types
-// aren't in the generated Supabase schema yet. We use an untyped client
-// handle for queue operations until `supabase gen types` is re-run.
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type UntypedClient = SupabaseClient<any, any, any>;
+// We use the extended Database interface to properly type the notification_queue table
+type ExtendedClient = SupabaseClient<Database>;
 
 // ── Types ──
 
@@ -87,7 +85,7 @@ export async function enqueueNotification(
 ): Promise<string | null> {
   try {
     const { createAdminClient } = await import("@/lib/supabase-server");
-    const supabase = createAdminClient() as UntypedClient;
+    const supabase = createAdminClient() as ExtendedClient;
 
     const { data, error } = await supabase
       .from("notification_queue")
@@ -95,13 +93,11 @@ export async function enqueueNotification(
         clinic_id: params.clinicId,
         channel: params.channel,
         recipient: params.recipient,
-        body: params.body,
-        trigger_type: params.trigger,
+        payload: { body: params.body, trigger: params.trigger, metadata: params.metadata },
         status: "pending",
         attempts: 0,
         max_attempts: params.maxAttempts ?? 5,
-        next_retry_at: new Date().toISOString(),
-        metadata: params.metadata ?? {},
+        next_attempt_at: new Date().toISOString(),
       })
       .select("id")
       .single();
@@ -144,15 +140,15 @@ export async function processNotificationQueue(): Promise<ProcessResult> {
 
   try {
     const { createAdminClient } = await import("@/lib/supabase-server");
-    const supabase = createAdminClient() as UntypedClient;
+    const supabase = createAdminClient() as ExtendedClient;
 
     // Fetch pending items ready for processing
     const { data: items, error: fetchError } = await supabase
       .from("notification_queue")
-      .select("id, clinic_id, channel, recipient, body, trigger_type, status, attempts, max_attempts, next_retry_at, last_error, metadata, created_at, sent_at")
+      .select("id, clinic_id, channel, recipient, payload, status, attempts, max_attempts, next_attempt_at, error_message, created_at")
       .in("status", ["pending", "failed"])
-      .lte("next_retry_at", new Date().toISOString())
-      .order("next_retry_at", { ascending: true })
+      .lte("next_attempt_at", new Date().toISOString())
+      .order("next_attempt_at", { ascending: true })
       .limit(BATCH_SIZE);
 
     if (fetchError || !items || items.length === 0) {
@@ -173,14 +169,15 @@ export async function processNotificationQueue(): Promise<ProcessResult> {
       .in("id", itemIds);
 
     // Process each item
-    for (const item of items as QueuedNotification[]) {
+    for (const item of items) {
       result.processed++;
 
       try {
+        const payload = item.payload as { body: string, trigger?: string, metadata?: Record<string, string> };
         const sendResult = await deliverNotification(
           item.channel as NotificationChannel,
           item.recipient,
-          item.body,
+          payload.body,
         );
 
         if (sendResult.success) {
@@ -189,7 +186,6 @@ export async function processNotificationQueue(): Promise<ProcessResult> {
             .from("notification_queue")
             .update({
               status: "sent",
-              sent_at: new Date().toISOString(),
               updated_at: new Date().toISOString(),
             })
             .eq("id", item.id);
@@ -204,20 +200,19 @@ export async function processNotificationQueue(): Promise<ProcessResult> {
             await supabase
               .from("notification_queue")
               .update({
-                status: "dead_letter",
+                status: "failed", // We don't have 'dead_letter' in DB enum, just leave as 'failed' with max attempts
                 attempts: newAttempts,
-                last_error: sendResult.error ?? "Unknown error",
+                error_message: sendResult.error ?? "Unknown error",
                 updated_at: new Date().toISOString(),
               })
               .eq("id", item.id);
             result.deadLettered++;
 
-            logger.error("Notification moved to dead letter queue", {
+            logger.error("Notification exhausted retries", {
               context: "notification-queue",
               notificationId: item.id,
               channel: item.channel,
               recipient: item.recipient,
-              trigger: item.trigger_type,
               attempts: newAttempts,
               lastError: sendResult.error,
             });
@@ -229,8 +224,8 @@ export async function processNotificationQueue(): Promise<ProcessResult> {
               .update({
                 status: "failed",
                 attempts: newAttempts,
-                next_retry_at: nextRetry.toISOString(),
-                last_error: sendResult.error ?? "Unknown error",
+                next_attempt_at: nextRetry.toISOString(),
+                error_message: sendResult.error ?? "Unknown error",
                 updated_at: new Date().toISOString(),
               })
               .eq("id", item.id);
@@ -243,17 +238,16 @@ export async function processNotificationQueue(): Promise<ProcessResult> {
         const maxAttempts = item.max_attempts ?? 5;
         const errorMsg = err instanceof Error ? err.message : "Unknown error";
 
-        const status = newAttempts >= maxAttempts ? "dead_letter" : "failed";
-        if (status === "dead_letter") result.deadLettered++;
+        if (newAttempts >= maxAttempts) result.deadLettered++;
         else result.failed++;
 
         await supabase
           .from("notification_queue")
           .update({
-            status,
+            status: "failed",
             attempts: newAttempts,
-            next_retry_at: status === "failed" ? calculateNextRetry(newAttempts).toISOString() : item.next_retry_at,
-            last_error: errorMsg,
+            next_attempt_at: newAttempts >= maxAttempts ? item.next_attempt_at : calculateNextRetry(newAttempts).toISOString(),
+            error_message: errorMsg,
             updated_at: new Date().toISOString(),
           })
           .eq("id", item.id);
