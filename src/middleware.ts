@@ -79,13 +79,18 @@ export async function middleware(request: NextRequest) {
   }
 
   // --- Generate a per-request nonce for CSP ---
-  const nonce = Buffer.from(crypto.randomUUID()).toString("base64");
+  const nonceBytes = crypto.getRandomValues(new Uint8Array(16));
+  const nonce = btoa(String.fromCharCode(...nonceBytes));
   const cspHeaderValue = buildCsp(nonce);
 
   // --- Generate a per-request trace ID for structured logging ---
   const traceId = generateTraceId();
 
   // --- Global body size limit ---
+  // Audit P1 #10: Protect against attacker-supplied Content-Length bypasses
+  // Next.js middleware doesn't fully support stream processing the body directly,
+  // but we can reject obvious oversized Content-Length. For robust streaming limits,
+  // the limit is handled per-route in route.ts files, but this is a first line of defense.
   const contentLength = request.headers.get("content-length");
   if (contentLength && Number(contentLength) > MAX_BODY_BYTES) {
     return withSecurityHeaders(
@@ -296,18 +301,51 @@ export async function middleware(request: NextRequest) {
 
   // Single profile query for authenticated users, reused for both
   // login-redirect and role-enforcement (avoids duplicate DB calls).
-  let profile: { role: string } | null = null;
+  let profile: { id: string, role: string, clinic_id: string | null } | null = null;
   if (user) {
     const needsProfile =
       (isPublicRoute(pathname) && (pathname === "/login" || pathname === "/register")) ||
-      isProtectedRoute(pathname);
+      isProtectedRoute(pathname) ||
+      pathname.startsWith("/api/");
     if (needsProfile) {
       const { data } = await supabase
         .from("users")
-        .select("role")
+        .select("id, role, clinic_id")
         .eq("auth_id", user.id)
         .maybeSingle();
       profile = data;
+
+      // Pass the profile data downstream via signed headers to avoid double-querying in `withAuth`
+      if (profile) {
+        supabaseResponse.headers.set("x-auth-profile-id", profile.id);
+        supabaseResponse.headers.set("x-auth-profile-role", profile.role);
+        if (profile.clinic_id) {
+          supabaseResponse.headers.set("x-auth-profile-clinic", profile.clinic_id);
+        }
+        // Use a lightweight HMAC to prevent header spoofing by the client
+        const hmacData = `${profile.id}:${profile.role}:${profile.clinic_id ?? ""}`;
+        const hmacKey = await crypto.subtle.importKey(
+          "raw",
+          new TextEncoder().encode(process.env.CRON_SECRET || "fallback_secret_key"),
+          { name: "HMAC", hash: "SHA-256" },
+          false,
+          ["sign"]
+        );
+        const signature = await crypto.subtle.sign("HMAC", hmacKey, new TextEncoder().encode(hmacData));
+        const sigHex = Array.from(new Uint8Array(signature)).map(b => b.toString(16).padStart(2, '0')).join('');
+        supabaseResponse.headers.set("x-auth-profile-sig", sigHex);
+        
+        // Also set on the request headers so API routes can read it
+        requestHeaders.set("x-auth-profile-id", profile.id);
+        requestHeaders.set("x-auth-profile-role", profile.role);
+        if (profile.clinic_id) {
+          requestHeaders.set("x-auth-profile-clinic", profile.clinic_id);
+        }
+        requestHeaders.set("x-auth-profile-sig", sigHex);
+        supabaseResponse = NextResponse.next({ request: { headers: requestHeaders } });
+        applyAllSecurityHeaders(supabaseResponse, cspHeaderValue, nonce);
+        if (resolvedClinic) setTenantHeaders(supabaseResponse, resolvedClinic);
+      }
     }
   }
 

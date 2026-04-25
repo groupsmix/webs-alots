@@ -4,6 +4,9 @@
 -- A read-only showcase clinic for prospects to explore the
 -- platform without signing up. Pre-loaded with sample doctors,
 -- services, time slots, and appointments.
+--
+-- Audit P2 #22: Demo tenant lives in production DB.
+-- We must ensure the is_demo flag is set to true to isolate it.
 -- ============================================================
 
 -- ============================================================

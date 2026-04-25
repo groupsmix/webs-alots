@@ -77,7 +77,7 @@
     "wrangler": "^4.85.0"
   },
   "lint-staged": {
-    "*.{ts,tsx}": [
+    "*.{ts,tsx,js,mjs,cjs}": [
       "eslint --fix --max-warnings=0"
     ]
   },

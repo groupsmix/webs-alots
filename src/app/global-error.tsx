@@ -1,5 +1,6 @@
 "use client";
 
+import * as Sentry from "@sentry/nextjs";
 import { useEffect } from "react";
 import { useLocale } from "@/components/locale-switcher";
 import { t } from "@/lib/i18n";
@@ -20,6 +21,7 @@ export default function GlobalError({
   const [locale] = useLocale();
 
   useEffect(() => {
+    Sentry.captureException(error);
     logger.warn("Operation failed", { context: "global-error", error });
   }, [error]);
 
@@ -51,7 +53,7 @@ export default function GlobalError({
           </p>
           {error.digest && (
             <p className="text-xs text-gray-400 mb-4">
-              Error ID: {error.digest}
+              {t("fr", "errorId")}: {error.digest}
             </p>
           )}
           <button

@@ -11,7 +11,6 @@
  */
 
 import { requireRole } from "@/lib/auth";
-import { STAFF_DEFAULT_PASSWORD } from "@/lib/constants";
 import { sendEmail } from "@/lib/email";
 import { staffWelcomeEmail, clinicSuspendedEmail, clinicActivatedEmail } from "@/lib/email-templates";
 import { logger } from "@/lib/logger";
@@ -254,14 +253,18 @@ export async function createUser(input: CreateUserInput): Promise<UserRow> {
   if (input.email && process.env.SUPABASE_SERVICE_ROLE_KEY) {
     try {
       const admin = createAdminClient();
+      // Audit P1 #12: Generate a secure random one-time password for new staff
+      // so we don't rely on a shared static STAFF_DEFAULT_PASSWORD constant.
+      const secureOneTimePassword = crypto.randomUUID() + crypto.randomUUID().slice(0, 8);
       const { data: authUser, error: authError } = await admin.auth.admin.createUser({
         email: input.email,
-        password: STAFF_DEFAULT_PASSWORD,
+        password: secureOneTimePassword,
         email_confirm: true,
         user_metadata: {
           name: input.name,
           role: input.role,
           clinic_id: input.clinic_id,
+          must_change_password: true,
         },
       });
 
@@ -365,7 +368,17 @@ export async function createUser(input: CreateUserInput): Promise<UserRow> {
   if (input.email) {
     try {
       const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://oltigo.com";
-      const loginUrl = `${siteUrl}/login`;
+      const admin = createAdminClient();
+      const { data: resetLink } = await admin.auth.admin.generateLink({
+        type: "recovery",
+        email: input.email,
+        options: {
+          redirectTo: `${siteUrl}/login?reset=true`
+        }
+      });
+      
+      const loginUrl = resetLink?.properties?.action_link ?? `${siteUrl}/login`;
+      
       const template = staffWelcomeEmail({
         staffName: input.name,
         clinicName: input.clinic_id,

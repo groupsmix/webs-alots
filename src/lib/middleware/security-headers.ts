@@ -27,8 +27,8 @@ export function buildCsp(nonce: string): string {
     // data: removed from font-src — Google Fonts via next/font are self-hosted and don't
     // need data: URIs. Removing data: prevents font-based CSS data exfiltration attacks.
     "font-src 'self'",
-    "connect-src 'self' *.supabase.co wss://*.supabase.co graph.facebook.com api.twilio.com api.cloudflare.com *.googleapis.com https://cloudflareinsights.com https://static.cloudflareinsights.com",
-    "frame-src 'self' www.google.com",
+    "connect-src 'self' *.supabase.co wss://*.supabase.co *.googleapis.com https://cloudflareinsights.com https://static.cloudflareinsights.com",
+    "frame-src 'self'",
     "form-action 'self'",
     "base-uri 'self'",
     "frame-ancestors 'none'",
