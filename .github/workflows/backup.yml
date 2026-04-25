@@ -272,7 +272,7 @@ jobs:
     steps:
       - name: Slack notification
         if: vars.SLACK_BACKUP_WEBHOOK_URL != ''
-        uses: slackapi/slack-github-action@v2.0.0
+        uses: slackapi/slack-github-action@v3.0.2
         with:
           webhook: ${{ vars.SLACK_BACKUP_WEBHOOK_URL }}
           webhook-type: incoming-webhook
