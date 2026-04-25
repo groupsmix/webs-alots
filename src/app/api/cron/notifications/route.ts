@@ -11,7 +11,7 @@ import { withSentryCron } from "@/lib/sentry-cron";
  * Processes the notification queue — delivers pending WhatsApp/SMS messages
  * with retry and exponential backoff.
  *
- * Called by the Cloudflare Worker scheduled handler every 5 minutes.
+ * Called by the Cloudflare Worker scheduled handler every 15 minutes.
  * Protected by CRON_SECRET via Authorization: Bearer header.
  */
 async function handler(request: NextRequest) {
@@ -34,4 +34,4 @@ async function handler(request: NextRequest) {
   }
 }
 
-export const GET = withSentryCron("notifications-every-5m", "*/5 * * * *", handler);
+export const GET = withSentryCron("notifications-every-15m", "*/15 * * * *", handler);

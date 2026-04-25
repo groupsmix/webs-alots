@@ -25,7 +25,9 @@ bucket_name = "webs-alots-uploads"
 [[kv_namespaces]]
 binding = "RATE_LIMIT_KV"
 id = "7ac37dff0a794542b0c766f38e73f105"
-preview_id = "7ac37dff0a794542b0c766f38e73f105"
+# IMPORTANT: preview_id MUST differ from id to avoid preview deploys writing to production KV.
+# Generate with: wrangler kv namespace create RATE_LIMIT_KV --preview
+preview_id = "PREVIEW_RATE_LIMIT_KV_PLACEHOLDER"
 
 # ---- Feature Flags KV Namespace ----
 # Runtime feature flags using Cloudflare KV
@@ -34,7 +36,9 @@ preview_id = "7ac37dff0a794542b0c766f38e73f105"
 [[kv_namespaces]]
 binding = "FEATURE_FLAGS_KV"
 id = "610b3748bba545e2b083473b9023d66f"
-preview_id = "610b3748bba545e2b083473b9023d66f"
+# IMPORTANT: preview_id MUST differ from id to avoid preview deploys writing to production KV.
+# Generate with: wrangler kv namespace create FEATURE_FLAGS_KV --preview
+preview_id = "PREVIEW_FEATURE_FLAGS_KV_PLACEHOLDER"
 
 # ---- Non-Sensitive Environment Variables ----
 [vars]

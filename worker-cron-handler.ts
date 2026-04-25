@@ -22,7 +22,7 @@ import { default as handler } from "./.open-next/worker.js";
  */
 const CRON_ROUTES: Record<string, string> = {
   "*/30 * * * *": "/api/cron/reminders",
-  "*/5 * * * *": "/api/cron/notifications",
+  "*/15 * * * *": "/api/cron/notifications",
   "0 2 * * *": "/api/cron/billing",
 };
 

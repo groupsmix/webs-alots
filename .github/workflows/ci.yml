@@ -28,6 +28,9 @@ jobs:
       - name: Check for vulnerable dependencies
         run: npm audit --omit=dev
 
+      - name: Check cron mapping
+        run: npx tsx scripts/check-cron-mapping.ts
+
       - name: Run ESLint
         run: npm run lint
 

@@ -9,7 +9,6 @@
  */
 
 const CACHE_NAME = "oltigo-v2";
-const API_CACHE_NAME = "oltigo-api-v1";
 const OFFLINE_URL = "/offline.html";
 
 const PRECACHE_URLS = ["/", "/offline.html"];
@@ -26,7 +25,7 @@ self.addEventListener("install", (event) => {
 // ---- Activate ----
 
 self.addEventListener("activate", (event) => {
-  const KEEP = new Set([CACHE_NAME, API_CACHE_NAME]);
+  const KEEP = new Set([CACHE_NAME]);
   event.waitUntil(
     caches.keys().then((keys) =>
       Promise.all(
@@ -48,30 +47,9 @@ self.addEventListener("fetch", (event) => {
   // Skip non-GET requests (POST bookings, etc.)
   if (request.method !== "GET") return;
 
-  // --- API calls: network-first with cached fallback ---
-  // This enables offline appointment viewing when the network is unavailable.
-  if (url.pathname.startsWith("/api/")) {
-    event.respondWith(
-      fetch(request)
-        .then((response) => {
-          if (response.ok) {
-            const clone = response.clone();
-            caches.open(API_CACHE_NAME).then((cache) => cache.put(request, clone));
-          }
-          return response;
-        })
-        .catch(() =>
-          caches.match(request).then((cached) => {
-            if (cached) return cached;
-            return new Response(
-              JSON.stringify({ error: "You are offline. Showing cached data." }),
-              { status: 503, headers: { "Content-Type": "application/json" } }
-            );
-          })
-        )
-    );
-    return;
-  }
+  // Never cache API responses — they may contain PHI that must not persist
+  // in browser storage after logout or role switch.
+  if (url.pathname.startsWith("/api/")) return;
 
   // --- Static assets: cache-first, update in background ---
   if (
