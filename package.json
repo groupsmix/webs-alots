@@ -61,7 +61,7 @@
     "@vitejs/plugin-react": "^6.0.1",
     "esbuild": "^0.27.4",
     "eslint": "^9",
-    "eslint-config-next": "16.2.0",
+    "eslint-config-next": "16.2.4",
     "eslint-plugin-i18next": "^6.1.4",
     "eslint-plugin-jsx-a11y": "^6.10.2",
     "husky": "^9.1.7",
