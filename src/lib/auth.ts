@@ -342,6 +342,12 @@ export async function signOut(): Promise<void> {
   } catch (err) {
     logger.error("Sign-out failed", { context: "auth/signOut", error: err });
   }
+
+  // Purge all service-worker caches so no PHI persists after logout.
+  // This runs server-side where `caches` is unavailable, so the actual
+  // purge is done client-side via the sign-out-button component.
+  // See src/components/sign-out-button.tsx for the browser-side purge.
+
   redirect("/");
 }
 
