@@ -68,7 +68,7 @@ jobs:
 
       # Audit 12: Add RLS assertion tests to migration check
       - name: Setup Node.js for RLS Tests
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: 22
 
