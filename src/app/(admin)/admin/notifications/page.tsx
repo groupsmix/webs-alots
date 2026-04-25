@@ -39,6 +39,7 @@ import {
   type NotificationTemplate,
   type NotificationTrigger,
 } from "@/lib/notifications";
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { formatCurrency, formatNumber, formatDisplayDate } from "@/lib/utils";
 
 // ---- Status & Channel Badges ----

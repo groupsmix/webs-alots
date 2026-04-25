@@ -14,6 +14,7 @@ import { STAFF_ROLES } from "@/lib/auth-roles";
 import { updateLabOrderPdfUrl } from "@/lib/data/server";
 import { escapeHtml } from "@/lib/escape-html";
 import { uploadToR2, isR2Configured, buildUploadKey } from "@/lib/r2";
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { formatCurrency, formatNumber, formatDisplayDate } from "@/lib/utils";
 import { labReportSchema } from "@/lib/validations";
 

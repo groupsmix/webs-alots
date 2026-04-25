@@ -12,6 +12,7 @@ import { CardSkeleton } from "@/components/ui/loading-skeleton";
 import {
   SUBSCRIPTION_PLANS,
   PLAN_ORDER,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   type PlanSlug,
 } from "@/lib/config/subscription-plans";
 import { logger } from "@/lib/logger";

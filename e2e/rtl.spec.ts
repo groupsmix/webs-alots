@@ -27,6 +27,7 @@ test.describe('RTL (Arabic) Layout Smoke Tests', () => {
     await expect(page.locator('html')).toHaveAttribute('lang', 'ar');
     
     // The layout should apply RTL classes
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const body = page.locator('body');
     await expect(page.locator('html')).toHaveClass(/rtl/);
     

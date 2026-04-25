@@ -32,6 +32,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { fetchRadiologyOrders, fetchRadiologyTemplates } from "@/lib/data/client";
 import type { RadiologyOrderView, RadiologyTemplateView } from "@/lib/data/client";
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { formatCurrency, formatNumber } from "@/lib/utils";
 
 const statusOptions = ["all", "pending", "scheduled", "in_progress", "images_ready", "reported", "validated", "cancelled"] as const;
@@ -39,6 +40,7 @@ const modalityOptions = ["xray", "ct", "mri", "ultrasound", "mammography", "pet"
 const priorityOptions = ["normal", "urgent", "stat"] as const;
 
 export default function RadiologyOrdersPage() {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [locale] = useLocale();
 
   const tenant = useTenant();

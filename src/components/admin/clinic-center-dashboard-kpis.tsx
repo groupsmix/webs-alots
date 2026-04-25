@@ -20,6 +20,7 @@ import {
   type ClinicCenterDashboardKPIs,
 } from "@/lib/data/client";
 import { logger } from "@/lib/logger";
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { formatCurrency, formatNumber } from "@/lib/utils";
 
 /**

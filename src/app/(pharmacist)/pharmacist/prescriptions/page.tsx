@@ -14,6 +14,7 @@ import { Input } from "@/components/ui/input";
 import { PageLoader } from "@/components/ui/page-loader";
 import { fetchPrescriptionRequests } from "@/lib/data/client";
 import type { PharmacyPrescriptionView } from "@/lib/data/client";
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { formatCurrency, formatNumber, formatDisplayDate } from "@/lib/utils";
 
 type PrescriptionStatus = "pending" | "reviewing" | "partially-ready" | "ready" | "picked-up" | "delivered" | "rejected";

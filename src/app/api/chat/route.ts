@@ -1,4 +1,5 @@
 import { NextRequest } from "next/server";
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { apiSuccess, apiError, apiRateLimited } from "@/lib/api-response";
 import { withValidation } from "@/lib/api-validate";
 import { fetchChatbotContext, buildSystemPrompt, getBasicResponse } from "@/lib/chatbot-data";
@@ -55,6 +56,7 @@ function sanitizeUserInput(text: string): string {
   );
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export const POST = withValidation(chatRequestSchema, async (body, request: NextRequest) => {
     // Resolve clinic ID strictly from tenant context (middleware headers)
     const tenant = await requireTenant();

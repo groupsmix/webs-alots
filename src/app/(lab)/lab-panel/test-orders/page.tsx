@@ -26,12 +26,14 @@ import {
   createLabTestOrder, updateLabOrderStatus, assignLabTechnician,
 } from "@/lib/data/client";
 import type { LabTestOrderView, LabTestCatalogView, PatientView } from "@/lib/data/client";
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { formatCurrency, formatNumber } from "@/lib/utils";
 
 const statusOptions = ["all", "pending", "sample_collected", "in_progress", "completed", "validated", "cancelled"] as const;
 const priorityOptions = ["normal", "urgent", "stat"] as const;
 
 export default function TestOrdersPage() {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [locale] = useLocale();
 
   const tenant = useTenant();

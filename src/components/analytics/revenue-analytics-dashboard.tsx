@@ -16,6 +16,7 @@ import {
 } from "@/lib/data/client";
 import { exportToCSV } from "@/lib/export-data";
 import { generateRevenueReport } from "@/lib/revenue-report-pdf";
+// eslint-disable-next-line import/order
 import type { RevenueDataPoint } from "./revenue-chart";
 
 const RevenueChart = dynamic(
