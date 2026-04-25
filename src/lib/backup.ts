@@ -93,22 +93,29 @@ export async function createBackup(
     let tableRows: Record<string, unknown>[] = [];
     let hasMore = true;
     let offset = 0;
-    const limit = 1000; // Fetch in chunks
+    const CHUNK_SIZE = 1000; // Default fetch chunk
 
     while (hasMore) {
-      // If we exceed the safety cap, abort fetching further rows
-      if (totalRecords + tableRows.length >= MAX_TOTAL_RECORDS) {
+      // Compute remaining capacity so each chunk stays within both
+      // per-table (MAX_ROWS_PER_TABLE) and global (MAX_TOTAL_RECORDS)
+      // caps. Without this, a default 1000-row chunk could overshoot
+      // either limit by up to CHUNK_SIZE - 1 rows.
+      const remainingForTable = MAX_ROWS_PER_TABLE - tableRows.length;
+      const remainingForTotal = MAX_TOTAL_RECORDS - (totalRecords + tableRows.length);
+
+      if (remainingForTotal <= 0) {
         isTruncated = true;
         truncatedAtRecord = totalRecords + tableRows.length;
         hasMore = false;
         break;
       }
 
-      // Enforce per-table limit (HIGH-04)
-      if (tableRows.length >= MAX_ROWS_PER_TABLE) {
+      if (remainingForTable <= 0) {
         hasMore = false;
         break;
       }
+
+      const limit = Math.min(CHUNK_SIZE, remainingForTable, remainingForTotal);
 
       const { data: chunk, error } = await supabase
         .from(table)
@@ -126,7 +133,7 @@ export async function createBackup(
         hasMore = false;
       } else {
         tableRows = tableRows.concat(chunk);
-        offset += limit;
+        offset += chunk.length;
         if (chunk.length < limit) {
           hasMore = false; // Last page
         }

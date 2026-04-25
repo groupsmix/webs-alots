@@ -10,7 +10,7 @@
 import { cacheLife } from "next/cache";
 import { cacheTag } from "next/cache";
 import { logger } from "@/lib/logger";
-import { createClient, createTenantClient, createAdminClient } from "@/lib/supabase-server";
+import { createClient, createTenantClient } from "@/lib/supabase-server";
 import { getTenant, getClinicConfig } from "@/lib/tenant";
 import { APPOINTMENT_STATUS } from "@/lib/types/database";
 import { getLocalDateStr } from "@/lib/utils";
@@ -198,7 +198,7 @@ async function fetchBrandingFromDb(clinicId: string, fallbackName: string): Prom
   cacheLife("minutes");
   cacheTag(`clinic-branding-${clinicId}`);
 
-  const supabase = createAdminClient();
+  const supabase = await createTenantClient(clinicId);
 
   const { data, error } = await supabase
     .from("clinics")
@@ -255,7 +255,7 @@ async function fetchReviewsFromDb(clinicId: string): Promise<PublicReview[]> {
   cacheLife("minutes");
   cacheTag(`clinic-reviews-${clinicId}`);
 
-  const supabase = createAdminClient();
+  const supabase = await createTenantClient(clinicId);
 
   const { data: reviews, error } = await supabase
     .from("reviews")
@@ -290,7 +290,7 @@ async function fetchAverageRatingFromDb(clinicId: string): Promise<number> {
   cacheLife("minutes");
   cacheTag(`clinic-reviews-${clinicId}`);
 
-  const supabase = createAdminClient();
+  const supabase = await createTenantClient(clinicId);
 
   // Try DB-level AVG via Supabase RPC first (single row returned,
   // no data transferred).  Falls back to application-level computation
