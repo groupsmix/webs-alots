@@ -15,7 +15,7 @@ if [ -f .env.production ] && grep -q "PLACEHOLDER" .env.production; then
 fi
 
 # Detect suspicious KV namespace IDs (sequential nibble patterns that look like fakes)
-if grep -E '^id ?= ?"(0+|2d3e4f5a|8f9e0d1c)' wrangler.toml; then
+if grep -E '^id ?= ?"(PLACEHOLDER|0+|2d3e4f5a|8f9e0d1c)' wrangler.toml; then
   echo "::error::Suspicious KV namespace ID detected in wrangler.toml"
   exit 1
 fi

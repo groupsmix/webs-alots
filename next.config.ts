@@ -1,8 +1,6 @@
-// eslint-disable-next-line import/order
+ 
 import withBundleAnalyzer from "@next/bundle-analyzer";
-// eslint-disable-next-line import/order
 import { withSentryConfig } from "@sentry/nextjs";
-// eslint-disable-next-line import/order
 import type { NextConfig } from "next";
 
 const withAnalyzer = withBundleAnalyzer({

@@ -13,6 +13,7 @@
  */
 
 import { type NextRequest } from "next/server";
+import { sanitizeUntrustedText } from "@/lib/ai/sanitize";
 import { apiSuccess, apiError, apiRateLimited, apiInternalError } from "@/lib/api-response";
 import { withAuthValidation } from "@/lib/api-validate";
 import { logger } from "@/lib/logger";
@@ -272,7 +273,7 @@ function buildUserMessage(
 ): string {
   const parts: string[] = [];
 
-  parts.push(`Question de l'administrateur: "${question}"`);
+  parts.push(`Question de l'administrateur: "${sanitizeUntrustedText(question)}"`);
   parts.push(`\nDONNÉES DE LA CLINIQUE:`);
   parts.push(`\nRENDEZ-VOUS:`);
   parts.push(`- Cette semaine: ${metrics.appointmentsThisWeek}`);

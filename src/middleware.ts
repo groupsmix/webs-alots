@@ -30,7 +30,7 @@ import {
 } from "@/lib/middleware/security-headers";
 import { isSeedUserBlocked } from "@/lib/seed-guard";
 import { extractSubdomain } from "@/lib/subdomain";
-import { subdomainCache, SUBDOMAIN_CACHE_TTL_MS, setSubdomainCache } from "@/lib/subdomain-cache";
+import { subdomainCache, SUBDOMAIN_CACHE_TTL_MS, setSubdomainCache, negativeSubdomainCache, NEGATIVE_CACHE_TTL_MS, setNegativeSubdomainCache } from "@/lib/subdomain-cache";
 import { TENANT_HEADERS } from "@/lib/tenant";
 
 // ── Subdomain → clinic resolution cache ──────────────────────────
@@ -208,8 +208,13 @@ export async function middleware(request: NextRequest) {
   if (subdomain) {
     let clinic: CachedClinic | undefined;
     const cached = subdomainCache.get(subdomain);
+    const negativeCached = negativeSubdomainCache.get(subdomain);
+
     if (cached && Date.now() - cached.cachedAt < SUBDOMAIN_CACHE_TTL_MS) {
       clinic = cached;
+    } else if (negativeCached && Date.now() - negativeCached.cachedAt < NEGATIVE_CACHE_TTL_MS) {
+      // Subdomain is known to be invalid — bypass Supabase entirely
+      clinic = undefined;
     } else {
       // Use a separate anon-only Supabase client (no user session cookies)
       // for subdomain resolution. The RLS policy on `clinics` allows
@@ -240,6 +245,8 @@ export async function middleware(request: NextRequest) {
       } else {
         // Evict stale entry if the subdomain was previously valid
         subdomainCache.delete(subdomain);
+        // Add to negative cache to prevent Supabase queries on random subdomains
+        setNegativeSubdomainCache(subdomain);
       }
     }
 

@@ -18,14 +18,25 @@ interface CachedClinic {
   cachedAt: number;
 }
 
+// We use a negative cache to prevent DDoS via random subdomains
+export interface NegativeCacheEntry {
+  cachedAt: number;
+}
+
 /** Maximum number of entries to prevent unbounded memory growth (PERF-05). */
 const MAX_CACHE_SIZE = 500;
 
 /** Shared subdomain cache — used by middleware and invalidation API */
 export const subdomainCache = new Map<string, CachedClinic>();
 
+/** Shared negative cache — used to block random subdomains quickly */
+export const negativeSubdomainCache = new Map<string, NegativeCacheEntry>();
+
 /** TTL for cached entries (1 minute) */
 export const SUBDOMAIN_CACHE_TTL_MS = 60 * 1000;
+
+/** TTL for negative cached entries (5 minutes) */
+export const NEGATIVE_CACHE_TTL_MS = 5 * 60 * 1000;
 
 /**
  * Evict expired entries from the cache.
@@ -36,6 +47,11 @@ export function evictExpiredEntries(): void {
   for (const [key, value] of subdomainCache) {
     if (now - value.cachedAt > SUBDOMAIN_CACHE_TTL_MS) {
       subdomainCache.delete(key);
+    }
+  }
+  for (const [key, value] of negativeSubdomainCache) {
+    if (now - value.cachedAt > NEGATIVE_CACHE_TTL_MS) {
+      negativeSubdomainCache.delete(key);
     }
   }
 }
@@ -49,6 +65,14 @@ function enforceMaxSize(): void {
     const oldest = subdomainCache.keys().next().value;
     if (oldest !== undefined) {
       subdomainCache.delete(oldest);
+    } else {
+      break;
+    }
+  }
+  while (negativeSubdomainCache.size >= MAX_CACHE_SIZE) {
+    const oldest = negativeSubdomainCache.keys().next().value;
+    if (oldest !== undefined) {
+      negativeSubdomainCache.delete(oldest);
     } else {
       break;
     }
@@ -68,6 +92,19 @@ export function setSubdomainCache(subdomain: string, clinic: CachedClinic): void
     enforceMaxSize();
   }
   subdomainCache.set(subdomain, clinic);
+  negativeSubdomainCache.delete(subdomain); // clear negative cache if valid
+}
+
+/**
+ * Add an entry to the negative subdomain cache.
+ */
+export function setNegativeSubdomainCache(subdomain: string): void {
+  if (negativeSubdomainCache.has(subdomain)) {
+    negativeSubdomainCache.delete(subdomain);
+  } else {
+    enforceMaxSize();
+  }
+  negativeSubdomainCache.set(subdomain, { cachedAt: Date.now() });
 }
 
 /**
@@ -76,6 +113,7 @@ export function setSubdomainCache(subdomain: string, clinic: CachedClinic): void
  */
 export function invalidateSubdomainCache(subdomain: string): void {
   subdomainCache.delete(subdomain);
+  negativeSubdomainCache.delete(subdomain);
 }
 
 /**

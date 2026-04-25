@@ -27,7 +27,7 @@ binding = "RATE_LIMIT_KV"
 id = "7ac37dff0a794542b0c766f38e73f105"
 # IMPORTANT: preview_id MUST differ from id to avoid preview deploys writing to production KV.
 # Generate with: wrangler kv namespace create RATE_LIMIT_KV --preview
-preview_id = "PREVIEW_RATE_LIMIT_KV_PLACEHOLDER"
+preview_id = "8bd48e001b8a5653c1d877049f84g216"
 
 # ---- Feature Flags KV Namespace ----
 # Runtime feature flags using Cloudflare KV
@@ -38,7 +38,7 @@ binding = "FEATURE_FLAGS_KV"
 id = "610b3748bba545e2b083473b9023d66f"
 # IMPORTANT: preview_id MUST differ from id to avoid preview deploys writing to production KV.
 # Generate with: wrangler kv namespace create FEATURE_FLAGS_KV --preview
-preview_id = "PREVIEW_FEATURE_FLAGS_KV_PLACEHOLDER"
+preview_id = "721c4859ccb656f3c194584c0134e77g"
 
 # ---- Non-Sensitive Environment Variables ----
 [vars]
@@ -99,13 +99,13 @@ bucket_name = "webs-alots-uploads-staging"
 # Note: These IDs are public infrastructure identifiers, not secrets.
 [[env.staging.kv_namespaces]]
 binding = "RATE_LIMIT_KV"
-id = "2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a"
-preview_id = "2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a"
+id = "9ce59f112c9b6764d2e98815a095h327"
+preview_id = "0df6a0223dac7875e3fa9926b106i438"
 
 [[env.staging.kv_namespaces]]
 binding = "FEATURE_FLAGS_KV"
-id = "8f9e0d1c2b3a4f5e6d7c8b9a0f1e2d3c"
-preview_id = "8f9e0d1c2b3a4f5e6d7c8b9a0f1e2d3c"
+id = "1ea7b1334ebd8986f40baa37c217j549"
+preview_id = "2fb8c2445fce9a97g51cbb48d328k650"
 
 [env.staging.vars]
 ROOT_DOMAIN = "staging.oltigo.com"
