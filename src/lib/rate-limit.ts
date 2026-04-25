@@ -113,6 +113,7 @@ interface CircuitBreakerState {
   consecutiveFailures: number;
   trippedAt: number | null;
   fallback: RateLimiter | null;
+  lastFailure?: number;
 }
 
 function createCircuitBreaker(): CircuitBreakerState {
@@ -136,6 +137,7 @@ function isCircuitOpen(state: CircuitBreakerState): boolean {
 
 function recordFailure(state: CircuitBreakerState, options: RateLimiterOptions): void {
   state.consecutiveFailures++;
+  state.lastFailure = Date.now();
   if (state.consecutiveFailures >= CIRCUIT_BREAKER_THRESHOLD) {
     state.trippedAt = Date.now();
     if (!state.fallback) {
@@ -321,11 +323,30 @@ interface CloudflareKV {
 function createKVRateLimiter(options: RateLimiterOptions): RateLimiter {
   const { windowMs, max } = options;
   const circuitBreaker = createCircuitBreaker();
+  
+  // KV-backed limiters have a configured grace period before they fail-closed
+  const getKvGraceMs = () => {
+    const raw = process.env.RATE_LIMIT_KV_GRACE_MS;
+    const DEFAULT_KV_GRACE_MS = 60_000;
+    if (!raw) return DEFAULT_KV_GRACE_MS;
+    const parsed = Number.parseInt(raw, 10);
+    return Number.isFinite(parsed) ? parsed : DEFAULT_KV_GRACE_MS;
+  };
 
   return {
     async check(key: string): Promise<boolean> {
       // If circuit breaker is tripped, use the in-memory fallback
       if (isCircuitOpen(circuitBreaker)) {
+        // Enforce the grace period fail-closed boundary
+        const elapsed = Date.now() - (circuitBreaker.lastFailure || 0);
+        if (elapsed > getKvGraceMs()) {
+          logger.error("Rate limiter KV grace period expired, failing closed", {
+            context: "rate-limit",
+            key,
+            elapsedMs: elapsed
+          });
+          return false; // Fail closed after grace period
+        }
         return circuitBreaker.fallback!.check(key);
       }
 
@@ -342,6 +363,8 @@ function createKVRateLimiter(options: RateLimiterOptions): RateLimiter {
           // KV binding not available, fall back to memory
           logger.warn("Rate limiter KV binding not available, falling back to in-memory", { context: "rate-limit" });
           recordFailure(circuitBreaker, options);
+          const elapsed = Date.now() - (circuitBreaker.lastFailure || 0);
+          if (elapsed > getKvGraceMs()) return false; // Fail closed after grace period
           if (circuitBreaker.fallback) {
             return circuitBreaker.fallback.check(key);
           }
@@ -375,6 +398,8 @@ function createKVRateLimiter(options: RateLimiterOptions): RateLimiter {
       } catch (err) {
         logger.error("Rate limiter KV failure", { context: "rate-limit", error: err });
         recordFailure(circuitBreaker, options);
+        const elapsed = Date.now() - (circuitBreaker.lastFailure || 0);
+        if (elapsed > getKvGraceMs()) return false; // Fail closed after grace period
         if (circuitBreaker.fallback) {
           return circuitBreaker.fallback.check(key);
         }
