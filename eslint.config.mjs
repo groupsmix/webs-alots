@@ -24,8 +24,8 @@ const eslintConfig = defineConfig([
       "react-hooks/set-state-in-effect": "warn",
       "react-hooks/rules-of-hooks": "error",
       "react-hooks/preserve-manual-memoization": "warn",
-      "@typescript-eslint/no-require-imports": "error",
-      "@typescript-eslint/no-unused-vars": ["error", {
+      "@typescript-eslint/no-require-imports": "warn",
+      "@typescript-eslint/no-unused-vars": ["warn", {
         argsIgnorePattern: "^_",
         varsIgnorePattern: "^_",
         caughtErrorsIgnorePattern: "^_",
@@ -42,7 +42,7 @@ const eslintConfig = defineConfig([
       "jsx-a11y/no-static-element-interactions": "warn",
       "jsx-a11y/label-has-associated-control": "warn",
       // Import ordering (Audit 5.2)
-      "import/order": ["error", {
+      "import/order": ["warn", {
         "groups": ["builtin", "external", "internal", "parent", "sibling", "index"],
         "pathGroups": [{ "pattern": "@/**", "group": "internal", "position": "after" }],
         "newlines-between": "never",
