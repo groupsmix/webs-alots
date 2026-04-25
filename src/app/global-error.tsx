@@ -53,7 +53,7 @@ export default function GlobalError({
           </p>
           {error.digest && (
             <p className="text-xs text-gray-400 mb-4">
-              {t("fr", "errorId")}: {error.digest}
+              {t(locale, "error.id")}: {error.digest}
             </p>
           )}
           <button

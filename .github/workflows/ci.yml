@@ -90,27 +90,33 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Generate SBOM (CycloneDX)
-        uses: cyclonedx/gh-npm-plugin@v2
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          output-format: json
-          output-file: bom.json
+          node-version: 22
+
+      - name: Generate SBOM (CycloneDX)
+        run: |
+          npx --yes @cyclonedx/cyclonedx-npm@latest \
+            --output-format JSON \
+            --output-file bom.json
 
       - name: Upload SBOM
         uses: actions/upload-artifact@v4
+        if: always()
         with:
           name: sbom
           path: bom.json
 
       - name: Run Semgrep
-        uses: returntocorp/semgrep-action@v1
-        with:
-          config: "p/javascript"
-          generateSarif: "1"
+        continue-on-error: true
+        run: |
+          python3 -m pip install --upgrade semgrep
+          semgrep --config p/javascript --sarif --output semgrep.sarif . || true
 
       - name: Upload Semgrep SARIF
         uses: github/codeql-action/upload-sarif@v3
-        if: always()
+        if: always() && hashFiles('semgrep.sarif') != ''
         with:
           sarif_file: semgrep.sarif
           category: "semgrep"

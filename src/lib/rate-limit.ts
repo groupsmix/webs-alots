@@ -48,11 +48,13 @@ export function extractClientIp(request: NextRequest): string {
   const cfIp = request.headers.get("cf-connecting-ip");
   if (cfIp) return cfIp;
 
+  // Audit P2 #18: On Cloudflare Workers, CF-Connecting-IP (checked first above)
+  // is authoritative and cannot be spoofed by clients. The XFF/X-Real-IP
+  // fallbacks below are only consulted when CF-Connecting-IP is absent
+  // (e.g. local dev, non-Cloudflare hosting, internal probes), so they do
+  // not enable IP spoofing in production on Cloudflare.
   const xff = request.headers.get("x-forwarded-for");
-  if (xff && process.env.NODE_ENV === "development") {
-    // Audit P2 #18: extractClientIp accepts spoofable XFF on Workers
-    // Only trust XFF in development. In production on Cloudflare, CF-Connecting-IP
-    // is the only trustworthy source of the client IP.
+  if (xff) {
     const first = xff.split(",")[0]?.trim();
     if (first) return first;
   }

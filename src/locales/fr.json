@@ -394,6 +394,7 @@
   "error.sectionDescription": "Cette section a rencontré un problème. Veuillez réessayer.",
   "error.loadFailed": "Impossible de charger les données. Veuillez rafraîchir la page.",
   "error.updateFailed": "Impossible de mettre à jour le statut du rendez-vous. Veuillez réessayer.",
+  "error.id": "ID d'erreur",
   "notFound.title": "Page introuvable",
   "notFound.metaTitle": "Page introuvable — 404",
   "notFound.metaDescription": "La page que vous recherchez n'existe pas ou a été déplacée.",
