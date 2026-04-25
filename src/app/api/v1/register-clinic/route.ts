@@ -12,9 +12,16 @@ import { apiSuccess, apiError, apiValidationError, apiInternalError } from "@/li
 import { generateSubdomain } from "@/lib/generate-subdomain";
 import { logger } from "@/lib/logger";
 import { phoneToWhatsApp } from "@/lib/morocco";
+import { createRateLimiter, extractClientIp } from "@/lib/rate-limit";
 import { createAdminClient } from "@/lib/supabase-server";
 import { safeParse } from "@/lib/validations";
 import { sendTextMessage } from "@/lib/whatsapp";
+
+// ---------------------------------------------------------------------------
+// Anti-Abuse Rate Limiter
+// ---------------------------------------------------------------------------
+// Extremely strict rate limit for public registration (2 per hour per IP)
+const registerLimiter = createRateLimiter({ windowMs: 60 * 60 * 1000, max: 2 });
 
 // ---------------------------------------------------------------------------
 // Validation schema
@@ -34,6 +41,18 @@ const registerClinicSchema = z.object({
 // ---------------------------------------------------------------------------
 
 export async function POST(request: NextRequest) {
+  // Check feature flag first
+  if (process.env.SELF_SERVICE_REGISTRATION_ENABLED !== "true") {
+    return apiError("Self-service registration is currently disabled.", 403);
+  }
+
+  // Rate limiting (IP-based)
+  const clientIp = extractClientIp(request);
+  if (!(await registerLimiter.check(`register_${clientIp}`))) {
+    logger.warn("Public registration rate-limit exceeded", { context: "register-clinic", ip: clientIp });
+    return apiError("Too many registration attempts. Please try again later.", 429);
+  }
+
   let body: unknown;
   try {
     body = await request.json();
@@ -102,9 +121,21 @@ export async function POST(request: NextRequest) {
     }
 
     // 4. Create the clinic and user profile atomically (Audit 5.6 Fix)
-    // Cast to any since register_new_clinic is not yet in the generated types
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: clinicId, error: rpcError } = await (supabase.rpc as any)("register_new_clinic", {
+    const rpc = supabase.rpc as (
+      fn: "register_new_clinic",
+      args: {
+        p_clinic_name: string;
+        p_subdomain: string;
+        p_phone: string;
+        p_doctor_name: string;
+        p_email: string;
+        p_city: string | null;
+        p_specialty: string;
+        p_auth_id: string;
+      }
+    ) => ReturnType<typeof supabase.rpc>;
+
+    const { data: clinicId, error: rpcError } = await rpc("register_new_clinic", {
       p_clinic_name: data.clinic_name,
       p_subdomain: subdomain,
       p_phone: data.phone,

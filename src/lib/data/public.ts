@@ -10,7 +10,7 @@
 import { cacheLife } from "next/cache";
 import { cacheTag } from "next/cache";
 import { logger } from "@/lib/logger";
-import { createClient, createTenantClient } from "@/lib/supabase-server";
+import { createClient, createTenantClient, createAdminClient } from "@/lib/supabase-server";
 import { getTenant, getClinicConfig } from "@/lib/tenant";
 import { APPOINTMENT_STATUS } from "@/lib/types/database";
 import { getLocalDateStr } from "@/lib/utils";
@@ -194,7 +194,20 @@ const DEFAULT_BRANDING: ClinicBranding = {
  * hitting the DB on every page load (branding rarely changes).
  */
 async function fetchBrandingFromDb(clinicId: string, fallbackName: string): Promise<ClinicBranding> {
-  const supabase = await createTenantClient(clinicId);
+  "use cache";
+  cacheLife("minutes");
+  cacheTag(`clinic-branding-${clinicId}`);
+
+  // Inside `use cache` we cannot read cookies, so createTenantClient is
+  // unsafe here. Fall back to DEFAULT_BRANDING when the service role key
+  // is unavailable (dev/build) instead of crashing — matches the pattern
+  // used by `src/lib/data/directory.ts`. Tenant isolation is preserved
+  // by the explicit `.eq("id", clinicId)` filter below.
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    return { ...DEFAULT_BRANDING, clinicName: fallbackName };
+  }
+
+  const supabase = createAdminClient();
 
   const { data, error } = await supabase
     .from("clinics")
@@ -230,10 +243,6 @@ async function fetchBrandingFromDb(clinicId: string, fallbackName: string): Prom
 }
 
 export async function getPublicBranding(): Promise<ClinicBranding> {
-  "use cache";
-  cacheLife("minutes");
-  cacheTag("clinic-branding");
-
   const tenant = await getTenantInfo();
   const clinicId = await getClinicId();
 
@@ -251,7 +260,15 @@ export async function getPublicBranding(): Promise<ClinicBranding> {
 // ── Reviews ──
 
 async function fetchReviewsFromDb(clinicId: string): Promise<PublicReview[]> {
-  const supabase = await createTenantClient(clinicId);
+  "use cache";
+  cacheLife("minutes");
+  cacheTag(`clinic-reviews-${clinicId}`);
+
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    return [];
+  }
+
+  const supabase = createAdminClient();
 
   const { data: reviews, error } = await supabase
     .from("reviews")
@@ -276,17 +293,21 @@ async function fetchReviewsFromDb(clinicId: string): Promise<PublicReview[]> {
 }
 
 export async function getPublicReviews(): Promise<PublicReview[]> {
-  "use cache";
-  cacheLife("minutes");
-  cacheTag("clinic-reviews");
-
   const clinicId = await getClinicId();
   if (!clinicId) return [];
   return fetchReviewsFromDb(clinicId);
 }
 
 async function fetchAverageRatingFromDb(clinicId: string): Promise<number> {
-  const supabase = await createTenantClient(clinicId);
+  "use cache";
+  cacheLife("minutes");
+  cacheTag(`clinic-reviews-${clinicId}`);
+
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    return 0;
+  }
+
+  const supabase = createAdminClient();
 
   // Try DB-level AVG via Supabase RPC first (single row returned,
   // no data transferred).  Falls back to application-level computation
@@ -328,10 +349,6 @@ async function fetchAverageRatingFromDb(clinicId: string): Promise<number> {
 }
 
 export async function getPublicAverageRating(): Promise<number> {
-  "use cache";
-  cacheLife("minutes");
-  cacheTag("clinic-reviews");
-
   const clinicId = await getClinicId();
   if (!clinicId) return 0;
   return fetchAverageRatingFromDb(clinicId);

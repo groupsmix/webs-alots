@@ -1,7 +1,9 @@
 // eslint-disable-next-line import/order
-import type { NextConfig } from "next";
-// eslint-disable-next-line import/order
 import withBundleAnalyzer from "@next/bundle-analyzer";
+// eslint-disable-next-line import/order
+import { withSentryConfig } from "@sentry/nextjs";
+// eslint-disable-next-line import/order
+import type { NextConfig } from "next";
 
 const withAnalyzer = withBundleAnalyzer({
   enabled: process.env.ANALYZE === "true",
@@ -92,11 +94,6 @@ const nextConfig: NextConfig = {
     return [];
   },
 };
-
-// Sentry wraps the Next.js config for source-map upload and error tunneling.
-// The NEXT_PUBLIC_SENTRY_DSN env var activates it; without the DSN the wrapper
-// is a transparent pass-through.
-import { withSentryConfig } from "@sentry/nextjs";
 
 export default withSentryConfig(withAnalyzer(nextConfig), {
   // Suppress noisy source-map upload logs in CI.

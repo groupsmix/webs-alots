@@ -85,6 +85,54 @@ export type ExtendedDatabase = GenDatabase & {
         };
         Relationships: [];
       };
+      notification_queue: {
+        Row: {
+          id: string;
+          clinic_id: string;
+          channel: "whatsapp" | "email" | "sms" | "in_app";
+          recipient: string;
+          template_id: string | null;
+          payload: unknown;
+          status: "pending" | "processing" | "sent" | "failed";
+          attempts: number;
+          max_attempts: number;
+          next_attempt_at: string;
+          error_message: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          clinic_id: string;
+          channel: "whatsapp" | "email" | "sms" | "in_app";
+          recipient: string;
+          template_id?: string | null;
+          payload: unknown;
+          status?: "pending" | "processing" | "sent" | "failed";
+          attempts?: number;
+          max_attempts?: number;
+          next_attempt_at?: string;
+          error_message?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          clinic_id?: string;
+          channel?: "whatsapp" | "email" | "sms" | "in_app";
+          recipient?: string;
+          template_id?: string | null;
+          payload?: unknown;
+          status?: "pending" | "processing" | "sent" | "failed";
+          attempts?: number;
+          max_attempts?: number;
+          next_attempt_at?: string;
+          error_message?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
       restaurant_orders: {
         Row: {
           id: string;

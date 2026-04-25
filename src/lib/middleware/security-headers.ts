@@ -71,10 +71,11 @@ export function secureRedirect(url: string | URL, init?: number | ResponseInit):
 export function applyAllSecurityHeaders(
   response: NextResponse,
   cspHeaderValue: string,
-  nonce: string,
+  _nonce: string, // Unused but kept for API compatibility
 ): void {
   response.headers.set("Content-Security-Policy", cspHeaderValue);
-  response.headers.set("x-nonce", nonce);
+  // Audit 7 Fix: Do not echo x-nonce in response headers to reduce exposure
+  // response.headers.set("x-nonce", nonce);
   response.headers.set("Strict-Transport-Security", HSTS_VALUE);
   response.headers.set("X-Content-Type-Options", "nosniff");
   response.headers.set("X-Frame-Options", "DENY");

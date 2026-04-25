@@ -1,4 +1,5 @@
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { logger } from "../logger";
 import { extractClientIp, createRateLimiter } from "../rate-limit";
 
 // Mock NextRequest
@@ -55,13 +56,18 @@ describe("extractClientIp", () => {
 });
 
 describe("createRateLimiter (in-memory)", () => {
+  let loggerSpy: ReturnType<typeof vi.spyOn>;
+
   beforeEach(() => {
     // Force in-memory backend
     process.env.RATE_LIMIT_BACKEND = "memory";
+    // Suppress expected warnings about in-memory rate limiter in tests
+    loggerSpy = vi.spyOn(logger, "warn").mockImplementation(() => {});
   });
 
   afterEach(() => {
     delete process.env.RATE_LIMIT_BACKEND;
+    loggerSpy.mockRestore();
   });
 
   it("allows requests within the limit", () => {

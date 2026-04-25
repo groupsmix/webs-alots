@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { ClinicStats } from "../admin/clinic-stats";
 
@@ -42,36 +42,35 @@ describe("ClinicStats", () => {
   it("renders without error", async () => {
     const { container } = render(<ClinicStats />);
     expect(container).toBeDefined();
+    await waitFor(() => expect(screen.getByText("Total Patients")).toBeDefined());
   });
 
   it("displays stat card titles after data loads", async () => {
     render(<ClinicStats />);
     
-    // Wait for data to load
-    await new Promise(resolve => setTimeout(resolve, 100));
-    
-    // Check stat titles are rendered
-    expect(screen.getByText("Total Patients")).toBeDefined();
-    expect(screen.getByText("Today's Bookings")).toBeDefined();
-    expect(screen.getByText("No-Show Rate")).toBeDefined();
-    expect(screen.getByText("Revenue (MTD)")).toBeDefined();
+    await waitFor(() => {
+      expect(screen.getByText("Total Patients")).toBeDefined();
+      expect(screen.getByText("Today's Bookings")).toBeDefined();
+      expect(screen.getByText("No-Show Rate")).toBeDefined();
+      expect(screen.getByText("Revenue (MTD)")).toBeDefined();
+    });
   });
 
   it("displays booking sources section", async () => {
     render(<ClinicStats />);
     
-    await new Promise(resolve => setTimeout(resolve, 100));
-    
-    expect(screen.getByText("Online")).toBeDefined();
-    expect(screen.getByText("Phone")).toBeDefined();
-    expect(screen.getByText("Walk-in")).toBeDefined();
+    await waitFor(() => {
+      expect(screen.getByText("Online")).toBeDefined();
+      expect(screen.getByText("Phone")).toBeDefined();
+      expect(screen.getByText("Walk-in")).toBeDefined();
+    });
   });
 
   it("displays busiest hours section", async () => {
     render(<ClinicStats />);
     
-    await new Promise(resolve => setTimeout(resolve, 100));
-    
-    expect(screen.getByText("Busiest Hours")).toBeDefined();
+    await waitFor(() => {
+      expect(screen.getByText("Busiest Hours")).toBeDefined();
+    });
   });
 });
