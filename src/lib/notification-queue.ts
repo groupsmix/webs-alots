@@ -60,6 +60,12 @@ const BASE_RETRY_DELAY_MS = 30_000;
 /** Maximum number of items to process per cron invocation. */
 const BATCH_SIZE = 50;
 
+/** Default max attempts before dead-lettering a notification. */
+const BATCH_MAX_ATTEMPTS = 5;
+
+/** Far-future timestamp so dead-lettered items are never picked up again. */
+const DEAD_LETTER_NEXT_ATTEMPT = "9999-12-31T23:59:59Z";
+
 // ── Backoff Calculation ──
 
 /**
@@ -148,6 +154,7 @@ export async function processNotificationQueue(): Promise<ProcessResult> {
       .select("id, clinic_id, channel, recipient, payload, status, attempts, max_attempts, next_attempt_at, error_message, created_at")
       .in("status", ["pending", "failed"])
       .lte("next_attempt_at", new Date().toISOString())
+      .lt("attempts", BATCH_MAX_ATTEMPTS)
       .order("next_attempt_at", { ascending: true })
       .limit(BATCH_SIZE);
 
@@ -196,12 +203,13 @@ export async function processNotificationQueue(): Promise<ProcessResult> {
           const maxAttempts = item.max_attempts ?? 5;
 
           if (newAttempts >= maxAttempts) {
-            // Move to dead letter
+            // Move to dead letter — set next_attempt_at to far future so it's never picked up again
             await supabase
               .from("notification_queue")
               .update({
-                status: "failed", // We don't have 'dead_letter' in DB enum, just leave as 'failed' with max attempts
+                status: "failed",
                 attempts: newAttempts,
+                next_attempt_at: DEAD_LETTER_NEXT_ATTEMPT,
                 error_message: sendResult.error ?? "Unknown error",
                 updated_at: new Date().toISOString(),
               })
@@ -246,7 +254,7 @@ export async function processNotificationQueue(): Promise<ProcessResult> {
           .update({
             status: "failed",
             attempts: newAttempts,
-            next_attempt_at: newAttempts >= maxAttempts ? item.next_attempt_at : calculateNextRetry(newAttempts).toISOString(),
+            next_attempt_at: newAttempts >= maxAttempts ? DEAD_LETTER_NEXT_ATTEMPT : calculateNextRetry(newAttempts).toISOString(),
             error_message: errorMsg,
             updated_at: new Date().toISOString(),
           })

@@ -104,6 +104,12 @@ export async function createBackup(
         break;
       }
 
+      // Enforce per-table limit (HIGH-04)
+      if (tableRows.length >= MAX_ROWS_PER_TABLE) {
+        hasMore = false;
+        break;
+      }
+
       const { data: chunk, error } = await supabase
         .from(table)
         .select("*")
