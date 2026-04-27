@@ -9,6 +9,8 @@ const piiUrlRegex = /[?&](phone|email|cin|dob|password|token|secret|ssn|cnss|nam
 Sentry.init({
   dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
 
+  sendDefaultPii: false,
+
   // Performance monitoring: sample 10% of transactions in production.
   tracesSampleRate: process.env.NODE_ENV === "production" ? 0.1 : 1.0,
 

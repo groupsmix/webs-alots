@@ -220,6 +220,13 @@ export async function POST(request: NextRequest) {
       });
     });
 
+    logger.info("New clinic registered successfully", {
+      context: "register-clinic",
+      clinicId,
+      subdomain,
+      clientIp,
+    });
+
     return apiSuccess(
       {
         status: "created",
