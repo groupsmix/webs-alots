@@ -74,6 +74,11 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          # Gitleaks scans the base..head range on PRs, so it needs full
+          # history. With the default shallow clone (fetch-depth: 1) the
+          # base SHA is unknown and `git log base^..head` fails.
+          fetch-depth: 0
 
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v3

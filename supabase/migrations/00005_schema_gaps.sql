@@ -535,7 +535,17 @@ ALTER TABLE documents
   ADD COLUMN IF NOT EXISTS file_size BIGINT,
   ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT now();
 
--- 13v. clinic_holidays: add created_at column
+-- 13v. clinic_holidays: ensure base table exists, then add created_at column.
+-- Re-declared further down (13cc); IF NOT EXISTS makes the duplicate safe.
+CREATE TABLE IF NOT EXISTS clinic_holidays (
+  id         UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  clinic_id  UUID NOT NULL REFERENCES clinics(id) ON DELETE CASCADE,
+  title      TEXT NOT NULL,
+  start_date DATE NOT NULL,
+  end_date   DATE NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
 ALTER TABLE clinic_holidays
   ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT now();
 
