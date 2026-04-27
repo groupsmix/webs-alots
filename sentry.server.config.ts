@@ -6,14 +6,82 @@ const piiKeysRegex = /(email|phone|address|dob|prescription|diagnosis|patient|ci
 // F-10: Regex to detect PII in URL query parameters
 const piiUrlRegex = /[?&](phone|email|cin|dob|password|token|secret|ssn|cnss|name|address|patient)=/i;
 
+// R-20 Fix: Per-route sampling configuration
+// Higher sampling for critical paths, lower for read-only operations
+const routeSamplingConfig = {
+  // Critical paths: 100% sampling for webhooks, cron, payment
+  webhooks: 1.0,
+  cron: 1.0,
+  payment: 1.0,
+  // Mutations: 50% sampling for POST/PUT/PATCH/DELETE
+  mutations: 0.5,
+  // Read operations: 10% sampling for GET requests
+  reads: 0.1,
+};
+
+// R-20 Fix: Calculate trace sample rate based on transaction type
+function getTraceSampleRate(transactionType: string): number {
+  const type = transactionType.toLowerCase();
+  if (type.includes("webhook") || type.includes("cron") || type.includes("payment")) {
+    return routeSamplingConfig.webhooks;
+  }
+  if (["post", "put", "patch", "delete"].some(m => type.includes(m))) {
+    return routeSamplingConfig.mutations;
+  }
+  return routeSamplingConfig.reads;
+}
+
 Sentry.init({
   dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
 
-  // Performance monitoring: sample 10% of transactions in production.
+  // R-20 Fix: Set sendDefaultPii to false explicitly
+  // @sentry/nextjs@8 defaults this to true, which is a PII risk
+  sendDefaultPii: false,
+
+  // Performance monitoring: Sample 10% of transactions in production by default.
+  // Critical paths (webhooks, cron, payment) use 100% via transaction hooks.
+  // Mutations use 50%, reads use 10%.
   tracesSampleRate: process.env.NODE_ENV === "production" ? 0.1 : 1.0,
 
   // Don't send errors in development unless explicitly enabled.
   enabled: !!process.env.NEXT_PUBLIC_SENTRY_DSN,
+
+  // R-20 Fix: Per-transaction sampling for fine-grained control
+  tracesSampler(samplingContext) {
+    // Extract transaction name from context
+    const transactionName = samplingContext.name || "";
+    const transactionDescription = samplingContext.description || "";
+
+    // Determine sampling rate based on route type
+    const combinedContext = `${transactionName} ${transactionDescription}`.toLowerCase();
+
+    // Critical paths: webhooks, cron, payment
+    if (
+      combinedContext.includes("webhook") ||
+      combinedContext.includes("cron") ||
+      combinedContext.includes("payment") ||
+      combinedContext.includes("stripe") ||
+      combinedContext.includes("notification")
+    ) {
+      return routeSamplingConfig.webhooks;
+    }
+
+    // Mutations: POST, PUT, PATCH, DELETE
+    if (
+      combinedContext.includes("post") ||
+      combinedContext.includes("put") ||
+      combinedContext.includes("patch") ||
+      combinedContext.includes("delete") ||
+      combinedContext.includes("booking") ||
+      combinedContext.includes("appointment") ||
+      combinedContext.includes("register")
+    ) {
+      return routeSamplingConfig.mutations;
+    }
+
+    // Reads: GET requests (default to 10%)
+    return routeSamplingConfig.reads;
+  },
 
   // F-10: Scrub PII from breadcrumbs on the server side
   beforeBreadcrumb(breadcrumb) {
