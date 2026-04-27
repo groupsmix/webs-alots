@@ -14,19 +14,19 @@ export const DEMO_SUBDOMAIN = "demo";
 /** Demo user IDs for one-click login. */
 export const DEMO_USERS = {
   doctor: {
-    id: "u0000000-de00-0000-0000-000000000002",
+    id: "b0000000-de00-0000-0000-000000000002",
     email: "karim@demo.oltigo.com",
     name: "Dr. Karim Idrissi",
     role: "doctor" as const,
   },
   receptionist: {
-    id: "u0000000-de00-0000-0000-000000000004",
+    id: "b0000000-de00-0000-0000-000000000004",
     email: "imane@demo.oltigo.com",
     name: "Imane Fassi",
     role: "receptionist" as const,
   },
   patient: {
-    id: "u0000000-de00-0000-0000-000000000010",
+    id: "b0000000-de00-0000-0000-000000000010",
     email: "rachid@example.com",
     name: "Rachid Bennani",
     role: "patient" as const,

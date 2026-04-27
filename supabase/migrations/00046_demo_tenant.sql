@@ -154,8 +154,8 @@ ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO appointments (id, patient_id, doctor_id, clinic_id, service_id, slot_start, slot_end, status, is_first_visit, insurance_flag, source) VALUES
   ('a0000000-de00-0000-0000-000000000002',
-   'u0000000-de00-0000-0000-000000000011',
-   'u0000000-de00-0000-0000-000000000002',
+   'b0000000-de00-0000-0000-000000000011',
+   'b0000000-de00-0000-0000-000000000002',
    'c0000000-de00-0000-0000-000000000001',
    '50000000-de00-0000-0000-000000000002',
    '2026-03-25 10:00:00+00', '2026-03-25 10:20:00+00',
@@ -164,8 +164,8 @@ ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO appointments (id, patient_id, doctor_id, clinic_id, service_id, slot_start, slot_end, status, is_first_visit, insurance_flag, source) VALUES
   ('a0000000-de00-0000-0000-000000000003',
-   'u0000000-de00-0000-0000-000000000012',
-   'u0000000-de00-0000-0000-000000000003',
+   'b0000000-de00-0000-0000-000000000012',
+   'b0000000-de00-0000-0000-000000000003',
    'c0000000-de00-0000-0000-000000000001',
    '50000000-de00-0000-0000-000000000004',
    '2026-03-28 09:00:00+00', '2026-03-28 09:45:00+00',
@@ -174,8 +174,8 @@ ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO appointments (id, patient_id, doctor_id, clinic_id, service_id, slot_start, slot_end, status, is_first_visit, insurance_flag, source) VALUES
   ('a0000000-de00-0000-0000-000000000004',
-   'u0000000-de00-0000-0000-000000000013',
-   'u0000000-de00-0000-0000-000000000002',
+   'b0000000-de00-0000-0000-000000000013',
+   'b0000000-de00-0000-0000-000000000002',
    'c0000000-de00-0000-0000-000000000001',
    '50000000-de00-0000-0000-000000000005',
    '2026-04-01 15:00:00+00', '2026-04-01 15:15:00+00',
@@ -184,8 +184,8 @@ ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO appointments (id, patient_id, doctor_id, clinic_id, service_id, slot_start, slot_end, status, is_first_visit, insurance_flag, source, notes) VALUES
   ('a0000000-de00-0000-0000-000000000005',
-   'u0000000-de00-0000-0000-000000000014',
-   'u0000000-de00-0000-0000-000000000003',
+   'b0000000-de00-0000-0000-000000000014',
+   'b0000000-de00-0000-0000-000000000003',
    'c0000000-de00-0000-0000-000000000001',
    '50000000-de00-0000-0000-000000000001',
    '2026-03-19 11:00:00+00', '2026-03-19 11:30:00+00',
@@ -199,17 +199,17 @@ ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO reviews (id, patient_id, clinic_id, stars, comment, response) VALUES
   ('70000000-de00-0000-0000-000000000001',
-   'u0000000-de00-0000-0000-000000000010',
+   'b0000000-de00-0000-0000-000000000010',
    'c0000000-de00-0000-0000-000000000001',
    5, 'Excellent cabinet, très bien organisé. Je recommande !',
    'Merci beaucoup pour votre confiance.'),
   ('70000000-de00-0000-0000-000000000002',
-   'u0000000-de00-0000-0000-000000000011',
+   'b0000000-de00-0000-0000-000000000011',
    'c0000000-de00-0000-0000-000000000001',
    4, 'Bon médecin, ponctuel et à l''écoute.',
    NULL),
   ('70000000-de00-0000-0000-000000000003',
-   'u0000000-de00-0000-0000-000000000014',
+   'b0000000-de00-0000-0000-000000000014',
    'c0000000-de00-0000-0000-000000000001',
    5, 'Service impeccable, cabinet moderne et propre.',
    'Merci, nous faisons de notre mieux !')
@@ -222,12 +222,12 @@ ON CONFLICT (id) DO NOTHING;
 INSERT INTO payments (id, clinic_id, patient_id, appointment_id, amount, method, status, ref) VALUES
   ('90000000-de00-0000-0000-000000000001',
    'c0000000-de00-0000-0000-000000000001',
-   'u0000000-de00-0000-0000-000000000010',
+   'b0000000-de00-0000-0000-000000000010',
    'a0000000-de00-0000-0000-000000000001',
    300.00, 'cash', 'completed', 'DEMO-PAY-001'),
   ('90000000-de00-0000-0000-000000000002',
    'c0000000-de00-0000-0000-000000000001',
-   'u0000000-de00-0000-0000-000000000014',
+   'b0000000-de00-0000-0000-000000000014',
    'a0000000-de00-0000-0000-000000000005',
    300.00, 'card', 'completed', 'DEMO-PAY-002')
 ON CONFLICT (id) DO NOTHING;
