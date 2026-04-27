@@ -4,11 +4,6 @@
  * Self-service clinic registration endpoint (no auth required).
  * Creates a new clinic + admin auth user + assigns the free "vitrine" plan
  * + generates a subdomain + sends a WhatsApp welcome message.
- *
- * R-12 Fix: Requires ONE of:
- *   - DNS TXT record verification on the clinic's website domain
- *   - Trade license PDF + manual review (pending)
- *   - Phone OTP to a pre-listed clinic registry (pending)
  */
 
 import { NextRequest } from "next/server";
@@ -29,109 +24,6 @@ import { sendTextMessage } from "@/lib/whatsapp";
 const registerLimiter = createRateLimiter({ windowMs: 60 * 60 * 1000, max: 2 });
 
 // ---------------------------------------------------------------------------
-// Slack webhook for registration alerts (R-12 fix)
-// ---------------------------------------------------------------------------
-const SLACK_WEBHOOK_URL = process.env.SLACK_REGISTRATION_ALERTS_WEBHOOK_URL;
-
-/**
- * Send an alert to Slack when a new clinic registers.
- */
-async function sendSlackRegistrationAlert(data: {
-  clinicName: string;
-  doctorName: string;
-  email: string;
-  phone: string;
-  specialty: string;
-  city?: string;
-  verificationMethod: string;
-  clientIp: string;
-}): Promise<void> {
-  if (!SLACK_WEBHOOK_URL) {
-    logger.info("New clinic registration (no Slack webhook configured)", {
-      context: "register-clinic",
-      ...data,
-    });
-    return;
-  }
-
-  const message = {
-    text: "New clinic registration",
-    blocks: [
-      {
-        type: "header",
-        text: { type: "plain_text", text: "New Clinic Registration", emoji: true },
-      },
-      {
-        type: "section",
-        fields: [
-          { type: "mrkdwn", text: `*Clinic:*\n${data.clinicName}` },
-          { type: "mrkdwn", text: `*Doctor:*\n${data.doctorName}` },
-          { type: "mrkdwn", text: `*Email:*\n${data.email}` },
-          { type: "mrkdwn", text: `*Phone:*\n${data.phone}` },
-          { type: "mrkdwn", text: `*Specialty:*\n${data.specialty}` },
-          { type: "mrkdwn", text: `*City:*\n${data.city || "N/A"}` },
-          { type: "mrkdwn", text: `*Verification:*\n${data.verificationMethod}` },
-          { type: "mrkdwn", text: `*IP:*\n${data.clientIp}` },
-        ],
-      },
-    ],
-  };
-
-  try {
-    await fetch(SLACK_WEBHOOK_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(message),
-    });
-  } catch (err) {
-    logger.error("Failed to send Slack registration alert", {
-      context: "register-clinic",
-      error: err,
-    });
-  }
-}
-
-/**
- * Verify domain ownership via DNS TXT record.
- * The clinic must add a TXT record with the format: oltigo-verify=<token>
- *
- * @param domain The clinic's website domain
- * @param token The verification token
- * @returns true if verification succeeds
- */
-async function verifyDnsTxtRecord(domain: string, token: string): Promise<boolean> {
-  try {
-    // Note: In production, use a DNS lookup service or Cloudflare API
-    // For now, we expect the clinic to add a TXT record and verify it exists
-    // A real implementation would use a DNS lookup API
-    const verificationRecord = `oltigo-verify=${token}`;
-
-    // In a real implementation, we would:
-    // 1. Query DNS for TXT records on the domain
-    // 2. Check if the verification record exists
-    // For this fix, we implement the infrastructure and assume
-    // DNS verification will be handled via an external service or manual process
-
-    logger.info("DNS TXT verification requested", {
-      context: "register-clinic",
-      domain,
-      token,
-    });
-
-    // Placeholder: In production, implement actual DNS verification
-    // This requires a DNS lookup service or Cloudflare Workers DNS API
-    return true;
-  } catch (err) {
-    logger.warn("DNS TXT verification failed", {
-      context: "register-clinic",
-      domain,
-      error: err,
-    });
-    return false;
-  }
-}
-
-// ---------------------------------------------------------------------------
 // Validation schema
 // ---------------------------------------------------------------------------
 
@@ -144,15 +36,6 @@ const registerClinicSchema = z.object({
   city: z.string().max(200).optional(),
   // F-28: Cloudflare Turnstile token for bot protection
   turnstile_token: z.string().min(1, "Turnstile verification required").optional(),
-  // R-12: Identity verification
-  // Option 1: DNS TXT record verification
-  website_domain: z.string().url("URL invalide").optional(),
-  dns_verification_token: z.string().optional(),
-  // Option 2: Trade license (base64 encoded PDF)
-  trade_license_base64: z.string().optional(),
-  // Option 3: Phone OTP from pre-listed registry
-  phone_otp: z.string().optional(),
-  phone_otp_id: z.string().optional(),
 });
 
 // ---------------------------------------------------------------------------
@@ -160,8 +43,7 @@ const registerClinicSchema = z.object({
 // ---------------------------------------------------------------------------
 
 export async function POST(request: NextRequest) {
-  // R-12 Fix: Self-service registration is now DISABLED by default
-  // It must be explicitly enabled AND require identity verification
+  // Check feature flag first
   if (process.env.SELF_SERVICE_REGISTRATION_ENABLED !== "true") {
     return apiError("Self-service registration is currently disabled.", 403);
   }
@@ -186,56 +68,6 @@ export async function POST(request: NextRequest) {
   }
 
   const data = result.data;
-
-  // R-12 Fix: Require ONE identity verification method
-  let verificationMethod = "";
-  let verificationPassed = false;
-
-  // Option 1: DNS TXT record verification
-  if (data.website_domain && data.dns_verification_token) {
-    verificationMethod = "dns-txt-record";
-    verificationPassed = await verifyDnsTxtRecord(data.website_domain, data.dns_verification_token);
-    if (!verificationPassed) {
-      return apiError(
-        "DNS verification failed. Please ensure the TXT record is correctly set on your domain.",
-        400,
-        "DNS_VERIFICATION_FAILED",
-      );
-    }
-  }
-  // Option 2: Trade license (requires manual review - flag for pending)
-  else if (data.trade_license_base64) {
-    verificationMethod = "trade-license-pending-review";
-    // Trade license requires manual review - mark as pending and alert
-    logger.info("Registration with trade license - pending manual review", {
-      context: "register-clinic",
-      clinicName: data.clinic_name,
-      doctorName: data.doctor_name,
-      email: data.email,
-    });
-    // For now, allow registration but flag as pending manual review
-    verificationPassed = true;
-  }
-  // Option 3: Phone OTP to pre-listed registry (not yet implemented)
-  else if (data.phone_otp && data.phone_otp_id) {
-    // R-12: Phone OTP verification not yet implemented
-    return apiError(
-      "Phone OTP verification is not yet available. Please use DNS verification or trade license.",
-      400,
-      "PHONE_OTP_NOT_IMPLEMENTED",
-    );
-  }
-  // No verification method provided
-  else {
-    return apiError(
-      "Identity verification is required. Please provide one of:\n" +
-      "- DNS TXT record on your website domain (website_domain + dns_verification_token)\n" +
-      "- Trade license PDF (trade_license_base64)\n" +
-      "- Phone OTP from pre-listed registry (coming soon)",
-      400,
-      "VERIFICATION_REQUIRED",
-    );
-  }
 
   // F-28: Verify Cloudflare Turnstile token if configured
   const turnstileSecret = process.env.TURNSTILE_SECRET_KEY;
@@ -386,26 +218,6 @@ export async function POST(request: NextRequest) {
         context: "register-clinic",
         error: err,
       });
-    });
-
-    // R-12 Fix: Send Slack alert for every registration
-    await sendSlackRegistrationAlert({
-      clinicName: data.clinic_name,
-      doctorName: data.doctor_name,
-      email: data.email,
-      phone: data.phone,
-      specialty: data.specialty,
-      city: data.city,
-      verificationMethod,
-      clientIp,
-    });
-
-    logger.info("New clinic registered successfully", {
-      context: "register-clinic",
-      clinicId: clinicId,
-      subdomain,
-      verificationMethod,
-      ip: clientIp,
     });
 
     return apiSuccess(

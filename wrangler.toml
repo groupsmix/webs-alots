@@ -54,9 +54,6 @@ NEXT_PUBLIC_DATA_MASKING = "partial"
 NEXT_PUBLIC_PHONE_AUTH_ENABLED = "false"
 # WhatsApp provider selection
 WHATSAPP_PROVIDER = "meta"
-# R-12 Fix: Self-service registration is DISABLED by default
-# Enable via: wrangler secret put SELF_SERVICE_REGISTRATION_ENABLED=true
-SELF_SERVICE_REGISTRATION_ENABLED = "false"
 
 # ---- Workers Routes (custom domain + wildcard subdomains) ----
 routes = [
@@ -138,63 +135,3 @@ WHATSAPP_PROVIDER = "meta"
 # Audit 8.8 — Less aggressive schedule for staging (was */5, now */15)
 [env.staging.triggers]
 crons = ["*/30 * * * *", "*/15 * * * *", "0 2 * * *"]
-
-# ---- Cloudflare Queues (R-14 Fix) ----
-# Provision queues for reliable webhook/cron retry + DLQ.
-# Create via: wrangler queues create <name>
-# The consumer worker is worker-cron-handler.ts
-[[queues.consumers]]
-queue = "reminders-queue"
-max_batch_size = 10
-max_batch_timeout = 30
-max_retries = 5
-dead_letter_queue = "reminders-dlq"
-
-[[queues.consumers]]
-queue = "notifications-queue"
-max_batch_size = 10
-max_batch_timeout = 30
-max_retries = 5
-dead_letter_queue = "notifications-dlq"
-
-# Queue producers (used by the app to enqueue jobs)
-[[queues.producers]]
-queue = "reminders-queue"
-binding = "REMINDERS_QUEUE"
-
-[[queues.producers]]
-queue = "notifications-queue"
-binding = "NOTIFICATIONS_QUEUE"
-
-[env.staging.vars]
-ROOT_DOMAIN = "staging.oltigo.com"
-NEXT_PUBLIC_SITE_URL = "https://staging.oltigo.com"
-R2_BUCKET_NAME = "webs-alots-uploads-staging"
-RATE_LIMIT_BACKEND = "kv"
-NEXT_PUBLIC_DATA_MASKING = "partial"
-NEXT_PUBLIC_PHONE_AUTH_ENABLED = "false"
-WHATSAPP_PROVIDER = "meta"
-SELF_SERVICE_REGISTRATION_ENABLED = "false"
-
-# ---- Staging Cloudflare Queues ----
-[[env.staging.queues.consumers]]
-queue = "reminders-queue-staging"
-max_batch_size = 10
-max_batch_timeout = 30
-max_retries = 5
-dead_letter_queue = "reminders-dlq-staging"
-
-[[env.staging.queues.consumers]]
-queue = "notifications-queue-staging"
-max_batch_size = 10
-max_batch_timeout = 30
-max_retries = 5
-dead_letter_queue = "notifications-dlq-staging"
-
-[[env.staging.queues.producers]]
-queue = "reminders-queue-staging"
-binding = "REMINDERS_QUEUE"
-
-[[env.staging.queues.producers]]
-queue = "notifications-queue-staging"
-binding = "NOTIFICATIONS_QUEUE"
