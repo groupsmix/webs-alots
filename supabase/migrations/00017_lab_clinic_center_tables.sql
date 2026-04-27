@@ -78,7 +78,8 @@ CREATE TABLE IF NOT EXISTS beds (
 );
 
 CREATE INDEX IF NOT EXISTS idx_beds_clinic ON beds(clinic_id);
-CREATE INDEX IF NOT EXISTS idx_beds_department ON beds(department_id);
+-- Note: the real beds table (created in 00015) has room_id, not department_id,
+-- and idx_beds_room is already created there. Skip the department_id index.
 CREATE INDEX IF NOT EXISTS idx_beds_status ON beds(status);
 
 -- ============================================================
