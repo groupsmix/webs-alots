@@ -12,13 +12,13 @@ ALTER FUNCTION public.get_tenant_context() SET search_path = public, pg_temp;
 ALTER FUNCTION public.get_request_clinic_id() SET search_path = public, pg_temp;
 
 -- rate_limit_increment (from 00038)
-ALTER FUNCTION public.rate_limit_increment(text, integer, integer) SET search_path = public, pg_temp;
+ALTER FUNCTION public.rate_limit_increment(text, bigint, bigint, timestamptz) SET search_path = public, pg_temp;
 
 -- booking_find_or_create_patient (from 00043)
-ALTER FUNCTION public.booking_find_or_create_patient(text, text, uuid) SET search_path = public, pg_temp;
+ALTER FUNCTION public.booking_find_or_create_patient(uuid, text, text, text) SET search_path = public, pg_temp;
 
 -- register_new_clinic (from 00065)
-ALTER FUNCTION public.register_new_clinic(text, text, text, text, text) SET search_path = public, pg_temp;
+ALTER FUNCTION public.register_new_clinic(text, text, text, text, text, text, text, uuid) SET search_path = public, pg_temp;
 
 -- get_user_role (from 00002)
 ALTER FUNCTION public.get_user_role() SET search_path = public, pg_temp;

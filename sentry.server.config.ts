@@ -4,7 +4,7 @@ import * as Sentry from "@sentry/nextjs";
 const piiKeysRegex = /(email|phone|address|dob|prescription|diagnosis|patient|cin|password|token|secret|ssn|cnss|amu)/i;
 
 // F-10: Regex to detect PII in URL query parameters
-const piiUrlRegex = /[?&](phone|email|cin|dob|password|token|secret|ssn|cnss|name|address|patient)=/gi;
+const piiUrlRegex = /[?&](phone|email|cin|dob|password|token|secret|ssn|cnss|name|address|patient)=/i;
 
 Sentry.init({
   dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,

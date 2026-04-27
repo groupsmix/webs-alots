@@ -38,11 +38,11 @@ const PUBLIC_CACHE_ALLOWLIST = [
 
 /** Authenticated route prefixes — never cache these. */
 const AUTHED_PREFIXES = [
-  "/admin",
-  "/doctor",
-  "/receptionist",
-  "/patient",
-  "/super-admin",
+  "/admin/",
+  "/doctor/",
+  "/receptionist/",
+  "/patient/",
+  "/super-admin/",
 ];
 
 function isPublicRoute(pathname) {
