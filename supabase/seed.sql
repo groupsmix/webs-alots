@@ -40,6 +40,14 @@ EXCEPTION
 END
 $$;
 
+-- Mark this session as a local-dev seed run so the SEED-01 guard
+-- (migration 00059, trg_block_seed_user_insert) does not block
+-- INSERT of seed users into auth.users. The trigger fail-closes
+-- when app.environment is unset / 'production' / 'staging';
+-- a session-local SET only affects this seeding session and
+-- never leaks to runtime.
+SET app.environment = 'local';
+
 -- Use SEED_USER_PASSWORD env var if set, otherwise fall back to
 -- the well-known default (acceptable for local dev only).
 DO $$ BEGIN
