@@ -134,6 +134,27 @@ export function enforceEnvValidation(): void {
         group,
       });
     }
+
+    // F-34: Emit Sentry alert for WhatsApp provider degradation in production
+    if (process.env.NODE_ENV === "production") {
+      const whatsappWarnings = result.warnings.filter((w) => w.group === "whatsapp");
+      if (whatsappWarnings.length > 0) {
+        try {
+          import("@sentry/nextjs").then((Sentry) => {
+            Sentry.captureMessage(
+              "WhatsApp primary provider (Meta) unavailable — degrading to Twilio fallback",
+              {
+                level: "warning",
+                tags: { degradation: "whatsapp_meta_to_twilio" },
+                extra: { missingVars: whatsappWarnings.map((w) => w.name) },
+              },
+            );
+          });
+        } catch {
+          // Sentry unavailable
+        }
+      }
+    }
   }
 
   // Hard-fail for required variables

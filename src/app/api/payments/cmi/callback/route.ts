@@ -44,14 +44,57 @@ export async function POST(request: NextRequest) {
     if (callbackData.status === "approved") {
       // Find the payment by order ID (stored as gateway_session_id)
       // Only process if not already completed (idempotency check)
-      // Include clinic_id in SELECT to scope subsequent updates to the same tenant.
+      // F-16: Include amount and currency for validation against callback data.
       const { data: payment } = await supabase
         .from("payments")
-        .select("id, appointment_id, clinic_id, status")
+        .select("id, appointment_id, clinic_id, status, amount")
         .eq("gateway_session_id", callbackData.orderId)
         .single();
 
       if (payment && payment.status !== PAYMENT_STATUS.COMPLETED) {
+        // F-16: Validate amount/currency match between gateway and DB.
+        // CMI uses currency code "504" for MAD. Amount must match exactly.
+        const callbackAmount = parseFloat(callbackData.amount ?? "0");
+        // CMI uses currency code "504" for MAD. Extract from raw params if available.
+        const callbackCurrency = (params as Record<string, string>).currency || "504";
+        if (
+          payment.amount !== null &&
+          (Math.abs(callbackAmount - payment.amount) > 0.01 || callbackCurrency !== "504")
+        ) {
+          logger.error("CMI callback amount/currency mismatch — potential tampering", {
+            context: "payments/cmi/callback",
+            paymentId: payment.id,
+            expectedAmount: payment.amount,
+            callbackAmount,
+            callbackCurrency,
+            clinicId: payment.clinic_id,
+          });
+          // Mark as tampered, do NOT complete the payment
+          await supabase
+            .from("payments")
+            .update({ status: "tampered" as never })
+            .eq("id", payment.id)
+            .eq("clinic_id", payment.clinic_id);
+
+          try {
+            const Sentry = await import("@sentry/nextjs");
+            Sentry.captureException(
+              new Error("CMI payment amount/currency mismatch"),
+              {
+                tags: { compliance: "payment_tampering", clinicId: payment.clinic_id },
+                extra: { paymentId: payment.id, expectedAmount: payment.amount, callbackAmount, callbackCurrency },
+              },
+            );
+          } catch {
+            // Sentry unavailable
+          }
+
+          return new NextResponse("ACTION=POSTAUTH", {
+            status: 200,
+            headers: { "Content-Type": "text/plain" },
+          });
+        }
+
         // Set tenant context for defense-in-depth RLS enforcement
         if (payment.clinic_id) {
           try {

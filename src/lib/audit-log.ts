@@ -1,13 +1,9 @@
 /**
  * Audit logging utility for healthcare compliance.
  *
- * Logs data mutations (appointment CRUD, patient changes, role changes,
- * impersonation, auth events, config changes, etc.) to the
- * `activity_logs` table. Failures are caught and logged to stderr so
- * they never break the calling endpoint.
- *
- * Supports structured metadata for rich audit trail queries and
- * optional IP/user-agent tracking for security-sensitive events.
+ * F-09: Uses createAdminClient() with explicit clinic_id so RLS cannot
+ * drop writes. On insert failure, raises a Sentry alert with compliance
+ * tags and writes a structured log line for DLQ-style recovery.
  */
 
 import type { SupabaseClient } from "@supabase/supabase-js";
@@ -54,7 +50,25 @@ export async function logAuditEvent({
   metadata,
 }: AuditLogParams): Promise<void> {
   try {
-    await supabase.from("activity_logs").insert({
+    // F-09: Prefer admin client so audit writes cannot be blocked by RLS.
+    // Falls back to caller-supplied client if admin client is unavailable.
+    let client: SupabaseClient<Database> = supabase;
+    try {
+      const { createAdminClient } = await import("@/lib/supabase-server");
+      client = createAdminClient();
+    } catch {
+      // Service role key unavailable (dev/build) — fall back to caller's client
+      if (!supabase) {
+        logger.warn("Audit log skipped: admin client unavailable", {
+          context: "audit-log",
+          clinicId,
+          action,
+        });
+        return;
+      }
+    }
+
+    const { error } = await client.from("activity_logs").insert({
       action,
       type,
       actor: actor ?? null,
@@ -66,6 +80,30 @@ export async function logAuditEvent({
       metadata: metadata ?? null,
       timestamp: new Date().toISOString(),
     });
+
+    if (error) {
+      // F-09: Raise Sentry alert for audit write failure
+      logger.error("AUDIT_LOG_WRITE_FAILED", {
+        context: "audit-log",
+        action,
+        clinicId,
+        error,
+        tags: { compliance: "audit_loss" },
+      });
+
+      try {
+        const Sentry = await import("@sentry/nextjs");
+        Sentry.captureException(
+          new Error(`Audit log write failed: ${action}`),
+          {
+            tags: { compliance: "audit_loss", clinicId },
+            extra: { action, type, clinicId, error },
+          },
+        );
+      } catch {
+        // Sentry unavailable — structured log above is the fallback
+      }
+    }
   } catch (err) {
     logger.error("Failed to write audit log", { context: "audit-log", error: err });
   }

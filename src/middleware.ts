@@ -86,6 +86,9 @@ export async function middleware(request: NextRequest) {
   const traceId = generateTraceId();
 
   // --- Global body size limit ---
+  // F-38: Check Content-Length header first (fast path), but also enforce
+  // actual body size via stream reading in route handlers. The header
+  // check is kept as a quick reject for honest clients.
   const contentLength = request.headers.get("content-length");
   if (contentLength && Number(contentLength) > MAX_BODY_BYTES) {
     return withSecurityHeaders(

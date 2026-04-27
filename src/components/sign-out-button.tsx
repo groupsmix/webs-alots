@@ -4,6 +4,11 @@ import { LogOut } from "lucide-react";
 import { signOut } from "@/lib/auth";
 
 async function purgeServiceWorkerCaches(): Promise<void> {
+  // F-04: Post PURGE_AUTHED to the service worker so it removes
+  // any cached authenticated HTML before we clear all caches.
+  if ("serviceWorker" in navigator && navigator.serviceWorker.controller) {
+    navigator.serviceWorker.controller.postMessage({ type: "PURGE_AUTHED" });
+  }
   if ("caches" in window) {
     const keys = await caches.keys();
     await Promise.all(keys.map((k) => caches.delete(k)));

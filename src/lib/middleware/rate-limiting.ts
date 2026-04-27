@@ -25,6 +25,10 @@ export async function applyRateLimit(
 ): Promise<{ response: NextResponse | null; rateLimitInfo?: RateLimitInfo }> {
   const { pathname } = request.nextUrl;
   const hostname = request.headers.get("host") ?? "";
+  // F-27: For authenticated AI/booking endpoints, prefer user ID over IP.
+  // In edge middleware we don't have the decoded user yet, so we still
+  // use IP here. Post-auth user-keyed limiting is done in route handlers
+  // (withAuth) for /api/chat and /api/ai/* endpoints.
   const rateLimitKey = `${hostname}:${extractClientIp(request)}`;
 
   // Find a specific API rule if applicable

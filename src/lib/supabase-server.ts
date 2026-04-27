@@ -117,7 +117,8 @@ export async function createTenantClient(clinicId: string) {
  * creating auth users via `supabase.auth.admin.createUser()`.
  *
  * Only use this for privileged server-side operations (e.g. super-admin
- * onboarding staff accounts). Never expose this client to the browser.
+ * onboarding staff accounts, audit log writes). Never expose this client
+ * to the browser.
  *
  * @throws Error if SUPABASE_SERVICE_ROLE_KEY is not configured
  */
@@ -126,5 +127,31 @@ export function createAdminClient() {
     requireEnv("NEXT_PUBLIC_SUPABASE_URL"),
     requireEnv("SUPABASE_SERVICE_ROLE_KEY"),
     { auth: { autoRefreshToken: false, persistSession: false } },
+  );
+}
+
+/**
+ * Create a cookie-free anon Supabase client with x-clinic-id header set.
+ *
+ * F-03: Replacement for createAdminClient() in `use cache` blocks
+ * that need tenant-scoped reads. Unlike createAdminClient(), this uses
+ * the anon key and relies on RLS policies (via the x-clinic-id header)
+ * instead of bypassing them with the service role.
+ *
+ * Safe for use inside `use cache` directives since it does not read cookies.
+ */
+export function createPublicAnonClient(clinicId: string) {
+  if (!clinicId || !isValidClinicId(clinicId)) {
+    throw new Error(`createPublicAnonClient: invalid clinicId: ${clinicId}`);
+  }
+  return createSupabaseClient<Database>(
+    requireEnv("NEXT_PUBLIC_SUPABASE_URL"),
+    requireEnv("NEXT_PUBLIC_SUPABASE_ANON_KEY"),
+    {
+      auth: { autoRefreshToken: false, persistSession: false },
+      global: {
+        headers: { "x-clinic-id": clinicId },
+      },
+    },
   );
 }

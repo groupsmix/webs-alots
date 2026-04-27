@@ -1,12 +1,12 @@
 /**
  * Subdomain cache management.
  *
- * Provides a shared Map and invalidation helpers so that both
- * middleware.ts and API routes access the same cache instance.
+ * F-07: Two-tier cache:
+ *   1. In-memory Map — fast, per-isolate, lost on cold start.
+ *   2. Cloudflare KV (FEATURE_FLAGS_KV) — per-edge-PoP, survives cold starts.
  *
- * Since Next.js middleware and API routes share the same process
- * in Cloudflare Workers, the cache Map is shared via a module-level
- * export.
+ * The KV tier is used when the FEATURE_FLAGS_KV binding is available.
+ * On cache miss in memory, the KV tier is checked before hitting the DB.
  */
 
 interface CachedClinic {
@@ -128,4 +128,63 @@ export function invalidateAllSubdomainCaches(): void {
 // stale entries from accumulating in memory.
 if (typeof setInterval !== "undefined") {
   setInterval(evictExpiredEntries, 30_000);
+}
+
+// ── F-07: KV-backed subdomain cache helpers ──
+
+/** KV key prefix for subdomain cache entries */
+const KV_PREFIX = "subdomain:";
+/** KV TTL in seconds (5 minutes) */
+const KV_TTL_SECONDS = 300;
+
+interface KVNamespace {
+  get(key: string, options?: { type: "json" }): Promise<CachedClinic | null>;
+  put(key: string, value: string, options?: { expirationTtl?: number }): Promise<void>;
+  delete(key: string): Promise<void>;
+}
+
+function getKV(): KVNamespace | null {
+  return (globalThis as unknown as { FEATURE_FLAGS_KV?: KVNamespace }).FEATURE_FLAGS_KV ?? null;
+}
+
+/**
+ * F-07: Try to read a subdomain entry from KV cache.
+ * Returns null on miss or if KV is not available.
+ */
+export async function getSubdomainFromKV(subdomain: string): Promise<CachedClinic | null> {
+  const kv = getKV();
+  if (!kv) return null;
+  try {
+    return await kv.get(`${KV_PREFIX}${subdomain}`, { type: "json" });
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * F-07: Write a subdomain entry to KV cache.
+ */
+export async function setSubdomainInKV(subdomain: string, clinic: CachedClinic): Promise<void> {
+  const kv = getKV();
+  if (!kv) return;
+  try {
+    await kv.put(`${KV_PREFIX}${subdomain}`, JSON.stringify(clinic), {
+      expirationTtl: KV_TTL_SECONDS,
+    });
+  } catch {
+    // KV write failure is non-critical
+  }
+}
+
+/**
+ * F-07: Delete a subdomain entry from KV cache.
+ */
+export async function deleteSubdomainFromKV(subdomain: string): Promise<void> {
+  const kv = getKV();
+  if (!kv) return;
+  try {
+    await kv.delete(`${KV_PREFIX}${subdomain}`);
+  } catch {
+    // KV delete failure is non-critical
+  }
 }

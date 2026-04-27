@@ -10,7 +10,7 @@
 import { cacheLife } from "next/cache";
 import { cacheTag } from "next/cache";
 import { logger } from "@/lib/logger";
-import { createClient, createTenantClient, createAdminClient } from "@/lib/supabase-server";
+import { createClient, createTenantClient, createPublicAnonClient } from "@/lib/supabase-server";
 import { getTenant, getClinicConfig } from "@/lib/tenant";
 import { APPOINTMENT_STATUS } from "@/lib/types/database";
 import { getLocalDateStr } from "@/lib/utils";
@@ -198,16 +198,14 @@ async function fetchBrandingFromDb(clinicId: string, fallbackName: string): Prom
   cacheLife("minutes");
   cacheTag(`clinic-branding-${clinicId}`);
 
-  // Inside `use cache` we cannot read cookies, so createTenantClient is
-  // unsafe here. Fall back to DEFAULT_BRANDING when the service role key
-  // is unavailable (dev/build) instead of crashing — matches the pattern
-  // used by `src/lib/data/directory.ts`. Tenant isolation is preserved
-  // by the explicit `.eq("id", clinicId)` filter below.
-  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+  // F-03: Use anon client with x-clinic-id header instead of admin client.
+  // Inside `use cache` we cannot read cookies, so we use a cookie-free
+  // client that respects RLS via the x-clinic-id header.
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
     return { ...DEFAULT_BRANDING, clinicName: fallbackName };
   }
 
-  const supabase = createAdminClient();
+  const supabase = createPublicAnonClient(clinicId);
 
   const { data, error } = await supabase
     .from("clinics")
@@ -264,11 +262,11 @@ async function fetchReviewsFromDb(clinicId: string): Promise<PublicReview[]> {
   cacheLife("minutes");
   cacheTag(`clinic-reviews-${clinicId}`);
 
-  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
     return [];
   }
 
-  const supabase = createAdminClient();
+  const supabase = createPublicAnonClient(clinicId);
 
   const { data: reviews, error } = await supabase
     .from("reviews")
@@ -303,11 +301,11 @@ async function fetchAverageRatingFromDb(clinicId: string): Promise<number> {
   cacheLife("minutes");
   cacheTag(`clinic-reviews-${clinicId}`);
 
-  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
     return 0;
   }
 
-  const supabase = createAdminClient();
+  const supabase = createPublicAnonClient(clinicId);
 
   // Try DB-level AVG via Supabase RPC first (single row returned,
   // no data transferred).  Falls back to application-level computation

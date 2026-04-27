@@ -97,8 +97,10 @@ export const POST = withAuthValidation(impersonateSchema, async (body, request, 
       maxAge: sessionMaxAge,
     });
 
+    // F-11: Cookie is httpOnly to prevent XSS exfiltration.
+    // The impersonation banner reads the reason via a server action instead.
     response.cookies.set("sa_impersonate_reason", encodeURIComponent(reason), {
-      httpOnly: false, // readable by banner component
+      httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "strict",
       path: "/",
@@ -140,7 +142,7 @@ export const DELETE = withAuth(async (_request, { supabase, user }) => {
     });
 
     response.cookies.set("sa_impersonate_reason", "", {
-      httpOnly: false,
+      httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "strict",
       path: "/",

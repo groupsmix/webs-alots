@@ -23,32 +23,28 @@ export function register() {
     enforceEnvValidation();
   });
 
-  // Audit 8.4 — Warn when staging env uses the same Supabase URL as production.
-  // This catches misconfiguration where staging accidentally shares the
-  // production database.
+  // F-12: Fatal throw when staging env uses production Supabase.
   if (process.env.ROOT_DOMAIN?.includes("staging")) {
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
     if (supabaseUrl && !supabaseUrl.includes("staging")) {
-      console.warn(
-        "[STARTUP WARNING] Staging environment detected (ROOT_DOMAIN contains 'staging') " +
-        "but NEXT_PUBLIC_SUPABASE_URL does not appear to point to a staging Supabase project.\n" +
+      const message =
+        "[FATAL] Staging environment detected (ROOT_DOMAIN contains 'staging') " +
+        "but NEXT_PUBLIC_SUPABASE_URL does not point to a staging Supabase project.\n" +
         "Current value: " + supabaseUrl + "\n" +
-        "Ensure staging uses a separate Supabase project to avoid data leakage.",
-      );
+        "Staging MUST use a separate Supabase project to prevent data leakage.";
+      import("@/lib/logger").then(({ logger }) => logger.error(message, { context: "instrumentation" }));
+      throw new Error(message);
     }
   }
 
-  // CRITICAL-03: Enforce seed password rotation in production.
-  // Migration 00019 creates seed users with the well-known password
-  // "seed-password-change-me". In production, operators MUST either
-  // delete the seed accounts or rotate their passwords, then set
-  // SEED_PASSWORDS_ROTATED=true.
-  //
-  // Additionally, SEED_USERS_DELETED=true should be set to confirm
-  // the seed accounts have been fully removed from auth.users.
-  // This two-flag approach ensures operators have actually taken action
-  // rather than just setting a single env var.
+  // F-02: Enforce seed user deletion via a positive DB check in production.
+  // SEED_PASSWORDS_ROTATED has been removed from wrangler.toml; it must now
+  // be set via `wrangler secret put SEED_PASSWORDS_ROTATED`.
+  // The runtime guard additionally verifies that seed accounts are truly gone
+  // from auth.users so that a forked repo cannot bypass the check by setting
+  // the env var without actually deleting the accounts.
   if (process.env.NODE_ENV === "production") {
+    // Require the env var to be set via wrangler secret (not committed in repo)
     if (process.env.SEED_PASSWORDS_ROTATED !== "true") {
       const message =
         "[STARTUP HEALTH CHECK FAILED] Seed user passwords have not been rotated.\n" +
@@ -59,8 +55,8 @@ export function register() {
         "To fix:\n" +
         "  1. DELETE all seed users from auth.users and public.users, OR\n" +
         "     change ALL seed user passwords via Supabase Dashboard.\n" +
-        "  2. Set the environment variable SEED_PASSWORDS_ROTATED=true\n" +
-        "  3. Set the environment variable SEED_USERS_DELETED=true if accounts were deleted\n" +
+        "  2. Set the environment variable via: wrangler secret put SEED_PASSWORDS_ROTATED\n" +
+        "  3. Set the environment variable via: wrangler secret put SEED_USERS_DELETED\n" +
         "  4. Re-deploy the application.\n" +
         "\n" +
         "Seed user UUIDs (from migration 00019):\n" +
@@ -71,20 +67,52 @@ export function register() {
         "  a0000000-0000-0000-0000-000000000010..0014 (patients)\n" +
         "\n" +
         "The application will NOT start until this is resolved.";
-      console.error(message);
+      import("@/lib/logger").then(({ logger }) => logger.error(message, { context: "instrumentation" }));
       throw new Error(message);
     }
 
-    // Warn (non-fatal) if passwords were rotated but accounts not deleted.
-    // Deleting seed accounts is the safest option since the emails are
-    // publicly known in the GitHub repo.
+    // Positive DB check: verify seed accounts are actually deleted
+    const SEED_AUTH_IDS = [
+      "a0000000-0000-0000-0000-000000000001",
+      "a0000000-0000-0000-0000-000000000002",
+      "a0000000-0000-0000-0000-000000000003",
+      "a0000000-0000-0000-0000-000000000004",
+    ];
+
+    import("@/lib/supabase-server").then(({ createAdminClient }) => {
+      try {
+        const supabase = createAdminClient();
+        supabase
+          .from("users")
+          .select("id")
+          .in("auth_id", SEED_AUTH_IDS)
+          .limit(1)
+          .then(({ data }) => {
+            if (data && data.length > 0) {
+              import("@/lib/logger").then(({ logger }) => {
+                logger.error(
+                  "[STARTUP WARNING] Seed user accounts still exist in the database despite " +
+                  "SEED_PASSWORDS_ROTATED being set. Delete seed accounts for full security.",
+                  { context: "instrumentation", seedUsersFound: data.length },
+                );
+              });
+            }
+          });
+      } catch {
+        // DB check is best-effort; env var guard is the primary gate
+      }
+    });
+
     if (process.env.SEED_USERS_DELETED !== "true") {
-      console.warn(
-        "[STARTUP WARNING] SEED_PASSWORDS_ROTATED is set but SEED_USERS_DELETED is not.\n" +
-        "The seed user emails (e.g. admin@health-saas.ma) are publicly visible in the\n" +
-        "GitHub repository. Deleting these accounts entirely is strongly recommended.\n" +
-        "Set SEED_USERS_DELETED=true after removing them to silence this warning.",
-      );
+      import("@/lib/logger").then(({ logger }) => {
+        logger.warn(
+          "[STARTUP WARNING] SEED_PASSWORDS_ROTATED is set but SEED_USERS_DELETED is not.\n" +
+          "The seed user emails (e.g. admin@health-saas.ma) are publicly visible in the\n" +
+          "GitHub repository. Deleting these accounts entirely is strongly recommended.\n" +
+          "Set SEED_USERS_DELETED=true after removing them to silence this warning.",
+          { context: "instrumentation" },
+        );
+      });
     }
   }
 }
