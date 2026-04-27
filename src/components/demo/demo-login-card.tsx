@@ -1,70 +1,94 @@
+/* eslint-disable i18next/no-literal-string -- Demo UI with intentional French strings */
 "use client";
 
-import { Stethoscope, ClipboardList, User, Loader2, Play } from "lucide-react";
+import { User, Loader2, Play } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { DEMO_USERS } from "@/lib/demo";
 
-const ROLE_CONFIG = [
-  {
-    key: "doctor" as const,
-    label: "Docteur",
-    description: "Gérez les rendez-vous, ordonnances et dossiers patients",
-    icon: Stethoscope,
-    color: "bg-blue-50 text-blue-600 border-blue-200 hover:bg-blue-100",
-    dashboard: "/admin/dashboard",
-  },
-  {
-    key: "receptionist" as const,
-    label: "Réceptionniste",
-    description: "Accueillez les patients, gérez l'agenda et les paiements",
-    icon: ClipboardList,
-    color: "bg-green-50 text-green-600 border-green-200 hover:bg-green-100",
-    dashboard: "/admin/dashboard",
-  },
-  {
-    key: "patient" as const,
-    label: "Patient",
-    description: "Prenez rendez-vous, consultez vos ordonnances et résultats",
-    icon: User,
-    color: "bg-purple-50 text-purple-600 border-purple-200 hover:bg-purple-100",
-    dashboard: "/patient/dashboard",
-  },
-] as const;
+/**
+ * R-10: Only the patient role is exposed for demo login.
+ * Elevated roles (doctor, receptionist, clinic_admin, super_admin) are refused
+ * server-side and no longer presented in the UI.
+ */
+const PATIENT_DEMO = {
+  key: "patient" as const,
+  label: "Patient",
+  description: "Prenez rendez-vous, consultez vos ordonnances et résultats",
+  icon: User,
+  color: "bg-purple-50 text-purple-600 border-purple-200 hover:bg-purple-100",
+  dashboard: "/patient/dashboard",
+} as const;
+
+declare global {
+  interface Window {
+    turnstile?: {
+      render: (container: string | HTMLElement, options: {
+        sitekey: string;
+        callback: (token: string) => void;
+        "error-callback"?: () => void;
+        "expired-callback"?: () => void;
+      }) => string;
+      reset: (widgetId: string) => void;
+    };
+  }
+}
 
 export function DemoLoginCard() {
-  const [loading, setLoading] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const turnstileToken = useRef<string | null>(null);
+  const turnstileContainer = useRef<HTMLDivElement>(null);
+  const widgetId = useRef<string | null>(null);
 
-  async function handleDemoLogin(roleKey: "doctor" | "receptionist" | "patient") {
-    setLoading(roleKey);
+  const siteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
+
+  useEffect(() => {
+    if (!siteKey || !turnstileContainer.current || !window.turnstile) return;
+    widgetId.current = window.turnstile.render(turnstileContainer.current, {
+      sitekey: siteKey,
+      callback: (token: string) => { turnstileToken.current = token; },
+      "error-callback": () => { turnstileToken.current = null; },
+      "expired-callback": () => { turnstileToken.current = null; },
+    });
+  }, [siteKey]);
+
+  async function handleDemoLogin() {
+    setLoading(true);
     setError(null);
 
-    const user = DEMO_USERS[roleKey];
-    const config = ROLE_CONFIG.find((r) => r.key === roleKey);
+    const user = DEMO_USERS.patient;
 
     try {
       const res = await fetch("/api/auth/demo-login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: user.email }),
+        body: JSON.stringify({
+          email: user.email,
+          ...(turnstileToken.current ? { turnstile_token: turnstileToken.current } : {}),
+        }),
       });
 
       if (!res.ok) {
         const data = await res.json();
         setError(data.error || "Erreur de connexion démo");
+        if (widgetId.current && window.turnstile) {
+          window.turnstile.reset(widgetId.current);
+          turnstileToken.current = null;
+        }
         return;
       }
 
-      // Redirect to the appropriate dashboard
-      window.location.href = config?.dashboard ?? "/admin/dashboard";
+      window.location.href = PATIENT_DEMO.dashboard;
     } catch {
       setError("Erreur de connexion. Veuillez réessayer.");
     } finally {
-      setLoading(null);
+      setLoading(false);
     }
   }
+
+  const Icon = PATIENT_DEMO.icon;
 
   return (
     <Card className="w-full max-w-md mx-auto">
@@ -76,41 +100,34 @@ export function DemoLoginCard() {
         <CardDescription className="text-balance">
           Explorez Oltigo avec des données fictives.
           <br />
-          Choisissez un rôle pour commencer.
+          Connectez-vous en tant que patient pour commencer.
         </CardDescription>
       </CardHeader>
 
       <CardContent className="space-y-3">
-        {ROLE_CONFIG.map((role) => {
-          const Icon = role.icon;
-          const isLoading = loading === role.key;
-          const demoUser = DEMO_USERS[role.key];
+        <button
+          type="button"
+          onClick={() => handleDemoLogin()}
+          disabled={loading}
+          className={`flex w-full items-center gap-4 rounded-xl border p-4 text-left transition-colors ${PATIENT_DEMO.color} disabled:opacity-50`}
+        >
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white/80">
+            {loading ? (
+              <Loader2 className="h-5 w-5 animate-spin" />
+            ) : (
+              <Icon className="h-5 w-5" />
+            )}
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2">
+              <span className="font-semibold">{PATIENT_DEMO.label}</span>
+              <span className="text-xs opacity-60">{DEMO_USERS.patient.name}</span>
+            </div>
+            <p className="text-xs opacity-80 mt-0.5">{PATIENT_DEMO.description}</p>
+          </div>
+        </button>
 
-          return (
-            <button
-              key={role.key}
-              type="button"
-              onClick={() => handleDemoLogin(role.key)}
-              disabled={loading !== null}
-              className={`flex w-full items-center gap-4 rounded-xl border p-4 text-left transition-colors ${role.color} disabled:opacity-50`}
-            >
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white/80">
-                {isLoading ? (
-                  <Loader2 className="h-5 w-5 animate-spin" />
-                ) : (
-                  <Icon className="h-5 w-5" />
-                )}
-              </div>
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2">
-                  <span className="font-semibold">{role.label}</span>
-                  <span className="text-xs opacity-60">{demoUser.name}</span>
-                </div>
-                <p className="text-xs opacity-80 mt-0.5">{role.description}</p>
-              </div>
-            </button>
-          );
-        })}
+        {siteKey && <div ref={turnstileContainer} />}
 
         {error && (
           <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">

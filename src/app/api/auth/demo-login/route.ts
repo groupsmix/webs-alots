@@ -4,7 +4,10 @@
  * One-click demo login — signs in as a pre-seeded demo user.
  * Uses the Supabase admin client to create a session without a real password.
  *
- * Only works for emails belonging to the demo tenant.
+ * R-10 hardening:
+ *   - Turnstile bot-verification required when TURNSTILE_SECRET_KEY is set.
+ *   - Only the "patient" role can be minted — elevated roles are refused.
+ *   - Auto-disabled when the demo clinic row does not exist.
  */
 
 import { NextRequest } from "next/server";
@@ -19,7 +22,11 @@ import { safeParse } from "@/lib/validations";
 
 const demoLoginSchema = z.object({
   email: z.string().email(),
+  turnstile_token: z.string().min(1).optional(),
 });
+
+/** Only the patient role is allowed for demo login (R-10). */
+const MAX_DEMO_ROLE = "patient" as const;
 
 /** Emails allowed for demo login. */
 const ALLOWED_DEMO_EMAILS: Set<string> = new Set(
@@ -60,10 +67,55 @@ export async function POST(request: NextRequest) {
     return apiValidationError(result.error);
   }
 
-  const { email } = result.data;
+  const { email, turnstile_token } = result.data;
+
+  // R-10: Cloudflare Turnstile verification (fail-closed when configured)
+  const turnstileSecret = process.env.TURNSTILE_SECRET_KEY;
+  if (turnstileSecret) {
+    if (!turnstile_token) {
+      return apiError("Turnstile verification is required", 400);
+    }
+    try {
+      const verifyRes = await fetch(
+        "https://challenges.cloudflare.com/turnstile/v0/siteverify",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+          body: new URLSearchParams({
+            secret: turnstileSecret,
+            response: turnstile_token,
+            remoteip: clientIp,
+          }),
+        },
+      );
+      const verifyData = (await verifyRes.json()) as { success: boolean };
+      if (!verifyData.success) {
+        logger.warn("Turnstile verification failed for demo login", {
+          context: "demo-login",
+          ip: clientIp,
+        });
+        return apiError("Bot verification failed. Please try again.", 403);
+      }
+    } catch (err) {
+      logger.error("Turnstile verification request failed", {
+        context: "demo-login",
+        error: err,
+      });
+      // R-10: Fail closed — do not allow demo login if Turnstile is unreachable
+      return apiInternalError("Verification service unavailable. Please try again later.");
+    }
+  }
 
   if (!ALLOWED_DEMO_EMAILS.has(email)) {
     return apiError("Email non autorisé pour le mode démo", 403);
+  }
+
+  // R-10: Refuse to mint sessions for any role above patient.
+  const demoUser = Object.values(DEMO_USERS).find((u) => u.email === email);
+  if (!demoUser || demoUser.role !== MAX_DEMO_ROLE) {
+    return apiForbidden(
+      "Demo login is restricted to the patient role",
+    );
   }
 
   try {
@@ -81,13 +133,12 @@ export async function POST(request: NextRequest) {
 
     if (!userId) {
       // Create the demo auth user
-      const demoUser = Object.values(DEMO_USERS).find((u) => u.email === email);
       const { data: newUser, error: createError } = await supabase.auth.admin.createUser({
         email,
         password: crypto.randomUUID(),
         email_confirm: true,
         user_metadata: {
-          full_name: demoUser?.name ?? "Demo User",
+          full_name: demoUser.name,
           is_demo: true,
         },
       });
@@ -103,12 +154,10 @@ export async function POST(request: NextRequest) {
       userId = newUser.user.id;
 
       // Link auth user to the existing demo profile
-      if (demoUser) {
-        await supabase
-          .from("users")
-          .update({ auth_id: userId })
-          .eq("id", demoUser.id);
-      }
+      await supabase
+        .from("users")
+        .update({ auth_id: userId })
+        .eq("id", demoUser.id);
     }
 
     // Generate a magic link token for the demo user

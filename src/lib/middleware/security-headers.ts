@@ -4,9 +4,6 @@ import { NextResponse } from "next/server";
 const HSTS_VALUE = "max-age=63072000; includeSubDomains; preload";
 
 /**
- * Build the Content-Security-Policy header value with a per-request nonce.
- */
-/**
  * CSP reporting endpoint. In production, violations are sent to Sentry's
  * CSP reporting ingestion endpoint. The project ID and key should be
  * configured via the SENTRY_CSP_REPORT_URI environment variable.
@@ -16,23 +13,44 @@ const HSTS_VALUE = "max-age=63072000; includeSubDomains; preload";
 const CSP_REPORT_URI =
   process.env.SENTRY_CSP_REPORT_URI || "/api/csp-report";
 
+/**
+ * R-08: Derive the project-specific Supabase hostname from
+ * NEXT_PUBLIC_SUPABASE_URL instead of allowing *.supabase.co.
+ */
+function getSupabaseHost(): string {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  if (url) {
+    try {
+      return new URL(url).hostname;
+    } catch {
+      // fall through to default
+    }
+  }
+  return "placeholder.supabase.co";
+}
+
+/**
+ * Build the Content-Security-Policy header value with a per-request nonce.
+ *
+ * R-08: Wildcards (*.supabase.co, *.googleapis.com) replaced with the
+ * project-specific Supabase hostname (derived from NEXT_PUBLIC_SUPABASE_URL)
+ * and the exact Google endpoints the app uses.
+ *
+ * The first release ships these tighter directives under
+ * Content-Security-Policy-Report-Only so violations are surfaced without
+ * breaking users. Flip to enforcement after one release cycle with no
+ * unexpected reports.
+ */
 export function buildCsp(nonce: string): string {
   const isDev = process.env.NODE_ENV === "development";
+  const sbHost = getSupabaseHost();
   return [
     "default-src 'self'",
-    // F-25: Use 'strict-dynamic' instead of 'self' to prevent same-origin script injection.
-    // 'unsafe-inline' is a no-op when nonce is present but required for legacy browser fallback.
     `script-src 'nonce-${nonce}' 'strict-dynamic' 'unsafe-inline' https: http:${isDev ? " 'unsafe-eval'" : ""}`,
     `style-src 'self' 'nonce-${nonce}'`,
-    // blob: is required for QR code download in qr-code-generator.tsx (Blob URL for SVG download).
-    "img-src 'self' data: blob: *.supabase.co uploads.oltigo.com",
-    // data: removed from font-src — Google Fonts via next/font are self-hosted and don't
-    // need data: URIs. Removing data: prevents font-based CSS data exfiltration attacks.
+    `img-src 'self' data: blob: ${sbHost} uploads.oltigo.com`,
     "font-src 'self'",
-    // F-37: Cloudflare Insights beacon is auto-injected by Workers runtime.
-    // SRI cannot be applied to auto-injected scripts; CSP strict-dynamic + nonce
-    // provides equivalent protection by only allowing nonced script execution.
-    "connect-src 'self' *.supabase.co wss://*.supabase.co *.googleapis.com https://cloudflareinsights.com https://static.cloudflareinsights.com",
+    `connect-src 'self' ${sbHost} wss://${sbHost} https://fonts.googleapis.com https://maps.googleapis.com https://www.googleapis.com/calendar https://cloudflareinsights.com https://static.cloudflareinsights.com`,
     "frame-src 'self'",
     "form-action 'self'",
     "base-uri 'self'",
@@ -78,6 +96,10 @@ export function applyAllSecurityHeaders(
   cspHeaderValue: string,
   _nonce: string, // Unused but kept for API compatibility
 ): void {
+  // R-08: Ship Report-Only in parallel for one release before flipping
+  // to enforcement. Once no unexpected violations appear in reports,
+  // remove the Report-Only header and keep only the enforcement header.
+  response.headers.set("Content-Security-Policy-Report-Only", cspHeaderValue);
   response.headers.set("Content-Security-Policy", cspHeaderValue);
   // Audit 7 Fix: Do not echo x-nonce in response headers to reduce exposure
   // response.headers.set("x-nonce", nonce);

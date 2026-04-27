@@ -156,29 +156,34 @@ jobs:
           NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
           NEXT_PUBLIC_SUPABASE_ANON_KEY: placeholder
 
-      - name: Run E2E tests
-        id: e2e
-        # E2E tests run against a placeholder Supabase backend and exercise
-        # routes that require live data, so failures are advisory until a
-        # CI-provisioned Supabase project is wired up. The Playwright report
-        # is uploaded as an artifact for inspection.
+      - name: Start Supabase (ephemeral CI project)
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Boot local Supabase
         run: |
-          set +e
-          npx playwright test --project=chromium
-          EXIT_CODE=$?
-          set -e
-          echo "exit_code=$EXIT_CODE" >> "$GITHUB_OUTPUT"
-          if [ "$EXIT_CODE" != "0" ]; then
-            echo "::warning::Some E2E tests failed (exit $EXIT_CODE). See playwright-report artifact."
-          fi
+          supabase init --force
+          supabase start
+          echo "SUPABASE_LOCAL_URL=$(supabase status --output json | jq -r '.API_URL')" >> "$GITHUB_ENV"
+          echo "SUPABASE_LOCAL_ANON_KEY=$(supabase status --output json | jq -r '.ANON_KEY')" >> "$GITHUB_ENV"
+          echo "SUPABASE_LOCAL_SERVICE_ROLE_KEY=$(supabase status --output json | jq -r '.SERVICE_ROLE_KEY')" >> "$GITHUB_ENV"
+
+      - name: Apply migrations
+        run: supabase db push
+
+      - name: Run E2E tests (blocking)
+        # R-11: E2E suite is now blocking. Genuinely flaky specs should be
+        # tagged @flaky and handled via Playwright retries (configured in
+        # playwright.config.ts with retries: 2 in CI). The set +e pattern
+        # has been removed — failures fail the pipeline.
+        run: npx playwright test --project=chromium
         env:
           CI: true
           E2E_BASE_URL: http://localhost:3000
-          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co' }}
-          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder' }}
-          # Stubs satisfying the production startup health check
-          # (src/lib/env.ts). E2E runs `next start` in NODE_ENV=production,
-          # which requires these variables to be present.
+          NEXT_PUBLIC_SUPABASE_URL: ${{ env.SUPABASE_LOCAL_URL || secrets.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co' }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ env.SUPABASE_LOCAL_ANON_KEY || secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder' }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ env.SUPABASE_LOCAL_SERVICE_ROLE_KEY || '' }}
           BOOKING_TOKEN_SECRET: ci-e2e-booking-token-secret-placeholder
           ROOT_DOMAIN: localhost
           NEXT_PUBLIC_SITE_URL: http://localhost:3000
