@@ -27,9 +27,18 @@ const MAX_MESSAGE_LENGTH = 2000;
 /**
  * Sanitize user-supplied text before it reaches the LLM.
  *
- * Defence-in-depth: this is NOT a substitute for proper output
- * filtering / guardrails on the LLM response, but it raises the
- * bar against common injection patterns.
+ * F-36: DEFENCE-IN-DEPTH ONLY — this regex-based filter is NOT a
+ * security boundary. It can be bypassed by Unicode confusables,
+ * homoglyphs, right-to-left overrides, and novel prompt structures.
+ *
+ * Primary protection comes from:
+ *   1. Labelling user content as a "user" turn at the model-call boundary
+ *   2. The system prompt's instruction-following directives
+ *   3. Output guardrails / content filtering on the response
+ *
+ * This sanitiser provides a lightweight first pass that catches the
+ * most common copy-paste injection attempts. Keep it, but do not
+ * rely on it as the sole defense.
  */
 function sanitizeUserInput(text: string): string {
   return (

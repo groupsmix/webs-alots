@@ -3,15 +3,66 @@
  *
  * Strategies:
  * - Static assets (JS, CSS, images, fonts): cache-first, update in background
- * - API calls (/api/*): network-first with cached fallback (offline viewing)
- * - HTML pages: network-first with offline fallback page
+ * - API calls (/api/*): never cached (PHI safety)
+ * - HTML pages: network-first with offline fallback — only PUBLIC routes cached
  * - Push notifications for appointment reminders
+ *
+ * F-04: Only cache public marketing/booking HTML routes. Authenticated
+ * routes (/admin/*, /doctor/*, /receptionist/*, /patient/*, /super-admin/*)
+ * are never cached. On logout, clients post PURGE_AUTHED to clear any
+ * stale authenticated content.
  */
 
-const CACHE_NAME = "oltigo-v2";
+const CACHE_NAME = "oltigo-v3";
 const OFFLINE_URL = "/offline.html";
 
 const PRECACHE_URLS = ["/", "/offline.html"];
+
+/** Routes that are safe to cache (public, no auth required). */
+const PUBLIC_CACHE_ALLOWLIST = [
+  "/",
+  "/blog",
+  "/book",
+  "/about",
+  "/services",
+  "/contact",
+  "/reviews",
+  "/how-to-book",
+  "/location",
+  "/testimonials",
+  "/privacy",
+  "/annuaire",
+  "/doctor-profile",
+  "/offline.html",
+];
+
+/** Authenticated route prefixes — never cache these. */
+const AUTHED_PREFIXES = [
+  "/admin/",
+  "/doctor/",
+  "/receptionist/",
+  "/patient/",
+  "/super-admin/",
+];
+
+function isPublicRoute(pathname) {
+  // Exact match or starts with a public prefix
+  for (const route of PUBLIC_CACHE_ALLOWLIST) {
+    if (pathname === route || pathname === route + "/" || pathname.startsWith(route + "/")) {
+      return true;
+    }
+  }
+  return false;
+}
+
+function isAuthedRoute(pathname) {
+  for (const prefix of AUTHED_PREFIXES) {
+    if (pathname.startsWith(prefix)) {
+      return true;
+    }
+  }
+  return false;
+}
 
 // ---- Install ----
 
@@ -38,6 +89,28 @@ self.addEventListener("activate", (event) => {
   self.clients.claim();
 });
 
+// ---- Message handler ----
+
+self.addEventListener("message", (event) => {
+  if (event.data?.type === "SKIP_WAITING") {
+    self.skipWaiting();
+  }
+
+  // F-04: Purge authenticated content from cache on logout
+  if (event.data?.type === "PURGE_AUTHED") {
+    caches.open(CACHE_NAME).then((cache) => {
+      cache.keys().then((keys) => {
+        for (const request of keys) {
+          const url = new URL(request.url);
+          if (isAuthedRoute(url.pathname)) {
+            cache.delete(request);
+          }
+        }
+      });
+    });
+  }
+});
+
 // ---- Fetch ----
 
 self.addEventListener("fetch", (event) => {
@@ -50,6 +123,12 @@ self.addEventListener("fetch", (event) => {
   // Never cache API responses — they may contain PHI that must not persist
   // in browser storage after logout or role switch.
   if (url.pathname.startsWith("/api/")) return;
+
+  // Never cache authenticated routes
+  if (isAuthedRoute(url.pathname)) return;
+
+  // Respect Cache-Control: no-store from authenticated layouts
+  if (request.headers.get("cache-control")?.includes("no-store")) return;
 
   // --- Static assets: cache-first, update in background ---
   if (
@@ -77,7 +156,10 @@ self.addEventListener("fetch", (event) => {
   }
 
   // --- HTML pages: network-first with offline fallback ---
+  // F-04: Only cache HTML for public routes
   if (request.headers.get("accept")?.includes("text/html")) {
+    if (!isPublicRoute(url.pathname)) return; // don't cache non-public HTML
+
     event.respondWith(
       fetch(request)
         .then((response) => {

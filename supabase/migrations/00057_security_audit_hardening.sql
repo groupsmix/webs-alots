@@ -138,7 +138,7 @@ WHERE user_id IS NOT NULL AND anonymized_user_id IS NULL;
 CREATE EXTENSION IF NOT EXISTS btree_gist;
 
 -- Only apply to active appointments (not cancelled/completed)
--- Uses tsrange(slot_start, slot_end) for range overlap detection
+-- slot_start/slot_end are TIMESTAMPTZ (see migration 00001), so use tstzrange
 DO $$
 BEGIN
   IF NOT EXISTS (
@@ -149,7 +149,7 @@ BEGIN
       EXCLUDE USING gist (
         doctor_id WITH =,
         clinic_id WITH =,
-        tsrange(slot_start, slot_end, '[)') WITH &&
+        tstzrange(slot_start, slot_end, '[)') WITH &&
       )
       WHERE (status NOT IN ('cancelled', 'completed', 'no_show'));
   END IF;
@@ -157,6 +157,8 @@ EXCEPTION
   WHEN undefined_column THEN
     -- slot_start/slot_end columns may not exist in all environments
     RAISE NOTICE 'Skipping overlap constraint: slot_start/slot_end columns not found';
+  WHEN undefined_function THEN
+    RAISE NOTICE 'Skipping overlap constraint: tstzrange not available';
 END $$;
 
 -- ============================================================

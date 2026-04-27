@@ -175,8 +175,8 @@ INSERT INTO custom_field_definitions (clinic_type_key, entity_type, field_key, f
 ('ophthalmology', 'consultation', 'os_sphere', 'number', 'OS Sphère (dioptries)', 'كرة العين اليسرى', 'Left eye sphere value', FALSE, 4, TRUE, '{"min": -30, "max": 30, "step": 0.25}'),
 ('ophthalmology', 'consultation', 'os_cylinder', 'number', 'OS Cylindre', 'أسطوانة العين اليسرى', 'Left eye cylinder value', FALSE, 5, TRUE, '{"min": -10, "max": 10, "step": 0.25}'),
 ('ophthalmology', 'consultation', 'os_axis', 'number', 'OS Axe (°)', 'محور العين اليسرى', 'Left eye axis in degrees', FALSE, 6, TRUE, '{"min": 0, "max": 180, "step": 1}'),
-('ophthalmology', 'consultation', 'od_visual_acuity', 'text', 'AV OD (acuité visuelle)', 'حدة البصر للعين اليمنى', 'Right eye visual acuity (e.g., 10/10)', FALSE, 7, TRUE),
-('ophthalmology', 'consultation', 'os_visual_acuity', 'text', 'AV OS (acuité visuelle)', 'حدة البصر للعين اليسرى', 'Left eye visual acuity (e.g., 10/10)', FALSE, 8, TRUE),
+('ophthalmology', 'consultation', 'od_visual_acuity', 'text', 'AV OD (acuité visuelle)', 'حدة البصر للعين اليمنى', 'Right eye visual acuity (e.g., 10/10)', FALSE, 7, TRUE, NULL),
+('ophthalmology', 'consultation', 'os_visual_acuity', 'text', 'AV OS (acuité visuelle)', 'حدة البصر للعين اليسرى', 'Left eye visual acuity (e.g., 10/10)', FALSE, 8, TRUE, NULL),
 ('ophthalmology', 'consultation', 'intraocular_pressure_od', 'number', 'PIO OD (mmHg)', 'ضغط العين اليمنى', 'Right eye intraocular pressure', FALSE, 9, TRUE, '{"min": 0, "max": 80, "step": 1}'),
 ('ophthalmology', 'consultation', 'intraocular_pressure_os', 'number', 'PIO OS (mmHg)', 'ضغط العين اليسرى', 'Left eye intraocular pressure', FALSE, 10, TRUE, '{"min": 0, "max": 80, "step": 1}');
 

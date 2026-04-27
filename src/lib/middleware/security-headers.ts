@@ -20,13 +20,18 @@ export function buildCsp(nonce: string): string {
   const isDev = process.env.NODE_ENV === "development";
   return [
     "default-src 'self'",
-    `script-src 'self' 'nonce-${nonce}' https://static.cloudflareinsights.com${isDev ? " 'unsafe-eval'" : ""}`,
+    // F-25: Use 'strict-dynamic' instead of 'self' to prevent same-origin script injection.
+    // 'unsafe-inline' is a no-op when nonce is present but required for legacy browser fallback.
+    `script-src 'nonce-${nonce}' 'strict-dynamic' 'unsafe-inline' https: http:${isDev ? " 'unsafe-eval'" : ""}`,
     `style-src 'self' 'nonce-${nonce}'`,
     // blob: is required for QR code download in qr-code-generator.tsx (Blob URL for SVG download).
-    "img-src 'self' data: blob: *.supabase.co *.r2.cloudflarestorage.com *.r2.dev",
+    "img-src 'self' data: blob: *.supabase.co uploads.oltigo.com",
     // data: removed from font-src — Google Fonts via next/font are self-hosted and don't
     // need data: URIs. Removing data: prevents font-based CSS data exfiltration attacks.
     "font-src 'self'",
+    // F-37: Cloudflare Insights beacon is auto-injected by Workers runtime.
+    // SRI cannot be applied to auto-injected scripts; CSP strict-dynamic + nonce
+    // provides equivalent protection by only allowing nonced script execution.
     "connect-src 'self' *.supabase.co wss://*.supabase.co *.googleapis.com https://cloudflareinsights.com https://static.cloudflareinsights.com",
     "frame-src 'self'",
     "form-action 'self'",

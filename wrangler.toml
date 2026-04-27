@@ -27,7 +27,7 @@ binding = "RATE_LIMIT_KV"
 id = "7ac37dff0a794542b0c766f38e73f105"
 # IMPORTANT: preview_id MUST differ from id to avoid preview deploys writing to production KV.
 # Generate with: wrangler kv namespace create RATE_LIMIT_KV --preview
-preview_id = "8bd48e001b8a5653c1d877049f84g216"
+preview_id = "8bd48e001b8a5653c1d877049f840216"
 
 # ---- Feature Flags KV Namespace ----
 # Runtime feature flags using Cloudflare KV
@@ -38,7 +38,7 @@ binding = "FEATURE_FLAGS_KV"
 id = "610b3748bba545e2b083473b9023d66f"
 # IMPORTANT: preview_id MUST differ from id to avoid preview deploys writing to production KV.
 # Generate with: wrangler kv namespace create FEATURE_FLAGS_KV --preview
-preview_id = "721c4859ccb656f3c194584c0134e77g"
+preview_id = "721c4859ccb656f3c194584c0134e770"
 
 # ---- Non-Sensitive Environment Variables ----
 [vars]
@@ -48,9 +48,6 @@ R2_BUCKET_NAME = "webs-alots-uploads"
 # Use Cloudflare KV for distributed rate limiting in production
 # Falls back to Supabase → in-memory if KV is unavailable
 RATE_LIMIT_BACKEND = "kv"
-# Seed users from migration 00019 have been deleted in production.
-# This flag tells instrumentation.ts not to block startup.
-SEED_PASSWORDS_ROTATED = "true"
 # Data masking for patient PHI in the UI
 NEXT_PUBLIC_DATA_MASKING = "partial"
 # Phone/OTP auth disabled until Twilio SMS is configured
@@ -99,20 +96,37 @@ bucket_name = "webs-alots-uploads-staging"
 # Note: These IDs are public infrastructure identifiers, not secrets.
 [[env.staging.kv_namespaces]]
 binding = "RATE_LIMIT_KV"
-id = "9ce59f112c9b6764d2e98815a095h327"
-preview_id = "0df6a0223dac7875e3fa9926b106i438"
+id = "9ce59f112c9b6764d2e98815a0950327"
+preview_id = "0df6a0223dac7875e3fa9926b1060438"
 
 [[env.staging.kv_namespaces]]
 binding = "FEATURE_FLAGS_KV"
-id = "1ea7b1334ebd8986f40baa37c217j549"
-preview_id = "2fb8c2445fce9a97g51cbb48d328k650"
+id = "1ea7b1334ebd8986f40baa37c2170549"
+preview_id = "2fb8c2445fce9a97051cbb48d3280650"
+
+# F-20: Cloudflare Queues for reliable webhook/cron retry + DLQ.
+# Create these queues via: wrangler queues create <name>
+# Uncomment once queues are provisioned in the Cloudflare dashboard.
+# [[queues.producers]]
+# queue = "reminders-queue"
+# binding = "REMINDERS_QUEUE"
+# [[queues.producers]]
+# queue = "notifications-queue"
+# binding = "NOTIFICATIONS_QUEUE"
+# [[queues.consumers]]
+# queue = "reminders-queue"
+# max_retries = 5
+# dead_letter_queue = "reminders-dlq"
+# [[queues.consumers]]
+# queue = "notifications-queue"
+# max_retries = 5
+# dead_letter_queue = "notifications-dlq"
 
 [env.staging.vars]
 ROOT_DOMAIN = "staging.oltigo.com"
 NEXT_PUBLIC_SITE_URL = "https://staging.oltigo.com"
 R2_BUCKET_NAME = "webs-alots-uploads-staging"
 RATE_LIMIT_BACKEND = "kv"
-SEED_PASSWORDS_ROTATED = "true"
 NEXT_PUBLIC_DATA_MASKING = "partial"
 NEXT_PUBLIC_PHONE_AUTH_ENABLED = "false"
 WHATSAPP_PROVIDER = "meta"

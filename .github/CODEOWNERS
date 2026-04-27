@@ -1,0 +1,28 @@
+# F-26: CODEOWNERS — require senior reviewer approval for security-critical files.
+#
+# Lines starting with '#' are comments.
+# Each line is a file pattern followed by one or more owners (GitHub usernames or teams).
+
+# Security-critical: encryption, audit logging, authentication
+src/lib/encryption.ts           @groupsmix
+src/lib/audit-log.ts            @groupsmix
+src/lib/with-auth.ts            @groupsmix
+src/lib/auth.ts                 @groupsmix
+src/lib/tenant.ts               @groupsmix
+src/lib/tenant-context.ts       @groupsmix
+src/lib/rate-limit.ts           @groupsmix
+
+# Database migrations — must be reviewed for RLS, data safety
+supabase/migrations/*           @groupsmix
+
+# Infrastructure config — deployment, secrets, KV namespaces
+wrangler.toml                   @groupsmix
+.github/workflows/*             @groupsmix
+
+# Sentry config — PII scrubbing
+sentry.server.config.ts         @groupsmix
+sentry.client.config.ts         @groupsmix
+
+# Middleware — CSRF, tenant resolution, security headers
+src/middleware.ts                @groupsmix
+src/lib/middleware/*             @groupsmix

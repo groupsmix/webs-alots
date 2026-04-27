@@ -8,6 +8,15 @@ import { cmiPaymentSchema } from "@/lib/validations";
  * Validate that a redirect URL is same-origin to prevent open redirects.
  * Falls back to a safe default if the URL is invalid or cross-origin.
  */
+// F-24: Path allowlist to prevent open redirect via payment return URLs.
+const REDIRECT_PATH_ALLOWLIST = [
+  /^\/patient\/dashboard/,
+  /^\/booking\/confirm/,
+  /^\/admin\//,
+  /^\/doctor\//,
+  /^\/$/,
+];
+
 function validateRedirectUrl(
   url: string | undefined,
   origin: string,
@@ -18,6 +27,9 @@ function validateRedirectUrl(
   try {
     const parsed = new URL(url);
     if (parsed.origin !== origin) return fallback;
+    // F-24: Check that the pathname is on the allowlist
+    const allowed = REDIRECT_PATH_ALLOWLIST.some((re) => re.test(parsed.pathname));
+    if (!allowed) return fallback;
     return url;
   } catch {
     return fallback;

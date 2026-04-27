@@ -6,7 +6,7 @@
  */
 
 /** The well-known UUID for the demo clinic (seeded in migration 00046). */
-export const DEMO_CLINIC_ID = "c0000000-demo-0000-0000-000000000001";
+export const DEMO_CLINIC_ID = "c0000000-de00-0000-0000-000000000001";
 
 /** The subdomain used for the demo tenant. */
 export const DEMO_SUBDOMAIN = "demo";
@@ -14,19 +14,19 @@ export const DEMO_SUBDOMAIN = "demo";
 /** Demo user IDs for one-click login. */
 export const DEMO_USERS = {
   doctor: {
-    id: "u0000000-demo-0000-0000-000000000002",
+    id: "b0000000-de00-0000-0000-000000000002",
     email: "karim@demo.oltigo.com",
     name: "Dr. Karim Idrissi",
     role: "doctor" as const,
   },
   receptionist: {
-    id: "u0000000-demo-0000-0000-000000000004",
+    id: "b0000000-de00-0000-0000-000000000004",
     email: "imane@demo.oltigo.com",
     name: "Imane Fassi",
     role: "receptionist" as const,
   },
   patient: {
-    id: "u0000000-demo-0000-0000-000000000010",
+    id: "b0000000-de00-0000-0000-000000000010",
     email: "rachid@example.com",
     name: "Rachid Bennani",
     role: "patient" as const,
@@ -84,4 +84,34 @@ export function shouldBlockDemoRequest(
   }
 
   return true;
+}
+
+/**
+ * F-39: Decorator-style wrapper that marks a route handler as safe for
+ * demo mode. Handlers NOT wrapped with demoSafe will be blocked by
+ * default when the request targets the demo tenant with a destructive
+ * HTTP method.
+ *
+ * Usage:
+ *   export const POST = demoSafe(withAuth(async (req, ctx) => { ... }));
+ *
+ * This replaces the path/method allow-list approach with an explicit
+ * opt-in per route handler.
+ */
+export function demoSafe<T extends (...args: never[]) => unknown>(
+  handler: T,
+): T {
+  // Tag the handler so middleware or withAuth can check it
+  (handler as unknown as Record<string, unknown>).__demoSafe = true;
+  return handler;
+}
+
+/**
+ * Check if a handler has been marked as demo-safe via the demoSafe wrapper.
+ */
+export function isDemoSafeHandler(handler: unknown): boolean {
+  return (
+    typeof handler === "function" &&
+    (handler as unknown as Record<string, unknown>).__demoSafe === true
+  );
 }

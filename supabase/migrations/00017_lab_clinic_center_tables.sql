@@ -37,7 +37,10 @@ CREATE TABLE IF NOT EXISTS lab_test_orders (
 
 CREATE INDEX IF NOT EXISTS idx_lab_test_orders_clinic ON lab_test_orders(clinic_id);
 CREATE INDEX IF NOT EXISTS idx_lab_test_orders_patient ON lab_test_orders(patient_id);
-CREATE INDEX IF NOT EXISTS idx_lab_test_orders_doctor ON lab_test_orders(doctor_id);
+-- Note: lab_test_orders is actually created in 00014 with column
+-- ordering_doctor_id (not doctor_id). Use the real column name to
+-- keep this migration runnable on a fresh DB.
+CREATE INDEX IF NOT EXISTS idx_lab_test_orders_doctor ON lab_test_orders(ordering_doctor_id);
 CREATE INDEX IF NOT EXISTS idx_lab_test_orders_status ON lab_test_orders(status);
 
 -- ============================================================
@@ -75,7 +78,8 @@ CREATE TABLE IF NOT EXISTS beds (
 );
 
 CREATE INDEX IF NOT EXISTS idx_beds_clinic ON beds(clinic_id);
-CREATE INDEX IF NOT EXISTS idx_beds_department ON beds(department_id);
+-- Note: the real beds table (created in 00015) has room_id, not department_id,
+-- and idx_beds_room is already created there. Skip the department_id index.
 CREATE INDEX IF NOT EXISTS idx_beds_status ON beds(status);
 
 -- ============================================================

@@ -87,10 +87,12 @@ export async function middleware(request: NextRequest) {
   const traceId = generateTraceId();
 
   // --- Global body size limit ---
-  // Audit P1 #10: Protect against attacker-supplied Content-Length bypasses
-  // Next.js middleware doesn't fully support stream processing the body directly,
-  // but we can reject obvious oversized Content-Length. For robust streaming limits,
-  // the limit is handled per-route in route.ts files, but this is a first line of defense.
+  // F-38: Check Content-Length header first (fast path), but also enforce
+  // actual body size via stream reading in route handlers (see body-limit.ts).
+  // Next.js middleware doesn't fully support stream-processing the body directly,
+  // so this header check is the quick reject for honest clients and the per-route
+  // stream check in route handlers is the robust defense against Content-Length
+  // bypasses.
   const contentLength = request.headers.get("content-length");
   if (contentLength && Number(contentLength) > MAX_BODY_BYTES) {
     return withSecurityHeaders(

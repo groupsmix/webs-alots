@@ -19,6 +19,7 @@ import type { User } from "@supabase/supabase-js";
 import { NextResponse, type NextRequest } from "next/server";
 import { logger } from "@/lib/logger";
 import { createClient } from "@/lib/supabase-server";
+import { getTenant } from "@/lib/tenant";
 import { setTenantContext, logTenantContext } from "@/lib/tenant-context";
 import type { UserRole } from "@/lib/types/database";
 import type { Database } from "@/lib/types/database";
@@ -122,6 +123,31 @@ export function withAuth(
         );
       }
 
+      // F-08: Assert the user's clinic_id matches the subdomain-resolved tenant
+      // to prevent cross-tenant access via tampered profile data.
+      if (profile.clinic_id && profile.role !== "super_admin") {
+        try {
+          const tenant = await getTenant();
+          if (tenant && profile.clinic_id !== tenant.clinicId) {
+            logger.error("Tenant mismatch: profile.clinic_id does not match subdomain tenant", {
+              context: "with-auth",
+              profileClinicId: profile.clinic_id,
+              subdomainClinicId: tenant.clinicId,
+              userId: profile.id,
+            });
+            return NextResponse.json(
+              { error: "Forbidden — tenant mismatch" },
+              { status: 403 },
+            );
+          }
+        } catch (tenantErr) {
+          logger.warn("Could not resolve tenant for assertion", {
+            context: "with-auth",
+            error: tenantErr,
+          });
+        }
+      }
+
       // Set tenant context on the Supabase client so RLS policies
       // can use app.current_clinic_id as an additional isolation check.
       if (profile.clinic_id) {
@@ -142,19 +168,20 @@ export function withAuth(
         role: profile.role,
       });
 
-      // Audit Gap: Add structured request-path logging on success paths for PHI reads.
-      // We log the API access here so that every authenticated API request is recorded.
-      // This is crucial for Moroccan Law 09-08 / GDPR compliance to audit read operations.
+      // F-13: Downsample per-request API read access log to 1% in production.
+      // Full audit trail is still available via audit_log entries for mutations.
       if (request.method === "GET") {
-        logger.info(`API Read Access: ${request.method} ${request.nextUrl.pathname}`, {
-          context: "audit-read",
-          userId: profile.id,
-          role: profile.role,
-          clinicId: profile.clinic_id,
-          path: request.nextUrl.pathname,
-          method: request.method,
-          ip: request.headers.get("x-real-ip") || request.headers.get("x-forwarded-for") || "unknown"
-        });
+        const shouldLog = process.env.NODE_ENV !== "production" || Math.random() < 0.01;
+        if (shouldLog) {
+          logger.debug(`API Read Access: ${request.method} ${request.nextUrl.pathname}`, {
+            context: "audit-read",
+            userId: profile.id,
+            role: profile.role,
+            clinicId: profile.clinic_id,
+            path: request.nextUrl.pathname,
+            method: request.method,
+          });
+        }
       }
 
       return handler(request, {

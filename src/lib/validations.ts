@@ -3,6 +3,18 @@
  *
  * Centralised here so that every route validates `request.json()` through a
  * typed schema instead of trusting raw `as` type assertions.
+ *
+ * F-30: This 700+ LOC file should be split into domain-specific modules:
+ *   - validations/booking.ts
+ *   - validations/payments.ts
+ *   - validations/patients.ts
+ *   - validations/admin.ts
+ *   - validations/chat.ts
+ *   - validations/webhooks.ts
+ *   - validations/index.ts (barrel re-export)
+ *
+ * When splitting, keep this file as the barrel (re-exporting everything)
+ * to avoid breaking existing imports.
  */
 
 import { z } from "zod";

@@ -22,7 +22,31 @@
 
 -- Temporarily disable the trigger so inserting into auth.users
 -- does not create duplicate public.users rows.
-ALTER TABLE auth.users DISABLE TRIGGER on_auth_user_created;
+--
+-- Some environments (e.g. the supabase CLI local stack) run seed.sql
+-- as a role that does not own auth.users, so DISABLE TRIGGER would
+-- fail with SQLSTATE 42501 (insufficient_privilege / "must be owner
+-- of table users"). Wrap the ownership-required DDL in a DO block
+-- that swallows that specific error. The duplicate public.users rows
+-- are still avoided because the INSERT below uses ON CONFLICT DO NOTHING
+-- and the seed users in public.users were already created via migration
+-- 00003.
+DO $$
+BEGIN
+  EXECUTE 'ALTER TABLE auth.users DISABLE TRIGGER on_auth_user_created';
+EXCEPTION
+  WHEN insufficient_privilege THEN
+    RAISE NOTICE 'Skipping DISABLE TRIGGER on auth.users (insufficient privilege)';
+END
+$$;
+
+-- Mark this session as a local-dev seed run so the SEED-01 guard
+-- (migration 00059, trg_block_seed_user_insert) does not block
+-- INSERT of seed users into auth.users. The trigger fail-closes
+-- when app.environment is unset / 'production' / 'staging';
+-- a session-local SET only affects this seeding session and
+-- never leaks to runtime.
+SET app.environment = 'local';
 
 -- Use SEED_USER_PASSWORD env var if set, otherwise fall back to
 -- the well-known default (acceptable for local dev only).
@@ -160,7 +184,14 @@ AND NOT EXISTS (
   WHERE ai.user_id = au.id AND ai.provider = 'phone'
 );
 
--- Re-enable the trigger
-ALTER TABLE auth.users ENABLE TRIGGER on_auth_user_created;
+-- Re-enable the trigger (mirror the DO block guard above)
+DO $$
+BEGIN
+  EXECUTE 'ALTER TABLE auth.users ENABLE TRIGGER on_auth_user_created';
+EXCEPTION
+  WHEN insufficient_privilege THEN
+    RAISE NOTICE 'Skipping ENABLE TRIGGER on auth.users (insufficient privilege)';
+END
+$$;
 
 

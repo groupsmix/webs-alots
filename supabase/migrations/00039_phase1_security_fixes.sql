@@ -24,9 +24,19 @@
 -- Deleting from public.users removes the application profile.
 -- ============================================================
 
--- Disable the trigger so deleting auth.users doesn't fire
--- unexpected side-effects.
-ALTER TABLE auth.users DISABLE TRIGGER on_auth_user_created;
+-- The on_auth_user_created trigger fires AFTER INSERT only (see 00002),
+-- so DELETE statements below do not fire it. Some environments (e.g. the
+-- supabase CLI local stack) run migrations as a role that does not own
+-- auth.users, so DISABLE TRIGGER would fail with SQLSTATE 42501. Wrap any
+-- ownership-required DDL in a DO block that swallows that specific error.
+DO $$
+BEGIN
+  EXECUTE 'ALTER TABLE auth.users DISABLE TRIGGER on_auth_user_created';
+EXCEPTION
+  WHEN insufficient_privilege THEN
+    RAISE NOTICE 'Skipping DISABLE TRIGGER on auth.users (insufficient privilege)';
+END
+$$;
 
 -- Delete seed entries from auth.users (IDs start with a0000000-)
 DELETE FROM auth.users WHERE id IN (
@@ -54,8 +64,15 @@ DELETE FROM auth.identities WHERE user_id IN (
   'a0000000-0000-0000-0000-000000000014'
 );
 
--- Re-enable the trigger
-ALTER TABLE auth.users ENABLE TRIGGER on_auth_user_created;
+-- Re-enable the trigger (mirror the DO block guard above)
+DO $$
+BEGIN
+  EXECUTE 'ALTER TABLE auth.users ENABLE TRIGGER on_auth_user_created';
+EXCEPTION
+  WHEN insufficient_privilege THEN
+    RAISE NOTICE 'Skipping ENABLE TRIGGER on auth.users (insufficient privilege)';
+END
+$$;
 
 
 -- ============================================================

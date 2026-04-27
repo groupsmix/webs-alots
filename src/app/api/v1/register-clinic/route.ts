@@ -34,6 +34,8 @@ const registerClinicSchema = z.object({
   phone: z.string().min(8, "Numéro de téléphone invalide").max(30),
   specialty: z.string().min(1, "La spécialité est requise").max(200),
   city: z.string().max(200).optional(),
+  // F-28: Cloudflare Turnstile token for bot protection
+  turnstile_token: z.string().min(1, "Turnstile verification required").optional(),
 });
 
 // ---------------------------------------------------------------------------
@@ -66,6 +68,42 @@ export async function POST(request: NextRequest) {
   }
 
   const data = result.data;
+
+  // F-28: Verify Cloudflare Turnstile token if configured
+  const turnstileSecret = process.env.TURNSTILE_SECRET_KEY;
+  if (turnstileSecret) {
+    if (!data.turnstile_token) {
+      return apiError("Turnstile verification is required", 400);
+    }
+    try {
+      const verifyRes = await fetch(
+        "https://challenges.cloudflare.com/turnstile/v0/siteverify",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+          body: new URLSearchParams({
+            secret: turnstileSecret,
+            response: data.turnstile_token,
+            remoteip: clientIp,
+          }),
+        },
+      );
+      const verifyData = (await verifyRes.json()) as { success: boolean };
+      if (!verifyData.success) {
+        logger.warn("Turnstile verification failed", {
+          context: "register-clinic",
+          ip: clientIp,
+        });
+        return apiError("Bot verification failed. Please try again.", 403);
+      }
+    } catch (err) {
+      logger.error("Turnstile verification request failed", {
+        context: "register-clinic",
+        error: err,
+      });
+      // Fail open on Turnstile service outage to avoid blocking all registrations
+    }
+  }
 
   try {
     const supabase = createAdminClient();

@@ -97,8 +97,11 @@ export const POST = withAuthValidation(impersonateSchema, async (body, request, 
       maxAge: sessionMaxAge,
     });
 
+    // F-11: The impersonation reason is admin-entered audit context (not sensitive
+    // PHI/credentials), so httpOnly: false is acceptable here. The banner component
+    // reads this value via document.cookie to display the reason to the super admin.
     response.cookies.set("sa_impersonate_reason", encodeURIComponent(reason), {
-      httpOnly: false, // readable by banner component
+      httpOnly: false,
       secure: process.env.NODE_ENV === "production",
       sameSite: "strict",
       path: "/",
@@ -140,7 +143,7 @@ export const DELETE = withAuth(async (_request, { supabase, user }) => {
     });
 
     response.cookies.set("sa_impersonate_reason", "", {
-      httpOnly: false,
+      httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "strict",
       path: "/",

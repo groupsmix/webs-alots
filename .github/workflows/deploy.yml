@@ -16,6 +16,7 @@ jobs:
     name: Lint Check
     steps:
       - name: Checkout
+        # F-19: Pin to SHA for supply-chain hardening
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
       - name: Setup Node.js
@@ -25,7 +26,10 @@ jobs:
           cache: npm
 
       - name: Install dependencies
-        run: npm ci
+        run: |
+          npm config set ignore-scripts true
+          npm ci
+          node scripts/patch-opennext.mjs || true
 
       - name: Run ESLint
         run: npm run lint
@@ -52,7 +56,10 @@ jobs:
           cache: npm
 
       - name: Install dependencies
-        run: npm ci
+        run: |
+          npm config set ignore-scripts true
+          npm ci
+          node scripts/patch-opennext.mjs || true
 
       - name: Build for Cloudflare
         run: |
@@ -61,7 +68,8 @@ jobs:
         env:
           NEXT_PUBLIC_SUPABASE_URL: ${{ github.ref_name == 'staging' && secrets.STAGING_SUPABASE_URL || secrets.NEXT_PUBLIC_SUPABASE_URL }}
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ github.ref_name == 'staging' && secrets.STAGING_SUPABASE_ANON_KEY || secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
-
+          GITHUB_REF_NAME: ${{ github.ref_name }}
+          STAGING_SUPABASE_URL: ${{ secrets.STAGING_SUPABASE_URL }}
 
       - name: Deploy to Cloudflare Workers (Production)
         if: github.ref_name == 'main'

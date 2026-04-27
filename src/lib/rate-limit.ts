@@ -74,7 +74,13 @@ export interface RateLimiterOptions {
   max: number;
   /** Maximum number of distinct keys to track (prevents memory exhaustion, in-memory only) */
   maxKeys?: number;
-  /** Fail closed (block request) if the backend is down? Useful for auth/AI endpoints. Default: false */
+  /**
+   * F-06: When true, deny requests on backend errors instead of allowing them.
+   * Defaults to false (fail-open) to preserve availability of non-security-critical
+   * endpoints (webhooks, bookings, etc.) during rate-limit backend outages.
+   * Security-critical limiters (login, registration, password reset, AI, chat)
+   * MUST explicitly set `failClosed: true`.
+   */
   failClosed?: boolean;
 }
 
@@ -168,9 +174,31 @@ function recordSuccess(state: CircuitBreakerState): void {
   state.consecutiveFailures = 0;
 }
 
+/**
+ * F-06: Report rate-limit backend errors to Sentry at error severity.
+ */
+function reportRateLimitBackendError(operation: string, error: unknown): void {
+  try {
+    import("@sentry/nextjs").then((Sentry) => {
+      Sentry.captureException(
+        error instanceof Error ? error : new Error(`Rate limiter ${operation} failed`),
+        {
+          tags: { rateLimit: "backend_error", operation },
+          level: "error",
+        },
+      );
+    });
+  } catch {
+    // Sentry unavailable — structured log above is sufficient
+  }
+}
+
 // ── Supabase-backed distributed rate limiter ──
 
 function createSupabaseRateLimiter(options: RateLimiterOptions): RateLimiter {
+  // F-06: Default fail-open. Security-critical limiters opt in to fail-closed
+  // explicitly via `failClosed: true` in their createRateLimiter() call.
+  // This preserves availability for webhooks/bookings during backend outages.
   const { windowMs, max, failClosed = false } = options;
   const circuitBreaker = createCircuitBreaker(failClosed);
 
@@ -241,11 +269,12 @@ function createSupabaseRateLimiter(options: RateLimiterOptions): RateLimiter {
         if (error) {
           logger.error("Rate limiter query failed", { context: "rate-limit", error });
           recordFailure(circuitBreaker, options);
+          reportRateLimitBackendError("query", error);
           if (circuitBreaker.failClosed) return false;
           if (circuitBreaker.fallback) {
             return circuitBreaker.fallback.check(key);
           }
-          return true;
+          return !failClosed;
         }
 
         if (!data || data.reset_at <= windowStart) {
@@ -260,11 +289,12 @@ function createSupabaseRateLimiter(options: RateLimiterOptions): RateLimiter {
           if (upsertError) {
             logger.error("Rate limiter upsert failed", { context: "rate-limit", error: upsertError });
             recordFailure(circuitBreaker, options);
+            reportRateLimitBackendError("upsert", upsertError);
             if (circuitBreaker.failClosed) return false;
             if (circuitBreaker.fallback) {
               return circuitBreaker.fallback.check(key);
             }
-            return true;
+            return !failClosed;
           }
           recordSuccess(circuitBreaker);
           return true;
@@ -285,11 +315,12 @@ function createSupabaseRateLimiter(options: RateLimiterOptions): RateLimiter {
         if (updateError) {
           logger.error("Rate limiter update failed", { context: "rate-limit", error: updateError });
           recordFailure(circuitBreaker, options);
+          reportRateLimitBackendError("update", updateError);
           if (circuitBreaker.failClosed) return false;
           if (circuitBreaker.fallback) {
             return circuitBreaker.fallback.check(key);
           }
-          return true;
+          return !failClosed;
         }
         recordSuccess(circuitBreaker);
 
@@ -308,11 +339,12 @@ function createSupabaseRateLimiter(options: RateLimiterOptions): RateLimiter {
       } catch (err) {
         logger.error("Rate limiter network failure", { context: "rate-limit", error: err });
         recordFailure(circuitBreaker, options);
+        reportRateLimitBackendError("network", err);
         if (circuitBreaker.failClosed) return false;
         if (circuitBreaker.fallback) {
           return circuitBreaker.fallback.check(key);
         }
-        return true;
+        return !failClosed;
       }
     },
   };
@@ -334,6 +366,8 @@ interface CloudflareKV {
  * Provides better rate limiting smoothness than fixed window.
  */
 function createKVRateLimiter(options: RateLimiterOptions): RateLimiter {
+  // F-06: Default fail-open. Security-critical limiters opt in to fail-closed
+  // explicitly via `failClosed: true` in their createRateLimiter() call.
   const { windowMs, max, failClosed = false } = options;
   const circuitBreaker = createCircuitBreaker(failClosed);
   
@@ -383,7 +417,7 @@ function createKVRateLimiter(options: RateLimiterOptions): RateLimiter {
           if (circuitBreaker.fallback) {
             return circuitBreaker.fallback.check(key);
           }
-          return true;
+          return !failClosed;
         }
 
         const stored = await kv.get(`rate_limit:${key}`, { type: "json" });
@@ -416,10 +450,11 @@ function createKVRateLimiter(options: RateLimiterOptions): RateLimiter {
         if (circuitBreaker.failClosed) return false;
         const elapsed = Date.now() - (circuitBreaker.lastFailure || 0);
         if (elapsed > getKvGraceMs()) return false; // Fail closed after grace period
+        reportRateLimitBackendError("kv", err);
         if (circuitBreaker.fallback) {
           return circuitBreaker.fallback.check(key);
         }
-        return true;
+        return !failClosed;
       }
     },
   };
@@ -592,10 +627,11 @@ export const uploadLimiter = createRateLimiter({
   max: 10,
 });
 
-/** Onboarding (clinic creation): 5 req / 60s per IP */
+/** Onboarding (clinic creation): 5 req / 60s per IP — security-critical (registration). */
 export const onboardingLimiter = createRateLimiter({
   windowMs: 60_000,
   max: 5,
+  failClosed: true,
 });
 
 /** Chat endpoint: 15 req / 60s per IP (prevent AI API abuse) */

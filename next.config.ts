@@ -61,6 +61,9 @@ const nextConfig: NextConfig = {
 
   images: {
     // Allow external image domains for next/image (R2 and Supabase storage)
+    // F-23: Restrict to Supabase storage and the project's custom R2 domain.
+    // Removed **.r2.dev and **.r2.cloudflarestorage.com wildcards to prevent
+    // abuse of the image optimizer with arbitrary R2 URLs.
     remotePatterns: [
       {
         protocol: "https",
@@ -70,11 +73,7 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: "https",
-        hostname: "**.r2.cloudflarestorage.com",
-      },
-      {
-        protocol: "https",
-        hostname: "**.r2.dev",
+        hostname: "uploads.oltigo.com",
       },
     ],
     // Optimize image delivery with modern formats
