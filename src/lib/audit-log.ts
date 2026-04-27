@@ -6,6 +6,7 @@
  * tags and writes a structured log line for DLQ-style recovery.
  */
 
+import * as Sentry from "@sentry/nextjs";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { logger } from "@/lib/logger";
 import type { Database, Json } from "@/lib/types/database";
@@ -82,7 +83,7 @@ export async function logAuditEvent({
     });
 
     if (error) {
-      // F-09: Raise Sentry alert for audit write failure
+      // F-09: Raise Sentry alert for audit write failure with compliance tag
       logger.error("AUDIT_LOG_WRITE_FAILED", {
         context: "audit-log",
         action,
@@ -92,7 +93,6 @@ export async function logAuditEvent({
       });
 
       try {
-        const Sentry = await import("@sentry/nextjs");
         Sentry.captureException(
           new Error(`Audit log write failed: ${action}`),
           {
@@ -103,9 +103,27 @@ export async function logAuditEvent({
       } catch {
         // Sentry unavailable — structured log above is the fallback
       }
+
+      // Throw so the outer catch can push to the KV retry queue
+      throw error;
     }
   } catch (err) {
     logger.error("Failed to write audit log", { context: "audit-log", error: err });
+    Sentry.captureMessage("Audit log write failed (data loss risk)", {
+      level: "warning",
+      extra: { action, type, clinicId, actor },
+    });
+    
+    // Fallback: If KV is available, push to a durable retry queue (Audit P2 #19)
+    try {
+      const kv = (globalThis as unknown as { AUDIT_LOG_RETRY_KV?: { put: (k: string, v: string) => Promise<void> } }).AUDIT_LOG_RETRY_KV;
+      if (kv) {
+        const payload = JSON.stringify({ action, type, actor, clinicId, clinicName, description, ipAddress, userAgent, metadata, timestamp: new Date().toISOString() });
+        await kv.put(`audit_retry:${Date.now()}:${crypto.randomUUID()}`, payload);
+      }
+    } catch (kvErr) {
+      logger.error("Failed to write audit log to fallback KV", { context: "audit-log", error: kvErr });
+    }
   }
 }
 

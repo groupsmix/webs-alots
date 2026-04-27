@@ -39,33 +39,14 @@ export function validateCsrf(
 
   const origin = request.headers.get("origin");
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL;
-  const rootDomain = process.env.ROOT_DOMAIN;
-
+  
+  // Audit P1 #9: Lock the Origin allow-list to the specific request's host
+  // rather than blindly trusting every *.oltigo.com peer. This prevents
+  // cross-tenant CSRF where tenant A issues a request to tenant B.
   const allowedOrigins = new Set<string>();
+  allowedOrigins.add(`${request.nextUrl.protocol}//${hostname}`);
   if (siteUrl) {
     allowedOrigins.add(siteUrl.replace(/\/$/, ""));
-  }
-  if (rootDomain) {
-    const protocol = request.nextUrl.protocol;
-    allowedOrigins.add(`${protocol}//${rootDomain}`);
-  }
-  if (origin && rootDomain) {
-    try {
-      const originHost = new URL(origin).hostname;
-      const rootHost = rootDomain.split(":")[0];
-      if (
-        originHost.endsWith(`.${rootHost}`) &&
-        !originHost.slice(0, -(rootHost.length + 1)).includes(".")
-      ) {
-        allowedOrigins.add(origin);
-      }
-    } catch (err) {
-      /* malformed origin — log for debugging */
-      void err;
-    }
-  }
-  if (process.env.NODE_ENV !== "production") {
-    allowedOrigins.add(`${request.nextUrl.protocol}//${hostname}`);
   }
 
   // CSRF-DESIGN: We intentionally reject requests with a missing Origin header.

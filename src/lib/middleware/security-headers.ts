@@ -32,8 +32,8 @@ export function buildCsp(nonce: string): string {
     // F-37: Cloudflare Insights beacon is auto-injected by Workers runtime.
     // SRI cannot be applied to auto-injected scripts; CSP strict-dynamic + nonce
     // provides equivalent protection by only allowing nonced script execution.
-    "connect-src 'self' *.supabase.co wss://*.supabase.co graph.facebook.com api.twilio.com api.cloudflare.com *.googleapis.com https://cloudflareinsights.com https://static.cloudflareinsights.com",
-    "frame-src 'self' www.google.com",
+    "connect-src 'self' *.supabase.co wss://*.supabase.co *.googleapis.com https://cloudflareinsights.com https://static.cloudflareinsights.com",
+    "frame-src 'self'",
     "form-action 'self'",
     "base-uri 'self'",
     "frame-ancestors 'none'",

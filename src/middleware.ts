@@ -79,7 +79,8 @@ export async function middleware(request: NextRequest) {
   }
 
   // --- Generate a per-request nonce for CSP ---
-  const nonce = Buffer.from(crypto.randomUUID()).toString("base64");
+  const nonceBytes = crypto.getRandomValues(new Uint8Array(16));
+  const nonce = btoa(String.fromCharCode(...nonceBytes));
   const cspHeaderValue = buildCsp(nonce);
 
   // --- Generate a per-request trace ID for structured logging ---
@@ -87,8 +88,11 @@ export async function middleware(request: NextRequest) {
 
   // --- Global body size limit ---
   // F-38: Check Content-Length header first (fast path), but also enforce
-  // actual body size via stream reading in route handlers. The header
-  // check is kept as a quick reject for honest clients.
+  // actual body size via stream reading in route handlers (see body-limit.ts).
+  // Next.js middleware doesn't fully support stream-processing the body directly,
+  // so this header check is the quick reject for honest clients and the per-route
+  // stream check in route handlers is the robust defense against Content-Length
+  // bypasses.
   const contentLength = request.headers.get("content-length");
   if (contentLength && Number(contentLength) > MAX_BODY_BYTES) {
     return withSecurityHeaders(
@@ -119,6 +123,17 @@ export async function middleware(request: NextRequest) {
   // Supabase clients (createTenantClient). An attacker could inject this
   // header to bypass RLS policies that read `request.headers->>'x-clinic-id'`.
   requestHeaders.delete("x-clinic-id");
+
+  // Strip incoming x-auth-profile-* headers. These are set later in this
+  // middleware (after the user/profile lookup) with an HMAC signature so
+  // downstream API routes (`withAuth`) can trust them without re-querying
+  // the DB. Allowing a client to forge them would let an authenticated
+  // attacker who knows the HMAC key (e.g. the dev fallback) escalate
+  // privilege. Always overwrite with server-derived values below.
+  requestHeaders.delete("x-auth-profile-id");
+  requestHeaders.delete("x-auth-profile-role");
+  requestHeaders.delete("x-auth-profile-clinic");
+  requestHeaders.delete("x-auth-profile-sig");
 
   // --- Subdomain resolution ---
   const subdomain = extractSubdomain(hostname, rootDomain);
@@ -299,18 +314,74 @@ export async function middleware(request: NextRequest) {
 
   // Single profile query for authenticated users, reused for both
   // login-redirect and role-enforcement (avoids duplicate DB calls).
-  let profile: { role: string } | null = null;
+  let profile: { id: string, role: string, clinic_id: string | null } | null = null;
   if (user) {
     const needsProfile =
       (isPublicRoute(pathname) && (pathname === "/login" || pathname === "/register")) ||
-      isProtectedRoute(pathname);
+      isProtectedRoute(pathname) ||
+      pathname.startsWith("/api/");
     if (needsProfile) {
       const { data } = await supabase
         .from("users")
-        .select("role")
+        .select("id, role, clinic_id")
         .eq("auth_id", user.id)
         .maybeSingle();
       profile = data;
+
+      // Pass the profile data downstream via signed headers to avoid double-querying in `withAuth`
+      if (profile) {
+        // Use a lightweight HMAC to prevent header spoofing by the client
+        const hmacData = `${profile.id}:${profile.role}:${profile.clinic_id ?? ""}`;
+        const hmacKey = await crypto.subtle.importKey(
+          "raw",
+          new TextEncoder().encode(process.env.CRON_SECRET || "fallback_secret_key"),
+          { name: "HMAC", hash: "SHA-256" },
+          false,
+          ["sign"],
+        );
+        const signature = await crypto.subtle.sign("HMAC", hmacKey, new TextEncoder().encode(hmacData));
+        const sigHex = Array.from(new Uint8Array(signature)).map((b) => b.toString(16).padStart(2, "0")).join("");
+
+        // Set on the forwarded request headers so API routes (and `withAuth`)
+        // can read them. These are stripped from the inbound request above so
+        // a client cannot forge them.
+        requestHeaders.set("x-auth-profile-id", profile.id);
+        requestHeaders.set("x-auth-profile-role", profile.role);
+        if (profile.clinic_id) {
+          requestHeaders.set("x-auth-profile-clinic", profile.clinic_id);
+        } else {
+          requestHeaders.delete("x-auth-profile-clinic");
+        }
+        requestHeaders.set("x-auth-profile-sig", sigHex);
+
+        // Re-create the response so the new request headers are forwarded
+        // downstream, but preserve any Set-Cookie headers (e.g. refreshed
+        // Supabase auth tokens written by the `setAll` callback during
+        // getUser()) and any tenant/security headers already on the
+        // existing response. Recreating without copying these would silently
+        // drop the refreshed session cookies and effectively log the user out.
+        const previousResponse = supabaseResponse;
+        supabaseResponse = NextResponse.next({ request: { headers: requestHeaders } });
+        previousResponse.headers.forEach((value, key) => {
+          if (key.toLowerCase() === "set-cookie") {
+            supabaseResponse.headers.append(key, value);
+          } else {
+            supabaseResponse.headers.set(key, value);
+          }
+        });
+
+        // Set the auth-profile response headers (informational; the request
+        // headers above are what `withAuth` reads). Re-apply security and
+        // tenant headers since the response was just recreated.
+        supabaseResponse.headers.set("x-auth-profile-id", profile.id);
+        supabaseResponse.headers.set("x-auth-profile-role", profile.role);
+        if (profile.clinic_id) {
+          supabaseResponse.headers.set("x-auth-profile-clinic", profile.clinic_id);
+        }
+        supabaseResponse.headers.set("x-auth-profile-sig", sigHex);
+        applyAllSecurityHeaders(supabaseResponse, cspHeaderValue, nonce);
+        if (resolvedClinic) setTenantHeaders(supabaseResponse, resolvedClinic);
+      }
     }
   }
 

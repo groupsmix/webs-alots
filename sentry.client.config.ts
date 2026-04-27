@@ -11,7 +11,12 @@ Sentry.init({
   replaysOnErrorSampleRate: 1.0,
 
   integrations: [
-    Sentry.replayIntegration(),
+    Sentry.replayIntegration({
+      // Audit P1 #13: Prevent PHI from leaking into Session Replays
+      maskAllText: true,
+      maskAllInputs: true,
+      blockAllMedia: true,
+    }),
     Sentry.browserTracingIntegration(),
   ],
 
@@ -26,4 +31,13 @@ Sentry.init({
     }
     return breadcrumb;
   },
+  // Audit P1 #13: Disable Replay entirely on PHI-heavy routes
+  beforeSend(event) {
+    const url = event.request?.url ?? window.location.href;
+    if (url.includes("/admin/") || url.includes("/doctor/") || url.includes("/patient/")) {
+      delete event.exception?.values?.[0]?.mechanism?.handled; // optional cleanup
+      if (event.type === 'replay_event') return null; // Drop replay
+    }
+    return event;
+  }
 });
