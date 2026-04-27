@@ -18,6 +18,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { User } from "@supabase/supabase-js";
 import { NextResponse, type NextRequest } from "next/server";
 import { logger } from "@/lib/logger";
+import { verifyProfileHeader, PROFILE_HEADER_NAMES } from "@/lib/profile-header-hmac";
 import { createClient } from "@/lib/supabase-server";
 import { getTenant } from "@/lib/tenant";
 import { setTenantContext, logTenantContext } from "@/lib/tenant-context";
@@ -61,36 +62,26 @@ export function withAuth(
         );
       }
 
-      // Check for signed profile headers from middleware to avoid double-querying (Audit P1 #8)
-      const headerProfileId = request.headers.get("x-auth-profile-id");
-      const headerProfileRole = request.headers.get("x-auth-profile-role");
-      const headerProfileClinic = request.headers.get("x-auth-profile-clinic") || null;
-      const headerProfileSig = request.headers.get("x-auth-profile-sig");
+      // Check for signed profile headers from middleware to avoid double-querying (Audit P1 #8).
+      // R-01: If the header HMAC key is unset, `verifyProfileHeader` returns null so we
+      //       fall through to the authoritative DB lookup below. We never trust these
+      //       headers without a valid signature.
+      const verified = await verifyProfileHeader({
+        id: request.headers.get(PROFILE_HEADER_NAMES.id),
+        role: request.headers.get(PROFILE_HEADER_NAMES.role),
+        clinic_id: request.headers.get(PROFILE_HEADER_NAMES.clinic),
+        signature: request.headers.get(PROFILE_HEADER_NAMES.sig),
+      });
 
-      let profile: { id: string; role: UserRole; clinic_id: string | null } | null = null;
+      let profile: { id: string; role: UserRole; clinic_id: string | null } | null = verified
+        ? { id: verified.id, role: verified.role as UserRole, clinic_id: verified.clinic_id }
+        : null;
 
-      if (headerProfileId && headerProfileRole && headerProfileSig) {
-        // Verify HMAC signature
-        const hmacData = `${headerProfileId}:${headerProfileRole}:${headerProfileClinic ?? ""}`;
-        const hmacKey = await crypto.subtle.importKey(
-          "raw",
-          new TextEncoder().encode(process.env.CRON_SECRET || "fallback_secret_key"),
-          { name: "HMAC", hash: "SHA-256" },
-          false,
-          ["verify"]
-        );
-        const expectedSig = await crypto.subtle.sign("HMAC", hmacKey, new TextEncoder().encode(hmacData));
-        const expectedSigHex = Array.from(new Uint8Array(expectedSig)).map(b => b.toString(16).padStart(2, '0')).join('');
-        
-        if (expectedSigHex === headerProfileSig) {
-          profile = {
-            id: headerProfileId,
-            role: headerProfileRole as UserRole,
-            clinic_id: headerProfileClinic
-          };
-        } else {
-          logger.warn("Invalid profile signature in headers, falling back to DB", { context: "with-auth", userId: user.id });
-        }
+      if (!profile && request.headers.get(PROFILE_HEADER_NAMES.sig)) {
+        logger.warn("Profile headers present but signature could not be verified — falling back to DB", {
+          context: "with-auth",
+          userId: user.id,
+        });
       }
 
       if (!profile) {

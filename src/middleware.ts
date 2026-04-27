@@ -28,6 +28,7 @@ import {
   secureRedirect,
   applyAllSecurityHeaders,
 } from "@/lib/middleware/security-headers";
+import { signProfileHeader, PROFILE_HEADER_NAMES } from "@/lib/profile-header-hmac";
 import { isSeedUserBlocked } from "@/lib/seed-guard";
 import { extractSubdomain } from "@/lib/subdomain";
 import { subdomainCache, SUBDOMAIN_CACHE_TTL_MS, setSubdomainCache, negativeSubdomainCache, NEGATIVE_CACHE_TTL_MS, setNegativeSubdomainCache } from "@/lib/subdomain-cache";
@@ -127,13 +128,12 @@ export async function middleware(request: NextRequest) {
   // Strip incoming x-auth-profile-* headers. These are set later in this
   // middleware (after the user/profile lookup) with an HMAC signature so
   // downstream API routes (`withAuth`) can trust them without re-querying
-  // the DB. Allowing a client to forge them would let an authenticated
-  // attacker who knows the HMAC key (e.g. the dev fallback) escalate
-  // privilege. Always overwrite with server-derived values below.
-  requestHeaders.delete("x-auth-profile-id");
-  requestHeaders.delete("x-auth-profile-role");
-  requestHeaders.delete("x-auth-profile-clinic");
-  requestHeaders.delete("x-auth-profile-sig");
+  // the DB. Allowing a client to forge them would let an attacker
+  // impersonate any user, so we always overwrite with server-derived
+  // values (or omit them entirely if no HMAC key is configured).
+  for (const name of Object.values(PROFILE_HEADER_NAMES)) {
+    requestHeaders.delete(name);
+  }
 
   // --- Subdomain resolution ---
   const subdomain = extractSubdomain(hostname, rootDomain);
@@ -328,59 +328,59 @@ export async function middleware(request: NextRequest) {
         .maybeSingle();
       profile = data;
 
-      // Pass the profile data downstream via signed headers to avoid double-querying in `withAuth`
+      // Pass the profile data downstream via signed headers to avoid double-querying in `withAuth`.
+      // R-01: When PROFILE_HEADER_HMAC_KEY (or CRON_SECRET as a transitional fallback) is
+      //       unset, `signProfileHeader` returns null and we skip emitting the headers
+      //       entirely. Downstream `withAuth` then performs the authoritative DB lookup —
+      //       there is no literal fallback key that could be used to forge a signature.
       if (profile) {
-        // Use a lightweight HMAC to prevent header spoofing by the client
-        const hmacData = `${profile.id}:${profile.role}:${profile.clinic_id ?? ""}`;
-        const hmacKey = await crypto.subtle.importKey(
-          "raw",
-          new TextEncoder().encode(process.env.CRON_SECRET || "fallback_secret_key"),
-          { name: "HMAC", hash: "SHA-256" },
-          false,
-          ["sign"],
-        );
-        const signature = await crypto.subtle.sign("HMAC", hmacKey, new TextEncoder().encode(hmacData));
-        const sigHex = Array.from(new Uint8Array(signature)).map((b) => b.toString(16).padStart(2, "0")).join("");
-
-        // Set on the forwarded request headers so API routes (and `withAuth`)
-        // can read them. These are stripped from the inbound request above so
-        // a client cannot forge them.
-        requestHeaders.set("x-auth-profile-id", profile.id);
-        requestHeaders.set("x-auth-profile-role", profile.role);
-        if (profile.clinic_id) {
-          requestHeaders.set("x-auth-profile-clinic", profile.clinic_id);
-        } else {
-          requestHeaders.delete("x-auth-profile-clinic");
-        }
-        requestHeaders.set("x-auth-profile-sig", sigHex);
-
-        // Re-create the response so the new request headers are forwarded
-        // downstream, but preserve any Set-Cookie headers (e.g. refreshed
-        // Supabase auth tokens written by the `setAll` callback during
-        // getUser()) and any tenant/security headers already on the
-        // existing response. Recreating without copying these would silently
-        // drop the refreshed session cookies and effectively log the user out.
-        const previousResponse = supabaseResponse;
-        supabaseResponse = NextResponse.next({ request: { headers: requestHeaders } });
-        previousResponse.headers.forEach((value, key) => {
-          if (key.toLowerCase() === "set-cookie") {
-            supabaseResponse.headers.append(key, value);
-          } else {
-            supabaseResponse.headers.set(key, value);
-          }
+        const sigHex = await signProfileHeader({
+          id: profile.id,
+          role: profile.role,
+          clinic_id: profile.clinic_id,
         });
 
-        // Set the auth-profile response headers (informational; the request
-        // headers above are what `withAuth` reads). Re-apply security and
-        // tenant headers since the response was just recreated.
-        supabaseResponse.headers.set("x-auth-profile-id", profile.id);
-        supabaseResponse.headers.set("x-auth-profile-role", profile.role);
-        if (profile.clinic_id) {
-          supabaseResponse.headers.set("x-auth-profile-clinic", profile.clinic_id);
+        if (sigHex) {
+          // Set on the forwarded request headers so API routes (and `withAuth`)
+          // can read them. These are stripped from the inbound request above so
+          // a client cannot forge them.
+          requestHeaders.set(PROFILE_HEADER_NAMES.id, profile.id);
+          requestHeaders.set(PROFILE_HEADER_NAMES.role, profile.role);
+          if (profile.clinic_id) {
+            requestHeaders.set(PROFILE_HEADER_NAMES.clinic, profile.clinic_id);
+          } else {
+            requestHeaders.delete(PROFILE_HEADER_NAMES.clinic);
+          }
+          requestHeaders.set(PROFILE_HEADER_NAMES.sig, sigHex);
+
+          // Re-create the response so the new request headers are forwarded
+          // downstream, but preserve any Set-Cookie headers (e.g. refreshed
+          // Supabase auth tokens written by the `setAll` callback during
+          // getUser()) and any tenant/security headers already on the
+          // existing response. Recreating without copying these would silently
+          // drop the refreshed session cookies and effectively log the user out.
+          const previousResponse = supabaseResponse;
+          supabaseResponse = NextResponse.next({ request: { headers: requestHeaders } });
+          previousResponse.headers.forEach((value, key) => {
+            if (key.toLowerCase() === "set-cookie") {
+              supabaseResponse.headers.append(key, value);
+            } else {
+              supabaseResponse.headers.set(key, value);
+            }
+          });
+
+          // Set the auth-profile response headers (informational; the request
+          // headers above are what `withAuth` reads). Re-apply security and
+          // tenant headers since the response was just recreated.
+          supabaseResponse.headers.set(PROFILE_HEADER_NAMES.id, profile.id);
+          supabaseResponse.headers.set(PROFILE_HEADER_NAMES.role, profile.role);
+          if (profile.clinic_id) {
+            supabaseResponse.headers.set(PROFILE_HEADER_NAMES.clinic, profile.clinic_id);
+          }
+          supabaseResponse.headers.set(PROFILE_HEADER_NAMES.sig, sigHex);
+          applyAllSecurityHeaders(supabaseResponse, cspHeaderValue, nonce);
+          if (resolvedClinic) setTenantHeaders(supabaseResponse, resolvedClinic);
         }
-        supabaseResponse.headers.set("x-auth-profile-sig", sigHex);
-        applyAllSecurityHeaders(supabaseResponse, cspHeaderValue, nonce);
-        if (resolvedClinic) setTenantHeaders(supabaseResponse, resolvedClinic);
       }
     }
   }

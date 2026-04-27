@@ -77,6 +77,12 @@ const ENV_RULES: EnvRule[] = [
   // ── Cron ───────────────────────────────────────────────────────────
   { name: "CRON_SECRET", required: process.env.NODE_ENV === "production", description: "Bearer token for cron endpoints (required in production)", group: "cron" },
 
+  // ── Profile-header HMAC (R-02) ────────────────────────────────────
+  // Distinct key from CRON_SECRET so leaking one does not compromise
+  // both cron invocation and session-header forgery. Falls back to
+  // CRON_SECRET only as a transitional measure (see profile-header-hmac.ts).
+  { name: "PROFILE_HEADER_HMAC_KEY", required: process.env.NODE_ENV === "production", description: "HMAC key used to sign x-auth-profile-* headers between middleware and withAuth (required in production)", group: "auth" },
+
   // ── Custom Domains ─────────────────────────────────────────────────
   { name: "CLOUDFLARE_API_TOKEN", required: false, description: "Cloudflare API token for DNS management", group: "domains" },
   { name: "CLOUDFLARE_ZONE_ID", required: false, description: "Cloudflare zone ID for DNS management", group: "domains" },
