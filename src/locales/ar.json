@@ -394,6 +394,7 @@
   "error.sectionDescription": "واجه هذا القسم مشكلة. يرجى المحاولة مرة أخرى.",
   "error.loadFailed": "تعذر تحميل البيانات. يرجى تحديث الصفحة.",
   "error.updateFailed": "تعذر تحديث حالة الموعد. يرجى المحاولة مرة أخرى.",
+  "error.id": "معرف الخطأ",
   "notFound.title": "الصفحة غير موجودة",
   "notFound.metaTitle": "الصفحة غير موجودة — 404",
   "notFound.metaDescription": "الصفحة التي تبحث عنها غير موجودة أو تم نقلها.",

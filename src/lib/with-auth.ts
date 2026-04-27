@@ -60,12 +60,47 @@ export function withAuth(
         );
       }
 
-      // Always fetch the real profile from the database
-      const { data: profile } = await supabase
-        .from("users")
-        .select("id, role, clinic_id")
-        .eq("auth_id", user.id)
-        .single();
+      // Check for signed profile headers from middleware to avoid double-querying (Audit P1 #8)
+      const headerProfileId = request.headers.get("x-auth-profile-id");
+      const headerProfileRole = request.headers.get("x-auth-profile-role");
+      const headerProfileClinic = request.headers.get("x-auth-profile-clinic") || null;
+      const headerProfileSig = request.headers.get("x-auth-profile-sig");
+
+      let profile: { id: string; role: UserRole; clinic_id: string | null } | null = null;
+
+      if (headerProfileId && headerProfileRole && headerProfileSig) {
+        // Verify HMAC signature
+        const hmacData = `${headerProfileId}:${headerProfileRole}:${headerProfileClinic ?? ""}`;
+        const hmacKey = await crypto.subtle.importKey(
+          "raw",
+          new TextEncoder().encode(process.env.CRON_SECRET || "fallback_secret_key"),
+          { name: "HMAC", hash: "SHA-256" },
+          false,
+          ["verify"]
+        );
+        const expectedSig = await crypto.subtle.sign("HMAC", hmacKey, new TextEncoder().encode(hmacData));
+        const expectedSigHex = Array.from(new Uint8Array(expectedSig)).map(b => b.toString(16).padStart(2, '0')).join('');
+        
+        if (expectedSigHex === headerProfileSig) {
+          profile = {
+            id: headerProfileId,
+            role: headerProfileRole as UserRole,
+            clinic_id: headerProfileClinic
+          };
+        } else {
+          logger.warn("Invalid profile signature in headers, falling back to DB", { context: "with-auth", userId: user.id });
+        }
+      }
+
+      if (!profile) {
+        // Always fetch the real profile from the database if headers are missing or invalid
+        const { data: dbProfile } = await supabase
+          .from("users")
+          .select("id, role, clinic_id")
+          .eq("auth_id", user.id)
+          .single();
+        profile = dbProfile as { id: string; role: UserRole; clinic_id: string | null } | null;
+      }
 
       if (!profile) {
         return NextResponse.json(

@@ -48,6 +48,11 @@ export function extractClientIp(request: NextRequest): string {
   const cfIp = request.headers.get("cf-connecting-ip");
   if (cfIp) return cfIp;
 
+  // Audit P2 #18: On Cloudflare Workers, CF-Connecting-IP (checked first above)
+  // is authoritative and cannot be spoofed by clients. The XFF/X-Real-IP
+  // fallbacks below are only consulted when CF-Connecting-IP is absent
+  // (e.g. local dev, non-Cloudflare hosting, internal probes), so they do
+  // not enable IP spoofing in production on Cloudflare.
   const xff = request.headers.get("x-forwarded-for");
   if (xff) {
     const first = xff.split(",")[0]?.trim();
@@ -62,13 +67,15 @@ interface RateLimitEntry {
   resetAt: number;
 }
 
-interface RateLimiterOptions {
+export interface RateLimiterOptions {
   /** Time window in milliseconds */
   windowMs: number;
   /** Maximum requests allowed per window */
   max: number;
   /** Maximum number of distinct keys to track (prevents memory exhaustion, in-memory only) */
   maxKeys?: number;
+  /** Fail closed (block request) if the backend is down? Useful for auth/AI endpoints. Default: false */
+  failClosed?: boolean;
 }
 
 export interface RateLimiter {
@@ -106,6 +113,10 @@ function shouldUseKV(): boolean {
 // backend "trips" and falls back to an in-memory limiter for
 // CIRCUIT_BREAKER_RESET_MS. This prevents failing completely open
 // during sustained infrastructure outages.
+//
+// Audit P1 #11: Rate limiter falls open during Supabase outages
+// For sensitive endpoints (like auth/login/AI), we now fail-closed
+// if the circuit is tripped to prevent abuse during downtime.
 const CIRCUIT_BREAKER_THRESHOLD = 3;
 const CIRCUIT_BREAKER_RESET_MS = 60_000;
 
@@ -114,13 +125,16 @@ interface CircuitBreakerState {
   trippedAt: number | null;
   fallback: RateLimiter | null;
   lastFailure?: number;
+  // If true, requests will be rejected (429) when circuit is open
+  failClosed?: boolean;
 }
 
-function createCircuitBreaker(): CircuitBreakerState {
+function createCircuitBreaker(failClosed = false): CircuitBreakerState {
   return {
     consecutiveFailures: 0,
     trippedAt: null,
     fallback: null,
+    failClosed,
   };
 }
 
@@ -140,11 +154,11 @@ function recordFailure(state: CircuitBreakerState, options: RateLimiterOptions):
   state.lastFailure = Date.now();
   if (state.consecutiveFailures >= CIRCUIT_BREAKER_THRESHOLD) {
     state.trippedAt = Date.now();
-    if (!state.fallback) {
+    if (!state.fallback && !state.failClosed) {
       state.fallback = createMemoryRateLimiter(options);
     }
     logger.warn(
-      `Rate limiter circuit breaker tripped after ${state.consecutiveFailures} failures — falling back to in-memory limiter`,
+      `Rate limiter circuit breaker tripped after ${state.consecutiveFailures} failures — ${state.failClosed ? 'failing closed' : 'falling back to in-memory limiter'}`,
       { context: "rate-limit" },
     );
   }
@@ -157,8 +171,8 @@ function recordSuccess(state: CircuitBreakerState): void {
 // ── Supabase-backed distributed rate limiter ──
 
 function createSupabaseRateLimiter(options: RateLimiterOptions): RateLimiter {
-  const { windowMs, max } = options;
-  const circuitBreaker = createCircuitBreaker();
+  const { windowMs, max, failClosed = false } = options;
+  const circuitBreaker = createCircuitBreaker(failClosed);
 
   // SECURITY NOTE: Service role key intentionally used here.
   // rate_limit_entries is a global infrastructure table (not tenant-scoped)
@@ -180,6 +194,7 @@ function createSupabaseRateLimiter(options: RateLimiterOptions): RateLimiter {
       // If circuit breaker is tripped, use the in-memory fallback
       // instead of failing open.
       if (isCircuitOpen(circuitBreaker)) {
+        if (circuitBreaker.failClosed) return false;
         return circuitBreaker.fallback!.check(key);
       }
 
@@ -224,11 +239,9 @@ function createSupabaseRateLimiter(options: RateLimiterOptions): RateLimiter {
           .maybeSingle();
 
         if (error) {
-          // Record failure for circuit breaker. After N consecutive
-          // failures, the circuit trips and we use an in-memory fallback
-          // instead of failing completely open.
           logger.error("Rate limiter query failed", { context: "rate-limit", error });
           recordFailure(circuitBreaker, options);
+          if (circuitBreaker.failClosed) return false;
           if (circuitBreaker.fallback) {
             return circuitBreaker.fallback.check(key);
           }
@@ -247,6 +260,7 @@ function createSupabaseRateLimiter(options: RateLimiterOptions): RateLimiter {
           if (upsertError) {
             logger.error("Rate limiter upsert failed", { context: "rate-limit", error: upsertError });
             recordFailure(circuitBreaker, options);
+            if (circuitBreaker.failClosed) return false;
             if (circuitBreaker.fallback) {
               return circuitBreaker.fallback.check(key);
             }
@@ -271,6 +285,7 @@ function createSupabaseRateLimiter(options: RateLimiterOptions): RateLimiter {
         if (updateError) {
           logger.error("Rate limiter update failed", { context: "rate-limit", error: updateError });
           recordFailure(circuitBreaker, options);
+          if (circuitBreaker.failClosed) return false;
           if (circuitBreaker.fallback) {
             return circuitBreaker.fallback.check(key);
           }
@@ -291,11 +306,9 @@ function createSupabaseRateLimiter(options: RateLimiterOptions): RateLimiter {
 
         return newCount <= max;
       } catch (err) {
-        // Network/transient failure — record for circuit breaker.
-        // After N consecutive failures, fall back to in-memory limiter
-        // instead of failing completely open.
         logger.error("Rate limiter network failure", { context: "rate-limit", error: err });
         recordFailure(circuitBreaker, options);
+        if (circuitBreaker.failClosed) return false;
         if (circuitBreaker.fallback) {
           return circuitBreaker.fallback.check(key);
         }
@@ -321,8 +334,8 @@ interface CloudflareKV {
  * Provides better rate limiting smoothness than fixed window.
  */
 function createKVRateLimiter(options: RateLimiterOptions): RateLimiter {
-  const { windowMs, max } = options;
-  const circuitBreaker = createCircuitBreaker();
+  const { windowMs, max, failClosed = false } = options;
+  const circuitBreaker = createCircuitBreaker(failClosed);
   
   // KV-backed limiters have a configured grace period before they fail-closed
   const getKvGraceMs = () => {
@@ -337,6 +350,7 @@ function createKVRateLimiter(options: RateLimiterOptions): RateLimiter {
     async check(key: string): Promise<boolean> {
       // If circuit breaker is tripped, use the in-memory fallback
       if (isCircuitOpen(circuitBreaker)) {
+        if (circuitBreaker.failClosed) return false;
         // Enforce the grace period fail-closed boundary
         const elapsed = Date.now() - (circuitBreaker.lastFailure || 0);
         if (elapsed > getKvGraceMs()) {
@@ -363,6 +377,7 @@ function createKVRateLimiter(options: RateLimiterOptions): RateLimiter {
           // KV binding not available, fall back to memory
           logger.warn("Rate limiter KV binding not available, falling back to in-memory", { context: "rate-limit" });
           recordFailure(circuitBreaker, options);
+          if (circuitBreaker.failClosed) return false;
           const elapsed = Date.now() - (circuitBreaker.lastFailure || 0);
           if (elapsed > getKvGraceMs()) return false; // Fail closed after grace period
           if (circuitBreaker.fallback) {
@@ -398,6 +413,7 @@ function createKVRateLimiter(options: RateLimiterOptions): RateLimiter {
       } catch (err) {
         logger.error("Rate limiter KV failure", { context: "rate-limit", error: err });
         recordFailure(circuitBreaker, options);
+        if (circuitBreaker.failClosed) return false;
         const elapsed = Date.now() - (circuitBreaker.lastFailure || 0);
         if (elapsed > getKvGraceMs()) return false; // Fail closed after grace period
         if (circuitBreaker.fallback) {
@@ -504,12 +520,14 @@ export function createRateLimiter(options: RateLimiterOptions): RateLimiter {
 export const loginLimiter = createRateLimiter({
   windowMs: 60_000,
   max: 5,
+  failClosed: true,
 });
 
 /** Auth endpoints catch-all: 10 req / 60s per IP (RL-01 defense-in-depth) */
 export const authLimiter = createRateLimiter({
   windowMs: 60_000,
   max: 10,
+  failClosed: true,
 });
 
 /**
@@ -539,18 +557,21 @@ export const authLimiter = createRateLimiter({
 export const accountLockoutLimiter = createRateLimiter({
   windowMs: 15 * 60_000,
   max: 10,
+  failClosed: true,
 });
 
 /** OTP send rate limiter: 3 req / 60s per phone number (prevents SMS pumping) */
 export const otpSendLimiter = createRateLimiter({
   windowMs: 60_000,
   max: 3,
+  failClosed: true,
 });
 
 /** Password reset rate limiter: 3 req / 60s per IP (prevents email spam) */
 export const passwordResetLimiter = createRateLimiter({
   windowMs: 60_000,
   max: 3,
+  failClosed: true,
 });
 
 /** Branding GET: 20 req / 60s per IP (public endpoint, prevents clinic enumeration) */
@@ -581,12 +602,14 @@ export const onboardingLimiter = createRateLimiter({
 export const chatLimiter = createRateLimiter({
   windowMs: 60_000,
   max: 15,
+  failClosed: true,
 });
 
 /** AI Prescription: 50 req / 24h per doctor (included in plan limits) */
 export const aiPrescriptionLimiter = createRateLimiter({
   windowMs: 24 * 60 * 60_000,
   max: 50,
+  failClosed: true,
 });
 
 /** Webhook ingress: 100 req / 60s per IP (higher limit for legitimate webhook traffic) */
@@ -617,24 +640,28 @@ export const emailVerificationLimiter = createRateLimiter({
 export const aiPatientSummaryLimiter = createRateLimiter({
   windowMs: 24 * 60 * 60_000,
   max: 30,
+  failClosed: true,
 });
 
 /** AI Drug Interaction Check: 100 req / 24h per doctor */
 export const aiDrugCheckLimiter = createRateLimiter({
   windowMs: 24 * 60 * 60_000,
   max: 100,
+  failClosed: true,
 });
 
 /** AI Manager (Smart Dashboard): 30 req / 24h per admin */
 export const aiManagerLimiter = createRateLimiter({
   windowMs: 24 * 60 * 60_000,
   max: 30,
+  failClosed: true,
 });
 
 /** AI Auto-Suggest (Prescription suggestions): 100 req / 24h per doctor */
 export const aiAutoSuggestLimiter = createRateLimiter({
   windowMs: 24 * 60 * 60_000,
   max: 100,
+  failClosed: true,
 });
 
 export interface RateLimitRule {

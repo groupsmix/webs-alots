@@ -348,7 +348,20 @@ ALTER TABLE loyalty_points
   ADD COLUMN IF NOT EXISTS birthday_reward_year INT,
   ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT now();
 
--- 13c. loyalty_transactions: add columns used by LoyaltyTransaction (pharmacy-demo-data.ts)
+-- 13c. loyalty_transactions: ensure base table exists, then add columns used
+-- by LoyaltyTransaction (pharmacy-demo-data.ts). The base table is also
+-- (re)declared further down in this migration; the IF NOT EXISTS guard makes
+-- it safe to declare here so the ALTER TABLE below cannot fail with
+-- "relation does not exist" on a fresh database.
+CREATE TABLE IF NOT EXISTS loyalty_transactions (
+  id          UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  clinic_id   UUID NOT NULL REFERENCES clinics(id) ON DELETE CASCADE,
+  patient_id  UUID NOT NULL REFERENCES users(id),
+  points      INT NOT NULL DEFAULT 0,
+  reason      TEXT,
+  created_at  TIMESTAMPTZ DEFAULT now()
+);
+
 ALTER TABLE loyalty_transactions
   ADD COLUMN IF NOT EXISTS type TEXT DEFAULT 'earned'
     CHECK (type IN ('earned', 'redeemed', 'birthday_bonus', 'referral_bonus', 'expired')),
