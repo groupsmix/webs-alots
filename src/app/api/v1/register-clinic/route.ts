@@ -10,6 +10,7 @@ import { NextRequest } from "next/server";
 import { z } from "zod";
 import { apiSuccess, apiError, apiValidationError, apiInternalError } from "@/lib/api-response";
 import { generateSubdomain } from "@/lib/generate-subdomain";
+import { logAuditEvent } from "@/lib/audit-log";
 import { logger } from "@/lib/logger";
 import { phoneToWhatsApp } from "@/lib/morocco";
 import { createRateLimiter, extractClientIp } from "@/lib/rate-limit";
@@ -220,11 +221,14 @@ export async function POST(request: NextRequest) {
       });
     });
 
-    logger.info("New clinic registered successfully", {
-      context: "register-clinic",
+    await logAuditEvent({
+      supabase,
+      action: "clinic_registered",
+      type: "admin",
       clinicId,
-      subdomain,
-      clientIp,
+      actor: authUser.user.id,
+      description: `Self-service registration: ${data.clinic_name} (${subdomain})`,
+      ipAddress: clientIp,
     });
 
     return apiSuccess(
