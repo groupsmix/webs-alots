@@ -76,7 +76,10 @@ export interface RateLimiterOptions {
   maxKeys?: number;
   /**
    * F-06: When true, deny requests on backend errors instead of allowing them.
-   * Defaults to true for security-critical limiters (login, registration, AI).
+   * Defaults to false (fail-open) to preserve availability of non-security-critical
+   * endpoints (webhooks, bookings, etc.) during rate-limit backend outages.
+   * Security-critical limiters (login, registration, password reset, AI, chat)
+   * MUST explicitly set `failClosed: true`.
    */
   failClosed?: boolean;
 }
@@ -193,8 +196,10 @@ function reportRateLimitBackendError(operation: string, error: unknown): void {
 // ── Supabase-backed distributed rate limiter ──
 
 function createSupabaseRateLimiter(options: RateLimiterOptions): RateLimiter {
-  // F-06: Default to fail-closed for security-critical limiters.
-  const { windowMs, max, failClosed = true } = options;
+  // F-06: Default fail-open. Security-critical limiters opt in to fail-closed
+  // explicitly via `failClosed: true` in their createRateLimiter() call.
+  // This preserves availability for webhooks/bookings during backend outages.
+  const { windowMs, max, failClosed = false } = options;
   const circuitBreaker = createCircuitBreaker(failClosed);
 
   // SECURITY NOTE: Service role key intentionally used here.
@@ -361,8 +366,9 @@ interface CloudflareKV {
  * Provides better rate limiting smoothness than fixed window.
  */
 function createKVRateLimiter(options: RateLimiterOptions): RateLimiter {
-  // F-06: Default to fail-closed for security-critical limiters.
-  const { windowMs, max, failClosed = true } = options;
+  // F-06: Default fail-open. Security-critical limiters opt in to fail-closed
+  // explicitly via `failClosed: true` in their createRateLimiter() call.
+  const { windowMs, max, failClosed = false } = options;
   const circuitBreaker = createCircuitBreaker(failClosed);
   
   // KV-backed limiters have a configured grace period before they fail-closed
@@ -621,10 +627,11 @@ export const uploadLimiter = createRateLimiter({
   max: 10,
 });
 
-/** Onboarding (clinic creation): 5 req / 60s per IP */
+/** Onboarding (clinic creation): 5 req / 60s per IP — security-critical (registration). */
 export const onboardingLimiter = createRateLimiter({
   windowMs: 60_000,
   max: 5,
+  failClosed: true,
 });
 
 /** Chat endpoint: 15 req / 60s per IP (prevent AI API abuse) */

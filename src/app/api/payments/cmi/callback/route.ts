@@ -59,7 +59,9 @@ export async function POST(request: NextRequest) {
         const callbackCurrency = (params as Record<string, string>).currency || "504";
         if (
           payment.amount !== null &&
-          (Math.abs(callbackAmount - payment.amount) > 0.01 || callbackCurrency !== "504")
+          (Number.isNaN(callbackAmount) ||
+            Math.abs(callbackAmount - payment.amount) > 0.01 ||
+            callbackCurrency !== "504")
         ) {
           logger.error("CMI callback amount/currency mismatch — potential tampering", {
             context: "payments/cmi/callback",

@@ -401,7 +401,25 @@ ALTER TABLE suppliers
   ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT TRUE,
   ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT now();
 
--- 13g. purchase_orders: add extra columns used by PurchaseOrder (pharmacy-demo-data.ts)
+-- 13g. purchase_orders: ensure base table exists, then add extra columns used
+-- by PurchaseOrder (pharmacy-demo-data.ts). The base table is also (re)declared
+-- further down in this migration (13dd); the IF NOT EXISTS guard makes it safe
+-- to declare here so the ALTER TABLE below cannot fail with "relation does not
+-- exist" on a fresh database.
+CREATE TABLE IF NOT EXISTS purchase_orders (
+  id            UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  clinic_id     UUID NOT NULL REFERENCES clinics(id) ON DELETE CASCADE,
+  supplier_id   UUID NOT NULL REFERENCES suppliers(id),
+  status        TEXT DEFAULT 'draft'
+                CHECK (status IN ('draft', 'sent', 'confirmed', 'received', 'cancelled')),
+  total_amount  DECIMAL(10,2),
+  notes         TEXT,
+  ordered_at    TIMESTAMPTZ,
+  received_at   TIMESTAMPTZ,
+  created_at    TIMESTAMPTZ DEFAULT now(),
+  updated_at    TIMESTAMPTZ DEFAULT now()
+);
+
 ALTER TABLE purchase_orders
   ADD COLUMN IF NOT EXISTS supplier_name TEXT,
   ADD COLUMN IF NOT EXISTS currency TEXT DEFAULT 'MAD',
@@ -438,7 +456,18 @@ ALTER TABLE prescription_requests
   ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT now(),
   ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT now();
 
--- 13m. purchase_order_items: add created_at column (database.ts type expects it)
+-- 13m. purchase_order_items: ensure base table exists, then add created_at
+-- column (database.ts type expects it). Re-declared further down (13ee); IF
+-- NOT EXISTS makes the duplicate declaration a safe no-op.
+CREATE TABLE IF NOT EXISTS purchase_order_items (
+  id                UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  purchase_order_id UUID NOT NULL REFERENCES purchase_orders(id) ON DELETE CASCADE,
+  product_id        UUID NOT NULL REFERENCES products(id),
+  quantity          INT NOT NULL DEFAULT 0,
+  unit_price        DECIMAL(10,2),
+  created_at        TIMESTAMPTZ DEFAULT now()
+);
+
 ALTER TABLE purchase_order_items
   ADD COLUMN IF NOT EXISTS unit_price DECIMAL(10,2),
   ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT now();
