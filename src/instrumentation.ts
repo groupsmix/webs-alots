@@ -5,80 +5,15 @@ import * as Sentry from "@sentry/nextjs";
  *
  * https://nextjs.org/docs/app/building-your-application/optimizing/instrumentation
  */
-
-// R-20 Fix: Per-route sampling configuration for instrumentation
-const SAMPLE_RATES = {
-  // Critical paths: 100% sampling for webhooks, cron, payment
-  CRITICAL: 1.0,
-  // Mutations: 50% sampling for POST/PUT/PATCH/DELETE
-  MUTATION: 0.5,
-  // Read operations: 10% sampling for GET requests
-  READ: 0.1,
-} as const;
-
-/**
- * Get sample rate based on transaction context
- */
-function getSampleRate(transactionContext: {
-  name?: string;
-  description?: string;
-  tags?: Record<string, string>;
-}): number {
-  const context = [
-    transactionContext.name || "",
-    transactionContext.description || "",
-    ...Object.values(transactionContext.tags || {}),
-  ].join(" ").toLowerCase();
-
-  // Critical paths
-  if (
-    context.includes("webhook") ||
-    context.includes("cron") ||
-    context.includes("payment") ||
-    context.includes("stripe") ||
-    context.includes("notification") ||
-    context.includes("reminder")
-  ) {
-    return SAMPLE_RATES.CRITICAL;
-  }
-
-  // Mutations
-  if (
-    context.includes("post") ||
-    context.includes("put") ||
-    context.includes("patch") ||
-    context.includes("delete") ||
-    context.includes("booking") ||
-    context.includes("appointment") ||
-    context.includes("register")
-  ) {
-    return SAMPLE_RATES.MUTATION;
-  }
-
-  // Reads
-  return SAMPLE_RATES.READ;
-}
-
 export function register() {
   // Initialize Sentry for server-side error monitoring.
   // DSN is provided via NEXT_PUBLIC_SENTRY_DSN env var.
   if (process.env.NEXT_PUBLIC_SENTRY_DSN) {
     Sentry.init({
       dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
-
-      // R-20 Fix: Set sendDefaultPii to false explicitly
-      // @sentry/nextjs@8 defaults this to true, which is a PII risk
       sendDefaultPii: false,
-
-      // Base tracesSampleRate; per-transaction sampling is handled via tracesSampler
       tracesSampleRate: process.env.NODE_ENV === "production" ? 0.1 : 1.0,
-
       enabled: !!process.env.NEXT_PUBLIC_SENTRY_DSN,
-
-      // R-20 Fix: Per-transaction sampling for fine-grained control
-      tracesSampler(samplingContext) {
-        return getSampleRate(samplingContext);
-      },
     });
   }
   // Validate all required environment variables at startup so missing
