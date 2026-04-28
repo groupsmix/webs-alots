@@ -45,8 +45,10 @@ export function generateSignedR2Url(key: string, expiresIn = 3600): string {
   const secret = process.env.R2_SIGNED_URL_SECRET || process.env.R2_SECRET_ACCESS_KEY;
 
   if (!accountId || !bucketName || !secret) {
-    // Fallback to legacy behavior if R2 is not configured
-    return `https://${bucketName}.${accountId}.r2.cloudflarestorage.com/${key}`;
+    // R2 is not configured — return a best-effort placeholder URL.
+    // Callers should check isR2Configured() before using signed URLs.
+    logger.warn("generateSignedR2Url called but R2 is not fully configured", { context: "r2", key });
+    return `https://r2-not-configured.invalid/${key}`;
   }
 
   // R-16 Fix: Generate HMAC-signed URL for per-request authorization
