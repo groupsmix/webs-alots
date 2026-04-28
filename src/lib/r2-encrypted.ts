@@ -14,6 +14,19 @@ import { logger } from "@/lib/logger";
 import { uploadToR2, deleteFromR2 } from "@/lib/r2";
 
 /**
+ * Diagnostic / audit metadata threaded through encrypted upload calls.
+ *
+ * The values are NOT written into the encrypted blob (which would defeat
+ * the purpose of encryption); they are surfaced in structured logs so PHI
+ * upload activity can be traced back to a clinic, category and patient.
+ */
+export interface EncryptedUploadMetadata {
+  clinicId?: string;
+  category?: string;
+  patientId?: string | null;
+}
+
+/**
  * Encrypt a file and upload the ciphertext to R2.
  *
  * The R2 key gets a `.enc` suffix to signal that the stored object
@@ -22,12 +35,15 @@ import { uploadToR2, deleteFromR2 } from "@/lib/r2";
  * @param key         R2 object key (the `.enc` suffix is appended automatically)
  * @param plaintext   File contents as Buffer
  * @param contentType Original MIME type (stored as R2 metadata, not in the encrypted blob)
+ * @param metadata    Optional diagnostic context (clinicId, category, patientId)
+ *                    used for audit logging only — never stored in the encrypted blob.
  * @returns Public URL of the encrypted object, or null on failure
  */
 export async function encryptAndUpload(
   key: string,
   plaintext: Buffer | Uint8Array,
   contentType: string,
+  metadata?: EncryptedUploadMetadata,
 ): Promise<string | null> {
   if (!isEncryptionConfigured()) {
     // In production, PHI MUST be encrypted to comply with Moroccan Law 09-08.
@@ -37,6 +53,7 @@ export async function encryptAndUpload(
       logger.error("PHI encryption not configured in production — aborting upload to prevent unencrypted PHI storage", {
         context: "r2-encrypted",
         key,
+        metadata,
       });
       return null;
     }
@@ -44,6 +61,7 @@ export async function encryptAndUpload(
     logger.warn("PHI encryption not configured — uploading plaintext as fallback (non-production only)", {
       context: "r2-encrypted",
       key,
+      metadata,
     });
     return uploadToR2(key, Buffer.from(plaintext), contentType);
   }
@@ -53,6 +71,7 @@ export async function encryptAndUpload(
     logger.error("Failed to encrypt file — aborting upload", {
       context: "r2-encrypted",
       key,
+      metadata,
     });
     return null;
   }
