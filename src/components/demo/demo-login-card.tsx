@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useState, useRef, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { DEMO_USERS } from "@/lib/demo";
+import Script from "next/script";
 
 /**
  * R-10: Only the patient role is exposed for demo login.
@@ -38,21 +39,49 @@ declare global {
 export function DemoLoginCard() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [scriptLoaded, setScriptLoaded] = useState(false);
   const turnstileToken = useRef<string | null>(null);
   const turnstileContainer = useRef<HTMLDivElement>(null);
   const widgetId = useRef<string | null>(null);
 
   const siteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
 
+  // R-10 Fix: Load Turnstile script dynamically
   useEffect(() => {
-    if (!siteKey || !turnstileContainer.current || !window.turnstile) return;
+    if (!siteKey) return;
+
+    // Check if already loaded
+    if (window.turnstile) {
+      setScriptLoaded(true);
+      return;
+    }
+
+    // Load the Turnstile script
+    const script = document.createElement("script");
+    script.src = "https://challenges.cloudflare.com/turnstile/v0/api.js";
+    script.async = true;
+    script.onload = () => setScriptLoaded(true);
+    document.body.appendChild(script);
+
+    return () => {
+      // Cleanup is not needed for global script
+    };
+  }, [siteKey]);
+
+  // R-10 Fix: Render Turnstile widget after script loads
+  useEffect(() => {
+    if (!siteKey || !turnstileContainer.current || !window.turnstile || !scriptLoaded) return;
+
+    // Avoid re-rendering if already rendered
+    if (widgetId.current) return;
+
     widgetId.current = window.turnstile.render(turnstileContainer.current, {
       sitekey: siteKey,
       callback: (token: string) => { turnstileToken.current = token; },
       "error-callback": () => { turnstileToken.current = null; },
       "expired-callback": () => { turnstileToken.current = null; },
     });
-  }, [siteKey]);
+  }, [siteKey, scriptLoaded]);
 
   async function handleDemoLogin() {
     setLoading(true);

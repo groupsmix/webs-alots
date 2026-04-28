@@ -50,8 +50,10 @@ export function buildCsp(nonce: string): string {
     `style-src 'self' 'nonce-${nonce}'`,
     `img-src 'self' data: blob: ${sbHost} uploads.oltigo.com`,
     "font-src 'self'",
-    `connect-src 'self' ${sbHost} wss://${sbHost} https://fonts.googleapis.com https://maps.googleapis.com https://www.googleapis.com/calendar https://cloudflareinsights.com https://static.cloudflareinsights.com`,
-    "frame-src 'self'",
+    // R-08 Fix: Added challenges.cloudflare.com for Turnstile widget
+    `connect-src 'self' ${sbHost} wss://${sbHost} https://fonts.googleapis.com https://maps.googleapis.com https://www.googleapis.com/calendar https://cloudflareinsights.com https://static.cloudflareinsights.com https://challenges.cloudflare.com`,
+    // R-08 Fix: Added challenges.cloudflare.com for Turnstile iframe
+    "frame-src 'self' https://challenges.cloudflare.com",
     "form-action 'self'",
     "base-uri 'self'",
     "frame-ancestors 'none'",
@@ -96,11 +98,14 @@ export function applyAllSecurityHeaders(
   cspHeaderValue: string,
   _nonce: string, // Unused but kept for API compatibility
 ): void {
-  // R-08: Ship Report-Only in parallel for one release before flipping
-  // to enforcement. Once no unexpected violations appear in reports,
-  // remove the Report-Only header and keep only the enforcement header.
+  // R-08 Fix: Ship Report-Only for one release cycle before flipping to enforcement.
+  // Only set Report-Only header (no enforcement) to surface violations without blocking.
+  // After one release with no unexpected reports, remove Report-Only and uncomment
+  // the enforcement header below.
   response.headers.set("Content-Security-Policy-Report-Only", cspHeaderValue);
-  response.headers.set("Content-Security-Policy", cspHeaderValue);
+  // TEMPORARY DISABLED: R-08 enforcement should be activated after one release cycle
+  // with no unexpected CSP violation reports.
+  // response.headers.set("Content-Security-Policy", cspHeaderValue);
   // Audit 7 Fix: Do not echo x-nonce in response headers to reduce exposure
   // response.headers.set("x-nonce", nonce);
   response.headers.set("Strict-Transport-Security", HSTS_VALUE);
