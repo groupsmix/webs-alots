@@ -189,6 +189,11 @@ jobs:
           ROOT_DOMAIN: localhost
           NEXT_PUBLIC_SITE_URL: http://localhost:3000
           CRON_SECRET: ci-e2e-cron-secret-placeholder
+          # R-02: PROFILE_HEADER_HMAC_KEY is required in production mode (and
+          # `next start` runs in production). Without it, env validation in
+          # src/lib/env.ts hard-fails on startup and Playwright never gets a
+          # running web server, so every test fails with a connect error.
+          PROFILE_HEADER_HMAC_KEY: ci-e2e-profile-header-hmac-key-placeholder
           SEED_PASSWORDS_ROTATED: "true"
           SEED_USERS_DELETED: "true"
 
