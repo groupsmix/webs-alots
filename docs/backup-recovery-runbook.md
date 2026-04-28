@@ -238,7 +238,62 @@ When data loss or corruption is suspected:
 
 ---
 
-## 8. Encryption & Compliance
+## 8A. Cloudflare Queues & DLQ Drain Procedure (R-14 Fix)
+
+### Queue Architecture
+
+The platform uses Cloudflare Queues for reliable async processing:
+
+| Queue | Purpose | DLQ |
+|-------|---------|-----|
+| `reminders-queue` | Appointment reminder notifications | `reminders-dlq` |
+| `notifications-queue` | WhatsApp/email notifications | `notifications-dlq` |
+
+### DLQ Drain Procedure
+
+When messages fail after 5 retries, they are moved to the DLQ. Follow this procedure to drain and reprocess:
+
+```bash
+# 1. List messages in the DLQ (dry run - count only)
+wrangler queues list messages reminders-dlq --json | jq length
+
+# 2. View DLQ messages (first 10)
+wrangler queues list messages reminders-dlq --max 10
+
+# 3. Manually reprocess DLQ messages
+# Option A: Re-enqueue to main queue with delay
+wrangler queues consume reminders-dlq --wrangler-json | while read msg; do
+  echo "$msg" | wrangler queues send reminders-queue --message -
+done
+
+# Option B: Bulk reprocess via admin API
+# Replace YOUR_ADMIN_TOKEN with a super_admin session token (do NOT commit it).
+curl -X POST https://your-domain.com/api/admin/dlq/reprocess \
+  -H "Authorization: Bearer YOUR_ADMIN_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"queue": "reminders-dlq", "limit": 100}'
+
+# 4. Monitor DLQ depth
+wrangler queues list queues | grep -E "(reminders-dlq|notifications-dlq)"
+```
+
+**Automated DLQ monitoring** (recommended):
+- Set up a cron job to check DLQ depth every hour
+- Alert to Slack if DLQ depth > 100 messages
+- Auto-drain if DLQ depth < 10 messages
+
+### Queue Consumer Worker
+
+The `worker-cron-handler.ts` acts as the queue consumer. It processes messages in batches:
+- `max_batch_size`: 10 messages
+- `max_batch_timeout`: 30 seconds
+- `max_retries`: 5
+
+If the consumer fails to process a message 5 times, it's moved to the DLQ automatically by Cloudflare.
+
+---
+
+## 8B. Encryption & Compliance
 
 - Database backups via pg_dump include all data, including PHI
 - R2 buckets should have **encryption at rest** enabled (Cloudflare R2 default)

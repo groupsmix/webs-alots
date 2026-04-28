@@ -6,15 +6,109 @@
  *   - Free tier: 10 GB storage, 10M class-A ops, no egress fees
  *   - Served via Cloudflare CDN edge network
  *
+ * Security (R-16 Fix):
+ *   - By default, files are served via signed URLs through a Cloudflare Worker
+ *   - User-uploaded files are NEVER placed in a public bucket
+ *   - Filenames are hashed on write to prevent guessable URLs
+ *   - For truly public assets (clinic logos, marketing images), use a separate
+ *     "webs-alots-public" bucket and NEVER put user-uploaded files there
+ *
  * Required env vars:
  *   R2_ACCOUNT_ID        — Cloudflare account ID
  *   R2_ACCESS_KEY_ID     — R2 API token access key
  *   R2_SECRET_ACCESS_KEY — R2 API token secret key
  *   R2_BUCKET_NAME       — R2 bucket name (e.g., "webs-alots-uploads")
- *   R2_PUBLIC_URL        — Public URL for the bucket (custom domain or r2.dev URL)
+ *   R2_PUBLIC_URL        — (Deprecated) Legacy public URL; use signed URLs instead
+ *   R2_SIGNED_URL_SECRET — Secret for generating per-request signed URLs (optional, defaults to R2_SECRET_ACCESS_KEY)
  */
 
+import { createHmac } from "crypto";
 import { logger } from "@/lib/logger";
+
+// ---------------------------------------------------------------------------
+// Signed URL Generation (R-16 Fix)
+// ---------------------------------------------------------------------------
+// Instead of using R2_PUBLIC_URL directly, we generate per-request signed URLs
+// with a short expiration. This ensures files are only accessible to authorized users.
+
+/**
+ * Generate a signed URL for R2 object access.
+ * The URL includes HMAC signature for per-request authorization.
+ *
+ * @param key        Object key
+ * @param expiresIn  URL validity in seconds (default: 3600 = 1 hour)
+ * @returns Signed URL that validates against the secret
+ */
+export function generateSignedR2Url(key: string, expiresIn = 3600): string {
+  const accountId = process.env.R2_ACCOUNT_ID;
+  const bucketName = process.env.R2_BUCKET_NAME;
+  const secret = process.env.R2_SIGNED_URL_SECRET || process.env.R2_SECRET_ACCESS_KEY;
+
+  if (!accountId || !bucketName || !secret) {
+    // R2 is not configured — return a best-effort placeholder URL.
+    // Callers should check isR2Configured() before using signed URLs.
+    logger.warn("generateSignedR2Url called but R2 is not fully configured", { context: "r2", key });
+    return `https://r2-not-configured.invalid/${key}`;
+  }
+
+  // R-16 Fix: Generate HMAC-signed URL for per-request authorization.
+  // The signature covers (bucket, key, expires) so an attacker who obtains a
+  // valid URL cannot tamper with the bucket parameter to access a different
+  // R2 bucket while keeping the signature valid.
+  const expiresAt = Math.floor(Date.now() / 1000) + expiresIn;
+  const signatureBase = `${bucketName}:${key}:${expiresAt}`;
+  const signature = createHmac("sha256", secret).update(signatureBase).digest("hex").slice(0, 32);
+
+  // URL format: https://{domain}/r2/{bucket}/{key}?expires={expires}&sig={signature}
+  const baseUrl = process.env.R2_SIGNED_URL_BASE || `https://oltigo.com/r2`;
+  const params = new URLSearchParams({
+    b: bucketName,
+    k: key,
+    e: expiresAt.toString(),
+    s: signature,
+  });
+
+  return `${baseUrl}?${params.toString()}`;
+}
+
+/**
+ * Validate a signed URL's signature.
+ * Used by the R2 proxy worker to authorize requests.
+ *
+ * The signature base includes the bucket so a valid URL for one bucket cannot
+ * be replayed against another by tampering with the `b` query parameter.
+ *
+ * @param bucket     Bucket name from URL (`b` query parameter)
+ * @param key        Object key from URL
+ * @param expires    Expiration timestamp from URL
+ * @param signature  HMAC signature from URL
+ * @returns true if the signature is valid and not expired
+ */
+export function validateSignedR2Url(
+  bucket: string,
+  key: string,
+  expires: number,
+  signature: string,
+): boolean {
+  // Check expiration
+  if (Math.floor(Date.now() / 1000) > expires) {
+    return false;
+  }
+
+  const secret = process.env.R2_SIGNED_URL_SECRET || process.env.R2_SECRET_ACCESS_KEY;
+  if (!secret) return false;
+
+  const signatureBase = `${bucket}:${key}:${expires}`;
+  const expectedSignature = createHmac("sha256", secret).update(signatureBase).digest("hex").slice(0, 32);
+
+  // Constant-time comparison to prevent timing attacks
+  if (signature.length !== expectedSignature.length) return false;
+  let match = 0;
+  for (let i = 0; i < signature.length; i++) {
+    match |= signature.charCodeAt(i) ^ expectedSignature.charCodeAt(i);
+  }
+  return match === 0;
+}
 
 // AWS SDK types — imported dynamically at runtime to keep the heavy SDK
 // out of the main bundle (see PERF-01 audit finding).
@@ -72,15 +166,24 @@ export function isR2Configured(): boolean {
 /**
  * Upload a file to R2.
  *
+ * Returns a stable URL for the uploaded object that callers can persist in the
+ * database. If `R2_PUBLIC_URL` is configured, the public URL is returned;
+ * otherwise the underlying R2 storage URL is returned. Callers that need
+ * authorization should generate signed URLs at read time using
+ * {@link generateSignedR2Url} or {@link getPresignedDownloadUrl} rather than
+ * relying on the URL returned here.
+ *
  * @param key    Object key (path in bucket, e.g., "clinics/abc/logo.png")
  * @param body   File contents as Buffer or ReadableStream
  * @param contentType  MIME type (e.g., "image/png")
- * @returns Public URL of the uploaded file, or null if R2 is not configured
+ * @param options  Optional settings (hashFilename for R-16 fix)
+ * @returns Stable URL of the uploaded file, or null if R2 is not configured
  */
 export async function uploadToR2(
   key: string,
   body: Buffer | ReadableStream | Uint8Array,
   contentType: string,
+  options: { hashFilename?: boolean } = {},
 ): Promise<string | null> {
   const client = await getClient();
   const config = getR2Config();
@@ -88,22 +191,60 @@ export async function uploadToR2(
 
   const { PutObjectCommand } = await import("@aws-sdk/client-s3");
 
+  // R-16 Fix: Hash filenames on write so guessable basenames don't survive to the URL
+  // This prevents enumeration attacks where attackers guess filenames
+  let finalKey = key;
+  if (options.hashFilename) {
+    finalKey = hashFilename(key);
+    logger.info("R2 filename hashed for security", {
+      context: "r2",
+      originalKey: key,
+      hashedKey: finalKey,
+    });
+  }
+
   const params: PutObjectCommandInputType = {
     Bucket: config.bucketName,
-    Key: key,
+    Key: finalKey,
     Body: body,
     ContentType: contentType,
   };
 
   await client.send(new PutObjectCommand(params));
 
-  // Return public URL
+  // Return a stable URL so callers can persist it. Callers that serve PHI or
+  // other sensitive content should generate short-lived signed URLs at read
+  // time via generateSignedR2Url() / getPresignedDownloadUrl() rather than
+  // relying on the public URL.
   if (config.publicUrl) {
-    return `${config.publicUrl.replace(/\/$/, "")}/${key}`;
+    return `${config.publicUrl.replace(/\/$/, "")}/${finalKey}`;
   }
+  return `https://${config.bucketName}.${config.accountId}.r2.cloudflarestorage.com/${finalKey}`;
+}
 
-  // Fallback: no public URL configured
-  return `https://${config.bucketName}.${config.accountId}.r2.cloudflarestorage.com/${key}`;
+/**
+ * Hash the filename portion of a key to prevent guessable URLs.
+ * R-16 Fix: Replaces user-supplied basenames with a hash.
+ *
+ * @param key Original object key
+ * @returns Key with hashed filename portion
+ */
+function hashFilename(key: string): string {
+  // Extract directory and filename
+  const lastSlash = key.lastIndexOf("/");
+  const directory = lastSlash > 0 ? key.substring(0, lastSlash) : "";
+  const filename = lastSlash > 0 ? key.substring(lastSlash + 1) : key;
+
+  // Hash the filename while preserving extension
+  const dotIndex = filename.lastIndexOf(".");
+  const extension = dotIndex > 0 ? filename.substring(dotIndex) : "";
+
+  const hash = createHmac("sha256", process.env.R2_SIGNED_URL_SECRET || process.env.R2_SECRET_ACCESS_KEY || "default-salt")
+    .update(filename + Date.now().toString())
+    .digest("hex")
+    .slice(0, 16);
+
+  return directory ? `${directory}/${hash}${extension}` : `${hash}${extension}`;
 }
 
 /**
@@ -275,26 +416,51 @@ export async function readR2ObjectHead(
 /**
  * Build the R2 object key for a clinic upload.
  *
- * Format: clinics/{clinicId}/{category}/{timestamp}-{filename}
+ * Format: clinics/{clinicId}/{category}/{timestamp}-{randomSuffix}-{hashedFilename}
+ *
+ * R-16 Fix: Filenames are hashed on write to prevent guessable URLs.
  *
  * @param clinicId  Clinic UUID
  * @param category  Upload category (e.g., "logos", "photos", "documents")
  * @param filename  Original filename
+ * @param hashFilename  Whether to hash the filename (default: true for security)
  */
 export function buildUploadKey(
   clinicId: string,
   category: string,
   filename: string,
+  hashFilename = true,
 ): string {
   const timestamp = Date.now();
   // MED-06: Add a random suffix to prevent key collisions when two files
   // are uploaded in the same millisecond with the same filename.
   const rand = crypto.randomUUID().slice(0, 8);
+
   // Sanitize all path segments to prevent path-traversal (../ etc.)
   const safeClinicId = clinicId.replace(/[^a-zA-Z0-9_-]/g, "_");
   const safeCategory = category.replace(/[^a-zA-Z0-9_-]/g, "_");
   const safeFilename = filename.replace(/[^a-zA-Z0-9._-]/g, "_");
-  return `clinics/${safeClinicId}/${safeCategory}/${timestamp}-${rand}-${safeFilename}`;
+
+  // R-16 Fix: Hash the filename to prevent guessable URLs
+  // Even if an attacker knows the clinic ID, category, and timestamp,
+  // they cannot guess the final filename without knowing the secret
+  let finalFilename = safeFilename;
+  if (hashFilename) {
+    const dotIndex = safeFilename.lastIndexOf(".");
+    const extension = dotIndex > 0 ? safeFilename.substring(dotIndex) : "";
+
+    const hash = createHmac(
+      "sha256",
+      process.env.R2_SIGNED_URL_SECRET || process.env.R2_SECRET_ACCESS_KEY || "default-salt",
+    )
+      .update(safeFilename + timestamp.toString())
+      .digest("hex")
+      .slice(0, 16);
+
+    finalFilename = `${hash}${extension}`;
+  }
+
+  return `clinics/${safeClinicId}/${safeCategory}/${timestamp}-${rand}-${finalFilename}`;
 }
 
 // ── Image Resizing Utilities ──

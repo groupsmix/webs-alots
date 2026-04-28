@@ -37,8 +37,14 @@ describe("isR2Configured", () => {
 });
 
 describe("buildUploadKey", () => {
-  it("builds a key with the correct format", () => {
+  it("builds a key with the correct format (filename hashed by default per R-16)", () => {
     const key = buildUploadKey("clinic-123", "logos", "photo.png");
+    // R-16: filename portion is replaced by a 16-char hash, extension preserved
+    expect(key).toMatch(/^clinics\/clinic-123\/logos\/\d+-[a-f0-9]{8}-[a-f0-9]{16}\.png$/);
+  });
+
+  it("preserves the original filename when hashFilename=false", () => {
+    const key = buildUploadKey("clinic-123", "logos", "photo.png", false);
     expect(key).toMatch(/^clinics\/clinic-123\/logos\/\d+-[a-f0-9]{8}-photo\.png$/);
   });
 
@@ -54,9 +60,16 @@ describe("buildUploadKey", () => {
   });
 
   it("sanitizes filename to prevent path traversal", () => {
-    const key = buildUploadKey("clinic-1", "photos", "../../evil.js");
+    const key = buildUploadKey("clinic-1", "photos", "../../evil.js", false);
     expect(key).not.toContain("../");
     expect(key).toContain("evil.js");
+  });
+
+  it("strips path-traversal segments even when filename is hashed", () => {
+    const key = buildUploadKey("clinic-1", "photos", "../../evil.js");
+    expect(key).not.toContain("../");
+    // Extension is preserved through the hash, but the original basename is gone.
+    expect(key).toMatch(/\.js$/);
   });
 
   it("preserves valid characters in clinic ID", () => {
@@ -64,13 +77,13 @@ describe("buildUploadKey", () => {
     expect(key).toContain("clinic-abc_123");
   });
 
-  it("preserves dots and hyphens in filename", () => {
-    const key = buildUploadKey("clinic-1", "docs", "my-file.v2.pdf");
+  it("preserves dots and hyphens in filename when hashFilename=false", () => {
+    const key = buildUploadKey("clinic-1", "docs", "my-file.v2.pdf", false);
     expect(key).toContain("my-file.v2.pdf");
   });
 
-  it("replaces spaces in filename with underscores", () => {
-    const key = buildUploadKey("clinic-1", "photos", "my photo file.png");
+  it("replaces spaces in filename with underscores when hashFilename=false", () => {
+    const key = buildUploadKey("clinic-1", "photos", "my photo file.png", false);
     expect(key).toContain("my_photo_file.png");
   });
 
