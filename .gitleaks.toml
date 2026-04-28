@@ -1,0 +1,16 @@
+title = "Oltigo Health gitleaks config"
+
+# Inherit all default gitleaks rules.
+[extend]
+useDefault = true
+
+# Global allowlist for obvious placeholder tokens used in documentation
+# (e.g. example curl commands in runbooks). These are not real secrets.
+[allowlist]
+description = "Allow placeholder tokens in documentation"
+regexTarget = "match"
+regexes = [
+    '''YOUR_[A-Z][A-Z0-9_]*_TOKEN''',
+    '''YOUR_TOKEN''',
+    '''<YOUR_[A-Z0-9_]+>''',
+]
