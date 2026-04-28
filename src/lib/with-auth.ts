@@ -245,6 +245,33 @@ export function withAuthAnyRole(handler: AuthenticatedHandler) {
         );
       }
 
+      // F-08: Assert the user's clinic_id matches the subdomain-resolved tenant
+      // to prevent cross-tenant access via tampered profile data. This must run
+      // for withAuthAnyRole too — without it, routes migrated from
+      // withAuth(handler, null) lose the defense-in-depth check.
+      if (profile.clinic_id && profile.role !== "super_admin") {
+        try {
+          const tenant = await getTenant();
+          if (tenant && profile.clinic_id !== tenant.clinicId) {
+            logger.error("Tenant mismatch: profile.clinic_id does not match subdomain tenant", {
+              context: "with-auth-any-role",
+              profileClinicId: profile.clinic_id,
+              subdomainClinicId: tenant.clinicId,
+              userId: profile.id,
+            });
+            return NextResponse.json(
+              { error: "Forbidden — tenant mismatch" },
+              { status: 403 },
+            );
+          }
+        } catch (tenantErr) {
+          logger.warn("Could not resolve tenant for assertion", {
+            context: "with-auth-any-role",
+            error: tenantErr,
+          });
+        }
+      }
+
       // Set tenant context
       if (profile.clinic_id) {
         try {

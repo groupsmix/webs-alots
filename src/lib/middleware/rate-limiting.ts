@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { rateLimitRules, extractClientIp } from "@/lib/rate-limit";
+import type { CspHeaderValues } from "./security-headers";
 
 /**
  * Rate limit info to be added to response headers
@@ -20,8 +21,8 @@ export interface RateLimitInfo {
  */
 export async function applyRateLimit(
   request: NextRequest,
-  cspHeaderValue: string,
-  withSecurityHeaders: (r: NextResponse, csp: string) => NextResponse,
+  csp: CspHeaderValues,
+  withSecurityHeaders: (r: NextResponse, csp: CspHeaderValues) => NextResponse,
 ): Promise<{ response: NextResponse | null; rateLimitInfo?: RateLimitInfo }> {
   const { pathname } = request.nextUrl;
   const hostname = request.headers.get("host") ?? "";
@@ -44,7 +45,7 @@ export async function applyRateLimit(
           { error: "Too many requests. Please try again later.", code: "RATE_LIMIT_EXCEEDED" },
           { status: 429 },
         ),
-        cspHeaderValue,
+        csp,
       );
       response.headers.set("Retry-After", String(retryAfterSec));
       return {
@@ -65,7 +66,7 @@ export async function applyRateLimit(
             { error: "Too many requests. Please try again later.", code: "RATE_LIMIT_EXCEEDED" },
             { status: 429 },
           ),
-          cspHeaderValue,
+          csp,
         );
         response.headers.set("Retry-After", "60");
         return { response };
