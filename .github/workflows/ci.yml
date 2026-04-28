@@ -162,15 +162,16 @@ jobs:
           version: latest
 
       - name: Boot local Supabase
+        # `supabase start` boots the local stack and applies every file in
+        # supabase/migrations/ in order, so no separate `db push` step is
+        # needed (and `db push` would fail anyway because it targets a
+        # *linked remote* project, not the local stack).
         run: |
           supabase init --force
           supabase start
           echo "SUPABASE_LOCAL_URL=$(supabase status --output json | jq -r '.API_URL')" >> "$GITHUB_ENV"
           echo "SUPABASE_LOCAL_ANON_KEY=$(supabase status --output json | jq -r '.ANON_KEY')" >> "$GITHUB_ENV"
           echo "SUPABASE_LOCAL_SERVICE_ROLE_KEY=$(supabase status --output json | jq -r '.SERVICE_ROLE_KEY')" >> "$GITHUB_ENV"
-
-      - name: Apply migrations
-        run: supabase db push
 
       - name: Run E2E tests (blocking)
         # R-11: E2E suite is now blocking. Genuinely flaky specs should be
