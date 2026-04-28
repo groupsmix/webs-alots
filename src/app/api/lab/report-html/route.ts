@@ -21,6 +21,7 @@ import { withAuthValidation } from "@/lib/api-validate";
 import { logAuditEvent } from "@/lib/audit-log";
 import { STAFF_ROLES } from "@/lib/auth-roles";
 import { updateLabOrderPdfUrl } from "@/lib/data/server";
+import { isEncryptionConfigured } from "@/lib/encryption";
 import { escapeHtml } from "@/lib/escape-html";
 import { logger } from "@/lib/logger";
 import { buildUploadKey } from "@/lib/r2";
@@ -142,6 +143,27 @@ export const POST = withAuthValidation(labReportSchema, async (body, request, { 
     const clinicId = profile.clinic_id;
     if (!clinicId) {
       return apiError("User must belong to a clinic");
+    }
+
+    // Fail closed if PHI encryption is not configured.
+    //
+    // `encryptAndUpload` has a non-production plaintext fallback (no `.enc`
+    // suffix) for local convenience, but `downloadAndDecrypt` always reads
+    // the `.enc` object — so a plaintext upload here would produce a report
+    // that the download route can never serve. Refusing up-front avoids the
+    // asymmetry and guarantees lab reports only land in encrypted storage,
+    // matching the Moroccan Law 09-08 PHI handling requirement.
+    if (!isEncryptionConfigured()) {
+      logger.error("Lab report generation refused: PHI encryption not configured", {
+        context: "api/lab/report-html",
+        clinicId,
+        orderId,
+      });
+      return apiError(
+        "Encrypted report storage is not configured. Contact the administrator.",
+        503,
+        "ENCRYPTION_NOT_CONFIGURED",
+      );
     }
 
     const generatedAt = formatDisplayDate(new Date(), "en", "datetime");

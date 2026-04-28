@@ -87,6 +87,18 @@ export function isSafeKey(key: string): boolean {
   return true;
 }
 
+/**
+ * Extract the clinic UUID from a tenant-scoped key (`clinics/{clinicId}/...`).
+ * Used for audit logging when the caller's profile has no `clinic_id`
+ * (e.g. super_admin) so that PHI access is still attributed to the
+ * clinic that owns the file. Returns `null` for keys that don't match
+ * the expected shape.
+ */
+export function extractClinicIdFromKey(key: string): string | null {
+  const match = /^clinics\/([0-9a-fA-F-]{36})\//.exec(key);
+  return match ? match[1] : null;
+}
+
 async function handler(request: NextRequest, { supabase, profile }: AuthContext): Promise<NextResponse> {
   if (!ALLOWED_DOWNLOAD_ROLES.has(profile.role)) {
     return apiForbidden();
@@ -122,20 +134,44 @@ async function handler(request: NextRequest, { supabase, profile }: AuthContext)
   }
 
   // Audit the access. We do not include the file body in the audit metadata.
-  if (profile.clinic_id) {
+  // Privileged access (super_admin) MUST also be logged — for those callers
+  // we attribute the event to the clinic that owns the key, which is parsed
+  // from the `clinics/{clinicId}/...` prefix. Compliance with Moroccan Law
+  // 09-08 requires that PHI access be auditable; silently skipping audit
+  // writes when `profile.clinic_id` is null would create a privileged
+  // back-door.
+  const auditClinicId =
+    profile.clinic_id ?? extractClinicIdFromKey(baseKey);
+
+  if (auditClinicId) {
     await logAuditEvent({
       supabase,
       action: "file_downloaded",
       type: "patient",
-      clinicId: profile.clinic_id,
+      clinicId: auditClinicId,
       actor: profile.id,
       description: `Downloaded encrypted file ${baseKey}`,
-      metadata: { key: baseKey, role: profile.role },
+      metadata: {
+        key: baseKey,
+        role: profile.role,
+        // Flag privileged cross-tenant access explicitly in the audit trail.
+        crossTenant: profile.clinic_id !== auditClinicId,
+        callerClinicId: profile.clinic_id ?? null,
+      },
     }).catch((err) => {
       logger.warn("Failed to log file download audit event", {
         context: "api/files/download",
         error: err,
       });
+    });
+  } else {
+    // Should not happen in practice — `allowedPrefix` enforcement above
+    // guarantees the key starts with `clinics/{uuid}/` for any caller we
+    // got this far with. Log a warning so we notice if it ever does.
+    logger.warn("File download served without auditable clinic context", {
+      context: "api/files/download",
+      role: profile.role,
+      keyPrefix: baseKey.split("/").slice(0, 2).join("/"),
     });
   }
 

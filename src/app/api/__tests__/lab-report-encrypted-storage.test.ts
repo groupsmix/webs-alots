@@ -54,8 +54,9 @@ vi.mock("@/lib/tenant-context", () => ({
   logTenantContext: vi.fn(),
 }));
 
+const logAuditEventMock = vi.fn(async () => undefined);
 vi.mock("@/lib/audit-log", () => ({
-  logAuditEvent: vi.fn(async () => undefined),
+  logAuditEvent: (...args: unknown[]) => logAuditEventMock(...(args as [])),
 }));
 
 vi.mock("@/lib/logger", () => ({
@@ -67,6 +68,13 @@ const downloadAndDecryptMock = vi.fn<(...args: unknown[]) => unknown>();
 vi.mock("@/lib/r2-encrypted", () => ({
   encryptAndUpload: (...args: unknown[]) => encryptAndUploadMock(...args),
   downloadAndDecrypt: (...args: unknown[]) => downloadAndDecryptMock(...args),
+}));
+
+const isEncryptionConfiguredMock = vi.fn<() => boolean>();
+vi.mock("@/lib/encryption", () => ({
+  isEncryptionConfigured: () => isEncryptionConfiguredMock(),
+  encryptBuffer: vi.fn(),
+  decryptBuffer: vi.fn(),
 }));
 
 const uploadToR2Mock = vi.fn<(...args: unknown[]) => unknown>();
@@ -136,6 +144,12 @@ beforeEach(() => {
   uploadToR2Mock.mockReset();
   updateLabOrderPdfUrlMock.mockReset();
   updateLabOrderPdfUrlMock.mockResolvedValue(true);
+  isEncryptionConfiguredMock.mockReset();
+  // Default to "encryption configured" for the happy paths; individual
+  // tests opt out by overriding the mock.
+  isEncryptionConfiguredMock.mockReturnValue(true);
+  logAuditEventMock.mockReset();
+  logAuditEventMock.mockResolvedValue(undefined);
   mockChainable.single.mockReset();
   mockChainable.maybeSingle.mockReset();
 });
@@ -221,6 +235,29 @@ describe("POST /api/lab/report-html — encrypted PHI storage", () => {
     expect(json.ok).toBe(false);
     expect(encryptAndUploadMock).not.toHaveBeenCalled();
     expect(uploadToR2Mock).not.toHaveBeenCalled();
+  });
+
+  it("refuses up-front when PHI encryption is not configured (no plaintext upload)", async () => {
+    authedAs("doctor", CLINIC_ID);
+    isEncryptionConfiguredMock.mockReturnValue(false);
+    mockChainable.maybeSingle.mockResolvedValueOnce({
+      data: { id: "order-1", clinic_id: CLINIC_ID, patient_id: "patient-1" },
+      error: null,
+    });
+
+    const { POST } = await import("@/app/api/lab/report-html/route");
+    const response = await POST(buildJsonRequest("http://t.test/api/lab/report-html", validReportBody));
+    const json = await response.json();
+
+    expect(response.status).toBe(503);
+    expect(json.ok).toBe(false);
+    expect(json.code).toBe("ENCRYPTION_NOT_CONFIGURED");
+    // The dev plaintext fallback inside encryptAndUpload must NEVER be
+    // exercised through this route — it would leave the report unreadable
+    // to the auth-only download endpoint and (in prod) leak unencrypted PHI.
+    expect(encryptAndUploadMock).not.toHaveBeenCalled();
+    expect(uploadToR2Mock).not.toHaveBeenCalled();
+    expect(updateLabOrderPdfUrlMock).not.toHaveBeenCalled();
   });
 
   it("fails closed (no data: URL fallback) when encrypted storage is unavailable", async () => {
@@ -316,6 +353,59 @@ describe("GET /api/files/download — auth and tenant scoping", () => {
     expect(response.status).toBe(200);
     expect(downloadAndDecryptMock).toHaveBeenCalledWith(key);
   });
+
+  it("audit-logs super_admin downloads against the clinic that owns the key", async () => {
+    authedAs("super_admin", null);
+    downloadAndDecryptMock.mockResolvedValueOnce(Buffer.from("ok", "utf-8"));
+
+    const key = `clinics/${OTHER_CLINIC_ID}/lab-reports/audit.html`;
+    const { GET } = await import("@/app/api/files/download/route");
+    const response = await GET(
+      buildGetRequest(`http://t.test/api/files/download?key=${encodeURIComponent(key)}`),
+    );
+
+    expect(response.status).toBe(200);
+    expect(logAuditEventMock).toHaveBeenCalledTimes(1);
+
+    const [params] = logAuditEventMock.mock.calls[0] as unknown as [
+      {
+        action: string;
+        type: string;
+        clinicId: string;
+        actor: string | null | undefined;
+        metadata: { key: string; role: string; crossTenant: boolean; callerClinicId: string | null };
+      },
+    ];
+    expect(params.action).toBe("file_downloaded");
+    expect(params.type).toBe("patient");
+    // Clinic context comes from the key prefix because super_admin has clinic_id: null.
+    expect(params.clinicId).toBe(OTHER_CLINIC_ID);
+    expect(params.metadata.key).toBe(key);
+    expect(params.metadata.role).toBe("super_admin");
+    expect(params.metadata.crossTenant).toBe(true);
+    expect(params.metadata.callerClinicId).toBeNull();
+  });
+
+  it("audit-logs in-clinic downloads with crossTenant=false", async () => {
+    authedAs("doctor", CLINIC_ID);
+    downloadAndDecryptMock.mockResolvedValueOnce(Buffer.from("ok", "utf-8"));
+
+    const key = `clinics/${CLINIC_ID}/lab-reports/in-clinic.html`;
+    const { GET } = await import("@/app/api/files/download/route");
+    const response = await GET(
+      buildGetRequest(`http://t.test/api/files/download?key=${encodeURIComponent(key)}`),
+    );
+
+    expect(response.status).toBe(200);
+    expect(logAuditEventMock).toHaveBeenCalledTimes(1);
+
+    const [params] = logAuditEventMock.mock.calls[0] as unknown as [
+      { clinicId: string; metadata: { crossTenant: boolean; callerClinicId: string | null } },
+    ];
+    expect(params.clinicId).toBe(CLINIC_ID);
+    expect(params.metadata.crossTenant).toBe(false);
+    expect(params.metadata.callerClinicId).toBe(CLINIC_ID);
+  });
 });
 
 // ── Pure-helper unit tests ───────────────────────────────────────────
@@ -330,6 +420,17 @@ describe("download route helpers", () => {
     expect(expectedDownloadPrefixForProfile("super_admin", null)).toBe("clinics/");
     expect(expectedDownloadPrefixForProfile("super_admin", CLINIC_ID)).toBe("clinics/");
     expect(expectedDownloadPrefixForProfile("doctor", null)).toBeNull();
+  });
+
+  it("extractClinicIdFromKey parses the clinic UUID out of a tenant-scoped key", async () => {
+    const { extractClinicIdFromKey } = await import("@/app/api/files/download/route");
+    expect(extractClinicIdFromKey(`clinics/${CLINIC_ID}/lab-reports/x.html`)).toBe(CLINIC_ID);
+    expect(extractClinicIdFromKey(`clinics/${OTHER_CLINIC_ID}/photos/y.jpg`)).toBe(OTHER_CLINIC_ID);
+    // Non-clinic prefixes and malformed UUIDs return null.
+    expect(extractClinicIdFromKey("public/shared/x.html")).toBeNull();
+    expect(extractClinicIdFromKey("clinics//x.html")).toBeNull();
+    expect(extractClinicIdFromKey("clinics/not-a-uuid/x.html")).toBeNull();
+    expect(extractClinicIdFromKey("")).toBeNull();
   });
 
   it("isSafeKey rejects traversal and absolute-path inputs", async () => {
