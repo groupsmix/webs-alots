@@ -33,7 +33,11 @@ yarn-error.log*
 # env files (can opt-in for committing if needed)
 .env*
 !.env.example
-!.env.production
+
+# R-06: Do NOT commit .env.production or any production secrets.
+# Use `wrangler secret put` for production secrets. NEVER add
+# !.env.production here — it could accidentally expose secrets.
+# For local development, use .env.local (already ignored by .env*)
 
 # typescript
 *.tsbuildinfo
