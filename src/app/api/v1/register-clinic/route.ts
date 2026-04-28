@@ -15,6 +15,11 @@ import { NextRequest } from "next/server";
 import { z } from "zod";
 import { apiSuccess, apiError, apiValidationError, apiInternalError } from "@/lib/api-response";
 import { logAuditEvent } from "@/lib/audit-log";
+import {
+  generateDnsVerificationToken,
+  isDnsVerificationConfigured,
+  normalizeDomain,
+} from "@/lib/dns-verification";
 import { generateSubdomain } from "@/lib/generate-subdomain";
 import { logger } from "@/lib/logger";
 import { phoneToWhatsApp } from "@/lib/morocco";
@@ -102,29 +107,12 @@ async function sendSlackRegistrationAlert(data: {
  *
  * Fail-closed: any error or missing record causes verification to fail.
  *
- * @param domain The clinic's website domain (URL or hostname)
- * @param token The verification token
+ * @param hostname The normalized hostname (already validated)
+ * @param token The server-derived verification token
  * @returns true if verification succeeds
  */
-async function verifyDnsTxtRecord(domain: string, token: string): Promise<boolean> {
+async function verifyDnsTxtRecord(hostname: string, token: string): Promise<boolean> {
   try {
-    // Extract hostname from URL if a URL was supplied
-    let hostname: string;
-    try {
-      hostname = new URL(domain).hostname;
-    } catch {
-      hostname = domain;
-    }
-    hostname = hostname.replace(/^www\./, "").toLowerCase();
-
-    if (!hostname || !/^[a-z0-9.-]+\.[a-z]{2,}$/i.test(hostname)) {
-      logger.warn("DNS TXT verification rejected — invalid hostname", {
-        context: "register-clinic",
-        domain,
-      });
-      return false;
-    }
-
     const verificationRecord = `oltigo-verify=${token}`;
     const namesToQuery = [hostname, `_oltigo.${hostname}`];
 
@@ -155,7 +143,7 @@ async function verifyDnsTxtRecord(domain: string, token: string): Promise<boolea
   } catch (err) {
     logger.warn("DNS TXT verification failed", {
       context: "register-clinic",
-      domain,
+      hostname,
       error: err,
     });
     return false;
@@ -176,9 +164,13 @@ const registerClinicSchema = z.object({
   // F-28: Cloudflare Turnstile token for bot protection
   turnstile_token: z.string().min(1, "Turnstile verification required").optional(),
   // R-12: Identity verification
-  // Option 1: DNS TXT record verification
+  // Option 1: DNS TXT record verification.
+  // The token is NOT supplied by the client — the server derives it from
+  // (email, website_domain) so attackers cannot self-verify by supplying
+  // their own token alongside their own domain. Clients must first call
+  // POST /api/v1/register-clinic/verification-token to fetch the token,
+  // then publish it as a TXT record before calling this endpoint.
   website_domain: z.string().url("URL invalide").optional(),
-  dns_verification_token: z.string().optional(),
   // Option 2: Trade license (base64 encoded PDF)
   trade_license_base64: z.string().optional(),
   // Option 3: Phone OTP from pre-listed registry
@@ -222,13 +214,39 @@ export async function POST(request: NextRequest) {
   let verificationMethod = "";
   let verificationPassed = false;
 
-  // Option 1: DNS TXT record verification
-  if (data.website_domain && data.dns_verification_token) {
+  // Option 1: DNS TXT record verification (server-derived token, R-12)
+  if (data.website_domain) {
     verificationMethod = "dns-txt-record";
-    verificationPassed = await verifyDnsTxtRecord(data.website_domain, data.dns_verification_token);
+
+    if (!isDnsVerificationConfigured()) {
+      logger.warn("DNS verification attempted but no server secret is configured", {
+        context: "register-clinic",
+      });
+      return apiError(
+        "DNS verification is not available. Please contact support.",
+        503,
+        "DNS_VERIFICATION_UNAVAILABLE",
+      );
+    }
+
+    const hostname = normalizeDomain(data.website_domain);
+    if (!hostname) {
+      return apiError("Invalid website domain.", 400, "INVALID_DOMAIN");
+    }
+
+    const expectedToken = generateDnsVerificationToken(data.email, hostname);
+    if (!expectedToken) {
+      return apiError(
+        "DNS verification is not available. Please contact support.",
+        503,
+        "DNS_VERIFICATION_UNAVAILABLE",
+      );
+    }
+
+    verificationPassed = await verifyDnsTxtRecord(hostname, expectedToken);
     if (!verificationPassed) {
       return apiError(
-        "DNS verification failed. Please ensure the TXT record is correctly set on your domain.",
+        "DNS verification failed. Request a token from /api/v1/register-clinic/verification-token and publish it as a TXT record on your domain before retrying.",
         400,
         "DNS_VERIFICATION_FAILED",
       );
@@ -264,7 +282,7 @@ export async function POST(request: NextRequest) {
   else {
     return apiError(
       "Identity verification is required. Please provide one of:\n" +
-      "- DNS TXT record on your website domain (website_domain + dns_verification_token)\n" +
+      "- DNS TXT record on your website domain (set website_domain — token is issued via /api/v1/register-clinic/verification-token)\n" +
       "- Trade license PDF (trade_license_base64)\n" +
       "- Phone OTP from pre-listed registry (coming soon)",
       400,

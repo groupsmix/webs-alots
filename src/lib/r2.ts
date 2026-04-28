@@ -437,7 +437,10 @@ export function buildUploadKey(
     const dotIndex = safeFilename.lastIndexOf(".");
     const extension = dotIndex > 0 ? safeFilename.substring(dotIndex) : "";
 
-    const hash = createHmac("sha256", process.env.R2_SIGNED_URL_SECRET || "default-salt")
+    const hash = createHmac(
+      "sha256",
+      process.env.R2_SIGNED_URL_SECRET || process.env.R2_SECRET_ACCESS_KEY || "default-salt",
+    )
       .update(safeFilename + timestamp.toString())
       .digest("hex")
       .slice(0, 16);
