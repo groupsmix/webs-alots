@@ -51,9 +51,12 @@ export function generateSignedR2Url(key: string, expiresIn = 3600): string {
     return `https://r2-not-configured.invalid/${key}`;
   }
 
-  // R-16 Fix: Generate HMAC-signed URL for per-request authorization
+  // R-16 Fix: Generate HMAC-signed URL for per-request authorization.
+  // The signature covers (bucket, key, expires) so an attacker who obtains a
+  // valid URL cannot tamper with the bucket parameter to access a different
+  // R2 bucket while keeping the signature valid.
   const expiresAt = Math.floor(Date.now() / 1000) + expiresIn;
-  const signatureBase = `${key}:${expiresAt}`;
+  const signatureBase = `${bucketName}:${key}:${expiresAt}`;
   const signature = createHmac("sha256", secret).update(signatureBase).digest("hex").slice(0, 32);
 
   // URL format: https://{domain}/r2/{bucket}/{key}?expires={expires}&sig={signature}
@@ -72,12 +75,21 @@ export function generateSignedR2Url(key: string, expiresIn = 3600): string {
  * Validate a signed URL's signature.
  * Used by the R2 proxy worker to authorize requests.
  *
+ * The signature base includes the bucket so a valid URL for one bucket cannot
+ * be replayed against another by tampering with the `b` query parameter.
+ *
+ * @param bucket     Bucket name from URL (`b` query parameter)
  * @param key        Object key from URL
  * @param expires    Expiration timestamp from URL
  * @param signature  HMAC signature from URL
  * @returns true if the signature is valid and not expired
  */
-export function validateSignedR2Url(key: string, expires: number, signature: string): boolean {
+export function validateSignedR2Url(
+  bucket: string,
+  key: string,
+  expires: number,
+  signature: string,
+): boolean {
   // Check expiration
   if (Math.floor(Date.now() / 1000) > expires) {
     return false;
@@ -86,7 +98,7 @@ export function validateSignedR2Url(key: string, expires: number, signature: str
   const secret = process.env.R2_SIGNED_URL_SECRET || process.env.R2_SECRET_ACCESS_KEY;
   if (!secret) return false;
 
-  const signatureBase = `${key}:${expires}`;
+  const signatureBase = `${bucket}:${key}:${expires}`;
   const expectedSignature = createHmac("sha256", secret).update(signatureBase).digest("hex").slice(0, 32);
 
   // Constant-time comparison to prevent timing attacks

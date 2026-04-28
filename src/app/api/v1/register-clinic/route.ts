@@ -170,7 +170,11 @@ const registerClinicSchema = z.object({
   // their own token alongside their own domain. Clients must first call
   // POST /api/v1/register-clinic/verification-token to fetch the token,
   // then publish it as a TXT record before calling this endpoint.
-  website_domain: z.string().url("URL invalide").optional(),
+  // Accepts either a full URL (`https://myclinic.ma`) or a bare hostname
+  // (`myclinic.ma`); both are normalized via normalizeDomain() before use,
+  // and the verification-token endpoint accepts the same shapes so the
+  // value the user supplies to both endpoints is identical.
+  website_domain: z.string().min(1, "Domain is required").max(255).optional(),
   // Option 2: Trade license (base64 encoded PDF)
   trade_license_base64: z.string().optional(),
   // Option 3: Phone OTP from pre-listed registry
