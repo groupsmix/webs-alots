@@ -133,6 +133,8 @@ RATE_LIMIT_BACKEND = "kv"
 NEXT_PUBLIC_DATA_MASKING = "partial"
 NEXT_PUBLIC_PHONE_AUTH_ENABLED = "false"
 WHATSAPP_PROVIDER = "meta"
+# R-12 Fix: Self-service registration is DISABLED by default in staging too
+SELF_SERVICE_REGISTRATION_ENABLED = "false"
 
 # ---- Staging Cron Triggers ----
 # Audit 8.8 — Less aggressive schedule for staging (was */5, now */15)
@@ -165,16 +167,6 @@ binding = "REMINDERS_QUEUE"
 [[queues.producers]]
 queue = "notifications-queue"
 binding = "NOTIFICATIONS_QUEUE"
-
-[env.staging.vars]
-ROOT_DOMAIN = "staging.oltigo.com"
-NEXT_PUBLIC_SITE_URL = "https://staging.oltigo.com"
-R2_BUCKET_NAME = "webs-alots-uploads-staging"
-RATE_LIMIT_BACKEND = "kv"
-NEXT_PUBLIC_DATA_MASKING = "partial"
-NEXT_PUBLIC_PHONE_AUTH_ENABLED = "false"
-WHATSAPP_PROVIDER = "meta"
-SELF_SERVICE_REGISTRATION_ENABLED = "false"
 
 # ---- Staging Cloudflare Queues ----
 [[env.staging.queues.consumers]]

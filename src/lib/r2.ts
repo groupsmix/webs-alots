@@ -22,17 +22,8 @@
  *   R2_SIGNED_URL_SECRET — Secret for generating per-request signed URLs (optional, defaults to R2_SECRET_ACCESS_KEY)
  */
 
-import { logger } from "@/lib/logger";
 import { createHmac } from "crypto";
-
-// ---------------------------------------------------------------------------
-// Public Assets Bucket (R-16 Fix)
-// ---------------------------------------------------------------------------
-// This bucket is for TRULY PUBLIC assets only (clinic logos, marketing images).
-// NEVER put user-uploaded files here. User uploads go to the private bucket.
-// To use public assets, set R2_PUBLIC_BUCKET_NAME to a separate bucket.
-// ---------------------------------------------------------------------------
-const R2_PUBLIC_BUCKET_NAME = process.env.R2_PUBLIC_BUCKET_NAME;
+import { logger } from "@/lib/logger";
 
 // ---------------------------------------------------------------------------
 // Signed URL Generation (R-16 Fix)
@@ -161,11 +152,18 @@ export function isR2Configured(): boolean {
 /**
  * Upload a file to R2.
  *
+ * Returns a stable URL for the uploaded object that callers can persist in the
+ * database. If `R2_PUBLIC_URL` is configured, the public URL is returned;
+ * otherwise the underlying R2 storage URL is returned. Callers that need
+ * authorization should generate signed URLs at read time using
+ * {@link generateSignedR2Url} or {@link getPresignedDownloadUrl} rather than
+ * relying on the URL returned here.
+ *
  * @param key    Object key (path in bucket, e.g., "clinics/abc/logo.png")
  * @param body   File contents as Buffer or ReadableStream
  * @param contentType  MIME type (e.g., "image/png")
  * @param options  Optional settings (hashFilename for R-16 fix)
- * @returns Signed URL for the uploaded file, or null if R2 is not configured
+ * @returns Stable URL of the uploaded file, or null if R2 is not configured
  */
 export async function uploadToR2(
   key: string,
@@ -200,9 +198,14 @@ export async function uploadToR2(
 
   await client.send(new PutObjectCommand(params));
 
-  // R-16 Fix: Return signed URL instead of public URL
-  // This ensures files are only accessible via authorized signed URLs
-  return generateSignedR2Url(finalKey, 86400); // 24 hours default for upload confirmation
+  // Return a stable URL so callers can persist it. Callers that serve PHI or
+  // other sensitive content should generate short-lived signed URLs at read
+  // time via generateSignedR2Url() / getPresignedDownloadUrl() rather than
+  // relying on the public URL.
+  if (config.publicUrl) {
+    return `${config.publicUrl.replace(/\/$/, "")}/${finalKey}`;
+  }
+  return `https://${config.bucketName}.${config.accountId}.r2.cloudflarestorage.com/${finalKey}`;
 }
 
 /**
@@ -220,7 +223,6 @@ function hashFilename(key: string): string {
 
   // Hash the filename while preserving extension
   const dotIndex = filename.lastIndexOf(".");
-  const name = dotIndex > 0 ? filename.substring(0, dotIndex) : filename;
   const extension = dotIndex > 0 ? filename.substring(dotIndex) : "";
 
   const hash = createHmac("sha256", process.env.R2_SIGNED_URL_SECRET || "default-salt")
@@ -431,7 +433,6 @@ export function buildUploadKey(
   let finalFilename = safeFilename;
   if (hashFilename) {
     const dotIndex = safeFilename.lastIndexOf(".");
-    const name = dotIndex > 0 ? safeFilename.substring(0, dotIndex) : safeFilename;
     const extension = dotIndex > 0 ? safeFilename.substring(dotIndex) : "";
 
     const hash = createHmac("sha256", process.env.R2_SIGNED_URL_SECRET || "default-salt")

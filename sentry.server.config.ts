@@ -19,18 +19,6 @@ const routeSamplingConfig = {
   reads: 0.1,
 };
 
-// R-20 Fix: Calculate trace sample rate based on transaction type
-function getTraceSampleRate(transactionType: string): number {
-  const type = transactionType.toLowerCase();
-  if (type.includes("webhook") || type.includes("cron") || type.includes("payment")) {
-    return routeSamplingConfig.webhooks;
-  }
-  if (["post", "put", "patch", "delete"].some(m => type.includes(m))) {
-    return routeSamplingConfig.mutations;
-  }
-  return routeSamplingConfig.reads;
-}
-
 Sentry.init({
   dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
 

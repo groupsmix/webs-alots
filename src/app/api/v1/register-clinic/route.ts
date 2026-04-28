@@ -14,6 +14,7 @@
 import { NextRequest } from "next/server";
 import { z } from "zod";
 import { apiSuccess, apiError, apiValidationError, apiInternalError } from "@/lib/api-response";
+import { logAuditEvent } from "@/lib/audit-log";
 import { generateSubdomain } from "@/lib/generate-subdomain";
 import { logger } from "@/lib/logger";
 import { phoneToWhatsApp } from "@/lib/morocco";
@@ -92,35 +93,65 @@ async function sendSlackRegistrationAlert(data: {
 }
 
 /**
- * Verify domain ownership via DNS TXT record.
- * The clinic must add a TXT record with the format: oltigo-verify=<token>
+ * Verify domain ownership via DNS TXT record using Cloudflare DNS-over-HTTPS.
  *
- * @param domain The clinic's website domain
+ * The clinic must add a TXT record with the format: oltigo-verify=<token>
+ * on either the apex domain or the `_oltigo` subdomain. We query both names
+ * via Cloudflare's public DoH endpoint and look for an exact match against
+ * `oltigo-verify=<token>`.
+ *
+ * Fail-closed: any error or missing record causes verification to fail.
+ *
+ * @param domain The clinic's website domain (URL or hostname)
  * @param token The verification token
  * @returns true if verification succeeds
  */
 async function verifyDnsTxtRecord(domain: string, token: string): Promise<boolean> {
   try {
-    // Note: In production, use a DNS lookup service or Cloudflare API
-    // For now, we expect the clinic to add a TXT record and verify it exists
-    // A real implementation would use a DNS lookup API
+    // Extract hostname from URL if a URL was supplied
+    let hostname: string;
+    try {
+      hostname = new URL(domain).hostname;
+    } catch {
+      hostname = domain;
+    }
+    hostname = hostname.replace(/^www\./, "").toLowerCase();
+
+    if (!hostname || !/^[a-z0-9.-]+\.[a-z]{2,}$/i.test(hostname)) {
+      logger.warn("DNS TXT verification rejected — invalid hostname", {
+        context: "register-clinic",
+        domain,
+      });
+      return false;
+    }
+
     const verificationRecord = `oltigo-verify=${token}`;
+    const namesToQuery = [hostname, `_oltigo.${hostname}`];
 
-    // In a real implementation, we would:
-    // 1. Query DNS for TXT records on the domain
-    // 2. Check if the verification record exists
-    // For this fix, we implement the infrastructure and assume
-    // DNS verification will be handled via an external service or manual process
+    for (const name of namesToQuery) {
+      const url = `https://cloudflare-dns.com/dns-query?name=${encodeURIComponent(name)}&type=TXT`;
+      const res = await fetch(url, {
+        headers: { Accept: "application/dns-json" },
+      });
+      if (!res.ok) continue;
 
-    logger.info("DNS TXT verification requested", {
+      const json = (await res.json()) as { Answer?: Array<{ data?: string }> };
+      const answers = json.Answer ?? [];
+      for (const ans of answers) {
+        // DoH returns TXT data wrapped in quotes (possibly multiple strings).
+        const raw = (ans.data ?? "").trim();
+        const stripped = raw.replace(/^"|"$/g, "").replace(/"\s+"/g, "");
+        if (stripped === verificationRecord) {
+          return true;
+        }
+      }
+    }
+
+    logger.info("DNS TXT verification did not find matching record", {
       context: "register-clinic",
-      domain,
-      token,
+      hostname,
     });
-
-    // Placeholder: In production, implement actual DNS verification
-    // This requires a DNS lookup service or Cloudflare Workers DNS API
-    return true;
+    return false;
   } catch (err) {
     logger.warn("DNS TXT verification failed", {
       context: "register-clinic",
@@ -203,24 +234,28 @@ export async function POST(request: NextRequest) {
       );
     }
   }
-  // Option 2: Trade license (requires manual review - flag for pending)
+  // Option 2: Trade license (manual review workflow not yet implemented)
   else if (data.trade_license_base64) {
-    verificationMethod = "trade-license-pending-review";
-    // Trade license requires manual review - mark as pending and alert
-    logger.info("Registration with trade license - pending manual review", {
+    // R-12: Trade-license verification requires a manual review workflow
+    // (queueing the submission, ops review, approve/reject). Until that
+    // workflow ships we fail-closed rather than auto-approving registrations.
+    logger.info("Registration with trade license rejected — manual review not yet available", {
       context: "register-clinic",
       clinicName: data.clinic_name,
       doctorName: data.doctor_name,
       email: data.email,
     });
-    // For now, allow registration but flag as pending manual review
-    verificationPassed = true;
+    return apiError(
+      "Trade-license verification is not yet available. Please use DNS TXT verification by adding 'oltigo-verify=<token>' as a TXT record on your domain.",
+      400,
+      "TRADE_LICENSE_NOT_IMPLEMENTED",
+    );
   }
   // Option 3: Phone OTP to pre-listed registry (not yet implemented)
   else if (data.phone_otp && data.phone_otp_id) {
     // R-12: Phone OTP verification not yet implemented
     return apiError(
-      "Phone OTP verification is not yet available. Please use DNS verification or trade license.",
+      "Phone OTP verification is not yet available. Please use DNS verification.",
       400,
       "PHONE_OTP_NOT_IMPLEMENTED",
     );
@@ -386,6 +421,16 @@ export async function POST(request: NextRequest) {
         context: "register-clinic",
         error: err,
       });
+    });
+
+    await logAuditEvent({
+      supabase,
+      action: "clinic_registered",
+      type: "admin",
+      clinicId,
+      actor: authUser.user.id,
+      description: `Self-service registration: ${data.clinic_name} (${subdomain})`,
+      ipAddress: clientIp,
     });
 
     // R-12 Fix: Send Slack alert for every registration

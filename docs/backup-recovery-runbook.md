@@ -267,8 +267,9 @@ wrangler queues consume reminders-dlq --wrangler-json | while read msg; do
 done
 
 # Option B: Bulk reprocess via admin API
+# Set $ADMIN_TOKEN to a super_admin session token (do NOT commit it).
 curl -X POST https://your-domain.com/api/admin/dlq/reprocess \
-  -H "Authorization: Bearer YOUR_ADMIN_TOKEN" \
+  -H "Authorization: Bearer $ADMIN_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"queue": "reminders-dlq", "limit": 100}'
 
