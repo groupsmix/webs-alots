@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
+import type { CspHeaderValues } from "./security-headers";
 
 /** HTTP methods that mutate state and need CSRF protection */
 const MUTATION_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
@@ -24,8 +25,8 @@ function isCsrfExempt(pathname: string): boolean {
 export function validateCsrf(
   request: NextRequest,
   hostname: string,
-  cspHeaderValue: string,
-  withSecurityHeaders: (r: NextResponse, csp: string) => NextResponse,
+  csp: CspHeaderValues,
+  withSecurityHeaders: (r: NextResponse, csp: CspHeaderValues) => NextResponse,
 ): NextResponse | null {
   const { pathname } = request.nextUrl;
 
@@ -73,7 +74,7 @@ export function validateCsrf(
         { error: "CSRF validation failed: missing origin header" },
         { status: 403 },
       ),
-      cspHeaderValue,
+      csp,
     );
   }
 
@@ -83,7 +84,7 @@ export function validateCsrf(
         { error: "CSRF validation failed: origin not allowed" },
         { status: 403 },
       ),
-      cspHeaderValue,
+      csp,
     );
   }
 

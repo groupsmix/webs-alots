@@ -609,10 +609,12 @@ export const passwordResetLimiter = createRateLimiter({
   failClosed: true,
 });
 
-/** Branding GET: 20 req / 60s per IP (public endpoint, prevents clinic enumeration) */
+/** Branding GET: 20 req / 60s per IP (public endpoint, prevents clinic enumeration)
+ * R-22: Set failClosed: true for public clinic-enumeration surface */
 export const brandingLimiter = createRateLimiter({
   windowMs: 60_000,
   max: 20,
+  failClosed: true,
 });
 
 /** General API mutations: 30 req / 60s per IP */
@@ -648,16 +650,20 @@ export const aiPrescriptionLimiter = createRateLimiter({
   failClosed: true,
 });
 
-/** Webhook ingress: 100 req / 60s per IP (higher limit for legitimate webhook traffic) */
+/** Webhook ingress: 100 req / 60s per IP (higher limit for legitimate webhook traffic)
+ * R-22: Set failClosed: true for webhook endpoint integrity */
 export const webhookLimiter = createRateLimiter({
   windowMs: 60_000,
   max: 100,
+  failClosed: true,
 });
 
-/** Booking submissions: 10 req / 60s per IP (prevent spam bookings) */
+/** Booking submissions: 10 req / 60s per IP (prevent spam bookings)
+ * R-22: Set failClosed: true as this is a mutation with payment implications */
 export const bookingLimiter = createRateLimiter({
   windowMs: 60_000,
   max: 10,
+  failClosed: true,
 });
 
 /** Waiting-list joins: 3 req / 60 min per key (applied per phone, Issue 51) */

@@ -23,7 +23,7 @@ import {
   ROLE_DASHBOARD_MAP,
 } from "@/lib/middleware/routes";
 import {
-  buildCsp,
+  buildCspHeaderValues,
   withSecurityHeaders,
   secureRedirect,
   applyAllSecurityHeaders,
@@ -82,7 +82,10 @@ export async function middleware(request: NextRequest) {
   // --- Generate a per-request nonce for CSP ---
   const nonceBytes = crypto.getRandomValues(new Uint8Array(16));
   const nonce = btoa(String.fromCharCode(...nonceBytes));
-  const cspHeaderValue = buildCsp(nonce);
+  // R-08 migration: enforce the legacy (broad) CSP and ship the new tighter
+  // policy as Content-Security-Policy-Report-Only so violations are surfaced
+  // without regressing protection on normal responses. See security-headers.ts.
+  const cspHeaders = buildCspHeaderValues(nonce);
 
   // --- Generate a per-request trace ID for structured logging ---
   const traceId = generateTraceId();
@@ -101,7 +104,7 @@ export async function middleware(request: NextRequest) {
         { error: "Payload too large" },
         { status: 413 },
       ),
-      cspHeaderValue,
+      cspHeaders,
     );
   }
 
@@ -109,7 +112,9 @@ export async function middleware(request: NextRequest) {
   //     can read it via headers().get('x-nonce') ---
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set("x-nonce", nonce);
-  requestHeaders.set("Content-Security-Policy", cspHeaderValue);
+  // Forward the enforcing CSP so Server Components that introspect the request
+  // headers see the same policy the browser will enforce.
+  requestHeaders.set("Content-Security-Policy", cspHeaders.enforce);
   requestHeaders.set(TRACE_ID_HEADER, traceId);
 
   // --- SECURITY: Strip all tenant headers from the incoming request ---
@@ -139,7 +144,7 @@ export async function middleware(request: NextRequest) {
   const subdomain = extractSubdomain(hostname, rootDomain);
 
   // --- CSRF protection (delegated to composable module) ---
-  const csrfResult = validateCsrf(request, hostname, cspHeaderValue, withSecurityHeaders);
+  const csrfResult = validateCsrf(request, hostname, cspHeaders, withSecurityHeaders);
   if (csrfResult) return csrfResult;
 
   // --- Fast path for lightweight API routes (health checks, etc.) ---
@@ -147,12 +152,12 @@ export async function middleware(request: NextRequest) {
     const lightResponse = NextResponse.next({
       request: { headers: requestHeaders },
     });
-    applyAllSecurityHeaders(lightResponse, cspHeaderValue, nonce);
+    applyAllSecurityHeaders(lightResponse, cspHeaders, nonce);
     return lightResponse;
   }
 
   // --- Rate limiting (delegated to composable module) ---
-  const { response: rateLimitResponse, rateLimitInfo } = await applyRateLimit(request, cspHeaderValue, withSecurityHeaders);
+  const { response: rateLimitResponse, rateLimitInfo } = await applyRateLimit(request, cspHeaders, withSecurityHeaders);
   if (rateLimitResponse) {
     // Add rate limit headers to the response
     if (rateLimitInfo) {
@@ -179,14 +184,14 @@ export async function middleware(request: NextRequest) {
     const noSupabaseResponse = NextResponse.next({
       request: { headers: requestHeaders },
     });
-    applyAllSecurityHeaders(noSupabaseResponse, cspHeaderValue, nonce);
+    applyAllSecurityHeaders(noSupabaseResponse, cspHeaders, nonce);
     return noSupabaseResponse;
   }
 
   let supabaseResponse = NextResponse.next({
     request: { headers: requestHeaders },
   });
-  applyAllSecurityHeaders(supabaseResponse, cspHeaderValue, nonce);
+  applyAllSecurityHeaders(supabaseResponse, cspHeaders, nonce);
 
   // Note: Real rate-limit state is enforced by the rate limiter above.
   // These placeholder headers are omitted to avoid misleading API consumers.
@@ -206,7 +211,7 @@ export async function middleware(request: NextRequest) {
           supabaseResponse = NextResponse.next({
             request: { headers: requestHeaders },
           });
-          applyAllSecurityHeaders(supabaseResponse, cspHeaderValue, nonce);
+          applyAllSecurityHeaders(supabaseResponse, cspHeaders, nonce);
           // Re-apply tenant headers so they survive token-refresh responses
           if (resolvedClinic) {
             setTenantHeaders(supabaseResponse, resolvedClinic);
@@ -285,7 +290,7 @@ export async function middleware(request: NextRequest) {
           { ok: false, error: "Les modifications ne sont pas autorisées en mode démo." },
           { status: 403 },
         ),
-        cspHeaderValue,
+        cspHeaders,
       );
     }
 
@@ -378,7 +383,7 @@ export async function middleware(request: NextRequest) {
             supabaseResponse.headers.set(PROFILE_HEADER_NAMES.clinic, profile.clinic_id);
           }
           supabaseResponse.headers.set(PROFILE_HEADER_NAMES.sig, sigHex);
-          applyAllSecurityHeaders(supabaseResponse, cspHeaderValue, nonce);
+          applyAllSecurityHeaders(supabaseResponse, cspHeaders, nonce);
           if (resolvedClinic) setTenantHeaders(supabaseResponse, resolvedClinic);
         }
       }

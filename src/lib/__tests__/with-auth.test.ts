@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { createClient } from "@/lib/supabase-server";
-import { withAuth, type AuthContext } from "../with-auth";
+import { withAuth, withAuthAnyRole, type AuthContext } from "../with-auth";
 
 vi.mock("@/lib/supabase-server", () => ({
   createClient: vi.fn(),
@@ -125,7 +125,7 @@ describe("withAuth", () => {
     expect(authArg.profile.clinic_id).toBe("clinic-1");
   });
 
-  it("skips role check when allowedRoles is null", async () => {
+  it("allows any authenticated user via withAuthAnyRole", async () => {
     const mockUser = { id: "user-1" };
     const mockProfile = { id: "profile-1", role: "patient", clinic_id: null };
     const mockSupabase = createMockSupabase(mockUser, mockProfile);
@@ -134,7 +134,7 @@ describe("withAuth", () => {
     const handler = vi.fn().mockResolvedValue(
       new Response(JSON.stringify({ ok: true }), { status: 200 }),
     );
-    const wrappedHandler = withAuth(handler, null);
+    const wrappedHandler = withAuthAnyRole(handler);
 
     await wrappedHandler(createMockRequest() as never);
 
@@ -145,7 +145,7 @@ describe("withAuth", () => {
     vi.mocked(createClient).mockRejectedValue(new Error("DB down"));
 
     const handler = vi.fn();
-    const wrappedHandler = withAuth(handler, null);
+    const wrappedHandler = withAuth(handler, ["clinic_admin"]);
 
     const response = await wrappedHandler(createMockRequest() as never);
     const body = await response.json();

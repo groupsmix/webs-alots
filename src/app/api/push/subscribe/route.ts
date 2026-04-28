@@ -14,7 +14,7 @@
 import { z } from "zod";
 import { apiSuccess, apiError, apiInternalError, apiValidationError } from "@/lib/api-response";
 import { logger } from "@/lib/logger";
-import { withAuth } from "@/lib/with-auth";
+import { withAuthAnyRole } from "@/lib/with-auth";
 
 const pushSubscriptionSchema = z.object({
   endpoint: z.string().url(),
@@ -25,7 +25,7 @@ const pushSubscriptionSchema = z.object({
   expirationTime: z.number().nullable().optional(),
 });
 
-export const POST = withAuth(async (request, { supabase, user }) => {
+export const POST = withAuthAnyRole(async (request, { supabase, user }) => {
   let body: unknown;
   try {
     body = await request.json();
@@ -75,4 +75,4 @@ export const POST = withAuth(async (request, { supabase, user }) => {
     });
     return apiInternalError("Failed to process push subscription");
   }
-}, null);
+});
