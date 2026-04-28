@@ -66,6 +66,27 @@ function validateFileContent(buffer: Buffer, declaredType: string): boolean {
   );
 }
 
+/**
+ * Compute the R2 key prefix that the authenticated profile is allowed to
+ * confirm. Keys produced by `buildUploadKey()` are of the form
+ *   clinics/{clinicId}/{category}/{filename}
+ * so non-super-admin users must own a key starting with their clinic prefix.
+ * Super-admins may confirm any key under the shared `clinics/` namespace.
+ *
+ * Returns `null` when the profile cannot legitimately confirm any upload
+ * (e.g. a non-super-admin staff user with no `clinic_id`).
+ *
+ * Exported for testability.
+ */
+export function expectedKeyPrefixForProfile(
+  role: string,
+  clinicId: string | null | undefined,
+): string | null {
+  if (role === "super_admin") return "clinics/";
+  if (clinicId) return `clinics/${clinicId}/`;
+  return null;
+}
+
 export const POST = withAuth(async (request, { profile }) => {
   if (!isR2Configured()) {
     logger.warn("Upload attempted but R2 storage is not configured", { context: "upload" });
@@ -139,10 +160,13 @@ export const PUT = withAuthValidation(uploadConfirmSchema, async (body, request,
   const { key, contentType } = body;
 
   // Tenant isolation: verify the R2 key belongs to this user's clinic.
-  // Keys follow the pattern: {clinicId}/{category}/{filename}
-  const clinicId = profile.clinic_id ?? (profile.role === "super_admin" ? null : null);
-  if (clinicId && !key.startsWith(`${clinicId}/`)) {
-    return apiForbidden("Access denied: file does not belong to your clinic");
+  // Keys are produced by `buildUploadKey()` and follow the pattern:
+  //   clinics/{clinicId}/{category}/{filename}
+  // Super-admins are allowed to confirm any key under `clinics/`.
+  const expectedPrefix = expectedKeyPrefixForProfile(profile.role, profile.clinic_id);
+
+  if (!expectedPrefix || !key.startsWith(expectedPrefix)) {
+    return apiForbidden("Upload key does not belong to your clinic");
   }
 
   if (!ALLOWED_TYPES.has(contentType)) {
