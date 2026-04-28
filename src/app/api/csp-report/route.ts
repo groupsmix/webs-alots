@@ -8,8 +8,8 @@ import { logger } from "@/lib/logger";
  * These are silently logged for security monitoring - we don't want to
  * leak information to attackers about our security setup.
  * 
- * Note: This is for Content-Security-Policy-Report-Only header.
- * Production CSP would use report-uri (or report-to in newer browsers).
+ * Receives reports from the enforced Content-Security-Policy header
+ * via report-uri / report-to directives.
  */
 
 /**
