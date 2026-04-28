@@ -66,6 +66,60 @@ Oltigo Health implements defense-in-depth security:
 5. **CSP** — Per-request nonce generation with violation reporting to Sentry
 6. **Rate limiting** — 3-tier backend (Cloudflare KV → Supabase → in-memory fallback) with per-endpoint limits
 
+## PHI Masking Defaults
+
+The UI masks Protected Health Information (PHI) — phone numbers, emails,
+CIN — based on `NEXT_PUBLIC_DATA_MASKING`:
+
+| Value     | Behaviour                                              |
+|-----------|--------------------------------------------------------|
+| `full`    | Aggressive masking (demos, public screens)             |
+| `partial` | Moderate masking — staff who need partial visibility   |
+| `none`    | No masking (authorized personnel only)                 |
+
+**Production default is `partial`.** It is configured in two places that
+must agree:
+
+- `wrangler.toml` → `[vars] NEXT_PUBLIC_DATA_MASKING = "partial"` (and `[env.staging.vars]`)
+- `.env.production.example` → `NEXT_PUBLIC_DATA_MASKING=partial`
+
+### Startup enforcement
+
+`enforcePhiMaskingPolicy()` in `src/lib/env.ts` runs from the Next.js
+instrumentation hook (`src/instrumentation.ts`) and refuses to boot when:
+
+```
+NODE_ENV === "production"
+&& NEXT_PUBLIC_DATA_MASKING === "none"
+&& ALLOW_UNMASKED_PHI !== "true"
+```
+
+This prevents an accidental config drift from exposing patient data in
+the UI of a production deployment.
+
+### `ALLOW_UNMASKED_PHI` escape hatch
+
+Setting `ALLOW_UNMASKED_PHI=true` (alongside `NEXT_PUBLIC_DATA_MASKING=none`)
+is the only supported way to disable PHI masking in a production build.
+
+It is intended for narrow, audited scenarios — for example, an internal
+staff-only deployment behind additional access controls where unmasked
+PHI is required to perform clinical work.
+
+**Authorization to set `ALLOW_UNMASKED_PHI=true`:**
+
+- Only the **Security Officer / Data Protection Officer (DPO)** may
+  approve setting this flag.
+- It must be set as a **Cloudflare Workers secret**
+  (`wrangler secret put ALLOW_UNMASKED_PHI`) — never committed to the repo.
+- The change must be recorded in the security change log with business
+  justification, the approving DPO, and the planned review date.
+- A startup warning is logged whenever the flag is active so the
+  degraded posture is visible in monitoring.
+
+If you are not the DPO, do not set this variable — request a masking
+level of `partial` or `full` instead.
+
 ## Compliance
 
 This platform handles Protected Health Information (PHI) under Moroccan **Law 09-08** (Protection of Individuals with Regard to the Processing of Personal Data). All security reports related to PHI handling are treated as **critical priority**.
