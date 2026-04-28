@@ -1,19 +1,31 @@
 /**
- * POST /api/lab/report-html — Generate an HTML report for a lab test order
+ * POST /api/lab/report-html — Generate a lab report for a lab test order
  *
  * Body: { orderId, patientName, orderNumber, results }
  * clinic_id is derived from the authenticated user's profile.
  *
- * Generates an HTML report, uploads to R2, and updates the order's pdf_url.
- * Returns: { pdfUrl }
+ * The report is rendered as a protected HTML artifact, encrypted at rest
+ * via `encryptAndUpload`, and served through the authenticated download
+ * route. The route never returns a public R2 URL — only an authenticated
+ * download path that re-validates the caller's clinic and role.
+ *
+ * Returns: { reportKey, downloadUrl, pdfUrl }
+ *   - reportKey:   the underlying R2 key (without `.enc` suffix)
+ *   - downloadUrl: `/api/files/download?key=<reportKey>`
+ *   - pdfUrl:      same as downloadUrl, kept for backward compatibility
+ *                  with existing UI callers that read `data.pdfUrl`.
  */
 
 import { apiError, apiInternalError, apiSuccess } from "@/lib/api-response";
 import { withAuthValidation } from "@/lib/api-validate";
+import { logAuditEvent } from "@/lib/audit-log";
 import { STAFF_ROLES } from "@/lib/auth-roles";
 import { updateLabOrderPdfUrl } from "@/lib/data/server";
+import { isEncryptionConfigured } from "@/lib/encryption";
 import { escapeHtml } from "@/lib/escape-html";
-import { uploadToR2, isR2Configured, buildUploadKey } from "@/lib/r2";
+import { logger } from "@/lib/logger";
+import { buildUploadKey } from "@/lib/r2";
+import { encryptAndUpload } from "@/lib/r2-encrypted";
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { formatCurrency, formatNumber, formatDisplayDate } from "@/lib/utils";
 import { labReportSchema } from "@/lib/validations";
@@ -117,12 +129,41 @@ function generateLabReportHtml(data: {
 </html>`;
 }
 
-export const POST = withAuthValidation(labReportSchema, async (body, request, { profile }) => {
+/**
+ * Sanitize the order number for use as a file basename so we don't introduce
+ * path separators or `.enc` collisions through user-influenced data.
+ */
+function sanitizeOrderNumber(orderNumber: string): string {
+  return orderNumber.replace(/[^a-zA-Z0-9._-]/g, "_").slice(0, 80);
+}
+
+export const POST = withAuthValidation(labReportSchema, async (body, request, { supabase, profile }) => {
     const { orderId, patientName, orderNumber, results } = body;
     // Derive clinic_id from the authenticated user's profile — never from the request body
     const clinicId = profile.clinic_id;
     if (!clinicId) {
       return apiError("User must belong to a clinic");
+    }
+
+    // Fail closed if PHI encryption is not configured.
+    //
+    // `encryptAndUpload` has a non-production plaintext fallback (no `.enc`
+    // suffix) for local convenience, but `downloadAndDecrypt` always reads
+    // the `.enc` object — so a plaintext upload here would produce a report
+    // that the download route can never serve. Refusing up-front avoids the
+    // asymmetry and guarantees lab reports only land in encrypted storage,
+    // matching the Moroccan Law 09-08 PHI handling requirement.
+    if (!isEncryptionConfigured()) {
+      logger.error("Lab report generation refused: PHI encryption not configured", {
+        context: "api/lab/report-html",
+        clinicId,
+        orderId,
+      });
+      return apiError(
+        "Encrypted report storage is not configured. Contact the administrator.",
+        503,
+        "ENCRYPTION_NOT_CONFIGURED",
+      );
     }
 
     const generatedAt = formatDisplayDate(new Date(), "en", "datetime");
@@ -134,22 +175,78 @@ export const POST = withAuthValidation(labReportSchema, async (body, request, { 
       generatedAt,
     });
 
-    const fileName = `lab-report-${orderId.slice(0, 8)}-${Date.now()}.html`;
-    const key = buildUploadKey(clinicId, "lab-reports", fileName);
+    // Look up the order so we can (1) confirm tenant ownership and (2) audit
+    // the patient context. If the order doesn't belong to this clinic we
+    // refuse before writing any PHI to storage.
+    const { data: order, error: orderError } = await supabase
+      .from("lab_test_orders")
+      .select("id, clinic_id, patient_id")
+      .eq("id", orderId)
+      .eq("clinic_id", clinicId)
+      .maybeSingle();
 
-    if (!isR2Configured()) {
-      const dataUrl = `data:text/html;base64,${Buffer.from(html).toString("base64")}`;
-      return apiSuccess({ pdfUrl: dataUrl, fallback: true });
+    if (orderError) {
+      logger.warn("Failed to load lab order for report generation", {
+        context: "api/lab/report-html",
+        orderId,
+        error: orderError,
+      });
+      return apiInternalError("Failed to load order");
     }
+    if (!order) {
+      return apiError("Lab order not found", 404, "NOT_FOUND");
+    }
+
+    // Tenant-scoped key under the encrypted PHI namespace.
+    // buildUploadKey() produces `clinics/{clinicId}/lab-reports/{timestamp}-{rand}-{hashedName}`
+    // and `encryptAndUpload()` appends `.enc` for the stored object.
+    const fileName = `${sanitizeOrderNumber(orderNumber)}.html`;
+    const reportKey = buildUploadKey(clinicId, "lab-reports", fileName);
 
     const buffer = Buffer.from(html, "utf-8");
-    const url = await uploadToR2(key, buffer, "text/html");
+    const stored = await encryptAndUpload(reportKey, buffer, "text/html", {
+      clinicId,
+      category: "lab-reports",
+      patientId: order.patient_id ?? null,
+    });
 
-    if (!url) {
-      return apiInternalError("Failed to upload report");
+    if (!stored) {
+      // Either R2 is not configured or PHI encryption is missing in production.
+      // Fail closed — we never fall back to a data: URL because that would
+      // ship raw PHI HTML inline to the caller.
+      return apiError(
+        "Encrypted report storage is not configured. Contact the administrator.",
+        503,
+        "STORAGE_NOT_CONFIGURED",
+      );
     }
 
-    await updateLabOrderPdfUrl(orderId, url);
+    // Only an authenticated download route is exposed to the caller. The
+    // underlying R2 URL is never surfaced — that path bypasses tenant + role
+    // re-checks and would leak PHI if the URL were ever shared.
+    const downloadUrl = `/api/files/download?key=${encodeURIComponent(reportKey)}`;
 
-    return apiSuccess({ pdfUrl: url });
+    await updateLabOrderPdfUrl(orderId, downloadUrl);
+
+    await logAuditEvent({
+      supabase,
+      action: "lab_report_generated",
+      type: "patient",
+      clinicId,
+      actor: profile.id,
+      description: `Lab report for order ${orderNumber} stored at ${reportKey}`,
+      metadata: {
+        orderId,
+        orderNumber,
+        reportKey,
+        patientId: order.patient_id ?? null,
+      },
+    });
+
+    return apiSuccess({
+      reportKey,
+      downloadUrl,
+      // Backward-compat field for existing UI callers that read `pdfUrl`.
+      pdfUrl: downloadUrl,
+    });
 }, STAFF_ROLES);
