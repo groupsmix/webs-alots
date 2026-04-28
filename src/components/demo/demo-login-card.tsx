@@ -111,6 +111,13 @@ export function DemoLoginCard() {
       window.location.href = PATIENT_DEMO.dashboard;
     } catch {
       setError("Erreur de connexion. Veuillez réessayer.");
+      // Reset Turnstile after a network error so the next attempt sends a
+      // fresh token. Without this, the (already consumed) token is replayed
+      // on retry and Cloudflare rejects it as a bot, forcing a second click.
+      if (widgetId.current && window.turnstile) {
+        window.turnstile.reset(widgetId.current);
+        turnstileToken.current = null;
+      }
     } finally {
       setLoading(false);
     }

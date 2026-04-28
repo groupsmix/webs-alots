@@ -229,6 +229,17 @@ export function withAuthAnyRole(handler: AuthenticatedHandler) {
         ? { id: verified.id, role: verified.role as UserRole, clinic_id: verified.clinic_id }
         : null;
 
+      // Mirror withAuth's forgery probe signal: if a signature header was
+      // present but verifyProfileHeader rejected it, log a warning so probes
+      // with bad signatures still leave a trail. Routes migrated from
+      // withAuth(handler, null) to withAuthAnyRole would otherwise lose this.
+      if (!profile && request.headers.get(PROFILE_HEADER_NAMES.sig)) {
+        logger.warn("Profile headers present but signature could not be verified — falling back to DB", {
+          context: "with-auth-any-role",
+          userId: user.id,
+        });
+      }
+
       if (!profile) {
         const { data: dbProfile } = await supabase
           .from("users")

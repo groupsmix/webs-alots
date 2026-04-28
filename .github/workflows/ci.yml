@@ -150,12 +150,6 @@ jobs:
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
 
-      - name: Build application
-        run: npm run build
-        env:
-          NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
-          NEXT_PUBLIC_SUPABASE_ANON_KEY: placeholder
-
       - name: Start Supabase (ephemeral CI project)
         uses: supabase/setup-cli@v1
         with:
@@ -166,12 +160,28 @@ jobs:
         # supabase/migrations/ in order, so no separate `db push` step is
         # needed (and `db push` would fail anyway because it targets a
         # *linked remote* project, not the local stack).
+        #
+        # This must run BEFORE `npm run build` so the local Supabase URL
+        # (e.g. http://127.0.0.1:54321) is exported into GITHUB_ENV and
+        # baked into the client bundle by Next.js. NEXT_PUBLIC_* env vars
+        # are inlined at build time, so building with the placeholder URL
+        # would permanently pin client-side Supabase calls to a host that
+        # doesn't exist.
         run: |
           supabase init --force
           supabase start
           echo "SUPABASE_LOCAL_URL=$(supabase status --output json | jq -r '.API_URL')" >> "$GITHUB_ENV"
           echo "SUPABASE_LOCAL_ANON_KEY=$(supabase status --output json | jq -r '.ANON_KEY')" >> "$GITHUB_ENV"
           echo "SUPABASE_LOCAL_SERVICE_ROLE_KEY=$(supabase status --output json | jq -r '.SERVICE_ROLE_KEY')" >> "$GITHUB_ENV"
+
+      - name: Build application
+        # Build runs after `supabase start` so the local Supabase URL/anon
+        # key are inlined into the client bundle. Falls back to placeholder
+        # values only if the local stack failed to publish them.
+        run: npm run build
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ env.SUPABASE_LOCAL_URL || 'https://placeholder.supabase.co' }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ env.SUPABASE_LOCAL_ANON_KEY || 'placeholder' }}
 
       - name: Run E2E tests (advisory)
         # R-11 made E2E blocking, but the test suite assumes CI scaffolding
