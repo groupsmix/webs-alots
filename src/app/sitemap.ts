@@ -51,7 +51,17 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   }
 
   // Dynamic clinic subdomain pages
-  if (process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY) {
+  const isProduction = process.env.NODE_ENV === "production";
+  const hasServiceRoleKey = !!(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY);
+
+  if (isProduction && !hasServiceRoleKey) {
+    throw new Error(
+      "[sitemap] SUPABASE_SERVICE_ROLE_KEY is required in production for dynamic sitemap generation. " +
+      "Set this environment variable or feature-gate this route if service-role access is intentionally unavailable.",
+    );
+  }
+
+  if (hasServiceRoleKey) {
     try {
       // Use admin client (service role) so the sitemap query works without
       // authentication cookies. Googlebot won't have session cookies, so the
@@ -91,6 +101,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         }
       }
     } catch (err) {
+      if (isProduction) throw err;
       logger.warn("Failed to fetch clinic subdomains for sitemap", { context: "sitemap", error: err });
     }
   } else {
@@ -128,7 +139,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   }
 
   // Individual doctor profile pages
-  if (process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY) {
+  if (hasServiceRoleKey) {
     try {
       const doctors = await getDirectoryDoctors();
       for (const doctor of doctors) {
@@ -140,6 +151,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         });
       }
     } catch (err) {
+      if (isProduction) throw err;
       logger.warn("Failed to fetch directory doctors for sitemap", { context: "sitemap", error: err });
     }
   }
