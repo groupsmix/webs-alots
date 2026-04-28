@@ -194,6 +194,14 @@ jobs:
           # src/lib/env.ts hard-fails on startup and Playwright never gets a
           # running web server, so every test fails with a connect error.
           PROFILE_HEADER_HMAC_KEY: ci-e2e-profile-header-hmac-key-placeholder
+          # Force the in-memory rate limiter in CI. The Supabase rate-limit RPC
+          # (rate_limit_check_and_increment) isn't reliably available on the
+          # ephemeral supabase-cli instance during boot, so the limiter's
+          # circuit breaker trips closed and rejects every subsequent request
+          # with 429, causing the E2E suite to fail across the board. The
+          # in-memory limiter has no external dependency and is appropriate
+          # for a single-instance CI web server.
+          RATE_LIMIT_BACKEND: memory
           SEED_PASSWORDS_ROTATED: "true"
           SEED_USERS_DELETED: "true"
 
