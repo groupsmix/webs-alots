@@ -8,11 +8,22 @@
  *
  * Returns: { url: string, key: string }
  *
- * GET /api/upload — Get a pre-signed URL for direct browser upload
+ * GET /api/upload — Get a pre-signed POST policy for direct browser upload
  *   Query params: filename, contentType, category, clinicId
- *   Returns: { uploadUrl: string, publicUrl: string, key: string }
+ *   Returns: { uploadUrl, fields, key, publicUrl?, thumbnails? }
  *
- * PUT /api/upload — Confirm a pre-signed upload (S13 magic-byte validation)
+ *   The client uploads via:
+ *     const fd = new FormData();
+ *     for (const [k, v] of Object.entries(fields)) fd.append(k, v);
+ *     fd.append("file", file);
+ *     await fetch(uploadUrl, { method: "POST", body: fd });
+ *
+ *   R2 enforces both `content-length-range` (max size) and the exact
+ *   `Content-Type` from the policy at upload time, so oversized or
+ *   wrong-type uploads are rejected before bytes are stored.
+ *
+ * PUT /api/upload — Confirm a direct upload (S13 magic-byte validation +
+ *   HeadObject size/content-type cross-check).
  *   Body: { key: string, contentType: string }
  *   Returns: { valid: true } or deletes the object and returns 400
  */
@@ -25,7 +36,8 @@ import {
   uploadToR2,
   isR2Configured,
   buildUploadKey,
-  getPresignedUploadUrl,
+  getPresignedUploadPost,
+  getR2ObjectMetadata,
   readR2ObjectHead,
   deleteFromR2,
   getResponsiveImageUrls,
@@ -175,6 +187,38 @@ export const PUT = withAuthValidation(uploadConfirmSchema, async (body, request,
     return apiError(`File type not allowed: ${contentType}`);
   }
 
+  // Defense-in-depth: although the presigned POST policy enforces
+  // `content-length-range` and `eq $Content-Type` at upload time, an attacker
+  // who reuses a stale policy or a misconfigured bucket could still produce
+  // an object that violates the limits. Confirm via HeadObject before any
+  // downstream code trusts the upload, and delete on mismatch.
+  const metadata = await getR2ObjectMetadata(key);
+  if (!metadata) {
+    return apiNotFound("Uploaded file not found or unreadable");
+  }
+
+  if (metadata.contentLength > MAX_FILE_SIZE) {
+    logger.warn("Pre-signed upload exceeded max size, deleting", {
+      context: "upload",
+      key,
+      contentLength: metadata.contentLength,
+      maxSize: MAX_FILE_SIZE,
+    });
+    await deleteFromR2(key);
+    return apiError("File too large (max 2 MB)");
+  }
+
+  if (metadata.contentType && metadata.contentType !== contentType) {
+    logger.warn("Pre-signed upload content-type mismatch, deleting", {
+      context: "upload",
+      key,
+      declaredType: contentType,
+      actualType: metadata.contentType,
+    });
+    await deleteFromR2(key);
+    return apiError("File content type does not match declared type");
+  }
+
   // Read the first bytes of the uploaded object to validate magic bytes
   const headBuffer = await readR2ObjectHead(key);
   if (!headBuffer) {
@@ -216,9 +260,9 @@ export const GET = withAuth(async (request, { profile }) => {
   }
 
   const key = buildUploadKey(clinicId, category, filename);
-  const uploadUrl = await getPresignedUploadUrl(key, contentType);
+  const presigned = await getPresignedUploadPost(key, contentType, MAX_FILE_SIZE);
 
-  if (!uploadUrl) {
+  if (!presigned) {
     return apiInternalError("Failed to generate upload URL");
   }
 
@@ -231,5 +275,12 @@ export const GET = withAuth(async (request, { profile }) => {
   const isImage = contentType.startsWith("image/");
   const thumbnails = isImage && publicUrl ? getResponsiveImageUrls(publicUrl) : undefined;
 
-  return apiSuccess({ uploadUrl, publicUrl, key, thumbnails });
+  return apiSuccess({
+    uploadUrl: presigned.url,
+    fields: presigned.fields,
+    key: presigned.key,
+    publicUrl,
+    thumbnails,
+    maxSize: MAX_FILE_SIZE,
+  });
 }, ["super_admin", "clinic_admin", "receptionist", "doctor"]);

@@ -115,6 +115,24 @@ export function validateSignedR2Url(
 type S3ClientType = import("@aws-sdk/client-s3").S3Client;
 type PutObjectCommandInputType = import("@aws-sdk/client-s3").PutObjectCommandInput;
 
+/**
+ * Default maximum size enforced by direct-upload presigned POST policies.
+ * Individual call-sites may pass a smaller bound when they know the
+ * acceptable upper limit for that upload kind.
+ */
+export const DEFAULT_PRESIGNED_POST_MAX_SIZE = 2 * 1024 * 1024; // 2 MB
+
+/**
+ * Returned by {@link getPresignedUploadPost}. Clients submit the file as the
+ * `file` field of a `multipart/form-data` POST to `url`, including every
+ * field returned in `fields`.
+ */
+export interface PresignedUploadPost {
+  url: string;
+  fields: Record<string, string>;
+  key: string;
+}
+
 function getR2Config() {
   const accountId = process.env.R2_ACCOUNT_ID;
   const accessKeyId = process.env.R2_ACCESS_KEY_ID;
@@ -268,75 +286,64 @@ export async function deleteFromR2(key: string): Promise<void> {
 }
 
 /**
- * Generate a pre-signed URL for direct browser upload.
- * Allows clients to upload directly to R2 without going through the server.
+ * Generate a pre-signed POST policy for direct browser upload.
+ *
+ * Audit 3.7 / HIGH-07 Fix: PUT pre-signed URLs cannot enforce a maximum object
+ * size — a malicious client could upload multi-gigabyte files before the
+ * server confirmation route ever runs. Presigned POST policies *can* enforce
+ * size via the `content-length-range` condition, so R2 itself rejects
+ * oversized uploads at write time rather than after the fact.
+ *
+ * The returned `fields` must be sent verbatim as `multipart/form-data` fields
+ * alongside the file (which goes in a final `file` part). The S3/R2 server
+ * validates the policy before accepting any bytes.
+ *
+ * Conditions enforced server-side by R2:
+ *   - `content-length-range`: file size must be within `[0, maxSize]`.
+ *   - `eq $Content-Type`: declared MIME type must match `contentType` exactly.
+ *
+ * S13-FIX: `Content-Disposition: attachment` is locked into the policy so
+ * browsers never render uploaded files inline (defense-in-depth against
+ * stored XSS via HTML/JS uploads that bypass magic-byte validation).
  *
  * @param key          Object key
- * @param contentType  Expected MIME type
- * @param expiresIn    URL validity in seconds (default: 3600 = 1 hour)
- * @returns Pre-signed upload URL, or null if R2 is not configured
+ * @param contentType  Expected MIME type (locked into the POST policy)
+ * @param maxSize      Maximum bytes accepted (default: 2 MB)
+ * @param expiresIn    Policy validity in seconds (default: 600 = 10 min)
+ * @returns Presigned POST URL + fields, or null if R2 is not configured
  */
-export async function getPresignedUploadUrl(
+export async function getPresignedUploadPost(
   key: string,
   contentType: string,
+  maxSize: number = DEFAULT_PRESIGNED_POST_MAX_SIZE,
   expiresIn = 600,
-): Promise<string | null> {
+): Promise<PresignedUploadPost | null> {
   const client = await getClient();
   const config = getR2Config();
   if (!client || !config) return null;
 
-  const { PutObjectCommand } = await import("@aws-sdk/client-s3");
+  const { createPresignedPost } = await import("@aws-sdk/s3-presigned-post");
 
-  // Audit 3.7 Fix: Use POST pre-signed URLs instead of PUT to enforce content-length-range.
-  // PUT presigned URLs in S3 do not support max-size enforcement, allowing malicious
-  // clients to upload 5GB files before confirming.
-  try {
-    const { createPresignedPost: _createPresignedPost } = await import("@aws-sdk/s3-presigned-post");
-    await _createPresignedPost(client, {
-      Bucket: config.bucketName,
-      Key: key,
-      Conditions: [
-        ["content-length-range", 0, 5 * 1024 * 1024], // Max 5 MB enforced by R2
-        ["eq", "$Content-Type", contentType],
-      ],
-      Fields: {
-        "Content-Type": contentType,
-      },
-      Expires: expiresIn,
-    });
-    
-    // We return a JSON string that the client will need to parse to do the POST upload.
-    // To maintain backward compatibility with existing PUT clients that expect a simple URL string,
-    // we would need to change the client code as well. Since we only want to fix the backend vulnerability,
-    // and PUT doesn't support content-length-range, we will stick to PUT but add a note, or we can just 
-    // implement a cleanup cron job as suggested by the audit.
-    //
-    // Actually, Cloudflare R2 DOES support `content-length-range` but ONLY via POST policies.
-    // If we return a POST policy here, all client-side `fetch(uploadUrl, { method: 'PUT' })` will break.
-    // Let's implement the cleanup approach instead, or simply add a TODO for the cleanup cron job
-    // since building a full cleanup cron job requires DB state for "unconfirmed" uploads.
-  } catch {
-    // Ignore, just exploring options
-  }
-
-  const { getSignedUrl } = await import("@aws-sdk/s3-request-presigner");
-
-  // HIGH-07 / Audit 3.7: PUT pre-signed URLs do not support maximum size enforcement
-  // natively in S3/R2 (unlike POST policies). A malicious client could upload up to 5GB.
-  // Mitigation implemented: We enforce the 2MB limit on the server-side confirmation route (PUT /api/upload).
-  // Unconfirmed orphaned uploads must be cleaned up via a bucket lifecycle rule or a cron job.
-  //
-  // S13-FIX: Set Content-Disposition to "attachment" so browsers will never
-  // render uploaded files inline (prevents stored XSS via HTML/JS uploads
-  // that bypass the server-side magic-byte validation).
-  const command = new PutObjectCommand({
+  const presigned = await createPresignedPost(client, {
     Bucket: config.bucketName,
     Key: key,
-    ContentType: contentType,
-    ContentDisposition: "attachment",
+    Conditions: [
+      ["content-length-range", 0, maxSize],
+      ["eq", "$Content-Type", contentType],
+      ["eq", "$Content-Disposition", "attachment"],
+    ],
+    Fields: {
+      "Content-Type": contentType,
+      "Content-Disposition": "attachment",
+    },
+    Expires: expiresIn,
   });
 
-  return getSignedUrl(client, command, { expiresIn });
+  return {
+    url: presigned.url,
+    fields: presigned.fields,
+    key,
+  };
 }
 
 /**
@@ -373,6 +380,47 @@ export async function getPresignedDownloadUrl(
   // on the R2 bucket or a dedicated download proxy route.
 
   return getSignedUrl(client, command, { expiresIn });
+}
+
+/**
+ * Object metadata retrieved from R2 via HeadObject.
+ */
+export interface R2ObjectMetadata {
+  contentLength: number;
+  contentType: string | null;
+}
+
+/**
+ * Fetch object metadata (size + content type) from R2 without downloading the
+ * body. Used by the upload confirmation route to validate that a direct
+ * upload actually matched the declared content-type and size, even though the
+ * presigned POST policy already enforces these server-side.
+ *
+ * Returns `null` if the object does not exist or R2 is not configured.
+ */
+export async function getR2ObjectMetadata(
+  key: string,
+): Promise<R2ObjectMetadata | null> {
+  const client = await getClient();
+  const config = getR2Config();
+  if (!client || !config) return null;
+
+  const { HeadObjectCommand } = await import("@aws-sdk/client-s3");
+
+  try {
+    const response = await client.send(
+      new HeadObjectCommand({
+        Bucket: config.bucketName,
+        Key: key,
+      }),
+    );
+    return {
+      contentLength: response.ContentLength ?? 0,
+      contentType: response.ContentType ?? null,
+    };
+  } catch {
+    return null;
+  }
 }
 
 /**
