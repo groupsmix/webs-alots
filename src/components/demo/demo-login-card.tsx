@@ -6,7 +6,6 @@ import Link from "next/link";
 import { useState, useRef, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { DEMO_USERS } from "@/lib/demo";
-import Script from "next/script";
 
 /**
  * R-10: Only the patient role is exposed for demo login.

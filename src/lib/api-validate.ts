@@ -29,7 +29,7 @@ import { apiValidationError, apiInternalError } from "@/lib/api-response";
 import { logger } from "@/lib/logger";
 import type { UserRole } from "@/lib/types/database";
 import { safeParse } from "@/lib/validations";
-import { withAuth, type AuthContext } from "@/lib/with-auth";
+import { withAuth, withAuthAnyRole, type AuthContext } from "@/lib/with-auth";
 
 /**
  * Wrap an API route handler with Zod request body validation.
@@ -85,7 +85,7 @@ export function withAuthValidation<T>(
   handler: (data: T, request: NextRequest, auth: AuthContext) => Promise<NextResponse>,
   allowedRoles: UserRole[] | null,
 ): (request: NextRequest) => Promise<NextResponse> {
-  return withAuth(async (request: NextRequest, auth: AuthContext) => {
+  const inner = async (request: NextRequest, auth: AuthContext) => {
     let body: unknown;
     try {
       body = await request.json();
@@ -107,5 +107,11 @@ export function withAuthValidation<T>(
       });
       return apiInternalError();
     }
-  }, allowedRoles);
+  };
+
+  // R-04: withAuth no longer accepts null. Use withAuthAnyRole when callers
+  // pass null to preserve the "any authenticated user" behavior.
+  return allowedRoles === null
+    ? withAuthAnyRole(inner)
+    : withAuth(inner, allowedRoles);
 }
