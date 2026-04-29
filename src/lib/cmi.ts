@@ -163,12 +163,27 @@ export async function verifyCmiCallback(
   const receivedHash = params.HASH || params.hash;
   if (!receivedHash) return null;
 
-  // Rebuild hash from received parameters (excluding the hash itself)
+  // S-06: Rebuild hash from received parameters using only known CMI fields.
+  // Unknown params are NOT included in the HMAC reconstruction to prevent
+  // an attacker from injecting fields that alter the hash computation.
+  const CMI_KNOWN_HASH_FIELDS = new Set([
+    'clientid', 'amount', 'currency', 'oid', 'okUrl', 'failUrl',
+    'callbackUrl', 'shopurl', 'TranType', 'lang', 'BillToName', 'email',
+    'description', 'storeType', 'ProcReturnCode', 'procreturncode',
+    'TransId', 'transid', 'AuthCode', 'authcode', 'Response',
+    'mdStatus', 'txstatus', 'iReqCode', 'iReqDetail', 'vendorCode',
+    'PAResSyntaxOK', 'PAResVerified', 'cavv', 'cavvAlgorithm', 'eci',
+    'xid', 'md', 'rnd', 'OID', 'AMOUNT',
+  ]);
+
   const fieldsToHash: Record<string, string> = {};
   for (const [key, value] of Object.entries(params)) {
     const lowerKey = key.toLowerCase();
     if (lowerKey !== "hash" && lowerKey !== "encoding" && lowerKey !== "hashalgorithm") {
-      fieldsToHash[key] = value;
+      // S-06: Only include known CMI fields or rnd_* / EXTRA.* custom fields
+      if (CMI_KNOWN_HASH_FIELDS.has(key) || key.startsWith('rnd_') || key.startsWith('EXTRA.')) {
+        fieldsToHash[key] = value;
+      }
     }
   }
 

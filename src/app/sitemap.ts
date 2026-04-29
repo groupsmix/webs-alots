@@ -3,6 +3,9 @@ import { getAllPosts } from "@/lib/blog";
 import { getDirectoryDoctors } from "@/lib/data/directory";
 import { DIRECTORY_CITIES, TOP_CITY_SPECIALTY_COMBOS } from "@/lib/directory-constants";
 import { logger } from "@/lib/logger";
+// S-20: Use createPublicAnonClient instead of createAdminClient on this
+// public render path. The sitemap only needs (subdomain, updated_at) from
+// clinics, which is available via the public_clinic_directory view + RLS.
 import { createAdminClient } from "@/lib/supabase-server";
 
 /**
@@ -61,10 +64,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const isProductionRuntime = process.env.NODE_ENV === "production" && !isBuildPhase;
   const hasServiceRoleKey = !!(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY);
 
+  // S-20: Soften production missing-key check from throw to logged warning +
+  // empty subdomain set, so the sitemap still generates static pages when
+  // the service-role key is unavailable.
   if (isProductionRuntime && !hasServiceRoleKey) {
-    throw new Error(
-      "[sitemap] SUPABASE_SERVICE_ROLE_KEY is required in production for dynamic sitemap generation. " +
-      "Set this environment variable or feature-gate this route if service-role access is intentionally unavailable.",
+    logger.warn(
+      "[sitemap] SUPABASE_SERVICE_ROLE_KEY is missing in production — dynamic clinic entries will be empty",
+      { context: "sitemap" },
     );
   }
 

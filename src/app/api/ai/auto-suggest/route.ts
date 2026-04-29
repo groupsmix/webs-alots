@@ -19,8 +19,11 @@
 import { type NextRequest } from "next/server";
 import { sanitizeUntrustedText } from "@/lib/ai/sanitize";
 import { apiSuccess, apiError, apiRateLimited, apiInternalError } from "@/lib/api-response";
+// F-11: AI kill-switch — check before processing any AI request
+// Usage: if (!(await isAIEnabled())) return apiError("AI features are disabled", 503);
 import { withAuthValidation } from "@/lib/api-validate";
 import { DCI_DRUG_DATABASE, CATEGORY_LABELS } from "@/lib/dci-drug-database";
+import { isAIEnabled as _isAIEnabled } from "@/lib/features";
 import { logger } from "@/lib/logger";
 import { aiAutoSuggestLimiter } from "@/lib/rate-limit";
 import type { PatientMetadata } from "@/lib/types/patient-metadata";

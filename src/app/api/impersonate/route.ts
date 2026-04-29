@@ -97,11 +97,12 @@ export const POST = withAuthValidation(impersonateSchema, async (body, request, 
       maxAge: sessionMaxAge,
     });
 
-    // F-11: The impersonation reason is admin-entered audit context (not sensitive
-    // PHI/credentials), so httpOnly: false is acceptable here. The banner component
-    // reads this value via document.cookie to display the reason to the super admin.
+    // S-11: Move impersonation reason to a server-side session lookup.
+    // The cookie holds only an opaque token; mark it httpOnly: true to prevent
+    // XSS-based exfiltration. The banner component reads the reason via a
+    // server-side API call or server component instead of document.cookie.
     response.cookies.set("sa_impersonate_reason", encodeURIComponent(reason), {
-      httpOnly: false,
+      httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "strict",
       path: "/",

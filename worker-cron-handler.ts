@@ -46,9 +46,11 @@ export default {
 
     console.log(`[Cron] Firing ${controller.cron} → ${route}`);
 
-    // Build a request to the Next.js API route via the same Worker fetch handler.
-    // Use Authorization: Bearer header — both cron routes expect this format.
-    const url = new URL(route, "http://localhost");
+    // B-03: Build a request to the Next.js API route via the same Worker fetch handler.
+    // Use a configurable base URL (defaulted to the prod host) so downstream
+    // subdomain/CSRF/signed-URL helpers see the real host instead of localhost.
+    const cronBaseUrl = env.CRON_SELF_BASE_URL || `https://${env.ROOT_DOMAIN || "oltigo.com"}`;
+    const url = new URL(route, cronBaseUrl);
     const headers: HeadersInit = {};
 
     const cronSecret = env.CRON_SECRET;

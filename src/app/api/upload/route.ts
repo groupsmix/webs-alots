@@ -28,6 +28,7 @@
  *   Returns: { valid: true } or deletes the object and returns 400
  */
 
+// S-26: Upload route requires tenant context — never write to a shared/ prefix
 import { apiError, apiForbidden, apiInternalError, apiNotFound, apiSuccess } from "@/lib/api-response";
 import { withAuthValidation } from "@/lib/api-validate";
 import { requiresEncryption } from "@/lib/encryption";

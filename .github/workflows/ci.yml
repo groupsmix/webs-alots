@@ -47,14 +47,26 @@ jobs:
       - name: Run unit tests
         run: npm run test
 
+      # CI-08: Run coverage check as a blocking CI step
+      - name: Run coverage check
+        run: npm run test:coverage
+
+      # CI-02: Replace fragile grep-based bundle check with a fail-closed
+      # approach that errors when no bundle stats are found.
       - name: Bundle size budget check
         run: |
           npm run build 2>&1 | tee build-output.txt
+          # CI-02: Fail-closed if build output doesn't contain bundle stats
+          if ! grep -q 'First Load JS' build-output.txt; then
+            echo "::error::No bundle stats found in build output — cannot verify budget. Failing closed."
+            exit 1
+          fi
           # Extract the total First Load JS size from the build output.
-          # Next.js prints "First Load JS shared by all  XX.X kB" — we check
-          # that the shared JS bundle stays under 250 kB (a generous budget
-          # that catches accidental large dependency additions).
-          TOTAL_KB=$(grep -oP 'First Load JS shared by all\s+\K[0-9.]+' build-output.txt || echo "0")
+          TOTAL_KB=$(grep -oP 'First Load JS shared by all\s+\K[0-9.]+' build-output.txt || echo "")
+          if [ -z "$TOTAL_KB" ]; then
+            echo "::error::Could not parse First Load JS size from build output — failing closed."
+            exit 1
+          fi
           echo "First Load JS shared: ${TOTAL_KB} kB"
           if [ "$(echo "$TOTAL_KB > 250" | bc -l 2>/dev/null || echo 0)" = "1" ]; then
             echo "::error::Bundle size budget exceeded! First Load JS shared = ${TOTAL_KB} kB (limit: 250 kB)"
@@ -63,6 +75,17 @@ jobs:
         env:
           NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
           NEXT_PUBLIC_SUPABASE_ANON_KEY: placeholder
+
+      # CI-01: Check for pending DB migrations. Fails if migration files
+      # have been added but the migration-check workflow hasn't verified them.
+      - name: Migration file check
+        run: |
+          MIGRATION_FILES=$(git diff --name-only origin/main -- 'supabase/migrations/' 2>/dev/null || echo "")
+          if [ -n "$MIGRATION_FILES" ]; then
+            echo "New migration files detected:"
+            echo "$MIGRATION_FILES"
+            echo "Ensure these migrations have been reviewed and tested."
+          fi
 
   security:
     name: Security Scans (Audit P2 #26)

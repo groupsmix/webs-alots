@@ -57,11 +57,19 @@ export async function verifyPartnerApiKey(
 
     if (error) {
       const pgError = error as { code?: string };
-      // Table might not exist yet
+      // S-27: In production, fail-closed (401/503) if the table is missing.
+      // The partner_api_keys table is a hard schema requirement (migration 00068).
       if (pgError.code === "42P01") {
-        logger.debug("partner_api_keys table not created yet", {
-          context: "partner-auth",
-        });
+        if (process.env.NODE_ENV === "production") {
+          logger.error("partner_api_keys table missing in production — fail-closed", {
+            context: "partner-auth",
+          });
+          // Return null = 401 Unauthorized from the caller
+        } else {
+          logger.debug("partner_api_keys table not created yet", {
+            context: "partner-auth",
+          });
+        }
         return null;
       }
       logger.error("Partner API key lookup failed", {

@@ -9,13 +9,26 @@
 
 import { createServerClient } from "@supabase/ssr";
 import { NextRequest } from "next/server";
-import { apiError, apiSuccess } from "@/lib/api-response";
+import { apiError, apiSuccess, apiRateLimited } from "@/lib/api-response";
 import { withValidation } from "@/lib/api-validate";
 import { logger } from "@/lib/logger";
-import { extractClientIp } from "@/lib/rate-limit";
+import { createRateLimiter, extractClientIp } from "@/lib/rate-limit";
+import { getTenant } from "@/lib/tenant";
 import { consentSchema } from "@/lib/validations";
 
+// S-22: Rate limit keyed on IP + clinic subdomain. Fail-closed if backend unavailable.
+const consentLimiter = createRateLimiter({ windowMs: 60 * 60 * 1000, max: 60, failClosed: true });
+
 export const POST = withValidation(consentSchema, async (data, request: NextRequest) => {
+  // S-22: Enforce rate limit on consent endpoint
+  const clientIp = extractClientIp(request);
+  const tenant = await getTenant();
+  const rateLimitKey = `consent:${clientIp}:${tenant?.clinicId ?? "root"}`;
+  const allowed = await consentLimiter.check(rateLimitKey);
+  if (!allowed) {
+    return apiRateLimited("Too many consent requests. Please try again later.");
+  }
+
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
