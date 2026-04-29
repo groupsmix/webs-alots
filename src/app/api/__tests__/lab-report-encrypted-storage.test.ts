@@ -336,8 +336,39 @@ describe("GET /api/files/download — auth and tenant scoping", () => {
     expect(response.headers.get("Content-Type")).toMatch(/^text\/html/);
     expect(response.headers.get("Content-Disposition")).toMatch(/^inline/);
     expect(response.headers.get("Cache-Control")).toMatch(/no-store/);
+    // Defense-in-depth XSS hardening: decrypted HTML PHI must be served with a
+    // strict per-response CSP, nosniff, and no-referrer so any future un-escaped
+    // field cannot become an authenticated stored-XSS sink.
+    const csp = response.headers.get("Content-Security-Policy");
+    expect(csp).toBeTruthy();
+    expect(csp).toContain("default-src 'none'");
+    expect(csp).toContain("frame-ancestors 'none'");
+    expect(csp).toContain("base-uri 'none'");
+    expect(csp).toContain("form-action 'none'");
+    expect(csp).not.toContain("script-src");
+    expect(response.headers.get("X-Content-Type-Options")).toBe("nosniff");
+    expect(response.headers.get("Referrer-Policy")).toBe("no-referrer");
     expect(downloadAndDecryptMock).toHaveBeenCalledWith(key);
     expect(await response.text()).toBe("<html>secret</html>");
+  });
+
+  it("does not attach a CSP for non-HTML downloads (e.g. PDF)", async () => {
+    authedAs("doctor", CLINIC_ID);
+    downloadAndDecryptMock.mockResolvedValueOnce(Buffer.from("%PDF-1.4", "utf-8"));
+
+    const key = `clinics/${CLINIC_ID}/lab-reports/123.pdf`;
+    const { GET } = await import("@/app/api/files/download/route");
+    const response = await GET(
+      buildGetRequest(`http://t.test/api/files/download?key=${encodeURIComponent(key)}`),
+    );
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get("Content-Type")).toBe("application/pdf");
+    // Non-HTML PHI is offered as an attachment so the browser doesn't render
+    // it — a CSP would be a no-op here, so we don't attach one.
+    expect(response.headers.get("Content-Disposition")).toMatch(/^attachment/);
+    expect(response.headers.get("Content-Security-Policy")).toBeNull();
+    expect(response.headers.get("Referrer-Policy")).toBe("no-referrer");
   });
 
   it("super_admin can download from any clinic", async () => {
