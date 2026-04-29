@@ -121,6 +121,7 @@ vi.mock("@/lib/logger", () => ({
 
 const readR2ObjectHeadMock = vi.fn<(...args: unknown[]) => unknown>();
 const deleteFromR2Mock = vi.fn<(...args: unknown[]) => unknown>();
+const getR2ObjectMetadataMock = vi.fn<(...args: unknown[]) => unknown>();
 vi.mock("@/lib/r2", async () => {
   const actual = await vi.importActual<typeof import("@/lib/r2")>("@/lib/r2");
   return {
@@ -128,6 +129,8 @@ vi.mock("@/lib/r2", async () => {
     isR2Configured: vi.fn(() => true),
     readR2ObjectHead: (...args: unknown[]) => readR2ObjectHeadMock(...args),
     deleteFromR2: (...args: unknown[]) => deleteFromR2Mock(...args),
+    getR2ObjectMetadata: (...args: unknown[]) =>
+      getR2ObjectMetadataMock(...args),
   };
 });
 
@@ -160,10 +163,20 @@ function buildPutRequest(body: Record<string, unknown>): NextRequest {
   });
 }
 
+// HeadObject metadata that satisfies the route's size + content-type checks
+// for the happy-path tests. Tests that exercise rejection paths can override
+// this per-call.
+const PDF_METADATA = {
+  contentLength: 8,
+  contentType: "application/pdf",
+};
+
 beforeEach(() => {
   vi.clearAllMocks();
   readR2ObjectHeadMock.mockReset();
   deleteFromR2Mock.mockReset();
+  getR2ObjectMetadataMock.mockReset();
+  getR2ObjectMetadataMock.mockResolvedValue(PDF_METADATA);
   mockChainable.single.mockReset();
   mockChainable.maybeSingle.mockReset();
 });
