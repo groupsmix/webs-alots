@@ -84,6 +84,12 @@ const ENV_RULES: EnvRule[] = [
   { name: "CLOUDFLARE_ACCOUNT_ID", required: false, description: "Cloudflare account ID for Workers AI", group: "ai" },
   { name: "CLOUDFLARE_AI_API_TOKEN", required: false, description: "Cloudflare AI API token", group: "ai" },
 
+  // ── PHI Encryption (C-08) ──────────────────────────────────────────
+  // C-08: PHI_ENCRYPTION_KEY is required in production. Without it, any code
+  // path that calls encryptAndUpload silently fails, and any code path that
+  // calls uploadToR2 directly stores plaintext PHI on R2.
+  { name: "PHI_ENCRYPTION_KEY", required: process.env.NODE_ENV === "production", description: "AES-256-GCM key for PHI file encryption (64 hex chars, required in production; `openssl rand -hex 32`)", group: "security" },
+
   // ── Observability ────────────────────────────────────────────────────
   // O-06: Sentry DSN is required in production so errors are not silently lost.
   { name: "NEXT_PUBLIC_SENTRY_DSN", required: process.env.NODE_ENV === "production", description: "Sentry DSN for error monitoring (required in production)", group: "observability" },
@@ -217,6 +223,12 @@ export function enforceEnvValidation(): void {
     throw new Error(message);
   }
 
+  // C-08: Validate PHI_ENCRYPTION_KEY shape (64 hex chars = AES-256-GCM).
+  // The ENV_RULES check above only ensures the key is set; this validates
+  // that the value is actually usable for encryption. An invalid key would
+  // silently disable encryption at first use.
+  enforcePhiEncryptionConfigured();
+
   // Audit Finding #7 — enforce safe PHI masking defaults in production.
   // Production must default to a masked view of PHI ("partial" or "full").
   // Explicitly disabling masking ("none") is only permitted when the operator
@@ -232,6 +244,33 @@ export function enforceEnvValidation(): void {
 
   // F-10: Ensure exactly one email provider is configured (not both).
   enforceEmailProviderExclusivity();
+}
+
+/**
+ * C-08: Validate PHI_ENCRYPTION_KEY shape in production.
+ *
+ * The ENV_RULES check ensures the key is set; this validates that the
+ * value is actually a 64-character hex string (AES-256-GCM key). An
+ * invalid key would silently disable encryption at first use because
+ * `encryption.ts` would fail to derive a CryptoKey.
+ *
+ * Exported for unit tests.
+ */
+export function enforcePhiEncryptionConfigured(): void {
+  if (process.env.NODE_ENV !== "production") return;
+
+  const key = process.env.PHI_ENCRYPTION_KEY;
+  if (!key) return; // Already caught by ENV_RULES required check
+
+  const HEX_64_RE = /^[0-9a-fA-F]{64}$/;
+  if (!HEX_64_RE.test(key)) {
+    const message =
+      "[STARTUP HEALTH CHECK FAILED] PHI_ENCRYPTION_KEY must be exactly 64 hex characters " +
+      "(a 256-bit AES key). The current value does not match this format.\n" +
+      "Generate a valid key: `openssl rand -hex 32`";
+    logger.error(message, { context: "env-validation", check: "phi-encryption-key" });
+    throw new Error(message);
+  }
 }
 
 /**

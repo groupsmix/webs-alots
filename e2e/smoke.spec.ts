@@ -32,6 +32,9 @@ test.describe("API health checks", () => {
     const response = await request.get("/api/branding");
     expect(response.status()).toBe(200);
     const body = await response.json();
-    expect(body).toHaveProperty("name");
+    // The API returns { ok: true, data: { name, ... } } via apiSuccess()
+    expect(body).toHaveProperty("ok", true);
+    expect(body).toHaveProperty("data");
+    expect(body.data).toHaveProperty("name");
   });
 });
