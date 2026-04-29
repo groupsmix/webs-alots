@@ -197,33 +197,41 @@ jobs:
         # Build runs after `supabase start` so the local Supabase URL/anon
         # key are inlined into the client bundle. Falls back to placeholder
         # values only if the local stack failed to publish them.
+        #
+        # CI-03 fixture fix: NEXT_PUBLIC_PHONE_AUTH_ENABLED must be set
+        # at build time (NEXT_PUBLIC_* vars are inlined by Next.js),
+        # otherwise the login/register pages render without the OTP step
+        # and the E2E suite fails.
         run: npm run build
         env:
           NEXT_PUBLIC_SUPABASE_URL: ${{ env.SUPABASE_LOCAL_URL || 'https://placeholder.supabase.co' }}
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ env.SUPABASE_LOCAL_ANON_KEY || 'placeholder' }}
+          NEXT_PUBLIC_PHONE_AUTH_ENABLED: "true"
 
-      - name: Run E2E tests (advisory)
-        # R-11 made E2E blocking, but the test suite assumes CI scaffolding
-        # that is not yet in place: a seeded clinic record, a working
-        # subdomain (e.g. demo.localhost) routed to that clinic, and the
-        # NEXT_PUBLIC_PHONE_AUTH_ENABLED feature flag turned on. Without
-        # those, pages that depend on tenant context render partial/empty
-        # content and tests like /api/branding=200 fail with 400 because no
-        # clinic is resolvable from plain localhost. Until that fixture
-        # work lands (tracked separately), keep the suite advisory so a
-        # broken-but-pre-existing baseline does not block unrelated PRs.
-        # The Playwright report is still uploaded as an artifact.
-        continue-on-error: true
+      - name: Run E2E tests (blocking)
+        # CI-03: Previously ran with `continue-on-error: true` (advisory)
+        # because the suite assumed CI scaffolding that was missing —
+        # a seeded clinic, a subdomain routed to that clinic, and the
+        # NEXT_PUBLIC_PHONE_AUTH_ENABLED flag. Those fixtures are now
+        # provided:
+        #   1. supabase start applies migration 00053, which seeds the
+        #      demo clinic with subdomain='demo'.
+        #   2. E2E_BASE_URL targets demo.localhost, so middleware can
+        #      resolve tenant context (Chromium resolves *.localhost to
+        #      127.0.0.1 per RFC 6761).
+        #   3. NEXT_PUBLIC_PHONE_AUTH_ENABLED is set at build time above.
+        # The suite is now REQUIRED and failures block the PR.
         run: npx playwright test --project=chromium
         env:
           CI: true
-          E2E_BASE_URL: http://localhost:3000
+          E2E_BASE_URL: http://demo.localhost:3000
           NEXT_PUBLIC_SUPABASE_URL: ${{ env.SUPABASE_LOCAL_URL || secrets.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co' }}
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ env.SUPABASE_LOCAL_ANON_KEY || secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder' }}
+          NEXT_PUBLIC_PHONE_AUTH_ENABLED: "true"
           SUPABASE_SERVICE_ROLE_KEY: ${{ env.SUPABASE_LOCAL_SERVICE_ROLE_KEY || '' }}
           BOOKING_TOKEN_SECRET: ci-e2e-booking-token-secret-placeholder
           ROOT_DOMAIN: localhost
-          NEXT_PUBLIC_SITE_URL: http://localhost:3000
+          NEXT_PUBLIC_SITE_URL: http://demo.localhost:3000
           CRON_SECRET: ci-e2e-cron-secret-placeholder
           # R-02: PROFILE_HEADER_HMAC_KEY is required in production mode (and
           # `next start` runs in production). Without it, env validation in
