@@ -309,17 +309,20 @@ export function enforceRateLimitBackend(): void {
   }
 
   if (process.env.NODE_ENV === "production" && backend === "memory") {
-    // CI exception: `next start` forces NODE_ENV=production, but the E2E
-    // Playwright job runs a single-instance Next server on the runner where
-    // in-memory limiting is the correct (and only reliable) choice — the
-    // ephemeral local Supabase instance's rate-limit RPC is not guaranteed
-    // to be available during boot, and forcing it trips the failClosed
-    // circuit breaker and 429s every auth request. Gate strictly on the
-    // GitHub-Actions-provided `CI=true` flag so a real production
-    // deployment can never opt into this path.
-    if (process.env.CI === "true") {
+    // GitHub Actions runs `next start` (NODE_ENV=production) on a single
+    // instance for E2E tests, where in-memory rate limiting is acceptable —
+    // the ephemeral local Supabase instance's rate-limit RPC is not
+    // guaranteed to be available during boot, and forcing it trips the
+    // failClosed circuit breaker and 429s every auth request.
+    //
+    // We gate on GITHUB_ACTIONS rather than the generic CI variable because
+    // CI=true is easy to set accidentally on a real deployment; GITHUB_ACTIONS
+    // is only set inside GitHub-hosted runners, so the production guard still
+    // applies to Cloudflare Workers / staging / prod even if a deploy script
+    // happens to export CI=true.
+    if (process.env.GITHUB_ACTIONS === "true") {
       logger.warn(
-        "RATE_LIMIT_BACKEND=memory accepted in production mode because CI=true. " +
+        "RATE_LIMIT_BACKEND=memory accepted in production mode because GITHUB_ACTIONS=true. " +
           "This path is permitted only for the E2E Playwright runner and must " +
           "never be set in a real production deployment.",
         { context: "env-validation", check: "rate-limit-backend" },

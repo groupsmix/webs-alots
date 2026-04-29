@@ -44,9 +44,6 @@ jobs:
       - name: Type check
         run: npx tsc --noEmit
 
-      - name: Run unit tests
-        run: npm run test
-
       # CI-08: Coverage thresholds are defined in vitest.config.ts and
       # enforced here. @vitest/coverage-v8 is a devDependency installed by
       # `npm ci` above; failing this step blocks the PR.
@@ -145,7 +142,11 @@ jobs:
       - name: Install cosign
         uses: sigstore/cosign-installer@v4.1.1
 
+      # Skip on fork PRs: keyless cosign signing requires an OIDC token,
+      # which GitHub does not issue to workflows triggered by pull_request
+      # events from forks (id-token permissions are read-only there).
       - name: Sign SBOM with cosign (keyless)
+        if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
         env:
           COSIGN_EXPERIMENTAL: "true"
         run: |
@@ -157,7 +158,10 @@ jobs:
       # The attestation is uploaded to the GitHub attestations API and can
       # be verified later with `gh attestation verify bom.json --repo
       # ${{ github.repository }}`.
+      # Same fork-PR limitation as the cosign step above: the build
+      # provenance API needs a writable id-token / attestations token.
       - name: Attest SBOM build provenance (SLSA)
+        if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
         uses: actions/attest-build-provenance@v3.1.0
         with:
           subject-path: bom.json
