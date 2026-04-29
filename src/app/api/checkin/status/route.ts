@@ -2,16 +2,25 @@ import { NextRequest } from "next/server";
 import { apiSuccess, apiError, apiInternalError } from "@/lib/api-response";
 import { logger } from "@/lib/logger";
 import { createTenantClient } from "@/lib/supabase-server";
+import { getTenant } from "@/lib/tenant";
 
 /**
  * GET /api/checkin/status?clinicId=...
  *
  * Check whether kiosk mode is enabled for the given clinic.
+ *
+ * S-02: clinicId is derived from the subdomain via `getTenant()`.
  */
 export async function GET(request: NextRequest) {
-  const clinicId = request.nextUrl.searchParams.get("clinicId");
+  const urlClinicId = request.nextUrl.searchParams.get("clinicId");
+  const tenant = await getTenant();
+  const clinicId = tenant?.clinicId ?? urlClinicId;
   if (!clinicId) {
     return apiError("Missing clinicId", 400);
+  }
+  // S-02: Reject if URL-supplied clinicId disagrees with subdomain.
+  if (urlClinicId && tenant?.clinicId && urlClinicId !== tenant.clinicId) {
+    return apiError("clinicId does not match subdomain", 403);
   }
 
   try {

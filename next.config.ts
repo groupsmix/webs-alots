@@ -76,6 +76,8 @@ const nextConfig: NextConfig = {
         hostname: "uploads.oltigo.com",
       },
     ],
+    // S-39: Explicitly disable SVG processing to prevent XSS via embedded scripts.
+    dangerouslyAllowSVG: false,
     // Optimize image delivery with modern formats
     formats: ["image/avif", "image/webp"],
     // Standardized device sizes for responsive images

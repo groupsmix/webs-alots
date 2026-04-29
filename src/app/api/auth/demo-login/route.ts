@@ -69,8 +69,16 @@ export async function POST(request: NextRequest) {
 
   const { email, turnstile_token } = result.data;
 
-  // R-10: Cloudflare Turnstile verification (fail-closed when configured)
+  // S-12: Turnstile is MANDATORY in production. If TURNSTILE_SECRET_KEY is
+  // missing in prod, hard-fail rather than silently allowing unverified
+  // demo logins which could be abused by bots.
   const turnstileSecret = process.env.TURNSTILE_SECRET_KEY;
+  if (!turnstileSecret && process.env.NODE_ENV === "production") {
+    logger.error("TURNSTILE_SECRET_KEY missing in production — refusing demo login", {
+      context: "demo-login",
+    });
+    return apiInternalError("Demo login is not available (misconfigured)");
+  }
   if (turnstileSecret) {
     if (!turnstile_token) {
       return apiError("Turnstile verification is required", 400);

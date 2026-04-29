@@ -1,7 +1,8 @@
-import { apiSuccess, apiInternalError } from "@/lib/api-response";
+import { apiSuccess, apiError, apiInternalError } from "@/lib/api-response";
 import { withValidation } from "@/lib/api-validate";
 import { logger } from "@/lib/logger";
 import { createTenantClient } from "@/lib/supabase-server";
+import { getTenant } from "@/lib/tenant";
 import { checkinConfirmSchema } from "@/lib/validations";
 
 /**
@@ -9,9 +10,22 @@ import { checkinConfirmSchema } from "@/lib/validations";
  *
  * Confirm patient arrival: update appointment status to "checked_in"
  * and calculate queue position / estimated wait.
+ *
+ * S-02: clinicId is derived from the subdomain. A body-supplied clinicId
+ * is accepted for backward compatibility but must match.
  */
 export const POST = withValidation(checkinConfirmSchema, async (body) => {
-    const { appointmentId, clinicId } = body;
+    const { appointmentId, clinicId: bodyClinicId } = body;
+
+    // S-02: Prefer subdomain-derived tenant over client-supplied clinicId.
+    const tenant = await getTenant();
+    const clinicId = tenant?.clinicId ?? bodyClinicId;
+    if (!clinicId) {
+      return apiError("Clinic context required", 400);
+    }
+    if (bodyClinicId && tenant?.clinicId && bodyClinicId !== tenant.clinicId) {
+      return apiError("clinicId does not match subdomain", 403);
+    }
 
     const supabase = await createTenantClient(clinicId);
 

@@ -79,6 +79,57 @@ export function register() {
       tracesSampler(samplingContext) {
         return getSampleRate(samplingContext);
       },
+
+      // S-35: Strip PHI from Sentry events before they leave the server.
+      // Request bodies, known PHI fields, and breadcrumb data that could
+      // contain patient information are scrubbed. This is defense-in-depth
+      // on top of sendDefaultPii: false.
+      beforeSend(event) {
+        // Strip request bodies — they may contain patient data.
+        if (event.request) {
+          delete event.request.data;
+          delete event.request.cookies;
+          if (event.request.headers) {
+            // Remove auth-related headers that could contain session tokens.
+            const safeHeaders: Record<string, string> = {};
+            const SAFE_HEADER_NAMES = new Set([
+              "content-type", "accept", "user-agent", "referer",
+              "x-trace-id", "host",
+            ]);
+            for (const [k, v] of Object.entries(event.request.headers)) {
+              if (SAFE_HEADER_NAMES.has(k.toLowerCase())) {
+                safeHeaders[k] = String(v);
+              }
+            }
+            event.request.headers = safeHeaders;
+          }
+        }
+        // Strip known PHI field names from extra/context data.
+        const PHI_KEYS = new Set([
+          "phone", "email", "name", "patientName", "patient_name",
+          "name_ar", "full_name", "address", "notes", "content",
+          "message", "file_name", "date_of_birth", "dob",
+          "insurance_number", "cin", "ssn",
+        ]);
+        if (event.extra) {
+          for (const key of Object.keys(event.extra)) {
+            if (PHI_KEYS.has(key.toLowerCase())) {
+              event.extra[key] = "[REDACTED]";
+            }
+          }
+        }
+        return event;
+      },
+
+      // S-35: Strip PHI from breadcrumbs (e.g. fetch body data).
+      beforeBreadcrumb(breadcrumb) {
+        if (breadcrumb.data) {
+          delete breadcrumb.data.body;
+          delete breadcrumb.data.request_body;
+          delete breadcrumb.data.response_body;
+        }
+        return breadcrumb;
+      },
     });
   }
   // Validate all required environment variables at startup so missing

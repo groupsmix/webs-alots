@@ -183,9 +183,13 @@ export const POST = withAuth(async (request, { profile }) => {
   const formData = await request.formData();
   const file = formData.get("file");
   const category = (formData.get("category") as string) || "uploads";
-  // Derive clinicId from the authenticated user's profile to prevent
-  // cross-tenant file access. Fall back to "shared" only for super_admins.
-  const clinicId = profile.clinic_id ?? (profile.role === "super_admin" ? ((formData.get("clinicId") as string) || "shared") : "shared");
+  // S-26: Derive clinicId from the authenticated user's profile. Never
+  // write to a "shared" prefix — if the user has no clinic context the
+  // upload is rejected. Super-admins may specify a target clinicId.
+  const clinicId = profile.clinic_id ?? (profile.role === "super_admin" ? (formData.get("clinicId") as string) : null);
+  if (!clinicId) {
+    return apiError("Clinic context required for uploads", 403);
+  }
 
   if (!file || !(file instanceof File)) {
     return apiError("No file provided");
@@ -331,8 +335,12 @@ export const GET = withAuth(async (request, { profile }) => {
   const filename = searchParams.get("filename");
   const contentType = searchParams.get("contentType");
   const category = searchParams.get("category") || "uploads";
-  // Derive clinicId from session, not from untrusted query params
-  const clinicId = profile.clinic_id ?? (profile.role === "super_admin" ? (searchParams.get("clinicId") || "shared") : "shared");
+  // S-26: Derive clinicId from session. Super-admins may specify a target.
+  // Never fall back to "shared" — reject if no clinic context.
+  const clinicId = profile.clinic_id ?? (profile.role === "super_admin" ? searchParams.get("clinicId") : null);
+  if (!clinicId) {
+    return apiError("Clinic context required for uploads", 403);
+  }
 
   if (!filename || !contentType) {
     return apiError("filename and contentType are required");

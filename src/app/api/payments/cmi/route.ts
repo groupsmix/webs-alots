@@ -17,6 +17,12 @@ const REDIRECT_PATH_ALLOWLIST = [
   /^\/$/,
 ];
 
+/**
+ * S-14: Validate redirect URL for CMI payment flow. In addition to the
+ * origin allow-list check, explicitly reject dangerous protocol schemes
+ * (data:, javascript:, file:, protocol-relative) and normalize trailing
+ * slashes to prevent open-redirect abuse.
+ */
 function validateRedirectUrl(
   url: string | undefined,
   origin: string,
@@ -24,13 +30,20 @@ function validateRedirectUrl(
 ): string {
   const fallback = `${origin}/patient/dashboard?payment=${type}`;
   if (!url) return fallback;
+  // S-14: Block protocol-relative URLs and dangerous schemes up-front.
+  const trimmed = url.trim();
+  if (trimmed.startsWith("//")) return fallback;
+  if (/^(javascript|data|file|vbscript):/i.test(trimmed)) return fallback;
   try {
-    const parsed = new URL(url);
+    const parsed = new URL(trimmed);
+    // S-14: Only allow http(s) schemes.
+    if (parsed.protocol !== "https:" && parsed.protocol !== "http:") return fallback;
     if (parsed.origin !== origin) return fallback;
     // F-24: Check that the pathname is on the allowlist
-    const allowed = REDIRECT_PATH_ALLOWLIST.some((re) => re.test(parsed.pathname));
+    const normalizedPath = parsed.pathname.replace(/\/+$/, "") || "/";
+    const allowed = REDIRECT_PATH_ALLOWLIST.some((re) => re.test(normalizedPath));
     if (!allowed) return fallback;
-    return url;
+    return trimmed;
   } catch {
     return fallback;
   }
