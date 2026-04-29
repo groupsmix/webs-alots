@@ -38,7 +38,7 @@ function getPlausibleHost(): string | null {
   if (!domain) return null;
   const host = process.env.NEXT_PUBLIC_PLAUSIBLE_HOST ?? "https://plausible.io";
   try {
-    return new URL(host).hostname;
+    return new URL(host).host;
   } catch {
     return "plausible.io";
   }
