@@ -311,12 +311,15 @@ export function enforceRateLimitBackend(): void {
   if (
     process.env.NODE_ENV === "production" &&
     backend === "memory" &&
-    process.env.CI !== "true"
+    process.env.GITHUB_ACTIONS !== "true"
   ) {
-    // CI runs `next start` (NODE_ENV=production) on a single instance for
-    // E2E tests, where in-memory rate limiting is acceptable. The
-    // production guard still applies to real deployments (no CI=true on
-    // Cloudflare Workers / staging / prod).
+    // GitHub Actions runs `next start` (NODE_ENV=production) on a single
+    // instance for E2E tests, where in-memory rate limiting is acceptable.
+    // We gate on GITHUB_ACTIONS rather than the generic CI variable
+    // because CI=true is easy to set accidentally on a real deployment;
+    // GITHUB_ACTIONS is only set inside GitHub-hosted runners, so the
+    // production guard still applies to Cloudflare Workers / staging /
+    // prod even if a deploy script happens to export CI=true.
     const message =
       "[STARTUP HEALTH CHECK FAILED] RATE_LIMIT_BACKEND=memory is not allowed in production.\n" +
       "In-memory rate limiting is per-isolate and provides no real protection in a " +
