@@ -136,10 +136,12 @@ jobs:
             --output-file bom.json
 
       # CI-05: Sign the SBOM with cosign using keyless OIDC signing
-      # (Sigstore / Fulcio / Rekor). Produces a detached signature and the
-      # short-lived signing certificate so consumers can verify with
-      # `cosign verify-blob --certificate bom.json.pem --signature
-      # bom.json.sig bom.json`.
+      # (Sigstore / Fulcio / Rekor). cosign v3 emits a single Sigstore
+      # bundle (signature + certificate + Rekor entry) which consumers can
+      # verify with:
+      #   cosign verify-blob --bundle bom.json.bundle bom.json \
+      #     --certificate-identity-regexp ... \
+      #     --certificate-oidc-issuer https://token.actions.githubusercontent.com
       - name: Install cosign
         uses: sigstore/cosign-installer@v4.1.1
 
@@ -148,8 +150,7 @@ jobs:
           COSIGN_EXPERIMENTAL: "true"
         run: |
           cosign sign-blob --yes \
-            --output-signature bom.json.sig \
-            --output-certificate bom.json.pem \
+            --bundle bom.json.bundle \
             bom.json
 
       # CI-05: Generate SLSA build provenance attestation for the SBOM.
@@ -168,8 +169,7 @@ jobs:
           name: sbom
           path: |
             bom.json
-            bom.json.sig
-            bom.json.pem
+            bom.json.bundle
 
       - name: Run Semgrep
         continue-on-error: true
