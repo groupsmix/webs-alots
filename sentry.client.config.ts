@@ -56,7 +56,7 @@ Sentry.init({
       // Redact PHI query params from the URL
       if (typeof event.request.query_string === "string") {
         event.request.query_string = event.request.query_string
-          .replace(/(?:phone|email|name|patient|patientId|dob|date_of_birth)=[^&]*/gi, "$1=[REDACTED]");
+          .replace(/(phone|email|name|patient|patientId|dob|date_of_birth)=[^&]*/gi, "$1=[REDACTED]");
       }
     }
 
