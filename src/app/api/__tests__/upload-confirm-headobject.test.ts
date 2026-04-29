@@ -103,10 +103,11 @@ describe("PUT /api/upload — HeadObject confirmation cross-check", () => {
   it("rejects and deletes an upload that exceeds MAX_FILE_SIZE", async () => {
     authedAs("clinic_admin", CLINIC_ID);
 
-    // The pre-signed POST policy is supposed to bound this at 2 MB, but if
-    // the policy was stale or relaxed the route must still catch it.
+    // The pre-signed POST policy is supposed to bound this at the per-category
+    // limit (2 MB for `photos` per `LIMITS_BY_CATEGORY` in the upload route),
+    // but if the policy was stale or relaxed the route must still catch it.
     getR2ObjectMetadataMock.mockResolvedValueOnce({
-      contentLength: 5 * 1024 * 1024, // 5 MB
+      contentLength: 5 * 1024 * 1024, // 5 MB — exceeds the 2 MB cap for `photos`
       contentType: "image/png",
     });
 
@@ -119,7 +120,10 @@ describe("PUT /api/upload — HeadObject confirmation cross-check", () => {
     );
     const json = await response.json();
 
-    expect(response.status).toBe(400);
+    // RFC 7231 §6.5.11: 413 Payload Too Large is the correct response when an
+    // upload exceeds a server-enforced size limit. Issue #10 standardised this
+    // across the upload routes.
+    expect(response.status).toBe(413);
     expect(json.error).toMatch(/too large/i);
     expect(deleteFromR2Mock).toHaveBeenCalledWith(
       `clinics/${CLINIC_ID}/photos/file.png`,
