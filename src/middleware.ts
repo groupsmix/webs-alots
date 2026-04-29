@@ -176,14 +176,33 @@ export async function middleware(request: NextRequest) {
     return rateLimitResponse;
   }
 
-  // If Supabase is not configured, allow all requests through
-  // so the site renders with demo data instead of crashing
-  if (
-    !process.env.NEXT_PUBLIC_SUPABASE_URL ||
-    !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-  ) {
-    // For protected routes without Supabase, redirect to login
-    // (login page will show an appropriate message)
+  // Supabase configuration check.
+  //
+  // Production MUST fail closed: if NEXT_PUBLIC_SUPABASE_URL or
+  // NEXT_PUBLIC_SUPABASE_ANON_KEY is missing in a production runtime,
+  // we have a misconfigured deploy that could partially serve the app
+  // without auth (and therefore without tenant scoping / RLS). For a
+  // healthcare platform handling PHI this must never silently degrade —
+  // we return 503 so a failing health check trips deployment rollback
+  // and operators are alerted, instead of leaking a half-functional UI.
+  //
+  // In non-production runtimes we keep the legacy demo-mode behavior:
+  // public routes render with demo data and protected routes redirect
+  // to /login. This preserves the local-dev experience without affecting
+  // production safety.
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  const isSupabaseConfigured = !!supabaseUrl && !!supabaseAnonKey;
+
+  if (!supabaseUrl || !supabaseAnonKey || !isSupabaseConfigured) {
+    if (process.env.NODE_ENV === "production") {
+      return withSecurityHeaders(
+        new NextResponse("Server misconfigured", { status: 503 }),
+        cspHeaders,
+      );
+    }
+
+    // Non-production: allow demo-mode rendering.
     if (isProtectedRoute(pathname)) {
       const loginUrl = new URL("/login", request.url);
       loginUrl.searchParams.set("redirect", pathname);
@@ -205,8 +224,8 @@ export async function middleware(request: NextRequest) {
   // These placeholder headers are omitted to avoid misleading API consumers.
 
   const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+    supabaseUrl,
+    supabaseAnonKey,
     {
       cookies: {
         getAll() {
@@ -254,8 +273,8 @@ export async function middleware(request: NextRequest) {
       // By omitting cookies, the query always runs as unauthenticated,
       // ensuring subdomain resolution works for all users.
       const anonSupabase = createServerClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+        supabaseUrl,
+        supabaseAnonKey,
         {
           cookies: {
             getAll() { return []; },
