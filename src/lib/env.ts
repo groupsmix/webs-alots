@@ -308,7 +308,15 @@ export function enforceRateLimitBackend(): void {
     throw new Error(message);
   }
 
-  if (process.env.NODE_ENV === "production" && backend === "memory") {
+  if (
+    process.env.NODE_ENV === "production" &&
+    backend === "memory" &&
+    process.env.CI !== "true"
+  ) {
+    // CI runs `next start` (NODE_ENV=production) on a single instance for
+    // E2E tests, where in-memory rate limiting is acceptable. The
+    // production guard still applies to real deployments (no CI=true on
+    // Cloudflare Workers / staging / prod).
     const message =
       "[STARTUP HEALTH CHECK FAILED] RATE_LIMIT_BACKEND=memory is not allowed in production.\n" +
       "In-memory rate limiting is per-isolate and provides no real protection in a " +
