@@ -71,7 +71,8 @@ routes = [
 # Audit 8.8 — Changed second cron from every 5 min to every 15 min to
 # reduce unnecessary Worker invocations. Appointment reminders (*/30) and
 # daily subscription check (0 2 * * *) remain unchanged.
-crons = ["*/30 * * * *", "*/15 * * * *", "0 2 * * *"]
+# Task 3.3.3 — Added hourly R2 abandoned-upload cleanup (0 * * * *).
+crons = ["*/30 * * * *", "*/15 * * * *", "0 * * * *", "0 2 * * *"]
 
 # ---- Staging Environment ----
 # Deploy with: wrangler deploy --env staging
@@ -138,8 +139,9 @@ SELF_SERVICE_REGISTRATION_ENABLED = "false"
 
 # ---- Staging Cron Triggers ----
 # Audit 8.8 — Less aggressive schedule for staging (was */5, now */15)
+# Task 3.3.3 — Added hourly R2 abandoned-upload cleanup (0 * * * *).
 [env.staging.triggers]
-crons = ["*/30 * * * *", "*/15 * * * *", "0 2 * * *"]
+crons = ["*/30 * * * *", "*/15 * * * *", "0 * * * *", "0 2 * * *"]
 
 # ---- Cloudflare Queues (R-14 Fix) ----
 # Provision queues for reliable webhook/cron retry + DLQ.
