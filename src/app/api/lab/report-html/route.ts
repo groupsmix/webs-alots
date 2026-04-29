@@ -23,12 +23,36 @@ import { STAFF_ROLES } from "@/lib/auth-roles";
 import { updateLabOrderPdfUrl } from "@/lib/data/server";
 import { isEncryptionConfigured } from "@/lib/encryption";
 import { escapeHtml } from "@/lib/escape-html";
+import { getDirection, isRTL, t, type Locale } from "@/lib/i18n";
 import { logger } from "@/lib/logger";
 import { buildUploadKey } from "@/lib/r2";
 import { encryptAndUpload } from "@/lib/r2-encrypted";
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { formatCurrency, formatNumber, formatDisplayDate } from "@/lib/utils";
 import { labReportSchema } from "@/lib/validations";
+
+const SUPPORTED_LOCALES: readonly Locale[] = ["fr", "ar", "en"] as const;
+const DEFAULT_LOCALE: Locale = "fr";
+
+function normalizeLocale(value: string | null | undefined): Locale {
+  if (!value) return DEFAULT_LOCALE;
+  return SUPPORTED_LOCALES.includes(value as Locale) ? (value as Locale) : DEFAULT_LOCALE;
+}
+
+function resolveLocale(request: Request): Locale {
+  // Priority: explicit cookie set by the locale switcher → tenant default header → fallback.
+  // Stays consistent with src/app/layout.tsx which reads the same sources.
+  const cookieHeader = request.headers.get("cookie") ?? "";
+  const cookieMatch = /(?:^|;\s*)preferred-locale=([^;]+)/.exec(cookieHeader);
+  if (cookieMatch) {
+    return normalizeLocale(decodeURIComponent(cookieMatch[1]));
+  }
+  const tenantLocale = request.headers.get("x-tenant-locale");
+  if (tenantLocale) {
+    return normalizeLocale(tenantLocale);
+  }
+  return DEFAULT_LOCALE;
+}
 
 interface LabResultItem {
   testName: string;
@@ -39,9 +63,20 @@ interface LabResultItem {
   flag: string | null;
 }
 
-function flagLabel(flag: string | null): string {
+function flagLabel(locale: Locale, flag: string | null): string {
   if (!flag || flag === "normal") return "";
-  return flag.replace("_", " ").toUpperCase();
+  switch (flag) {
+    case "high":
+      return t(locale, "lab.report.flagHigh");
+    case "low":
+      return t(locale, "lab.report.flagLow");
+    case "critical_high":
+      return t(locale, "lab.report.flagCriticalHigh");
+    case "critical_low":
+      return t(locale, "lab.report.flagCriticalLow");
+    default:
+      return flag.replace("_", " ").toUpperCase();
+  }
 }
 
 function flagColor(flag: string | null): string {
@@ -56,7 +91,14 @@ function generateLabReportHtml(data: {
   orderNumber: string;
   results: LabResultItem[];
   generatedAt: string;
+  locale: Locale;
 }): string {
+  const { locale } = data;
+  const dir = getDirection(locale);
+  const rtl = isRTL(locale);
+  // CSS logical alignment so RTL renders mirrored without per-property overrides.
+  const textAlign = rtl ? "right" : "left";
+
   const resultRows = data.results
     .map((r) => {
       const ref =
@@ -68,53 +110,66 @@ function generateLabReportHtml(data: {
               ? `<= ${r.referenceMax}`
               : "&mdash;";
 
-      const fl = flagLabel(r.flag);
+      const fl = flagLabel(locale, r.flag);
       const flStyle = fl ? `color: ${flagColor(r.flag)}; font-weight: bold;` : "";
+      const normalLabel = t(locale, "lab.report.flagNormal");
 
       return `<tr>
         <td>${escapeHtml(r.testName)}</td>
         <td>${r.value ? escapeHtml(r.value) : "&mdash;"}</td>
         <td>${r.unit ? escapeHtml(r.unit) : ""}</td>
         <td>${ref}</td>
-        <td style="${flStyle}">${fl || "Normal"}</td>
+        <td style="${flStyle}">${fl || escapeHtml(normalLabel)}</td>
       </tr>`;
     })
     .join("\n");
 
+  const documentTitle = t(locale, "lab.report.documentTitle", { orderNumber: data.orderNumber });
+  const heading = t(locale, "lab.report.title");
+  const labelPatient = t(locale, "lab.report.patient");
+  const labelOrder = t(locale, "lab.report.order");
+  const labelDate = t(locale, "lab.report.date");
+  const colTest = t(locale, "lab.report.colTest");
+  const colValue = t(locale, "lab.report.colValue");
+  const colUnit = t(locale, "lab.report.colUnit");
+  const colReference = t(locale, "lab.report.colReference");
+  const colFlag = t(locale, "lab.report.colFlag");
+  const footer = t(locale, "lab.report.footer", { generatedAt: data.generatedAt });
+
   return `<!DOCTYPE html>
-<html>
+<html lang="${locale}" dir="${dir}">
 <head>
 <meta charset="utf-8">
-<title>Lab Report — ${escapeHtml(data.orderNumber)}</title>
+<title>${escapeHtml(documentTitle)}</title>
 <style>
-  body { font-family: Arial, sans-serif; max-width: 800px; margin: 40px auto; padding: 20px; color: #333; }
+  body { font-family: Arial, sans-serif; max-width: 800px; margin: 40px auto; padding: 20px; color: #333; text-align: ${textAlign}; }
   h1 { color: #0d9488; border-bottom: 2px solid #0d9488; padding-bottom: 10px; }
   .meta { background: #f5f5f5; padding: 15px; border-radius: 8px; margin: 20px 0; }
   .meta p { margin: 5px 0; }
   .meta strong { color: #555; }
   table { width: 100%; border-collapse: collapse; margin: 20px 0; }
-  th { background: #f0fdfa; color: #0d9488; text-align: left; padding: 10px 8px; border-bottom: 2px solid #0d9488; font-size: 13px; }
+  th { background: #f0fdfa; color: #0d9488; text-align: ${textAlign}; padding: 10px 8px; border-bottom: 2px solid #0d9488; font-size: 13px; }
   td { padding: 8px; border-bottom: 1px solid #e5e7eb; font-size: 13px; }
   tr:last-child td { border-bottom: none; }
   .footer { margin-top: 40px; padding-top: 20px; border-top: 1px solid #ddd; font-size: 12px; color: #888; }
 </style>
 </head>
 <body>
-  <h1>Laboratory Report</h1>
+  <h1>${escapeHtml(heading)}</h1>
   <div class="meta">
-    <p><strong>Patient:</strong> ${escapeHtml(data.patientName)}</p>
-    <p><strong>Order:</strong> ${escapeHtml(data.orderNumber)}</p>
-    <p><strong>Date:</strong> ${escapeHtml(data.generatedAt)}</p>
+    <p><strong>${escapeHtml(labelPatient)}:</strong> ${escapeHtml(data.patientName)}</p>
+    <p><strong>${escapeHtml(labelOrder)}:</strong> ${escapeHtml(data.orderNumber)}</p>
+    <p><strong>${escapeHtml(labelDate)}:</strong> ${escapeHtml(data.generatedAt)}</p>
   </div>
 
   <table>
     <thead>
       <tr>
-        <th>Test</th>
-        <th>Value</th>
-        <th>Unit</th>
-        <th>Reference Range</th>
-        <th>Flag</th>
+        <th>${escapeHtml(colTest)}</th>
+        <th>${escapeHtml(colValue)}</th>
+        <th>${escapeHtml(colUnit)}</th>
+        <th>${escapeHtml(colReference)}</th>
+        <th>${escapeHtml(colFlag)}</th>
       </tr>
     </thead>
     <tbody>
@@ -123,7 +178,7 @@ function generateLabReportHtml(data: {
   </table>
 
   <div class="footer">
-    <p>Generated on ${escapeHtml(data.generatedAt)}</p>
+    <p>${escapeHtml(footer)}</p>
   </div>
 </body>
 </html>`;
@@ -166,13 +221,15 @@ export const POST = withAuthValidation(labReportSchema, async (body, request, { 
       );
     }
 
-    const generatedAt = formatDisplayDate(new Date(), "en", "datetime");
+    const locale = resolveLocale(request);
+    const generatedAt = formatDisplayDate(new Date(), locale, "datetime");
 
     const html = generateLabReportHtml({
       patientName,
       orderNumber,
       results: results as LabResultItem[],
       generatedAt,
+      locale,
     });
 
     // Look up the order so we can (1) confirm tenant ownership and (2) audit
