@@ -309,6 +309,24 @@ export function enforceRateLimitBackend(): void {
   }
 
   if (process.env.NODE_ENV === "production" && backend === "memory") {
+    // CI exception: `next start` forces NODE_ENV=production, but the E2E
+    // Playwright job runs a single-instance Next server on the runner where
+    // in-memory limiting is the correct (and only reliable) choice — the
+    // ephemeral local Supabase instance's rate-limit RPC is not guaranteed
+    // to be available during boot, and forcing it trips the failClosed
+    // circuit breaker and 429s every auth request. Gate strictly on the
+    // GitHub-Actions-provided `CI=true` flag so a real production
+    // deployment can never opt into this path.
+    if (process.env.CI === "true") {
+      logger.warn(
+        "RATE_LIMIT_BACKEND=memory accepted in production mode because CI=true. " +
+          "This path is permitted only for the E2E Playwright runner and must " +
+          "never be set in a real production deployment.",
+        { context: "env-validation", check: "rate-limit-backend" },
+      );
+      return;
+    }
+
     const message =
       "[STARTUP HEALTH CHECK FAILED] RATE_LIMIT_BACKEND=memory is not allowed in production.\n" +
       "In-memory rate limiting is per-isolate and provides no real protection in a " +
