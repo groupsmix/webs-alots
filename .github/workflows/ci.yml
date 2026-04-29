@@ -238,6 +238,16 @@ jobs:
           # src/lib/env.ts hard-fails on startup and Playwright never gets a
           # running web server, so every test fails with a connect error.
           PROFILE_HEADER_HMAC_KEY: ci-e2e-profile-header-hmac-key-placeholder
+          # Audit #8: R2_SIGNED_URL_SECRET is required in production mode;
+          # env validation hard-fails on startup otherwise. R2 itself is
+          # disabled in CI (no R2_* creds), so this value is never used to
+          # sign a real URL — it only satisfies the startup health check.
+          R2_SIGNED_URL_SECRET: ci-e2e-r2-signed-url-secret-placeholder
+          # O-06: NEXT_PUBLIC_SENTRY_DSN is required in production mode.
+          # The placeholder DSN has valid Sentry format so `Sentry.init`
+          # parses it without throwing; Sentry's transport will silently
+          # fail to reach the (unresolvable) host, which is fine for CI.
+          NEXT_PUBLIC_SENTRY_DSN: https://ci-e2e-sentry-dsn-placeholder@o0.ingest.sentry.io/0
           # Force the in-memory rate limiter in CI. The Supabase rate-limit RPC
           # (rate_limit_check_and_increment) isn't reliably available on the
           # ephemeral supabase-cli instance during boot, so the limiter's
