@@ -19,7 +19,25 @@ import {
   removeSubdomain,
   isValidSubdomain,
 } from "@/lib/cloudflare-dns";
+import { isCustomDomainsEnabled } from "@/lib/env";
 import { withAuth, type AuthContext } from "@/lib/with-auth";
+
+/**
+ * Feature-flag guard for every handler in this file.
+ *
+ * Custom-domain provisioning is gated by `NEXT_PUBLIC_ENABLE_CUSTOM_DOMAINS`
+ * so the API surface matches the env validation in `src/lib/env.ts`. When the
+ * feature is off we refuse with 503 — same shape as the existing
+ * `STORAGE_NOT_CONFIGURED` / `ENCRYPTION_NOT_CONFIGURED` errors elsewhere —
+ * rather than returning a 200 from a half-wired Cloudflare integration.
+ */
+function customDomainsDisabledResponse() {
+  return apiError(
+    "Custom domain management is not enabled on this deployment.",
+    503,
+    "CUSTOM_DOMAINS_DISABLED",
+  );
+}
 
 // ── Schemas ──
 
@@ -42,6 +60,9 @@ const deleteDnsSchema = z.object({
 
 export const GET = withAuth(
   async (request: NextRequest, _auth: AuthContext) => {
+    if (!isCustomDomainsEnabled()) {
+      return customDomainsDisabledResponse();
+    }
     const slug = request.nextUrl.searchParams.get("slug");
     if (!slug || !isValidSubdomain(slug)) {
       return apiError("Invalid or missing slug parameter", 400, "INVALID_SLUG");
@@ -65,6 +86,9 @@ export const GET = withAuth(
 export const POST = withAuthValidation(
   provisionDnsSchema,
   async (body, _request, auth) => {
+    if (!isCustomDomainsEnabled()) {
+      return customDomainsDisabledResponse();
+    }
     const clinicId = auth.profile.clinic_id;
 
     const result = await provisionSubdomain(body.slug);
@@ -96,6 +120,9 @@ export const POST = withAuthValidation(
 export const DELETE = withAuthValidation(
   deleteDnsSchema,
   async (body, _request, auth) => {
+    if (!isCustomDomainsEnabled()) {
+      return customDomainsDisabledResponse();
+    }
     const clinicId = auth.profile.clinic_id;
 
     const result = await removeSubdomain(body.slug);

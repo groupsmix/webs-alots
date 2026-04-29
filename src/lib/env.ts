@@ -94,9 +94,38 @@ const ENV_RULES: EnvRule[] = [
   { name: "PROFILE_HEADER_HMAC_KEY", required: process.env.NODE_ENV === "production", description: "HMAC key used to sign x-auth-profile-* headers between middleware and withAuth (required in production)", group: "auth" },
 
   // ── Custom Domains ─────────────────────────────────────────────────
-  { name: "CLOUDFLARE_API_TOKEN", required: false, description: "Cloudflare API token for DNS management", group: "domains" },
-  { name: "CLOUDFLARE_ZONE_ID", required: false, description: "Cloudflare zone ID for DNS management", group: "domains" },
+  // These are gated by NEXT_PUBLIC_ENABLE_CUSTOM_DOMAINS — when the flag is
+  // "true" they become required, so the app refuses to boot with a half-wired
+  // custom-domain feature. See `isCustomDomainsEnabled()` below.
+  { name: "CLOUDFLARE_API_TOKEN", required: customDomainsEnabledFromEnv(), description: "Cloudflare API token for DNS management (required when NEXT_PUBLIC_ENABLE_CUSTOM_DOMAINS=true)", group: "domains" },
+  { name: "CLOUDFLARE_ZONE_ID", required: customDomainsEnabledFromEnv(), description: "Cloudflare zone ID for DNS management (required when NEXT_PUBLIC_ENABLE_CUSTOM_DOMAINS=true)", group: "domains" },
+  { name: "CLOUDFLARE_ZONE_NAME", required: customDomainsEnabledFromEnv(), description: "Cloudflare zone (root domain) name for DNS management (required when NEXT_PUBLIC_ENABLE_CUSTOM_DOMAINS=true)", group: "domains" },
 ];
+
+/**
+ * Whether the custom-domain / Cloudflare DNS feature is enabled.
+ *
+ * Toggled by `NEXT_PUBLIC_ENABLE_CUSTOM_DOMAINS=true`. When disabled, the
+ * `/api/dns/*` handlers refuse with 503 and the related Cloudflare env vars
+ * are *optional*. When enabled, those env vars become required at startup.
+ *
+ * Read it through this helper rather than `process.env` directly so the
+ * gating logic stays in one place.
+ */
+export function isCustomDomainsEnabled(): boolean {
+  return process.env.NEXT_PUBLIC_ENABLE_CUSTOM_DOMAINS === "true";
+}
+
+/**
+ * Internal helper used while building `ENV_RULES` so the `required` flag is
+ * evaluated at module load (matching how the other rules use
+ * `process.env.NODE_ENV === "production"` checks). Kept private to avoid
+ * drift between the two readers — call `isCustomDomainsEnabled()` everywhere
+ * else.
+ */
+function customDomainsEnabledFromEnv(): boolean {
+  return process.env.NEXT_PUBLIC_ENABLE_CUSTOM_DOMAINS === "true";
+}
 
 export interface EnvValidationResult {
   valid: boolean;
