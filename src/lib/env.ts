@@ -59,6 +59,12 @@ const ENV_RULES: EnvRule[] = [
   // secret. A hardcoded fallback ("default-salt") is never acceptable in
   // production, so we refuse to boot without a dedicated R2_SIGNED_URL_SECRET.
   { name: "R2_SIGNED_URL_SECRET", required: process.env.NODE_ENV === "production", description: "HMAC secret for R2 signed URLs and upload filename hashing (required in production; `openssl rand -hex 32`)", group: "storage" },
+  // Consumed by `src/lib/r2-cleanup.ts` — the fraction (0..1) of keys in a
+  // reconciliation pass that, when classified as orphans, triggers a
+  // Sentry alert and an error-level log line. Optional: defaults to 0.1
+  // (10 %) when unset. The library ignores out-of-range or non-numeric
+  // values rather than failing closed — see `readOrphanRateAlertThreshold`.
+  { name: "R2_ORPHAN_RATE_ALERT_THRESHOLD", required: false, description: "Orphan-rate threshold (0..1) above which the R2 cleanup cron emits a Sentry alert. Default: 0.1", group: "storage" },
 
   // ── Payments ───────────────────────────────────────────────────────
   { name: "STRIPE_SECRET_KEY", required: false, description: "Stripe secret key", group: "payments" },
