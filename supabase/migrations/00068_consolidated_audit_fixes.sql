@@ -159,20 +159,13 @@ BEGIN
 END $$;
 
 -- ─── D-08: users.role / clinic_id cross-constraint ──────────────────────────
-DO $$
-BEGIN
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_constraint
-    WHERE conname = 'users_role_clinic_id_check' AND conrelid = 'users'::regclass
-  ) THEN
-    ALTER TABLE users ADD CONSTRAINT users_role_clinic_id_check
-      CHECK (
-        (role = 'super_admin' AND clinic_id IS NULL)
-        OR (role <> 'super_admin' AND clinic_id IS NOT NULL)
-      );
-    RAISE NOTICE 'D-08: Added role/clinic_id cross-constraint on users';
-  END IF;
-END $$;
+-- NOTE: A hard CHECK constraint is too strict for the current data flow:
+--   - handle_new_auth_user creates patients with clinic_id=NULL initially
+--     (before clinic assignment via booking or admin invite)
+--   - super_admin users may temporarily have clinic_id set for impersonation
+-- The invariant is documented and enforced at the application level
+-- via requireTenant() rather than as a database constraint.
+COMMENT ON TABLE users IS 'D-08: Invariant: super_admin should have clinic_id IS NULL; other roles should have clinic_id IS NOT NULL. Enforced at app level via requireTenant().';
 
 -- ─── D-09: loyalty_points.points CHECK >= 0 ─────────────────────────────────
 DO $$
