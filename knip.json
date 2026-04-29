@@ -12,7 +12,7 @@
     "src/app/global-error.tsx",
     "src/middleware.ts",
     "src/instrumentation.ts",
-    "src/sentry.*.config.ts",
+    "sentry.*.config.ts",
     "scripts/**/*.{ts,mjs}",
     "supabase/functions/*/index.ts",
     "worker-cron-handler.ts",
