@@ -173,4 +173,42 @@ export function enforceEnvValidation(): void {
     logger.error(message, { context: "env-validation" });
     throw new Error(message);
   }
+
+  // Audit Finding #7 — enforce safe PHI masking defaults in production.
+  // Production must default to a masked view of PHI ("partial" or "full").
+  // Explicitly disabling masking ("none") is only permitted when the operator
+  // has set ALLOW_UNMASKED_PHI=true. See SECURITY.md → "PHI Masking Defaults".
+  enforcePhiMaskingPolicy();
+}
+
+/**
+ * Refuse to boot when production is configured with PHI masking disabled
+ * unless the operator has explicitly set ALLOW_UNMASKED_PHI=true.
+ *
+ * Exported for unit tests.
+ */
+export function enforcePhiMaskingPolicy(): void {
+  if (process.env.NODE_ENV !== "production") return;
+
+  const masking = process.env.NEXT_PUBLIC_DATA_MASKING;
+  const allowUnmasked = process.env.ALLOW_UNMASKED_PHI === "true";
+
+  if (masking === "none" && !allowUnmasked) {
+    const message =
+      "[STARTUP HEALTH CHECK FAILED] NEXT_PUBLIC_DATA_MASKING=none is not allowed in production.\n" +
+      "Production must default to \"partial\" or \"full\" so patient PHI is never\n" +
+      "accidentally exposed in the UI. To intentionally disable masking (e.g. for an\n" +
+      "internal staff-only deployment), set ALLOW_UNMASKED_PHI=true alongside\n" +
+      "NEXT_PUBLIC_DATA_MASKING=none. See SECURITY.md → \"PHI Masking Defaults\".";
+    logger.error(message, { context: "env-validation", check: "phi-masking" });
+    throw new Error(message);
+  }
+
+  if (masking === "none" && allowUnmasked) {
+    logger.warn(
+      "PHI masking is DISABLED in production (ALLOW_UNMASKED_PHI=true). " +
+        "This must be approved by the Security Officer / DPO and documented.",
+      { context: "env-validation", check: "phi-masking" },
+    );
+  }
 }
