@@ -64,9 +64,15 @@ export interface BuildCspOptions {
  *
  * Task 2.2: This policy is now **enforced** (no longer report-only).
  * The legacy broad CSP has been removed.
+ *
+ * Hardened production `script-src`: in production we drop `'unsafe-inline'`,
+ * `https:`, and `http:` and rely on `'self'` + nonce + `'strict-dynamic'`.
+ * Older browsers without `'strict-dynamic'` support fall back to `'self'`
+ * (no inline/eval), so production is fail-closed against XSS via injected
+ * inline or third-party scripts. `'unsafe-eval'` remains dev-only.
  */
 export function buildCsp(nonce: string, _options?: BuildCspOptions): string {
-  const isDev = process.env.NODE_ENV === "development";
+  const isDev = process.env.NODE_ENV !== "production";
   const sbHost = getSupabaseHost();
   const plausibleHost = getPlausibleHost();
 
@@ -83,9 +89,13 @@ export function buildCsp(nonce: string, _options?: BuildCspOptions): string {
     ...(plausibleHost ? [`https://${plausibleHost}`] : []),
   ].join(" ");
 
+  const scriptSrc = isDev
+    ? ["'self'", `'nonce-${nonce}'`, "'strict-dynamic'", "'unsafe-eval'"]
+    : ["'self'", `'nonce-${nonce}'`, "'strict-dynamic'"];
+
   return [
     "default-src 'self'",
-    `script-src 'nonce-${nonce}' 'strict-dynamic' 'unsafe-inline' https: http:${isDev ? " 'unsafe-eval'" : ""}`,
+    `script-src ${scriptSrc.join(" ")}`,
     `style-src 'self' 'nonce-${nonce}'`,
     `img-src 'self' data: blob: ${sbHost} uploads.oltigo.com`,
     "font-src 'self'",
@@ -94,10 +104,27 @@ export function buildCsp(nonce: string, _options?: BuildCspOptions): string {
     "form-action 'self'",
     "base-uri 'self'",
     "frame-ancestors 'none'",
+    "object-src 'none'",
     ...(isDev ? [] : ["upgrade-insecure-requests"]),
     ...(isDev ? [] : [`report-uri ${CSP_REPORT_URI}`]),
     ...(isDev ? [] : ["report-to csp-endpoint"]),
   ].join("; ");
+}
+
+/**
+ * When true, the strict CSP is emitted as `Content-Security-Policy-Report-Only`
+ * instead of the enforcing header. Used for staged rollouts of policy changes:
+ * deploy with `CSP_REPORT_ONLY=true`, watch the CSP report endpoint for 24-72h
+ * for unexpected violations, then unset to enforce.
+ *
+ * Only honored in production — in dev/test the policy is always enforced so
+ * regressions surface immediately.
+ */
+function isCspReportOnly(): boolean {
+  return (
+    process.env.NODE_ENV === "production" &&
+    process.env.CSP_REPORT_ONLY === "true"
+  );
 }
 
 /**
@@ -129,13 +156,16 @@ export interface CspHeaderValues {
 }
 
 /**
- * Build the CSP header values. The strict policy is now enforced directly.
+ * Build the CSP header values. The strict policy is enforced directly
+ * unless `CSP_REPORT_ONLY=true` is set in production, in which case the
+ * same policy is emitted on the Report-Only header for staged rollout.
  */
 export function buildCspHeaderValues(nonce: string): CspHeaderValues {
-  return {
-    enforce: buildCsp(nonce, { reportOnly: false }),
-    reportOnly: "",
-  };
+  const policy = buildCsp(nonce, { reportOnly: false });
+  if (isCspReportOnly()) {
+    return { enforce: "", reportOnly: policy };
+  }
+  return { enforce: policy, reportOnly: "" };
 }
 
 /**
@@ -147,8 +177,13 @@ export function withSecurityHeaders(
   response: NextResponse,
   csp: CspHeaderValues,
 ): NextResponse {
-  response.headers.set("Content-Security-Policy", csp.enforce);
-  response.headers.delete("Content-Security-Policy-Report-Only");
+  if (csp.enforce) {
+    response.headers.set("Content-Security-Policy", csp.enforce);
+    response.headers.delete("Content-Security-Policy-Report-Only");
+  } else if (csp.reportOnly) {
+    response.headers.set("Content-Security-Policy-Report-Only", csp.reportOnly);
+    response.headers.delete("Content-Security-Policy");
+  }
   response.headers.set("Strict-Transport-Security", HSTS_VALUE);
   response.headers.set("X-Content-Type-Options", "nosniff");
   response.headers.set("X-Frame-Options", "DENY");
@@ -177,8 +212,13 @@ export function applyAllSecurityHeaders(
   csp: CspHeaderValues,
   _nonce: string, // Unused but kept for API compatibility
 ): void {
-  response.headers.set("Content-Security-Policy", csp.enforce);
-  response.headers.delete("Content-Security-Policy-Report-Only");
+  if (csp.enforce) {
+    response.headers.set("Content-Security-Policy", csp.enforce);
+    response.headers.delete("Content-Security-Policy-Report-Only");
+  } else if (csp.reportOnly) {
+    response.headers.set("Content-Security-Policy-Report-Only", csp.reportOnly);
+    response.headers.delete("Content-Security-Policy");
+  }
   response.headers.set("Strict-Transport-Security", HSTS_VALUE);
   response.headers.set("X-Content-Type-Options", "nosniff");
   response.headers.set("X-Frame-Options", "DENY");
