@@ -1,0 +1,47 @@
+{
+  "_doc": [
+    "Native R2 lifecycle rules applied via scripts/apply-r2-lifecycle.mjs.",
+    "This file is JSONC-ish: fields whose name starts with '_' and any '// ...'",
+    "line comments are stripped by the apply script before the request body is",
+    "posted to the Cloudflare API. Keep schema in sync with:",
+    "  https://developers.cloudflare.com/api/resources/r2/subresources/buckets/subresources/lifecycle/"
+  ],
+  "rules": [
+    {
+      "id": "abort-incomplete-multipart-1d",
+      "enabled": true,
+      "conditions": { "prefix": "" },
+      "abortMultipartUploadsTransition": {
+        "condition": { "maxAge": 86400, "type": "Age" }
+      },
+      "_comment": [
+        "Aborts multipart uploads that have not been completed within 24h.",
+        "The direct-upload flow uses presigned POSTs capped at 2 MB so it does",
+        "NOT start multipart uploads, but any ad-hoc client (the AWS SDK in",
+        "scripts/, SOP tooling, a future large-file feature) can leave part",
+        "data behind on network/process failure. The part data is billed and",
+        "not visible to the confirm-upload route's cleanup, so we rely on R2's",
+        "own engine as the backstop."
+      ]
+    }
+
+    // ──────────────────────────────────────────────────────────────────────
+    // Future-refactor stub — DO NOT ENABLE without a corresponding code
+    // change that moves unconfirmed direct uploads under `clinics/_pending/`
+    // and only re-keys them to `clinics/{id}/...` after confirmation.
+    //
+    // Today the direct-upload flow writes straight to `clinics/{id}/...`, so
+    // an age-based delete rule on that prefix would also nuke long-lived
+    // assets (logos, templates). The `clinics/_pending/` refactor is
+    // tracked in docs/r2-lifecycle.md under "Future refactor".
+    //
+    // ,{
+    //   "id": "expire-pending-uploads-30d",
+    //   "enabled": true,
+    //   "conditions": { "prefix": "clinics/_pending/" },
+    //   "deleteObjectsTransition": {
+    //     "condition": { "maxAge": 2592000, "type": "Age" }
+    //   }
+    // }
+  ]
+}
