@@ -163,7 +163,7 @@ jobs:
           subject-path: bom.json
 
       - name: Upload SBOM
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           name: sbom
@@ -276,7 +276,7 @@ jobs:
           SEED_USERS_DELETED: "true"
 
       - name: Upload Playwright report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           name: playwright-report
