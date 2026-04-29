@@ -148,6 +148,23 @@ export type StripeWebhookEvent = z.infer<typeof stripeWebhookEventSchema>;
  * CMI callback form data schema — validates the parsed form fields after
  * HMAC signature verification for defense-in-depth on payment callbacks.
  */
+/**
+ * S-06: CMI callback allow-list. Only known CMI parameters are accepted;
+ * unknown parameters are rejected to prevent HMAC reconstruction with
+ * attacker-injected fields.
+ */
+const CMI_ALLOWED_PARAMS = new Set([
+  'oid', 'OID', 'amount', 'AMOUNT', 'currency', 'ProcReturnCode',
+  'procreturncode', 'TransId', 'transid', 'AuthCode', 'authcode',
+  'HASH', 'hash', 'encoding', 'hashAlgorithm', 'clientid',
+  'okUrl', 'failUrl', 'callbackUrl', 'shopurl', 'TranType', 'lang',
+  'BillToName', 'email', 'description', 'storeType', 'Response',
+  'mdStatus', 'txstatus', 'iReqCode', 'iReqDetail', 'vendorCode',
+  'PAResSyntaxOK', 'PAResVerified', 'cavv', 'cavvAlgorithm', 'eci',
+  'xid', 'md', 'rnd', 'EXTRA.TRXDATE', 'EXTRA.CARDBRAND',
+  'EXTRA.CARDISSUER', 'EXTRA.CARDTYPE', 'EXTRA.HOSTMSG',
+]);
+
 export const cmiCallbackFieldsSchema = z.object({
   oid: z.string().optional(),
   OID: z.string().optional(),
@@ -164,13 +181,21 @@ export const cmiCallbackFieldsSchema = z.object({
 }).passthrough().refine(
   (data) => Boolean(data.HASH || data.hash),
   { message: "Missing required HASH field" },
+).refine(
+  (data) => {
+    // S-06: Reject any unknown parameters not in the CMI allow-list
+    const keys = Object.keys(data);
+    return keys.every((k) => CMI_ALLOWED_PARAMS.has(k) || k.startsWith('rnd_') || k.startsWith('EXTRA.'));
+  },
+  { message: "Unknown parameter in CMI callback — potential tampering" },
 );
 
 export type CmiCallbackFields = z.infer<typeof cmiCallbackFieldsSchema>;
 
 export const cmiPaymentSchema = z.object({
   amount: z.number().positive().finite(),
-  description: z.string().max(500).optional(),
+  // S-16: Cap description length and restrict charset to prevent injection
+  description: z.string().max(200).regex(/^[\w\s\-.,;:!?()éèêëàâôùûçïöüÉÈÊËÀÂÔÙÛÇÏÖÜ]*$/u, "Invalid characters in description").optional(),
   patientId: z.string().optional(),
   appointmentId: z.string().optional(),
   successUrl: z.string().url().optional(),

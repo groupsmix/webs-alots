@@ -84,6 +84,10 @@ const ENV_RULES: EnvRule[] = [
   { name: "CLOUDFLARE_ACCOUNT_ID", required: false, description: "Cloudflare account ID for Workers AI", group: "ai" },
   { name: "CLOUDFLARE_AI_API_TOKEN", required: false, description: "Cloudflare AI API token", group: "ai" },
 
+  // ── Observability ────────────────────────────────────────────────────
+  // O-06: Sentry DSN is required in production so errors are not silently lost.
+  { name: "NEXT_PUBLIC_SENTRY_DSN", required: process.env.NODE_ENV === "production", description: "Sentry DSN for error monitoring (required in production)", group: "observability" },
+
   // ── Cron ───────────────────────────────────────────────────────────
   { name: "CRON_SECRET", required: process.env.NODE_ENV === "production", description: "Bearer token for cron endpoints (required in production)", group: "cron" },
 

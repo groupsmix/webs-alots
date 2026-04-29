@@ -36,7 +36,9 @@ export async function GET(request: NextRequest) {
   const date = url.searchParams.get("date");
   const status = url.searchParams.get("status");
   const limit = Math.min(Number(url.searchParams.get("limit") || 50), 100);
-  const offset = Number(url.searchParams.get("offset") || 0);
+  // S-24: Cap offset to prevent unbounded pagination abuse
+  const rawOffset = Number(url.searchParams.get("offset") || 0);
+  const offset = Math.min(Math.max(0, rawOffset), 10000);
 
   let query = supabase
     .from("appointments")

@@ -56,6 +56,20 @@ const eslintConfig = defineConfig([
     },
   },
   {
+    // S-17: Prevent scripts/** paths from being imported into Worker bundle.
+    // Files under scripts/ are meant for local/CI use only and may contain
+    // service-role keys or Node-only APIs that must never reach the browser.
+    files: ["src/**/*.{ts,tsx}"],
+    rules: {
+      "no-restricted-imports": ["error", {
+        patterns: [{
+          group: ["**/scripts/*", "**/scripts/**"],
+          message: "S-17: scripts/** must not be imported from src/** — they are not part of the Worker bundle.",
+        }],
+      }],
+    },
+  },
+  {
     // Enforce no-literal-string strictly on the fully translated auth/2fa folders
     files: [
       "src/app/(auth)/setup-2fa/**/*.{ts,tsx}",

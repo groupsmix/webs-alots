@@ -12,22 +12,24 @@ export const DEMO_CLINIC_ID = "c0000000-de00-0000-0000-000000000001";
 export const DEMO_SUBDOMAIN = "demo";
 
 /** Demo user IDs for one-click login. */
+// F-14: Use @example.invalid (RFC 2606 reserved domain) for demo seed users
+// to prevent any possibility of emails being sent to real addresses.
 export const DEMO_USERS = {
   doctor: {
     id: "b0000000-de00-0000-0000-000000000002",
-    email: "karim@demo.oltigo.com",
+    email: "karim@example.invalid",
     name: "Dr. Karim Idrissi",
     role: "doctor" as const,
   },
   receptionist: {
     id: "b0000000-de00-0000-0000-000000000004",
-    email: "imane@demo.oltigo.com",
+    email: "imane@example.invalid",
     name: "Imane Fassi",
     role: "receptionist" as const,
   },
   patient: {
     id: "b0000000-de00-0000-0000-000000000010",
-    email: "rachid@example.com",
+    email: "rachid@example.invalid",
     name: "Rachid Bennani",
     role: "patient" as const,
   },

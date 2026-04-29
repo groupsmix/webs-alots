@@ -18,9 +18,12 @@ export default defineConfig({
         "src/app/api/**/*.tsx",
       ],
       exclude: ["src/lib/types/**", "src/app/api/docs/**"],
+      // CI-08: Enforce coverage thresholds; CI step fails if not met.
       thresholds: {
         statements: 80,
         branches: 70,
+        lines: 70,
+        functions: 60,
       },
     },
   },

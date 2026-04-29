@@ -48,20 +48,29 @@ export async function verifyPartnerApiKey(
 
     // Table may not exist yet — use `as never` to bypass type checking
     // since partner_api_keys is not in the generated DB types.
+    // S-28: select expires_at so we can reject expired keys below.
     const { data, error } = await supabase
       .from("partner_api_keys" as never)
-      .select("id, clinic_id, partner_name" as never)
+      .select("id, clinic_id, partner_name, expires_at" as never)
       .eq("key_hash" as never, hashHex as never)
       .eq("is_active" as never, true as never)
       .maybeSingle();
 
     if (error) {
       const pgError = error as { code?: string };
-      // Table might not exist yet
+      // S-27: In production, fail-closed (401/503) if the table is missing.
+      // The partner_api_keys table is a hard schema requirement (migration 00068).
       if (pgError.code === "42P01") {
-        logger.debug("partner_api_keys table not created yet", {
-          context: "partner-auth",
-        });
+        if (process.env.NODE_ENV === "production") {
+          logger.error("partner_api_keys table missing in production — fail-closed", {
+            context: "partner-auth",
+          });
+          // Return null = 401 Unauthorized from the caller
+        } else {
+          logger.debug("partner_api_keys table not created yet", {
+            context: "partner-auth",
+          });
+        }
         return null;
       }
       logger.error("Partner API key lookup failed", {
@@ -77,7 +86,21 @@ export async function verifyPartnerApiKey(
       id: string;
       clinic_id: string;
       partner_name: string;
+      expires_at: string | null;
     };
+
+    // S-28: Reject expired keys. `expires_at` is optional (NULL = no expiry).
+    if (row.expires_at) {
+      const expiresAt = Date.parse(row.expires_at);
+      if (Number.isFinite(expiresAt) && expiresAt <= Date.now()) {
+        logger.warn("Rejected expired partner API key", {
+          context: "partner-auth",
+          partnerId: row.id,
+          clinicId: row.clinic_id,
+        });
+        return null;
+      }
+    }
 
     return {
       partnerId: row.id,

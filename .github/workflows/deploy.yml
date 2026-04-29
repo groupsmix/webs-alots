@@ -86,19 +86,22 @@ jobs:
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           command: deploy --env staging
 
-      # Audit 8.6 — Post-deploy health check to verify the deployment is live
+      # CI-07: Post-deploy health check verifies response body markers,
+      # not just HTTP status, to catch deploy-but-broken scenarios.
       - name: Health Check
         run: |
           SITE_URL="${{ github.ref_name == 'staging' && 'https://staging.oltigo.com' || 'https://oltigo.com' }}"
           echo "Running health check against ${SITE_URL}..."
           for i in 1 2 3 4 5; do
-            STATUS=$(curl -s -o /dev/null -w '%{http_code}' --max-time 10 "${SITE_URL}" || echo "000")
-            if [ "$STATUS" -ge 200 ] && [ "$STATUS" -lt 400 ]; then
-              echo "Health check passed (HTTP ${STATUS})"
+            BODY=$(curl -s --max-time 10 "${SITE_URL}/api/health" || echo "")
+            STATUS=$(echo "$BODY" | grep -o '"ok":\s*true' || echo "")
+            HTTP_CODE=$(curl -s -o /dev/null -w '%{http_code}' --max-time 10 "${SITE_URL}/api/health" || echo "000")
+            if [ -n "$STATUS" ] && [ "$HTTP_CODE" -ge 200 ] && [ "$HTTP_CODE" -lt 400 ]; then
+              echo "Health check passed (HTTP ${HTTP_CODE}, body contains ok:true)"
               exit 0
             fi
-            echo "Attempt ${i}: HTTP ${STATUS}, retrying in 10s..."
+            echo "Attempt ${i}: HTTP ${HTTP_CODE}, body ok marker: '${STATUS}', retrying in 10s..."
             sleep 10
           done
-          echo "Health check FAILED after 5 attempts"
+          echo "Health check FAILED after 5 attempts — response body did not contain {\"ok\":true}"
           exit 1
