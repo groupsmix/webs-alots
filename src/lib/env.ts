@@ -193,7 +193,7 @@ export function enforcePhiMaskingPolicy(): void {
   const masking = process.env.NEXT_PUBLIC_DATA_MASKING;
   const allowUnmasked = process.env.ALLOW_UNMASKED_PHI === "true";
 
-  if ((masking === "none" || !masking) && !allowUnmasked) {
+  if (masking === "none" && !allowUnmasked) {
     const message =
       "[STARTUP HEALTH CHECK FAILED] NEXT_PUBLIC_DATA_MASKING=none is not allowed in production.\n" +
       "Production must default to \"partial\" or \"full\" so patient PHI is never\n" +
