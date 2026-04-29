@@ -183,6 +183,9 @@ export function withSecurityHeaders(
   } else if (csp.reportOnly) {
     response.headers.set("Content-Security-Policy-Report-Only", csp.reportOnly);
     response.headers.delete("Content-Security-Policy");
+  } else {
+    response.headers.delete("Content-Security-Policy");
+    response.headers.delete("Content-Security-Policy-Report-Only");
   }
   response.headers.set("Strict-Transport-Security", HSTS_VALUE);
   response.headers.set("X-Content-Type-Options", "nosniff");
@@ -218,6 +221,9 @@ export function applyAllSecurityHeaders(
   } else if (csp.reportOnly) {
     response.headers.set("Content-Security-Policy-Report-Only", csp.reportOnly);
     response.headers.delete("Content-Security-Policy");
+  } else {
+    response.headers.delete("Content-Security-Policy");
+    response.headers.delete("Content-Security-Policy-Report-Only");
   }
   response.headers.set("Strict-Transport-Security", HSTS_VALUE);
   response.headers.set("X-Content-Type-Options", "nosniff");

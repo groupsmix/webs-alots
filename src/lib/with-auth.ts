@@ -37,6 +37,24 @@ type AuthenticatedHandler = (
 ) => Promise<NextResponse>;
 
 /**
+ * Options for the `withAuth` / `withAuthAnyRole` wrappers.
+ *
+ * `failOpen` controls behavior when `setTenantContext` cannot be applied to
+ * the Supabase client. The default is **fail-closed** — a failure to set the
+ * Postgres session variable that RLS policies depend on must abort the
+ * request with a 503, because continuing would leave the request relying on
+ * weaker fallback isolation checks (`get_user_clinic_id()` alone) on a route
+ * that the application clearly intended to be tenant-scoped.
+ *
+ * Pass `failOpen: true` ONLY for explicit, read-only routes that never
+ * touch tenant data and where RLS-without-context is acceptable. This must
+ * be a deliberate, audited decision per route — never the default.
+ */
+export interface WithAuthOptions {
+  failOpen?: boolean;
+}
+
+/**
  * Wraps a Next.js API route handler with authentication and role checks.
  *
  * @param handler - The route handler that receives the request and auth context
@@ -50,7 +68,9 @@ type AuthenticatedHandler = (
 export function withAuth(
   handler: AuthenticatedHandler,
   allowedRoles: UserRole[],
+  options: WithAuthOptions = {},
 ) {
+  const failOpen = options.failOpen === true;
   return async (request: NextRequest): Promise<NextResponse> => {
     try {
       const supabase = await createClient();
@@ -142,6 +162,12 @@ export function withAuth(
 
       // Set tenant context on the Supabase client so RLS policies
       // can use app.current_clinic_id as an additional isolation check.
+      // Default behavior is fail-closed: if we cannot establish the tenant
+      // session variable, abort with 503 rather than silently relying on
+      // the weaker `get_user_clinic_id()` fallback for a tenant-scoped
+      // route. Routes that explicitly opt into `failOpen: true` (e.g. a
+      // read-only public endpoint that never touches tenant data) keep
+      // the legacy log-and-continue behavior.
       if (profile.clinic_id) {
         try {
           await setTenantContext(supabase, profile.clinic_id);
@@ -149,9 +175,15 @@ export function withAuth(
           logger.error("Failed to set tenant context in withAuth", {
             context: "with-auth",
             clinicId: profile.clinic_id,
+            failOpen,
             error: tenantErr,
           });
-          // Continue — RLS via get_user_clinic_id() still protects
+          if (!failOpen) {
+            return NextResponse.json(
+              { error: "Tenant context unavailable" },
+              { status: 503 },
+            );
+          }
         }
       }
 
@@ -198,7 +230,11 @@ export function withAuth(
  * Usage:
  *   export const POST = withAuthAnyRole(handler);
  */
-export function withAuthAnyRole(handler: AuthenticatedHandler) {
+export function withAuthAnyRole(
+  handler: AuthenticatedHandler,
+  options: WithAuthOptions = {},
+) {
+  const failOpen = options.failOpen === true;
   // Pass an empty array to withAuth, then check that the user is authenticated
   // without enforcing any specific role. This is a "deny-by-default with
   // explicit allowlist" pattern - every withAuth call must specify roles.
@@ -283,7 +319,7 @@ export function withAuthAnyRole(handler: AuthenticatedHandler) {
         }
       }
 
-      // Set tenant context
+      // Set tenant context (fail-closed by default — see withAuth above).
       if (profile.clinic_id) {
         try {
           await setTenantContext(supabase, profile.clinic_id);
@@ -291,8 +327,15 @@ export function withAuthAnyRole(handler: AuthenticatedHandler) {
           logger.error("Failed to set tenant context in withAuthAnyRole", {
             context: "with-auth",
             clinicId: profile.clinic_id,
+            failOpen,
             error: tenantErr,
           });
+          if (!failOpen) {
+            return NextResponse.json(
+              { error: "Tenant context unavailable" },
+              { status: 503 },
+            );
+          }
         }
       }
 

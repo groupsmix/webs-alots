@@ -111,8 +111,18 @@ export async function middleware(request: NextRequest) {
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set("x-nonce", nonce);
   // Forward the enforcing CSP so Server Components that introspect the request
-  // headers see the same policy the browser will enforce.
-  requestHeaders.set("Content-Security-Policy", cspHeaders.enforce);
+  // headers see the same policy the browser will enforce. Guard against an
+  // empty `enforce` value (e.g. a future report-only-only mode) so we never
+  // forward a `Content-Security-Policy: ` header with a blank value — Server
+  // Components that check for the header's presence would otherwise see an
+  // empty string instead of either no header or the actual policy. This
+  // mirrors the response-side guards in `withSecurityHeaders` and
+  // `applyAllSecurityHeaders`.
+  if (cspHeaders.enforce) {
+    requestHeaders.set("Content-Security-Policy", cspHeaders.enforce);
+  } else {
+    requestHeaders.delete("Content-Security-Policy");
+  }
   requestHeaders.set(TRACE_ID_HEADER, traceId);
 
   // --- SECURITY: Strip all tenant headers from the incoming request ---
@@ -391,15 +401,13 @@ export async function middleware(request: NextRequest) {
             }
           });
 
-          // Set the auth-profile response headers (informational; the request
-          // headers above are what `withAuth` reads). Re-apply security and
-          // tenant headers since the response was just recreated.
-          supabaseResponse.headers.set(PROFILE_HEADER_NAMES.id, profile.id);
-          supabaseResponse.headers.set(PROFILE_HEADER_NAMES.role, profile.role);
-          if (profile.clinic_id) {
-            supabaseResponse.headers.set(PROFILE_HEADER_NAMES.clinic, profile.clinic_id);
-          }
-          supabaseResponse.headers.set(PROFILE_HEADER_NAMES.sig, sigHex);
+          // Do NOT mirror the signed x-auth-profile-* headers onto the
+          // outgoing response. They are an internal trust contract between
+          // middleware and `withAuth` carried via the forwarded *request*
+          // headers; emitting them on the response leaks the user id, role,
+          // clinic id and HMAC signature to the browser and any
+          // intermediaries. Re-apply security and tenant headers since the
+          // response was just recreated.
           applyAllSecurityHeaders(supabaseResponse, cspHeaders, nonce);
           if (resolvedClinic) setTenantHeaders(supabaseResponse, resolvedClinic);
         }

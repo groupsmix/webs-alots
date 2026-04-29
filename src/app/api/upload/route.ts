@@ -46,7 +46,82 @@ import { encryptAndUpload } from "@/lib/r2-encrypted";
 import { uploadConfirmSchema } from "@/lib/validations";
 import { withAuth } from "@/lib/with-auth";
 
-const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2 MB
+/**
+ * Per-category upload size limits (issue #10).
+ *
+ * 2 MB is too small for real clinical workflows: PDFs, scanned scripts,
+ * lab reports, and radiology images routinely exceed it. We size each
+ * category to its real-world payload, capped at MAX_UPLOAD_BYTES so the
+ * middleware-level body limit (`MAX_BODY_BYTES` in `src/middleware.ts`)
+ * is the global ceiling.
+ *
+ * Keys are normalized via `normalizeCategory()` so callers may use
+ * either hyphen- or underscore-separated forms (e.g. `lab-report` or
+ * `lab_report`). Unknown categories fall back to DEFAULT_LIMIT.
+ */
+const KB = 1024;
+const MB = 1024 * KB;
+
+export const MAX_UPLOAD_BYTES = 25 * MB;
+export const DEFAULT_UPLOAD_LIMIT = 10 * MB;
+
+export const LIMITS_BY_CATEGORY: Readonly<Record<string, number>> = {
+  // Profile / branding (small images)
+  avatar: 2 * MB,
+  avatars: 2 * MB,
+  photos: 2 * MB,
+  logo: 2 * MB,
+  logos: 2 * MB,
+  clinic_logo: 2 * MB,
+  // Clinical documents (PDFs, scans, lab reports)
+  document: DEFAULT_UPLOAD_LIMIT,
+  documents: DEFAULT_UPLOAD_LIMIT,
+  prescriptions: DEFAULT_UPLOAD_LIMIT,
+  lab_report: DEFAULT_UPLOAD_LIMIT,
+  lab_results: DEFAULT_UPLOAD_LIMIT,
+  medical_records: DEFAULT_UPLOAD_LIMIT,
+  patient_files: DEFAULT_UPLOAD_LIMIT,
+  // Imaging (DICOM-style radiology, MRIs)
+  radiology: 25 * MB,
+  x_rays: 25 * MB,
+  xrays: 25 * MB,
+};
+
+/**
+ * Normalize a category key for limit lookup. Lower-cases and folds
+ * hyphens to underscores so `lab-report` and `lab_report` resolve to
+ * the same limit, matching the existing `PHI_CATEGORIES` set in
+ * `@/lib/encryption`.
+ */
+export function normalizeCategory(category: string): string {
+  return category.trim().toLowerCase().replace(/-/g, "_");
+}
+
+/**
+ * Resolve the maximum byte count for a given upload category. Unknown
+ * categories receive `DEFAULT_UPLOAD_LIMIT` so the API does not silently
+ * relax limits for typos. Exported for tests and the GET handler that
+ * passes the limit into the R2 presigned-POST policy.
+ */
+export function limitForCategory(category: string): number {
+  return LIMITS_BY_CATEGORY[normalizeCategory(category)] ?? DEFAULT_UPLOAD_LIMIT;
+}
+
+function formatLimit(bytes: number): string {
+  return `${Math.round(bytes / MB)} MB`;
+}
+
+/**
+ * Extract the {category} segment from a key produced by
+ * `buildUploadKey()` — `clinics/{clinicId}/{category}/{filename}`. The
+ * PUT handler uses this so the HeadObject size check honours the same
+ * per-category cap the POST/GET handlers enforce.
+ */
+export function categoryFromKey(key: string): string | null {
+  const parts = key.split("/");
+  if (parts.length < 4 || parts[0] !== "clinics") return null;
+  return parts[2] || null;
+}
 
 const ALLOWED_TYPES = new Set([
   "image/jpeg",
@@ -116,8 +191,9 @@ export const POST = withAuth(async (request, { profile }) => {
     return apiError("No file provided");
   }
 
-  if (file.size > MAX_FILE_SIZE) {
-    return apiError("File too large (max 2 MB)");
+  const maxSize = limitForCategory(category);
+  if (file.size > maxSize) {
+    return apiError(`File too large (max ${formatLimit(maxSize)} for category "${category}")`, 413);
   }
 
   if (!ALLOWED_TYPES.has(file.type)) {
@@ -197,15 +273,22 @@ export const PUT = withAuthValidation(uploadConfirmSchema, async (body, request,
     return apiNotFound("Uploaded file not found or unreadable");
   }
 
-  if (metadata.contentLength > MAX_FILE_SIZE) {
+  // Derive the per-category cap from the key the client confirmed.
+  // Unknown categories fall back to DEFAULT_UPLOAD_LIMIT, so the policy is
+  // never silently widened by an unrecognised category segment.
+  const keyCategory = categoryFromKey(key);
+  const maxSize = keyCategory ? limitForCategory(keyCategory) : DEFAULT_UPLOAD_LIMIT;
+
+  if (metadata.contentLength > maxSize) {
     logger.warn("Pre-signed upload exceeded max size, deleting", {
       context: "upload",
       key,
+      category: keyCategory,
       contentLength: metadata.contentLength,
-      maxSize: MAX_FILE_SIZE,
+      maxSize,
     });
     await deleteFromR2(key);
-    return apiError("File too large (max 2 MB)");
+    return apiError(`File too large (max ${formatLimit(maxSize)})`, 413);
   }
 
   if (metadata.contentType && metadata.contentType !== contentType) {
@@ -260,7 +343,8 @@ export const GET = withAuth(async (request, { profile }) => {
   }
 
   const key = buildUploadKey(clinicId, category, filename);
-  const presigned = await getPresignedUploadPost(key, contentType, MAX_FILE_SIZE);
+  const maxSize = limitForCategory(category);
+  const presigned = await getPresignedUploadPost(key, contentType, maxSize);
 
   if (!presigned) {
     return apiInternalError("Failed to generate upload URL");
@@ -281,6 +365,6 @@ export const GET = withAuth(async (request, { profile }) => {
     key: presigned.key,
     publicUrl,
     thumbnails,
-    maxSize: MAX_FILE_SIZE,
+    maxSize,
   });
 }, ["super_admin", "clinic_admin", "receptionist", "doctor"]);

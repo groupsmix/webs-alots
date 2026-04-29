@@ -640,5 +640,21 @@
   "superAdmin.manage": "Manage",
   "superAdmin.recentActivity": "Recent Activity",
   "superAdmin.newClinic": "New Clinic",
-  "superAdmin.announce": "Announce"
+  "superAdmin.announce": "Announce",
+  "lab.report.title": "Laboratory Report",
+  "lab.report.documentTitle": "Lab Report — {orderNumber}",
+  "lab.report.patient": "Patient",
+  "lab.report.order": "Order",
+  "lab.report.date": "Date",
+  "lab.report.colTest": "Test",
+  "lab.report.colValue": "Value",
+  "lab.report.colUnit": "Unit",
+  "lab.report.colReference": "Reference Range",
+  "lab.report.colFlag": "Flag",
+  "lab.report.flagNormal": "Normal",
+  "lab.report.flagHigh": "HIGH",
+  "lab.report.flagLow": "LOW",
+  "lab.report.flagCriticalHigh": "CRITICAL HIGH",
+  "lab.report.flagCriticalLow": "CRITICAL LOW",
+  "lab.report.footer": "Generated on {generatedAt}"
 }

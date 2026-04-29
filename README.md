@@ -157,6 +157,17 @@ For local development, subdomains work automatically via `*.localhost` (e.g., `d
 - Client Components use `useTenant()` from `src/components/tenant-provider.tsx`
 - Unknown subdomains redirect to the root domain
 
+### Custom Domains via Cloudflare DNS
+
+Automated subdomain provisioning through the Cloudflare API is gated behind an explicit feature flag so the `/api/dns/*` routes never run with a half-wired Cloudflare integration.
+
+**Enable the feature:**
+
+1. Set `NEXT_PUBLIC_ENABLE_CUSTOM_DOMAINS=true`
+2. Provide all three Cloudflare env vars: `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ZONE_ID`, `CLOUDFLARE_ZONE_NAME`
+
+When the flag is `true` the app refuses to boot if any of those vars are missing. When it is `false` (the default) the env vars are optional and the `/api/dns/*` endpoints respond with `503 CUSTOM_DOMAINS_DISABLED`.
+
 ## Per-Client Deployment
 
 To deploy for a new client, only edit `src/config/clinic.config.ts` with their details (name, contact, features, working hours).

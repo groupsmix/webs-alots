@@ -177,11 +177,45 @@ async function handler(request: NextRequest, { supabase, profile }: AuthContext)
 
   const filename = baseKey.split("/").pop() ?? "download";
   const contentType = contentTypeForKey(baseKey);
+  const isHtml = contentType.startsWith("text/html");
 
-  // Force `inline` for HTML so existing UI flows (window.open) render the
-  // report; everything else is offered as an attachment so the browser
-  // doesn't try to execute or interpret arbitrary PHI bytes.
-  const disposition = contentType.startsWith("text/html") ? "inline" : "attachment";
+  // Lab/radiology reports are HTML and existing UI flows open them in a new
+  // tab via `window.open(downloadUrl)` — that requires `inline`. Everything
+  // else is offered as an attachment so the browser doesn't try to execute
+  // or interpret arbitrary PHI bytes.
+  const disposition = isHtml ? "inline" : "attachment";
+  const safeFilename = filename.replace(/"/g, "");
+
+  // Defense-in-depth: even though report fields are HTML-escaped before
+  // rendering, a future un-escaped field would otherwise become an
+  // authenticated stored-XSS sink on PHI documents. A strict per-response
+  // CSP locks the document down so any injected <script>, inline event
+  // handler, remote stylesheet, or framing attempt is blocked at the
+  // browser level.
+  const csp = [
+    "default-src 'none'",
+    // Reports use a single inline <style> block; no external CSS is loaded.
+    "style-src 'unsafe-inline'",
+    // Allow inline base64/svg for report-embedded images (logos, etc.).
+    "img-src data:",
+    "base-uri 'none'",
+    "form-action 'none'",
+    "frame-ancestors 'none'",
+  ].join("; ");
+
+  const headers: Record<string, string> = {
+    "Content-Type": contentType,
+    "Content-Length": String(plaintext.byteLength),
+    "Content-Disposition": `${disposition}; filename="${safeFilename}"`,
+    // Short-lived private cache: PHI must not be cached by intermediaries.
+    "Cache-Control": "private, no-store, max-age=0",
+    "X-Content-Type-Options": "nosniff",
+    "Referrer-Policy": "no-referrer",
+  };
+
+  if (isHtml) {
+    headers["Content-Security-Policy"] = csp;
+  }
 
   // Cast the Node Buffer through `unknown` so it satisfies the Web BodyInit
   // type used by NextResponse — Buffers are streamable in Next.js but TS
@@ -191,14 +225,7 @@ async function handler(request: NextRequest, { supabase, profile }: AuthContext)
   try {
     return new NextResponse(body, {
       status: 200,
-      headers: {
-        "Content-Type": contentType,
-        "Content-Length": String(plaintext.byteLength),
-        "Content-Disposition": `${disposition}; filename="${filename.replace(/"/g, "")}"`,
-        // Short-lived private cache: PHI must not be cached by intermediaries.
-        "Cache-Control": "private, no-store, max-age=0",
-        "X-Content-Type-Options": "nosniff",
-      },
+      headers,
     });
   } catch (err) {
     logger.error("Failed to build download response", {
