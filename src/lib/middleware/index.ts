@@ -18,7 +18,7 @@ export {
   secureRedirect,
   applyAllSecurityHeaders,
 } from "./security-headers";
-export type { CspHeaderValues } from "./security-headers";
+export type { CspHeaderValues, BuildCspOptions } from "./security-headers";
 export { validateCsrf } from "./csrf";
 export { applyRateLimit } from "./rate-limiting";
 export {

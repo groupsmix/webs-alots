@@ -82,9 +82,7 @@ export async function middleware(request: NextRequest) {
   // --- Generate a per-request nonce for CSP ---
   const nonceBytes = crypto.getRandomValues(new Uint8Array(16));
   const nonce = btoa(String.fromCharCode(...nonceBytes));
-  // R-08 migration: enforce the legacy (broad) CSP and ship the new tighter
-  // policy as Content-Security-Policy-Report-Only so violations are surfaced
-  // without regressing protection on normal responses. See security-headers.ts.
+  // Task 2.2: Strict CSP is now enforced. Legacy broad policy removed.
   const cspHeaders = buildCspHeaderValues(nonce);
 
   // --- Generate a per-request trace ID for structured logging ---

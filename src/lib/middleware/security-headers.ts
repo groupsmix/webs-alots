@@ -30,70 +30,66 @@ function getSupabaseHost(): string {
 }
 
 /**
- * Build the tightened Content-Security-Policy header value with a per-request
- * nonce. This is the target policy we want to eventually enforce.
+ * Derive the Plausible analytics host so the CSP allows beacon requests.
+ * Falls back to the Plausible Cloud default when not configured.
+ */
+function getPlausibleHost(): string | null {
+  const domain = process.env.NEXT_PUBLIC_PLAUSIBLE_DOMAIN;
+  if (!domain) return null;
+  const host = process.env.NEXT_PUBLIC_PLAUSIBLE_HOST ?? "https://plausible.io";
+  try {
+    return new URL(host).host;
+  } catch {
+    return "plausible.io";
+  }
+}
+
+export interface BuildCspOptions {
+  /**
+   * When true, indicates the policy is intended for the Report-Only header.
+   * The directives are identical either way; this flag is used by callers
+   * to decide which HTTP header to set.
+   * @default false
+   */
+  reportOnly?: boolean;
+}
+
+/**
+ * Build the strict Content-Security-Policy header value with a per-request
+ * nonce.
  *
  * R-08: Wildcards (*.supabase.co, *.googleapis.com) replaced with the
  * project-specific Supabase hostname (derived from NEXT_PUBLIC_SUPABASE_URL)
  * and the exact Google endpoints the app uses.
  *
- * During the migration window this value is shipped as
- * Content-Security-Policy-Report-Only (via `applyAllSecurityHeaders`) so
- * violations are surfaced without breaking users. The enforcing header uses
- * the broader `buildLegacyCsp` policy to avoid regressions.
+ * Task 2.2: This policy is now **enforced** (no longer report-only).
+ * The legacy broad CSP has been removed.
  */
-export function buildCsp(nonce: string): string {
+export function buildCsp(nonce: string, _options?: BuildCspOptions): string {
   const isDev = process.env.NODE_ENV === "development";
   const sbHost = getSupabaseHost();
+  const plausibleHost = getPlausibleHost();
+
+  const connectSources = [
+    "'self'",
+    sbHost,
+    `wss://${sbHost}`,
+    "https://fonts.googleapis.com",
+    "https://maps.googleapis.com",
+    "https://www.googleapis.com/calendar",
+    "https://cloudflareinsights.com",
+    "https://static.cloudflareinsights.com",
+    "https://challenges.cloudflare.com",
+    ...(plausibleHost ? [`https://${plausibleHost}`] : []),
+  ].join(" ");
+
   return [
     "default-src 'self'",
     `script-src 'nonce-${nonce}' 'strict-dynamic' 'unsafe-inline' https: http:${isDev ? " 'unsafe-eval'" : ""}`,
     `style-src 'self' 'nonce-${nonce}'`,
     `img-src 'self' data: blob: ${sbHost} uploads.oltigo.com`,
     "font-src 'self'",
-    // R-08 Fix: Added challenges.cloudflare.com for Turnstile widget
-    `connect-src 'self' ${sbHost} wss://${sbHost} https://fonts.googleapis.com https://maps.googleapis.com https://www.googleapis.com/calendar https://cloudflareinsights.com https://static.cloudflareinsights.com https://challenges.cloudflare.com`,
-    // R-08 Fix: Added challenges.cloudflare.com for Turnstile iframe
-    "frame-src 'self' https://challenges.cloudflare.com",
-    "form-action 'self'",
-    "base-uri 'self'",
-    "frame-ancestors 'none'",
-    ...(isDev ? [] : ["upgrade-insecure-requests"]),
-    ...(isDev ? [] : [`report-uri ${CSP_REPORT_URI}`]),
-    ...(isDev
-      ? []
-      : [`report-to csp-endpoint`]),
-  ].join("; ");
-}
-
-/**
- * Build the legacy (broader) Content-Security-Policy used for enforcement
- * during the R-08 migration window.
- *
- * This matches the policy that was in production before R-08 tightened the
- * allow-lists, with one exception: it includes the `challenges.cloudflare.com`
- * entries added by R-10 so the Turnstile widget on the demo login page
- * continues to work under enforcement.
- *
- * Keeping enforcement on the legacy policy prevents regressions while the
- * new tighter policy is still being validated via Report-Only. Once one
- * release cycle has passed with no unexpected CSP violation reports, swap
- * enforcement to `buildCsp` and drop this helper.
- */
-export function buildLegacyCsp(nonce: string): string {
-  const isDev = process.env.NODE_ENV === "development";
-  return [
-    "default-src 'self'",
-    // F-25: 'strict-dynamic' + nonce; 'unsafe-inline' is ignored when a nonce
-    // is present but required for legacy browser fallback.
-    `script-src 'nonce-${nonce}' 'strict-dynamic' 'unsafe-inline' https: http:${isDev ? " 'unsafe-eval'" : ""}`,
-    `style-src 'self' 'nonce-${nonce}'`,
-    // blob: is required for QR code download in qr-code-generator.tsx.
-    "img-src 'self' data: blob: *.supabase.co uploads.oltigo.com",
-    "font-src 'self'",
-    // R-10: Turnstile widget needs to connect to challenges.cloudflare.com.
-    "connect-src 'self' *.supabase.co wss://*.supabase.co *.googleapis.com https://cloudflareinsights.com https://static.cloudflareinsights.com https://challenges.cloudflare.com",
-    // R-10: Turnstile widget is embedded via an iframe from Cloudflare.
+    `connect-src ${connectSources}`,
     "frame-src 'self' https://challenges.cloudflare.com",
     "form-action 'self'",
     "base-uri 'self'",
@@ -105,41 +101,54 @@ export function buildLegacyCsp(nonce: string): string {
 }
 
 /**
- * Pair of CSP values used by the response-header helpers: the enforcing
- * policy (broader, for backwards compatibility) and the tighter Report-Only
- * policy that surfaces violations for the upcoming flip to enforcement.
+ * @deprecated The legacy broad CSP has been removed (Task 2.2).
+ * Use `buildCsp` directly — it is now the enforced policy.
+ *
+ * This stub remains temporarily for backward compatibility with any
+ * call-sites that haven't been updated yet. It delegates to buildCsp.
+ */
+export function buildLegacyCsp(nonce: string): string {
+  return buildCsp(nonce, { reportOnly: false });
+}
+
+/**
+ * CSP values used by the response-header helpers.
+ *
+ * Task 2.2: The strict policy is now the enforced policy.
+ * `reportOnly` is kept as an empty string — the Report-Only header is
+ * no longer emitted.
  */
 export interface CspHeaderValues {
   /** Value for the enforcing `Content-Security-Policy` header. */
   enforce: string;
-  /** Value for the `Content-Security-Policy-Report-Only` header. */
+  /**
+   * @deprecated No longer used. The Report-Only header has been removed.
+   * Kept for interface compatibility; always empty string.
+   */
   reportOnly: string;
 }
 
 /**
- * Convenience helper that builds both the enforcing (legacy/broad) and
- * Report-Only (new/tight) CSP values for a given nonce.
+ * Build the CSP header values. The strict policy is now enforced directly.
  */
 export function buildCspHeaderValues(nonce: string): CspHeaderValues {
   return {
-    enforce: buildLegacyCsp(nonce),
-    reportOnly: buildCsp(nonce),
+    enforce: buildCsp(nonce, { reportOnly: false }),
+    reportOnly: "",
   };
 }
 
 /**
  * Apply defense-in-depth security headers to early-return error responses.
  *
- * Sets both the enforcing CSP (legacy/broad) and the Report-Only CSP
- * (new/tight) so error responses behave the same as normal responses during
- * the R-08 migration window.
+ * Task 2.2: Enforces the strict CSP. The Report-Only header is removed.
  */
 export function withSecurityHeaders(
   response: NextResponse,
   csp: CspHeaderValues,
 ): NextResponse {
   response.headers.set("Content-Security-Policy", csp.enforce);
-  response.headers.set("Content-Security-Policy-Report-Only", csp.reportOnly);
+  response.headers.delete("Content-Security-Policy-Report-Only");
   response.headers.set("Strict-Transport-Security", HSTS_VALUE);
   response.headers.set("X-Content-Type-Options", "nosniff");
   response.headers.set("X-Frame-Options", "DENY");
@@ -160,11 +169,8 @@ export function secureRedirect(url: string | URL, init?: number | ResponseInit):
 /**
  * Apply all standard security headers to a response.
  *
- * R-08 migration: Enforce the legacy (broad) CSP while shipping the new
- * tighter policy as Report-Only. This preserves existing protection (no
- * regression from commenting out enforcement entirely) while surfacing
- * violations of the target policy so they can be fixed before we flip the
- * enforcement header to the tight policy.
+ * Task 2.2: The strict CSP is now the enforced policy. The legacy broad CSP
+ * and Report-Only header have been removed.
  */
 export function applyAllSecurityHeaders(
   response: NextResponse,
@@ -172,9 +178,7 @@ export function applyAllSecurityHeaders(
   _nonce: string, // Unused but kept for API compatibility
 ): void {
   response.headers.set("Content-Security-Policy", csp.enforce);
-  response.headers.set("Content-Security-Policy-Report-Only", csp.reportOnly);
-  // Audit 7 Fix: Do not echo x-nonce in response headers to reduce exposure
-  // response.headers.set("x-nonce", nonce);
+  response.headers.delete("Content-Security-Policy-Report-Only");
   response.headers.set("Strict-Transport-Security", HSTS_VALUE);
   response.headers.set("X-Content-Type-Options", "nosniff");
   response.headers.set("X-Frame-Options", "DENY");
