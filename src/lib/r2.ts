@@ -472,6 +472,62 @@ export async function getR2ObjectMetadata(
 }
 
 /**
+ * List objects stored in R2 under the given key prefix, paginating over every
+ * page returned by `ListObjectsV2`. Used by the cleanup library
+ * (`r2-cleanup.ts`) to enumerate uploads for orphan reconciliation without
+ * caring about the 1 000-key page limit enforced by S3-compatible APIs.
+ *
+ * Returns an empty array when R2 is not configured so callers can safely
+ * invoke it during smoke runs without triggering credential errors.
+ *
+ * @param prefix    R2 key prefix to scan (e.g. `"clinics/"`). Required — an
+ *                  empty prefix would enumerate the entire bucket.
+ * @param opts.limit     Optional hard cap on the total number of keys
+ *                       returned across all pages. Defaults to no cap.
+ * @param opts.pageSize  Page size forwarded as `MaxKeys` (default: 1 000,
+ *                       the S3 maximum).
+ */
+export async function listR2Objects(
+  prefix: string,
+  opts: { limit?: number; pageSize?: number } = {},
+): Promise<string[]> {
+  const client = await getClient();
+  const config = getR2Config();
+  if (!client || !config) return [];
+
+  const limit = opts.limit ?? Number.POSITIVE_INFINITY;
+  const pageSize = opts.pageSize ?? 1000;
+  if (limit <= 0) return [];
+
+  const { ListObjectsV2Command } = await import("@aws-sdk/client-s3");
+
+  const keys: string[] = [];
+  let continuationToken: string | undefined;
+
+  do {
+    const response = await client.send(
+      new ListObjectsV2Command({
+        Bucket: config.bucketName,
+        Prefix: prefix,
+        MaxKeys: pageSize,
+        ContinuationToken: continuationToken,
+      }),
+    );
+
+    for (const obj of response.Contents ?? []) {
+      if (typeof obj.Key === "string") {
+        keys.push(obj.Key);
+        if (keys.length >= limit) return keys;
+      }
+    }
+
+    continuationToken = response.IsTruncated ? response.NextContinuationToken ?? undefined : undefined;
+  } while (continuationToken);
+
+  return keys;
+}
+
+/**
  * Read the first N bytes of an object from R2 for content validation.
  *
  * @param key      Object key
