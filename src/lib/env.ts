@@ -97,6 +97,13 @@ const ENV_RULES: EnvRule[] = [
   // CRON_SECRET only as a transitional measure (see profile-header-hmac.ts).
   { name: "PROFILE_HEADER_HMAC_KEY", required: process.env.NODE_ENV === "production", description: "HMAC key used to sign x-auth-profile-* headers between middleware and withAuth (required in production)", group: "auth" },
 
+  // ── PHI Encryption (Audit C-08) ──────────────────────────────────
+  // AES-256-GCM master key for patient files at rest on R2 (Moroccan
+  // Law 09-08). Required at startup in production so a misconfigured
+  // deploy fails fast instead of silently storing plaintext PHI through
+  // a code path that bypasses the encryptAndUpload chokepoint.
+  { name: "PHI_ENCRYPTION_KEY", required: process.env.NODE_ENV === "production", description: "Hex-encoded 256-bit AES-GCM key for PHI file encryption (required in production; `openssl rand -hex 32`)", group: "encryption" },
+
   // ── Custom Domains ─────────────────────────────────────────────────
   // These are gated by NEXT_PUBLIC_ENABLE_CUSTOM_DOMAINS — when the flag is
   // "true" they become required, so the app refuses to boot with a half-wired
@@ -223,6 +230,13 @@ export function enforceEnvValidation(): void {
   // has set ALLOW_UNMASKED_PHI=true. See SECURITY.md → "PHI Masking Defaults".
   enforcePhiMaskingPolicy();
 
+  // Audit Finding C-08 — refuse to boot in production without a valid PHI
+  // master key. The general ENV_RULES check above already requires the key
+  // to be set, but this guard additionally validates the key shape so an
+  // invalid value (wrong length, non-hex) cannot silently disable the
+  // encryption code path at first use.
+  enforcePhiEncryptionConfigured();
+
   // S-05: Assert PROFILE_HEADER_HMAC_KEY !== CRON_SECRET to prevent a
   // leaked cron token from also forging session headers.
   enforceHmacKeyIndependence();
@@ -263,6 +277,40 @@ export function enforcePhiMaskingPolicy(): void {
         "This must be approved by the Security Officer / DPO and documented.",
       { context: "env-validation", check: "phi-masking" },
     );
+  }
+}
+
+/**
+ * Audit Finding C-08: Refuse to boot in production when PHI_ENCRYPTION_KEY
+ * is missing or malformed. The general required-vars gate above already
+ * blocks an unset key in production; this guard additionally rejects keys
+ * that do not match the AES-256-GCM 64-hex-char shape consumed by
+ * `src/lib/encryption.ts`. Catching the bad shape at startup avoids a
+ * scenario where the key is "set" but every encrypt call silently returns
+ * null and writes through plaintext.
+ *
+ * Exported for unit tests.
+ */
+export function enforcePhiEncryptionConfigured(): void {
+  if (process.env.NODE_ENV !== "production") return;
+
+  const key = process.env.PHI_ENCRYPTION_KEY;
+  if (!key) {
+    // Already handled by enforceEnvValidation() but guard explicitly so
+    // the error message is specific.
+    const message =
+      "[STARTUP HEALTH CHECK FAILED] PHI_ENCRYPTION_KEY is required in production.\n" +
+      "Patient files (Moroccan Law 09-08 PHI) cannot be encrypted without it. Generate a key with: openssl rand -hex 32";
+    logger.error(message, { context: "env-validation", check: "phi-encryption" });
+    throw new Error(message);
+  }
+
+  if (!/^[0-9a-fA-F]{64}$/.test(key)) {
+    const message =
+      "[STARTUP HEALTH CHECK FAILED] PHI_ENCRYPTION_KEY must be exactly 64 hex characters (256 bits).\n" +
+      "Generate a valid key with: openssl rand -hex 32";
+    logger.error(message, { context: "env-validation", check: "phi-encryption" });
+    throw new Error(message);
   }
 }
 
