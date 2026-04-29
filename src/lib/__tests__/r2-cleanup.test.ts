@@ -85,6 +85,13 @@ function makeSupabaseStub() {
   return { client, builder };
 }
 
+/**
+ * A valid-looking clinic UUID. The library calls `assertClinicId`
+ * (which validates UUID shape) so the test fixture can't use the
+ * `"clinic-a"` shorthand.
+ */
+const TEST_CLINIC_ID = "00000000-0000-0000-0000-000000000001";
+
 const originalEnv = process.env;
 
 beforeEach(() => {
@@ -148,6 +155,7 @@ describe("findAbandonedPendingUploads", () => {
     const before = Date.now();
     const result = await findAbandonedPendingUploads(
       client as unknown as Parameters<typeof findAbandonedPendingUploads>[0],
+      TEST_CLINIC_ID,
     );
     const after = Date.now();
 
@@ -156,6 +164,7 @@ describe("findAbandonedPendingUploads", () => {
     expect(builder.select).toHaveBeenCalledWith(
       "id, clinic_id, r2_key, content_type, created_at, confirmed_at",
     );
+    expect(builder.eq).toHaveBeenCalledWith("clinic_id", TEST_CLINIC_ID);
     expect(builder.is).toHaveBeenCalledWith("confirmed_at", null);
 
     const [ltColumn, ltValue] = builder.lt.mock.calls[0] as [string, string];
@@ -178,8 +187,11 @@ describe("findAbandonedPendingUploads", () => {
 
     await findAbandonedPendingUploads(
       client as unknown as Parameters<typeof findAbandonedPendingUploads>[0],
+      TEST_CLINIC_ID,
       { prefix: "clinics/clinic-a/", olderThanHours: 1, limit: 50 },
     );
+
+    expect(builder.eq).toHaveBeenCalledWith("clinic_id", TEST_CLINIC_ID);
 
     expect(builder.like).toHaveBeenCalledWith("r2_key", "clinics/clinic-a/%");
     expect(builder.limit).toHaveBeenCalledWith(50);
@@ -197,6 +209,7 @@ describe("findAbandonedPendingUploads", () => {
     await expect(
       findAbandonedPendingUploads(
         client as unknown as Parameters<typeof findAbandonedPendingUploads>[0],
+        TEST_CLINIC_ID,
       ),
     ).rejects.toEqual({ message: "boom" });
 
@@ -204,6 +217,64 @@ describe("findAbandonedPendingUploads", () => {
       "findAbandonedPendingUploads query failed",
       expect.objectContaining({ context: "r2-cleanup" }),
     );
+  });
+});
+
+describe("tenant isolation guard", () => {
+  it("findAbandonedPendingUploads rejects a missing clinicId before touching Supabase", async () => {
+    const { findAbandonedPendingUploads } = await import("../r2-cleanup");
+    const { client } = makeSupabaseStub();
+
+    await expect(
+      findAbandonedPendingUploads(
+        client as unknown as Parameters<typeof findAbandonedPendingUploads>[0],
+        "" as unknown as string,
+      ),
+    ).rejects.toThrow(/TENANT SAFETY/);
+    expect(client.from).not.toHaveBeenCalled();
+  });
+
+  it("findOrphanKeys rejects a non-UUID clinicId before touching Supabase", async () => {
+    const { findOrphanKeys } = await import("../r2-cleanup");
+    const { client } = makeSupabaseStub();
+
+    await expect(
+      findOrphanKeys(
+        client as unknown as Parameters<typeof findOrphanKeys>[0],
+        "not-a-uuid",
+        ["clinics/a/orphan.png"],
+      ),
+    ).rejects.toThrow(/TENANT SAFETY/);
+    expect(client.from).not.toHaveBeenCalled();
+  });
+
+  it("cleanupAbandonedUploads rejects a missing clinicId before touching Supabase", async () => {
+    const { cleanupAbandonedUploads } = await import("../r2-cleanup");
+    const { client } = makeSupabaseStub();
+
+    await expect(
+      cleanupAbandonedUploads(
+        client as unknown as Parameters<typeof cleanupAbandonedUploads>[0],
+        undefined as unknown as string,
+      ),
+    ).rejects.toThrow(/TENANT SAFETY/);
+    expect(client.from).not.toHaveBeenCalled();
+  });
+
+  it("reconcileOrphans rejects a missing clinicId before listing R2", async () => {
+    const { reconcileOrphans } = await import("../r2-cleanup");
+    const { listR2Objects } = await import("@/lib/r2");
+    const { client } = makeSupabaseStub();
+
+    await expect(
+      reconcileOrphans(
+        client as unknown as Parameters<typeof reconcileOrphans>[0],
+        "" as unknown as string,
+        { prefix: "clinics/" },
+      ),
+    ).rejects.toThrow(/TENANT SAFETY/);
+    expect(listR2Objects).not.toHaveBeenCalled();
+    expect(client.from).not.toHaveBeenCalled();
   });
 });
 
@@ -216,6 +287,7 @@ describe("findOrphanKeys", () => {
 
     const result = await findOrphanKeys(
       client as unknown as Parameters<typeof findOrphanKeys>[0],
+      TEST_CLINIC_ID,
       [],
     );
 
@@ -239,6 +311,7 @@ describe("findOrphanKeys", () => {
     ];
     const result = await findOrphanKeys(
       client as unknown as Parameters<typeof findOrphanKeys>[0],
+      TEST_CLINIC_ID,
       input,
     );
 
@@ -246,6 +319,7 @@ describe("findOrphanKeys", () => {
       "clinics/a/logos/orphan-1.png",
       "clinics/a/logos/orphan-2.png",
     ]);
+    expect(builder.eq).toHaveBeenCalledWith("clinic_id", TEST_CLINIC_ID);
     expect(builder.in).toHaveBeenCalledWith(
       "r2_key",
       [
@@ -268,6 +342,7 @@ describe("findOrphanKeys", () => {
     await expect(
       findOrphanKeys(
         client as unknown as Parameters<typeof findOrphanKeys>[0],
+        TEST_CLINIC_ID,
         ["k1"],
       ),
     ).rejects.toEqual({ message: "db down" });
@@ -316,6 +391,7 @@ describe("cleanupAbandonedUploads", () => {
 
     const result = await cleanupAbandonedUploads(
       client as unknown as Parameters<typeof cleanupAbandonedUploads>[0],
+      TEST_CLINIC_ID,
     );
 
     expect(deleteFromR2).toHaveBeenCalledTimes(2);
@@ -323,6 +399,8 @@ describe("cleanupAbandonedUploads", () => {
     expect(deleteFromR2).toHaveBeenNthCalledWith(2, abandoned[1].r2_key);
 
     expect(builder.delete).toHaveBeenCalledTimes(2);
+    // Each delete is scoped by both clinic_id (tenant guard) and id (target row).
+    expect(builder.eq).toHaveBeenCalledWith("clinic_id", TEST_CLINIC_ID);
     expect(builder.eq).toHaveBeenCalledWith("id", "row-1");
     expect(builder.eq).toHaveBeenCalledWith("id", "row-2");
 
@@ -343,6 +421,7 @@ describe("cleanupAbandonedUploads", () => {
 
     const result = await cleanupAbandonedUploads(
       client as unknown as Parameters<typeof cleanupAbandonedUploads>[0],
+      TEST_CLINIC_ID,
       { dryRun: true },
     );
 
@@ -372,6 +451,7 @@ describe("cleanupAbandonedUploads", () => {
 
     const result = await cleanupAbandonedUploads(
       client as unknown as Parameters<typeof cleanupAbandonedUploads>[0],
+      TEST_CLINIC_ID,
     );
 
     expect(builder.delete).toHaveBeenCalledTimes(1);
@@ -399,6 +479,7 @@ describe("cleanupAbandonedUploads", () => {
 
     const result = await cleanupAbandonedUploads(
       client as unknown as Parameters<typeof cleanupAbandonedUploads>[0],
+      TEST_CLINIC_ID,
     );
 
     expect(result.deletedFromR2).toBe(1);
@@ -430,8 +511,11 @@ describe("reconcileOrphans", () => {
 
     const result = await reconcileOrphans(
       client as unknown as Parameters<typeof reconcileOrphans>[0],
+      TEST_CLINIC_ID,
       { prefix: "clinics/a/" },
     );
+
+    expect(builder.eq).toHaveBeenCalledWith("clinic_id", TEST_CLINIC_ID);
 
     expect(listR2Objects).toHaveBeenCalledWith("clinics/a/", undefined);
     expect(deleteFromR2).toHaveBeenCalledTimes(2);
@@ -461,6 +545,7 @@ describe("reconcileOrphans", () => {
 
     const result = await reconcileOrphans(
       client as unknown as Parameters<typeof reconcileOrphans>[0],
+      TEST_CLINIC_ID,
       { prefix: "clinics/a/", dryRun: true },
     );
 
@@ -484,6 +569,7 @@ describe("reconcileOrphans", () => {
 
     const result = await reconcileOrphans(
       client as unknown as Parameters<typeof reconcileOrphans>[0],
+      TEST_CLINIC_ID,
       { prefix: "clinics/empty/" },
     );
 
@@ -513,6 +599,7 @@ describe("reconcileOrphans", () => {
 
     const result = await reconcileOrphans(
       client as unknown as Parameters<typeof reconcileOrphans>[0],
+      TEST_CLINIC_ID,
       { prefix: "clinics/a/", alertThreshold: 0.99 },
     );
 
@@ -534,6 +621,7 @@ describe("reconcileOrphans", () => {
 
     await reconcileOrphans(
       client as unknown as Parameters<typeof reconcileOrphans>[0],
+      TEST_CLINIC_ID,
       { prefix: "clinics/", limit: 42 },
     );
 

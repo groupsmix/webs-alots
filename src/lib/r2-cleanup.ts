@@ -33,6 +33,7 @@
 
 import * as Sentry from "@sentry/nextjs";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { assertClinicId } from "@/lib/assert-tenant";
 import { logger } from "@/lib/logger";
 import { deleteFromR2, listR2Objects } from "@/lib/r2";
 
@@ -58,7 +59,7 @@ export const DEFAULT_ORPHAN_RATE_THRESHOLD = 0.1;
  */
 export interface PendingUploadRow {
   id: string;
-  clinic_id: string | null;
+  clinic_id: string;
   r2_key: string;
   content_type: string | null;
   created_at: string;
@@ -103,11 +104,18 @@ export interface FindAbandonedOptions {
  * Find pending-upload rows whose confirmation never arrived within the
  * SLA window. Returns rows ordered by creation time so the cron deletes
  * the oldest candidates first.
+ *
+ * The query is scoped to a single tenant — every cron invocation must
+ * iterate over clinics and pass the current `clinicId` (per AGENTS.md
+ * tenant-isolation rule 6).
  */
 export async function findAbandonedPendingUploads(
   supabase: AnySupabase,
+  clinicId: string,
   options: FindAbandonedOptions = {},
 ): Promise<PendingUploadRow[]> {
+  assertClinicId(clinicId, "findAbandonedPendingUploads");
+
   const {
     olderThanHours = DEFAULT_ABANDONED_HOURS,
     prefix,
@@ -121,6 +129,7 @@ export async function findAbandonedPendingUploads(
   let query = supabase
     .from("pending_uploads")
     .select("id, clinic_id, r2_key, content_type, created_at, confirmed_at")
+    .eq("clinic_id", clinicId)
     .is("confirmed_at", null)
     .lt("created_at", cutoffIso)
     .order("created_at", { ascending: true })
@@ -138,6 +147,7 @@ export async function findAbandonedPendingUploads(
     logger.error("findAbandonedPendingUploads query failed", {
       context: "r2-cleanup",
       error,
+      clinicId,
       olderThanHours,
       prefix,
     });
@@ -149,13 +159,20 @@ export async function findAbandonedPendingUploads(
 
 /**
  * Given a batch of R2 keys, return the subset that is NOT referenced by
- * any row in `pending_uploads` (pending or confirmed). An orphan key is
- * therefore one the application has no record of and is safe to delete.
+ * any row in `pending_uploads` (pending or confirmed) for the given
+ * tenant. An orphan key is therefore one the application has no record
+ * of and is safe to delete.
+ *
+ * The query is scoped to `clinicId` so a key tracked under one tenant
+ * cannot mask an orphan reported by another tenant's reconciliation.
  */
 export async function findOrphanKeys(
   supabase: AnySupabase,
+  clinicId: string,
   r2Keys: string[],
 ): Promise<string[]> {
+  assertClinicId(clinicId, "findOrphanKeys");
+
   if (r2Keys.length === 0) return [];
 
   // De-duplicate input so the `in()` filter stays within PostgREST's
@@ -166,12 +183,14 @@ export async function findOrphanKeys(
   const { data, error } = await supabase
     .from("pending_uploads")
     .select("r2_key")
+    .eq("clinic_id", clinicId)
     .in("r2_key", uniqueKeys);
 
   if (error) {
     logger.error("findOrphanKeys query failed", {
       context: "r2-cleanup",
       error,
+      clinicId,
       keyCount: uniqueKeys.length,
     });
     throw error;
@@ -206,13 +225,20 @@ export interface CleanupAbandonedOptions extends FindAbandonedOptions {
  * Delete abandoned pending uploads from R2 and prune the tracking rows.
  * Errors are collected per-key and returned — a transient R2 outage on
  * one object must not abort the rest of the pass.
+ *
+ * Scoped to a single tenant: the SELECT and the row DELETE both filter
+ * on `clinic_id` so a buggy caller cannot accidentally fan out across
+ * the bucket.
  */
 export async function cleanupAbandonedUploads(
   supabase: AnySupabase,
+  clinicId: string,
   options: CleanupAbandonedOptions = {},
 ): Promise<CleanupAbandonedResult> {
+  assertClinicId(clinicId, "cleanupAbandonedUploads");
+
   const dryRun = options.dryRun ?? false;
-  const abandoned = await findAbandonedPendingUploads(supabase, options);
+  const abandoned = await findAbandonedPendingUploads(supabase, clinicId, options);
 
   const errors: CleanupAbandonedResult["errors"] = [];
   let deletedFromR2 = 0;
@@ -228,6 +254,7 @@ export async function cleanupAbandonedUploads(
       errors.push({ key: row.r2_key, stage: "r2", error: err });
       logger.warn("R2 delete failed during abandoned-upload cleanup", {
         context: "r2-cleanup",
+        clinicId,
         key: row.r2_key,
         error: err,
       });
@@ -237,12 +264,14 @@ export async function cleanupAbandonedUploads(
     const { error: deleteError } = await supabase
       .from("pending_uploads")
       .delete()
+      .eq("clinic_id", clinicId)
       .eq("id", row.id);
 
     if (deleteError) {
       errors.push({ key: row.r2_key, stage: "db", error: deleteError });
       logger.warn("pending_uploads row delete failed after R2 delete", {
         context: "r2-cleanup",
+        clinicId,
         key: row.r2_key,
         id: row.id,
         error: deleteError,
@@ -254,6 +283,7 @@ export async function cleanupAbandonedUploads(
 
   logger.info("cleanupAbandonedUploads pass complete", {
     context: "r2-cleanup",
+    clinicId,
     scanned: abandoned.length,
     deletedFromR2,
     removedFromDb,
@@ -306,11 +336,19 @@ export interface ReconcileOrphansResult {
  * that is not tracked in `pending_uploads` as an orphan, delete those
  * objects (unless `dryRun`), and fire the alerting hook when the orphan
  * rate crosses the configured threshold.
+ *
+ * Scoped to a single tenant: callers (the future cron) iterate clinics
+ * and pass the current `clinicId`, which is forwarded to
+ * `findOrphanKeys` so the DB lookup that classifies orphans cannot see
+ * across tenants.
  */
 export async function reconcileOrphans(
   supabase: AnySupabase,
+  clinicId: string,
   options: ReconcileOrphansOptions,
 ): Promise<ReconcileOrphansResult> {
+  assertClinicId(clinicId, "reconcileOrphans");
+
   const {
     prefix,
     dryRun = false,
@@ -319,7 +357,7 @@ export async function reconcileOrphans(
   } = options;
 
   const keys = await listR2Objects(prefix, limit != null ? { limit } : undefined);
-  const orphanKeys = await findOrphanKeys(supabase, keys);
+  const orphanKeys = await findOrphanKeys(supabase, clinicId, keys);
 
   const errors: ReconcileOrphansResult["errors"] = [];
   let deletedFromR2 = 0;
@@ -333,6 +371,7 @@ export async function reconcileOrphans(
         errors.push({ key, error: err });
         logger.warn("R2 delete failed during orphan reconciliation", {
           context: "r2-cleanup",
+          clinicId,
           key,
           error: err,
         });
@@ -351,6 +390,7 @@ export async function reconcileOrphans(
 
   logger.info("reconcileOrphans pass complete", {
     context: "r2-cleanup",
+    clinicId,
     prefix,
     scanned: keys.length,
     orphans: orphanKeys.length,
