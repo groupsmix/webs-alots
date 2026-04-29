@@ -1,0 +1,43 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  "entry": [
+    "src/app/**/page.tsx",
+    "src/app/**/layout.tsx",
+    "src/app/**/route.ts",
+    "src/app/**/loading.tsx",
+    "src/app/**/error.tsx",
+    "src/app/**/not-found.tsx",
+    "src/app/**/default.tsx",
+    "src/app/**/template.tsx",
+    "src/app/global-error.tsx",
+    "src/middleware.ts",
+    "src/instrumentation.ts",
+    "src/sentry.*.config.ts",
+    "scripts/**/*.{ts,mjs}",
+    "supabase/functions/*/index.ts",
+    "worker-cron-handler.ts",
+    "extract-locales.{ts,mjs}",
+    "open-next.config.ts"
+  ],
+  "project": [
+    "src/**/*.{ts,tsx}",
+    "scripts/**/*.{ts,mjs}",
+    "supabase/functions/**/*.ts",
+    "e2e/**/*.ts",
+    "*.config.{ts,mjs}",
+    "worker-cron-handler.ts",
+    "extract-locales.{ts,mjs}"
+  ],
+  "ignore": [
+    "src/lib/types/database.ts"
+  ],
+  "ignoreDependencies": [
+    "eslint-plugin-jsx-a11y",
+    "tailwindcss",
+    "postcss",
+    "eslint-plugin-react-hooks",
+    "tsx",
+    "tw-animate-css",
+    "shadcn"
+  ]
+}
