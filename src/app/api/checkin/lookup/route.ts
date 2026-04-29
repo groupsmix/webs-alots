@@ -2,18 +2,40 @@ import { NextRequest } from "next/server";
 import { apiSuccess, apiError, apiInternalError } from "@/lib/api-response";
 import { logger } from "@/lib/logger";
 import { createTenantClient } from "@/lib/supabase-server";
+import { getTenant } from "@/lib/tenant";
 
 /**
- * GET /api/checkin/lookup?phone=...&clinicId=...
+ * GET /api/checkin/lookup?phone=...
  *
  * Look up today's appointments for a patient by phone number.
+ *
+ * S-02: clinicId is derived from the subdomain via getTenant() — it is
+ * never read from the URL/body. If a caller still supplies a `clinicId`
+ * query param (legacy clients, manual probing) it must agree with the
+ * subdomain-resolved tenant or the request is rejected. This prevents
+ * unauthenticated cross-tenant enumeration.
  */
 export async function GET(request: NextRequest) {
   const phone = request.nextUrl.searchParams.get("phone");
-  const clinicId = request.nextUrl.searchParams.get("clinicId");
+  const suppliedClinicId = request.nextUrl.searchParams.get("clinicId");
 
-  if (!phone || !clinicId) {
-    return apiError("Missing phone or clinicId", 400);
+  if (!phone) {
+    return apiError("Missing phone", 400);
+  }
+
+  const tenant = await getTenant();
+  if (!tenant?.clinicId) {
+    return apiError("Tenant context is required", 400, "TENANT_REQUIRED");
+  }
+  const clinicId = tenant.clinicId;
+
+  if (suppliedClinicId && suppliedClinicId !== clinicId) {
+    logger.warn("Rejected check-in lookup with mismatched clinicId", {
+      context: "api/checkin/lookup",
+      tenantClinicId: clinicId,
+      suppliedClinicId,
+    });
+    return apiError("clinicId mismatch", 403, "TENANT_MISMATCH");
   }
 
   try {

@@ -901,7 +901,6 @@ export type Database = {
           clinic_id: string
           created_at: string | null
           id: string
-          key: string | null
           key_hash: string
           label: string | null
           last_used_at: string | null
@@ -912,7 +911,6 @@ export type Database = {
           clinic_id: string
           created_at?: string | null
           id?: string
-          key?: string | null
           key_hash: string
           label?: string | null
           last_used_at?: string | null
@@ -923,7 +921,6 @@ export type Database = {
           clinic_id?: string
           created_at?: string | null
           id?: string
-          key?: string | null
           key_hash?: string
           label?: string | null
           last_used_at?: string | null

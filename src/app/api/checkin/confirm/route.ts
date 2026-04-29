@@ -1,7 +1,8 @@
-import { apiSuccess, apiInternalError } from "@/lib/api-response";
+import { apiSuccess, apiError, apiInternalError } from "@/lib/api-response";
 import { withValidation } from "@/lib/api-validate";
 import { logger } from "@/lib/logger";
 import { createTenantClient } from "@/lib/supabase-server";
+import { getTenant } from "@/lib/tenant";
 import { checkinConfirmSchema } from "@/lib/validations";
 
 /**
@@ -9,9 +10,29 @@ import { checkinConfirmSchema } from "@/lib/validations";
  *
  * Confirm patient arrival: update appointment status to "checked_in"
  * and calculate queue position / estimated wait.
+ *
+ * S-02: clinicId is derived from the subdomain via getTenant() — it is
+ * never trusted from the request body. A body-supplied `clinicId` is
+ * accepted only if it matches the subdomain-resolved tenant; otherwise
+ * the request is rejected to prevent unauthenticated cross-tenant writes.
  */
 export const POST = withValidation(checkinConfirmSchema, async (body) => {
-    const { appointmentId, clinicId } = body;
+    const { appointmentId, clinicId: bodyClinicId } = body;
+
+    const tenant = await getTenant();
+    if (!tenant?.clinicId) {
+      return apiError("Tenant context is required", 400, "TENANT_REQUIRED");
+    }
+    const clinicId = tenant.clinicId;
+
+    if (bodyClinicId && bodyClinicId !== clinicId) {
+      logger.warn("Rejected check-in confirm with mismatched clinicId", {
+        context: "api/checkin/confirm",
+        tenantClinicId: clinicId,
+        bodyClinicId,
+      });
+      return apiError("clinicId mismatch", 403, "TENANT_MISMATCH");
+    }
 
     const supabase = await createTenantClient(clinicId);
 

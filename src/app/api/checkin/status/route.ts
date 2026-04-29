@@ -2,16 +2,33 @@ import { NextRequest } from "next/server";
 import { apiSuccess, apiError, apiInternalError } from "@/lib/api-response";
 import { logger } from "@/lib/logger";
 import { createTenantClient } from "@/lib/supabase-server";
+import { getTenant } from "@/lib/tenant";
 
 /**
- * GET /api/checkin/status?clinicId=...
+ * GET /api/checkin/status
  *
- * Check whether kiosk mode is enabled for the given clinic.
+ * Check whether kiosk mode is enabled for the current clinic.
+ *
+ * S-02: clinicId is derived from the subdomain via getTenant() — it is
+ * never read from the URL. A legacy `clinicId` query param is accepted
+ * only if it matches the subdomain-resolved tenant; otherwise the request
+ * is rejected to prevent unauthenticated cross-tenant probing.
  */
 export async function GET(request: NextRequest) {
-  const clinicId = request.nextUrl.searchParams.get("clinicId");
-  if (!clinicId) {
-    return apiError("Missing clinicId", 400);
+  const tenant = await getTenant();
+  if (!tenant?.clinicId) {
+    return apiError("Tenant context is required", 400, "TENANT_REQUIRED");
+  }
+  const clinicId = tenant.clinicId;
+
+  const suppliedClinicId = request.nextUrl.searchParams.get("clinicId");
+  if (suppliedClinicId && suppliedClinicId !== clinicId) {
+    logger.warn("Rejected check-in status with mismatched clinicId", {
+      context: "api/checkin/status",
+      tenantClinicId: clinicId,
+      suppliedClinicId,
+    });
+    return apiError("clinicId mismatch", 403, "TENANT_MISMATCH");
   }
 
   try {
