@@ -283,8 +283,12 @@ export async function middleware(request: NextRequest) {
         }
       );
 
+      // S-07 (migration 00068): anon callers can no longer SELECT from
+      // `clinics` directly. They read from the narrower
+      // `public_clinic_directory` view instead, which exposes only the
+      // columns needed for tenant header population.
       const { data } = await anonSupabase
-        .from("clinics")
+        .from("public_clinic_directory")
         .select("id, name, type, tier, subdomain")
         .eq("subdomain", subdomain)
         .single();
