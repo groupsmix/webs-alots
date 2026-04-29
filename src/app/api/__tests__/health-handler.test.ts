@@ -36,8 +36,10 @@ describe("GET /api/health — route handler", () => {
     vi.unstubAllEnvs();
   });
 
-  it("returns 200 with degraded status when env vars are missing", async () => {
-    // Ensure Supabase env vars are NOT set
+  it("returns 200 with ok:true when degraded but not down", async () => {
+    // Ensure Supabase env vars are NOT set — this puts the database
+    // check in a "degraded" state, but the overall endpoint still
+    // returns 200 because nothing is fully down.
     vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "");
     vi.stubEnv("NEXT_PUBLIC_SUPABASE_ANON_KEY", "");
 
@@ -48,11 +50,7 @@ describe("GET /api/health — route handler", () => {
 
     expect(response.status).toBe(200);
     expect(body.ok).toBe(true);
-    // O-04: Public health endpoint returns only ok, status, timestamp
-    // Detailed checks are only exposed via /api/health/internal
-    expect(body.data.ok).toBeDefined();
-    expect(body.data.status).toBeDefined();
-    expect(body.data.timestamp).toBeDefined();
+    expect(body.data.ok).toBe(true);
   });
 
   it("returns response with correct Cache-Control header", async () => {
@@ -65,7 +63,7 @@ describe("GET /api/health — route handler", () => {
     expect(response.headers.get("Cache-Control")).toBe("public, max-age=30");
   });
 
-  it("O-04: does NOT expose granular dependency status to anon callers", async () => {
+  it("O-04: anon response is exactly { ok: boolean } with no extra fields", async () => {
     vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "");
     vi.stubEnv("NEXT_PUBLIC_SUPABASE_ANON_KEY", "");
 
@@ -73,22 +71,12 @@ describe("GET /api/health — route handler", () => {
     const response = await GET();
     const body = await response.json();
 
-    // O-04: checks object should NOT be present in public response
-    expect(body.data.checks).toBeUndefined();
-    expect(body.data.ok).toBeDefined();
-    expect(body.data.status).toBeDefined();
-  });
-
-  it("returns ok:true or ok:false based on overall status", async () => {
-    vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "");
-    vi.stubEnv("NEXT_PUBLIC_SUPABASE_ANON_KEY", "");
-
-    const { GET } = await import("@/app/api/health/route");
-    const response = await GET();
-    const body = await response.json();
-
-    // With missing env vars, status is "degraded" which still means ok:true
-    // (only "down" means ok:false)
+    // O-04: data payload must be exactly { ok: boolean } — no granular
+    // dependency status, no overall status string, and no timestamp.
     expect(typeof body.data.ok).toBe("boolean");
+    expect(Object.keys(body.data)).toEqual(["ok"]);
+    expect(body.data.checks).toBeUndefined();
+    expect(body.data.status).toBeUndefined();
+    expect(body.data.timestamp).toBeUndefined();
   });
 });
