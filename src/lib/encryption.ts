@@ -181,25 +181,49 @@ export async function decryptBuffer(
 // ── Patient File Categories Requiring Encryption ──
 
 /**
+ * Normalize a category key to a single canonical form: lowercase + all
+ * hyphens folded to underscores. Mirrors `normalizeCategory()` in the
+ * upload route so the per-category size limits and the PHI-encryption
+ * decision can never disagree on what e.g. `"X-Rays"` means.
+ *
+ * Audit Finding C-08: keeping two separate normalizations (one lowercase-
+ * only here, one hyphen-folding in upload route) meant a category like
+ * `x_rays` had a 25 MB limit but bypassed encryption because the PHI set
+ * only listed `x-rays` / `xrays`.
+ */
+export function normalizePhiCategory(category: string): string {
+  return category.trim().toLowerCase().replace(/-/g, "_");
+}
+
+/**
  * Upload categories that contain Protected Health Information (PHI)
  * and must be encrypted at rest per Moroccan Law 09-08.
+ *
+ * Stored in canonical normalized form (lowercase, underscores). Callers
+ * must look up via `requiresEncryption()` rather than directly reading
+ * this set, since `requiresEncryption()` applies the same normalization
+ * to the input.
  */
 export const PHI_CATEGORIES = new Set([
   "documents",
   "prescriptions",
-  "lab-results",
+  "lab_report",
   "lab_results",
-  "x-rays",
+  "x_rays",
+  // `xrays` (no separator) intentionally listed separately because the
+  // hyphen-fold normalization does not collapse "xrays" → "x_rays".
+  // Both forms appear in LIMITS_BY_CATEGORY and must mirror that set.
   "xrays",
-  "medical-records",
+  "radiology",
   "medical_records",
-  "patient-files",
   "patient_files",
 ]);
 
 /**
- * Determine if a file upload category requires encryption.
+ * Determine if a file upload category requires encryption. Applies the
+ * same normalization as `LIMITS_BY_CATEGORY` so `lab-results`,
+ * `lab_results`, `Lab-Results` etc. all resolve to the same decision.
  */
 export function requiresEncryption(category: string): boolean {
-  return PHI_CATEGORIES.has(category.toLowerCase());
+  return PHI_CATEGORIES.has(normalizePhiCategory(category));
 }
