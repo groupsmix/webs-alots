@@ -372,15 +372,13 @@ export async function middleware(request: NextRequest) {
             }
           });
 
-          // Set the auth-profile response headers (informational; the request
-          // headers above are what `withAuth` reads). Re-apply security and
-          // tenant headers since the response was just recreated.
-          supabaseResponse.headers.set(PROFILE_HEADER_NAMES.id, profile.id);
-          supabaseResponse.headers.set(PROFILE_HEADER_NAMES.role, profile.role);
-          if (profile.clinic_id) {
-            supabaseResponse.headers.set(PROFILE_HEADER_NAMES.clinic, profile.clinic_id);
-          }
-          supabaseResponse.headers.set(PROFILE_HEADER_NAMES.sig, sigHex);
+          // Do NOT mirror the signed x-auth-profile-* headers onto the
+          // outgoing response. They are an internal trust contract between
+          // middleware and `withAuth` carried via the forwarded *request*
+          // headers; emitting them on the response leaks the user id, role,
+          // clinic id and HMAC signature to the browser and any
+          // intermediaries. Re-apply security and tenant headers since the
+          // response was just recreated.
           applyAllSecurityHeaders(supabaseResponse, cspHeaders, nonce);
           if (resolvedClinic) setTenantHeaders(supabaseResponse, resolvedClinic);
         }
