@@ -1,0 +1,11 @@
+# Allowlisted gitleaks fingerprints.
+# Format: <commit-sha>:<file>:<rule-id>:<line>
+#
+# These are false positives from the test fixtures used in
+# `src/lib/__tests__/env-phi-encryption.test.ts`. The original commit
+# (a2c1bd63...) contained 16-char hex literals (".repeat(4)") that gitleaks
+# matched as `generic-api-key`. The literals were never real secrets and
+# have since been replaced with `crypto.randomBytes(32).toString("hex")`
+# at runtime, but the historical commit still trips the scanner.
+a2c1bd63387d9939dcda9b3d197c9452cdb60ba0:src/lib/__tests__/env-phi-encryption.test.ts:generic-api-key:60
+a2c1bd63387d9939dcda9b3d197c9452cdb60ba0:src/lib/__tests__/env-phi-encryption.test.ts:generic-api-key:66
