@@ -125,6 +125,12 @@ jobs:
           # parses it without throwing; transport sends silently fail to
           # reach the unresolvable host, which is fine for CI.
           NEXT_PUBLIC_SENTRY_DSN: https://ci-e2e-sentry-dsn-placeholder@o0.ingest.sentry.io/0
+          # F-10: enforceEmailProviderExclusivity throws at production boot
+          # when no email provider is configured. The Resend API isn't
+          # reachable from the runner and we never actually send mail in
+          # E2E, so a syntactically valid placeholder satisfies the
+          # startup health check without provisioning a real account.
+          RESEND_API_KEY: ci-e2e-resend-api-key-placeholder
           # Force in-memory rate limiter — the Supabase rate-limit RPC
           # isn't reliably available on the ephemeral CLI instance.
           RATE_LIMIT_BACKEND: memory
@@ -228,6 +234,7 @@ jobs:
           STAGING_SUPABASE_URL: ${{ secrets.STAGING_SUPABASE_URL }}
 
       - name: Deploy to Cloudflare Workers (Production)
+        id: deploy_production
         if: github.ref_name == 'main'
         uses: cloudflare/wrangler-action@392082e815bfc9e70d4d8011e40fb8779b5c1564 # v3.14.0
         with:
@@ -235,6 +242,7 @@ jobs:
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
 
       - name: Deploy to Cloudflare Workers (Staging)
+        id: deploy_staging
         if: github.ref_name == 'staging'
         uses: cloudflare/wrangler-action@392082e815bfc9e70d4d8011e40fb8779b5c1564 # v3.14.0
         with:
@@ -244,7 +252,14 @@ jobs:
 
       # CI-07: Post-deploy health check verifies response body markers,
       # not just HTTP status, to catch deploy-but-broken scenarios.
+      #
+      # CI-11: `continue-on-error: true` lets the job proceed to the
+      # auto-rollback step below when this check fails. The final
+      # "Fail workflow on health check failure" step still surfaces the
+      # failure so the deploy run is correctly marked red.
       - name: Health Check
+        id: health
+        continue-on-error: true
         run: |
           SITE_URL="${{ github.ref_name == 'staging' && 'https://staging.oltigo.com' || 'https://oltigo.com' }}"
           echo "Running health check against ${SITE_URL}..."
@@ -260,4 +275,69 @@ jobs:
             sleep 10
           done
           echo "Health check FAILED after 5 attempts — response body did not contain {\"ok\":true}"
+          exit 1
+
+      # CI-11: Auto-rollback to the previous Cloudflare Worker version when
+      # the post-deploy health check fails. `wrangler rollback` defaults to
+      # the immediately previous deployment when no deployment id is given.
+      # Piping `yes` answers the interactive confirmation prompt that
+      # wrangler emits even when --message is supplied.
+      #
+      # IMPORTANT: this only rolls back the Worker (code + bindings). It
+      # does NOT roll back any database migrations that ran as part of the
+      # release — see docs/db-rollback-constraints.md for the manual
+      # procedures that DB changes require.
+      - name: Auto-rollback Worker on failed health check
+        id: rollback
+        if: steps.health.outcome == 'failure'
+        continue-on-error: true
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          if [ "${{ github.ref_name }}" = "staging" ]; then
+            WORKER_NAME="webs-alots-staging"
+          else
+            WORKER_NAME="webs-alots"
+          fi
+          echo "::warning::Health check failed — rolling back ${WORKER_NAME} to the previous Cloudflare Worker version"
+          yes | npx wrangler rollback \
+            --name "${WORKER_NAME}" \
+            --message "Auto-rollback: post-deploy health check failed (commit ${{ github.sha }}, run ${{ github.run_id }})"
+
+      # CI-11: Confirm the previous version is healthy after rollback.
+      # If the rollback target is also broken, we want the run to clearly
+      # flag that manual intervention is required.
+      - name: Verify rollback health
+        id: rollback_health
+        if: always() && steps.health.outcome == 'failure' && steps.rollback.outcome == 'success'
+        run: |
+          SITE_URL="${{ github.ref_name == 'staging' && 'https://staging.oltigo.com' || 'https://oltigo.com' }}"
+          echo "Verifying rollback health against ${SITE_URL}..."
+          for i in 1 2 3 4 5; do
+            BODY=$(curl -s --max-time 10 "${SITE_URL}/api/health" || echo "")
+            STATUS=$(echo "$BODY" | grep -o '"ok":\s*true' || echo "")
+            HTTP_CODE=$(curl -s -o /dev/null -w '%{http_code}' --max-time 10 "${SITE_URL}/api/health" || echo "000")
+            if [ -n "$STATUS" ] && [ "$HTTP_CODE" -ge 200 ] && [ "$HTTP_CODE" -lt 400 ]; then
+              echo "Rollback verified — previous version is healthy (HTTP ${HTTP_CODE})"
+              exit 0
+            fi
+            echo "Verify attempt ${i}: HTTP ${HTTP_CODE}, body ok marker: '${STATUS}', retrying in 10s..."
+            sleep 10
+          done
+          echo "::error::Rollback completed but the previous version is also unhealthy. Manual intervention required — see docs/db-rollback-constraints.md and docs/incident-response.md."
+          exit 1
+
+      # CI-11: Always fail the workflow if the original health check failed,
+      # regardless of whether the rollback succeeded. The deploy is broken
+      # and on-call needs a red signal even when the Worker has been
+      # automatically reverted.
+      - name: Fail workflow on health check failure
+        if: always() && steps.health.outcome == 'failure'
+        run: |
+          if [ "${{ steps.rollback.outcome }}" = "success" ]; then
+            echo "::error::Deploy was rolled back to the previous Worker version because the post-deploy health check failed. Investigate the failed commit (${{ github.sha }}) before re-deploying. DB migrations from this release are NOT reverted — see docs/db-rollback-constraints.md."
+          else
+            echo "::error::Post-deploy health check FAILED and the automatic rollback also failed. Production may be broken — follow docs/incident-response.md and consider running scripts/staging-swap.sh --rollback manually."
+          fi
           exit 1

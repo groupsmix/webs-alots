@@ -47,11 +47,11 @@ jobs:
       - name: Run unit tests
         run: npm run test
 
-      # CI-08: Coverage thresholds are defined in vitest.config.ts.
-      # The coverage step requires @vitest/coverage-v8 which is a devDependency.
-      # When the dependency is installed, uncomment this step:
-      # - name: Run coverage check
-      #   run: npm run test:coverage
+      # CI-08: Coverage thresholds are defined in vitest.config.ts and
+      # enforced here. @vitest/coverage-v8 is a devDependency installed by
+      # `npm ci` above; failing this step blocks the PR.
+      - name: Run coverage check
+        run: npm run test:coverage
 
       # CI-02: Fail-closed bundle budget check.
       #
@@ -90,6 +90,11 @@ jobs:
       contents: read
       security-events: write
       actions: read
+      # CI-05: required for keyless cosign signing (OIDC token) and for
+      # `actions/attest-build-provenance` to record SLSA provenance against
+      # the GitHub attestations API.
+      id-token: write
+      attestations: write
     steps:
       - name: Checkout
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
@@ -130,12 +135,41 @@ jobs:
             --output-format JSON \
             --output-file bom.json
 
+      # CI-05: Sign the SBOM with cosign using keyless OIDC signing
+      # (Sigstore / Fulcio / Rekor). cosign v3 emits a single Sigstore
+      # bundle (signature + certificate + Rekor entry) which consumers can
+      # verify with:
+      #   cosign verify-blob --bundle bom.json.bundle bom.json \
+      #     --certificate-identity-regexp ... \
+      #     --certificate-oidc-issuer https://token.actions.githubusercontent.com
+      - name: Install cosign
+        uses: sigstore/cosign-installer@v4.1.1
+
+      - name: Sign SBOM with cosign (keyless)
+        env:
+          COSIGN_EXPERIMENTAL: "true"
+        run: |
+          cosign sign-blob --yes \
+            --bundle bom.json.bundle \
+            bom.json
+
+      # CI-05: Generate SLSA build provenance attestation for the SBOM.
+      # The attestation is uploaded to the GitHub attestations API and can
+      # be verified later with `gh attestation verify bom.json --repo
+      # ${{ github.repository }}`.
+      - name: Attest SBOM build provenance (SLSA)
+        uses: actions/attest-build-provenance@v3.1.0
+        with:
+          subject-path: bom.json
+
       - name: Upload SBOM
         uses: actions/upload-artifact@v4
         if: always()
         with:
           name: sbom
-          path: bom.json
+          path: |
+            bom.json
+            bom.json.bundle
 
       - name: Run Semgrep
         continue-on-error: true
@@ -248,6 +282,12 @@ jobs:
           # parses it without throwing; Sentry's transport will silently
           # fail to reach the (unresolvable) host, which is fine for CI.
           NEXT_PUBLIC_SENTRY_DSN: https://ci-e2e-sentry-dsn-placeholder@o0.ingest.sentry.io/0
+          # F-10: enforceEmailProviderExclusivity throws at production boot
+          # when no email provider is configured. The Resend API isn't
+          # reachable from the runner and we never actually send mail in
+          # E2E, so a syntactically valid placeholder satisfies the
+          # startup health check without provisioning a real account.
+          RESEND_API_KEY: ci-e2e-resend-api-key-placeholder
           # Force the in-memory rate limiter in CI. The Supabase rate-limit RPC
           # (rate_limit_check_and_increment) isn't reliably available on the
           # ephemeral supabase-cli instance during boot, so the limiter's

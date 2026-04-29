@@ -96,15 +96,13 @@ export async function GET() {
       ? "down"
       : "degraded";
 
-  // O-04: Anon /api/health returns only {ok: true/false} and status code.
-  // Detailed dependency checks are exposed only via /api/health/internal
-  // (gated on CRON_SECRET) to prevent information leakage to anon callers.
+  // O-04: Anon /api/health returns only `{ ok: boolean }` plus the HTTP
+  // status code (200 when healthy/degraded, 503 when down). Status
+  // strings, timestamps, and per-dependency detail are reserved for the
+  // gated /api/health/internal endpoint so unauthenticated callers cannot
+  // fingerprint our infrastructure.
   return apiSuccess(
-    {
-      ok: overallStatus !== "down",
-      status: overallStatus,
-      timestamp: new Date().toISOString(),
-    },
+    { ok: overallStatus !== "down" },
     overallStatus === "down" ? 503 : 200,
     { "Cache-Control": "public, max-age=30" },
   );

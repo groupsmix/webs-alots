@@ -159,13 +159,16 @@ BEGIN
 END $$;
 
 -- ─── D-08: users.role / clinic_id cross-constraint ──────────────────────────
--- NOTE: A hard CHECK constraint is too strict for the current data flow:
---   - handle_new_auth_user creates patients with clinic_id=NULL initially
---     (before clinic assignment via booking or admin invite)
---   - super_admin users may temporarily have clinic_id set for impersonation
--- The invariant is documented and enforced at the application level
--- via requireTenant() rather than as a database constraint.
-COMMENT ON TABLE users IS 'D-08: Invariant: super_admin should have clinic_id IS NULL; other roles should have clinic_id IS NOT NULL. Enforced at app level via requireTenant().';
+-- Historical note: an earlier revision of this migration added a strict
+-- CHECK constraint that conflicted with the self-signup data flow
+-- (handle_new_auth_user creates patients with clinic_id=NULL before clinic
+-- assignment). That strict constraint was reverted here, but leaving the
+-- invariant app-only was flagged again in audit review.
+--
+-- A relaxed CHECK constraint that tolerates patient.clinic_id = NULL is
+-- introduced in migration 00069 (users_role_clinic_id_valid). See that
+-- migration for the full rationale.
+COMMENT ON TABLE users IS 'D-08: Invariant enforced at DB level in 00069 (users_role_clinic_id_valid). See that migration for details.';
 
 -- ─── D-09: loyalty_points.points CHECK >= 0 ─────────────────────────────────
 DO $$
