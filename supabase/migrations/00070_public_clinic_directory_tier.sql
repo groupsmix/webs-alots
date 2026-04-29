@@ -23,16 +23,19 @@
 
 BEGIN;
 
--- Recreate the view with `tier` included. CREATE OR REPLACE VIEW preserves
--- existing grants, so the earlier `GRANT SELECT ... TO anon` from 00068
--- continues to apply.
-CREATE OR REPLACE VIEW public_clinic_directory AS
+-- Postgres `CREATE OR REPLACE VIEW` only lets us append columns to the end
+-- of the existing column list — it rejects any reorder or rename. Drop and
+-- recreate so we can express the final column list in a readable order.
+DROP VIEW IF EXISTS public_clinic_directory;
+
+CREATE VIEW public_clinic_directory AS
 SELECT id, name, subdomain, type, tier, status
 FROM clinics
 WHERE status = 'active';
 
--- Re-assert the anon grant defensively in case the view was created in a
--- schema migration path that skipped the original grant.
+-- Re-grant anon read after the drop. Grants do not survive a DROP VIEW, so
+-- this must be re-asserted explicitly (the original grant from 00068 is
+-- gone after the drop above).
 GRANT SELECT ON public_clinic_directory TO anon;
 
 COMMIT;
