@@ -104,17 +104,40 @@ export function register() {
             event.request.headers = safeHeaders;
           }
         }
-        // Strip known PHI field names from extra/context data.
+        // Strip known PHI field names anywhere arbitrary key/value data is
+        // attached to the event — event.extra, event.contexts (walked
+        // recursively; these may be nested via Sentry.setContext()), and
+        // event.tags (flat via Sentry.setTag()).
         const PHI_KEYS = new Set([
-          "phone", "email", "name", "patientName", "patient_name",
+          "phone", "email", "name", "patientname", "patient_name",
           "name_ar", "full_name", "address", "notes", "content",
           "message", "file_name", "date_of_birth", "dob",
           "insurance_number", "cin", "ssn",
         ]);
-        if (event.extra) {
-          for (const key of Object.keys(event.extra)) {
+        const scrubPHI = (value: unknown, depth = 0): unknown => {
+          if (depth > 10 || value === null || value === undefined) return value;
+          if (Array.isArray(value)) {
+            return value.map((v) => scrubPHI(v, depth + 1));
+          }
+          if (typeof value === "object") {
+            const obj = value as Record<string, unknown>;
+            for (const key of Object.keys(obj)) {
+              if (PHI_KEYS.has(key.toLowerCase())) {
+                obj[key] = "[REDACTED]";
+              } else {
+                obj[key] = scrubPHI(obj[key], depth + 1);
+              }
+            }
+            return obj;
+          }
+          return value;
+        };
+        if (event.extra) scrubPHI(event.extra);
+        if (event.contexts) scrubPHI(event.contexts);
+        if (event.tags) {
+          for (const key of Object.keys(event.tags)) {
             if (PHI_KEYS.has(key.toLowerCase())) {
-              event.extra[key] = "[REDACTED]";
+              event.tags[key] = "[REDACTED]";
             }
           }
         }
