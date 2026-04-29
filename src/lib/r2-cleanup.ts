@@ -318,7 +318,7 @@ export async function reconcileOrphans(
     limit,
   } = options;
 
-  const keys = await listR2Objects(prefix, limit ? { limit } : undefined);
+  const keys = await listR2Objects(prefix, limit != null ? { limit } : undefined);
   const orphanKeys = await findOrphanKeys(supabase, keys);
 
   const errors: ReconcileOrphansResult["errors"] = [];
