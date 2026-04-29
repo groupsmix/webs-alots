@@ -1,3 +1,4 @@
+import { cookies } from "next/headers";
 import { apiSuccess, apiInternalError, apiNotFound, apiUnauthorized } from "@/lib/api-response";
 import { withAuthValidation } from "@/lib/api-validate";
 import { logSecurityEvent } from "@/lib/audit-log";
@@ -110,6 +111,32 @@ export const POST = withAuthValidation(impersonateSchema, async (body, request, 
     });
 
     return response;
+}, ["super_admin"]);
+
+/**
+ * GET /api/impersonate
+ *
+ * S-11: Returns the current impersonation state for the signed-in user.
+ * The impersonation cookies (`sa_impersonate_clinic_name`,
+ * `sa_impersonate_reason`) are `httpOnly: true` — the banner cannot read
+ * them via `document.cookie`, so it calls this endpoint instead. Response
+ * is `{ clinicName: string, reason: string } | { clinicName: null }`.
+ *
+ * Only super_admins can be impersonating; `withAuth` enforces that.
+ */
+export const GET = withAuth(async () => {
+  const cookieStore = await cookies();
+  const clinicName = cookieStore.get("sa_impersonate_clinic_name")?.value ?? null;
+  const reason = cookieStore.get("sa_impersonate_reason")?.value ?? null;
+
+  if (!clinicName) {
+    return apiSuccess({ clinicName: null, reason: null });
+  }
+
+  return apiSuccess({
+    clinicName: decodeURIComponent(clinicName),
+    reason: reason ? decodeURIComponent(reason) : null,
+  });
 }, ["super_admin"]);
 
 export const DELETE = withAuth(async (_request, { supabase, user }) => {

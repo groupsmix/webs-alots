@@ -53,30 +53,24 @@ jobs:
       # - name: Run coverage check
       #   run: npm run test:coverage
 
-      # CI-02: Replace fragile grep-based bundle check with a fail-closed
-      # approach that errors when no bundle stats are found.
+      # CI-02: Fail-closed bundle budget check.
+      #
+      # Next 16 (Turbopack) no longer prints the "First Load JS shared by all"
+      # summary in `next build` output, so the previous grep-based check is
+      # unreliable. Parse `.next/build-manifest.json` instead — the root main
+      # chunks + polyfills are the JS loaded by every page. Budget is
+      # expressed in raw (uncompressed) bytes; roughly 4x the gzipped size.
       - name: Bundle size budget check
         run: |
           npm run build 2>&1 | tee build-output.txt
-          # CI-02: Fail-closed if build output doesn't contain bundle stats
-          if ! grep -q 'First Load JS' build-output.txt; then
-            echo "::error::No bundle stats found in build output — cannot verify budget. Failing closed."
-            exit 1
-          fi
-          # Extract the total First Load JS size from the build output.
-          TOTAL_KB=$(grep -oP 'First Load JS shared by all\s+\K[0-9.]+' build-output.txt || echo "")
-          if [ -z "$TOTAL_KB" ]; then
-            echo "::error::Could not parse First Load JS size from build output — failing closed."
-            exit 1
-          fi
-          echo "First Load JS shared: ${TOTAL_KB} kB"
-          if [ "$(echo "$TOTAL_KB > 250" | bc -l 2>/dev/null || echo 0)" = "1" ]; then
-            echo "::error::Bundle size budget exceeded! First Load JS shared = ${TOTAL_KB} kB (limit: 250 kB)"
-            exit 1
-          fi
+          node scripts/check-bundle-budget.mjs
         env:
           NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
           NEXT_PUBLIC_SUPABASE_ANON_KEY: placeholder
+          # Raw (uncompressed) limit on shared root chunks + polyfills.
+          # Current baseline ≈ 560 kB; 1024 kB leaves headroom and fails
+          # closed on runaway shared bundle growth (~ 250 kB gzipped).
+          BUNDLE_BUDGET_KB: "1024"
 
       # CI-01: Check for pending DB migrations. Fails if migration files
       # have been added but the migration-check workflow hasn't verified them.

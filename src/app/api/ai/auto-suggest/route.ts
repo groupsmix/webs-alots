@@ -19,11 +19,9 @@
 import { type NextRequest } from "next/server";
 import { sanitizeUntrustedText } from "@/lib/ai/sanitize";
 import { apiSuccess, apiError, apiRateLimited, apiInternalError } from "@/lib/api-response";
-// F-11: AI kill-switch — check before processing any AI request
-// Usage: if (!(await isAIEnabled())) return apiError("AI features are disabled", 503);
 import { withAuthValidation } from "@/lib/api-validate";
 import { DCI_DRUG_DATABASE, CATEGORY_LABELS } from "@/lib/dci-drug-database";
-import { isAIEnabled as _isAIEnabled } from "@/lib/features";
+import { isAIEnabled } from "@/lib/features";
 import { logger } from "@/lib/logger";
 import { aiAutoSuggestLimiter } from "@/lib/rate-limit";
 import type { PatientMetadata } from "@/lib/types/patient-metadata";
@@ -266,6 +264,16 @@ export const POST = withAuthValidation(
     const { profile, supabase } = auth;
     const clinicId = profile.clinic_id;
     const doctorId = profile.id;
+
+    // F-11: AI kill-switch — reject all AI requests when the global
+    // `ai.enabled` flag is explicitly set to "false" in FEATURE_FLAGS_KV.
+    if (!(await isAIEnabled())) {
+      return apiError(
+        "Les fonctionnalités IA sont temporairement désactivées.",
+        503,
+        "AI_DISABLED",
+      );
+    }
 
     if (!clinicId) {
       return apiError("No clinic associated with this account", 403, "NO_CLINIC");

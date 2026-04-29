@@ -446,8 +446,14 @@ BEGIN
 END $$;
 
 -- ─── C-03: processing_consents table for consent ledger ─────────────────────
+-- Multi-tenant: scoped by clinic_id per tenant-isolation requirements in
+-- AGENTS.md. clinic_id is nullable because cookie/pre-signup consents are
+-- recorded before a user is associated with a clinic (e.g. anonymous marketing
+-- visits). RLS enforces that rows with a clinic_id are visible only to that
+-- tenant, and user-scoped rows only to their owner.
 CREATE TABLE IF NOT EXISTS processing_consents (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  clinic_id UUID REFERENCES clinics(id) ON DELETE CASCADE,
   user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   processing_activity TEXT NOT NULL,
   legal_basis TEXT NOT NULL,
@@ -458,22 +464,60 @@ CREATE TABLE IF NOT EXISTS processing_consents (
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
+-- Backfill clinic_id on existing rows from the owning user (no-op on fresh
+-- installs; idempotent on re-runs).
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'processing_consents' AND column_name = 'clinic_id'
+  ) THEN
+    UPDATE processing_consents pc
+    SET clinic_id = u.clinic_id
+    FROM users u
+    WHERE pc.user_id = u.id
+      AND pc.clinic_id IS NULL
+      AND u.clinic_id IS NOT NULL;
+  END IF;
+END $$;
+
 ALTER TABLE processing_consents ENABLE ROW LEVEL SECURITY;
+
+-- Drop the old user-only policy if present so the clinic-scoped policy
+-- below replaces it cleanly on re-runs.
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE tablename = 'processing_consents'
+    AND policyname = 'processing_consents_user_own'
+  ) THEN
+    DROP POLICY processing_consents_user_own ON processing_consents;
+  END IF;
+END $$;
 
 DO $$
 BEGIN
   IF NOT EXISTS (
     SELECT 1 FROM pg_policies
     WHERE tablename = 'processing_consents'
-    AND policyname = 'processing_consents_user_own'
+    AND policyname = 'processing_consents_tenant_scope'
   ) THEN
-    CREATE POLICY processing_consents_user_own ON processing_consents
+    CREATE POLICY processing_consents_tenant_scope ON processing_consents
     FOR ALL USING (
+      -- Owner can always see their own rows.
       user_id = (SELECT id FROM users WHERE auth_id = auth.uid() LIMIT 1)
+      -- Clinic staff can see rows scoped to their tenant.
+      OR (
+        clinic_id IS NOT NULL
+        AND clinic_id = (current_setting('request.header.x-clinic-id', true))::uuid
+      )
     );
   END IF;
 END $$;
 
 CREATE INDEX IF NOT EXISTS idx_processing_consents_user ON processing_consents (user_id);
+CREATE INDEX IF NOT EXISTS idx_processing_consents_clinic ON processing_consents (clinic_id)
+  WHERE clinic_id IS NOT NULL;
 
 COMMIT;
