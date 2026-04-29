@@ -12,6 +12,18 @@ const CRITICAL_PAGES = [
   { name: "login", path: "/login" },
 ];
 
+/**
+ * `buildCsp` (src/lib/middleware/security-headers.ts) intentionally omits
+ * `upgrade-insecure-requests`, `report-uri`, and `report-to` when
+ * `NODE_ENV === "development"`. The Playwright config runs `next dev`
+ * (development mode) for local runs and `next start` (production mode) only
+ * in CI or when `E2E_BASE_URL` points at an external server.
+ *
+ * Mirror that gate here so production-only directives are asserted only when
+ * the test target is actually a production build.
+ */
+const IS_PRODUCTION_TARGET = !!process.env.CI || !!process.env.E2E_BASE_URL;
+
 test.describe("CSP header enforcement", () => {
   for (const { name, path } of CRITICAL_PAGES) {
     test(`${name} (${path}) serves enforced strict CSP`, async ({ page }) => {
@@ -27,7 +39,9 @@ test.describe("CSP header enforcement", () => {
       expect(csp).toContain("'nonce-");
       expect(csp).toContain("default-src 'self'");
       expect(csp).toContain("frame-ancestors 'none'");
-      expect(csp).toContain("upgrade-insecure-requests");
+      if (IS_PRODUCTION_TARGET) {
+        expect(csp).toContain("upgrade-insecure-requests");
+      }
 
       // Legacy wildcards must NOT appear in the strict policy
       expect(csp).not.toContain("*.supabase.co");
