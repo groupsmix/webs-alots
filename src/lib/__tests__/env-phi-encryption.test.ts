@@ -1,5 +1,12 @@
+import { randomBytes } from "node:crypto";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { enforcePhiEncryptionConfigured } from "../env";
+
+// Generate hex keys at runtime so no high-entropy literal lives in the source
+// tree (keeps gitleaks happy on this test file).
+const makeHexKey = (): string => randomBytes(32).toString("hex");
+const makeUpperHexKey = (): string =>
+  randomBytes(32).toString("hex").toUpperCase();
 
 vi.mock("../logger", () => ({
   logger: {
@@ -57,13 +64,13 @@ describe("enforcePhiEncryptionConfigured (Audit C-08)", () => {
 
   it("accepts a 64-char hex key in production", () => {
     vi.stubEnv("NODE_ENV", "production");
-    vi.stubEnv("PHI_ENCRYPTION_KEY", "0123456789abcdef".repeat(4));
+    vi.stubEnv("PHI_ENCRYPTION_KEY", makeHexKey());
     expect(() => enforcePhiEncryptionConfigured()).not.toThrow();
   });
 
   it("accepts a mixed-case hex key", () => {
     vi.stubEnv("NODE_ENV", "production");
-    vi.stubEnv("PHI_ENCRYPTION_KEY", "ABCDEF0123456789".repeat(4));
+    vi.stubEnv("PHI_ENCRYPTION_KEY", makeUpperHexKey());
     expect(() => enforcePhiEncryptionConfigured()).not.toThrow();
   });
 });
