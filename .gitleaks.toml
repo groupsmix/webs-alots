@@ -5,12 +5,19 @@ title = "Oltigo Health gitleaks config"
 useDefault = true
 
 # Global allowlist for obvious placeholder tokens used in documentation
-# (e.g. example curl commands in runbooks). These are not real secrets.
+# (e.g. example curl commands in runbooks) and in CI workflow env vars
+# (ephemeral placeholders that satisfy runtime env validation — never
+# real secrets and never resolvable off the CI runner).
 [allowlist]
-description = "Allow placeholder tokens in documentation"
+description = "Allow placeholder tokens in documentation and CI env vars"
 regexTarget = "match"
 regexes = [
     '''YOUR_[A-Z][A-Z0-9_]*_TOKEN''',
     '''YOUR_TOKEN''',
     '''<YOUR_[A-Z0-9_]+>''',
+    # CI-only placeholders — used in .github/workflows/*.yml so that
+    # `next start` env validation doesn't hard-fail when the E2E job
+    # boots the web server. Always of the form
+    # `ci-e2e-<name>-placeholder`.
+    '''ci-e2e-[a-z0-9-]+-placeholder''',
 ]
