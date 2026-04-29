@@ -55,6 +55,10 @@ const ENV_RULES: EnvRule[] = [
   { name: "R2_ACCESS_KEY_ID", required: false, description: "Cloudflare R2 access key", group: "storage" },
   { name: "R2_SECRET_ACCESS_KEY", required: false, description: "Cloudflare R2 secret key", group: "storage" },
   { name: "R2_BUCKET_NAME", required: false, description: "Cloudflare R2 bucket name", group: "storage" },
+  // Audit Finding #8: PHI file paths and signed URLs are derived from this
+  // secret. A hardcoded fallback ("default-salt") is never acceptable in
+  // production, so we refuse to boot without a dedicated R2_SIGNED_URL_SECRET.
+  { name: "R2_SIGNED_URL_SECRET", required: process.env.NODE_ENV === "production", description: "HMAC secret for R2 signed URLs and upload filename hashing (required in production; `openssl rand -hex 32`)", group: "storage" },
 
   // ── Payments ───────────────────────────────────────────────────────
   { name: "STRIPE_SECRET_KEY", required: false, description: "Stripe secret key", group: "payments" },

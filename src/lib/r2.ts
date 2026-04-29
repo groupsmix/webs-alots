@@ -19,11 +19,53 @@
  *   R2_SECRET_ACCESS_KEY — R2 API token secret key
  *   R2_BUCKET_NAME       — R2 bucket name (e.g., "webs-alots-uploads")
  *   R2_PUBLIC_URL        — (Deprecated) Legacy public URL; use signed URLs instead
- *   R2_SIGNED_URL_SECRET — Secret for generating per-request signed URLs (optional, defaults to R2_SECRET_ACCESS_KEY)
+ *   R2_SIGNED_URL_SECRET — Secret for generating per-request signed URLs and
+ *                          hashing upload filenames. **Required in production.**
+ *                          Must be a high-entropy random string (e.g. `openssl rand -hex 32`).
+ *                          Rotate per `docs/SOP-SECRET-ROTATION.md` §8.
  */
 
 import { createHmac } from "crypto";
 import { logger } from "@/lib/logger";
+
+/**
+ * Resolve the HMAC secret used for R2 signed URLs and upload-key filename
+ * hashing.
+ *
+ * Audit finding #8: production must never fall back to a hardcoded salt. The
+ * same applies to falling back to the R2 access key, since that couples URL
+ * signing to the AWS credential (rotating one forces rotating the other).
+ *
+ * Behaviour:
+ *   - Returns `R2_SIGNED_URL_SECRET` when set.
+ *   - In production, throws if the variable is missing. Startup validation in
+ *     `src/lib/env.ts` should have already prevented the server from booting,
+ *     but this is defense-in-depth for code paths that run before or outside
+ *     the instrumentation hook.
+ *   - In non-production environments, falls back to `R2_SECRET_ACCESS_KEY` for
+ *     developer convenience (historical behaviour). If neither is set, throws
+ *     with a helpful error rather than silently using a shared constant.
+ */
+function getR2SigningSecret(): string {
+  const keySecret = process.env.R2_SIGNED_URL_SECRET;
+  if (keySecret) return keySecret;
+
+  if (process.env.NODE_ENV === "production") {
+    throw new Error(
+      "R2_SIGNED_URL_SECRET is required in production. " +
+        "Generate one with `openssl rand -hex 32` and deploy it as a Cloudflare Worker secret.",
+    );
+  }
+
+  const fallback = process.env.R2_SECRET_ACCESS_KEY;
+  if (!fallback) {
+    throw new Error(
+      "R2 signing secret is missing. Set R2_SIGNED_URL_SECRET in your .env.local " +
+        "(or R2_SECRET_ACCESS_KEY for historical compatibility in development).",
+    );
+  }
+  return fallback;
+}
 
 // ---------------------------------------------------------------------------
 // Signed URL Generation (R-16 Fix)
@@ -42,14 +84,15 @@ import { logger } from "@/lib/logger";
 export function generateSignedR2Url(key: string, expiresIn = 3600): string {
   const accountId = process.env.R2_ACCOUNT_ID;
   const bucketName = process.env.R2_BUCKET_NAME;
-  const secret = process.env.R2_SIGNED_URL_SECRET || process.env.R2_SECRET_ACCESS_KEY;
 
-  if (!accountId || !bucketName || !secret) {
+  if (!accountId || !bucketName) {
     // R2 is not configured — return a best-effort placeholder URL.
     // Callers should check isR2Configured() before using signed URLs.
     logger.warn("generateSignedR2Url called but R2 is not fully configured", { context: "r2", key });
     return `https://r2-not-configured.invalid/${key}`;
   }
+
+  const secret = getR2SigningSecret();
 
   // R-16 Fix: Generate HMAC-signed URL for per-request authorization.
   // The signature covers (bucket, key, expires) so an attacker who obtains a
@@ -95,8 +138,13 @@ export function validateSignedR2Url(
     return false;
   }
 
-  const secret = process.env.R2_SIGNED_URL_SECRET || process.env.R2_SECRET_ACCESS_KEY;
-  if (!secret) return false;
+  let secret: string;
+  try {
+    secret = getR2SigningSecret();
+  } catch {
+    // Misconfiguration — reject rather than accept unsigned URLs.
+    return false;
+  }
 
   const signatureBase = `${bucket}:${key}:${expires}`;
   const expectedSignature = createHmac("sha256", secret).update(signatureBase).digest("hex").slice(0, 32);
@@ -257,7 +305,7 @@ function hashFilename(key: string): string {
   const dotIndex = filename.lastIndexOf(".");
   const extension = dotIndex > 0 ? filename.substring(dotIndex) : "";
 
-  const hash = createHmac("sha256", process.env.R2_SIGNED_URL_SECRET || process.env.R2_SECRET_ACCESS_KEY || "default-salt")
+  const hash = createHmac("sha256", getR2SigningSecret())
     .update(filename + Date.now().toString())
     .digest("hex")
     .slice(0, 16);
@@ -497,10 +545,7 @@ export function buildUploadKey(
     const dotIndex = safeFilename.lastIndexOf(".");
     const extension = dotIndex > 0 ? safeFilename.substring(dotIndex) : "";
 
-    const hash = createHmac(
-      "sha256",
-      process.env.R2_SIGNED_URL_SECRET || process.env.R2_SECRET_ACCESS_KEY || "default-salt",
-    )
+    const hash = createHmac("sha256", getR2SigningSecret())
       .update(safeFilename + timestamp.toString())
       .digest("hex")
       .slice(0, 16);
