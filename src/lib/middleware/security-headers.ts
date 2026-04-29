@@ -147,7 +147,11 @@ export function withSecurityHeaders(
   response: NextResponse,
   csp: CspHeaderValues,
 ): NextResponse {
-  response.headers.set("Content-Security-Policy", csp.enforce);
+  if (csp.enforce) {
+    response.headers.set("Content-Security-Policy", csp.enforce);
+  } else {
+    response.headers.delete("Content-Security-Policy");
+  }
   response.headers.delete("Content-Security-Policy-Report-Only");
   response.headers.set("Strict-Transport-Security", HSTS_VALUE);
   response.headers.set("X-Content-Type-Options", "nosniff");
@@ -177,7 +181,11 @@ export function applyAllSecurityHeaders(
   csp: CspHeaderValues,
   _nonce: string, // Unused but kept for API compatibility
 ): void {
-  response.headers.set("Content-Security-Policy", csp.enforce);
+  if (csp.enforce) {
+    response.headers.set("Content-Security-Policy", csp.enforce);
+  } else {
+    response.headers.delete("Content-Security-Policy");
+  }
   response.headers.delete("Content-Security-Policy-Report-Only");
   response.headers.set("Strict-Transport-Security", HSTS_VALUE);
   response.headers.set("X-Content-Type-Options", "nosniff");

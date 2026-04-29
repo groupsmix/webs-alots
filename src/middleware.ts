@@ -111,8 +111,18 @@ export async function middleware(request: NextRequest) {
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set("x-nonce", nonce);
   // Forward the enforcing CSP so Server Components that introspect the request
-  // headers see the same policy the browser will enforce.
-  requestHeaders.set("Content-Security-Policy", cspHeaders.enforce);
+  // headers see the same policy the browser will enforce. Guard against an
+  // empty `enforce` value (e.g. a future report-only-only mode) so we never
+  // forward a `Content-Security-Policy: ` header with a blank value — Server
+  // Components that check for the header's presence would otherwise see an
+  // empty string instead of either no header or the actual policy. This
+  // mirrors the response-side guards in `withSecurityHeaders` and
+  // `applyAllSecurityHeaders`.
+  if (cspHeaders.enforce) {
+    requestHeaders.set("Content-Security-Policy", cspHeaders.enforce);
+  } else {
+    requestHeaders.delete("Content-Security-Policy");
+  }
   requestHeaders.set(TRACE_ID_HEADER, traceId);
 
   // --- SECURITY: Strip all tenant headers from the incoming request ---
