@@ -51,7 +51,24 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   }
 
   // Dynamic clinic subdomain pages
-  if (process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY) {
+  //
+  // At production *runtime*, SUPABASE_SERVICE_ROLE_KEY is guaranteed to exist
+  // because enforceEnvValidation() (called from instrumentation.ts) refuses to
+  // boot without it. During `next build` prerendering NODE_ENV is "production"
+  // but the key may legitimately be absent (CI builds), so we detect that via
+  // NEXT_PHASE and skip gracefully.
+  const isBuildPhase = process.env.NEXT_PHASE === "phase-production-build";
+  const isProductionRuntime = process.env.NODE_ENV === "production" && !isBuildPhase;
+  const hasServiceRoleKey = !!(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY);
+
+  if (isProductionRuntime && !hasServiceRoleKey) {
+    throw new Error(
+      "[sitemap] SUPABASE_SERVICE_ROLE_KEY is required in production for dynamic sitemap generation. " +
+      "Set this environment variable or feature-gate this route if service-role access is intentionally unavailable.",
+    );
+  }
+
+  if (hasServiceRoleKey) {
     try {
       // Use admin client (service role) so the sitemap query works without
       // authentication cookies. Googlebot won't have session cookies, so the
@@ -91,6 +108,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         }
       }
     } catch (err) {
+      if (isProductionRuntime) throw err;
       logger.warn("Failed to fetch clinic subdomains for sitemap", { context: "sitemap", error: err });
     }
   } else {
@@ -128,7 +146,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   }
 
   // Individual doctor profile pages
-  if (process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY) {
+  if (hasServiceRoleKey) {
     try {
       const doctors = await getDirectoryDoctors();
       for (const doctor of doctors) {
@@ -140,6 +158,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         });
       }
     } catch (err) {
+      if (isProductionRuntime) throw err;
       logger.warn("Failed to fetch directory doctors for sitemap", { context: "sitemap", error: err });
     }
   }
