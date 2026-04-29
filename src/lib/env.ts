@@ -319,8 +319,14 @@ export function enforceRateLimitBackend(): void {
 }
 
 /**
- * F-10: Ensure exactly one email provider is configured. Having both
- * RESEND_API_KEY and SMTP_HOST set risks duplicate emails.
+ * F-10: Ensure exactly one email provider is configured at production boot.
+ *
+ * Refuses to start when both Resend and the HTTP relay (SMTP_HOST /
+ * EMAIL_RELAY_HOST) are configured (risks duplicate sends and ambiguous
+ * routing) or when neither is configured (transactional email silently
+ * fails). The "configured" check for the HTTP relay matches the runtime
+ * detection in `src/lib/email.ts` — host + user + pass must all be set,
+ * since any single one is unusable on its own.
  *
  * Exported for unit tests.
  */
@@ -328,13 +334,27 @@ export function enforceEmailProviderExclusivity(): void {
   if (process.env.NODE_ENV !== "production") return;
 
   const hasResend = !!process.env.RESEND_API_KEY;
-  const hasSmtp = !!process.env.SMTP_HOST;
+  const hasSmtp = !!(
+    (process.env.EMAIL_RELAY_HOST || process.env.SMTP_HOST) &&
+    (process.env.EMAIL_RELAY_USER || process.env.SMTP_USER) &&
+    (process.env.EMAIL_RELAY_PASS || process.env.SMTP_PASS)
+  );
 
   if (hasResend && hasSmtp) {
     const message =
-      "[STARTUP HEALTH CHECK WARNING] Both RESEND_API_KEY and SMTP_HOST are configured.\n" +
-      "This risks sending duplicate emails. Configure exactly one email provider.";
-    logger.warn(message, { context: "env-validation", check: "email-provider-exclusivity" });
-    // Warn rather than throw — this is a configuration smell, not a security failure.
+      "[STARTUP HEALTH CHECK FAILED] Both Resend (RESEND_API_KEY) and the HTTP email relay\n" +
+      "(EMAIL_RELAY_HOST/SMTP_HOST + USER + PASS) are configured. Configure exactly one email\n" +
+      "provider — having both risks duplicate sends and ambiguous routing.";
+    logger.error(message, { context: "env-validation", check: "email-provider-exclusivity" });
+    throw new Error(message);
+  }
+
+  if (!hasResend && !hasSmtp) {
+    const message =
+      "[STARTUP HEALTH CHECK FAILED] No email provider is configured. Set either\n" +
+      "RESEND_API_KEY or the HTTP email relay credentials\n" +
+      "(EMAIL_RELAY_HOST/SMTP_HOST + EMAIL_RELAY_USER/SMTP_USER + EMAIL_RELAY_PASS/SMTP_PASS).";
+    logger.error(message, { context: "env-validation", check: "email-provider-exclusivity" });
+    throw new Error(message);
   }
 }
