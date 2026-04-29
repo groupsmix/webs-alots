@@ -218,6 +218,16 @@ export function enforceEnvValidation(): void {
   // Explicitly disabling masking ("none") is only permitted when the operator
   // has set ALLOW_UNMASKED_PHI=true. See SECURITY.md → "PHI Masking Defaults".
   enforcePhiMaskingPolicy();
+
+  // S-05: Assert PROFILE_HEADER_HMAC_KEY !== CRON_SECRET to prevent a
+  // leaked cron token from also forging session headers.
+  enforceHmacKeyIndependence();
+
+  // S-33: Validate RATE_LIMIT_BACKEND against known backends.
+  enforceRateLimitBackend();
+
+  // F-10: Ensure exactly one email provider is configured (not both).
+  enforceEmailProviderExclusivity();
 }
 
 /**
@@ -249,5 +259,78 @@ export function enforcePhiMaskingPolicy(): void {
         "This must be approved by the Security Officer / DPO and documented.",
       { context: "env-validation", check: "phi-masking" },
     );
+  }
+}
+
+/**
+ * S-05: Assert that PROFILE_HEADER_HMAC_KEY and CRON_SECRET are distinct.
+ * Sharing the same value means leaking one (e.g. via a cron-log exposure)
+ * also compromises session-header forgery.
+ *
+ * Exported for unit tests.
+ */
+export function enforceHmacKeyIndependence(): void {
+  if (process.env.NODE_ENV !== "production") return;
+
+  const hmac = process.env.PROFILE_HEADER_HMAC_KEY;
+  const cron = process.env.CRON_SECRET;
+  if (hmac && cron && hmac === cron) {
+    const message =
+      "[STARTUP HEALTH CHECK FAILED] PROFILE_HEADER_HMAC_KEY must not equal CRON_SECRET.\n" +
+      "Using the same value means a leaked cron token also compromises session-header " +
+      "forgery. Generate a distinct key: `openssl rand -hex 32`.";
+    logger.error(message, { context: "env-validation", check: "hmac-key-independence" });
+    throw new Error(message);
+  }
+}
+
+/**
+ * S-33: Validate RATE_LIMIT_BACKEND against known values. A typo would
+ * silently downgrade to in-memory (per-isolate) limiting, which is
+ * effectively no limiting in a multi-isolate Worker deployment.
+ *
+ * Exported for unit tests.
+ */
+export function enforceRateLimitBackend(): void {
+  const backend = process.env.RATE_LIMIT_BACKEND;
+  if (!backend) return; // unset is fine — the rate-limit module picks a default
+
+  const VALID_BACKENDS = new Set(["kv", "supabase", "memory"]);
+  if (!VALID_BACKENDS.has(backend)) {
+    const message =
+      `[STARTUP HEALTH CHECK FAILED] RATE_LIMIT_BACKEND="${backend}" is not a recognized value.\n` +
+      `Valid options: ${[...VALID_BACKENDS].join(", ")}. A typo silently downgrades to in-memory limiting.`;
+    logger.error(message, { context: "env-validation", check: "rate-limit-backend" });
+    throw new Error(message);
+  }
+
+  if (process.env.NODE_ENV === "production" && backend === "memory") {
+    const message =
+      "[STARTUP HEALTH CHECK FAILED] RATE_LIMIT_BACKEND=memory is not allowed in production.\n" +
+      "In-memory rate limiting is per-isolate and provides no real protection in a " +
+      "multi-isolate Worker deployment. Use 'kv' or 'supabase'.";
+    logger.error(message, { context: "env-validation", check: "rate-limit-backend" });
+    throw new Error(message);
+  }
+}
+
+/**
+ * F-10: Ensure exactly one email provider is configured. Having both
+ * RESEND_API_KEY and SMTP_HOST set risks duplicate emails.
+ *
+ * Exported for unit tests.
+ */
+export function enforceEmailProviderExclusivity(): void {
+  if (process.env.NODE_ENV !== "production") return;
+
+  const hasResend = !!process.env.RESEND_API_KEY;
+  const hasSmtp = !!process.env.SMTP_HOST;
+
+  if (hasResend && hasSmtp) {
+    const message =
+      "[STARTUP HEALTH CHECK WARNING] Both RESEND_API_KEY and SMTP_HOST are configured.\n" +
+      "This risks sending duplicate emails. Configure exactly one email provider.";
+    logger.warn(message, { context: "env-validation", check: "email-provider-exclusivity" });
+    // Warn rather than throw — this is a configuration smell, not a security failure.
   }
 }

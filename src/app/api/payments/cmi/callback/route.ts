@@ -15,8 +15,19 @@ import { cmiCallbackFieldsSchema } from "@/lib/validations";
  *
  * Also handles the customer redirect (GET) after payment.
  */
+/** S-15: Max body size for CMI callback (10 KB). CMI callbacks are small
+ *  form-encoded payloads; anything larger is suspicious. */
+const MAX_CMI_CALLBACK_BYTES = 10 * 1024;
+
 export async function POST(request: NextRequest) {
   try {
+    // S-15: Enforce a body size cap before parsing formData to prevent
+    // memory exhaustion from an attacker-controlled payload.
+    const contentLength = request.headers.get("content-length");
+    if (contentLength && Number(contentLength) > MAX_CMI_CALLBACK_BYTES) {
+      return apiError("Payload too large", 413);
+    }
+
     const formData = await request.formData();
     const params: Record<string, string> = {};
     formData.forEach((value, key) => {

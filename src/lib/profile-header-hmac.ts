@@ -40,16 +40,16 @@ export interface SignedProfile {
  * none is set. Callers MUST treat `null` as "do not sign / do not trust
  * inbound headers" — never substitute a literal.
  *
- * Prefers `PROFILE_HEADER_HMAC_KEY` (R-02) but accepts `CRON_SECRET` as
- * a transitional fallback so existing deployments keep working until the
- * dedicated key is provisioned. Once `PROFILE_HEADER_HMAC_KEY` is set in
- * an environment, `CRON_SECRET` is no longer consulted for header HMAC.
+ * S-05: The CRON_SECRET fallback has been removed. Leaking CRON_SECRET
+ * must not also compromise session-header forgery. In production,
+ * `PROFILE_HEADER_HMAC_KEY` is required (enforced by `enforceEnvValidation`).
+ * In non-production, a missing key simply disables the optimization and
+ * forces the authoritative DB lookup in `withAuth`.
  */
 function getProfileHeaderSecret(): string | null {
   const dedicated = process.env.PROFILE_HEADER_HMAC_KEY;
   if (dedicated && dedicated.length > 0) return dedicated;
-  const legacy = process.env.CRON_SECRET;
-  if (legacy && legacy.length > 0) return legacy;
+  // S-05: No CRON_SECRET fallback — the two secrets must be independent.
   return null;
 }
 

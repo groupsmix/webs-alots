@@ -39,7 +39,7 @@ export async function GET(request: NextRequest) {
 
   let query = supabase
     .from("users")
-    .select("id, full_name, email, phone, created_at", { count: "exact" })
+    .select("id, name, name_ar, email, phone, created_at", { count: "exact" })
     .eq("clinic_id", auth.clinicId)
     .eq("role", "patient")
     .order("created_at", { ascending: false })
@@ -50,7 +50,9 @@ export async function GET(request: NextRequest) {
     // Strip %, _, comma, parens AND dots (PostgREST uses . as filter separator).
     const sanitized = search.replace(/[%_,.()]/g, "");
     if (sanitized.length > 0) {
-      query = query.or(`full_name.ilike.%${sanitized}%,email.ilike.%${sanitized}%,phone.ilike.%${sanitized}%`);
+      // B-01: Use `name` (and `name_ar` for Arabic search) instead of the
+      // non-existent `full_name` column which caused a 500 on every request.
+      query = query.or(`name.ilike.%${sanitized}%,name_ar.ilike.%${sanitized}%,email.ilike.%${sanitized}%,phone.ilike.%${sanitized}%`);
     }
   }
 
@@ -80,7 +82,8 @@ export const POST = withValidation(v1PatientCreateSchema, async (body, request: 
     const insertPayload: Record<string, unknown> = {
       clinic_id: auth.clinicId,
       role: "patient",
-      full_name: body.full_name,
+      // B-01: Map the API field `full_name` to the DB column `name`.
+      name: body.full_name,
       email: body.email || null,
       phone: body.phone || null,
       date_of_birth: body.date_of_birth || null,

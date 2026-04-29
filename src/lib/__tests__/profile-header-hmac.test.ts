@@ -120,15 +120,17 @@ describe("profile-header-hmac", () => {
       expect(verified).toBeNull();
     });
 
-    it("falls back to CRON_SECRET only when PROFILE_HEADER_HMAC_KEY is unset (transitional)", async () => {
+    it("S-05: does NOT fall back to CRON_SECRET when PROFILE_HEADER_HMAC_KEY is unset", async () => {
+      // The CRON_SECRET fallback has been removed (S-05) so leaking
+      // CRON_SECRET does not also compromise session-header forgery.
+      delete process.env.PROFILE_HEADER_HMAC_KEY;
       process.env.CRON_SECRET = "legacy-key";
 
       const profile = { id: "p", role: "receptionist", clinic_id: null };
       const sig = await signProfileHeader(profile);
-      expect(sig).not.toBeNull();
-
-      const verified = await verifyProfileHeader({ ...profile, signature: sig });
-      expect(verified).toEqual(profile);
+      // Without PROFILE_HEADER_HMAC_KEY, signing must return null
+      // (forcing the authoritative DB lookup in withAuth).
+      expect(sig).toBeNull();
     });
   });
 
