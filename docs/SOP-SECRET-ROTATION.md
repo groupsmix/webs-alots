@@ -88,3 +88,36 @@ This standard operating procedure outlines the exact steps to detect, revoke, an
 - Existing R2 object keys are unaffected; only future `buildUploadKey()` calls use the new secret for filename hashing, so old and new uploads coexist safely.
 - PHI files remain accessible through the R2 proxy because authorization re-signs on each request — rotation does **not** require re-uploading files.
 **Backfill:** Query `audit_logs` for `action = 'file.download'` entries during the suspected compromise window. If the old secret was "default-salt" or the R2 access key, treat every signed URL issued before the rotation as potentially predictable and review download patterns per-clinic for anomalies.
+
+## 9. Signing Identity Compromise (Sigstore / GitHub OIDC)
+
+**Context:** The CI pipeline uses `actions/attest-build-provenance` for SLSA in-toto attestation, which relies on Sigstore (Fulcio + Rekor) and GitHub's OIDC identity.
+
+**Detection:** Unexpected attestations appearing in Rekor transparency log for the `groupsmix/webs-alots` subject, or GitHub audit log showing OIDC token issuance for unrecognized workflows.
+
+**Revoke & Contain:**
+1. **Disable the compromised GitHub Actions workflow** immediately by pushing a commit that removes or disables it, or use the GitHub API to disable the workflow.
+2. **Revoke GitHub OIDC trust** if the identity was issued to an unauthorized workflow:
+   - Review `gh api /repos/groupsmix/webs-alots/actions/oidc/customization/sub` to check the subject claim template.
+   - If the attacker used a forked repo or injected workflow, restrict OIDC to specific branches: set the subject claim to include `ref:refs/heads/main`.
+3. **Check Rekor transparency log** for unauthorized attestations:
+   ```bash
+   rekor-cli search --email "github-actions[bot]@users.noreply.github.com" \
+     --rekor_server https://rekor.sigstore.dev
+   ```
+4. **Rotate any deploy secrets** that the compromised workflow had access to (Cloudflare API token, Supabase keys, etc.) using the procedures in sections 1-8 above.
+
+**Propagate:**
+1. Update GitHub branch protection rules to require attestation from the new, trusted workflow only.
+2. If using Workload Identity Federation (e.g., for cloud deploys), rotate the identity pool and restrict the subject claim.
+3. Notify downstream consumers that attestations before timestamp X should be treated as untrusted.
+
+**Verify:**
+1. Trigger a deploy from `main` and confirm the new attestation appears in Rekor.
+2. Verify `cosign verify-attestation` succeeds for the new artifact.
+3. Confirm the old compromised identity no longer has access to produce trusted attestations.
+
+**Postmortem:**
+1. Determine how the identity was compromised (workflow injection, branch protection bypass, stolen PAT, etc.).
+2. Add the incident to the tabletop exercise library for future drills.
+3. Review all attestations produced during the compromise window and flag any suspicious artifacts.

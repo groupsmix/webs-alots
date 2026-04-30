@@ -9,19 +9,28 @@ This document maps each sub-processor's data residency and transfer mechanisms.
 
 ## Sub-Processor Registry
 
-| Sub-Processor | Data Type | Region | Transfer Mechanism | DPA Status |
-|---|---|---|---|---|
-| **Supabase** (PostgreSQL) | PHI, PII, auth | AWS eu-west-1 (Ireland) | EU SCCs | Signed |
-| **Cloudflare Workers** | Request routing, caching | Global edge (nearest PoP) | Cloudflare DPA | Signed |
-| **Cloudflare R2** | Encrypted patient files | Auto (nearest region) | Cloudflare DPA | Signed |
-| **Cloudflare KV** | Rate limit counters, feature flags | Global edge | Cloudflare DPA | N/A (no PHI) |
-| **Sentry** | Error telemetry (scrubbed) | US (sentry.io) | EU SCCs | Signed |
-| **OpenAI** | AI chat (medical Q&A) | US | OpenAI DPA | Signed |
-| **Stripe** | Payment data | US/EU | Stripe DPA, PCI DSS | Signed |
-| **CMI** | Payment data (MAD) | Morocco | Local processor | N/A (domestic) |
-| **Meta (WhatsApp)** | Phone numbers, appointment reminders | US/EU | Meta DPA | Signed |
-| **Twilio** (fallback) | Phone numbers, SMS | US | Twilio DPA | Signed |
-| **Resend** | Email addresses, notification text | US | Resend DPA | Signed |
+| Sub-Processor | Data Type | Region | Transfer Mechanism | DPA Status | Criticality | Evidence | Sub-Processors | Breach SLA |
+|---|---|---|---|---|---|---|---|---|
+| **Supabase** (PostgreSQL) | PHI, PII, auth | AWS eu-west-1 (Ireland) | EU SCCs | Signed | Tier 1 | SOC 2 Type II (exp. 2027-03) | AWS (hosting), Fly.io (edge) | 72 hours |
+| **Cloudflare Workers** | Request routing, caching | Global edge (nearest PoP) | Cloudflare DPA | Signed | Tier 1 | SOC 2 Type II, ISO 27001 (exp. 2026-12) | N/A (own infra) | 72 hours |
+| **Cloudflare R2** | Encrypted patient files | Auto (nearest region) | Cloudflare DPA | Signed | Tier 1 | (same as CF Workers) | N/A (own infra) | 72 hours |
+| **Cloudflare KV** | Rate limit counters, feature flags | Global edge | Cloudflare DPA | N/A (no PHI) | Tier 3 | (same as CF Workers) | N/A (own infra) | N/A |
+| **Sentry** | Error telemetry (scrubbed) | US (sentry.io) | EU SCCs | Signed | Tier 3 | SOC 2 Type II (exp. 2027-01) | GCP, Clickhouse Cloud | 72 hours |
+| **OpenAI** | AI chat (medical Q&A) | US | OpenAI DPA | Signed | Tier 2 | SOC 2 Type II (exp. 2026-09) | Azure (hosting) | 72 hours |
+| **Stripe** | Payment data | US/EU | Stripe DPA, PCI DSS | Signed | Tier 2 | PCI DSS L1, SOC 2 Type II (exp. 2027-06) | AWS (hosting) | 72 hours |
+| **CMI** | Payment data (MAD) | Morocco | Local processor | N/A (domestic) | Tier 2 | PCI DSS L1 (verify expiry) | TBD -- request from CMI | Per contract |
+| **Meta (WhatsApp)** | Phone numbers, appointment reminders | US/EU | Meta DPA | Signed | Tier 2 | SOC 2 Type II, ISO 27001 | Multiple (see Meta DPA) | 72 hours |
+| **Twilio** (fallback) | Phone numbers, SMS | US | Twilio DPA | Signed | Tier 3 | SOC 2 Type II, ISO 27001 (exp. 2026-11) | AWS (hosting) | 72 hours |
+| **Resend** | Email addresses, notification text | US | Resend DPA | Signed | Tier 3 | SOC 2 Type II (verify) | AWS SES (delivery) | 72 hours |
+
+### Criticality Tiers
+
+| Tier | Definition | Review Cadence |
+|------|-----------|----------------|
+| **Tier 1** | Platform cannot operate without this vendor; data loss risk | Quarterly |
+| **Tier 2** | Major feature depends on this vendor; degraded experience without | Semi-annual |
+| **Tier 3** | Convenience / non-critical; easy to replace or degrade gracefully | Annual |
+| **Tier 4** | Development-only tooling; no production data exposure | Annual |
 
 ## Cross-Border Transfer Position
 
