@@ -45,9 +45,15 @@
   --space-10: 128px;
   --space-11: 192px;
 
-  /* ── Typography ── */
-  --font-sans: Inter, ui-sans-serif, system-ui, -apple-system, sans-serif;
-  --font-mono: 'JetBrains Mono', ui-monospace, 'Cascadia Code', monospace;
+  /* ── Typography ──
+     Landing-specific font stacks. Namespaced (suffix `-landing`) so they do
+     not clobber `--font-sans` / `--font-mono` which are the app-wide theme
+     tokens consumed by Tailwind v4's `@theme inline` in globals.css — those
+     must continue to resolve to the app's default Geist stack for admin,
+     patient portal, and auth surfaces. Same rationale as `--radius-landing`
+     below. */
+  --font-sans-landing: Inter, ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-mono-landing: 'JetBrains Mono', ui-monospace, 'Cascadia Code', monospace;
   --font-arabic: 'IBM Plex Sans Arabic', 'Noto Sans Arabic', var(--font-noto-arabic), sans-serif;
 
   /* Type scale: 16px = 1rem base */

@@ -26,10 +26,9 @@ export function DemoSection() {
         style={{ maxWidth: "var(--container-max)" }}
       >
         {/* Eyebrow + heading */}
-        {/* eslint-disable-next-line i18next/no-literal-string -- section numbering is not translatable */}
         <p
           style={{
-            fontFamily: "var(--font-mono)",
+            fontFamily: "var(--font-mono-landing)",
             fontSize: "var(--text-mono)",
             lineHeight: "var(--lh-mono)",
             color: "var(--ink-60)",
@@ -37,7 +36,8 @@ export function DemoSection() {
             marginBottom: "var(--space-4)",
           }}
         >
-          03 &mdash; {t("landing.demoLabel")}
+          {"03 \u2014 "}
+          {t("landing.demoLabel")}
         </p>
         <h2
           style={{
@@ -80,31 +80,30 @@ export function DemoSection() {
               backgroundColor: "var(--bone-2)",
             }}
           >
-            {/* eslint-disable-next-line i18next/no-literal-string -- domain name is not translatable */}
             <p
               style={{
-                fontFamily: "var(--font-mono)",
+                fontFamily: "var(--font-mono-landing)",
                 fontSize: "var(--text-small)",
                 color: "var(--ink-60)",
               }}
             >
-              demo.oltigo.com
+              {"demo.oltigo.com"}
             </p>
           </div>
         </div>
 
         {/* Caption */}
-        {/* eslint-disable-next-line i18next/no-literal-string -- domain name is not translatable */}
         <p
           className="mt-[var(--space-3)]"
           style={{
-            fontFamily: "var(--font-mono)",
+            fontFamily: "var(--font-mono-landing)",
             fontSize: "var(--text-mono)",
             lineHeight: "var(--lh-mono)",
             color: "var(--ink-60)",
           }}
         >
-          demo.oltigo.com &middot; {t("landing.demoLastRefreshed" as TranslationKey)}
+          {"demo.oltigo.com \u00B7 "}
+          {t("landing.demoLastRefreshed" as TranslationKey)}
         </p>
 
         {/* View live site link */}
