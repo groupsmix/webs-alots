@@ -154,7 +154,21 @@ export async function POST(request: NextRequest) {
             break;
           }
           logTenantContext(failedClinicId, "payments/webhook:payment_failed");
-          // FIX: PaymentIntent objects use `amount`, not `amount_total`
+          // AUDIT-10: Deduplicate failed payment inserts by checking if this
+          // exact Stripe event has already been processed (same pattern as
+          // checkout.session.completed above).
+          const { data: existingFailed } = await supabase
+            .from("payments")
+            .select("id")
+            .eq("reference", intent.id)
+            .maybeSingle();
+
+          if (existingFailed) {
+            logger.info(`Stripe failed payment event already processed: ${intent.id}`, { context: "payments/webhook" });
+            break;
+          }
+
+          // AUDIT-05: PaymentIntent objects use `amount`, not `amount_total`
           // (which exists only on Checkout Session objects). Using
           // `amount_total` always yielded 0 for failed payment records.
           // Prefer metadata.amount (set by the checkout route) → real

@@ -4,15 +4,31 @@ import type { CspHeaderValues } from "./security-headers";
 /** HTTP methods that mutate state and need CSRF protection */
 const MUTATION_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 
-/** API routes that receive legitimate external requests (webhooks, callbacks, cron)
- *  or browser-initiated requests that don't carry a matching Origin header. */
+/**
+ * API routes that receive legitimate external requests (webhooks, callbacks, cron)
+ * or browser-initiated requests that don't carry a matching Origin header.
+ *
+ * AUDIT-18: Every CSRF-exempt route MUST have its own authentication mechanism
+ * or be otherwise safe (no state mutation):
+ *
+ * | Prefix                        | Auth mechanism                              |
+ * |-------------------------------|---------------------------------------------|
+ * | /api/webhooks                 | Meta HMAC-SHA256 via X-Hub-Signature-256    |
+ * | /api/payments/webhook         | Stripe HMAC-SHA256 via stripe-signature     |
+ * | /api/payments/cmi/callback    | CMI HMAC hash verification via verifyCmi    |
+ * | /api/cron/                    | CRON_SECRET Bearer token                    |
+ * | /api/csp-report               | No-auth (validated JSON schema, no mutation)|
+ *
+ * Adding a new exempt route without a corresponding signature/token check
+ * creates an unauthenticated, CSRF-unprotected mutation endpoint.
+ */
 const CSRF_EXEMPT_PREFIXES = [
-  "/api/webhooks",
-  "/api/payments/webhook",
-  "/api/payments/cmi/callback",
+  "/api/webhooks",          // WhatsApp: X-Hub-Signature-256 HMAC
+  "/api/payments/webhook",  // Stripe: stripe-signature HMAC
+  "/api/payments/cmi/callback", // CMI: HMAC hash field verification
   // CSRF-01: All cron endpoints are authenticated via CRON_SECRET bearer token
   // and may be triggered by external schedulers (Cloudflare Cron Triggers).
-  "/api/cron/",
+  "/api/cron/",             // Cron: CRON_SECRET Bearer token
   // CSP-RPT: Browsers send Content-Security-Policy violation reports as POST
   // requests with a `report-uri` or `report-to` directive. The Origin header
   // may not match the site URL (some browsers use `null` or omit it entirely),

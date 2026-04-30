@@ -67,6 +67,13 @@ const MAX_BODY_BYTES = 25 * 1024 * 1024;
 
 
 export async function middleware(request: NextRequest) {
+  // AUDIT-25: Record middleware start time for CPU telemetry.
+  // Cloudflare Workers "bundled" plan has a 10ms CPU limit per invocation.
+  // This timing helps identify when middleware complexity approaches that
+  // threshold so the team can optimize or switch to "unbound" before p99
+  // latency degrades.
+  const mwStart = Date.now();
+
   const { pathname } = request.nextUrl;
   const hostname = request.headers.get("host") ?? "";
   const rootDomain = process.env.ROOT_DOMAIN;
@@ -428,6 +435,23 @@ export async function middleware(request: NextRequest) {
     return supabaseResponse;
   }
 
+  // AUDIT-12 (P0-01): Deny-by-default for /api/ routes.
+  // Any /api/* path not in the public allowlist must require an authenticated
+  // session at the middleware layer. Without this explicit block, non-public
+  // API routes would fall through the remaining checks (which only handle
+  // PROTECTED_PREFIXES page routes) and reach `return supabaseResponse`
+  // unauthenticated, making every newly-added API route publicly accessible
+  // by default.
+  if (pathname.startsWith("/api/") && !user) {
+    return withSecurityHeaders(
+      NextResponse.json(
+        { ok: false, error: "Unauthorized", code: "UNAUTHORIZED" },
+        { status: 401 },
+      ),
+      cspHeaders,
+    );
+  }
+
   // If protected route and not authenticated, redirect to login
   if (isProtectedRoute(pathname) && !user) {
     const loginUrl = new URL("/login", request.url);
@@ -465,6 +489,17 @@ export async function middleware(request: NextRequest) {
       return secureRedirect(new URL(dashboardPath, request.url));
     }
   }
+
+  // AUDIT-25: Log middleware execution time for CPU budget monitoring.
+  // On Cloudflare Workers "bundled" plan (10ms CPU limit), sustained p95
+  // above ~7ms should trigger investigation or migration to "unbound".
+  const mwDuration = Date.now() - mwStart;
+  if (mwDuration > 5) {
+    // Only log slow requests to avoid noise. Threshold tuned for edge.
+    supabaseResponse.headers.set("x-middleware-duration", String(mwDuration));
+  }
+  // Always set the header so downstream can correlate
+  supabaseResponse.headers.set("server-timing", `mw;dur=${mwDuration}`);
 
   return supabaseResponse;
 }

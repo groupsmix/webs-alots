@@ -59,6 +59,47 @@ export const POST = withAuthValidation(stripeCheckoutSchema, async (body, reques
       metadata = {},
     } = body;
 
+    // AUDIT-09: When an appointmentId is provided, verify the amount against
+    // the trusted database record to prevent client-supplied price manipulation.
+    // A staff user or compromised account could otherwise create a checkout
+    // session with an arbitrarily low amount for a real appointment.
+    if (appointmentId && profile.clinic_id) {
+      const { createClient: createServiceClient } = await import("@/lib/supabase-server");
+      const dbClient = await createServiceClient();
+      const { data: appt } = await dbClient
+        .from("appointments")
+        .select("id, service_id, clinic_id")
+        .eq("id", appointmentId)
+        .eq("clinic_id", profile.clinic_id)
+        .single();
+
+      if (!appt) {
+        return apiError("Appointment not found in this clinic", 404);
+      }
+
+      // If the appointment has a service, cross-check the expected price
+      if (appt.service_id) {
+        const { data: service } = await dbClient
+          .from("services")
+          .select("price")
+          .eq("id", appt.service_id)
+          .eq("clinic_id", profile.clinic_id)
+          .single();
+
+        if (service?.price != null) {
+          // Service price is stored in main currency units; amount is in centimes
+          const expectedCentimes = Math.round(service.price * 100);
+          if (amount < expectedCentimes) {
+            return apiError(
+              `Payment amount (${amount}) is less than the service price (${expectedCentimes} centimes)`,
+              400,
+              "AMOUNT_BELOW_SERVICE_PRICE",
+            );
+          }
+        }
+      }
+    }
+
     const origin = request.nextUrl.origin;
 
     // HIGH-03: Validate that success/cancel URLs are same-origin to prevent

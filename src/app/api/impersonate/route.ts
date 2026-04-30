@@ -98,10 +98,19 @@ export const POST = withAuthValidation(impersonateSchema, async (body, request, 
       maxAge: sessionMaxAge,
     });
 
-    // S-11: Move impersonation reason to a server-side session lookup.
-    // The cookie holds only an opaque token; mark it httpOnly: true to prevent
-    // XSS-based exfiltration. The banner component reads the reason via a
-    // server-side API call or server component instead of document.cookie.
+    // S-11 / AUDIT-14: The impersonation reason is stored in an httpOnly cookie
+    // for now. This prevents JS-based exfiltration but the reason text still
+    // travels in request headers on every request.
+    //
+    // TODO: Replace with a server-side impersonation_sessions table:
+    //   1. Generate an opaque session UUID
+    //   2. INSERT { id, actor_id, target_clinic_id, reason, expires_at } into DB
+    //   3. Store only the session UUID in the cookie
+    //   4. GET /api/impersonate reads reason from DB by session UUID
+    //   5. DELETE /api/impersonate marks the DB row as ended
+    //
+    // This eliminates reason text from HTTP headers and enables server-side
+    // session invalidation, audit queries, and concurrent session limits.
     response.cookies.set("sa_impersonate_reason", encodeURIComponent(reason), {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",

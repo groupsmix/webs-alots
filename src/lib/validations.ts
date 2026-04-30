@@ -129,6 +129,9 @@ export const paymentRefundSchema = z.object({
 const stripeWebhookEventObjectSchema = z.object({
   id: z.string().min(1),
   metadata: z.record(z.string(), z.string()).optional(),
+  // AUDIT-05: Stripe PaymentIntent uses `amount`, while Checkout Session uses
+  // `amount_total`. Both are optional since the event type determines which
+  // field is present.
   /** PaymentIntent.amount — present on payment_intent.* events. */
   amount: z.number().optional(),
   /** Checkout Session.amount_total — present on checkout.session.* events. */

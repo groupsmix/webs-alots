@@ -1,21 +1,29 @@
 /**
- * C-07: Tenant-scoped Supabase client wrapper.
+ * C-07: Tenant-context Supabase client wrapper.
  *
  * Service-role Supabase clients bypass RLS by design. In webhook, cron,
  * and queue handlers the only tenant isolation is application-level
  * `.eq("clinic_id", clinicId)` calls. A single missed `.eq()` is a
  * cross-tenant read or write.
  *
- * This module provides `createTenantScopedClient()` which wraps the
- * service-role Supabase client's `.from()` method to automatically
- * inject `.eq("clinic_id", clinicId)` on every query. Handlers that
- * operate on tenant data should use this instead of raw `createClient()`.
+ * This module provides `createTenantScopedClient()` which creates a
+ * service-role Supabase client with the Postgres session variable
+ * `app.current_clinic_id` set for defense-in-depth. RLS policies that
+ * reference this variable get an additional isolation layer.
+ *
+ * IMPORTANT (AUDIT-07): This wrapper does NOT auto-inject
+ * `.eq("clinic_id", clinicId)` on queries. Callers MUST still add
+ * `.eq("clinic_id", clinicId)` to every `.from("table")` call
+ * themselves. The Postgres session variable is defense-in-depth only;
+ * application-level scoping is the primary control.
  *
  * Usage:
- *   const supabase = await createTenantScopedClient(clinicId);
- *   // Every .from("table").select/insert/update/delete automatically
- *   // has .eq("clinic_id", clinicId) — you can still add it manually
- *   // for documentation purposes, it's idempotent.
+ *   const { client, clinicId } = await createTenantScopedClient(clinicId);
+ *   // You MUST add .eq("clinic_id", clinicId) to every query:
+ *   const { data } = await client
+ *     .from("appointments")
+ *     .select("*")
+ *     .eq("clinic_id", clinicId);  // <-- REQUIRED
  */
 
 import type { SupabaseClient } from "@supabase/supabase-js";
@@ -25,17 +33,11 @@ import { createClient } from "@/lib/supabase-server";
 import { setTenantContext } from "@/lib/tenant-context";
 import type { Database } from "@/lib/types/database";
 
-/**
- * Tables that do NOT have a `clinic_id` column and should not be
- * auto-scoped. These are system-level tables that are intentionally
- * not tenant-partitioned.
- */
-const _UNSCOPED_TABLES = new Set([
-  "clinics",
-  "clinic_api_keys",
-  "rate_limit_entries",
-  "audit_log",
-]);
+// AUDIT-07: Removed unused _UNSCOPED_TABLES set. The previous doc comment
+// implied automatic .eq("clinic_id") injection which is not implemented.
+// These tables are documented here for reference only:
+//   - clinics, clinic_api_keys, rate_limit_entries, audit_log
+// do NOT have per-tenant clinic_id scoping.
 
 export interface TenantScopedClient {
   /** The underlying Supabase client (with tenant context set) */

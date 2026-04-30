@@ -1,12 +1,27 @@
+import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import type { MetadataRoute } from "next";
 import { getAllPosts } from "@/lib/blog";
 import { getDirectoryDoctors } from "@/lib/data/directory";
 import { DIRECTORY_CITIES, TOP_CITY_SPECIALTY_COMBOS } from "@/lib/directory-constants";
 import { logger } from "@/lib/logger";
-// S-20: Use createPublicAnonClient instead of createAdminClient on this
-// public render path. The sitemap only needs (subdomain, updated_at) from
-// clinics, which is available via the public_clinic_directory view + RLS.
-import { createAdminClient } from "@/lib/supabase-server";
+import type { Database } from "@/lib/types/database";
+
+/**
+ * Audit Finding #8 / S-20: Use a cookie-free anon client instead of
+ * createAdminClient on this public render path. The sitemap only needs
+ * (subdomain, updated_at) from clinics, which is available via the
+ * public-facing RLS policy that allows unauthenticated reads of active
+ * clinics. This avoids loading the service-role key into the sitemap
+ * render context unnecessarily.
+ */
+function createSitemapAnonClient() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  if (!url || !anonKey) return null;
+  return createSupabaseClient<Database>(url, anonKey, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
+}
 
 /**
  * Dynamic sitemap for public-facing pages.
@@ -62,24 +77,26 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // NEXT_PHASE and skip gracefully.
   const isBuildPhase = process.env.NEXT_PHASE === "phase-production-build";
   const isProductionRuntime = process.env.NODE_ENV === "production" && !isBuildPhase;
-  const hasServiceRoleKey = !!(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY);
+  const hasAnonKey = !!(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
 
-  // S-20: Soften production missing-key check from throw to logged warning +
-  // empty subdomain set, so the sitemap still generates static pages when
-  // the service-role key is unavailable.
-  if (isProductionRuntime && !hasServiceRoleKey) {
+  // Audit Finding #8 / S-20: The sitemap no longer requires the service-role
+  // key. The anon client is sufficient because the clinics table RLS policy
+  // allows unauthenticated reads of active clinics.
+  if (isProductionRuntime && !hasAnonKey) {
     logger.warn(
-      "[sitemap] SUPABASE_SERVICE_ROLE_KEY is missing in production — dynamic clinic entries will be empty",
+      "[sitemap] NEXT_PUBLIC_SUPABASE_ANON_KEY is missing in production — dynamic clinic entries will be empty",
       { context: "sitemap" },
     );
   }
 
-  if (hasServiceRoleKey) {
+  if (hasAnonKey) {
     try {
-      // Use admin client (service role) so the sitemap query works without
-      // authentication cookies. Googlebot won't have session cookies, so the
-      // cookie-based createClient() would fail silently on RLS-protected tables.
-      const supabase = createAdminClient();
+      // Audit Finding #8: Use a cookie-free anon client instead of
+      // createAdminClient(). The sitemap only reads public clinic data
+      // (subdomain, updated_at) which is accessible via the unauthenticated
+      // RLS policy. This avoids loading the service-role key into the
+      // sitemap render context.
+      const supabase = createSitemapAnonClient()!;
       const { data: clinics } = await supabase
         .from("clinics")
         .select("subdomain, updated_at")
@@ -152,7 +169,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   }
 
   // Individual doctor profile pages
-  if (hasServiceRoleKey) {
+  if (hasAnonKey) {
     try {
       const doctors = await getDirectoryDoctors();
       for (const doctor of doctors) {

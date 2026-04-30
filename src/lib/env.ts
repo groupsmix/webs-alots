@@ -103,9 +103,9 @@ const ENV_RULES: EnvRule[] = [
   // CRON_SECRET only as a transitional measure (see profile-header-hmac.ts).
   { name: "PROFILE_HEADER_HMAC_KEY", required: process.env.NODE_ENV === "production", description: "HMAC key used to sign x-auth-profile-* headers between middleware and withAuth (required in production)", group: "auth" },
 
-  // NOTE: PHI_ENCRYPTION_KEY is already declared above (group: "security").
-  // A duplicate entry was removed here to prevent double-reporting in
-  // validation output. See the "PHI Encryption (C-08)" block above.
+  // AUDIT-15: Removed duplicate PHI_ENCRYPTION_KEY entry (was listed at
+  // line ~91 under "security" group and again here under "encryption").
+  // The first entry (C-08, group: "security") is the canonical one.
 
   // ── Custom Domains ─────────────────────────────────────────────────
   // These are gated by NEXT_PUBLIC_ENABLE_CUSTOM_DOMAINS — when the flag is
