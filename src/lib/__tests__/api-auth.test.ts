@@ -100,7 +100,8 @@ describe("authenticateApiKey", () => {
 
     const req = createMockRequest("Bearer test-api-key-12345678");
     const result = await authenticateApiKey(req as never);
-    expect(result).toEqual({ clinicId: "clinic-123" });
+    // AUDIT-13: authenticateApiKey now returns scopes alongside clinicId
+    expect(result).toEqual({ clinicId: "clinic-123", scopes: null });
   });
 
   it("returns null when key hash does not match any candidate", async () => {

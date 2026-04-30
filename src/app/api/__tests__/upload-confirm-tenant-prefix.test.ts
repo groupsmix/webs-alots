@@ -189,7 +189,9 @@ describe("PUT /api/upload — tenant prefix enforcement", () => {
     const { PUT } = await import("../upload/route");
     const response = await PUT(
       buildPutRequest({
-        key: `clinics/${OWNER_CLINIC_ID}/documents/file.pdf`,
+        // AUDIT-14: Use non-PHI category since PHI categories are now
+        // blocked from presigned upload confirmation.
+        key: `clinics/${OWNER_CLINIC_ID}/photos/file.pdf`,
         contentType: "application/pdf",
       }),
     );
@@ -210,7 +212,8 @@ describe("PUT /api/upload — tenant prefix enforcement", () => {
 
     // Use the production key builder so the test fails if the prefix
     // contract drifts on either side.
-    const realKey = buildUploadKey(OWNER_CLINIC_ID, "documents", "file.pdf");
+    // AUDIT-14: Use non-PHI category since PHI categories are now blocked.
+    const realKey = buildUploadKey(OWNER_CLINIC_ID, "photos", "file.pdf");
 
     const { PUT } = await import("../upload/route");
     const response = await PUT(
@@ -287,7 +290,8 @@ describe("PUT /api/upload — tenant prefix enforcement", () => {
     const { PUT } = await import("../upload/route");
     const response = await PUT(
       buildPutRequest({
-        key: `clinics/${OTHER_CLINIC_ID}/documents/file.pdf`,
+        // AUDIT-14: Use non-PHI category since PHI categories are now blocked.
+        key: `clinics/${OTHER_CLINIC_ID}/photos/file.pdf`,
         contentType: "application/pdf",
       }),
     );
@@ -296,5 +300,24 @@ describe("PUT /api/upload — tenant prefix enforcement", () => {
     expect(response.status).toBe(200);
     expect(json).toMatchObject({ ok: true, data: { valid: true } });
     expect(deleteFromR2Mock).not.toHaveBeenCalled();
+  });
+
+  it("rejects PHI category confirmation with 400 and deletes the unencrypted object", async () => {
+    authedAs("clinic_admin", OWNER_CLINIC_ID);
+
+    const { PUT } = await import("../upload/route");
+    const response = await PUT(
+      buildPutRequest({
+        key: `clinics/${OWNER_CLINIC_ID}/documents/file.pdf`,
+        contentType: "application/pdf",
+      }),
+    );
+    const json = await response.json();
+
+    expect(response.status).toBe(400);
+    expect(json.ok).toBe(false);
+    expect(json.error).toMatch(/PHI/i);
+    // The unencrypted object must be deleted from R2
+    expect(deleteFromR2Mock).toHaveBeenCalledTimes(1);
   });
 });

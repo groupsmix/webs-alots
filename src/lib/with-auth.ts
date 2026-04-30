@@ -25,6 +25,40 @@ import { setTenantContext, logTenantContext } from "@/lib/tenant-context";
 import type { UserRole } from "@/lib/types/database";
 import type { Database } from "@/lib/types/database";
 
+// ── AUDIT-24: Per-user rate limiting ─────────────────────────────────
+// Lightweight in-memory sliding window per authenticated user ID.
+// Supplements the per-IP middleware limits to catch authenticated abuse.
+const USER_RATE_WINDOW_MS = 60_000; // 1 minute
+const USER_RATE_MAX = 100;          // max requests per window per user
+const USER_RATE_MAX_KEYS = 10_000;  // prevent unbounded memory growth
+
+interface UserRateEntry {
+  count: number;
+  resetAt: number;
+}
+
+const userRateBuckets = new Map<string, UserRateEntry>();
+
+function checkUserRateLimit(userId: string): boolean {
+  const now = Date.now();
+  const entry = userRateBuckets.get(userId);
+
+  if (!entry || now > entry.resetAt) {
+    // Evict oldest entries if map is too large
+    if (userRateBuckets.size >= USER_RATE_MAX_KEYS) {
+      const oldest = [...userRateBuckets.entries()]
+        .sort((a, b) => a[1].resetAt - b[1].resetAt)
+        .slice(0, Math.floor(USER_RATE_MAX_KEYS / 4));
+      for (const [key] of oldest) userRateBuckets.delete(key);
+    }
+    userRateBuckets.set(userId, { count: 1, resetAt: now + USER_RATE_WINDOW_MS });
+    return true;
+  }
+
+  entry.count++;
+  return entry.count <= USER_RATE_MAX;
+}
+
 export interface AuthContext {
   supabase: SupabaseClient<Database>;
   user: User;
@@ -193,6 +227,18 @@ export function withAuth(
         userId: profile.id,
         role: profile.role,
       });
+
+      // AUDIT-24: Per-user rate limiting for authenticated API requests.
+      // The middleware applies per-IP limits, but authenticated abuse from
+      // compromised accounts or distributed IPs requires user-keyed limits.
+      // This is a lightweight in-memory check (100 req/min per user) that
+      // supplements the IP-based middleware limits.
+      if (!checkUserRateLimit(profile.id)) {
+        return NextResponse.json(
+          { error: "Too many requests. Please slow down.", code: "USER_RATE_LIMIT" },
+          { status: 429 },
+        );
+      }
 
       // F-13: Downsample per-request API read access log to 1% in production.
       // Full audit trail is still available via audit_log entries for mutations.

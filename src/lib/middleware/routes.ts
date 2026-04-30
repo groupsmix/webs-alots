@@ -72,30 +72,81 @@ export const ROLE_DASHBOARD_MAP: Record<string, string> = {
 };
 
 /**
+ * API routes that are intentionally public (no middleware-level auth).
+ *
+ * AUDIT-12 (P0-01): Previously ALL `/api/` routes were public by default,
+ * relying on each handler to implement its own auth. This created a risk
+ * where a new API route without explicit auth checks would be publicly
+ * accessible. Now API routes are **protected by default** unless they
+ * appear in this allowlist.
+ *
+ * To add a new public API route, add it here and document why it must
+ * be unauthenticated (e.g. webhook with HMAC signature, public booking
+ * flow, health check).
+ */
+const PUBLIC_API_ROUTES = [
+  // Health checks — must be unauthenticated for uptime monitoring
+  "/api/health",
+  "/api/health/internal",
+  // Public booking flow — anonymous patients book appointments
+  "/api/booking",
+  "/api/booking/verify",
+  "/api/booking/cancel",
+  // Public branding — needed to render clinic's branded booking page
+  "/api/branding",
+  // Webhooks — authenticated via provider signatures (Stripe, WhatsApp, etc.)
+  "/api/webhooks",
+  "/api/payments/webhook",
+  "/api/payments/cmi/callback",
+  // Cron jobs — authenticated via CRON_SECRET bearer token
+  "/api/cron/",
+  // Public email verification
+  "/api/verify-email",
+  // API docs
+  "/api/docs",
+  // Check-in kiosk — public-facing
+  "/api/checkin/lookup",
+  "/api/checkin/confirm",
+  "/api/checkin/status",
+  // Public clinic registration
+  "/api/v1/register-clinic",
+  // Demo login (dev/staging only, guarded in handler)
+  "/api/auth/demo-login",
+  // CSP report endpoint
+  "/api/csp-report",
+];
+
+/**
+ * Check if an API route is in the public allowlist.
+ * Supports both exact matches and prefix matches (for routes ending with /).
+ */
+function isPublicApiRoute(pathname: string): boolean {
+  return PUBLIC_API_ROUTES.some((route) => {
+    if (route.endsWith("/")) {
+      // Prefix match for route groups (e.g. "/api/cron/")
+      return pathname.startsWith(route);
+    }
+    // Exact match or sub-path match
+    return pathname === route || pathname.startsWith(`${route}/`);
+  });
+}
+
+/**
  * Determine whether a route is public (no middleware-level auth check).
  *
- * SECURITY NOTE — API routes and the "self-auth" pattern:
- * All `/api/` routes are classified as public here because API route handlers
- * are responsible for their own authentication (e.g., verifying session cookies,
- * Bearer tokens, or API keys). This is intentional:
+ * API routes are now **protected by default**. Only routes explicitly
+ * listed in PUBLIC_API_ROUTES are treated as public. All other `/api/`
+ * routes require the user to be authenticated at the middleware level.
  *
- *   - API routes may need unauthenticated access (booking, branding, health check).
- *   - Auth mechanisms vary per endpoint (cookie vs. Bearer vs. HMAC webhook sig).
- *   - Middleware-level auth would force a single auth strategy on all API routes.
- *
- * **Important for contributors:** If you add a new API route under `/api/`,
- * you MUST implement authentication in the route handler itself. There is no
- * middleware safety net — an API route without explicit auth checks will be
- * publicly accessible. Consider using `requireAuth()` or `requireRole()` helpers.
- *
- * Future improvement: consider inverting to a default-protected pattern with
- * an explicit allowlist for public API routes (e.g., `/api/book`, `/api/branding`,
- * `/api/health`) to reduce the risk of accidentally exposing new endpoints.
+ * Route handlers can still implement additional auth (role checks, API key
+ * validation, etc.) on top of the middleware-level session check.
  */
 export function isPublicRoute(pathname: string): boolean {
+  if (pathname.startsWith("/api/")) {
+    return isPublicApiRoute(pathname);
+  }
   return (
     PUBLIC_ROUTES.includes(pathname) ||
-    pathname.startsWith("/api/") ||
     PUBLIC_PREFIXES.some((prefix) => pathname.startsWith(prefix))
   );
 }

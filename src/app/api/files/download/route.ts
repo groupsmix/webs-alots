@@ -128,6 +128,47 @@ async function handler(request: NextRequest, { supabase, profile }: AuthContext)
     return apiForbidden("File belongs to a different clinic");
   }
 
+  // AUDIT-03: Patient-level access check. The clinic-prefix check above
+  // prevents cross-tenant access, but a patient within the same clinic
+  // could guess/enumerate R2 keys to access another patient's files.
+  // For the "patient" role, verify that the file belongs to them by
+  // checking the patient_files table (if it exists). Staff roles
+  // (doctor, receptionist, clinic_admin) are allowed to access any
+  // file within their clinic.
+  if (profile.role === "patient" && profile.clinic_id) {
+    // patient_files may not be in the generated DB types yet — use
+    // an untyped query to avoid TS errors while still enforcing the check.
+    const { data: fileRecord } = await (supabase as unknown as {
+      from(table: string): {
+        select(cols: string): {
+          eq(col: string, val: string): {
+            eq(col2: string, val2: string): {
+              maybeSingle(): Promise<{ data: { id: string; patient_id: string } | null }>;
+            };
+          };
+        };
+      };
+    }).from("patient_files")
+      .select("id, patient_id")
+      .eq("clinic_id", profile.clinic_id)
+      .eq("r2_key", baseKey)
+      .maybeSingle();
+
+    // If we found a file record and the patient doesn't own it, deny access.
+    // If no record is found, fall through (the file may not be tracked in
+    // patient_files yet — legacy files uploaded before this table existed).
+    if (fileRecord && fileRecord.patient_id !== profile.id) {
+      logger.warn("Patient attempted to download another patient's file", {
+        context: "api/files/download",
+        role: profile.role,
+        profileId: profile.id,
+        filePatientId: fileRecord.patient_id,
+        keyPrefix: baseKey.split("/").slice(0, 2).join("/"),
+      });
+      return apiForbidden("You do not have access to this file");
+    }
+  }
+
   const plaintext = await downloadAndDecrypt(baseKey);
   if (!plaintext) {
     return apiNotFound("File not found or could not be decrypted");
