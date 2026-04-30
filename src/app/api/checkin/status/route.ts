@@ -5,21 +5,25 @@ import { createTenantClient } from "@/lib/supabase-server";
 import { getTenant } from "@/lib/tenant";
 
 /**
- * GET /api/checkin/status?clinicId=...
+ * GET /api/checkin/status
  *
  * Check whether kiosk mode is enabled for the given clinic.
  *
- * S-02: clinicId is derived from the subdomain via `getTenant()`.
+ * AUDIT F-04: clinicId is now ALWAYS derived from the subdomain via
+ * getTenant(). The URL-supplied clinicId fallback has been removed.
  */
 export async function GET(request: NextRequest) {
   const urlClinicId = request.nextUrl.searchParams.get("clinicId");
+
+  // AUDIT F-04: Always require subdomain-derived tenant. No fallback to URL param.
   const tenant = await getTenant();
-  const clinicId = tenant?.clinicId ?? urlClinicId;
-  if (!clinicId) {
-    return apiError("Missing clinicId", 400);
+  if (!tenant?.clinicId) {
+    return apiError("Clinic context required — use a clinic subdomain", 400);
   }
-  // S-02: Reject if URL-supplied clinicId disagrees with subdomain.
-  if (urlClinicId && tenant?.clinicId && urlClinicId !== tenant.clinicId) {
+  const clinicId = tenant.clinicId;
+
+  // If a URL-supplied clinicId is present, it must match the subdomain.
+  if (urlClinicId && urlClinicId !== clinicId) {
     return apiError("clinicId does not match subdomain", 403);
   }
 

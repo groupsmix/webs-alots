@@ -5,37 +5,30 @@ import { createTenantClient } from "@/lib/supabase-server";
 import { getTenant } from "@/lib/tenant";
 
 /**
- * GET /api/checkin/lookup?phone=...&clinicId=...
+ * GET /api/checkin/lookup?phone=...
  *
  * Look up today's appointments for a patient by phone number.
  *
- * S-02: clinicId is now derived from the subdomain via `getTenant()`.
- * A URL-supplied clinicId is accepted only for backward compatibility
- * but MUST match the subdomain-resolved value; mismatches are rejected
- * to prevent cross-tenant enumeration.
+ * AUDIT F-04: clinicId is now ALWAYS derived from the subdomain via
+ * getTenant(). The URL-supplied clinicId fallback has been removed to
+ * prevent cross-tenant patient enumeration on the root domain.
  */
 export async function GET(request: NextRequest) {
   const phone = request.nextUrl.searchParams.get("phone");
   const urlClinicId = request.nextUrl.searchParams.get("clinicId");
 
-  // S-02: Derive clinicId from the subdomain (set by middleware).
+  // AUDIT F-04: Always require subdomain-derived tenant. No fallback to URL param.
   const tenant = await getTenant();
-
-  // SECURITY FIX: Never fall back to a URL-supplied clinicId when there is
-  // no subdomain. On root-domain requests an attacker could enumerate patients
-  // across all clinics by iterating clinicId values. The URL clinicId is only
-  // accepted for backward compatibility when it matches the subdomain value.
   if (!tenant?.clinicId) {
-    return apiError("Clinic context required. Use a clinic subdomain.", 400);
+    return apiError("Clinic context required — use a clinic subdomain", 400);
   }
-
   const clinicId = tenant.clinicId;
 
   if (!phone) {
     return apiError("Missing phone parameter", 400);
   }
 
-  // S-02: If a URL-supplied clinicId disagrees with the subdomain, reject.
+  // If a URL-supplied clinicId is present, it must match the subdomain.
   if (urlClinicId && urlClinicId !== clinicId) {
     return apiError("clinicId does not match subdomain", 403);
   }

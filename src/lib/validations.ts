@@ -129,11 +129,10 @@ export const paymentRefundSchema = z.object({
 const stripeWebhookEventObjectSchema = z.object({
   id: z.string().min(1),
   metadata: z.record(z.string(), z.string()).optional(),
-  // Checkout Session exposes `amount_total`; PaymentIntent exposes `amount`.
-  // Both must be present in the schema or Zod's default `.strip()` mode will
-  // silently drop the incoming value and downstream code will see 0.
-  amount_total: z.number().optional(),
+  /** PaymentIntent.amount — present on payment_intent.* events. */
   amount: z.number().optional(),
+  /** Checkout Session.amount_total — present on checkout.session.* events. */
+  amount_total: z.number().optional(),
   currency: z.string().optional(),
   payment_status: z.string().optional(),
   customer_email: z.string().optional(),
@@ -525,10 +524,8 @@ export type AiDrugCheckOverride = z.infer<typeof aiDrugCheckOverrideSchema>;
 
 export const doctorUnavailabilitySchema = z.object({
   doctorId: z.string().min(1),
-  // SECURITY FIX: clinicId is derived server-side from the authenticated
-  // user's profile (see src/app/api/doctor-unavailability/route.ts) and is
-  // ignored if supplied. Schema accepts it as optional for backward
-  // compatibility with older clients but does not require it.
+  /** AUDIT F-01: clinicId is now optional — subdomain-derived tenant is authoritative.
+   *  If provided, it is validated against the subdomain in the route handler. */
   clinicId: z.string().min(1).optional(),
   startDate: isoDate,
   endDate: isoDate,
@@ -539,7 +536,9 @@ export const doctorUnavailabilitySchema = z.object({
 
 export const checkinConfirmSchema = z.object({
   appointmentId: z.string().min(1),
-  clinicId: z.string().min(1),
+  /** AUDIT F-04: clinicId is now optional — subdomain-derived tenant is authoritative.
+   *  If provided, it is validated against the subdomain in the route handler. */
+  clinicId: z.string().min(1).optional(),
 });
 
 // ── Waiting List Delete ─────────────────────────────────────────────────
