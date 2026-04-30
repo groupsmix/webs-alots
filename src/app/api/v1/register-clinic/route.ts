@@ -286,10 +286,10 @@ export async function POST(request: NextRequest) {
   // No verification method provided
   else {
     return apiError(
-      "Identity verification is required. Please provide one of:\n" +
-      "- DNS TXT record on your website domain (set website_domain — token is issued via /api/v1/register-clinic/verification-token)\n" +
-      "- Trade license PDF (trade_license_base64)\n" +
-      "- Phone OTP from pre-listed registry (coming soon)",
+      "Identity verification is required. Please provide a website_domain and set a DNS TXT record.\n" +
+      "1. Call GET /api/v1/register-clinic/verification-token with your domain\n" +
+      "2. Add a TXT record on your domain: oltigo-verify=<token>\n" +
+      "3. Retry the registration with website_domain set",
       400,
       "VERIFICATION_REQUIRED",
     );

@@ -74,8 +74,12 @@ function formatError(err: unknown): Record<string, unknown> {
  * This is a defense-in-depth measure. Callers should avoid passing PII
  * into log metadata in the first place, but this filter catches
  * accidental leaks that slip through code review.
+ *
+ * Uses word-boundary anchors (\b) to prevent over-matching keys like
+ * "hostname", "fileName", "domain", "patientId", "clinicId", etc.
  */
-const PII_KEY_PATTERN = /email|phone|name|cin|dob|date_of_birth|address|full_name|doctor_name|clinic_name|patient_name/i;
+const PII_KEY_PATTERN =
+  /\b(?:email|phone|cin|dob|date_of_birth|address|full_name|doctor_name|clinic_name|patient_name)\b/i;
 
 /**
  * Shallow-redact an extras object: any key matching {@link PII_KEY_PATTERN}
@@ -135,8 +139,10 @@ async function captureSentryError(message: string, meta?: LogMeta): Promise<void
       if (meta?.context) scope.setTag("context", meta.context);
       if (meta?.clinicId) scope.setTag("clinicId", meta.clinicId);
       if (meta?.traceId) scope.setTag("traceId", meta.traceId);
+      // A8-01: Apply redactPii so PII keys are not sent to Sentry either
       const { context: _ctx, clinicId: _cid, traceId: _tid, error: _err, ...extra } = meta ?? {};
-      for (const [k, v] of Object.entries(extra)) {
+      const redacted = redactPii(extra);
+      for (const [k, v] of Object.entries(redacted)) {
         scope.setExtra(k, v);
       }
       Sentry.captureException(error);
@@ -151,11 +157,15 @@ async function captureSentryBreadcrumb(level: string, message: string, meta?: Lo
     const Sentry = await import("@sentry/nextjs");
     if (!Sentry?.addBreadcrumb) return;
 
+    // A8-01: Apply redactPii so PII keys are not sent to Sentry
+    const { context: _ctx, clinicId: _cid, traceId: _tid, error: _err, ...extra } = meta ?? {};
+    const redacted = redactPii(extra);
+
     Sentry.addBreadcrumb({
-      category: meta?.context ?? "app",
+      category: _ctx ?? "app",
       message,
       level: level as "debug" | "info" | "warning" | "error" | "fatal",
-      data: meta ? { ...meta, error: undefined } : undefined,
+      data: redacted,
     });
   } catch {
     // Silently ignore

@@ -85,9 +85,10 @@ export async function middleware(request: NextRequest) {
   if (
     process.env.READ_ONLY_MODE === "true" &&
     ["POST", "PUT", "PATCH", "DELETE"].includes(request.method) &&
-    // Allow health-check and webhook verification (GET-only in practice,
-    // but guard against future POST health probes)
-    !pathname.startsWith("/api/health")
+    // Allow health-check and webhook routes (external integrations need
+    // to continue receiving events even during read-only maintenance)
+    !pathname.startsWith("/api/health") &&
+    !pathname.startsWith("/api/webhooks/")
   ) {
     return NextResponse.json(
       {
