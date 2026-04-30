@@ -206,7 +206,7 @@ INFORMATIONS DE LA CLINIQUE:
 - Nom: ${safeName}
 - Téléphone: ${ctx.phone}
 ${ctx.address ? `- Adresse: ${sanitizeRetrievedText(ctx.address)}` : ""}
-${ctx.openingHours ? `- Horaires: ${ctx.openingHours}` : ""}
+${ctx.openingHours ? `- Horaires: ${sanitizeRetrievedText(ctx.openingHours)}` : ""}
 ${safeServices.length > 0 ? `- Services: ${safeServices.join(", ")}` : ""}
 ${safeDoctors.length > 0 ? `- Médecins: ${safeDoctors.join(", ")}` : ""}
 

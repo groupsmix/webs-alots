@@ -178,17 +178,18 @@ export function buildSystemPrompt(ctx: ChatbotClinicContext): string {
     : "";
 
   const contactParts: string[] = [];
+  // A101-1 fix: All contact fields are clinic-admin-writable - sanitize to prevent prompt injection
   if (clinic.phone) contactParts.push(`Téléphone: ${clinic.phone}`);
-  if (clinic.email) contactParts.push(`Email: ${clinic.email}`);
-  if (clinic.address) contactParts.push(`Adresse: ${clinic.address}`);
-  if (clinic.city) contactParts.push(`Ville: ${clinic.city}`);
-  if (clinic.domain) contactParts.push(`Site web: ${clinic.domain}`);
+  if (clinic.email) contactParts.push(`Email: ${sanitizeRetrievedText(clinic.email)}`);
+  if (clinic.address) contactParts.push(`Adresse: ${sanitizeRetrievedText(clinic.address)}`);
+  if (clinic.city) contactParts.push(`Ville: ${sanitizeRetrievedText(clinic.city)}`);
+  if (clinic.domain) contactParts.push(`Site web: ${sanitizeRetrievedText(clinic.domain)}`);
 
-  return `Tu es l'assistant virtuel de "${clinic.name}", un(e) ${typeLabels[clinic.type] ?? clinic.type}.
+  return `Tu es l'assistant virtuel de "${sanitizeRetrievedText(clinic.name)}", un(e) ${typeLabels[clinic.type] ?? clinic.type}.
 Tu aides les patients avec leurs questions sur les rendez-vous, services, horaires et informations du cabinet.
 
 === INFORMATIONS DU CABINET ===
-Nom: ${clinic.name}
+Nom: ${sanitizeRetrievedText(clinic.name)}
 Type: ${typeLabels[clinic.type] ?? clinic.type}
 ${contactParts.length > 0 ? contactParts.join("\n") : "Contact: non renseigné"}
 

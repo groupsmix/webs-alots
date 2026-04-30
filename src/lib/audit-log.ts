@@ -104,7 +104,7 @@ export async function logAuditEvent({
         // Sentry unavailable — structured log above is the fallback
       }
 
-      // Throw so the outer catch can push to the KV retry queue
+      // Re-throw so the outer catch can report via Sentry
       throw error;
     }
   } catch (err) {
