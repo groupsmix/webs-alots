@@ -19,10 +19,6 @@ const CSRF_EXEMPT_PREFIXES = [
   // so the endpoint must be CSRF-exempt. The payload is a fixed JSON schema
   // that the handler validates — no state mutation occurs.
   "/api/csp-report",
-  // PUSH-01: The push subscription endpoint receives POST from service workers
-  // that may not carry a matching Origin header in all browsers. The endpoint
-  // is protected by session auth (withAuth) so CSRF exemption is safe.
-  "/api/push/subscribe",
 ];
 
 function isCsrfExempt(pathname: string): boolean {

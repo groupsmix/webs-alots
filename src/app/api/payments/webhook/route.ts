@@ -159,10 +159,14 @@ export async function POST(request: NextRequest) {
           // `amount_total` always yielded 0 for failed payment records.
           // Prefer metadata.amount (set by the checkout route) → real
           // PaymentIntent `amount` → Checkout Session `amount_total` →
-          // 0 as last-resort fallback so we never record a NaN row.
-          const intentAmount = intent.metadata?.amount
+          // 0 as last-resort fallback. Guard with Number.isFinite() because
+          // metadata is user-controlled and parseFloat can return NaN for
+          // truthy non-numeric strings; persisting NaN would corrupt the
+          // payments row.
+          const rawAmount = intent.metadata?.amount
             ? parseFloat(intent.metadata.amount)
             : (intent.amount ?? intent.amount_total ?? 0);
+          const intentAmount = Number.isFinite(rawAmount) ? rawAmount : 0;
           await supabase.from("payments").insert({
             clinic_id: failedClinicId,
             patient_id: failedPatientId,

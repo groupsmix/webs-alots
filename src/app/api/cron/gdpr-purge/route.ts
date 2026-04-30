@@ -74,10 +74,14 @@ async function handler(request: NextRequest) {
         const storageKeysToDelete: string[] = [];
         if (user.clinic_id && isR2Configured()) {
           try {
+            // AGENTS.md tenant-isolation rule #1: every query must filter by
+            // clinic_id. The admin client bypasses RLS, so application-level
+            // scoping is the only remaining defense in depth here.
             const { data: docs } = await supabase
               .from("documents")
               .select("storage_key")
-              .eq("patient_id", user.id);
+              .eq("patient_id", user.id)
+              .eq("clinic_id", user.clinic_id);
 
             if (docs && docs.length > 0) {
               for (const doc of docs) {
