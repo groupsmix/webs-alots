@@ -4,8 +4,62 @@ import { getPlanByPriceId, type PlanSlug } from "@/lib/config/subscription-plans
 import { hmacSha256Hex, timingSafeEqual } from "@/lib/crypto-utils";
 import { logger } from "@/lib/logger";
 import { createAdminClient } from "@/lib/supabase-server";
+import type { Json } from "@/lib/types/database";
 import { subscriptionWebhookEventSchema } from "@/lib/validations";
 import type { SubscriptionWebhookEvent } from "@/lib/validations";
+
+/**
+ * Q-01: Stripe API timeout. If Stripe is degraded, an unbounded fetch here
+ * holds the Worker handler open until Stripe times out the connection,
+ * which combines with Stripe's retry policy to amplify load. 10 s is well
+ * under the Worker request budget but long enough to cover Stripe's
+ * normal p99.
+ */
+const STRIPE_API_TIMEOUT_MS = 10_000;
+
+type ClinicConfig = { [key: string]: Json | undefined };
+
+/**
+ * Q-01: Merge a subset of subscription-related keys into a clinic's
+ * existing `config` jsonb without clobbering unrelated fields
+ * (`timezone`, `workingHours`, `slotDuration`, …).
+ *
+ * Postgres replaces `jsonb` columns wholesale on UPDATE — every Stripe
+ * event used to nuke per-clinic operational config. We now read the
+ * current value first, spread it, and write the merged object back.
+ *
+ * Uses the admin client (service role) — webhook requests do not carry
+ * a user session.
+ */
+async function mergeClinicConfig(
+  supabase: ReturnType<typeof createAdminClient>,
+  clinicId: string,
+  patch: ClinicConfig,
+): Promise<{ error: unknown }> {
+  const { data: existing, error: readError } = await supabase
+    .from("clinics")
+    .select("config")
+    .eq("id", clinicId)
+    .maybeSingle();
+
+  if (readError) {
+    return { error: readError };
+  }
+
+  const currentConfig: ClinicConfig =
+    existing?.config && typeof existing.config === "object" && !Array.isArray(existing.config)
+      ? (existing.config as ClinicConfig)
+      : {};
+
+  const merged: ClinicConfig = { ...currentConfig, ...patch };
+
+  const { error: updateError } = await supabase
+    .from("clinics")
+    .update({ config: merged })
+    .eq("id", clinicId);
+
+  return { error: updateError };
+}
 
 /**
  * POST /api/billing/webhook
@@ -95,19 +149,16 @@ export async function POST(request: NextRequest) {
           stripeSubscriptionId,
         });
 
-        // Update clinic's subscription plan and Stripe customer ID
-        const { error: updateError } = await supabase
-          .from("clinics")
-          .update({
-            config: {
-              subscription_plan: planId,
-              stripe_customer_id: stripeCustomerId,
-              stripe_subscription_id: stripeSubscriptionId,
-              subscription_status: "active",
-              subscription_updated_at: new Date().toISOString(),
-            },
-          })
-          .eq("id", clinicId);
+        // Q-01: merge subscription keys into existing config jsonb instead of
+        // replacing the whole column (which would wipe `timezone`,
+        // `workingHours`, `slotDuration`, etc.).
+        const { error: updateError } = await mergeClinicConfig(supabase, clinicId, {
+          subscription_plan: planId,
+          stripe_customer_id: stripeCustomerId,
+          stripe_subscription_id: stripeSubscriptionId,
+          subscription_status: "active",
+          subscription_updated_at: new Date().toISOString(),
+        });
 
         if (updateError) {
           logger.error("Failed to update clinic subscription", {
@@ -125,11 +176,14 @@ export async function POST(request: NextRequest) {
 
         if (!subscriptionId) break;
 
-        // Retrieve subscription to get clinic_id from metadata
+        // Retrieve subscription to get clinic_id from metadata.
+        // P-04: bound the outbound fetch — Stripe latency must not block the
+        // webhook handler past Cloudflare's request budget.
         const subResponse = await fetch(
           `https://api.stripe.com/v1/subscriptions/${subscriptionId}`,
           {
             headers: { Authorization: `Bearer ${stripeSecretKey}` },
+            signal: AbortSignal.timeout(STRIPE_API_TIMEOUT_MS),
           },
         );
 
@@ -157,22 +211,17 @@ export async function POST(request: NextRequest) {
           periodEnd: subscription.current_period_end,
         });
 
-        // Extend subscription period and ensure status is active
-        const { error: renewError } = await supabase
-          .from("clinics")
-          .update({
-            config: {
-              subscription_plan: plan?.slug ?? subscription.metadata?.plan_id,
-              stripe_customer_id: subscription.customer,
-              stripe_subscription_id: subscriptionId,
-              subscription_status: "active",
-              subscription_period_end: subscription.current_period_end
-                ? new Date(subscription.current_period_end * 1000).toISOString()
-                : undefined,
-              subscription_updated_at: new Date().toISOString(),
-            },
-          })
-          .eq("id", clinicId);
+        // Q-01: merge — see mergeClinicConfig.
+        const { error: renewError } = await mergeClinicConfig(supabase, clinicId, {
+          subscription_plan: plan?.slug ?? subscription.metadata?.plan_id,
+          stripe_customer_id: subscription.customer,
+          stripe_subscription_id: subscriptionId,
+          subscription_status: "active",
+          subscription_period_end: subscription.current_period_end
+            ? new Date(subscription.current_period_end * 1000).toISOString()
+            : undefined,
+          subscription_updated_at: new Date().toISOString(),
+        });
 
         if (renewError) {
           logger.error("Failed to renew clinic subscription", {
@@ -190,11 +239,13 @@ export async function POST(request: NextRequest) {
 
         if (!subscriptionId) break;
 
-        // Retrieve subscription to get clinic_id
+        // Retrieve subscription to get clinic_id.
+        // P-04: bound the outbound fetch (see comment above).
         const subResponse = await fetch(
           `https://api.stripe.com/v1/subscriptions/${subscriptionId}`,
           {
             headers: { Authorization: `Bearer ${stripeSecretKey}` },
+            signal: AbortSignal.timeout(STRIPE_API_TIMEOUT_MS),
           },
         );
 
@@ -211,19 +262,15 @@ export async function POST(request: NextRequest) {
           subscriptionId,
         });
 
-        // Mark subscription as past_due — grace period (Stripe retries automatically)
-        const { error: failError } = await supabase
-          .from("clinics")
-          .update({
-            config: {
-              subscription_plan: subscription.metadata?.plan_id,
-              stripe_customer_id: subscription.customer,
-              stripe_subscription_id: subscriptionId,
-              subscription_status: "past_due",
-              subscription_updated_at: new Date().toISOString(),
-            },
-          })
-          .eq("id", clinicId);
+        // Mark subscription as past_due — grace period (Stripe retries automatically).
+        // Q-01: merge — see mergeClinicConfig.
+        const { error: failError } = await mergeClinicConfig(supabase, clinicId, {
+          subscription_plan: subscription.metadata?.plan_id,
+          stripe_customer_id: subscription.customer,
+          stripe_subscription_id: subscriptionId,
+          subscription_status: "past_due",
+          subscription_updated_at: new Date().toISOString(),
+        });
 
         if (failError) {
           logger.error("Failed to mark subscription as past_due", {
@@ -247,19 +294,15 @@ export async function POST(request: NextRequest) {
           subscriptionId: subscription.id,
         });
 
-        // Downgrade to free plan
-        const { error: cancelError } = await supabase
-          .from("clinics")
-          .update({
-            config: {
-              subscription_plan: "free",
-              stripe_customer_id: subscription.customer,
-              stripe_subscription_id: null,
-              subscription_status: "cancelled",
-              subscription_updated_at: new Date().toISOString(),
-            },
-          })
-          .eq("id", clinicId);
+        // Downgrade to free plan.
+        // Q-01: merge — see mergeClinicConfig.
+        const { error: cancelError } = await mergeClinicConfig(supabase, clinicId, {
+          subscription_plan: "free",
+          stripe_customer_id: subscription.customer,
+          stripe_subscription_id: null,
+          subscription_status: "cancelled",
+          subscription_updated_at: new Date().toISOString(),
+        });
 
         if (cancelError) {
           logger.error("Failed to downgrade clinic to free plan", {

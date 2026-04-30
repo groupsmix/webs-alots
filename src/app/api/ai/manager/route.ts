@@ -427,9 +427,11 @@ export const POST = withAuthValidation(
 
     // Build prompts
     const systemPrompt = buildManagerSystemPrompt();
+    // T-02: sanitize each history entry through the prompt-injection scrubber.
+    // Schema guarantees role ∈ {user, assistant} and content ≤ 2000 chars (V-01).
     const conversationMessages = data.conversationHistory.map((m) => ({
       role: m.role as "user" | "assistant",
-      content: m.content,
+      content: sanitizeUntrustedText(m.content),
     }));
     const userMessage = buildUserMessage(data.question, metrics);
 

@@ -39,17 +39,43 @@ interface UserRateEntry {
 
 const userRateBuckets = new Map<string, UserRateEntry>();
 
+/**
+ * P-01 (perf audit): O(n) eviction. The previous implementation built an
+ * array of all entries and sorted by `resetAt` whenever the map filled up,
+ * costing O(n log n) on the Worker CPU budget for every overflowed
+ * request. We now do a single pass:
+ *   1. Drop every already-expired entry (cheap; common case).
+ *   2. If we are still over the soft cap, drop a 25 % slice using
+ *      Map insertion order — `Map` iterates in insertion order, so the
+ *      first entries are also the oldest by creation time. This is a
+ *      good-enough approximation of LRU for a defensive cap that exists
+ *      only to bound memory; the rate-limit window itself is 1 minute.
+ */
+function evictUserRateBuckets(now: number): void {
+  for (const [key, entry] of userRateBuckets) {
+    if (entry.resetAt <= now) {
+      userRateBuckets.delete(key);
+    }
+  }
+
+  if (userRateBuckets.size < USER_RATE_MAX_KEYS) return;
+
+  const dropTarget = Math.floor(USER_RATE_MAX_KEYS / 4);
+  let dropped = 0;
+  for (const key of userRateBuckets.keys()) {
+    if (dropped >= dropTarget) break;
+    userRateBuckets.delete(key);
+    dropped++;
+  }
+}
+
 function checkUserRateLimit(userId: string): boolean {
   const now = Date.now();
   const entry = userRateBuckets.get(userId);
 
   if (!entry || now > entry.resetAt) {
-    // Evict oldest entries if map is too large
     if (userRateBuckets.size >= USER_RATE_MAX_KEYS) {
-      const oldest = [...userRateBuckets.entries()]
-        .sort((a, b) => a[1].resetAt - b[1].resetAt)
-        .slice(0, Math.floor(USER_RATE_MAX_KEYS / 4));
-      for (const [key] of oldest) userRateBuckets.delete(key);
+      evictUserRateBuckets(now);
     }
     userRateBuckets.set(userId, { count: 1, resetAt: now + USER_RATE_WINDOW_MS });
     return true;

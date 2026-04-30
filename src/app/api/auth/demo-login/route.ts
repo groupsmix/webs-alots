@@ -137,35 +137,25 @@ export async function POST(request: NextRequest) {
       .ilike("email", email)
       .maybeSingle();
 
-    let userId = existingUserProfile?.auth_id;
+    const userId = existingUserProfile?.auth_id;
 
+    // A-01 (auth audit): refuse demo login when the demo profile is not
+    // already linked to an auth user. The previous behavior — silently
+    // creating an auth user via the service-role admin client and linking
+    // it to whatever `users` row matched the email — is a privileged JIT
+    // account-creation path that anyone who passes Turnstile + the
+    // ALLOWED_DEMO_EMAILS check could trigger on a fresh deploy.
+    //
+    // Demo users must be pre-seeded with `auth_id` populated by a
+    // migration / seed script, not self-healed by a public endpoint.
     if (!userId) {
-      // Create the demo auth user
-      const { data: newUser, error: createError } = await supabase.auth.admin.createUser({
-        email,
-        password: crypto.randomUUID(),
-        email_confirm: true,
-        user_metadata: {
-          full_name: demoUser.name,
-          is_demo: true,
-        },
+      logger.error("Demo profile has no linked auth_id — refusing to self-heal", {
+        context: "demo-login",
+        demoUserId: demoUser.id,
       });
-
-      if (createError || !newUser?.user) {
-        logger.error("Failed to create demo auth user", {
-          context: "demo-login",
-          error: createError,
-        });
-        return apiInternalError("Impossible de créer le compte démo");
-      }
-
-      userId = newUser.user.id;
-
-      // Link auth user to the existing demo profile
-      await supabase
-        .from("users")
-        .update({ auth_id: userId })
-        .eq("id", demoUser.id);
+      return apiInternalError(
+        "Le compte démo n'est pas correctement provisionné. Contactez le support.",
+      );
     }
 
     // Generate a magic link token for the demo user

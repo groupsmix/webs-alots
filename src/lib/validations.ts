@@ -565,22 +565,39 @@ export const subscriptionPortalSchema = z.object({
 /**
  * Stripe subscription webhook event schema — validates the parsed JSON body
  * after signature verification for defense-in-depth on subscription events.
+ *
+ * T-03 (taint audit): the `subscription` field is interpolated directly
+ * into `https://api.stripe.com/v1/subscriptions/${subscriptionId}`.
+ * Even though the body is HMAC-verified, we constrain the shape so that
+ * a future signature compromise cannot pivot to other Stripe path
+ * segments (e.g. `subscription = "../charges/ch_..."`).
+ *
+ * Stripe IDs are documented as `<prefix>_<alphanumeric>` with a small
+ * set of stable prefixes; we allow a conservative superset to avoid
+ * breaking on new prefixes Stripe might introduce.
  */
+// Stripe IDs in the wild include `sub_1ABC...`, `cs_test_a1b2c3`,
+// `evt_1ABC...` — i.e. `<lowercase-prefix>_<alphanumeric-with-underscores>`.
+// The leading prefix anchors the namespace; the suffix may contain `_`
+// (e.g. `cs_test_<id>`) but never `/`, `.`, `..`, or path metacharacters.
+const stripeIdRegex = /^[a-z]+_[A-Za-z0-9_]+$/;
+const stripeSubscriptionIdRegex = /^sub_[A-Za-z0-9_]+$/;
+
 const subscriptionWebhookObjectSchema = z.object({
-  id: z.string().min(1),
+  id: z.string().min(1).max(255).regex(stripeIdRegex),
   metadata: z.record(z.string(), z.string()).optional(),
   amount_total: z.number().optional(),
   amount_paid: z.number().optional(),
   currency: z.string().optional(),
   payment_status: z.string().optional(),
   customer_email: z.string().optional(),
-  customer: z.string().optional(),
-  subscription: z.string().optional(),
+  customer: z.string().max(255).regex(stripeIdRegex).optional(),
+  subscription: z.string().max(255).regex(stripeSubscriptionIdRegex).optional(),
   status: z.string().optional(),
   current_period_end: z.number().optional(),
   items: z.object({
     data: z.array(z.object({
-      price: z.object({ id: z.string() }).optional(),
+      price: z.object({ id: z.string().max(255).regex(stripeIdRegex) }).optional(),
     })),
   }).optional(),
 });
@@ -598,10 +615,13 @@ export type SubscriptionWebhookEvent = z.infer<typeof subscriptionWebhookEventSc
 
 export const aiManagerRequestSchema = z.object({
   question: z.string().min(1).max(2000),
+  // V-01: per-message length cap. Without this, an authenticated admin can
+  // burn OpenAI tokens by stuffing megabytes of text into each history item
+  // (the `.max(20)` array bound alone is not enough).
   conversationHistory: z.array(
     z.object({
       role: z.enum(["user", "assistant"]),
-      content: z.string(),
+      content: z.string().min(1).max(2000),
     }),
   ).max(20).optional().default([]),
 });
