@@ -60,7 +60,6 @@ export function LandingFooter() {
         <div className="grid grid-cols-1 gap-[var(--space-7)] sm:grid-cols-2 lg:grid-cols-4">
           {/* Col 1: Wordmark + address */}
           <div>
-            {/* eslint-disable-next-line i18next/no-literal-string -- brand wordmark is not translatable */}
             <Link
               href="/"
               style={{
@@ -70,9 +69,8 @@ export function LandingFooter() {
                 textDecoration: "none",
               }}
             >
-              Oltigo
+              {"Oltigo"}
             </Link>
-            {/* eslint-disable-next-line i18next/no-literal-string -- physical address is not translatable */}
             <address
               className="mt-[var(--space-4)] not-italic"
               style={{
@@ -81,12 +79,12 @@ export function LandingFooter() {
                 color: "var(--ink-60)",
               }}
             >
-              Casablanca, Morocco
+              {"Casablanca, Morocco"}
             </address>
             <p
               className="mt-[var(--space-2)]"
               style={{
-                fontFamily: "var(--font-mono)",
+                fontFamily: "var(--font-mono-landing)",
                 fontSize: "var(--text-mono)",
                 lineHeight: "var(--lh-mono)",
                 color: "var(--ink-60)",
@@ -100,7 +98,7 @@ export function LandingFooter() {
           <div>
             <h3
               style={{
-                fontFamily: "var(--font-mono)",
+                fontFamily: "var(--font-mono-landing)",
                 fontSize: "var(--text-mono)",
                 lineHeight: "var(--lh-mono)",
                 color: "var(--ink-60)",
@@ -136,7 +134,7 @@ export function LandingFooter() {
           <div>
             <h3
               style={{
-                fontFamily: "var(--font-mono)",
+                fontFamily: "var(--font-mono-landing)",
                 fontSize: "var(--text-mono)",
                 lineHeight: "var(--lh-mono)",
                 color: "var(--ink-60)",
@@ -172,7 +170,7 @@ export function LandingFooter() {
           <div>
             <h3
               style={{
-                fontFamily: "var(--font-mono)",
+                fontFamily: "var(--font-mono-landing)",
                 fontSize: "var(--text-mono)",
                 lineHeight: "var(--lh-mono)",
                 color: "var(--ink-60)",
@@ -213,14 +211,14 @@ export function LandingFooter() {
             paddingTop: "var(--space-5)",
           }}
         >
-          {/* eslint-disable-next-line i18next/no-literal-string -- brand name in copyright is not translatable */}
           <p
             style={{
               fontSize: "var(--text-small)",
               color: "var(--ink-60)",
             }}
           >
-            &copy; {new Date().getFullYear()} Oltigo. {t("landing.footerCopyright")}
+            {`\u00A9 ${new Date().getFullYear()} Oltigo. `}
+            {t("landing.footerCopyright")}
           </p>
 
           {/* Locale switcher */}

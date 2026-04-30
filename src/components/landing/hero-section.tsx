@@ -31,7 +31,7 @@ export function HeroSection() {
         <p
           className="pt-[var(--space-9)] flex items-center gap-[var(--space-2)]"
           style={{
-            fontFamily: "var(--font-mono)",
+            fontFamily: "var(--font-mono-landing)",
             fontSize: "var(--text-mono)",
             lineHeight: "var(--lh-mono)",
             color: "var(--ink-60)",
@@ -123,7 +123,7 @@ export function HeroSection() {
           <div
             className="grid grid-cols-2 gap-[var(--space-5)] py-[var(--space-5)] sm:grid-cols-4"
             style={{
-              fontFamily: "var(--font-mono)",
+              fontFamily: "var(--font-mono-landing)",
               fontSize: "var(--text-mono)",
               lineHeight: "var(--lh-mono)",
               color: "var(--ink-60)",

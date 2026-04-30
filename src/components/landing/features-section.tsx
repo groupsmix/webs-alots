@@ -47,10 +47,9 @@ export function FeaturesSection() {
         <div className="grid grid-cols-1 gap-[var(--space-8)] lg:grid-cols-12">
           {/* Left column: eyebrow + heading + lead */}
           <div className="lg:col-span-5">
-            {/* eslint-disable-next-line i18next/no-literal-string -- section numbering is not translatable */}
             <p
               style={{
-                fontFamily: "var(--font-mono)",
+                fontFamily: "var(--font-mono-landing)",
                 fontSize: "var(--text-mono)",
                 lineHeight: "var(--lh-mono)",
                 color: "var(--ink-60)",
@@ -58,7 +57,8 @@ export function FeaturesSection() {
                 marginBottom: "var(--space-4)",
               }}
             >
-              01 &mdash; {t("landing.featuresLabel")}
+              {"01 \u2014 "}
+              {t("landing.featuresLabel")}
             </p>
             <h2
               style={{
@@ -107,7 +107,6 @@ export function FeaturesSection() {
                         letterSpacing: "var(--ls-h3)",
                         fontWeight: 500,
                         color: "var(--ink)",
-                        whiteSpace: "nowrap",
                       }}
                     >
                       {t(titleKey)}

@@ -34,10 +34,9 @@ export function HowItWorksSection() {
         style={{ maxWidth: "var(--container-max)" }}
       >
         {/* Eyebrow + heading */}
-        {/* eslint-disable-next-line i18next/no-literal-string -- section numbering is not translatable */}
         <p
           style={{
-            fontFamily: "var(--font-mono)",
+            fontFamily: "var(--font-mono-landing)",
             fontSize: "var(--text-mono)",
             lineHeight: "var(--lh-mono)",
             color: "var(--ink-60)",
@@ -45,7 +44,8 @@ export function HowItWorksSection() {
             marginBottom: "var(--space-4)",
           }}
         >
-          02 &mdash; {t("landing.howLabel")}
+          {"02 \u2014 "}
+          {t("landing.howLabel")}
         </p>
         <h2
           style={{
@@ -75,7 +75,7 @@ export function HowItWorksSection() {
               <div
                 className="sm:col-span-1"
                 style={{
-                  fontFamily: "var(--font-mono)",
+                  fontFamily: "var(--font-mono-landing)",
                   fontSize: "var(--text-mono)",
                   lineHeight: "var(--lh-mono)",
                   color: "var(--ink-60)",
