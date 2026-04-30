@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { buttonVariants } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button-variants";
 import { defaultWebsiteConfig } from "@/lib/website-config";
 
 interface HeroOverrides {
@@ -100,14 +100,17 @@ export function HeroSection({ overrides }: HeroSectionProps) {
                   <g transform="translate(95, 310)">
                     <rect width="95" height="44" rx="10" className="fill-primary/10" />
                     <text x="48" y="22" textAnchor="middle" className="fill-primary" fontSize="14" fontWeight="700">24</text>
+                    {/* eslint-disable-next-line i18next/no-literal-string -- decorative SVG label, not user-facing copy */}
                     <text x="48" y="36" textAnchor="middle" className="fill-primary/60" fontSize="8">Patients</text>
 
                     <rect x="108" y="0" width="95" height="44" rx="10" className="fill-emerald-500/10" />
                     <text x="155" y="22" textAnchor="middle" className="fill-emerald-600" fontSize="14" fontWeight="700">98%</text>
+                    {/* eslint-disable-next-line i18next/no-literal-string -- decorative SVG label, not user-facing copy */}
                     <text x="155" y="36" textAnchor="middle" className="fill-emerald-600/60" fontSize="8">Satisfaction</text>
 
                     <rect x="215" y="0" width="95" height="44" rx="10" className="fill-blue-500/10" />
                     <text x="263" y="22" textAnchor="middle" className="fill-blue-600" fontSize="14" fontWeight="700">15+</text>
+                    {/* eslint-disable-next-line i18next/no-literal-string -- decorative SVG label, not user-facing copy */}
                     <text x="263" y="36" textAnchor="middle" className="fill-blue-600/60" fontSize="8">Services</text>
                   </g>
 

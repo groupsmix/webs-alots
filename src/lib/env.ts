@@ -358,18 +358,28 @@ export function enforceRateLimitBackend(): void {
     throw new Error(message);
   }
 
-  if (
-    process.env.NODE_ENV === "production" &&
-    backend === "memory" &&
-    process.env.GITHUB_ACTIONS !== "true"
-  ) {
+  if (process.env.NODE_ENV === "production" && backend === "memory") {
     // GitHub Actions runs `next start` (NODE_ENV=production) on a single
-    // instance for E2E tests, where in-memory rate limiting is acceptable.
-    // We gate on GITHUB_ACTIONS rather than the generic CI variable
-    // because CI=true is easy to set accidentally on a real deployment;
-    // GITHUB_ACTIONS is only set inside GitHub-hosted runners, so the
-    // production guard still applies to Cloudflare Workers / staging /
-    // prod even if a deploy script happens to export CI=true.
+    // instance for E2E tests, where in-memory rate limiting is acceptable —
+    // the ephemeral local Supabase instance's rate-limit RPC is not
+    // guaranteed to be available during boot, and forcing it trips the
+    // failClosed circuit breaker and 429s every auth request.
+    //
+    // We gate on GITHUB_ACTIONS rather than the generic CI variable because
+    // CI=true is easy to set accidentally on a real deployment; GITHUB_ACTIONS
+    // is only set inside GitHub-hosted runners, so the production guard still
+    // applies to Cloudflare Workers / staging / prod even if a deploy script
+    // happens to export CI=true.
+    if (process.env.GITHUB_ACTIONS === "true") {
+      logger.warn(
+        "RATE_LIMIT_BACKEND=memory accepted in production mode because GITHUB_ACTIONS=true. " +
+          "This path is permitted only for the E2E Playwright runner and must " +
+          "never be set in a real production deployment.",
+        { context: "env-validation", check: "rate-limit-backend" },
+      );
+      return;
+    }
+
     const message =
       "[STARTUP HEALTH CHECK FAILED] RATE_LIMIT_BACKEND=memory is not allowed in production.\n" +
       "In-memory rate limiting is per-isolate and provides no real protection in a " +

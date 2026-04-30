@@ -62,10 +62,23 @@ export const DESTRUCTIVE_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
  * Branding GET requests pass through because GET is not a destructive method.
  * Branding POST/PUT (file uploads, config changes) are blocked to prevent
  * demo users from polluting R2 storage (SEED-02).
+ *
+ * Webhook and cron paths are exempt: they receive POSTs from external
+ * services (Meta, Stripe, CMI, Cloudflare Cron) that authenticate via
+ * signature verification or bearer token rather than the user-facing
+ * demo-mode UI. Blocking them with a 403 would prevent the route handler's
+ * own auth check from running and cause E2E signature-validation tests
+ * (which legitimately exercise these endpoints under the demo subdomain)
+ * to fail before reaching the handler.
  */
 export const DEMO_ALLOWED_PATHS = new Set([
   "/api/auth",
   "/api/v1/register-clinic",
+  "/api/webhooks",
+  "/api/payments/webhook",
+  "/api/payments/cmi/callback",
+  "/api/billing/webhook",
+  "/api/cron/",
 ]);
 
 /**
