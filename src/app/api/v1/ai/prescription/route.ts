@@ -359,6 +359,9 @@ export const POST = withAuthValidation(
         prescription,
         patientId: data.patientId,
         diagnosis: data.diagnosis,
+        // LLM09: Surface AI provenance so the UI can display "AI-generated" stamps
+        aiGenerated: true,
+        modelVersion: model,
       });
     } catch (err) {
       if (err instanceof DOMException && err.name === "AbortError") {

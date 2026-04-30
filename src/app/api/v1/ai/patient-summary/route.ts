@@ -422,11 +422,14 @@ export const POST = withAuthValidation(
       // Log AI usage for billing (fire-and-forget)
       void logAiUsage(supabase, clinicId, doctorId);
 
-      return apiSuccess<PatientSummaryResponse>({
+      return apiSuccess({
         summary,
         generatedAt,
         patientId: data.patientId,
         cached: false,
+        // LLM09: Surface AI provenance so the UI can display "AI-generated" stamps
+        aiGenerated: true,
+        modelVersion: model,
       });
     } catch (err) {
       if (err instanceof DOMException && err.name === "AbortError") {

@@ -26,7 +26,7 @@ import type { AuthContext } from "@/lib/with-auth";
 
 // ── Types ──
 
-interface DrugCheckResponse {
+interface _DrugCheckResponse {
   overallSeverity: "dangerous" | "caution" | "safe";
   alerts: InteractionAlert[];
   dangerousCount: number;
@@ -270,12 +270,14 @@ export const POST = withAuthValidation(
         });
     }
 
-    return apiSuccess<DrugCheckResponse>({
+    return apiSuccess({
       overallSeverity: localResult.overallSeverity,
       alerts: localResult.alerts,
       dangerousCount: localResult.dangerousCount,
       cautionCount: localResult.cautionCount,
       aiEnhanced,
+      // LLM09: Surface AI provenance so the UI can display "AI-generated" stamps
+      ...(aiEnhanced && aiConfig ? { aiGenerated: true, modelVersion: aiConfig.model } : {}),
     });
   },
   ["doctor", "clinic_admin"],

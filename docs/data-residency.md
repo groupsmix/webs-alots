@@ -41,9 +41,30 @@ safeguards (Article 43-44).
    All operate under signed DPAs with EU SCCs. PHI is scrubbed from Sentry
    payloads before transmission (see `sentry.server.config.ts`).
 
-3. **AI data:** Patient conversations with the AI assistant are NOT stored
-   by OpenAI (data processing agreement prohibits training on customer data).
-   No PHI identifiers are sent in AI prompts — only anonymized medical queries.
+3. **AI data (OpenAI):** The following PHI categories are sent to the
+   OpenAI API in prompts for the prescription, patient-summary, drug-check,
+   and auto-suggest endpoints: patient name, date of birth, gender, weight,
+   allergies, current medications, chronic conditions, consultation notes,
+   prescription history, and vital signs (blood pressure, heart rate).
+
+   **DPA basis:** OpenAI's Data Processing Agreement (signed) prohibits
+   training on API data submitted via the `/v1/chat/completions` endpoint.
+   OpenAI retains API inputs/outputs for up to 30 days for abuse monitoring,
+   then deletes. See: https://openai.com/enterprise-privacy
+
+   **Egress control:** `OPENAI_BASE_URL` is validated against an allowlist
+   of approved origins at runtime (see `src/lib/ai/openai.ts`). Only
+   `https://api.openai.com`, `https://oai.azure.com`, and Cloudflare AI
+   Gateway URLs are permitted by default.
+
+   **Model pinning:** The default model is pinned to a dated snapshot
+   (`gpt-4o-mini-2024-07-18`) to prevent silent rotation. Override via
+   `OPENAI_MODEL` env var.
+
+   **No-train:** OpenAI API terms (as of 2024-03-01) state that data
+   submitted via the API is NOT used for model training. This is implicit
+   in the API terms; there is no per-request opt-out header. Confirm this
+   remains in effect at each contract renewal.
 
 4. **Domestic processing (CMI):** Moroccan payment processor. No cross-border
    transfer involved.

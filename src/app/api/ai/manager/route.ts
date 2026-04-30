@@ -497,6 +497,9 @@ export const POST = withAuthValidation(
       return apiSuccess({
         insight,
         question: data.question,
+        // LLM09: Surface AI provenance so the UI can display "AI-generated" stamps
+        aiGenerated: true,
+        modelVersion: model,
       });
     } catch (err) {
       if (err instanceof DOMException && err.name === "AbortError") {
