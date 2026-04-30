@@ -300,3 +300,84 @@ If the consumer fails to process a message 5 times, it's moved to the DLQ automa
 - The `SUPABASE_DB_URL` secret must be rotated if compromised
 - Patient documents uploaded via the platform are encrypted with AES-256-GCM (see `src/lib/r2-encrypted.ts`)
 - Moroccan Law 09-08 requires PHI to be handled with appropriate safeguards — ensure backup storage complies with your data residency requirements
+
+---
+
+## 9. Failback Procedure (A191)
+
+After a disaster recovery event (restoring from backup to a new Supabase
+project or alternative infrastructure), follow this procedure to return to
+the primary environment.
+
+### 9.1 Pre-Failback Checklist
+
+- [ ] Primary infrastructure is confirmed healthy (Supabase, Cloudflare, R2)
+- [ ] Root cause of the original failure has been identified and resolved
+- [ ] No ongoing incidents on the primary infrastructure
+- [ ] Failback window communicated to clinics (schedule during low-traffic hours)
+
+### 9.2 Data Synchronization
+
+```bash
+# 1. Export data from the DR environment
+pg_dump --no-owner --no-acl --clean --if-exists "$DR_SUPABASE_DB_URL" \
+  | gzip > "failback_$(date +%Y%m%d_%H%M%S).sql.gz"
+
+# 2. Verify the export
+gunzip -t "failback_$(date +%Y%m%d_%H%M%S).sql.gz"
+
+# 3. Import into the primary environment
+gunzip -c "failback_$(date +%Y%m%d_%H%M%S).sql.gz" | psql "$PRIMARY_SUPABASE_DB_URL"
+
+# 4. Sync R2 objects (if DR used a different bucket)
+aws s3 sync "s3://${DR_R2_BUCKET}" "s3://${PRIMARY_R2_BUCKET}" \
+  --endpoint-url "https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com"
+```
+
+### 9.3 DNS / Traffic Cutover
+
+1. Update Cloudflare Workers to point to the primary Supabase project.
+2. Update `SUPABASE_DB_URL` and `NEXT_PUBLIC_SUPABASE_URL` via `wrangler secret put` or `update-secrets.yml`.
+3. Deploy the updated Workers configuration.
+4. Verify DNS is resolving to the primary infrastructure.
+
+### 9.4 Post-Failback Verification
+
+- [ ] All API endpoints returning 200 (run health check)
+- [ ] RLS policies intact (`SELECT * FROM pg_policies WHERE schemaname = 'public';`)
+- [ ] Login works for each role (super_admin, clinic_admin, doctor, receptionist, patient)
+- [ ] Tenant isolation verified (query from two different clinic contexts)
+- [ ] Seed-guard active (seed users blocked)
+- [ ] R2 file access working (download a test file)
+- [ ] Notifications sending (WhatsApp, email)
+- [ ] Payment processing working (Stripe test mode)
+- [ ] Audit logging active (check `audit_logs` for new entries)
+
+### 9.5 DR Environment Teardown
+
+1. Keep the DR environment running for 24 hours after failback as a safety net.
+2. After 24 hours with no issues, decommission the DR environment:
+   - Delete the DR Supabase project (or pause it).
+   - Remove DR-specific secrets from GitHub.
+   - Document the failback in the incident post-mortem.
+
+### 9.6 Multi-Region Risk Acceptance
+
+Supabase is currently single-region (eu-west-1). This is a known limitation:
+
+- **Risk:** Regional AWS outage would cause a full database outage.
+- **Mitigation:** Nightly pg_dump to R2 (different provider) provides cross-provider backup.
+- **Future:** If Supabase introduces multi-region, evaluate migration.
+- **Alternative:** Read replicas in a second region (Supabase Enterprise feature).
+
+This risk is accepted and documented. Review quarterly.
+
+---
+
+## 10. Related Documents
+
+- [Business Continuity Plan](./bcp.md)
+- [Vendor Exit Playbooks](./vendor-exit-playbooks.md)
+- [Incident Response Runbook](./incident-response.md)
+- [SLO Document](./slo.md)
+- [On-Call Rotation](./oncall.md)
