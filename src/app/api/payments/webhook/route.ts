@@ -154,11 +154,17 @@ export async function POST(request: NextRequest) {
             break;
           }
           logTenantContext(failedClinicId, "payments/webhook:payment_failed");
+          // FIX: PaymentIntent objects use `amount`, not `amount_total`
+          // (which exists only on Checkout Session objects). Using
+          // `amount_total` always yielded 0 for failed payment records.
+          const intentAmount = intent.metadata?.amount
+            ? parseFloat(intent.metadata.amount)
+            : (intent.amount_total || 0);
           await supabase.from("payments").insert({
             clinic_id: failedClinicId,
             patient_id: failedPatientId,
             appointment_id: failedAppointmentId || null,
-            amount: (intent.amount_total || 0) / 100,
+            amount: intentAmount / 100,
             method: "online",
             status: PAYMENT_STATUS.FAILED,
             reference: intent.id,

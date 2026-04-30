@@ -8,9 +8,18 @@ import {
   type NotificationChannel,
   type TemplateVariables,
 } from "@/lib/notifications";
-import type { NotificationChannel as DBNotificationChannel } from "@/lib/types/database";
+import type { NotificationChannel as DBNotificationChannel, UserRole } from "@/lib/types/database";
 import { notificationDispatchSchema } from "@/lib/validations";
 import { withAuth } from "@/lib/with-auth";
+
+/** Roles allowed to read notifications (all authenticated users). */
+const ALL_AUTHENTICATED_ROLES: UserRole[] = [
+  "super_admin",
+  "clinic_admin",
+  "receptionist",
+  "doctor",
+  "patient",
+];
 /**
  * POST /api/notifications
  *
@@ -55,6 +64,11 @@ export const POST = withAuthValidation(notificationDispatchSchema, async (body, 
  *
  * Returns notification history for a user.
  * Query params: userId, channel, type, limit, offset
+ *
+ * FIX: Previously restricted to STAFF_ROLES which prevented patients from
+ * reading their own notifications. Now uses ALL_AUTHENTICATED_ROLES so
+ * patients can access their own notification history. Staff can still
+ * query other users' notifications within their clinic via the userId param.
  */
 export const GET = withAuth(async (request, { supabase, profile }) => {
   const searchParams = request.nextUrl.searchParams;
@@ -116,4 +130,4 @@ export const GET = withAuth(async (request, { supabase, profile }) => {
     logger.warn("Operation failed", { context: "notifications", error: err });
     return apiInternalError("Failed to fetch notifications");
   }
-}, STAFF_ROLES);
+}, ALL_AUTHENTICATED_ROLES);

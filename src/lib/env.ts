@@ -103,12 +103,9 @@ const ENV_RULES: EnvRule[] = [
   // CRON_SECRET only as a transitional measure (see profile-header-hmac.ts).
   { name: "PROFILE_HEADER_HMAC_KEY", required: process.env.NODE_ENV === "production", description: "HMAC key used to sign x-auth-profile-* headers between middleware and withAuth (required in production)", group: "auth" },
 
-  // ── PHI Encryption (Audit C-08) ──────────────────────────────────
-  // AES-256-GCM master key for patient files at rest on R2 (Moroccan
-  // Law 09-08). Required at startup in production so a misconfigured
-  // deploy fails fast instead of silently storing plaintext PHI through
-  // a code path that bypasses the encryptAndUpload chokepoint.
-  { name: "PHI_ENCRYPTION_KEY", required: process.env.NODE_ENV === "production", description: "Hex-encoded 256-bit AES-GCM key for PHI file encryption (required in production; `openssl rand -hex 32`)", group: "encryption" },
+  // NOTE: PHI_ENCRYPTION_KEY is already declared above (group: "security").
+  // A duplicate entry was removed here to prevent double-reporting in
+  // validation output. See the "PHI Encryption (C-08)" block above.
 
   // ── Custom Domains ─────────────────────────────────────────────────
   // These are gated by NEXT_PUBLIC_ENABLE_CUSTOM_DOMAINS — when the flag is

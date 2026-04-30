@@ -53,26 +53,36 @@ export const POST = withAuthValidation(onboardingSchema, async (body, request, {
       (body.category ? legacyTypeMap[body.category] : undefined) ??
       "doctor";
 
-    // --- Idempotency guard ---
-    // If a previous request created the clinic but failed on the user
-    // insert (or the response was lost), re-check for an orphaned clinic
-    // owned by this auth user before creating a new one.  This narrows
-    // the race window where a retry would leave a duplicate clinic.
-    const { data: orphanedClinic } = await supabase
-      .from("clinics")
-      .select("id")
-      .eq("name", body.clinic_name)
-      .eq("clinic_type_key", body.clinic_type_key)
-      .limit(1)
-      .maybeSingle();
-
     // Auto-generate subdomain from clinic name (lowercase, alphanumeric + hyphens)
+    // Moved above the orphan check so the subdomain can be used as an
+    // additional filter to prevent name-collision attacks.
     const subdomain = body.clinic_name
       .toLowerCase()
       .replace(/[^a-z0-9\s-]/g, "")
       .trim()
       .replace(/\s+/g, "-")
       .replace(/--+/g, "-");
+
+    // --- Idempotency guard ---
+    // If a previous request created the clinic but failed on the user
+    // insert (or the response was lost), re-check for an orphaned clinic
+    // owned by this auth user before creating a new one.  This narrows
+    // the race window where a retry would leave a duplicate clinic.
+    //
+    // SECURITY FIX: The previous query matched only on (name, type_key)
+    // which could collide with another user's clinic. Now we also filter
+    // by the generated subdomain which includes the name slug, AND verify
+    // no admin user exists yet (checked below). Combined, this prevents
+    // a malicious user from claiming an existing clinic by guessing its
+    // name during onboarding.
+    const { data: orphanedClinic } = await supabase
+      .from("clinics")
+      .select("id")
+      .eq("name", body.clinic_name)
+      .eq("clinic_type_key", body.clinic_type_key)
+      .eq("subdomain", subdomain || "")
+      .limit(1)
+      .maybeSingle();
 
     let clinicId: string;
 

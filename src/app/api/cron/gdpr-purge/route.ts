@@ -3,6 +3,7 @@ import { NextRequest } from "next/server";
 import { apiSuccess, apiInternalError } from "@/lib/api-response";
 import { verifyCronSecret } from "@/lib/cron-auth";
 import { logger } from "@/lib/logger";
+import { deleteFromR2, isR2Configured } from "@/lib/r2";
 import { withSentryCron } from "@/lib/sentry-cron";
 import { createAdminClient } from "@/lib/supabase-server";
 
@@ -115,6 +116,45 @@ async function handler(request: NextRequest) {
             userId: user.id,
             error: consentError,
           });
+        }
+
+        // 2b. GDPR-PHI: Delete encrypted patient files from R2 storage.
+        // Files are keyed as `clinics/{clinic_id}/{category}/{filename}.enc`.
+        // Without this step, PHI would persist on R2 indefinitely after the
+        // DB records are removed, violating Moroccan Law 09-08 and GDPR
+        // right-to-erasure obligations.
+        if (user.clinic_id && isR2Configured()) {
+          try {
+            const { data: docs } = await supabase
+              .from("documents")
+              .select("storage_key")
+              .eq("patient_id", user.id);
+
+            if (docs && docs.length > 0) {
+              for (const doc of docs) {
+                if (doc.storage_key) {
+                  try {
+                    // Delete both the encrypted (.enc) and any plaintext version
+                    await deleteFromR2(doc.storage_key);
+                    await deleteFromR2(`${doc.storage_key}.enc`);
+                  } catch (r2Err) {
+                    logger.warn("Failed to delete R2 object during GDPR purge", {
+                      context: "cron/gdpr-purge",
+                      userId: user.id,
+                      key: doc.storage_key,
+                      error: r2Err,
+                    });
+                  }
+                }
+              }
+            }
+          } catch (r2QueryErr) {
+            logger.warn("Failed to query documents for R2 cleanup", {
+              context: "cron/gdpr-purge",
+              userId: user.id,
+              error: r2QueryErr,
+            });
+          }
         }
 
         // 3. Delete the user record itself

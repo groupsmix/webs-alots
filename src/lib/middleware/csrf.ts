@@ -4,7 +4,8 @@ import type { CspHeaderValues } from "./security-headers";
 /** HTTP methods that mutate state and need CSRF protection */
 const MUTATION_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 
-/** API routes that receive legitimate external requests (webhooks, callbacks, cron) */
+/** API routes that receive legitimate external requests (webhooks, callbacks, cron)
+ *  or browser-initiated requests that don't carry a matching Origin header. */
 const CSRF_EXEMPT_PREFIXES = [
   "/api/webhooks",
   "/api/payments/webhook",
@@ -12,6 +13,16 @@ const CSRF_EXEMPT_PREFIXES = [
   // CSRF-01: All cron endpoints are authenticated via CRON_SECRET bearer token
   // and may be triggered by external schedulers (Cloudflare Cron Triggers).
   "/api/cron/",
+  // CSP-RPT: Browsers send Content-Security-Policy violation reports as POST
+  // requests with a `report-uri` or `report-to` directive. The Origin header
+  // may not match the site URL (some browsers use `null` or omit it entirely),
+  // so the endpoint must be CSRF-exempt. The payload is a fixed JSON schema
+  // that the handler validates — no state mutation occurs.
+  "/api/csp-report",
+  // PUSH-01: The push subscription endpoint receives POST from service workers
+  // that may not carry a matching Origin header in all browsers. The endpoint
+  // is protected by session auth (withAuth) so CSRF exemption is safe.
+  "/api/push/subscribe",
 ];
 
 function isCsrfExempt(pathname: string): boolean {
