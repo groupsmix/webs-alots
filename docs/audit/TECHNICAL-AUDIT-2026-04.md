@@ -287,31 +287,22 @@ Require subdomain context: if `tenant` is null, return 400 instead of falling ba
 
 ---
 
-### Finding F-05
+### Finding F-05 (REVISED -- False Positive)
 
-**Title:** No `stripe` npm dependency despite Stripe webhook handling code
+**Title:** ~~No `stripe` npm dependency despite Stripe webhook handling code~~ Stripe webhook signature verification IS implemented
 
-**Severity:** High
-**Confidence:** Medium
+**Severity:** N/A (Positive Finding)
+**Confidence:** High
 **Domain:** Business Logic / Payments
 
 **Evidence:**
-- File: [`package.json`](package.json:22-44) -- no `stripe` package in dependencies
-- Files exist: `src/app/api/billing/webhook/route.ts`, `src/app/api/payments/webhook/route.ts`, `src/app/api/payments/create-checkout/route.ts`
-- Validation schema `stripeWebhookEventSchema` exists in [`src/lib/validations.ts`](src/lib/validations.ts:128-145)
-- Test file `src/app/api/__tests__/stripe-webhook.test.ts` exists
+- File: [`src/app/api/billing/webhook/route.ts`](src/app/api/billing/webhook/route.ts:50) -- calls `verifyStripeSignature()` with HMAC-SHA256
+- File: [`src/app/api/payments/webhook/route.ts`](src/app/api/payments/webhook/route.ts:47) -- same pattern
+- Both use `hmacSha256Hex()` and `timingSafeEqual()` from [`src/lib/crypto-utils.ts`](src/lib/crypto-utils.ts) for signature verification
+- Both reject requests when `STRIPE_WEBHOOK_SECRET` is missing (return 503)
+- Both reject requests with missing or invalid `stripe-signature` header
 
-**Why This Matters:**
-Without the `stripe` SDK, webhook signature verification using `stripe.webhooks.constructEvent()` is impossible. The webhook handler likely parses the raw JSON body and validates it with Zod, but cannot verify the `stripe-signature` header cryptographically. This means:
-- Any attacker who knows the endpoint URL can send fake payment events
-- Fake `checkout.session.completed` events could grant unauthorized subscriptions
-
-**Remediation:**
-1. Add `stripe` to dependencies: `npm install stripe`
-2. Verify webhook signatures using `stripe.webhooks.constructEvent(body, sig, endpointSecret)`
-3. Store `STRIPE_WEBHOOK_SECRET` in environment
-
-**Priority:** P0 | **Effort:** M (1-2 days)
+**Correction:** The codebase implements its own Stripe-compatible HMAC-SHA256 webhook signature verification without needing the `stripe` npm SDK. The `stripe-signature` header is parsed, the payload is signed with the webhook secret, and constant-time comparison is used. This is cryptographically equivalent to `stripe.webhooks.constructEvent()` and is a valid approach that avoids pulling in the full Stripe SDK.
 
 ---
 
@@ -416,10 +407,10 @@ This is excellent for a healthcare platform. No risk of PHI leaking through unst
 
 ## 7. FIX FIRST (P0 Issues)
 
-| # | Finding | Time to Fix |
-|---|---------|-------------|
-| 1 | F-01: `/api/doctor-unavailability` cross-tenant mutation | < 1 day |
-| 2 | F-05: Stripe webhook signature verification missing (no `stripe` dep) | 1-2 days |
+| # | Finding | Time to Fix | Status |
+|---|---------|-------------|--------|
+| 1 | F-01: `/api/doctor-unavailability` cross-tenant mutation | < 1 day | **FIXED** |
+| 2 | ~~F-05: Stripe webhook signature verification~~ | N/A | **False positive** -- custom HMAC-SHA256 verification exists |
 
 ## 8. QUICK WINS IN 24 HOURS
 
