@@ -75,15 +75,28 @@ export function contentTypeForKey(key: string): string {
 }
 
 /**
- * Reject keys with traversal segments or absolute paths. The R2 helper
- * `buildUploadKey` already sanitizes inputs, but this is defense-in-depth
- * for any caller-supplied key.
+ * Reject keys with traversal segments, absolute paths, encoded NULs,
+ * Windows path separators, or anything outside the conservative R2-key
+ * alphabet. `buildUploadKey` already sanitizes inputs, but this is
+ * defense-in-depth for any caller-supplied key.
+ *
+ * V-03 (validation audit): the previous implementation only blocked
+ * "..", a leading "/", and a literal NUL byte. We additionally reject
+ * backslashes (Windows separator), `%00` urlencoded NULs, control
+ * characters, and any character outside `[A-Za-z0-9._/-]` so a future
+ * caller cannot smuggle homoglyphs or NFKC-collapsing sequences past
+ * the prefix check.
  */
 export function isSafeKey(key: string): boolean {
   if (!key) return false;
+  if (key.length > 1024) return false;
   if (key.startsWith("/")) return false;
   if (key.includes("..")) return false;
   if (key.includes("\0")) return false;
+  if (key.includes("\\")) return false;
+  if (/%00/i.test(key)) return false;
+  if (/[\u0000-\u001f\u007f]/.test(key)) return false;
+  if (!/^[A-Za-z0-9._/-]+$/.test(key)) return false;
   return true;
 }
 
