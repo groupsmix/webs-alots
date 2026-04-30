@@ -1,0 +1,10 @@
+# F-A194: Vulnerability Disclosure Policy
+# https://securitytxt.org/ — RFC 9116
+# This file is served at /.well-known/security.txt as required by the standard.
+
+Contact: mailto:security@oltigo.com
+Expires: 2027-04-30T00:00:00.000Z
+Encryption: https://oltigo.com/.well-known/pgp-key.txt
+Preferred-Languages: en, fr, ar
+Canonical: https://oltigo.com/.well-known/security.txt
+Policy: https://oltigo.com/security-policy

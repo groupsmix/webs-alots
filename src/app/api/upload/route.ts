@@ -129,8 +129,9 @@ const ALLOWED_TYPES = new Set([
   "image/jpeg",
   "image/png",
   "image/webp",
-  "image/gif",
-  // SVG removed: can contain embedded <script> tags leading to XSS
+  // A52.3: image/gif removed — GIF files can contain animation frames that
+  // bypass static analysis, and polyglot GIF/JS files are a known XSS vector.
+  // SVG removed: can contain embedded <script> tags leading to XSS.
   "application/pdf",
 ]);
 
@@ -140,10 +141,7 @@ const MAGIC_BYTES: Record<string, Uint8Array[]> = {
   "image/jpeg": [new Uint8Array([0xFF, 0xD8, 0xFF])],
   "image/png": [new Uint8Array([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A])],
   "image/webp": [new Uint8Array([0x52, 0x49, 0x46, 0x46])],
-  "image/gif": [
-    new Uint8Array([0x47, 0x49, 0x46, 0x38, 0x37, 0x61]), // GIF87a
-    new Uint8Array([0x47, 0x49, 0x46, 0x38, 0x39, 0x61]), // GIF89a
-  ],
+  // A52.3: GIF magic bytes removed along with image/gif from ALLOWED_TYPES
   "application/pdf": [new Uint8Array([0x25, 0x50, 0x44, 0x46])],
 };
 
