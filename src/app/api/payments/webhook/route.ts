@@ -171,15 +171,14 @@ export async function POST(request: NextRequest) {
           // AUDIT-05: PaymentIntent objects use `amount`, not `amount_total`
           // (which exists only on Checkout Session objects). Using
           // `amount_total` always yielded 0 for failed payment records.
-          // Prefer metadata.amount (set by the checkout route) → real
-          // PaymentIntent `amount` → Checkout Session `amount_total` →
-          // 0 as last-resort fallback. Guard with Number.isFinite() because
-          // metadata is user-controlled and parseFloat can return NaN for
-          // truthy non-numeric strings; persisting NaN would corrupt the
-          // payments row.
-          const rawAmount = intent.metadata?.amount
-            ? parseFloat(intent.metadata.amount)
-            : (intent.amount ?? intent.amount_total ?? 0);
+          // Source the amount only from authoritative Stripe fields — never
+          // from `metadata`, which the checkout route accepts as arbitrary
+          // user-supplied key/values (`z.record(z.string(), z.string())`)
+          // and forwards to Stripe verbatim. Trusting `metadata.amount`
+          // would let a caller poison the failed-payment audit row with
+          // any value they choose. Guard with Number.isFinite() for the
+          // unlikely case that Stripe returns a non-numeric field.
+          const rawAmount = intent.amount ?? intent.amount_total ?? 0;
           const intentAmount = Number.isFinite(rawAmount) ? rawAmount : 0;
           await supabase.from("payments").insert({
             clinic_id: failedClinicId,
