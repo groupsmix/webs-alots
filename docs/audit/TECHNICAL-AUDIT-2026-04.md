@@ -76,7 +76,7 @@ However, several **high-severity gaps** exist: (1) the `doctor-unavailability` r
 |-------|-----------|
 | **Frontend** | Next.js 16 + React 19, App Router, Tailwind CSS 4, shadcn/ui, Recharts |
 | **Backend** | Next.js API routes on Cloudflare Workers (via OpenNext) |
-| **Database** | Supabase (PostgreSQL) with 71 sequential migrations |
+| **Database** | Supabase (PostgreSQL) with 68 migration files (non-contiguous prefixes; gaps at 00003, 00025, 00044) at time of audit |
 | **Auth** | Supabase Auth (email/password, phone OTP via Twilio) |
 | **File Storage** | Cloudflare R2 with AES-256-GCM encryption for PHI |
 | **Notifications** | WhatsApp (Meta Cloud API / Twilio), Email, In-App, SMS |
@@ -160,7 +160,7 @@ However, several **high-severity gaps** exist: (1) the `doctor-unavailability` r
 | 16 | Session replay masks all text/inputs but still sends DOM structure to Sentry | Medium | Low | Privacy |
 | 17 | No DKIM/SPF/DMARC configuration evidence for email deliverability | Medium | Medium | Operations |
 | 18 | `react-copy-to-clipboard` override suggests peer dep conflicts with React 19 | Low | Low | Maintenance |
-| 19 | 71 sequential migrations with no squash -- migration replay time grows linearly | Low | Low | Operations |
+| 19 | 68 migrations (non-contiguous) with no squash -- migration replay time grows linearly | Low | Low | Operations |
 | 20 | No feature flag system beyond env vars and `NEXT_PUBLIC_PHONE_AUTH_ENABLED` | Medium | Low | Architecture |
 | 21 | No distributed tracing beyond Sentry -- cross-service correlation limited | Medium | Medium | Observability |
 | 22 | Audit log writes use admin client (bypasses RLS) -- audit tampering possible if service key leaks | Medium | Low | Security |
@@ -235,7 +235,7 @@ Replace the inline client creation with `createTenantClient(tenant.clinicId)`.
 
 ### Finding F-03
 
-**Title:** RLS policies are defined in 71 migrations but never tested against real Postgres
+**Title:** RLS policies are defined across 68 migrations but never tested against real Postgres
 
 **Severity:** High
 **Confidence:** High
@@ -523,7 +523,7 @@ This is excellent for a healthcare platform. No risk of PHI leaking through unst
 
 ### What's Hidden Complexity
 
-- **71 sequential migrations** -- each new developer must replay all 71 to set up a local DB; migration 00001 is 333 lines, total is likely 5000+ lines of SQL
+- **68 migration files (non-contiguous)** -- each new developer must replay all 68 to set up a local DB; migration 00001 is 333 lines, total is likely 5000+ lines of SQL
 - **Notification system spans 4+ files** -- `notifications.ts`, `notification-queue.ts`, `whatsapp.ts`, `whatsapp-templates-darija.ts`
 - **Specialist module explosion** -- 13+ specialist verticals (nutritionist, optician, physiotherapist, psychologist, radiology, speech therapist, etc.) each with their own routes and pages
 
