@@ -9,9 +9,9 @@
 #   NEXT_PUBLIC_SUPABASE_ANON_KEY=<anon key from supabase status>
 #   SUPABASE_SERVICE_ROLE_KEY=<service_role key from supabase status>
 #
-# A32.4: Security hardening applied:
-#   - Images pinned to specific tags (digest pinning deferred to CI image policy)
-#   - user: directive to avoid running as root
+# A32-3 fix: Security hardening applied - Note: user: directives are per-service;
+# the following services already use them: db (postgres user), minio (minio user)
+# Review individual services for specific user directives
 #   - read_only: true where feasible
 #   - cap_drop: [ALL] to drop all Linux capabilities
 #   - security_opt: no-new-privileges
@@ -92,7 +92,8 @@ services:
     security_opt:
       - no-new-privileges:true
     healthcheck:
-      test: ["CMD-SHELL", "mc ready local || exit 1"]
+      # A32-2 fix: Use built-in MinIO health endpoint instead of mc client
+      test: ["CMD-SHELL", "curl -f http://localhost:9000/minio/health/live || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
