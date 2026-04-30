@@ -63,7 +63,8 @@ jobs:
         run: npx playwright install --with-deps chromium
 
       - name: Install Supabase CLI
-        uses: supabase/setup-cli@v1
+        # F-19: Pin to SHA for supply-chain hardening
+        uses: supabase/setup-cli@b60b5899c73b63a2d2d651b1e90db8d4c9392f51 # v1.6.0
         with:
           version: latest
 
@@ -131,6 +132,12 @@ jobs:
           # E2E, so a syntactically valid placeholder satisfies the
           # startup health check without provisioning a real account.
           RESEND_API_KEY: ci-e2e-resend-api-key-placeholder
+          # C-08: PHI_ENCRYPTION_KEY is required in production mode
+          # (`next start` runs in production), and enforcePhiEncryptionConfigured()
+          # throws on startup when absent — that crash blocks Playwright before
+          # it ever connects. Must be exactly 64 hex chars (AES-256-GCM key shape).
+          # Mirrors the placeholder used in ci.yml.
+          PHI_ENCRYPTION_KEY: "0000000000000000000000000000000000000000000000000000000000000000"
           # Force in-memory rate limiter — the Supabase rate-limit RPC
           # isn't reliably available on the ephemeral CLI instance.
           RATE_LIMIT_BACKEND: memory
@@ -138,7 +145,8 @@ jobs:
           SEED_USERS_DELETED: "true"
 
       - name: Upload Playwright report
-        uses: actions/upload-artifact@v4
+        # F-19: Pin to SHA for supply-chain hardening
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         if: always()
         with:
           name: playwright-report-deploy-${{ github.ref_name }}
@@ -179,7 +187,8 @@ jobs:
           if [ "$missing" -eq 1 ]; then exit 1; fi
 
       - name: Install Supabase CLI
-        uses: supabase/setup-cli@v1
+        # F-19: Pin to SHA for supply-chain hardening
+        uses: supabase/setup-cli@b60b5899c73b63a2d2d651b1e90db8d4c9392f51 # v1.6.0
         with:
           version: latest
 
