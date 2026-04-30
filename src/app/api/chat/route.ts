@@ -76,7 +76,9 @@ export const POST = withValidation(chatRequestSchema, async (body, request: Next
       return apiError("Last message must be a non-empty user message");
     }
 
-    // Sanitize and truncate user messages; limit conversation history length
+    // Sanitize and truncate messages; limit conversation history length.
+    // V-01: Truncate assistant messages too — an attacker can fabricate
+    // long assistant turns in the request body to inflate token cost.
     const sanitizedMessages = body.messages
       .slice(-MAX_HISTORY_LENGTH)
       .map((m) => ({
@@ -84,7 +86,7 @@ export const POST = withValidation(chatRequestSchema, async (body, request: Next
         content:
           m.role === "user"
             ? sanitizeUserInput(m.content).slice(0, MAX_MESSAGE_LENGTH)
-            : m.content,
+            : m.content.slice(0, MAX_MESSAGE_LENGTH),
       }));
 
     // Fetch clinic context from Supabase
