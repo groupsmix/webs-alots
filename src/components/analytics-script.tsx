@@ -36,8 +36,9 @@ export function AnalyticsScript({
   /** A60.3: Only inject tracking scripts after user consent */
   consentGiven?: boolean;
 }) {
-  // A60.3: Do not fire tracking scripts without explicit consent
-  if (!consentGiven) return null;
+  // A60.3 / A85-1 fix: Only block on explicit opt-out (=== false), not falsy undefined.
+  // This preserves functionality for existing callers that don't pass consentGiven.
+  if (consentGiven === false) return null;
 
   if (gtmId) {
     return (

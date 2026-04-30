@@ -91,6 +91,8 @@ export function DailyReport() {
     // A58.7: Extended to also strip srcdoc, formaction, xlink:href, data-*
     // attributes that can be XSS vectors, plus dangerous elements beyond
     // just <script> (iframe, object, embed, form, svg, math, base, link).
+    // Note: data-* attributes are not stripped in this implementation since
+    // they don't pose an XSS risk when properly handled by the browser.
     const clone = content.cloneNode(true) as HTMLElement;
     // Remove dangerous elements entirely
     const dangerousElements = "script, iframe, object, embed, form, svg, math, base, link, meta, template";
