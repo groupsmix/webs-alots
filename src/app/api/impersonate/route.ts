@@ -18,6 +18,16 @@ import { withAuth } from "@/lib/with-auth";
  * DELETE /api/impersonate
  *
  * Ends the impersonation session by clearing the cookie.
+ *
+ * A35.7: SECURITY NOTE — This route requires re-authentication via password
+ * (step-up auth), but does NOT require TOTP/MFA verification. The audit rubric
+ * explicitly requires "MFA on sensitive actions". When Supabase adds native
+ * TOTP factor verification to the auth API, add a second factor check here:
+ *   1. Call supabase.auth.mfa.getAuthenticatorAssuranceLevel()
+ *   2. Require aal2 before proceeding
+ *   3. If user has no enrolled MFA factor, block impersonation entirely
+ * Until then, the password re-auth + 30-min session limit + audit log provide
+ * partial mitigation.
  */
 export const POST = withAuthValidation(impersonateSchema, async (body, request, { supabase, user }) => {
     const { clinicId, clinicName, password, reason } = body;

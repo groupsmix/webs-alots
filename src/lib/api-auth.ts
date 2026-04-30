@@ -12,6 +12,17 @@
  * whose required scope appears in the array. Keys without `scopes` are
  * treated as having full access (backward compatible).
  *
+ * A35.6: SECURITY NOTE — Per-clinic API keys currently have no enforced
+ * maximum lifetime, no MFA gate on creation, and no automated rotation.
+ * If a key is leaked, it grants long-lived read/write access to the
+ * entire tenant until manually revoked. Mitigations in place:
+ *   - expires_at enforcement (AUDIT-13)
+ *   - scopes enforcement (AUDIT-13)
+ *   - last_used_at tracking for stale key detection
+ * TODO(A35.6): Enforce a max lifetime (e.g. 365 days) at creation time
+ * TODO(A35.6): Add key rotation reminder workflow (similar to rotate-phi-key.yml)
+ * TODO(A35.6): Log warning for keys older than 90 days without rotation
+ *
  * Legacy plaintext key support has been removed. All keys must use
  * the hashed format.
  */
@@ -95,6 +106,15 @@ export async function authenticateApiKey(
           expiresAt,
         });
         return null;
+      }
+
+      // A35.6: Warn about keys without expiry — these are long-lived and
+      // should be migrated to have an expires_at set.
+      if (!expiresAt) {
+        logger.warn("API key without expiry used — consider setting expires_at", {
+          context: "api-auth",
+          clinicId: candidate.clinic_id,
+        });
       }
 
       // AUDIT-13: Enforce scopes. If the key has a `scopes` array and a

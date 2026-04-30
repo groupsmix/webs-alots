@@ -1,6 +1,16 @@
 /**
  * Distributed sliding-window rate limiter.
  *
+ * A35.4: SECURITY NOTE — The Supabase backend uses SUPABASE_SERVICE_ROLE_KEY,
+ * which bypasses RLS entirely (Postgres equivalent of IAM `*`). This is
+ * necessary because rate-limit checks run before user authentication, but it
+ * means a compromised service role key grants unrestricted DB access. Mitigations:
+ *   - The key is only used for rate_limit_entries operations (narrow query surface)
+ *   - Key rotation SOP: docs/SOP-SECRET-ROTATION.md
+ *   - TODO(A35.4): Restrict the service role to a dedicated Postgres role with
+ *     SELECT/INSERT/UPDATE on rate_limit_entries only (requires Supabase custom roles)
+ *   - TODO(A35.4): Add IP-restricted access policy when Supabase supports it
+ *
  * Supports three backends:
  *
  * 1. **Cloudflare KV** (default when `RATE_LIMIT_BACKEND=kv` or RATE_LIMIT_KV
