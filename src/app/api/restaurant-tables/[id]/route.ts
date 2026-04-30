@@ -37,7 +37,7 @@ export const GET = withAuth(async (request: NextRequest, auth: AuthContext) => {
 
   const { data, error } = await auth.supabase
     .from("restaurant_tables")
-    .select("*")
+    .select("id, clinic_id, name, capacity, zone, is_active, qr_code_url, sort_order, created_at, updated_at")
     .eq("id", id)
     .eq("clinic_id", clinicId)
     .single();

@@ -59,13 +59,15 @@ name = "webs-alots-staging"
 NODE_ENV = "production"
 RATE_LIMIT_BACKEND = "supabase"
 
-# ── Limits ────────────────────────────────────────────────────────────
-# [limits]
-# cpu_ms = 50  # Default: 50ms CPU time per request (Workers Paid plan)
+# ── Limits (A31-16) ───────────────────────────────────────────────────
+# Prevent runaway requests from incurring unbounded cost on the paid plan.
+[limits]
+cpu_ms = 50
 
-# ── Observability ─────────────────────────────────────────────────────
-# [observability]
-# enabled = true  # Enables Workers Logs (beta)
+# ── Observability (A31-17) ────────────────────────────────────────────
+# Enable Workers Logs for production visibility.
+[observability]
+enabled = true
 
 # ── Build ─────────────────────────────────────────────────────────────
 # The build command is handled by CI (npm run build:cf), not by wrangler.

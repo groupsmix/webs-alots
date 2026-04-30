@@ -35,7 +35,7 @@ export const GET = withAuth(async (request, { supabase, profile }) => {
     if (petId) {
       const { data, error } = await supabase
         .from("pet_profiles")
-        .select("*")
+        .select("id, clinic_id, owner_id, name, species, breed, weight_kg, date_of_birth, photo_url, notes, is_active, created_at, updated_at")
         .eq("id", petId)
         .eq("clinic_id", profile.clinic_id ?? "")
         .single();
@@ -50,7 +50,7 @@ export const GET = withAuth(async (request, { supabase, profile }) => {
     // List pets
     let query = supabase
       .from("pet_profiles")
-      .select("*")
+      .select("id, clinic_id, owner_id, name, species, breed, weight_kg, date_of_birth, photo_url, notes, is_active, created_at, updated_at")
       .eq("clinic_id", profile.clinic_id ?? "")
       .eq("is_active", true)
       .order("created_at", { ascending: false });

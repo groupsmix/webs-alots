@@ -46,6 +46,9 @@ async function fetchRows<T>(
     limit?: number;
   },
 ): Promise<T[]> {
+  if (!opts?.select) {
+    logger.warn("fetchRows called without explicit select — defaulting to '*'. Callers should whitelist columns.", { context: "data/specialists", table });
+  }
   const supabase = createClient();
   let q = supabase.from(table).select(opts?.select ?? "*");
   if (opts?.eq) {

@@ -62,7 +62,7 @@ export async function GET(request: NextRequest) {
   // extra round-trip or a COUNT query.
   let query = supabase
     .from("appointments")
-    .select("*")
+    .select("id, patient_id, doctor_id, clinic_id, service_id, appointment_date, start_time, end_time, slot_start, slot_end, status, is_first_visit, insurance_flag, source, notes, created_at")
     .eq("clinic_id", auth.clinicId)
     .order("appointment_date", { ascending: false })
     .order("start_time", { ascending: false })

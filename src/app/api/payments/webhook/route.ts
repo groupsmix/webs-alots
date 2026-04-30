@@ -5,7 +5,7 @@ import { hmacSha256Hex, timingSafeEqual } from "@/lib/crypto-utils";
 import { logger } from "@/lib/logger";
 import { createClient } from "@/lib/supabase-server";
 import { setTenantContext, logTenantContext } from "@/lib/tenant-context";
-import { APPOINTMENT_STATUS, PAYMENT_STATUS } from "@/lib/types/database";
+import { PAYMENT_STATUS } from "@/lib/types/database";
 import { stripeWebhookEventSchema } from "@/lib/validations";
 import type { StripeWebhookEvent } from "@/lib/validations";
 
@@ -89,44 +89,36 @@ export async function POST(request: NextRequest) {
           }
           logTenantContext(clinicId, "payments/webhook:checkout.completed");
           
-          // Audit 3.8 Fix: Webhook Deduplication / Replay Protection
-          // We check if this exact Stripe event ID has already been processed to
-          // prevent duplicate processing in case of Stripe retries.
-          const { data: existingPayment } = await supabase
-            .from("payments")
-            .select("id")
-            .eq("reference", session.id)
-            .maybeSingle();
+          // A18-02: Use atomic RPC to upsert payment AND confirm appointment
+          // in a single transaction, preventing write-skew between the two
+          // operations. The RPC handles deduplication internally via
+          // ON CONFLICT (reference) DO NOTHING.
+          const { data: rpcResult, error: rpcError } = await supabase.rpc(
+            "complete_payment_and_confirm_appointment",
+            {
+              p_clinic_id: clinicId,
+              p_patient_id: patientId,
+              p_appointment_id: appointmentId || null,
+              p_amount: (session.amount_total || 0) / 100, // Convert from centimes
+              p_reference: session.id,
+              p_payment_type: "full",
+            },
+          );
 
-          if (existingPayment) {
-            logger.info(`Stripe webhook event already processed: ${session.id}`, { context: "payments/webhook" });
-            break; // Skip processing since it's already handled
+          if (rpcError) {
+            logger.error("Payment RPC failed", {
+              context: "payments/webhook",
+              clinicId,
+              reference: session.id,
+              error: rpcError,
+            });
+            break;
           }
 
-          await supabase.from("payments").upsert(
-            {
-              clinic_id: clinicId,
-              patient_id: patientId,
-              appointment_id: appointmentId || null,
-                  amount: (session.amount_total || 0) / 100, // Convert from centimes
-                  method: "online",
-                  status: PAYMENT_STATUS.COMPLETED,
-                  reference: session.id,
-                  payment_type: "full",
-            },
-            { onConflict: "reference" },
-          );
-        }
-
-        // Update appointment payment status if applicable — scoped to
-        // clinic_id to prevent cross-tenant appointment state mutation.
-        if (appointmentId && clinicId) {
-          await supabase
-            .from("appointments")
-            .update({ status: APPOINTMENT_STATUS.CONFIRMED })
-            .eq("id", appointmentId)
-            .eq("clinic_id", clinicId)
-            .eq("status", APPOINTMENT_STATUS.PENDING);
+          const result = rpcResult as Record<string, unknown> | null;
+          if (result?.deduplicated) {
+            logger.info(`Stripe webhook event already processed: ${session.id}`, { context: "payments/webhook" });
+          }
         }
 
         // Payment completed — recorded in DB above

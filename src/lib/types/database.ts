@@ -8619,6 +8619,17 @@ export type Database = {
         }
         Returns: string
       }
+      complete_payment_and_confirm_appointment: {
+        Args: {
+          p_clinic_id: string
+          p_patient_id: string
+          p_appointment_id: string | null
+          p_amount: number
+          p_reference: string
+          p_payment_type?: string
+        }
+        Returns: Json
+      }
     }
     Enums: {
       [_ in never]: never

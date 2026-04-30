@@ -38,7 +38,7 @@ export const GET = withAuth(async (request: NextRequest, auth: AuthContext) => {
 
   let query = auth.supabase
     .from("orders")
-    .select("*")
+    .select("id, clinic_id, reservation_id, table_id, items, subtotal, tax_amount, total, status, order_source, created_at, updated_at")
     .eq("clinic_id", clinicId)
     .order("created_at", { ascending: false });
 
