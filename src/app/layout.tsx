@@ -44,9 +44,11 @@ export const viewport: Viewport = {
 /**
  * SEO-01: Locale-aware metadata via i18n instead of hardcoded French.
  *
- * The locale is defaulted to "fr" for now (same as the layout). When
- * per-tenant locale headers are added (see TODO in RootLayout), this
- * will automatically pick up the correct language.
+ * F-A89-01: The locale is defaulted to "fr" for now (same as the layout).
+ * Per-tenant locale headers are not yet implemented. Arabic and English
+ * users get a French shell until this is resolved. When per-tenant locale
+ * headers are added (see TODO in RootLayout), this will automatically
+ * pick up the correct language.
  */
 export async function generateMetadata(): Promise<Metadata> {
   // Default locale — will be dynamically resolved once per-tenant locale

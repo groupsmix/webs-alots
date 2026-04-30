@@ -98,9 +98,10 @@ export const POST = withAuthValidation(impersonateSchema, async (body, request, 
       maxAge: sessionMaxAge,
     });
 
-    // S-11 / AUDIT-14: The impersonation reason is stored in an httpOnly cookie
-    // for now. This prevents JS-based exfiltration but the reason text still
-    // travels in request headers on every request.
+    // S-11 / AUDIT-14 / F-A89-02: The impersonation reason is stored in an
+    // httpOnly cookie for now. This prevents JS-based exfiltration but the
+    // reason text still travels in request headers on every request and
+    // cannot be invalidated server-side. Open audit finding.
     //
     // TODO: Replace with a server-side impersonation_sessions table:
     //   1. Generate an opaque session UUID

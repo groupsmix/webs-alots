@@ -6,7 +6,18 @@
 -- so that only one booking at a time can claim a slot for a given
 -- (clinic, doctor, date, time) tuple.
 --
--- Usage from the app:
+-- F-A99-01 (DEAD CODE WARNING): As of the mutation testing audit (2026-04),
+-- the booking route handler in src/app/api/booking/route.ts does NOT call
+-- this RPC via supabase.rpc('booking_atomic_insert', ...). Instead, it uses
+-- a direct INSERT followed by a count check. This means:
+--   1. The advisory lock is never acquired at runtime.
+--   2. Any mutation to this function is undetectable by existing tests.
+--   3. The TOCTOU race condition this migration was designed to fix is
+--      still present in the application layer.
+-- ACTION REQUIRED: Either wire the booking route to call this RPC, or
+-- remove this dead code and document the decision.
+--
+-- Usage from the app (INTENDED but not yet implemented):
 --   const { data, error } = await supabase.rpc('booking_atomic_insert', {
 --     p_clinic_id, p_patient_id, p_doctor_id, p_service_id,
 --     p_date, p_start_time, p_end_time, p_slot_start, p_slot_end,

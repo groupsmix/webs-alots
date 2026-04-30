@@ -8,8 +8,10 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
  * handlers and invoke them with mocked Supabase clients so the full
  * authorisation → validation → mutation → notification path is covered.
  *
- * TODO: Replace mock Supabase with Supabase local emulator when
- *       available for true end-to-end integration testing.
+ * TODO (F-A89-03): Replace mock Supabase with Supabase local emulator when
+ *       available for true end-to-end integration testing. Until then,
+ *       this "integration" suite is unit-shaped (uses mocked Supabase
+ *       client). Open audit finding.
  */
 
 // ── Mocks ─────────────────────────────────────────────────────────
