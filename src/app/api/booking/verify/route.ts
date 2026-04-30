@@ -21,8 +21,12 @@ import { withValidation } from "@/lib/api-validate";
 import { logger } from "@/lib/logger";
 import { createRateLimiter, extractClientIp } from "@/lib/rate-limit";
 import { requireTenantWithConfig } from "@/lib/tenant";
+// A14-02: enforce a syntactic phone regex. The previous min(6)/max(30)-only
+// schema accepted strings like "!@#$%^" — clearly not dialable. The regex
+// allows leading "+", digits, parens, whitespace, and hyphens, which matches
+// every form (E.164, national, hyphenated) seen in production data.
 const bookingVerifySchema = z.object({
-  phone: z.string().min(6).max(30),
+  phone: z.string().min(6).max(30).regex(/^\+?[0-9()\s-]+$/, "Invalid phone format"),
 });
 
 /** Token validity period: 15 minutes. */

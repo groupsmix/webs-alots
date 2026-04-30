@@ -27,6 +27,32 @@ const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Expected YYYY-MM-DD");
 /** Time string HH:MM */
 const timeHHMM = z.string().regex(/^\d{2}:\d{2}$/, "Expected HH:MM");
 
+/**
+ * A14-04 / A14-05: canonical text normalization.
+ *
+ * - Strips ASCII NUL (`\u0000`) bytes, which Postgres TEXT accepts but which
+ *   confuse downstream consumers (logs, JSON, CLI tooling) and can be used
+ *   to truncate values in C-string–based code paths.
+ * - Normalizes to Unicode NFC. Without this, attackers can register two
+ *   visually identical names (e.g. composed vs. decomposed accents) that
+ *   compare unequal byte-for-byte, defeating uniqueness checks and
+ *   user-recognition workflows.
+ *
+ * Use `safeText` for free-form fields and `safeName` for short identifiers.
+ */
+function normalizeText(value: string): string {
+  return value.replace(/\u0000/g, "").normalize("NFC");
+}
+
+/** Free-form user-supplied text (notes, content, descriptions). */
+export const safeText = z.string().transform(normalizeText);
+
+/** Short identifying text (names, titles). Trims surrounding whitespace. */
+export const safeName = z.string().transform((v) => normalizeText(v).trim());
+
+/** Direct access to the normalization function for callers outside Zod. */
+export { normalizeText };
+
 // ── Booking ─────────────────────────────────────────────────────────────
 
 export const bookingCancelSchema = z.object({
@@ -315,7 +341,9 @@ export const labReportSchema = z.object({
   results: z
     .array(
       z.object({
-        testName: z.string().min(1),
+        // A14-03: bound testName to 200 chars and normalize so identical
+        // composed/decomposed Unicode does not bypass downstream comparisons.
+        testName: safeName.pipe(z.string().min(1).max(200)),
         value: z.string().nullable(),
         unit: z.string().nullable(),
         referenceMin: z.number().nullable(),
@@ -416,13 +444,20 @@ export type AiPrescriptionRequest = z.infer<typeof aiPrescriptionRequestSchema>;
 
 // ── Chat ────────────────────────────────────────────────────────────────
 
+/**
+ * A14-01: bound `content` to 4 000 chars to prevent unbounded payloads
+ * being forwarded to the upstream LLM. Keeps cost and latency predictable
+ * and protects against memory-exhaustion vectors in the chat handler.
+ */
+export const CHAT_MESSAGE_CONTENT_MAX = 4000;
+
 export const chatRequestSchema = z.object({
   clinicId: z.string().optional(),
   messages: z
     .array(
       z.object({
         role: z.enum(["user", "assistant"]),
-        content: z.string(),
+        content: safeText.pipe(z.string().min(1).max(CHAT_MESSAGE_CONTENT_MAX)),
       }),
     )
     .min(1),
