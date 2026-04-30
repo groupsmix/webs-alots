@@ -57,7 +57,10 @@ export async function applyRateLimit(
     // Audit 3: Apply a global rate limit to non-API paths (HTML pages, etc.)
     // to prevent subdomain enumeration DDoS attacks.
     // Allow 100 requests per minute per IP per Host
-    const globalLimiter = rateLimitRules.find(r => r.prefix === "/api")?.limiter;
+    // AUDIT-06: The catch-all API rule uses prefix "/api/" (with trailing slash).
+    // Previously this lookup used "/api" (without slash), so the global limiter
+    // was never found and non-API paths were silently unprotected.
+    const globalLimiter = rateLimitRules.find(r => r.prefix === "/api/")?.limiter;
     if (globalLimiter) {
       const allowed = await globalLimiter.check(`global_${rateLimitKey}`);
       if (!allowed) {

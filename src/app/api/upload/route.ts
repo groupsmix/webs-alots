@@ -351,6 +351,18 @@ export const GET = withAuth(async (request, { profile }) => {
     return apiError(`File type not allowed: ${contentType}`);
   }
 
+  // AUDIT-01: PHI categories MUST go through the POST handler which encrypts
+  // the file server-side before storing to R2. Presigned direct uploads bypass
+  // server-side encryption and would store plaintext PHI — a compliance
+  // violation under Moroccan Law 09-08.
+  if (requiresEncryption(category)) {
+    return apiError(
+      "Direct upload is not allowed for PHI file categories. Use the POST endpoint instead.",
+      400,
+      "PHI_DIRECT_UPLOAD_BLOCKED",
+    );
+  }
+
   const key = buildUploadKey(clinicId, category, filename);
   const maxSize = limitForCategory(category);
   const presigned = await getPresignedUploadPost(key, contentType, maxSize);

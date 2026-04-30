@@ -42,26 +42,42 @@ const bookingRequestSchema = z.object({
   bufferTime: z.number().int().min(0),
 });
 /**
+ * Result of booking token verification.
+ *
+ * AUDIT-04: The verified phone number is returned so that callers can
+ * bind it to the submitted patient phone. Previously the function only
+ * returned a boolean, allowing a user to verify one phone number and
+ * then submit a booking for a different phone.
+ */
+interface BookingTokenResult {
+  valid: boolean;
+  /** The phone number embedded in the token (only set when valid=true). */
+  phone?: string;
+}
+
+/**
  * Verify a booking token issued after OTP verification.
  * Tokens are HMAC-SHA256 signatures of the phone number + expiry timestamp.
  * Format: "phone:expiryTimestamp:signature"
+ *
+ * Returns the verified phone so callers can enforce phone binding.
  */
-async function verifyBookingToken(token: string): Promise<boolean> {
+async function verifyBookingToken(token: string): Promise<BookingTokenResult> {
   const secret = process.env.BOOKING_TOKEN_SECRET;
   if (!secret) {
     // HIGH-05: BOOKING_TOKEN_SECRET is required in ALL environments.
     // Dev bypass removed — configure the secret even in development
     // to prevent accidental leakage of unauthenticated booking access.
     logger.error("BOOKING_TOKEN_SECRET is not configured — rejecting all booking tokens", { context: "booking" });
-    return false;
+    return { valid: false };
   }
 
   const parts = token.split(":");
-  if (parts.length !== 3) return false;
+  if (parts.length !== 3) return { valid: false };
 
   const [phone, expiryStr, signature] = parts;
   const expiry = parseInt(expiryStr, 10);
-  if (isNaN(expiry) || Date.now() > expiry) return false;
+  if (isNaN(expiry) || Date.now() > expiry) return { valid: false };
 
   // Verify HMAC signature
   const encoder = new TextEncoder();
@@ -79,12 +95,12 @@ async function verifyBookingToken(token: string): Promise<boolean> {
     .join("");
 
   // Constant-time comparison
-  if (expectedSig.length !== signature.length) return false;
+  if (expectedSig.length !== signature.length) return { valid: false };
   let mismatch = 0;
   for (let i = 0; i < expectedSig.length; i++) {
     mismatch |= expectedSig.charCodeAt(i) ^ signature.charCodeAt(i);
   }
-  return mismatch === 0;
+  return mismatch === 0 ? { valid: true, phone } : { valid: false };
 }
 
 /** Inferred from the Zod schema — single source of truth. */
@@ -195,9 +211,17 @@ export const POST = withValidation(bookingRequestSchema, async (body, request: N
     }
 
     // Verify the booking token (HMAC-based, issued after OTP check)
-    const isValidToken = await verifyBookingToken(bookingToken);
-    if (!isValidToken) {
+    const tokenResult = await verifyBookingToken(bookingToken);
+    if (!tokenResult.valid) {
       return apiForbidden("Invalid or expired booking token");
+    }
+
+    // AUDIT-04: Bind the verified phone from the token to the submitted
+    // patient phone. Prevents a user from verifying one phone number and
+    // then booking under a different one.
+    const normalizePhone = (p: string) => p.replace(/[\s\-()]/g, "");
+    if (normalizePhone(tokenResult.phone!) !== normalizePhone(body.patient.phone)) {
+      return apiForbidden("Booking token does not match the submitted patient phone number");
     }
 
     const { tenant, config: tenantConfig } = await requireTenantWithConfig();
