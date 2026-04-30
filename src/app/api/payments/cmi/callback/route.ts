@@ -162,9 +162,11 @@ export async function POST(request: NextRequest) {
           });
         }
 
-        // A155: Extract AVS/CVV results from CMI callback.
-        // CMI returns these in ProcReturnCode-adjacent fields when available.
-        const avsResult = params.cavv || params.CAVV || params.avs || null;
+        // A155: Extract 3DS (CAVV) and AVS results from CMI callback.
+        // CAVV = Cardholder Authentication Verification Value (3D-Secure result)
+        // AVS = Address Verification System result (separate fraud signal)
+        const cavv3dsResult = params.cavv || params.CAVV || null;
+        const avsResult = params.avs || null;  // Separate from CAVV
         const cvvResult = params.cvvResult || params.CVVResult || null;
         const cardLast4 = params.Pan ? params.Pan.slice(-4) : (params.pan ? params.pan.slice(-4) : null);
         const cardBin = params.Pan ? params.Pan.slice(0, 6) : (params.pan ? params.pan.slice(0, 6) : null);
@@ -178,6 +180,15 @@ export async function POST(request: NextRequest) {
             context: "payments/cmi/callback",
             paymentId: payment.id,
             cvvResult,
+            clinicId: payment.clinic_id,
+          });
+        }
+        // A155: 3DS verification result (separate from AVS)
+        if (cavv3dsResult && cavv3dsResult !== "Y" && cavv3dsResult !== "1") {
+          logger.warn("CMI 3DS/CVV mismatch on approved payment", {
+            context: "payments/cmi/callback",
+            paymentId: payment.id,
+            cavv3dsResult,
             clinicId: payment.clinic_id,
           });
         }
@@ -230,6 +241,7 @@ export async function POST(request: NextRequest) {
             ...(cardBin ? { card_bin: cardBin } : {}),
             ...(avsResult ? { avs_result: avsResult } : {}),
             ...(cvvResult ? { cvv_result: cvvResult } : {}),
+            ...(cavv3dsResult ? { cavv_result: cavv3dsResult } : {}),  // A126-02: Store 3DS CAVV separately from AVS
           })
           .eq("id", payment.id)
           .eq("clinic_id", payment.clinic_id);

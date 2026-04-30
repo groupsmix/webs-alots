@@ -162,8 +162,10 @@ export async function signInWithPassword(
   // Runs after successful auth so we don't leak timing info about
   // whether the email exists. Sends a warning email if the password
   // appears in known breaches. Does NOT block the login.
-  checkBreachedPassword(password)
-    .then((result) => {
+  // A126-02 fix: Properly handle fire-and-forget on Workers - use waitUntil for Cloudflare context.
+  const handleBreachedPassword = async () => {
+    try {
+      const result = await checkBreachedPassword(password);
       if (result.breached) {
         logger.warn("User logged in with breached password", {
           context: "auth/hibp",
@@ -171,23 +173,49 @@ export async function signInWithPassword(
           breachCount: result.count,
         });
         const template = breachedPasswordEmail({ userEmail: normalizedEmail });
-        sendEmail({ to: normalizedEmail, subject: template.subject, html: template.html })
-          .catch((err) => { logger.warn("Failed to send breached-password email", { context: "auth/hibp", error: err }); });
+        await sendEmail({ to: normalizedEmail, subject: template.subject, html: template.html });
       }
-    })
-    .catch((err) => { logger.warn("HIBP check failed post-login", { context: "auth/hibp", error: err }); });
+    } catch (err) {
+      logger.warn("HIBP check failed post-login", { context: "auth/hibp", error: err });
+    }
+  };
+
+  // Register async task with proper cleanup handler for Workers
+  if (typeof globalThis !== 'undefined' && 'waitUntil' in globalThis) {
+    // Cloudflare Workers environment
+    (globalThis as { waitUntil: (promise: Promise<unknown>) => void }).waitUntil(handleBreachedPassword());
+  } else {
+    // Standard Node.js environment
+    handleBreachedPassword().catch((err) => logger.warn("HIBP async task failed", { error: err }));
+  }
 
   // A154: Suspicious login detection (async, non-blocking).
   // Records the login event and alerts user if IP+UA is new.
   const hdrs = await headers();
   const userAgent = hdrs.get("user-agent") ?? "unknown";
-  recordLoginAndAlert(supabase, {
-    userId: signInData.user?.id ?? normalizedEmail,
-    email: normalizedEmail,
-    ipAddress: clientIp,
-    userAgent,
-    clinicId: profile?.clinic_id ?? undefined,
-  }).catch((err) => { logger.warn("Suspicious login check failed", { context: "auth/suspicious-login", error: err }); });
+
+  const handleLoginAlert = async () => {
+    try {
+      await recordLoginAndAlert(supabase, {
+        userId: signInData.user?.id ?? normalizedEmail,
+        email: normalizedEmail,
+        ipAddress: clientIp,
+        userAgent,
+        clinicId: profile?.clinic_id ?? undefined,
+      });
+    } catch (err) {
+      logger.warn("Suspicious login check failed", { context: "auth/suspicious-login", error: err });
+    }
+  };
+
+  // Register async task with proper cleanup handler for Workers
+  if (typeof globalThis !== 'undefined' && 'waitUntil' in globalThis) {
+    // Cloudflare Workers environment
+    (globalThis as { waitUntil: (promise: Promise<unknown>) => void }).waitUntil(handleLoginAlert());
+  } else {
+    // Standard Node.js environment
+    handleLoginAlert().catch((err) => logger.warn("Login alert async task failed", { error: err }));
+  }
 
   if (profile) {
     redirect(ROLE_DASHBOARD_MAP[profile.role]);

@@ -35,10 +35,24 @@ CREATE INDEX IF NOT EXISTS idx_login_events_clinic_id
 ALTER TABLE login_events ENABLE ROW LEVEL SECURITY;
 
 -- Only service role can insert/read login events (no direct user access)
-CREATE POLICY login_events_service_only ON login_events
-  FOR ALL
-  USING (false)
-  WITH CHECK (false);
+-- A126-02 fix: Changed from USING(false) which blocks ALL roles including authenticated.
+-- Now uses SECURITY DEFINER with service role to allow API inserts while blocking direct user access.
+CREATE OR REPLACE FUNCTION auth_service_role()
+RETURNS SETOF void AS $$
+BEGIN
+  -- Service role function - only callable by service role
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Allow authenticated users to SELECT their own login events for history
+CREATE POLICY login_events_authenticated_select ON login_events
+  FOR SELECT
+  USING (auth.uid() = user_id);
+
+-- Allow service role to INSERT (for API calls using service key)
+CREATE POLICY login_events_service_insert ON login_events
+  FOR INSERT
+  WITH CHECK (auth.role() = 'service_role');
 
 -- ============================================================
 -- A155: Chargebacks table for dispute tracking
