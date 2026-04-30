@@ -35,6 +35,24 @@ describe("timingSafeEqual", () => {
     expect(timingSafeEqual("héllo", "héllo")).toBe(true);
     expect(timingSafeEqual("héllo", "hello")).toBe(false);
   });
+
+  // A6-06: defence against memory-amplification via attacker-controlled
+  // length on the `b` (or `a`) side. Inputs longer than 1 KiB must be
+  // rejected up-front so `padEnd` never allocates a multi-megabyte
+  // string under attacker control.
+  it("rejects oversized inputs up-front (A6-06)", () => {
+    const expected = "a".repeat(64);
+    const oversize = "x".repeat(1025);
+    expect(timingSafeEqual(expected, oversize)).toBe(false);
+    expect(timingSafeEqual(oversize, expected)).toBe(false);
+    // Both sides oversized: still false, never allocated.
+    expect(timingSafeEqual(oversize, oversize)).toBe(false);
+  });
+
+  it("accepts inputs at the 1024-char boundary (A6-06)", () => {
+    const a = "a".repeat(1024);
+    expect(timingSafeEqual(a, a)).toBe(true);
+  });
 });
 
 describe("sha256Hex", () => {

@@ -24,10 +24,41 @@ export function hexToBytes(hex: string): Uint8Array<ArrayBuffer> {
 }
 
 /**
+ * Maximum length, in characters, accepted by {@link timingSafeEqual} on
+ * either side of the comparison.
+ *
+ * A6-06: When `b` is attacker-controlled (e.g. a signature received in
+ * a token / header), an unbounded input would force `padEnd(maxLen, "\0")`
+ * to allocate a string of length `maxLen` per side. That turns a
+ * comparison into a memory-amplification primitive. We cap the inputs
+ * well above any legitimate use:
+ *
+ *   - hex SHA-256 / HMAC-SHA256 digests:                64 chars
+ *   - Stripe signatures (`v1=`):                        64 chars
+ *   - WhatsApp `X-Hub-Signature-256` (`sha256=`):       71 chars
+ *   - API keys (`k_<32-byte hex>`):                    ≤ 96 chars
+ *   - CMI HASH parameter:                              ≤ 88 chars
+ *
+ * A 1 KiB cap is two orders of magnitude above any of those and well
+ * below anything that would meaningfully consume memory.
+ */
+const TIMING_SAFE_EQUAL_MAX_LEN = 1024;
+
+/**
  * Constant-time string comparison to prevent timing attacks.
- * Pads the shorter string to avoid leaking length information via early return.
+ *
+ * Pads the shorter string to avoid leaking length information via early
+ * return. Inputs longer than {@link TIMING_SAFE_EQUAL_MAX_LEN} are
+ * rejected up-front so an attacker cannot force an unbounded allocation
+ * by submitting a multi-megabyte signature (A6-06).
  */
 export function timingSafeEqual(a: string, b: string): boolean {
+  if (
+    a.length > TIMING_SAFE_EQUAL_MAX_LEN ||
+    b.length > TIMING_SAFE_EQUAL_MAX_LEN
+  ) {
+    return false;
+  }
   const maxLen = Math.max(a.length, b.length);
   const paddedA = a.padEnd(maxLen, "\0");
   const paddedB = b.padEnd(maxLen, "\0");
