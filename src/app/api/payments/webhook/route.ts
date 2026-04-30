@@ -157,9 +157,12 @@ export async function POST(request: NextRequest) {
           // FIX: PaymentIntent objects use `amount`, not `amount_total`
           // (which exists only on Checkout Session objects). Using
           // `amount_total` always yielded 0 for failed payment records.
+          // Prefer metadata.amount (set by the checkout route) → real
+          // PaymentIntent `amount` → Checkout Session `amount_total` →
+          // 0 as last-resort fallback so we never record a NaN row.
           const intentAmount = intent.metadata?.amount
             ? parseFloat(intent.metadata.amount)
-            : (intent.amount_total || 0);
+            : (intent.amount ?? intent.amount_total ?? 0);
           await supabase.from("payments").insert({
             clinic_id: failedClinicId,
             patient_id: failedPatientId,

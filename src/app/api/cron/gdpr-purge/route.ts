@@ -67,7 +67,35 @@ async function handler(request: NextRequest) {
 
     for (const user of usersToDelete) {
       try {
-        // 1. Delete dependent records in order (FK-safe)
+        // 1a. GDPR-PHI: Collect encrypted patient file keys from R2 BEFORE
+        // deleting the `documents` table rows. Querying after the delete
+        // below would always return empty, leaving PHI files orphaned on
+        // R2 indefinitely (violates Moroccan Law 09-08 / GDPR erasure).
+        const storageKeysToDelete: string[] = [];
+        if (user.clinic_id && isR2Configured()) {
+          try {
+            const { data: docs } = await supabase
+              .from("documents")
+              .select("storage_key")
+              .eq("patient_id", user.id);
+
+            if (docs && docs.length > 0) {
+              for (const doc of docs) {
+                if (doc.storage_key) {
+                  storageKeysToDelete.push(doc.storage_key);
+                }
+              }
+            }
+          } catch (r2QueryErr) {
+            logger.warn("Failed to query documents for R2 cleanup", {
+              context: "cron/gdpr-purge",
+              userId: user.id,
+              error: r2QueryErr,
+            });
+          }
+        }
+
+        // 1b. Delete dependent records in order (FK-safe)
         // These tables reference users.id as patient_id or user_id
         const dependentTables = [
           { table: "appointments", column: "patient_id" },
@@ -120,39 +148,21 @@ async function handler(request: NextRequest) {
 
         // 2b. GDPR-PHI: Delete encrypted patient files from R2 storage.
         // Files are keyed as `clinics/{clinic_id}/{category}/{filename}.enc`.
-        // Without this step, PHI would persist on R2 indefinitely after the
-        // DB records are removed, violating Moroccan Law 09-08 and GDPR
-        // right-to-erasure obligations.
-        if (user.clinic_id && isR2Configured()) {
+        // Keys were collected in step 1a *before* the documents rows were
+        // deleted. Without this step, PHI would persist on R2 indefinitely
+        // after DB records are removed, violating Moroccan Law 09-08 and
+        // GDPR right-to-erasure obligations.
+        for (const storageKey of storageKeysToDelete) {
           try {
-            const { data: docs } = await supabase
-              .from("documents")
-              .select("storage_key")
-              .eq("patient_id", user.id);
-
-            if (docs && docs.length > 0) {
-              for (const doc of docs) {
-                if (doc.storage_key) {
-                  try {
-                    // Delete both the encrypted (.enc) and any plaintext version
-                    await deleteFromR2(doc.storage_key);
-                    await deleteFromR2(`${doc.storage_key}.enc`);
-                  } catch (r2Err) {
-                    logger.warn("Failed to delete R2 object during GDPR purge", {
-                      context: "cron/gdpr-purge",
-                      userId: user.id,
-                      key: doc.storage_key,
-                      error: r2Err,
-                    });
-                  }
-                }
-              }
-            }
-          } catch (r2QueryErr) {
-            logger.warn("Failed to query documents for R2 cleanup", {
+            // Delete both the encrypted (.enc) and any plaintext version
+            await deleteFromR2(storageKey);
+            await deleteFromR2(`${storageKey}.enc`);
+          } catch (r2Err) {
+            logger.warn("Failed to delete R2 object during GDPR purge", {
               context: "cron/gdpr-purge",
               userId: user.id,
-              error: r2QueryErr,
+              key: storageKey,
+              error: r2Err,
             });
           }
         }

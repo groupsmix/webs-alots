@@ -129,7 +129,11 @@ export const paymentRefundSchema = z.object({
 const stripeWebhookEventObjectSchema = z.object({
   id: z.string().min(1),
   metadata: z.record(z.string(), z.string()).optional(),
+  // Checkout Session exposes `amount_total`; PaymentIntent exposes `amount`.
+  // Both must be present in the schema or Zod's default `.strip()` mode will
+  // silently drop the incoming value and downstream code will see 0.
   amount_total: z.number().optional(),
+  amount: z.number().optional(),
   currency: z.string().optional(),
   payment_status: z.string().optional(),
   customer_email: z.string().optional(),
