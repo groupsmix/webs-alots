@@ -1,0 +1,90 @@
+# =============================================================================
+# PR Preview — fast Cloudflare Workers build check for PRs
+# =============================================================================
+#
+# WHY THIS EXISTS
+# ───────────────
+# The Cloudflare Pages GitHub integration triggers a full build on every
+# PR commit using Pages' own build infrastructure.  This routinely takes
+# hours due to:
+#   • Pages free-tier build queue (1 concurrent build)
+#   • Cold npm cache on every build
+#   • Heavy OpenNext + Next.js 16 compilation on limited-resource runners
+#
+# This workflow runs the same `npm run build:cf` (OpenNext → Cloudflare
+# Workers) on GitHub Actions, which completes in ~10-15 minutes thanks
+# to npm caching and faster runners.
+#
+# SETUP (one-time, required)
+# ──────────────────────────
+#   1. Cloudflare Dashboard → Pages → webs-alots project → Settings →
+#      Builds & deployments → **Pause deployments** (or disconnect the
+#      GitHub integration entirely).  This stops the slow auto-build.
+#
+#   2. If "Cloudflare Pages" was a required status check in GitHub
+#      branch protection (Settings → Branches → main → Edit), remove
+#      it and add **"Cloudflare Workers Build"** instead.
+#
+#   3. Secrets CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID are
+#      already configured for deploy.yml — no new secrets needed.
+# =============================================================================
+
+name: PR Preview
+
+on:
+  pull_request:
+    branches: [main, staging]
+
+# Least-privilege permissions
+permissions:
+  contents: read
+
+# Cancel stale builds — no point finishing an old build when a newer
+# commit has been pushed to the same PR.
+concurrency:
+  group: pr-preview-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  build-cf:
+    runs-on: ubuntu-latest
+    name: Cloudflare Workers Build
+    steps:
+      # C-14: Pin all GH Actions to full SHA to prevent tag-mutation attacks
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Setup Node.js
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version: 22
+          cache: npm
+
+      # C-04: --ignore-scripts prevents malicious postinstall on CI
+      - name: Install dependencies
+        run: |
+          npm config set ignore-scripts true
+          npm ci
+          node scripts/patch-opennext.mjs || true
+
+      # This is the same build that deploy.yml runs before wrangler
+      # deploy.  Validating it on PRs catches OpenNext/Cloudflare
+      # build failures before they hit the deploy pipeline.
+      - name: Build for Cloudflare Workers
+        run: npm run build:cf
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: placeholder
+
+      # Verify the worker entry point was emitted — catches silent
+      # build misconfigurations where the build "succeeds" but the
+      # output is missing.
+      - name: Verify build output
+        run: |
+          if [ ! -f .open-next/worker.js ]; then
+            echo "::error::Build succeeded but .open-next/worker.js is missing."
+            echo "The OpenNext build may have silently failed or the output path changed."
+            exit 1
+          fi
+          SIZE=$(stat -c%s .open-next/worker.js 2>/dev/null || stat -f%z .open-next/worker.js)
+          echo "Worker entry point: .open-next/worker.js (${SIZE} bytes)"
