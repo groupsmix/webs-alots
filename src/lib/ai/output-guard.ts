@@ -21,15 +21,15 @@
  */
 const SECRET_PATTERNS: RegExp[] = [
   // OpenAI API keys
-  /sk-[A-Za-z0-9]{20,}/,
+  /sk-[A-Za-z0-9]{20,}/g,
   // Supabase service role keys (eyJ... JWT)
-  /eyJ[A-Za-z0-9_-]{50,}\.[A-Za-z0-9_-]{50,}/,
+  /eyJ[A-Za-z0-9_-]{50,}\.[A-Za-z0-9_-]{50,}/g,
   // Generic "secret" or "key" assignments
-  /(?:SECRET|KEY|TOKEN|PASSWORD|CREDENTIAL)\s*[:=]\s*\S{8,}/i,
+  /(?:SECRET|KEY|TOKEN|PASSWORD|CREDENTIAL)\s*[:=]\s*\S{8,}/gi,
   // Stripe keys
-  /(?:sk|pk|rk)_(?:test|live)_[A-Za-z0-9]{10,}/,
+  /(?:sk|pk|rk)_(?:test|live)_[A-Za-z0-9]{10,}/g,
   // Cloudflare API tokens
-  /[A-Za-z0-9_-]{40}/, // Too generic alone — only checked in context
+  /[A-Za-z0-9_-]{40}/g, // Too generic alone — only checked in context
 ];
 
 /**

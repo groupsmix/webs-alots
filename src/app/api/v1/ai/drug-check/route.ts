@@ -113,7 +113,7 @@ Identifie les interactions médicamenteuses supplémentaires qui pourraient ne p
         max_tokens: 1000,
         temperature: 0.2,
         response_format: { type: "json_object" },
-        seed: generateAISeed("drug-check"),
+        seed: generateAISeed(clinicId),
       }),
       signal: AbortSignal.timeout(15_000),
     });

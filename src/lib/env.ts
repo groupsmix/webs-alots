@@ -234,6 +234,11 @@ export function enforceEnvValidation(): void {
   // silently disable encryption at first use.
   enforcePhiEncryptionConfigured();
 
+  // AI-#5: Validate OPENAI_BASE_URL against allowlist.
+  // A misconfigured URL could silently exfiltrate prompts + PHI to a
+  // malicious endpoint.
+  enforceOpenAIBaseURL();
+
   // Audit Finding #7 — enforce safe PHI masking defaults in production.
   // Production must default to a masked view of PHI ("partial" or "full").
   // Explicitly disabling masking ("none") is only permitted when the operator
