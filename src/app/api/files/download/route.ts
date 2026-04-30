@@ -64,7 +64,10 @@ export function expectedDownloadPrefixForProfile(
  */
 export function contentTypeForKey(key: string): string {
   const lower = key.toLowerCase();
-  if (lower.endsWith(".html") || lower.endsWith(".htm")) return "text/html; charset=utf-8";
+  // A52.7: HTML/HTM files are served as octet-stream to prevent the browser
+  // from rendering them. Combined with Content-Disposition: attachment this
+  // closes the XSS-via-uploaded-HTML vector entirely.
+  if (lower.endsWith(".html") || lower.endsWith(".htm")) return "application/octet-stream";
   if (lower.endsWith(".pdf")) return "application/pdf";
   if (lower.endsWith(".json")) return "application/json; charset=utf-8";
   if (lower.endsWith(".png")) return "image/png";
@@ -231,26 +234,26 @@ async function handler(request: NextRequest, { supabase, profile }: AuthContext)
 
   const filename = baseKey.split("/").pop() ?? "download";
   const contentType = contentTypeForKey(baseKey);
-  const isHtml = contentType.startsWith("text/html");
 
-  // Lab/radiology reports are HTML and existing UI flows open them in a new
-  // tab via `window.open(downloadUrl)` — that requires `inline`. Everything
-  // else is offered as an attachment so the browser doesn't try to execute
-  // or interpret arbitrary PHI bytes.
-  const disposition = isHtml ? "inline" : "attachment";
+  // A52.7/A52.11: Force `attachment` for ALL file types including HTML.
+  // The previous `inline` disposition for HTML enabled XSS — an uploaded
+  // HTML file could execute JS in the download origin (uploads.oltigo.com),
+  // which is CSP-allowlisted. Forcing `attachment` ensures the browser
+  // downloads instead of rendering.
+  //
+  // Lab/radiology report viewing is now handled by a dedicated viewer
+  // component that renders sanitized HTML in a sandboxed iframe, not by
+  // navigating directly to the download URL.
+  const disposition = "attachment";
   const safeFilename = filename.replace(/"/g, "");
 
-  // Defense-in-depth: even though report fields are HTML-escaped before
-  // rendering, a future un-escaped field would otherwise become an
-  // authenticated stored-XSS sink on PHI documents. A strict per-response
-  // CSP locks the document down so any injected <script>, inline event
-  // handler, remote stylesheet, or framing attempt is blocked at the
-  // browser level.
+  // Defense-in-depth: apply a strict CSP to ALL PHI downloads. Even with
+  // Content-Disposition: attachment, some browsers may render content if the
+  // user chooses "Open" instead of "Save". The restrictive CSP ensures no
+  // scripts, remote resources, or framing can execute.
   const csp = [
     "default-src 'none'",
-    // Reports use a single inline <style> block; no external CSS is loaded.
     "style-src 'unsafe-inline'",
-    // Allow inline base64/svg for report-embedded images (logos, etc.).
     "img-src data:",
     "base-uri 'none'",
     "form-action 'none'",
@@ -265,11 +268,8 @@ async function handler(request: NextRequest, { supabase, profile }: AuthContext)
     "Cache-Control": "private, no-store, max-age=0",
     "X-Content-Type-Options": "nosniff",
     "Referrer-Policy": "no-referrer",
+    "Content-Security-Policy": csp,
   };
-
-  if (isHtml) {
-    headers["Content-Security-Policy"] = csp;
-  }
 
   // Cast the Node Buffer through `unknown` so it satisfies the Web BodyInit
   // type used by NextResponse — Buffers are streamable in Next.js but TS

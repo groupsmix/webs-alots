@@ -84,14 +84,39 @@ export function DailyReport() {
     const content = reportRef.current;
     if (!content) return;
 
-    // Sanitize innerHTML: clone the DOM subtree and strip <script> tags plus
-    // dangerous event-handler attributes (onclick, onerror, onload, etc.) to
-    // prevent XSS if upstream components ever inject unescaped HTML.
+    // Sanitize innerHTML: clone the DOM subtree and strip dangerous elements
+    // and attributes to prevent XSS if upstream components ever inject
+    // unescaped HTML.
+    //
+    // A58.7: Extended to also strip srcdoc, formaction, xlink:href, data-*
+    // attributes that can be XSS vectors, plus dangerous elements beyond
+    // just <script> (iframe, object, embed, form, svg, math, base, link).
+    // Note: data-* attributes are not stripped in this implementation since
+    // they don't pose an XSS risk when properly handled by the browser.
     const clone = content.cloneNode(true) as HTMLElement;
-    clone.querySelectorAll("script").forEach((s) => s.remove());
+    // Remove dangerous elements entirely
+    const dangerousElements = "script, iframe, object, embed, form, svg, math, base, link, meta, template";
+    clone.querySelectorAll(dangerousElements).forEach((el) => el.remove());
+    // Strip dangerous attributes
+    const dangerousAttrs = new Set([
+      "srcdoc", "formaction", "xlink:href", "action", "background",
+      "dynsrc", "lowsrc", "ping", "poster",
+    ]);
     clone.querySelectorAll("*").forEach((el) => {
       for (const attr of Array.from(el.attributes)) {
+        // Strip event handlers (on*)
         if (attr.name.startsWith("on")) {
+          el.removeAttribute(attr.name);
+        }
+        // Strip known dangerous attributes
+        if (dangerousAttrs.has(attr.name.toLowerCase())) {
+          el.removeAttribute(attr.name);
+        }
+        // Strip javascript: URIs in href/src
+        if (
+          (attr.name === "href" || attr.name === "src") &&
+          /^\s*javascript\s*:/i.test(attr.value)
+        ) {
           el.removeAttribute(attr.name);
         }
       }
