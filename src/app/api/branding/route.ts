@@ -221,7 +221,19 @@ export const POST = withAuth(async (request, { supabase }) => {
   const url = await uploadToR2(key, buffer, file.type);
 
   if (!url) {
-    return apiInternalError("Upload failed");
+    // A84-F3: User-friendly error with structured logging for R2 outages.
+    logger.error("Branding upload failed — R2 storage unavailable or write error", {
+      context: "branding",
+      clinicId,
+      field,
+      contentType: file.type,
+      fileSize: file.size,
+    });
+    return apiError(
+      "Image upload failed. Please try again later or contact support if the problem persists.",
+      502,
+      "STORAGE_UNAVAILABLE",
+    );
   }
 
   // Persist the URL to the clinics table

@@ -20,16 +20,17 @@ export default defineConfig({
       exclude: ["src/lib/types/**", "src/app/api/docs/**"],
       // CI-08: Enforce coverage thresholds; CI step fails if not met.
       //
-      // These are *baseline* thresholds set just below the current measured
-      // coverage of the repo. The job is now blocking, so any change that
-      // drops coverage below these floors will fail CI. The numbers should
-      // be ratcheted upward as coverage improves; the long-term aspirational
-      // targets are statements: 80, branches: 70, lines: 70, functions: 60.
+      // A86-F05: Ratcheted from single-digit floors (8/6/8/5) to just below
+      // the current measured coverage so regressions are caught immediately.
+      // These MUST be ratcheted upward as new tests land; the long-term
+      // aspirational targets are statements: 80, branches: 70, lines: 70,
+      // functions: 60. For PHI software, the mid-term milestone is
+      // 60/50/60/50 per A86-F05.
       thresholds: {
-        statements: 8,
-        branches: 6,
-        lines: 8,
-        functions: 5,
+        statements: 12,
+        branches: 9,
+        lines: 12,
+        functions: 8,
       },
     },
   },

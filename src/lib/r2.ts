@@ -276,7 +276,20 @@ export async function uploadToR2(
     ContentType: contentType,
   };
 
-  await client.send(new PutObjectCommand(params));
+  try {
+    await client.send(new PutObjectCommand(params));
+  } catch (err) {
+    // A84-F3: Surface R2 upload failures with a structured log entry so
+    // operators can correlate storage outages (disk-full, network, auth)
+    // without leaking internal details to the caller.
+    logger.error("R2 upload failed", {
+      context: "r2",
+      key: finalKey,
+      contentType,
+      error: err instanceof Error ? err.message : String(err),
+    });
+    return null;
+  }
 
   // Return a stable URL so callers can persist it. Callers that serve PHI or
   // other sensitive content should generate short-lived signed URLs at read
