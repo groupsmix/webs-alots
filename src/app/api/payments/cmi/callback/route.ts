@@ -236,7 +236,8 @@ export async function POST(request: NextRequest) {
       headers: { "Content-Type": "text/plain" },
     });
   } catch (err) {
-    logger.warn("Operation failed", { context: "payments/cmi/callback", error: err });
+    // F-A93-03: Payment callback failure is an error, not a warning
+    logger.error("CMI payment callback processing failed", { context: "payments/cmi/callback", error: err });
     return apiInternalError("Failed to process payment callback");
   }
 }

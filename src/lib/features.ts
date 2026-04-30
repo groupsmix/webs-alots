@@ -169,8 +169,12 @@ export async function isAIEnabled(): Promise<boolean> {
 }
 
 /**
- * Get feature flags from KV namespace
- * Returns default features if KV is not available
+ * Get feature flags from KV namespace.
+ * Returns default features if KV is not available.
+ *
+ * F-A90-06: KV fetch errors are now surfaced via logger.error (not silently
+ * swallowed). The function still falls back to defaults for resilience, but
+ * operators can monitor for "KV_FETCH_ERROR" in their dashboards.
  */
 export async function getKVFeatureFlags(): Promise<FeaturesConfig> {
   try {
@@ -182,7 +186,13 @@ export async function getKVFeatureFlags(): Promise<FeaturesConfig> {
     const flags = await kv.get("global:features", { type: "json" });
     return (flags as FeaturesConfig) ?? DEFAULT_FEATURES;
   } catch (error) {
-    logger.error("Failed to get feature flags from KV", { context: "features", error });
+    // F-A90-06: Surface KV errors clearly so operators know features are
+    // running on defaults due to an outage, not by design.
+    logger.error("KV_FETCH_ERROR: Feature flags falling back to defaults", {
+      context: "features",
+      error,
+      fallback: "DEFAULT_FEATURES",
+    });
     return DEFAULT_FEATURES;
   }
 }
@@ -213,12 +223,19 @@ export async function getClinicFeatureOverride(
 }
 
 /**
- * Set feature flag override for a specific clinic
- * Used by admin UI to enable/disable features per clinic
+ * Set feature flag override for a specific clinic.
+ * Used by admin UI to enable/disable features per clinic.
+ *
+ * F-A90-01: Supports both enabling AND disabling (kill-switch) — setting
+ * a key to `false` explicitly disables the feature for a clinic, overriding
+ * the clinic-type default.
+ *
+ * F-A90-05: Routes flag changes through logAuditEvent for compliance.
  */
 export async function setClinicFeatureOverride(
   clinicId: string,
   config: FeaturesConfig,
+  actor?: string | null,
 ): Promise<boolean> {
   try {
     const kv = (globalThis as unknown as { FEATURE_FLAGS_KV?: CloudflareKV }).FEATURE_FLAGS_KV;
@@ -230,17 +247,58 @@ export async function setClinicFeatureOverride(
       return false;
     }
 
+    // Capture previous state for audit diff
+    const previous = await getClinicFeatureOverride(clinicId);
+
     // Store the override with a long TTL (30 days)
     await kv.put(`clinic:${clinicId}:features`, JSON.stringify(config), {
       expirationTtl: 30 * 24 * 60 * 60,
     });
 
-    // Log the change for audit purposes
+    // F-A90-05: Log the change via structured logger AND audit log.
+    // Compute which flags changed for the audit trail.
+    const changes: Record<string, { from: boolean | undefined; to: boolean | undefined }> = {};
+    const allKeys = new Set([
+      ...Object.keys(config),
+      ...Object.keys(previous ?? {}),
+    ]) as Set<ClinicFeatureKey>;
+    for (const key of allKeys) {
+      const oldVal = previous?.[key];
+      const newVal = config[key];
+      if (oldVal !== newVal) {
+        changes[key] = { from: oldVal, to: newVal };
+      }
+    }
+
     logger.info("Clinic feature override updated", {
       context: "features",
       clinicId,
-      features: Object.keys(config),
+      actor: actor ?? "system",
+      changes,
     });
+
+    // F-A90-05: Write audit event (non-blocking — feature toggle must not
+    // fail if audit write fails, but we log the attempt).
+    try {
+      const { createAdminClient } = await import("@/lib/supabase-server");
+      const { logAuditEvent } = await import("@/lib/audit-log");
+      const supabase = createAdminClient();
+      await logAuditEvent({
+        supabase,
+        action: "feature_flag.updated",
+        type: "config",
+        clinicId,
+        actor,
+        description: `Feature flags updated: ${Object.entries(changes).map(([k, v]) => `${k}: ${v.from} → ${v.to}`).join(", ")}`,
+        metadata: { changes: JSON.parse(JSON.stringify(changes)) },
+      });
+    } catch (auditErr) {
+      logger.warn("Failed to write audit log for feature flag change", {
+        context: "features",
+        clinicId,
+        error: auditErr,
+      });
+    }
 
     return true;
   } catch (error) {
@@ -249,6 +307,42 @@ export async function setClinicFeatureOverride(
       error,
       clinicId,
     });
+    return false;
+  }
+}
+
+/**
+ * F-A90-01: Global kill-switch for any feature flag.
+ * Sets a global override in KV that takes precedence over clinic-type defaults.
+ * Setting a key to `false` disables the feature for ALL clinics immediately.
+ */
+export async function setGlobalFeatureFlag(
+  key: ClinicFeatureKey,
+  enabled: boolean,
+  actor?: string | null,
+): Promise<boolean> {
+  try {
+    const kv = (globalThis as unknown as { FEATURE_FLAGS_KV?: CloudflareKV }).FEATURE_FLAGS_KV;
+    if (!kv) {
+      logger.warn("KV not available, cannot set global feature flag", { context: "features" });
+      return false;
+    }
+
+    // Read current global flags, merge the change
+    const current = await getKVFeatureFlags();
+    const updated = { ...current, [key]: enabled };
+    await kv.put("global:features", JSON.stringify(updated));
+
+    logger.info("Global feature flag updated", {
+      context: "features",
+      key,
+      enabled,
+      actor: actor ?? "system",
+    });
+
+    return true;
+  } catch (error) {
+    logger.error("Failed to set global feature flag", { context: "features", error, key });
     return false;
   }
 }
