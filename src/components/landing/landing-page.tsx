@@ -34,9 +34,13 @@ export function LandingPage() {
     <LandingLocaleProvider>
       <div
         className="flex min-h-screen flex-col"
-        style={{ backgroundColor: "var(--bone)", color: "var(--ink)" }}
+        style={{
+          backgroundColor: "var(--bone)",
+          color: "var(--ink)",
+          fontFamily: "var(--font-sans-landing)",
+        }}
       >
-        {/* eslint-disable-next-line i18next/no-literal-string -- skip-to-content is a standard accessibility pattern */}
+        {/* eslint-disable i18next/no-literal-string -- skip-to-content is a standard accessibility pattern */}
         <a
           href="#main-content"
           className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[100] focus:rounded-lg focus:px-4 focus:py-2 focus:text-sm focus:font-medium"
@@ -47,6 +51,7 @@ export function LandingPage() {
         >
           Aller au contenu principal
         </a>
+        {/* eslint-enable i18next/no-literal-string */}
         <LandingHeader />
         <main id="main-content" className="flex-1">
           <HeroSection />
