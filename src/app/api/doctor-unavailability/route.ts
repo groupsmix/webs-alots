@@ -35,8 +35,15 @@ export const POST = withAuth(async (request, auth) => {
     const tenant = await requireTenant();
     const clinicId = tenant.clinicId;
 
-    // Parse and validate the request body
-    const rawBody = await request.json();
+    // Parse and validate the request body.
+    // Guard request.json() so malformed JSON returns a 400 instead of an
+    // opaque 500 "Authentication failed" from the outer withAuth() wrapper.
+    let rawBody: unknown;
+    try {
+      rawBody = await request.json();
+    } catch {
+      return apiError("Invalid JSON body", 400, "INVALID_JSON");
+    }
     const parsed = doctorUnavailabilitySchema.safeParse(rawBody);
     if (!parsed.success) {
       return apiError(parsed.error.issues.map(i => i.message).join(", "), 422, "VALIDATION_ERROR");

@@ -70,7 +70,11 @@ export const POST = withValidation(consentSchema, async (data, request: NextRequ
     };
   };
   const consentClient = supabase as unknown as ConsentInsertClient;
+  // Include clinic_id when tenant context is available so the log row is
+  // scoped for RLS and downstream GDPR queries. Pre-login consent on the
+  // root domain has no tenant — leave the column null in that case.
   const { error } = await consentClient.from("consent_logs").insert({
+    clinic_id: tenant?.clinicId ?? null,
     user_id: userId,
     consent_type: consentType as string,
     granted,
