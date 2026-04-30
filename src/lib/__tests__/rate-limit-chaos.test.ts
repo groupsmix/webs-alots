@@ -5,7 +5,7 @@
  * in fail-closed mode (post F-06 changes).
  */
 
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
 // Mock Supabase to simulate errors
 vi.mock("@supabase/supabase-js", () => ({
@@ -60,6 +60,12 @@ describe("Rate Limiter Chaos Tests (F-35)", () => {
     vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "https://test.supabase.co");
     vi.stubEnv("SUPABASE_SERVICE_ROLE_KEY", "test-service-role-key");
     vi.stubEnv("RATE_LIMIT_BACKEND", "supabase");
+  });
+
+  // A87-F03: Restore original env after each test to prevent leakage
+  // into subsequent tests running in the same Vitest worker.
+  afterEach(() => {
+    vi.unstubAllEnvs();
   });
 
   it("should deny requests when backend errors and failClosed=true", async () => {

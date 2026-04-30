@@ -285,7 +285,20 @@ export const POST = withAuth(async (request, { profile }) => {
   }
 
   if (!url) {
-    return apiInternalError("Upload failed");
+    // A84-F3: Log a structured error so operators can correlate R2 outages.
+    // The underlying error is already logged by uploadToR2 / encryptAndUpload.
+    logger.error("File upload failed — R2 storage unavailable or write error", {
+      context: "upload",
+      category,
+      clinicId,
+      contentType: file.type,
+      fileSize: file.size,
+    });
+    return apiError(
+      "File upload failed. Please try again later or contact support if the problem persists.",
+      502,
+      "STORAGE_UNAVAILABLE",
+    );
   }
 
   // L3-H2: Return Cloudflare Image Resizing URLs for image uploads so clients
