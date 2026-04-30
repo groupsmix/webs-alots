@@ -3,8 +3,36 @@ import * as Sentry from "@sentry/nextjs";
 Sentry.init({
   dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
 
-  // Performance monitoring: sample 10% of transactions in production.
+  // AUDIT F-07: Per-route client-side sampling (mirrors sentry.server.config.ts).
+  // Critical user flows (booking, payment, auth) get 100% sampling in production;
+  // other navigations get 10%.
   tracesSampleRate: process.env.NODE_ENV === "production" ? 0.1 : 1.0,
+  tracesSampler(samplingContext) {
+    const name = (samplingContext.name || "").toLowerCase();
+    // Critical booking/payment/auth flows: 100% in production
+    if (
+      name.includes("/book") ||
+      name.includes("/booking") ||
+      name.includes("/payment") ||
+      name.includes("/checkout") ||
+      name.includes("/login") ||
+      name.includes("/register") ||
+      name.includes("/checkin")
+    ) {
+      return 1.0;
+    }
+    // Dashboard navigations: 20%
+    if (
+      name.includes("/dashboard") ||
+      name.includes("/admin") ||
+      name.includes("/doctor") ||
+      name.includes("/patient")
+    ) {
+      return process.env.NODE_ENV === "production" ? 0.2 : 1.0;
+    }
+    // Everything else: 10% in production, 100% in dev
+    return process.env.NODE_ENV === "production" ? 0.1 : 1.0;
+  },
 
   // Session replay: capture 1% of sessions, 100% on error.
   replaysSessionSampleRate: 0.01,

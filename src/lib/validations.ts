@@ -521,7 +521,9 @@ export type AiDrugCheckOverride = z.infer<typeof aiDrugCheckOverrideSchema>;
 
 export const doctorUnavailabilitySchema = z.object({
   doctorId: z.string().min(1),
-  clinicId: z.string().min(1),
+  /** AUDIT F-01: clinicId is now optional — subdomain-derived tenant is authoritative.
+   *  If provided, it is validated against the subdomain in the route handler. */
+  clinicId: z.string().min(1).optional(),
   startDate: isoDate,
   endDate: isoDate,
   reason: z.string().max(1000).optional(),
@@ -531,7 +533,9 @@ export const doctorUnavailabilitySchema = z.object({
 
 export const checkinConfirmSchema = z.object({
   appointmentId: z.string().min(1),
-  clinicId: z.string().min(1),
+  /** AUDIT F-04: clinicId is now optional — subdomain-derived tenant is authoritative.
+   *  If provided, it is validated against the subdomain in the route handler. */
+  clinicId: z.string().min(1).optional(),
 });
 
 // ── Waiting List Delete ─────────────────────────────────────────────────
