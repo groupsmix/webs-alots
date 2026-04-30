@@ -211,6 +211,7 @@ export const POST = withValidation(chatRequestSchema, async (body, request: Next
         stream: true,
         max_tokens: 500,
         temperature: 0.7,
+        seed: 42, // A111: fixed seed for reproducibility
       }),
       signal: AbortSignal.timeout(30_000),
     });

@@ -19,7 +19,8 @@ export type AuditEventType =
   | "admin"
   | "auth"
   | "config"
-  | "security";
+  | "security"
+  | "ai"; // A109/A110: AI invocation audit trail (inputs, outputs, outcomes)
 
 interface AuditLogParams {
   supabase: SupabaseClient<Database>;
