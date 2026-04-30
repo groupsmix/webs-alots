@@ -16,6 +16,7 @@ import { type NextRequest } from "next/server";
 import { sanitizeUntrustedText } from "@/lib/ai/sanitize";
 import { apiSuccess, apiError, apiRateLimited, apiInternalError } from "@/lib/api-response";
 import { withAuthValidation } from "@/lib/api-validate";
+import { isAIEnabled } from "@/lib/features";
 import { logger } from "@/lib/logger";
 import { aiManagerLimiter } from "@/lib/rate-limit";
 import { aiManagerRequestSchema } from "@/lib/validations";
@@ -399,6 +400,11 @@ export const POST = withAuthValidation(
 
     if (!clinicId) {
       return apiError("No clinic associated with this account", 403, "NO_CLINIC");
+    }
+
+    // A248: Global AI kill-switch — disable all AI routes during incidents
+    if (!(await isAIEnabled())) {
+      return apiError("AI features are temporarily disabled.", 503, "AI_DISABLED");
     }
 
     // Rate limit per admin (30/day)

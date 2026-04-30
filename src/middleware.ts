@@ -78,6 +78,27 @@ export async function middleware(request: NextRequest) {
   const hostname = request.headers.get("host") ?? "";
   const rootDomain = process.env.ROOT_DOMAIN;
 
+  // --- A248: Read-only mode --- 
+  // During incidents, flip READ_ONLY_MODE=true to reject all mutation
+  // requests at the edge. Patients can still read cached data; write
+  // paths (booking, payment, upload, etc.) return HTTP 503.
+  if (
+    process.env.READ_ONLY_MODE === "true" &&
+    ["POST", "PUT", "PATCH", "DELETE"].includes(request.method) &&
+    // Allow health-check and webhook verification (GET-only in practice,
+    // but guard against future POST health probes)
+    !pathname.startsWith("/api/health")
+  ) {
+    return NextResponse.json(
+      {
+        ok: false,
+        error: "Service is in read-only mode for maintenance. Please try again later.",
+        code: "READ_ONLY_MODE",
+      },
+      { status: 503 },
+    );
+  }
+
   // --- WWW redirect (works on Cloudflare Workers unlike next.config redirects) ---
   const hostWithoutPort = hostname.split(":")[0];
   if (hostWithoutPort === `www.${rootDomain?.split(":")[0] ?? ""}`) {

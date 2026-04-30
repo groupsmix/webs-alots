@@ -17,9 +17,11 @@ import { z } from "zod";
 import { sanitizeUntrustedText } from "@/lib/ai/sanitize";
 import {
   apiSuccess,
+  apiError,
   apiRateLimited,
 } from "@/lib/api-response";
 import { withValidation } from "@/lib/api-validate";
+import { isAIEnabled } from "@/lib/features";
 import { logger } from "@/lib/logger";
 import { webhookLimiter } from "@/lib/rate-limit";
 import { createAdminClient } from "@/lib/supabase-server";
@@ -359,6 +361,11 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 export const POST = withValidation(
   whatsappWebhookSchema,
   async (data, _request) => {
+    // A248: Global AI kill-switch — disable all AI routes during incidents
+    if (!(await isAIEnabled())) {
+      return apiError("AI features are temporarily disabled.", 503, "AI_DISABLED");
+    }
+
     // Rate limit per phone number ID
     const phoneNumberId =
       data.entry[0]?.changes[0]?.value?.metadata?.phone_number_id;
