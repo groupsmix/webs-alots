@@ -16,8 +16,9 @@
 services:
   # ---------- Supabase Postgres ----------
   db:
-    image: supabase/postgres:15.8.1.145@sha256:placeholder
-    # A31-01: Pin to digest (replace placeholder with actual digest from registry)
+    # A27-2 fix: Remove @sha256:placeholder digest suffix - Docker tries to verify
+    # it against the registry and fails. Rely on tag alone until real digests collected.
+    image: supabase/postgres:15.8.1.145
     ports:
       - "127.0.0.1:54322:5432"  # A31-02: Bind to localhost only
     environment:

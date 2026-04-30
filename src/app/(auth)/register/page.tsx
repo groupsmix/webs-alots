@@ -63,14 +63,17 @@ export default function RegisterPage() {
     // A200: Block registration of minors without guardian consent
     if (isMinor && !guardianConsent) {
       setError(t(locale, "register.guardianConsentRequired" as TranslationKey));
+      setLoading(false); // A27-3 fix: Reset loading state on early return
       return;
     }
     if (isMinor && !guardianName.trim()) {
       setError(t(locale, "register.guardianNameRequired" as TranslationKey));
+      setLoading(false); // A27-3 fix: Reset loading state on early return
       return;
     }
     if (isMinor && !guardianPhone.trim()) {
       setError(t(locale, "register.guardianPhoneRequired" as TranslationKey));
+      setLoading(false); // A27-3 fix: Reset loading state on early return
       return;
     }
 

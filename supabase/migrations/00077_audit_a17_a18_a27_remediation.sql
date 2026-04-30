@@ -53,7 +53,9 @@ CREATE OR REPLACE FUNCTION complete_payment_and_confirm_appointment(
 RETURNS JSONB
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public
+SET search_path = public;
+-- A27-1 fix: Add statement_timeout to prevent blocked locks from holding indefinitely (4a23ee6711)
+SET statement_timeout = '5s';
 AS $$
 DECLARE
   v_payment_id UUID;
