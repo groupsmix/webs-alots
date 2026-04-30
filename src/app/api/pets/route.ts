@@ -79,10 +79,14 @@ export const GET = withAuth(async (request, { supabase, profile }) => {
  * Create a new pet profile.
  */
 export const POST = withAuthValidation(petProfileCreateSchema, async (body, _request, { supabase, profile }) => {
+  if (!profile.clinic_id) {
+    return apiError("No clinic associated with this account", 403);
+  }
+
   const { data, error } = await supabase
     .from("pet_profiles")
     .insert({
-      clinic_id: profile.clinic_id ?? "",
+      clinic_id: profile.clinic_id,
       owner_id: body.owner_id,
       name: body.name,
       species: body.species,
@@ -109,6 +113,10 @@ export const POST = withAuthValidation(petProfileCreateSchema, async (body, _req
  * Update an existing pet profile.
  */
 export const PATCH = withAuthValidation(petProfileUpdateSchema, async (body, _request, { supabase, profile }) => {
+  if (!profile.clinic_id) {
+    return apiError("No clinic associated with this account", 403);
+  }
+
   const { id, ...updates } = body;
 
   const updatePayload: Record<string, unknown> = { updated_at: new Date().toISOString() };
@@ -127,7 +135,7 @@ export const PATCH = withAuthValidation(petProfileUpdateSchema, async (body, _re
     .from("pet_profiles")
     .update(updatePayload)
     .eq("id", id)
-    .eq("clinic_id", profile.clinic_id ?? "")
+    .eq("clinic_id", profile.clinic_id)
     .select()
     .single();
 
@@ -145,6 +153,10 @@ export const PATCH = withAuthValidation(petProfileUpdateSchema, async (body, _re
  * Soft-delete a pet profile (sets is_active = false).
  */
 export const DELETE = withAuth(async (request, { supabase, profile }) => {
+  if (!profile.clinic_id) {
+    return apiError("No clinic associated with this account", 403);
+  }
+
   const id = request.nextUrl.searchParams.get("id");
 
   if (!id) {
@@ -155,7 +167,7 @@ export const DELETE = withAuth(async (request, { supabase, profile }) => {
     .from("pet_profiles")
     .update({ is_active: false, updated_at: new Date().toISOString() })
     .eq("id", id)
-    .eq("clinic_id", profile.clinic_id ?? "");
+    .eq("clinic_id", profile.clinic_id);
 
   if (error) {
     logger.warn("Failed to delete pet profile", { context: "pets", error });

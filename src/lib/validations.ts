@@ -525,7 +525,11 @@ export type AiDrugCheckOverride = z.infer<typeof aiDrugCheckOverrideSchema>;
 
 export const doctorUnavailabilitySchema = z.object({
   doctorId: z.string().min(1),
-  clinicId: z.string().min(1),
+  // SECURITY FIX: clinicId is derived server-side from the authenticated
+  // user's profile (see src/app/api/doctor-unavailability/route.ts) and is
+  // ignored if supplied. Schema accepts it as optional for backward
+  // compatibility with older clients but does not require it.
+  clinicId: z.string().min(1).optional(),
   startDate: isoDate,
   endDate: isoDate,
   reason: z.string().max(1000).optional(),

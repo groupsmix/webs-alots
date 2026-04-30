@@ -75,12 +75,20 @@ export const POST = withAuthValidation(onboardingSchema, async (body, request, {
     // no admin user exists yet (checked below). Combined, this prevents
     // a malicious user from claiming an existing clinic by guessing its
     // name during onboarding.
-    const { data: orphanedClinic } = await supabase
+    // FIX: When `subdomain` is empty (e.g. Arabic-only clinic names where the
+    // ASCII regex strips all characters), the insert below stores NULL via
+    // `subdomain: subdomain || null`. In Postgres, `subdomain = ''` does NOT
+    // match `subdomain IS NULL`, so we must use `.is(..., null)` for the
+    // null case to keep the orphan-detection idempotency guarantee.
+    const orphanBase = supabase
       .from("clinics")
       .select("id")
       .eq("name", body.clinic_name)
-      .eq("clinic_type_key", body.clinic_type_key)
-      .eq("subdomain", subdomain || "")
+      .eq("clinic_type_key", body.clinic_type_key);
+    const orphanQuery = subdomain
+      ? orphanBase.eq("subdomain", subdomain)
+      : orphanBase.is("subdomain", null);
+    const { data: orphanedClinic } = await orphanQuery
       .limit(1)
       .maybeSingle();
 
