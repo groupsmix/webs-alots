@@ -1,5 +1,43 @@
 import { describe, it, expect } from "vitest";
-import { timingSafeEqual, sha256Hex, hmacSha256Hex } from "../crypto-utils";
+import {
+  bytesToHex,
+  hexToBytes,
+  hmacSha256Hex,
+  sha256Hex,
+  timingSafeEqual,
+} from "../crypto-utils";
+
+describe("hexToBytes", () => {
+  it("decodes a valid even-length hex string", () => {
+    const bytes = hexToBytes("deadbeef");
+    expect(Array.from(bytes)).toEqual([0xde, 0xad, 0xbe, 0xef]);
+  });
+
+  it("accepts uppercase hex", () => {
+    const bytes = hexToBytes("DEADBEEF");
+    expect(Array.from(bytes)).toEqual([0xde, 0xad, 0xbe, 0xef]);
+  });
+
+  it("round-trips with bytesToHex", () => {
+    const original = new Uint8Array([0, 1, 127, 128, 255]);
+    expect(Array.from(hexToBytes(bytesToHex(original)))).toEqual(
+      Array.from(original),
+    );
+  });
+
+  it("throws on empty input rather than producing a 500 (A10-07)", () => {
+    expect(() => hexToBytes("")).toThrow(/must not be empty/);
+  });
+
+  it("throws on odd-length input rather than producing a 500 (A10-07)", () => {
+    expect(() => hexToBytes("abc")).toThrow(/even number/);
+  });
+
+  it("throws on non-hex characters (A10-07)", () => {
+    expect(() => hexToBytes("zz")).toThrow(/hex characters/);
+    expect(() => hexToBytes("dead!!")).toThrow(/hex characters/);
+  });
+});
 
 describe("timingSafeEqual", () => {
   it("returns true for identical strings", () => {

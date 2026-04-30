@@ -19,6 +19,11 @@ supabase/migrations/*           @groupsmix
 wrangler.toml                   @groupsmix
 .github/workflows/*             @groupsmix
 
+# AUDIT A9: Build/deploy scripts run during install (postinstall) and CI.
+# Any change here can introduce a postinstall hijack vector, so require a
+# senior reviewer.
+scripts/*                       @groupsmix
+
 # Sentry config — PII scrubbing
 sentry.server.config.ts         @groupsmix
 sentry.client.config.ts         @groupsmix
