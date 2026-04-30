@@ -1,48 +1,107 @@
 /**
- * Lightweight server-safe HTML sanitization.
+ * Server-safe HTML sanitization (S5-06).
  *
- * Strips dangerous tags (script, iframe, object, embed, etc.) and
- * event-handler attributes (onclick, onerror, etc.) from HTML content
- * before rendering via dangerouslySetInnerHTML.
+ * Uses DOMPurify (via isomorphic-dompurify, which provides a JSDOM-backed
+ * DOM on the server) to strip dangerous tags, attributes, and protocols
+ * from HTML before rendering via dangerouslySetInnerHTML.
  *
- * Defence-in-depth: even when content comes from trusted static sources,
- * sanitization prevents stored XSS if the content pipeline is ever
- * compromised or extended to accept user/admin input.
+ * Why DOMPurify instead of regex?
  *
- * ⚠️  WARNING — NOT SAFE FOR ARBITRARY USER INPUT  ⚠️
+ * The previous implementation used a hand-rolled regex pipeline. Regex-based
+ * HTML sanitization has well-known bypass vectors (nested malformed tags,
+ * whitespace-around-`=`, exotic elements like `<svg onload>` /
+ * `<details ontoggle>`, etc.). DOMPurify parses the HTML into a real DOM
+ * and walks the tree, which makes it sound for arbitrary input — including
+ * future cases where blog content is admin-editable rather than checked-in
+ * static files.
  *
- * This function uses regex-based stripping which is inherently unreliable
- * for untrusted HTML. Known bypass vectors include:
- *   - Nested/malformed tags (e.g., `<scr<script>ipt>`).
- *   - Event handlers with tab/newline between attribute name and `=`.
- *   - Exotic elements: `<svg onload=...>`, `<math>`, `<details/open/ontoggle>`.
- *
- * Current usage is acceptable because the input comes from **static blog
- * content** (trusted source, not user-editable). If this function is ever
- * used for user-generated content (admin-editable blogs, rich text fields,
- * comments, etc.), it MUST be replaced with a DOM-based sanitizer such as
- * DOMPurify (client-side) or isomorphic-dompurify (server-side).
+ * This module currently sanitizes static blog content
+ * (`src/app/(public)/blog/[slug]/page.tsx`) at build time via
+ * `generateStaticParams` — there is no runtime sanitization on the edge.
  */
+import DOMPurify from "isomorphic-dompurify";
 
 /**
- * Strip dangerous HTML tags and attributes from a string of HTML.
+ * Allow the tags that the static blog markup actually uses, plus the
+ * usual semantic / formatting tags. Anything else (script, iframe,
+ * object, embed, form, meta, link, style, etc.) is dropped by DOMPurify.
+ */
+const ALLOWED_TAGS = [
+  "a",
+  "abbr",
+  "b",
+  "blockquote",
+  "br",
+  "code",
+  "div",
+  "em",
+  "figcaption",
+  "figure",
+  "h1",
+  "h2",
+  "h3",
+  "h4",
+  "h5",
+  "h6",
+  "hr",
+  "i",
+  "img",
+  "li",
+  "ol",
+  "p",
+  "pre",
+  "s",
+  "small",
+  "span",
+  "strong",
+  "sub",
+  "sup",
+  "table",
+  "tbody",
+  "td",
+  "tfoot",
+  "th",
+  "thead",
+  "tr",
+  "u",
+  "ul",
+];
+
+const ALLOWED_ATTR = [
+  "href",
+  "src",
+  "alt",
+  "title",
+  "class",
+  "id",
+  "rel",
+  "target",
+  "loading",
+  "width",
+  "height",
+];
+
+/**
+ * Sanitize a string of HTML, returning a string that is safe to pass to
+ * `dangerouslySetInnerHTML`.
  *
- * @see Module-level warning — this is defense-in-depth for trusted content only.
+ * - `script`, `iframe`, `object`, `embed`, `form`, `meta`, `link`, `style`,
+ *   and any other non-allow-listed tags are removed.
+ * - All event-handler attributes (`onclick`, `onerror`, `onload`, …) are
+ *   stripped.
+ * - `javascript:` and other dangerous URL schemes are stripped from `href`
+ *   / `src`. `data:` URIs are blocked except for `data:image/*`.
  */
 export function sanitizeHtml(dirty: string): string {
-  return (
-    dirty
-      // Remove <script>...</script> blocks (including multiline)
-      .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, "")
-      // Remove self-closing <script /> tags
-      .replace(/<script\b[^>]*\/>/gi, "")
-      // Remove <iframe>, <object>, <embed>, <applet>, <form>, <base> tags
-      .replace(/<\/?(iframe|object|embed|applet|form|base|meta|link)\b[^>]*>/gi, "")
-      // Remove event handler attributes (onclick, onerror, onload, etc.)
-      .replace(/\s+on\w+\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+)/gi, "")
-      // Remove javascript: protocol in href/src attributes
-      .replace(/(href|src|action)\s*=\s*["']?\s*javascript\s*:/gi, "$1=\"\"")
-      // Remove data: protocol in src attributes (except images)
-      .replace(/src\s*=\s*["']?\s*data\s*:(?!image\/)/gi, "src=\"\"")
-  );
+  return DOMPurify.sanitize(dirty, {
+    ALLOWED_TAGS,
+    ALLOWED_ATTR,
+    // Block all URL schemes other than http/https/mailto/tel and
+    // data:image/* (DOMPurify allows http/https/mailto/tel/ftp/file by
+    // default; we further restrict via ALLOWED_URI_REGEXP below).
+    ALLOWED_URI_REGEXP: /^(?:(?:https?|mailto|tel):|data:image\/(?:png|jpe?g|gif|webp|svg\+xml);|[^a-z]|[a-z+.-]+(?:[^a-z+.\-:]|$))/i,
+    // Strip the wrapping <html>/<body> that DOMPurify sometimes adds.
+    WHOLE_DOCUMENT: false,
+    RETURN_TRUSTED_TYPE: false,
+  });
 }

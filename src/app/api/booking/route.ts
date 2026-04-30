@@ -48,17 +48,30 @@ const bookingRequestSchema = z.object({
  * bind it to the submitted patient phone. Previously the function only
  * returned a boolean, allowing a user to verify one phone number and
  * then submit a booking for a different phone.
+ *
+ * A6-13: The verified clinicId is also returned so the caller can
+ * reject tokens whose embedded clinicId does not match the current
+ * tenant context (cross-tenant replay).
  */
 interface BookingTokenResult {
   valid: boolean;
   /** The phone number embedded in the token (only set when valid=true). */
   phone?: string;
+  /** The clinic id embedded in the token (only set when valid=true). */
+  clinicId?: string;
 }
 
 /**
  * Verify a booking token issued after OTP verification.
- * Tokens are HMAC-SHA256 signatures of the phone number + expiry timestamp.
- * Format: "phone:expiryTimestamp:signature"
+ *
+ * Tokens are HMAC-SHA256 signatures over `${clinicId}:${phone}:${expiry}`.
+ * Format: `"clinicId:phone:expiryTimestamp:signature"` (4 parts).
+ *
+ * A6-13: The clinicId is part of the signed payload — not just the
+ * token plaintext — so a token issued for clinic A cannot be replayed
+ * against clinic B even when both tenants share the same
+ * BOOKING_TOKEN_SECRET. The caller is still responsible for verifying
+ * that the returned `clinicId` matches the current tenant context.
  *
  * Returns the verified phone so callers can enforce phone binding.
  */
@@ -72,14 +85,19 @@ async function verifyBookingToken(token: string): Promise<BookingTokenResult> {
     return { valid: false };
   }
 
+  // A6-13: token is now `clinicId:phone:expiry:signature` (4 parts).
+  // Tokens issued under the previous 3-part format become invalid the
+  // moment this code ships; given the 15-minute TTL the impact is a
+  // single retry of the verify step for users mid-flow at deploy time.
   const parts = token.split(":");
-  if (parts.length !== 3) return { valid: false };
+  if (parts.length !== 4) return { valid: false };
 
-  const [phone, expiryStr, signature] = parts;
+  const [clinicId, phone, expiryStr, signature] = parts;
+  if (!clinicId || !phone) return { valid: false };
   const expiry = parseInt(expiryStr, 10);
   if (isNaN(expiry) || Date.now() > expiry) return { valid: false };
 
-  // Verify HMAC signature
+  // Verify HMAC signature over the full payload (clinicId included).
   const encoder = new TextEncoder();
   const key = await crypto.subtle.importKey(
     "raw",
@@ -88,7 +106,7 @@ async function verifyBookingToken(token: string): Promise<BookingTokenResult> {
     false,
     ["sign"],
   );
-  const data = encoder.encode(`${phone}:${expiryStr}`);
+  const data = encoder.encode(`${clinicId}:${phone}:${expiryStr}`);
   const sig = await crypto.subtle.sign("HMAC", key, data);
   const expectedSig = Array.from(new Uint8Array(sig))
     .map((b) => b.toString(16).padStart(2, "0"))
@@ -100,7 +118,7 @@ async function verifyBookingToken(token: string): Promise<BookingTokenResult> {
   for (let i = 0; i < expectedSig.length; i++) {
     mismatch |= expectedSig.charCodeAt(i) ^ signature.charCodeAt(i);
   }
-  return mismatch === 0 ? { valid: true, phone } : { valid: false };
+  return mismatch === 0 ? { valid: true, phone, clinicId } : { valid: false };
 }
 
 /** Inferred from the Zod schema — single source of truth. */
@@ -226,6 +244,14 @@ export const POST = withValidation(bookingRequestSchema, async (body, request: N
 
     const { tenant, config: tenantConfig } = await requireTenantWithConfig();
     const clinicId = tenant.clinicId;
+
+    // A6-13: Reject tokens whose embedded clinicId does not match the
+    // current tenant subdomain. The clinicId is part of the signed HMAC
+    // payload, so this check together with the signature verification
+    // makes cross-tenant replay infeasible.
+    if (tokenResult.clinicId !== clinicId) {
+      return apiForbidden("Booking token was issued for a different clinic");
+    }
     const supabase = await createTenantClient(clinicId);
 
     const validation = await validateBookingRequest(body, tenantConfig.timezone, tenantConfig.workingHours);
