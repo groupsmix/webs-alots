@@ -24,7 +24,7 @@ export function HeroSection() {
       style={{ backgroundColor: "var(--bone)" }}
     >
       <div
-        className="hero-headline-override mx-auto w-full px-[var(--gutter-mobile)] md:px-[var(--gutter-tablet)] lg:px-[var(--gutter-desktop)]"
+        className="mx-auto w-full px-[var(--gutter-mobile)] md:px-[var(--gutter-tablet)] lg:px-[var(--gutter-desktop)]"
         style={{ maxWidth: "var(--container-max)" }}
       >
         {/* Eyebrow */}
