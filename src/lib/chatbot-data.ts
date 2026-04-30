@@ -5,6 +5,7 @@
  */
 
 import { createClient } from "@/lib/supabase-server";
+import { sanitizeUntrustedText } from "@/lib/ai/sanitize";
 
 /** Shape of the `clinics.config` JSONB column (subset used by chatbot). */
 interface ClinicConfigJson {
@@ -160,32 +161,38 @@ export function buildSystemPrompt(ctx: ChatbotClinicContext): string {
     ? services
         .map((s) => {
           const price = s.price != null ? `${s.price} MAD` : "Prix sur demande";
-          const cat = s.category ? ` (${s.category})` : "";
-          return `- ${s.name}${cat}: ${price} — ${s.duration_minutes} min`;
+          const cat = s.category ? ` (${sanitizeUntrustedText(s.category)})` : "";
+          return `- ${sanitizeUntrustedText(s.name)}${cat}: ${price} — ${s.duration_minutes} min`;
         })
         .join("\n")
     : "Aucun service configuré";
 
+  // A101-1: Sanitize doctor names to prevent stored prompt injection
   const doctorsText = doctors.length > 0
-    ? doctors.map((d) => `- Dr. ${d.name}`).join("\n")
+    ? doctors.map((d) => `- Dr. ${sanitizeUntrustedText(d.name)}`).join("\n")
     : "Aucun médecin configuré";
 
+  // A101-1: Sanitize FAQ text to prevent stored prompt injection
   const faqsText = faqs.length > 0
-    ? faqs.map((f) => `Q: ${f.question}\nR: ${f.answer}`).join("\n\n")
+    ? faqs.map((f) => `Q: ${sanitizeUntrustedText(f.question)}\nR: ${sanitizeUntrustedText(f.answer)}`).join("\n\n")
     : "";
 
+  // A101-1: Sanitize contact fields to prevent stored prompt injection
   const contactParts: string[] = [];
   if (clinic.phone) contactParts.push(`Téléphone: ${clinic.phone}`);
   if (clinic.email) contactParts.push(`Email: ${clinic.email}`);
-  if (clinic.address) contactParts.push(`Adresse: ${clinic.address}`);
-  if (clinic.city) contactParts.push(`Ville: ${clinic.city}`);
-  if (clinic.domain) contactParts.push(`Site web: ${clinic.domain}`);
+  if (clinic.address) contactParts.push(`Adresse: ${sanitizeUntrustedText(clinic.address)}`);
+  if (clinic.city) contactParts.push(`Ville: ${sanitizeUntrustedText(clinic.city)}`);
+  if (clinic.domain) contactParts.push(`Site web: ${sanitizeUntrustedText(clinic.domain)}`);
 
-  return `Tu es l'assistant virtuel de "${clinic.name}", un(e) ${typeLabels[clinic.type] ?? clinic.type}.
+  // A101-1: Sanitize clinic name for prompt injection defense
+  const safeClinicName = sanitizeUntrustedText(clinic.name);
+
+  return `Tu es l'assistant virtuel de "${safeClinicName}", un(e) ${typeLabels[clinic.type] ?? clinic.type}.
 Tu aides les patients avec leurs questions sur les rendez-vous, services, horaires et informations du cabinet.
 
 === INFORMATIONS DU CABINET ===
-Nom: ${clinic.name}
+Nom: ${safeClinicName}
 Type: ${typeLabels[clinic.type] ?? clinic.type}
 ${contactParts.length > 0 ? contactParts.join("\n") : "Contact: non renseigné"}
 
