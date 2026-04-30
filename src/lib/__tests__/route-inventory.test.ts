@@ -13,9 +13,9 @@
 // This prevents audit finding P0-01: accidentally exposing new API routes
 // without authentication.
 
-import { describe, it, expect } from "vitest";
 import * as fs from "node:fs";
 import * as path from "node:path";
+import { describe, it, expect } from "vitest";
 import { isPublicRoute } from "@/lib/middleware/routes";
 
 /**
@@ -72,7 +72,6 @@ describe("API Route Inventory", () => {
     expect(total).toBe(testableRoutes.length);
 
     // Log the classification for audit trail
-    // eslint-disable-next-line no-console
     console.log(
       `\nRoute inventory: ${publicRoutes.length} public, ${protectedRoutes.length} protected (${total} total)\n` +
         `Public routes:\n${publicRoutes.map((r) => `  ✓ ${r}`).join("\n")}\n` +
