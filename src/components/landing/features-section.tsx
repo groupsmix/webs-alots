@@ -1,32 +1,31 @@
 "use client";
 
-import {
-  CalendarDays,
-  ClipboardList,
-  MonitorSmartphone,
-  Zap,
-} from "lucide-react";
 import type { TranslationKey } from "@/lib/i18n";
 import { useLandingLocale } from "./landing-locale-provider";
 
-const features: readonly { icon: typeof CalendarDays; titleKey: TranslationKey; descKey: TranslationKey }[] = [
+/**
+ * Features section — table layout, not a card grid.
+ *
+ * Eyebrow: 01 — PRODUCT (mono, 13px, uppercase, Ink/60)
+ * h2: Everything your practice needs
+ * Right column: a 4-row <table> with 1px row separators.
+ * Reads like a spec sheet, not marketing fluff.
+ */
+
+const features: readonly { titleKey: TranslationKey; descKey: TranslationKey }[] = [
   {
-    icon: CalendarDays,
     titleKey: "landing.featureAppointmentsTitle",
     descKey: "landing.featureAppointmentsDesc",
   },
   {
-    icon: ClipboardList,
     titleKey: "landing.featurePatientsTitle",
     descKey: "landing.featurePatientsDesc",
   },
   {
-    icon: MonitorSmartphone,
     titleKey: "landing.featureWebsiteTitle",
     descKey: "landing.featureWebsiteDesc",
   },
   {
-    icon: Zap,
     titleKey: "landing.featureAutomationTitle",
     descKey: "landing.featureAutomationDesc",
   },
@@ -36,35 +35,98 @@ export function FeaturesSection() {
   const { t } = useLandingLocale();
 
   return (
-    <section id="fonctionnalites" className="bg-white dark:bg-gray-950 py-20 sm:py-28">
-      <div className="mx-auto max-w-6xl px-4 sm:px-6">
-        <div className="mx-auto max-w-2xl text-center">
-          <p className="mb-3 text-sm font-semibold uppercase tracking-widest text-blue-600">
-            {t("landing.featuresLabel")}
-          </p>
-          <h2 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-gray-50 sm:text-4xl">
-            {t("landing.featuresTitle")}
-          </h2>
-          <p className="mt-4 text-lg text-gray-600 dark:text-gray-400">
-            {t("landing.featuresSubtitle")}
-          </p>
-        </div>
-
-        <div className="mt-16 grid gap-6 sm:grid-cols-2">
-          {features.map(({ icon: Icon, titleKey, descKey }) => (
-            <div
-              key={titleKey}
-              className="group rounded-2xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 p-8 transition-all hover:border-gray-200 dark:hover:border-gray-700 hover:shadow-lg hover:shadow-gray-100/50 dark:hover:shadow-gray-900/50"
+    <section
+      id="fonctionnalites"
+      className="py-[var(--space-9)] md:py-[var(--space-10)]"
+      style={{ backgroundColor: "var(--bone)" }}
+    >
+      <div
+        className="mx-auto px-[var(--gutter-mobile)] md:px-[var(--gutter-tablet)] lg:px-[var(--gutter-desktop)]"
+        style={{ maxWidth: "var(--container-max)" }}
+      >
+        <div className="grid grid-cols-1 gap-[var(--space-8)] lg:grid-cols-12">
+          {/* Left column: eyebrow + heading + lead */}
+          <div className="lg:col-span-5">
+            {/* eslint-disable-next-line i18next/no-literal-string -- section numbering is not translatable */}
+            <p
+              style={{
+                fontFamily: "var(--font-mono)",
+                fontSize: "var(--text-mono)",
+                lineHeight: "var(--lh-mono)",
+                color: "var(--ink-60)",
+                textTransform: "uppercase",
+                marginBottom: "var(--space-4)",
+              }}
             >
-              <div className="mb-5 flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-600/20">
-                <Icon className="h-5 w-5" />
-              </div>
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-50">{t(titleKey)}</h3>
-              <p className="mt-2 text-sm leading-relaxed text-gray-600 dark:text-gray-400">
-                {t(descKey)}
-              </p>
-            </div>
-          ))}
+              01 &mdash; {t("landing.featuresLabel")}
+            </p>
+            <h2
+              style={{
+                fontSize: "var(--text-h2)",
+                lineHeight: "var(--lh-h2)",
+                letterSpacing: "var(--ls-h2)",
+                fontWeight: 500,
+                color: "var(--ink)",
+              }}
+            >
+              {t("landing.featuresTitle")}
+            </h2>
+            <p
+              className="mt-[var(--space-4)]"
+              style={{
+                fontSize: "var(--text-body-lg)",
+                lineHeight: "var(--lh-body-lg)",
+                letterSpacing: "var(--ls-body-lg)",
+                color: "var(--ink-70)",
+              }}
+            >
+              {t("landing.featuresSubtitle")}
+            </p>
+          </div>
+
+          {/* Right column: feature table */}
+          <div className="lg:col-span-7">
+            <table
+              className="w-full"
+              style={{ borderCollapse: "collapse" }}
+            >
+              <tbody>
+                {features.map(({ titleKey, descKey }, idx) => (
+                  <tr
+                    key={titleKey}
+                    style={{
+                      borderTop: idx === 0 ? "1px solid var(--rule)" : undefined,
+                      borderBottom: "1px solid var(--rule)",
+                    }}
+                  >
+                    <td
+                      className="py-[var(--space-4)] pe-[var(--space-5)] align-top"
+                      style={{
+                        fontSize: "var(--text-h3)",
+                        lineHeight: "var(--lh-h3)",
+                        letterSpacing: "var(--ls-h3)",
+                        fontWeight: 500,
+                        color: "var(--ink)",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {t(titleKey)}
+                    </td>
+                    <td
+                      className="py-[var(--space-4)] align-top"
+                      style={{
+                        fontSize: "var(--text-small)",
+                        lineHeight: "var(--lh-small)",
+                        color: "var(--ink-60)",
+                      }}
+                    >
+                      {t(descKey)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     </section>

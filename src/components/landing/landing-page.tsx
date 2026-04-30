@@ -1,7 +1,6 @@
 "use client";
 
 import { CookieConsent } from "@/components/cookie-consent";
-import { ComparisonSection } from "@/components/marketing/comparison-table";
 import { CtaSection } from "./cta-section";
 import { DemoSection } from "./demo-section";
 import { FeaturesSection } from "./features-section";
@@ -17,14 +16,34 @@ import { TrustSection } from "./trust-section";
  *
  * This page does NOT load any tenant/clinic data.
  * Clinic websites live on subdomains (e.g. dr-ahmed.oltigo.com).
+ *
+ * Section order per spec:
+ *   1. Top bar (LandingHeader)
+ *   2. Hero (editorial, left-aligned)
+ *   3. Evidence strip (TrustSection — stat blocks)
+ *   4. What Oltigo is (FeaturesSection — table layout)
+ *   5. How it works (HowItWorksSection — numbered rows)
+ *   6. Live example (DemoSection — screenshot frame)
+ *   7. Closing CTA (CtaSection — Ink background)
+ *   8. Footer (LandingFooter — 4-column)
+ *
+ * Removed: ComparisonSection (not in spec), decorative blobs, amber demo CTA.
  */
 export function LandingPage() {
   return (
     <LandingLocaleProvider>
-      <div className="flex min-h-screen flex-col bg-background">
+      <div
+        className="flex min-h-screen flex-col"
+        style={{ backgroundColor: "var(--bone)", color: "var(--ink)" }}
+      >
+        {/* eslint-disable-next-line i18next/no-literal-string -- skip-to-content is a standard accessibility pattern */}
         <a
           href="#main-content"
-          className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[100] focus:rounded-lg focus:bg-blue-600 focus:px-4 focus:py-2 focus:text-white focus:text-sm focus:font-medium"
+          className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[100] focus:rounded-lg focus:px-4 focus:py-2 focus:text-sm focus:font-medium"
+          style={{
+            backgroundColor: "var(--oltigo-green)",
+            color: "var(--bone)",
+          }}
         >
           Aller au contenu principal
         </a>
@@ -35,7 +54,6 @@ export function LandingPage() {
           <FeaturesSection />
           <HowItWorksSection />
           <DemoSection />
-          <ComparisonSection />
           <CtaSection />
         </main>
         <LandingFooter />

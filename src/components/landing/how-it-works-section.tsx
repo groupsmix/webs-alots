@@ -1,78 +1,114 @@
 "use client";
 
-import {
-  UserPlus,
-  Settings,
-  Share2,
-  CalendarCheck,
-} from "lucide-react";
-import type { LucideIcon } from "lucide-react";
 import type { TranslationKey } from "@/lib/i18n";
 import { useLandingLocale } from "./landing-locale-provider";
 
-const steps: readonly { number: string; titleKey: TranslationKey; descKey: TranslationKey; icon: LucideIcon }[] = [
-  {
-    number: "01",
-    icon: UserPlus,
-    titleKey: "landing.howStep1Title",
-    descKey: "landing.howStep1Desc",
-  },
-  {
-    number: "02",
-    icon: Settings,
-    titleKey: "landing.howStep2Title",
-    descKey: "landing.howStep2Desc",
-  },
-  {
-    number: "03",
-    icon: Share2,
-    titleKey: "landing.howStep3Title",
-    descKey: "landing.howStep3Desc",
-  },
-  {
-    number: "04",
-    icon: CalendarCheck,
-    titleKey: "landing.howStep4Title",
-    descKey: "landing.howStep4Desc",
-  },
+/**
+ * How it works — 4 numbered rows, mono numerals, stacked, left-aligned.
+ * No connecting arrows or progress bars. No icons.
+ * 64px between rows.
+ */
+
+const steps: readonly {
+  number: string;
+  titleKey: TranslationKey;
+  descKey: TranslationKey;
+}[] = [
+  { number: "01", titleKey: "landing.howStep1Title", descKey: "landing.howStep1Desc" },
+  { number: "02", titleKey: "landing.howStep2Title", descKey: "landing.howStep2Desc" },
+  { number: "03", titleKey: "landing.howStep3Title", descKey: "landing.howStep3Desc" },
+  { number: "04", titleKey: "landing.howStep4Title", descKey: "landing.howStep4Desc" },
 ];
 
 export function HowItWorksSection() {
   const { t } = useLandingLocale();
 
   return (
-    <section id="comment-ca-marche" className="bg-gray-50 dark:bg-gray-900 py-20 sm:py-28">
-      <div className="mx-auto max-w-6xl px-4 sm:px-6">
-        <div className="mx-auto max-w-2xl text-center">
-          <p className="mb-3 text-sm font-semibold uppercase tracking-widest text-blue-600">
-            {t("landing.howLabel")}
-          </p>
-          <h2 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-gray-50 sm:text-4xl">
-            {t("landing.howTitle")}
-          </h2>
-          <p className="mt-4 text-lg text-gray-600 dark:text-gray-400">
-            {t("landing.howSubtitle")}
-          </p>
-        </div>
+    <section
+      id="comment-ca-marche"
+      className="py-[var(--space-9)] md:py-[var(--space-10)]"
+      style={{ backgroundColor: "var(--bone)" }}
+    >
+      <div
+        className="mx-auto px-[var(--gutter-mobile)] md:px-[var(--gutter-tablet)] lg:px-[var(--gutter-desktop)]"
+        style={{ maxWidth: "var(--container-max)" }}
+      >
+        {/* Eyebrow + heading */}
+        {/* eslint-disable-next-line i18next/no-literal-string -- section numbering is not translatable */}
+        <p
+          style={{
+            fontFamily: "var(--font-mono)",
+            fontSize: "var(--text-mono)",
+            lineHeight: "var(--lh-mono)",
+            color: "var(--ink-60)",
+            textTransform: "uppercase",
+            marginBottom: "var(--space-4)",
+          }}
+        >
+          02 &mdash; {t("landing.howLabel")}
+        </p>
+        <h2
+          style={{
+            fontSize: "var(--text-h2)",
+            lineHeight: "var(--lh-h2)",
+            letterSpacing: "var(--ls-h2)",
+            fontWeight: 500,
+            color: "var(--ink)",
+          }}
+        >
+          {t("landing.howTitle")}
+        </h2>
 
-        <div className="mt-16 grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
-          {steps.map(({ number, titleKey, descKey, icon: Icon }, idx) => (
-            <div key={number} className="relative text-center">
-              {/* Connector line (hidden on first item and on mobile) */}
-              {idx > 0 && (
-                <div className="pointer-events-none absolute -left-4 top-7 hidden h-px w-8 bg-gray-200 lg:block" />
-              )}
-
-              <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-white dark:bg-gray-800 shadow-md ring-1 ring-gray-100 dark:ring-gray-700">
-                <Icon className="h-6 w-6 text-blue-600" />
+        {/* Steps */}
+        <div className="mt-[var(--space-8)]">
+          {steps.map(({ number, titleKey, descKey }, idx) => (
+            <div
+              key={number}
+              className="grid grid-cols-1 gap-[var(--space-3)] sm:grid-cols-12"
+              style={{
+                paddingTop: idx === 0 ? 0 : "var(--space-8)",
+                borderTop: idx === 0 ? undefined : "1px solid var(--rule)",
+                marginTop: idx === 0 ? 0 : "var(--space-8)",
+              }}
+            >
+              {/* Number */}
+              <div
+                className="sm:col-span-1"
+                style={{
+                  fontFamily: "var(--font-mono)",
+                  fontSize: "var(--text-mono)",
+                  lineHeight: "var(--lh-mono)",
+                  color: "var(--ink-60)",
+                }}
+              >
+                {number}.
               </div>
-              <div className="mb-2 text-xs font-bold uppercase tracking-widest text-blue-600">
-                {t("landing.howStep")} {number}
+              {/* Title */}
+              <div className="sm:col-span-3">
+                <h3
+                  style={{
+                    fontSize: "var(--text-h3)",
+                    lineHeight: "var(--lh-h3)",
+                    letterSpacing: "var(--ls-h3)",
+                    fontWeight: 500,
+                    color: "var(--ink)",
+                  }}
+                >
+                  {t(titleKey)}
+                </h3>
               </div>
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-50">{t(titleKey)}</h3>
-              <p className="mt-2 text-sm leading-relaxed text-gray-600 dark:text-gray-400">
-                {t(descKey)}
-              </p>
+              {/* Description */}
+              <div className="sm:col-span-8">
+                <p
+                  style={{
+                    fontSize: "var(--text-body)",
+                    lineHeight: "var(--lh-body)",
+                    color: "var(--ink-60)",
+                  }}
+                >
+                  {t(descKey)}
+                </p>
+              </div>
             </div>
           ))}
         </div>

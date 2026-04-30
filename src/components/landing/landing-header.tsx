@@ -1,154 +1,173 @@
 "use client";
 
-import { Menu, X, Moon, Sun } from "lucide-react";
+import { Menu, X } from "lucide-react";
 import Link from "next/link";
 import { useState, useEffect } from "react";
-import { LocaleSwitcher } from "@/components/locale-switcher";
-import { useTheme } from "@/components/theme-provider";
 import type { TranslationKey } from "@/lib/i18n";
 import { useLandingLocale } from "./landing-locale-provider";
 
-const navLinks: readonly { key: TranslationKey; href: string; sectionId?: string }[] = [
-  { key: "landing.navFeatures", href: "/#fonctionnalites", sectionId: "fonctionnalites" },
-  { key: "landing.navHow", href: "/#comment-ca-marche", sectionId: "comment-ca-marche" },
-  { key: "landing.navDemo", href: "/#demo", sectionId: "demo" },
+const navLinks: readonly { key: TranslationKey; href: string }[] = [
+  { key: "landing.navProduct" as TranslationKey, href: "/product" },
+  { key: "landing.navCustomers" as TranslationKey, href: "/customers" },
   { key: "landing.navPricing", href: "/pricing" },
+  { key: "landing.navDocs" as TranslationKey, href: "/docs" },
+  { key: "landing.navStatus" as TranslationKey, href: "/status" },
 ];
 
+/**
+ * Sticky top bar — 64px, Bone background, 1px bottom hairline.
+ * Wordmark only (no logo glyph at launch). Status link has a 6px signal dot.
+ * No dark-mode toggle (not shipped at launch per spec).
+ */
 export function LandingHeader() {
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [activeSection, setActiveSection] = useState("");
+  const [scrolled, setScrolled] = useState(false);
   const { t } = useLandingLocale();
-  const { theme, setTheme } = useTheme();
 
   useEffect(() => {
-    const sectionIds = navLinks
-      .map((link) => link.sectionId)
-      .filter((id): id is string => !!id);
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        for (const entry of entries) {
-          if (entry.isIntersecting) {
-            setActiveSection(entry.target.id);
-          }
-        }
-      },
-      { rootMargin: "-20% 0px -60% 0px", threshold: 0 },
-    );
-
-    for (const id of sectionIds) {
-      const el = document.getElementById(id);
-      if (el) observer.observe(el);
-    }
-
-    return () => observer.disconnect();
+    const onScroll = () => setScrolled(window.scrollY > 0);
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-gray-100 dark:border-gray-800 bg-white/80 dark:bg-gray-950/80 backdrop-blur-lg">
-      <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
+    <header
+      className="sticky top-0 z-50 w-full transition-shadow"
+      style={{
+        height: "64px",
+        backgroundColor: scrolled ? "rgba(246, 244, 238, 0.95)" : "var(--bone)",
+        borderBottom: "1px solid var(--rule)",
+        boxShadow: scrolled ? "var(--shadow-sticky)" : "none",
+        transitionDuration: "var(--duration)",
+        transitionTimingFunction: "var(--easing)",
+      }}
+    >
+      <div
+        className="mx-auto flex h-full items-center justify-between px-[var(--gutter-mobile)] md:px-[var(--gutter-tablet)] lg:px-[var(--gutter-desktop)]"
+        style={{ maxWidth: "var(--container-max)" }}
+      >
+        {/* Wordmark */}
         <Link
           href="/"
-          className="text-xl font-bold tracking-tight text-gray-900 dark:text-gray-50"
+          style={{
+            fontSize: "17px",
+            fontWeight: 500,
+            color: "var(--ink)",
+            letterSpacing: "-0.01em",
+            textDecoration: "none",
+          }}
         >
+          {/* eslint-disable-next-line i18next/no-literal-string -- brand wordmark is not translatable */}
           Oltigo
         </Link>
 
         {/* Desktop nav */}
-        <nav aria-label="Navigation principale" className="hidden items-center gap-8 md:flex">
-          {navLinks.map(({ key, href, sectionId }) => (
-            <a
+        <nav aria-label="Main navigation" className="hidden items-center gap-[var(--space-5)] md:flex">
+          {navLinks.map(({ key, href }) => (
+            <Link
               key={href}
               href={href}
-              className={`text-sm transition-colors hover:text-gray-900 dark:hover:text-gray-50 ${
-                sectionId && activeSection === sectionId
-                  ? "text-blue-600 dark:text-blue-400 font-medium"
-                  : "text-gray-600 dark:text-gray-400"
-              }`}
+              className="inline-flex items-center gap-[var(--space-1)] transition-colors"
+              style={{
+                fontSize: "var(--text-small)",
+                fontWeight: 400,
+                color: "var(--ink-80)",
+                transitionDuration: "var(--duration)",
+              }}
             >
               {t(key)}
-            </a>
+              {key === ("landing.navStatus" as TranslationKey) && (
+                <span
+                  className="inline-block h-1.5 w-1.5 rounded-full"
+                  style={{ backgroundColor: "var(--signal-green)" }}
+                  aria-label="Status: operational"
+                />
+              )}
+            </Link>
           ))}
         </nav>
 
-        <div className="flex items-center gap-3">
-          <button
-            type="button"
-            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-            className="hidden h-8 w-8 items-center justify-center rounded-lg text-gray-600 dark:text-gray-400 transition-colors hover:bg-gray-100 dark:hover:bg-gray-800 sm:inline-flex"
-            aria-label={theme === "dark" ? "Passer en mode clair" : "Passer en mode sombre"}
-          >
-            {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-          </button>
-          <LocaleSwitcher className="hidden sm:block" />
+        {/* Desktop CTAs */}
+        <div className="hidden items-center gap-[var(--space-3)] md:flex">
           <Link
             href="/login"
-            className="hidden text-sm font-medium text-gray-600 dark:text-gray-400 transition-colors hover:text-gray-900 dark:hover:text-gray-50 sm:inline-flex"
+            className="transition-colors"
+            style={{
+              fontSize: "var(--text-small)",
+              fontWeight: 400,
+              color: "var(--ink-80)",
+              transitionDuration: "var(--duration)",
+            }}
           >
             {t("nav.login")}
           </Link>
           <Link
             href="/register-clinic"
-            className="hidden h-9 items-center rounded-lg bg-blue-600 px-4 text-sm font-medium text-white transition-colors hover:bg-blue-700 sm:inline-flex"
+            className="inline-flex items-center rounded-[var(--radius-landing)] px-[var(--space-5)] transition-colors"
+            style={{
+              fontSize: "var(--text-small)",
+              fontWeight: 500,
+              backgroundColor: "var(--oltigo-green)",
+              color: "var(--bone)",
+              height: "28px",
+              transitionDuration: "var(--duration)",
+              transitionTimingFunction: "var(--easing)",
+            }}
           >
-            {t("landing.ctaPrimary")}
+            {t("landing.ctaOpenAccount" as TranslationKey)}
           </Link>
-          <Link
-            href="/contact"
-            className="inline-flex h-9 items-center rounded-lg bg-gray-900 px-4 text-sm font-medium text-white transition-colors hover:bg-gray-800 sm:hidden"
-          >
-            {t("nav.contact")}
-          </Link>
-
-          {/* Mobile menu toggle */}
-          <button
-            type="button"
-            className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-gray-600 dark:text-gray-400 transition-colors hover:bg-gray-100 dark:hover:bg-gray-800 md:hidden"
-            onClick={() => setMobileOpen(!mobileOpen)}
-            aria-label={mobileOpen ? t("landing.menuClose") : t("landing.menuOpen")}
-            aria-expanded={mobileOpen}
-            aria-controls="mobile-nav"
-          >
-            {mobileOpen ? (
-              <X className="h-5 w-5" />
-            ) : (
-              <Menu className="h-5 w-5" />
-            )}
-          </button>
         </div>
+
+        {/* Mobile menu toggle */}
+        <button
+          type="button"
+          className="inline-flex h-11 w-11 items-center justify-center md:hidden"
+          onClick={() => setMobileOpen(!mobileOpen)}
+          aria-label={mobileOpen ? t("landing.menuClose") : t("landing.menuOpen")}
+          aria-expanded={mobileOpen}
+          aria-controls="mobile-nav"
+          style={{ color: "var(--ink)" }}
+        >
+          {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+        </button>
       </div>
 
-      {/* Mobile nav */}
+      {/* Mobile nav drawer */}
       {mobileOpen && (
-        <nav id="mobile-nav" aria-label="Navigation mobile" className="border-t border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-950 px-4 pb-4 pt-2 md:hidden">
+        <nav
+          id="mobile-nav"
+          aria-label="Mobile navigation"
+          className="md:hidden"
+          style={{
+            backgroundColor: "var(--bone)",
+            borderBottom: "1px solid var(--rule)",
+          }}
+        >
           {navLinks.map(({ key, href }) => (
-            <a
+            <Link
               key={href}
               href={href}
-              className="block rounded-lg px-3 py-2.5 text-sm font-medium text-gray-600 dark:text-gray-400 transition-colors hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-gray-50"
+              className="block px-[var(--gutter-mobile)] py-[var(--space-3)] transition-colors"
               onClick={() => setMobileOpen(false)}
+              style={{
+                fontSize: "var(--text-small)",
+                fontWeight: 400,
+                color: "var(--ink-80)",
+                borderBottom: "1px solid var(--rule)",
+              }}
             >
               {t(key)}
-            </a>
+            </Link>
           ))}
-          <Link
-            href="/login"
-            className="block rounded-lg px-3 py-2.5 text-sm font-medium text-gray-600 dark:text-gray-400 transition-colors hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-gray-50 sm:hidden"
-            onClick={() => setMobileOpen(false)}
-          >
-            {t("nav.login")}
-          </Link>
-          <div className="mt-2 flex items-center gap-3 px-3 sm:hidden">
-            <LocaleSwitcher />
-            <button
-              type="button"
-              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-              className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-gray-600 dark:text-gray-400 transition-colors hover:bg-gray-100 dark:hover:bg-gray-800"
-              aria-label={theme === "dark" ? "Passer en mode clair" : "Passer en mode sombre"}
+          <div className="flex gap-[var(--space-3)] px-[var(--gutter-mobile)] py-[var(--space-4)]">
+            <Link
+              href="/login"
+              className="text-[var(--text-small)]"
+              style={{ color: "var(--ink-80)" }}
+              onClick={() => setMobileOpen(false)}
             >
-              {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-            </button>
+              {t("nav.login")}
+            </Link>
           </div>
         </nav>
       )}
