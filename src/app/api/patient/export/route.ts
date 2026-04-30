@@ -55,6 +55,11 @@ export const GET = withAuth(async (request: NextRequest, { supabase, profile }) 
     return apiNotFound("Profile not found");
   }
 
+  // A73-F3: Cap each sub-query to prevent unbounded result sets for
+  // long-history patients. 5 000 rows per category is generous but prevents
+  // memory exhaustion on pathological accounts.
+  const EXPORT_ROW_LIMIT = 5_000;
+
   // Fetch patient-related data
   const [
     { data: appointments },
@@ -66,24 +71,28 @@ export const GET = withAuth(async (request: NextRequest, { supabase, profile }) 
       .from("appointments")
       .select("id, slot_start, slot_end, status, notes, source, is_first_visit, insurance_flag, created_at")
       .eq("patient_id", profile.id)
-      .order("slot_start", { ascending: false }),
+      .order("slot_start", { ascending: false })
+      .limit(EXPORT_ROW_LIMIT),
     // NOTE: medication/dosage/duration/instructions are not in generated Supabase types
     // but exist in the DB schema. Cast the query result.
     (supabase
       .from("prescriptions")
       .select("id, medication, dosage, duration, instructions, created_at")
       .eq("patient_id", profile.id)
-      .order("created_at", { ascending: false }) as unknown as Promise<{ data: { id: string; medication: string; dosage: string; duration: string; instructions: string; created_at: string }[] | null }>),
+      .order("created_at", { ascending: false })
+      .limit(EXPORT_ROW_LIMIT) as unknown as Promise<{ data: { id: string; medication: string; dosage: string; duration: string; instructions: string; created_at: string }[] | null }>),
     supabase
       .from("payments")
       .select("id, amount, method, status, ref, created_at")
       .eq("patient_id", profile.id)
-      .order("created_at", { ascending: false }),
+      .order("created_at", { ascending: false })
+      .limit(EXPORT_ROW_LIMIT),
     supabase
       .from("documents")
       .select("id, name, category, created_at")
       .eq("patient_id", profile.id)
-      .order("created_at", { ascending: false }),
+      .order("created_at", { ascending: false })
+      .limit(EXPORT_ROW_LIMIT),
   ]);
 
   const exportData = {
