@@ -13,9 +13,12 @@
  */
 
 import { type NextRequest } from "next/server";
+import { getOpenAIBaseUrl, getOpenAIModel } from "@/lib/ai/config";
 import { sanitizeUntrustedText } from "@/lib/ai/sanitize";
 import { apiSuccess, apiError, apiRateLimited, apiInternalError } from "@/lib/api-response";
 import { withAuthValidation } from "@/lib/api-validate";
+import { logAuditEvent } from "@/lib/audit-log";
+import { isAIEnabled } from "@/lib/features";
 import { logger } from "@/lib/logger";
 import { aiPatientSummaryLimiter } from "@/lib/rate-limit";
 import type { Json } from "@/lib/types/database";
@@ -265,6 +268,15 @@ export const POST = withAuthValidation(
       return apiError("No clinic associated with this account", 403, "NO_CLINIC");
     }
 
+    // A115-1: AI kill-switch — reject when ai.enabled is "false" in KV.
+    if (!(await isAIEnabled())) {
+      return apiError(
+        "Les fonctionnalites IA sont temporairement desactivees.",
+        503,
+        "AI_DISABLED",
+      );
+    }
+
     // Rate limit per doctor (30/day)
     const allowed = await aiPatientSummaryLimiter.check(`ai-summary:${doctorId}`);
     if (!allowed) {
@@ -299,8 +311,8 @@ export const POST = withAuthValidation(
 
     // Check AI configuration
     const apiKey = process.env.OPENAI_API_KEY;
-    const baseUrl = process.env.OPENAI_BASE_URL || "https://api.openai.com/v1";
-    const model = process.env.OPENAI_MODEL || "gpt-4o-mini";
+    const baseUrl = getOpenAIBaseUrl();
+    const model = getOpenAIModel();
 
     if (!apiKey) {
       return apiError(
@@ -428,6 +440,17 @@ export const POST = withAuthValidation(
 
       // Log AI usage for billing (fire-and-forget)
       void logAiUsage(supabase, clinicId, doctorId);
+
+      // A115-8: Audit trail for AI invocations (no PHI in metadata)
+      void logAuditEvent({
+        supabase,
+        action: "ai_patient_summary_invoked",
+        type: "config",
+        clinicId,
+        actor: doctorId,
+        description: "AI patient summary generated",
+        metadata: { model: getOpenAIModel(), feature: "ai_patient_summary" },
+      });
 
       return apiSuccess<PatientSummaryResponse>({
         summary,

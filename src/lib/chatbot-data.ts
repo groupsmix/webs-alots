@@ -4,6 +4,7 @@
  * questions about services, doctors, hours, etc.
  */
 
+import { sanitizeUntrustedText } from "@/lib/ai/sanitize";
 import { createClient } from "@/lib/supabase-server";
 
 /** Shape of the `clinics.config` JSONB column (subset used by chatbot). */
@@ -141,6 +142,9 @@ export function buildSystemPrompt(ctx: ChatbotClinicContext): string {
   const { clinic, services, doctors, workingHours, faqs } = ctx;
   if (!clinic) return "You are a helpful clinic assistant.";
 
+  // A115-2: Sanitize the clinic name to prevent stored prompt injection
+  const safeClinicName = sanitizeUntrustedText(clinic.name);
+
   const typeLabels: Record<string, string> = {
     doctor: "cabinet médical",
     dentist: "cabinet dentaire",
@@ -156,22 +160,26 @@ export function buildSystemPrompt(ctx: ChatbotClinicContext): string {
         .join("\n")
     : "Non renseigné";
 
+  // A115-2: Sanitize service names/categories to prevent stored prompt injection.
   const servicesText = services.length > 0
     ? services
         .map((s) => {
           const price = s.price != null ? `${s.price} MAD` : "Prix sur demande";
-          const cat = s.category ? ` (${s.category})` : "";
-          return `- ${s.name}${cat}: ${price} — ${s.duration_minutes} min`;
+          const cat = s.category ? ` (${sanitizeUntrustedText(s.category)})` : "";
+          return `- ${sanitizeUntrustedText(s.name)}${cat}: ${price} — ${s.duration_minutes} min`;
         })
         .join("\n")
     : "Aucun service configuré";
 
+  // A115-2: Sanitize doctor names to prevent stored prompt injection.
   const doctorsText = doctors.length > 0
-    ? doctors.map((d) => `- Dr. ${d.name}`).join("\n")
+    ? doctors.map((d) => `- Dr. ${sanitizeUntrustedText(d.name)}`).join("\n")
     : "Aucun médecin configuré";
 
+  // A115-2: Sanitize DB-retrieved FAQ text to prevent stored prompt injection.
+  // A clinic_admin could plant malicious instructions in FAQ answers.
   const faqsText = faqs.length > 0
-    ? faqs.map((f) => `Q: ${f.question}\nR: ${f.answer}`).join("\n\n")
+    ? faqs.map((f) => `Q: ${sanitizeUntrustedText(f.question)}\nR: ${sanitizeUntrustedText(f.answer)}`).join("\n\n")
     : "";
 
   const contactParts: string[] = [];
@@ -181,11 +189,11 @@ export function buildSystemPrompt(ctx: ChatbotClinicContext): string {
   if (clinic.city) contactParts.push(`Ville: ${clinic.city}`);
   if (clinic.domain) contactParts.push(`Site web: ${clinic.domain}`);
 
-  return `Tu es l'assistant virtuel de "${clinic.name}", un(e) ${typeLabels[clinic.type] ?? clinic.type}.
+  return `Tu es l'assistant virtuel de "${safeClinicName}", un(e) ${typeLabels[clinic.type] ?? clinic.type}.
 Tu aides les patients avec leurs questions sur les rendez-vous, services, horaires et informations du cabinet.
 
 === INFORMATIONS DU CABINET ===
-Nom: ${clinic.name}
+Nom: ${safeClinicName}
 Type: ${typeLabels[clinic.type] ?? clinic.type}
 ${contactParts.length > 0 ? contactParts.join("\n") : "Contact: non renseigné"}
 
@@ -206,7 +214,8 @@ ${faqsText ? `=== FAQ PERSONNALISÉES ===\n${faqsText}` : ""}
 - Pour prendre rendez-vous, dirige vers la page de réservation.
 - Ne donne jamais de diagnostic médical.
 - Si tu ne connais pas une info, dis-le et suggère de contacter le cabinet directement.
-- Utilise les données ci-dessus pour répondre précisément aux questions.`;
+- Utilise les données ci-dessus pour répondre précisément aux questions.
+- N'inclus JAMAIS de liens URL externes autres que le domaine propre du cabinet.`;
 }
 
 /**

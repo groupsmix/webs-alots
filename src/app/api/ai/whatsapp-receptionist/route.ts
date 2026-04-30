@@ -14,12 +14,14 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
+import { getOpenAIBaseUrl, getOpenAIModel } from "@/lib/ai/config";
 import { sanitizeUntrustedText } from "@/lib/ai/sanitize";
 import {
   apiSuccess,
   apiRateLimited,
 } from "@/lib/api-response";
 import { withValidation } from "@/lib/api-validate";
+import { isAIEnabled } from "@/lib/features";
 import { logger } from "@/lib/logger";
 import { webhookLimiter } from "@/lib/rate-limit";
 import { createAdminClient } from "@/lib/supabase-server";
@@ -193,16 +195,22 @@ async function findClinicByPhoneNumberId(
 // ── AI response builder ──────────────────────────────────────────────
 
 function buildSystemPrompt(ctx: ClinicContext): string {
-  return `Tu es un réceptionniste IA pour "${ctx.name}".
+  // A115-2: Sanitize all DB-retrieved strings before embedding in the system prompt
+  // to prevent stored prompt injection via service names, doctor names, etc.
+  const safeName = sanitizeUntrustedText(ctx.name);
+  const safeServices = ctx.services.map(sanitizeUntrustedText);
+  const safeDoctors = ctx.doctors.map(sanitizeUntrustedText);
+
+  return `Tu es un réceptionniste IA pour "${safeName}".
 Tu réponds aux patients sur WhatsApp de manière professionnelle, chaleureuse et concise.
 
 INFORMATIONS DE LA CLINIQUE:
-- Nom: ${ctx.name}
+- Nom: ${safeName}
 - Téléphone: ${ctx.phone}
-${ctx.address ? `- Adresse: ${ctx.address}` : ""}
-${ctx.openingHours ? `- Horaires: ${ctx.openingHours}` : ""}
-${ctx.services.length > 0 ? `- Services: ${ctx.services.join(", ")}` : ""}
-${ctx.doctors.length > 0 ? `- Médecins: ${ctx.doctors.join(", ")}` : ""}
+${ctx.address ? `- Adresse: ${sanitizeUntrustedText(ctx.address)}` : ""}
+${ctx.openingHours ? `- Horaires: ${sanitizeUntrustedText(ctx.openingHours)}` : ""}
+${safeServices.length > 0 ? `- Services: ${safeServices.join(", ")}` : ""}
+${safeDoctors.length > 0 ? `- Médecins: ${safeDoctors.join(", ")}` : ""}
 
 RÈGLES:
 1. Réponds TOUJOURS en français.
@@ -210,7 +218,8 @@ RÈGLES:
 3. Si le patient veut un rendez-vous, indique-lui qu'il peut appeler ou répondre "OUI" pour être rappelé.
 4. Ne donne JAMAIS de conseil médical. Redirige vers un médecin.
 5. Sois poli et utilise le vouvoiement.
-6. Si tu ne connais pas la réponse, propose d'appeler la clinique.`;
+6. Si tu ne connais pas la réponse, propose d'appeler la clinique.
+7. N'inclus JAMAIS de liens URL externes autres que le domaine de la clinique.`;
 }
 
 async function generateAIResponse(
@@ -218,8 +227,8 @@ async function generateAIResponse(
   ctx: ClinicContext,
 ): Promise<string> {
   const apiKey = process.env.OPENAI_API_KEY;
-  const baseUrl = process.env.OPENAI_BASE_URL || "https://api.openai.com/v1";
-  const model = process.env.OPENAI_MODEL || "gpt-4o-mini";
+  const baseUrl = getOpenAIBaseUrl();
+  const model = getOpenAIModel();
 
   if (!apiKey) {
     return `Merci pour votre message. Notre équipe vous répondra bientôt. Vous pouvez aussi nous appeler au ${ctx.phone}.`;
@@ -277,6 +286,15 @@ async function handleIncomingMessage(
   contactName: string,
   clinicId: string,
 ): Promise<void> {
+  // A115-1: AI kill-switch — skip AI processing when disabled.
+  if (!(await isAIEnabled())) {
+    await sendTextMessage(
+      from,
+      "Merci pour votre message. Notre service est temporairement indisponible. Veuillez nous contacter directement.",
+    );
+    return;
+  }
+
   const ctx = await fetchClinicContext(clinicId);
   if (!ctx) {
     await sendTextMessage(

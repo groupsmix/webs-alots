@@ -13,10 +13,12 @@
  */
 
 import { type NextRequest } from "next/server";
+import { getOpenAIBaseUrl, getOpenAIModel } from "@/lib/ai/config";
 import { sanitizeUntrustedText } from "@/lib/ai/sanitize";
 import { apiSuccess, apiError, apiRateLimited, apiInternalError } from "@/lib/api-response";
 import { withAuthValidation } from "@/lib/api-validate";
 import { checkAllInteractions, type InteractionAlert } from "@/lib/check-interactions";
+import { isAIEnabled } from "@/lib/features";
 import { logger } from "@/lib/logger";
 import { aiDrugCheckLimiter } from "@/lib/rate-limit";
 import type { PatientMetadata } from "@/lib/types/patient-metadata";
@@ -50,8 +52,8 @@ async function checkWithAi(
   allergies: string[],
 ): Promise<AiInteractionResult | null> {
   const apiKey = process.env.OPENAI_API_KEY;
-  const baseUrl = process.env.OPENAI_BASE_URL || "https://api.openai.com/v1";
-  const model = process.env.OPENAI_MODEL || "gpt-4o-mini";
+  const baseUrl = getOpenAIBaseUrl();
+  const model = getOpenAIModel();
 
   if (!apiKey) return null;
 
@@ -150,6 +152,15 @@ export const POST = withAuthValidation(
 
     if (!clinicId) {
       return apiError("No clinic associated with this account", 403, "NO_CLINIC");
+    }
+
+    // A115-1: AI kill-switch — reject when ai.enabled is "false" in KV.
+    if (!(await isAIEnabled())) {
+      return apiError(
+        "Les fonctionnalites IA sont temporairement desactivees.",
+        503,
+        "AI_DISABLED",
+      );
     }
 
     // Rate limit per doctor (100/day)

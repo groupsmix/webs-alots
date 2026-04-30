@@ -1,8 +1,9 @@
 import { NextRequest } from "next/server";
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-import { apiSuccess, apiError, apiRateLimited } from "@/lib/api-response";
+import { getOpenAIBaseUrl, getOpenAIModel } from "@/lib/ai/config";
+import { apiSuccess, apiError } from "@/lib/api-response";
 import { withValidation } from "@/lib/api-validate";
 import { fetchChatbotContext, buildSystemPrompt, getBasicResponse } from "@/lib/chatbot-data";
+import { isAIEnabled } from "@/lib/features";
 import { logger } from "@/lib/logger";
 import { createClient } from "@/lib/supabase-server";
 import { requireTenant } from "@/lib/tenant";
@@ -121,6 +122,16 @@ export const POST = withValidation(chatRequestSchema, async (body, request: Next
       });
     }
 
+    // A115-1: AI kill-switch — reject AI-powered requests when the global
+    // `ai.enabled` flag is explicitly set to "false" in FEATURE_FLAGS_KV.
+    if (!(await isAIEnabled())) {
+      // Gracefully degrade to basic keyword matching instead of hard error
+      const reply = getBasicResponse(lastMessage.content, ctx);
+      return apiSuccess({
+        message: { role: "assistant" as const, content: reply },
+      });
+    }
+
     // --- SMART: Cloudflare Workers AI (free) ---
     if (intelligence === "smart") {
       const cfAccountId = process.env.CLOUDFLARE_ACCOUNT_ID;
@@ -183,8 +194,8 @@ export const POST = withValidation(chatRequestSchema, async (body, request: Next
     // --- ADVANCED: OpenAI-compatible API (paid) ---
     // Authentication is already enforced above (SEC-01) for all tiers.
     const apiKey = process.env.OPENAI_API_KEY;
-    const baseUrl = process.env.OPENAI_BASE_URL || "https://api.openai.com/v1";
-    const model = process.env.OPENAI_MODEL || "gpt-4o-mini";
+    const baseUrl = getOpenAIBaseUrl();
+    const model = getOpenAIModel();
 
     if (!apiKey) {
       const reply = getBasicResponse(lastMessage.content, ctx);
