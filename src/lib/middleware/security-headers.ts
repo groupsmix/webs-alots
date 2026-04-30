@@ -96,7 +96,13 @@ export function buildCsp(nonce: string, _options?: BuildCspOptions): string {
   return [
     "default-src 'self'",
     `script-src ${scriptSrc.join(" ")}`,
-    `style-src 'self' 'nonce-${nonce}'`,
+    // C-01: Add 'unsafe-inline' as a fallback for style-src. CSP3 nonces do NOT
+    // apply to inline style="" attributes (only <style> blocks), so the 46+
+    // React components using style={{}} would have their styles blocked in
+    // production. 'unsafe-inline' is ignored by browsers that support nonces
+    // (CSP3), but provides the necessary fallback for style attributes.
+    // Long-term fix: migrate all style={{}} to Tailwind/CSS modules.
+    `style-src 'self' 'unsafe-inline' 'nonce-${nonce}'`,
     `img-src 'self' data: blob: ${sbHost} uploads.oltigo.com`,
     "font-src 'self'",
     `connect-src ${connectSources}`,

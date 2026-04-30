@@ -21,12 +21,22 @@ const HEADER_ID = "x-auth-profile-id";
 const HEADER_ROLE = "x-auth-profile-role";
 const HEADER_CLINIC = "x-auth-profile-clinic";
 const HEADER_SIG = "x-auth-profile-sig";
+const HEADER_IAT = "x-auth-profile-iat";
+
+/**
+ * C-02: Maximum age (in seconds) for a signed profile header to be considered
+ * valid. After this window the signature is rejected and the authoritative DB
+ * lookup is forced. 5 minutes is generous enough for clock skew between
+ * middleware and route handler within the same Worker isolate.
+ */
+const MAX_HEADER_AGE_SECONDS = 300;
 
 export const PROFILE_HEADER_NAMES = {
   id: HEADER_ID,
   role: HEADER_ROLE,
   clinic: HEADER_CLINIC,
   sig: HEADER_SIG,
+  iat: HEADER_IAT,
 } as const;
 
 export interface SignedProfile {
@@ -53,8 +63,8 @@ function getProfileHeaderSecret(): string | null {
   return null;
 }
 
-function buildPayload(profile: SignedProfile): string {
-  return `${profile.id}:${profile.role}:${profile.clinic_id ?? ""}`;
+function buildPayload(profile: SignedProfile, iat: number): string {
+  return `${profile.id}:${profile.role}:${profile.clinic_id ?? ""}:${iat}`;
 }
 
 function bytesToHex(bytes: Uint8Array): string {
@@ -89,16 +99,21 @@ async function importHmacKey(secret: string, usage: "sign" | "verify"): Promise<
 }
 
 /**
- * Sign a profile and return the hex-encoded signature, or `null` when
- * no HMAC key is configured. The caller must skip setting the
+ * Sign a profile and return the hex-encoded signature + issued-at timestamp,
+ * or `null` when no HMAC key is configured. The caller must skip setting the
  * `x-auth-profile-*` headers when this returns `null`.
+ *
+ * C-02: The payload now includes an `iat` (issued-at) Unix timestamp so
+ * that captured headers expire after MAX_HEADER_AGE_SECONDS. The caller
+ * must set `x-auth-profile-iat` alongside the signature.
  */
-export async function signProfileHeader(profile: SignedProfile): Promise<string | null> {
+export async function signProfileHeader(profile: SignedProfile): Promise<{ sig: string; iat: number } | null> {
   const secret = getProfileHeaderSecret();
   if (!secret) return null;
+  const iat = Math.floor(Date.now() / 1000);
   const key = await importHmacKey(secret, "sign");
-  const sig = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(buildPayload(profile)));
-  return bytesToHex(new Uint8Array(sig));
+  const sig = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(buildPayload(profile, iat)));
+  return { sig: bytesToHex(new Uint8Array(sig)), iat };
 }
 
 export interface VerifyHeaderInput {
@@ -106,17 +121,32 @@ export interface VerifyHeaderInput {
   role: string | null;
   clinic_id: string | null;
   signature: string | null;
+  /** C-02: Unix timestamp (seconds) when the header was signed. */
+  iat: string | null;
 }
 
 /**
  * Verify the inbound `x-auth-profile-*` headers. Returns the parsed
  * profile on success, or `null` on any failure (missing fields, no
- * configured key, or signature mismatch). The caller MUST then perform
- * the authoritative DB lookup — `null` here means "do not trust the
- * headers", never "the user is anonymous".
+ * configured key, signature mismatch, or expired `iat`).
+ *
+ * C-02: The signature now includes an `iat` timestamp. Headers older
+ * than MAX_HEADER_AGE_SECONDS are rejected, preventing indefinite
+ * replay of captured profile headers.
+ *
+ * The caller MUST then perform the authoritative DB lookup — `null`
+ * here means "do not trust the headers", never "the user is anonymous".
  */
 export async function verifyProfileHeader(input: VerifyHeaderInput): Promise<SignedProfile | null> {
   if (!input.id || !input.role || !input.signature) return null;
+
+  // C-02: Require iat and reject expired headers
+  const iat = input.iat ? parseInt(input.iat, 10) : NaN;
+  if (isNaN(iat)) return null;
+
+  const now = Math.floor(Date.now() / 1000);
+  if (Math.abs(now - iat) > MAX_HEADER_AGE_SECONDS) return null;
+
   const secret = getProfileHeaderSecret();
   if (!secret) return null;
 
@@ -124,7 +154,7 @@ export async function verifyProfileHeader(input: VerifyHeaderInput): Promise<Sig
   const expected = await crypto.subtle.sign(
     "HMAC",
     key,
-    new TextEncoder().encode(buildPayload({ id: input.id, role: input.role, clinic_id: input.clinic_id })),
+    new TextEncoder().encode(buildPayload({ id: input.id, role: input.role, clinic_id: input.clinic_id }, iat)),
   );
   const expectedHex = bytesToHex(new Uint8Array(expected));
 
