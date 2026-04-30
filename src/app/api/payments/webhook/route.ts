@@ -1,3 +1,4 @@
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { NextRequest } from "next/server";
 import { apiError, apiSuccess, apiInternalError } from "@/lib/api-response";
 import { assertClinicId } from "@/lib/assert-tenant";
@@ -5,6 +6,7 @@ import { hmacSha256Hex, timingSafeEqual } from "@/lib/crypto-utils";
 import { logger } from "@/lib/logger";
 import { createClient } from "@/lib/supabase-server";
 import { setTenantContext, logTenantContext } from "@/lib/tenant-context";
+import type { Database } from "@/lib/types/database";
 import { APPOINTMENT_STATUS, PAYMENT_STATUS } from "@/lib/types/database";
 import { stripeWebhookEventSchema } from "@/lib/validations";
 import type { StripeWebhookEvent } from "@/lib/validations";
@@ -88,6 +90,27 @@ export async function POST(request: NextRequest) {
             break;
           }
           logTenantContext(clinicId, "payments/webhook:checkout.completed");
+
+          // T-2 (STRIDE): Stripe's signature only proves the event came
+          // from Stripe — NOT that `session.metadata.*` is honest. A
+          // malicious patient could create a Checkout Session with crafted
+          // metadata (different clinic_id, someone else's patient_id, or
+          // an appointment_id from another tenant) and the resulting
+          // webhook would be cryptographically valid. Cross-check every
+          // metadata reference against the database before mutating any
+          // payment or appointment row.
+          const metadataValid = await verifyStripeMetadata(supabase, {
+            clinicId,
+            patientId,
+            appointmentId,
+            context: "payments/webhook:checkout.completed",
+          });
+          if (!metadataValid) {
+            // Already logged inside verifyStripeMetadata. Skip processing
+            // rather than ack — returning 200 lets Stripe stop retrying
+            // an event we will never accept.
+            break;
+          }
           
           // Audit 3.8 Fix: Webhook Deduplication / Replay Protection
           // We check if this exact Stripe event ID has already been processed to
@@ -151,6 +174,17 @@ export async function POST(request: NextRequest) {
               clinicId: failedClinicId,
               error: tenantErr,
             });
+            break;
+          }
+          // T-2 (STRIDE): cross-check metadata against DB before writing
+          // a failed-payment audit row.
+          const failedMetadataValid = await verifyStripeMetadata(supabase, {
+            clinicId: failedClinicId,
+            patientId: failedPatientId,
+            appointmentId: failedAppointmentId,
+            context: "payments/webhook:payment_failed",
+          });
+          if (!failedMetadataValid) {
             break;
           }
           logTenantContext(failedClinicId, "payments/webhook:payment_failed");
@@ -241,4 +275,89 @@ async function verifyStripeSignature(
     logger.warn("Operation failed", { context: "payments/webhook", error: err });
     return false;
   }
+}
+
+/**
+ * T-2 (STRIDE): Cross-check Stripe webhook metadata against the database.
+ *
+ * Stripe's signature header proves only that the event came from Stripe.
+ * The values inside `session.metadata` / `payment_intent.metadata` are
+ * arbitrary key/value pairs that any party who can create a Checkout
+ * Session (including a malicious patient who briefly authenticated to
+ * a clinic's checkout endpoint) can set to whatever they like \u2014 a
+ * different `clinic_id`, somebody else's `patient_id`, or an
+ * `appointment_id` from another tenant.
+ *
+ * This helper rejects the event when:
+ *   1. patient_id does not refer to a row in `users` belonging to the
+ *      claimed clinic_id.
+ *   2. appointment_id (if present) does not belong to the claimed
+ *      clinic_id, OR its patient_id does not match the claimed
+ *      patient_id.
+ *
+ * Each rejection is logged at warn level (with the offending IDs) so
+ * operators can trace replay attempts without surfacing PHI.
+ */
+async function verifyStripeMetadata(
+  supabase: SupabaseClient<Database>,
+  params: {
+    clinicId: string;
+    patientId: string;
+    appointmentId: string | null | undefined;
+    context: string;
+  },
+): Promise<boolean> {
+  const { clinicId, patientId, appointmentId, context } = params;
+
+  // 1. Confirm the patient belongs to the claimed clinic.
+  const { data: patientRow, error: patientErr } = await supabase
+    .from("users")
+    .select("id, clinic_id, role")
+    .eq("id", patientId)
+    .eq("clinic_id", clinicId)
+    .maybeSingle();
+
+  if (patientErr || !patientRow) {
+    logger.warn("Stripe metadata rejected: patient_id does not belong to clinic_id", {
+      context,
+      clinicId,
+      patientId,
+      error: patientErr ?? undefined,
+    });
+    return false;
+  }
+
+  // 2. If an appointment is referenced, confirm it is for this clinic
+  //    and this patient.
+  if (appointmentId) {
+    const { data: appt, error: apptErr } = await supabase
+      .from("appointments")
+      .select("id, clinic_id, patient_id")
+      .eq("id", appointmentId)
+      .eq("clinic_id", clinicId)
+      .maybeSingle();
+
+    if (apptErr || !appt) {
+      logger.warn("Stripe metadata rejected: appointment_id not in clinic_id", {
+        context,
+        clinicId,
+        appointmentId,
+        error: apptErr ?? undefined,
+      });
+      return false;
+    }
+
+    if (appt.patient_id !== patientId) {
+      logger.warn("Stripe metadata rejected: appointment.patient_id mismatch", {
+        context,
+        clinicId,
+        appointmentId,
+        claimedPatientId: patientId,
+        actualPatientId: appt.patient_id,
+      });
+      return false;
+    }
+  }
+
+  return true;
 }

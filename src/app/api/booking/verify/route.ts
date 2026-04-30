@@ -3,10 +3,13 @@
  *
  * Issues a booking verification token after validating the patient's
  * phone number.  The token is an HMAC-SHA256 signature of the phone
- * number and an expiry timestamp, matching the format expected by
- * `verifyBookingToken` in the main booking route.
+ * number, the resolved clinic_id and an expiry timestamp, matching
+ * the format expected by `verifyBookingToken` in the main booking route.
  *
- * Token format: "phone:expiryTimestamp:signature"
+ * Token format: "phone:clinicId:expiryTimestamp:signature"
+ *
+ * S-2 (STRIDE): The clinic_id is included in the signed payload so a
+ * token issued for tenant A cannot be replayed against tenant B.
  *
  * NOTE: Full OTP verification (Twilio SMS) is deferred.  Currently
  * this endpoint issues a token for any syntactically valid phone
@@ -41,8 +44,10 @@ export const POST = withValidation(bookingVerifySchema, async (data, request: Ne
     return apiRateLimited("Too many verification requests. Please try again later.");
   }
 
-  // Ensure we are in a valid tenant context (subdomain resolved)
-  await requireTenantWithConfig();
+  // Ensure we are in a valid tenant context (subdomain resolved) and
+  // capture the clinicId so we can bind the issued token to this tenant.
+  const { tenant } = await requireTenantWithConfig();
+  const clinicId = tenant.clinicId;
 
   const { phone } = data;
 
@@ -55,7 +60,9 @@ export const POST = withValidation(bookingVerifySchema, async (data, request: Ne
     return apiError("Booking verification is not available. Contact the clinic.", 503);
   }
 
-  // Build the token: phone:expiryTimestamp:hmacSignature
+  // Build the token: phone:clinicId:expiryTimestamp:hmacSignature
+  // S-2: clinicId is part of the signed payload to prevent cross-tenant
+  // replay of tokens issued for one clinic against another.
   const expiry = Date.now() + TOKEN_TTL_MS;
   const encoder = new TextEncoder();
   const key = await crypto.subtle.importKey(
@@ -65,13 +72,13 @@ export const POST = withValidation(bookingVerifySchema, async (data, request: Ne
     false,
     ["sign"],
   );
-  const sigData = encoder.encode(`${phone}:${expiry}`);
+  const sigData = encoder.encode(`${phone}:${clinicId}:${expiry}`);
   const sig = await crypto.subtle.sign("HMAC", key, sigData);
   const signature = Array.from(new Uint8Array(sig))
     .map((b) => b.toString(16).padStart(2, "0"))
     .join("");
 
-  const token = `${phone}:${expiry}:${signature}`;
+  const token = `${phone}:${clinicId}:${expiry}:${signature}`;
 
   return apiSuccess({
     token,

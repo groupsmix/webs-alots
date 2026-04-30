@@ -65,6 +65,54 @@ function formatError(err: unknown): Record<string, unknown> {
   return { raw: String(err) };
 }
 
+/**
+ * I-3 (STRIDE): Defense-in-depth PHI scrubber.
+ *
+ * Application code is expected to never pass PHI to the logger, but a
+ * single careless `logger.info("...", { patient })` would otherwise leak
+ * the entire patient row into stderr / Sentry / Datadog. This recursive
+ * redactor walks every value attached to a log entry and replaces any
+ * key whose name matches a known PHI / credential pattern with the
+ * literal string `"[redacted]"`. The walk is depth- and breadth-bounded
+ * so a malicious or recursive object cannot be used as a CPU sink.
+ *
+ * The redactor is a safety net — code reviewers should still flag any
+ * call site that obviously logs PHI.
+ */
+const PHI_KEY_PATTERN =
+  /^(name|full_?name|first_?name|last_?name|patient_?name|email|phone|mobile|whatsapp|date_?of_?birth|dob|address|street|city|cin|cnss|cnops|amo|ramed|insurance_?number|password|token|secret|otp|code|content|notes|diagnosis|symptoms|allergies|medications|reason)$/i;
+
+const REDACTED = "[redacted]";
+const MAX_DEPTH = 8;
+const MAX_KEYS = 128;
+
+function scrubPhi(value: unknown, depth = 0): unknown {
+  if (depth > MAX_DEPTH) return REDACTED;
+  if (value === null || value === undefined) return value;
+  const t = typeof value;
+  if (t === "string" || t === "number" || t === "boolean" || t === "bigint") {
+    return value;
+  }
+  if (Array.isArray(value)) {
+    return value.slice(0, MAX_KEYS).map((v) => scrubPhi(v, depth + 1));
+  }
+  if (t === "object") {
+    const out: Record<string, unknown> = {};
+    let count = 0;
+    for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
+      if (count++ >= MAX_KEYS) break;
+      if (PHI_KEY_PATTERN.test(k)) {
+        out[k] = REDACTED;
+      } else {
+        out[k] = scrubPhi(v, depth + 1);
+      }
+    }
+    return out;
+  }
+  // Functions, symbols, etc.
+  return REDACTED;
+}
+
 function emit(level: LogLevel, message: string, meta?: LogMeta): void {
   const { context, clinicId, traceId, error, ...extra } = meta ?? {};
   const payload: Record<string, unknown> = {
@@ -76,7 +124,9 @@ function emit(level: LogLevel, message: string, meta?: LogMeta): void {
   if (context) payload.context = context;
   if (clinicId !== undefined) payload.clinicId = clinicId;
   if (error !== undefined) payload.error = formatError(error);
-  if (Object.keys(extra).length > 0) Object.assign(payload, extra);
+  if (Object.keys(extra).length > 0) {
+    Object.assign(payload, scrubPhi(extra) as Record<string, unknown>);
+  }
 
   // Use console.error for structured output to stderr.
   // In Cloudflare Workers this is captured by `wrangler tail`.

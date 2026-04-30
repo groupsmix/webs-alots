@@ -416,16 +416,26 @@ export type AiPrescriptionRequest = z.infer<typeof aiPrescriptionRequestSchema>;
 
 // ── Chat ────────────────────────────────────────────────────────────────
 
+/**
+ * D-1 (STRIDE): bound the chat payload at the schema level so a single
+ * request cannot exhaust LLM token budgets or memory before it ever
+ * reaches the route handler. The route's runtime checks
+ * (`MAX_HISTORY_LENGTH`, `MAX_MESSAGE_LENGTH`) remain as defense-in-depth.
+ */
+export const CHAT_MESSAGE_MAX_LENGTH = 4000;
+export const CHAT_HISTORY_MAX_MESSAGES = 20;
+
 export const chatRequestSchema = z.object({
   clinicId: z.string().optional(),
   messages: z
     .array(
       z.object({
         role: z.enum(["user", "assistant"]),
-        content: z.string(),
+        content: z.string().min(1).max(CHAT_MESSAGE_MAX_LENGTH),
       }),
     )
-    .min(1),
+    .min(1)
+    .max(CHAT_HISTORY_MAX_MESSAGES),
 });
 
 // ── Branding ────────────────────────────────────────────────────────────

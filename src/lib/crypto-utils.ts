@@ -24,10 +24,32 @@ export function hexToBytes(hex: string): Uint8Array<ArrayBuffer> {
 }
 
 /**
+ * Hard ceiling on input length for `timingSafeEqual`.
+ *
+ * D-2 (STRIDE): Without an upper bound, an attacker can send a 1 MB
+ * `stripe-signature` (or other HMAC) header and force the server into
+ * a 1 MB constant-time loop on every request, exhausting CPU on the
+ * Cloudflare Workers / edge runtime.
+ *
+ * Real signatures we compare are 64 hex characters (SHA-256). 256 is
+ * generous headroom for any future SHA-512 (128 hex) or base64 variants
+ * while staying well below the cost of a DoS amplification.
+ */
+export const TIMING_SAFE_EQUAL_MAX_LEN = 256;
+
+/**
  * Constant-time string comparison to prevent timing attacks.
  * Pads the shorter string to avoid leaking length information via early return.
+ *
+ * D-2: Returns `false` immediately when either input exceeds
+ * `TIMING_SAFE_EQUAL_MAX_LEN`. The early return is safe here because
+ * legitimate signatures are well below the bound, so the timing of the
+ * length-check branch does not depend on any secret value.
  */
 export function timingSafeEqual(a: string, b: string): boolean {
+  if (a.length > TIMING_SAFE_EQUAL_MAX_LEN || b.length > TIMING_SAFE_EQUAL_MAX_LEN) {
+    return false;
+  }
   const maxLen = Math.max(a.length, b.length);
   const paddedA = a.padEnd(maxLen, "\0");
   const paddedB = b.padEnd(maxLen, "\0");

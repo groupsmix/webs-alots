@@ -25,13 +25,27 @@
  */
 
 /**
+ * D-3 (STRIDE): Hard ceiling on input length to defeat ReDoS / catastrophic
+ * backtracking on the regex pipeline below. The blog renderer is the only
+ * caller and post bodies are well under this bound; anything larger is
+ * pathological and is truncated rather than fed to the regex engine.
+ */
+export const SANITIZE_HTML_MAX_LEN = 1_000_000; // 1 MB of HTML
+
+/**
  * Strip dangerous HTML tags and attributes from a string of HTML.
  *
  * @see Module-level warning — this is defense-in-depth for trusted content only.
  */
 export function sanitizeHtml(dirty: string): string {
+  // D-3: Bound input before any regex work. Catastrophic backtracking on
+  // the stripping regexes below is otherwise linear in input length and
+  // can be amplified into CPU exhaustion by a single large request.
+  const bounded = dirty.length > SANITIZE_HTML_MAX_LEN
+    ? dirty.slice(0, SANITIZE_HTML_MAX_LEN)
+    : dirty;
   return (
-    dirty
+    bounded
       // Remove <script>...</script> blocks (including multiline)
       .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, "")
       // Remove self-closing <script /> tags

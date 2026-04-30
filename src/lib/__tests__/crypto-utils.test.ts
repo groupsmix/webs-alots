@@ -1,5 +1,10 @@
 import { describe, it, expect } from "vitest";
-import { timingSafeEqual, sha256Hex, hmacSha256Hex } from "../crypto-utils";
+import {
+  timingSafeEqual,
+  sha256Hex,
+  hmacSha256Hex,
+  TIMING_SAFE_EQUAL_MAX_LEN,
+} from "../crypto-utils";
 
 describe("timingSafeEqual", () => {
   it("returns true for identical strings", () => {
@@ -63,6 +68,25 @@ describe("sha256Hex", () => {
   it("returns a 64-character hex string", async () => {
     const hash = await sha256Hex("any input");
     expect(hash).toMatch(/^[0-9a-f]{64}$/);
+  });
+});
+
+describe("timingSafeEqual D-2 length bound", () => {
+  it("rejects inputs exceeding TIMING_SAFE_EQUAL_MAX_LEN", () => {
+    const big = "a".repeat(TIMING_SAFE_EQUAL_MAX_LEN + 1);
+    expect(timingSafeEqual(big, big)).toBe(false);
+  });
+
+  it("accepts inputs at the boundary", () => {
+    const ok = "a".repeat(TIMING_SAFE_EQUAL_MAX_LEN);
+    expect(timingSafeEqual(ok, ok)).toBe(true);
+  });
+
+  it("rejects when only one side is oversized", () => {
+    const ok = "a".repeat(64);
+    const big = "a".repeat(TIMING_SAFE_EQUAL_MAX_LEN + 1);
+    expect(timingSafeEqual(ok, big)).toBe(false);
+    expect(timingSafeEqual(big, ok)).toBe(false);
   });
 });
 

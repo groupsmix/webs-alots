@@ -57,12 +57,19 @@ interface BookingTokenResult {
 
 /**
  * Verify a booking token issued after OTP verification.
- * Tokens are HMAC-SHA256 signatures of the phone number + expiry timestamp.
- * Format: "phone:expiryTimestamp:signature"
+ * Tokens are HMAC-SHA256 signatures of `phone:clinicId:expiry`.
+ * Format: "phone:clinicId:expiryTimestamp:signature"
+ *
+ * S-2 (STRIDE): The token must be bound to the current tenant. A token
+ * issued for one clinic_id is rejected if presented under a different
+ * tenant context, defeating cross-tenant replay attacks.
  *
  * Returns the verified phone so callers can enforce phone binding.
  */
-async function verifyBookingToken(token: string): Promise<BookingTokenResult> {
+async function verifyBookingToken(
+  token: string,
+  expectedClinicId: string,
+): Promise<BookingTokenResult> {
   const secret = process.env.BOOKING_TOKEN_SECRET;
   if (!secret) {
     // HIGH-05: BOOKING_TOKEN_SECRET is required in ALL environments.
@@ -73,11 +80,16 @@ async function verifyBookingToken(token: string): Promise<BookingTokenResult> {
   }
 
   const parts = token.split(":");
-  if (parts.length !== 3) return { valid: false };
+  // S-2: New tokens are 4-part (phone:clinicId:expiry:sig).
+  if (parts.length !== 4) return { valid: false };
 
-  const [phone, expiryStr, signature] = parts;
+  const [phone, tokenClinicId, expiryStr, signature] = parts;
   const expiry = parseInt(expiryStr, 10);
   if (isNaN(expiry) || Date.now() > expiry) return { valid: false };
+
+  // S-2: The clinicId in the token must match the active tenant. Reject
+  // before any HMAC work to avoid leaking timing information.
+  if (tokenClinicId !== expectedClinicId) return { valid: false };
 
   // Verify HMAC signature
   const encoder = new TextEncoder();
@@ -88,7 +100,7 @@ async function verifyBookingToken(token: string): Promise<BookingTokenResult> {
     false,
     ["sign"],
   );
-  const data = encoder.encode(`${phone}:${expiryStr}`);
+  const data = encoder.encode(`${phone}:${tokenClinicId}:${expiryStr}`);
   const sig = await crypto.subtle.sign("HMAC", key, data);
   const expectedSig = Array.from(new Uint8Array(sig))
     .map((b) => b.toString(16).padStart(2, "0"))
@@ -210,8 +222,17 @@ export const POST = withValidation(bookingRequestSchema, async (body, request: N
       return apiUnauthorized("Booking verification required. Call POST /api/booking/verify first.");
     }
 
-    // Verify the booking token (HMAC-based, issued after OTP check)
-    const tokenResult = await verifyBookingToken(bookingToken);
+    // Resolve tenant context BEFORE verifying the booking token so we can
+    // bind the verification to the active clinic (S-2 STRIDE finding).
+    const { tenant, config: tenantConfig } = await requireTenantWithConfig();
+    const clinicId = tenant.clinicId;
+    const supabase = await createTenantClient(clinicId);
+
+    // Verify the booking token (HMAC-based, issued after OTP check).
+    // S-2: Pass the active clinicId so the token signature is verified
+    // against the tenant it was issued for. Tokens from other tenants
+    // are rejected even if the HMAC secret is shared.
+    const tokenResult = await verifyBookingToken(bookingToken, clinicId);
     if (!tokenResult.valid) {
       return apiForbidden("Invalid or expired booking token");
     }
@@ -223,10 +244,6 @@ export const POST = withValidation(bookingRequestSchema, async (body, request: N
     if (normalizePhone(tokenResult.phone!) !== normalizePhone(body.patient.phone)) {
       return apiForbidden("Booking token does not match the submitted patient phone number");
     }
-
-    const { tenant, config: tenantConfig } = await requireTenantWithConfig();
-    const clinicId = tenant.clinicId;
-    const supabase = await createTenantClient(clinicId);
 
     const validation = await validateBookingRequest(body, tenantConfig.timezone, tenantConfig.workingHours);
     if (validation.error) {
