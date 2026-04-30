@@ -22,11 +22,13 @@ import {
 } from "lucide-react";
 import { useState, useRef, useEffect, useCallback } from "react";
 import { FeatureGate } from "@/components/feature-gate";
+import { useLocale } from "@/components/locale-switcher";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Textarea } from "@/components/ui/textarea";
+import { t } from "@/lib/i18n";
 
 // ── Types ──
 
@@ -173,6 +175,7 @@ function MessageBubble({ message }: { message: ChatMessage }) {
 // ── Main page component ──
 
 function AiManagerChat() {
+  const [locale] = useLocale();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -309,6 +312,14 @@ function AiManagerChat() {
             Effacer
           </Button>
         )}
+      </div>
+
+      {/* AI disclaimer */}
+      <div className="mb-2 flex items-center gap-2 rounded-lg bg-amber-50 px-3 py-2 dark:bg-amber-950/30">
+        <AlertTriangle className="h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
+        <p className="text-xs text-amber-800 dark:text-amber-300">
+          {t(locale, "ai.disclaimer")}
+        </p>
       </div>
 
       {/* Chat area */}

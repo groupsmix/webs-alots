@@ -29,6 +29,7 @@ import {
   secureRedirect,
   applyAllSecurityHeaders,
 } from "@/lib/middleware/security-headers";
+import { stripTenantHeaders } from "@/lib/middleware/strip-tenant-headers";
 import { signProfileHeader, PROFILE_HEADER_NAMES } from "@/lib/profile-header-hmac";
 import { isSeedUserBlocked } from "@/lib/seed-guard";
 import { extractSubdomain } from "@/lib/subdomain";
@@ -138,13 +139,7 @@ export async function middleware(request: NextRequest) {
   // Without this, an attacker could inject x-tenant-clinic-id (or any
   // x-tenant-* header) on a root-domain request and impersonate another
   // tenant on public endpoints like /api/booking and /api/branding.
-  for (const key of Object.values(TENANT_HEADERS)) {
-    requestHeaders.delete(key);
-  }
-  // RLS-05: Also strip the legacy x-clinic-id header used by tenant-scoped
-  // Supabase clients (createTenantClient). An attacker could inject this
-  // header to bypass RLS policies that read `request.headers->>'x-clinic-id'`.
-  requestHeaders.delete("x-clinic-id");
+  stripTenantHeaders(requestHeaders);
 
   // Strip incoming x-auth-profile-* headers. These are set later in this
   // middleware (after the user/profile lookup) with an HMAC signature so

@@ -31,6 +31,7 @@
 // S-26: Upload route requires tenant context — never write to a shared/ prefix
 import { apiError, apiForbidden, apiInternalError, apiNotFound, apiSuccess } from "@/lib/api-response";
 import { withAuthValidation } from "@/lib/api-validate";
+import { fetchAllowlisted } from "@/lib/egress-allowlist";
 import { requiresEncryption } from "@/lib/encryption";
 import { logger } from "@/lib/logger";
 import {
@@ -239,7 +240,7 @@ export const POST = withAuth(async (request, { profile }) => {
   // ClamScan Lambda). Until then, this logs a warning for auditors.
   if (process.env.AV_SCAN_URL) {
     try {
-      const avResponse = await fetch(process.env.AV_SCAN_URL, {
+      const avResponse = await fetchAllowlisted(process.env.AV_SCAN_URL, {
         method: "POST",
         body: buffer,
         headers: { "Content-Type": file.type },

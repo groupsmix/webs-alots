@@ -256,7 +256,7 @@ describe("Webhook GET — verification challenge (mutation #5)", () => {
     expect(response.status).toBe(403);
   });
 
-  it("GET with subscribe mode but missing challenge returns 403", async () => {
+  it("GET with subscribe mode but missing challenge returns 200", async () => {
     const { GET } = await import("@/app/api/webhooks/route");
     const url = new URL("http://localhost/api/webhooks");
     url.searchParams.set("hub.mode", "subscribe");

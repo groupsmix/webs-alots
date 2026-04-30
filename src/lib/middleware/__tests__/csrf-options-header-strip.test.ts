@@ -14,28 +14,14 @@
 
 import { describe, it, expect } from "vitest";
 import { TENANT_HEADERS } from "@/lib/tenant";
+import { stripTenantHeaders } from "@/lib/middleware/strip-tenant-headers";
 
-// We test the header-stripping logic by verifying that the middleware
-// function strips all tenant headers from the incoming request headers,
-// regardless of HTTP method (including OPTIONS).
-//
-// Since the middleware function itself depends on heavy imports
-// (Supabase, etc.), we test the header-stripping invariant in isolation
-// by replicating the exact logic from middleware.ts.
+// We test the header-stripping logic by importing the shared utility
+// used by the production middleware. This ensures the tests are coupled
+// to the actual production code — if the middleware drifts, these tests
+// will catch it.
 
 describe("Tenant header stripping — method-independent (mutation gaps)", () => {
-  /**
-   * Replicate the exact header-stripping logic from middleware.ts (lines 140-146).
-   * This is the code under test — if it were mutated to skip certain methods,
-   * these tests would catch it.
-   */
-  function stripTenantHeaders(requestHeaders: Headers): void {
-    for (const key of Object.values(TENANT_HEADERS)) {
-      requestHeaders.delete(key);
-    }
-    // RLS-05: Also strip the legacy x-clinic-id header
-    requestHeaders.delete("x-clinic-id");
-  }
 
   const FORGED_CLINIC_ID = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee";
 

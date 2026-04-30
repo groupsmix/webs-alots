@@ -63,6 +63,24 @@ function getSupabaseHost(): string | null {
   return null;
 }
 
+/** Lazily populated from AV_SCAN_URL */
+let _avScanHost: string | null | undefined;
+
+function getAvScanHost(): string | null {
+  if (_avScanHost !== undefined) return _avScanHost;
+  const url = process.env.AV_SCAN_URL;
+  if (url) {
+    try {
+      _avScanHost = new URL(url).hostname;
+      return _avScanHost;
+    } catch {
+      // fall through
+    }
+  }
+  _avScanHost = null;
+  return null;
+}
+
 /**
  * Check whether a URL targets an allowlisted egress host.
  */
@@ -76,6 +94,10 @@ export function isEgressAllowed(url: string | URL): boolean {
     // Dynamic: Supabase project host
     const sbHost = getSupabaseHost();
     if (sbHost && hostname === sbHost) return true;
+
+    // Dynamic: AV scan service host (A37.7)
+    const avHost = getAvScanHost();
+    if (avHost && hostname === avHost) return true;
 
     // Allow subdomains of known hosts (e.g. o12345.sentry.io)
     for (const allowed of ALLOWED_EGRESS_HOSTS) {

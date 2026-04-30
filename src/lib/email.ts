@@ -139,6 +139,7 @@ async function sendViaHttpRelay(payload: EmailPayload): Promise<EmailSendResult>
         to: payload.to,
         subject: payload.subject,
         html: payload.html,
+        headers: payload.headers,
       }),
       signal: AbortSignal.timeout(10_000),
     });

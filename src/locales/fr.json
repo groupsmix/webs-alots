@@ -695,5 +695,8 @@
   "lab.report.flagLow": "BAS",
   "lab.report.flagCriticalHigh": "CRITIQUE ÉLEVÉ",
   "lab.report.flagCriticalLow": "CRITIQUE BAS",
-  "lab.report.footer": "Généré le {generatedAt}"
+  "lab.report.footer": "Généré le {generatedAt}",
+  "ai.disclaimer": "Outil d'aide à la décision uniquement. Ne remplace pas le jugement clinique du professionnel de santé.",
+  "ai.disclaimer.short": "Aide à la décision — ne remplace pas l'avis médical.",
+  "ai.disclaimer.prescription": "Cette ordonnance a été générée par IA à titre indicatif. Le médecin reste seul responsable de la prescription finale."
 }

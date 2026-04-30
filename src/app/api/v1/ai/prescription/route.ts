@@ -366,6 +366,10 @@ export const POST = withAuthValidation(
         prescription,
         patientId: data.patientId,
         diagnosis: data.diagnosis,
+        // The disclaimer locale key lets clients render the appropriate
+        // translation via t(locale, disclaimerKey). We avoid hardcoding
+        // French here so Arabic/English users see the correct language.
+        disclaimerKey: "ai.disclaimer.prescription",
       });
     } catch (err) {
       if (err instanceof DOMException && err.name === "AbortError") {

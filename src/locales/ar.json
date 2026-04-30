@@ -695,5 +695,8 @@
   "lab.report.flagLow": "منخفض",
   "lab.report.flagCriticalHigh": "مرتفع حرج",
   "lab.report.flagCriticalLow": "منخفض حرج",
-  "lab.report.footer": "تم الإنشاء في {generatedAt}"
+  "lab.report.footer": "تم الإنشاء في {generatedAt}",
+  "ai.disclaimer": "أداة مساعدة في اتخاذ القرار فقط. لا تحل محل الحكم السريري للمهني الصحي.",
+  "ai.disclaimer.short": "مساعدة في اتخاذ القرار — لا تحل محل الاستشارة الطبية.",
+  "ai.disclaimer.prescription": "تم إنشاء هذه الوصفة بواسطة الذكاء الاصطناعي لأغراض إرشادية فقط. يبقى الطبيب المسؤول الوحيد عن الوصفة النهائية."
 }

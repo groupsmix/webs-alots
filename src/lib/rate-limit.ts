@@ -57,7 +57,7 @@ function isPlausibleIp(value: string): boolean {
 
 export function extractClientIp(request: NextRequest): string {
   const cfIp = request.headers.get("cf-connecting-ip");
-  if (cfIp) return cfIp;
+  if (cfIp && isPlausibleIp(cfIp)) return cfIp;
 
   // A36.5: On Cloudflare Workers, CF-Connecting-IP (checked first above)
   // is authoritative and cannot be spoofed by clients. The XFF/X-Real-IP
