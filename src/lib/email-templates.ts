@@ -208,3 +208,69 @@ export function paymentFailedEmail(params: {
     </p>`;
   return wrap("Oltigo", `Payment Failed for ${clinicName}`, body);
 }
+
+// ---------- Suspicious login alert (A154) ----------
+
+export function suspiciousLoginEmail(params: {
+  userEmail: string;
+  ipAddress: string;
+  userAgent: string;
+  loginTime: string;
+}): { subject: string; html: string } {
+  const { userEmail, ipAddress, userAgent, loginTime } = params;
+  const body = `
+    <h2 style="margin:0 0 16px;font-size:18px;color:#dc2626;">New Sign-In Detected</h2>
+    <p style="font-size:14px;line-height:1.6;color:#475569;">
+      Hello,
+    </p>
+    <p style="font-size:14px;line-height:1.6;color:#475569;">
+      We detected a sign-in to your account <strong>${escapeHtml(userEmail)}</strong>
+      from a new device or location.
+    </p>
+    <table style="width:100%;border-collapse:collapse;margin:16px 0;">
+      <tr>
+        <td style="padding:8px 12px;border:1px solid #e2e8f0;font-size:13px;color:#64748b;font-weight:600;">IP Address</td>
+        <td style="padding:8px 12px;border:1px solid #e2e8f0;font-size:13px;color:#1e293b;">${escapeHtml(ipAddress)}</td>
+      </tr>
+      <tr>
+        <td style="padding:8px 12px;border:1px solid #e2e8f0;font-size:13px;color:#64748b;font-weight:600;">Device</td>
+        <td style="padding:8px 12px;border:1px solid #e2e8f0;font-size:13px;color:#1e293b;">${escapeHtml(userAgent.slice(0, 120))}</td>
+      </tr>
+      <tr>
+        <td style="padding:8px 12px;border:1px solid #e2e8f0;font-size:13px;color:#64748b;font-weight:600;">Time (UTC)</td>
+        <td style="padding:8px 12px;border:1px solid #e2e8f0;font-size:13px;color:#1e293b;">${escapeHtml(loginTime)}</td>
+      </tr>
+    </table>
+    <p style="font-size:14px;line-height:1.6;color:#475569;">
+      If this was you, no action is needed. If you do not recognize this activity,
+      please change your password immediately and enable two-factor authentication.
+    </p>
+    <p style="font-size:14px;line-height:1.6;color:#475569;">
+      You can revoke all active sessions from your account security settings.
+    </p>`;
+  return wrap("Oltigo", "New sign-in to your account", body);
+}
+
+// ---------- Breached password warning (A154) ----------
+
+export function breachedPasswordEmail(params: {
+  userEmail: string;
+}): { subject: string; html: string } {
+  const { userEmail } = params;
+  const body = `
+    <h2 style="margin:0 0 16px;font-size:18px;color:#dc2626;">Password Security Alert</h2>
+    <p style="font-size:14px;line-height:1.6;color:#475569;">
+      Hello,
+    </p>
+    <p style="font-size:14px;line-height:1.6;color:#475569;">
+      The password you used to sign in to <strong>${escapeHtml(userEmail)}</strong>
+      has been found in a known data breach. This does not mean your Oltigo account
+      has been compromised, but it does mean this password is no longer safe to use
+      anywhere.
+    </p>
+    <p style="font-size:14px;line-height:1.6;color:#475569;">
+      <strong>We strongly recommend you change your password immediately</strong>
+      and enable two-factor authentication for added security.
+    </p>`;
+  return wrap("Oltigo", "Your password was found in a data breach", body);
+}

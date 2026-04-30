@@ -706,6 +706,15 @@ export const aiAutoSuggestLimiter = createRateLimiter({
   failClosed: true,
 });
 
+/** A155: Card velocity limiter: 5 payment attempts / 10 min per card-last4.
+ * Prevents card-testing attacks where an attacker cycles through CVVs/expiry
+ * dates on a single card number. Key should be `card:last4:${last4}`. */
+export const cardVelocityLimiter = createRateLimiter({
+  windowMs: 10 * 60_000,
+  max: 5,
+  failClosed: true,
+});
+
 export interface RateLimitRule {
   /** URL prefix to match */
   prefix: string;

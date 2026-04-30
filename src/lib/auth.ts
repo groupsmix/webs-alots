@@ -3,6 +3,9 @@
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { logAuthEvent } from "@/lib/audit-log";
+import { sendEmail } from "@/lib/email";
+import { breachedPasswordEmail } from "@/lib/email-templates";
+import { checkBreachedPassword } from "@/lib/hibp";
 import { logger } from "@/lib/logger";
 import { ROLE_DASHBOARD_MAP } from "@/lib/middleware/routes";
 import {
@@ -13,6 +16,7 @@ import {
 } from "@/lib/rate-limit";
 import { isSeedUserBlocked } from "@/lib/seed-guard";
 import { createClient } from "@/lib/supabase-server";
+import { recordLoginAndAlert } from "@/lib/suspicious-login";
 
 /**
  * Phone auth feature flag.
@@ -153,6 +157,37 @@ export async function signInWithPassword(
     ipAddress: clientIp,
     success: true,
   }).catch((err) => { logger.warn("Failed to log auth event", { context: "auth/signIn", error: err }); });
+
+  // A154: HIBP breached-password check (async, non-blocking).
+  // Runs after successful auth so we don't leak timing info about
+  // whether the email exists. Sends a warning email if the password
+  // appears in known breaches. Does NOT block the login.
+  checkBreachedPassword(password)
+    .then((result) => {
+      if (result.breached) {
+        logger.warn("User logged in with breached password", {
+          context: "auth/hibp",
+          email: normalizedEmail,
+          breachCount: result.count,
+        });
+        const template = breachedPasswordEmail({ userEmail: normalizedEmail });
+        sendEmail({ to: normalizedEmail, subject: template.subject, html: template.html })
+          .catch((err) => { logger.warn("Failed to send breached-password email", { context: "auth/hibp", error: err }); });
+      }
+    })
+    .catch((err) => { logger.warn("HIBP check failed post-login", { context: "auth/hibp", error: err }); });
+
+  // A154: Suspicious login detection (async, non-blocking).
+  // Records the login event and alerts user if IP+UA is new.
+  const hdrs = await headers();
+  const userAgent = hdrs.get("user-agent") ?? "unknown";
+  recordLoginAndAlert(supabase, {
+    userId: signInData.user?.id ?? normalizedEmail,
+    email: normalizedEmail,
+    ipAddress: clientIp,
+    userAgent,
+    clinicId: profile?.clinic_id ?? undefined,
+  }).catch((err) => { logger.warn("Suspicious login check failed", { context: "auth/suspicious-login", error: err }); });
 
   if (profile) {
     redirect(ROLE_DASHBOARD_MAP[profile.role]);

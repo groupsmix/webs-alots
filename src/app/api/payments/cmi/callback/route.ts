@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { apiError, apiInternalError } from "@/lib/api-response";
 import { verifyCmiCallback } from "@/lib/cmi";
 import { logger } from "@/lib/logger";
+import { cardVelocityLimiter } from "@/lib/rate-limit";
 import { createClient } from "@/lib/supabase-server";
 import { setTenantContext, logTenantContext } from "@/lib/tenant-context";
 import { APPOINTMENT_STATUS, PAYMENT_STATUS } from "@/lib/types/database";
@@ -161,6 +162,48 @@ export async function POST(request: NextRequest) {
           });
         }
 
+        // A155: Extract AVS/CVV results from CMI callback.
+        // CMI returns these in ProcReturnCode-adjacent fields when available.
+        const avsResult = params.cavv || params.CAVV || params.avs || null;
+        const cvvResult = params.cvvResult || params.CVVResult || null;
+        const cardLast4 = params.Pan ? params.Pan.slice(-4) : (params.pan ? params.pan.slice(-4) : null);
+        const cardBin = params.Pan ? params.Pan.slice(0, 6) : (params.pan ? params.pan.slice(0, 6) : null);
+
+        // A155: AVS/CVV mismatch decision tree.
+        // Log mismatches for fraud review. In Moroccan CMI integrations AVS is
+        // rarely deployed, but we flag it when the gateway does return signals.
+        if (cvvResult && cvvResult !== "M" && cvvResult !== "P") {
+          // CVV mismatch: M=Match, P=Not Processed, anything else is a concern
+          logger.warn("CMI CVV mismatch on approved payment", {
+            context: "payments/cmi/callback",
+            paymentId: payment.id,
+            cvvResult,
+            clinicId: payment.clinic_id,
+          });
+        }
+        if (avsResult && avsResult !== "Y" && avsResult !== "M") {
+          logger.warn("CMI AVS mismatch on approved payment", {
+            context: "payments/cmi/callback",
+            paymentId: payment.id,
+            avsResult,
+            clinicId: payment.clinic_id,
+          });
+        }
+
+        // A155: Per-card velocity check (card-testing defense).
+        if (cardLast4) {
+          const cardAllowed = await cardVelocityLimiter.check(`card:last4:${cardLast4}`);
+          if (!cardAllowed) {
+            logger.error("Card velocity limit exceeded — potential card testing", {
+              context: "payments/cmi/callback",
+              paymentId: payment.id,
+              cardLast4,
+              clinicId: payment.clinic_id,
+            });
+            // Don't block the already-approved payment, but flag it
+          }
+        }
+
         // Set tenant context for defense-in-depth RLS enforcement
         if (payment.clinic_id) {
           try {
@@ -177,11 +220,16 @@ export async function POST(request: NextRequest) {
 
         // Mark payment as completed — scoped to the payment's clinic_id
         // to prevent any cross-tenant state mutation.
+        // A155: Also store card metadata (last4, BIN, AVS, CVV) for fraud analysis.
         await supabase
           .from("payments")
           .update({
             status: PAYMENT_STATUS.COMPLETED,
             reference: callbackData.transactionId || callbackData.orderId,
+            ...(cardLast4 ? { card_last4: cardLast4 } : {}),
+            ...(cardBin ? { card_bin: cardBin } : {}),
+            ...(avsResult ? { avs_result: avsResult } : {}),
+            ...(cvvResult ? { cvv_result: cvvResult } : {}),
           })
           .eq("id", payment.id)
           .eq("clinic_id", payment.clinic_id);
