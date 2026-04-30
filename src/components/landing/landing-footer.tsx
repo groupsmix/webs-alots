@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { useLocale } from "@/components/locale-switcher";
 import type { Locale, TranslationKey } from "@/lib/i18n";
 import { useLandingLocale } from "./landing-locale-provider";
 
@@ -44,8 +43,7 @@ const locales: readonly { code: Locale; label: string }[] = [
 ];
 
 export function LandingFooter() {
-  const { t } = useLandingLocale();
-  const [locale, setLocale] = useLocale();
+  const { t, locale, setLocale } = useLandingLocale();
 
   return (
     <footer

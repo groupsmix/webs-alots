@@ -20,7 +20,7 @@ export function HeroSection() {
 
   return (
     <section
-      className="relative"
+      className="relative hero-headline-override"
       style={{ backgroundColor: "var(--bone)" }}
     >
       <div
