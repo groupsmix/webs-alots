@@ -16,11 +16,31 @@ export function bytesToHex(bytes: Uint8Array): string {
 
 /**
  * Convert a hex-encoded string to a Uint8Array backed by a plain ArrayBuffer.
+ *
+ * AUDIT A10-07: Validates input is non-empty, even-length, and contains only
+ * hex characters. The previous implementation used a non-null assertion on the
+ * regex match result, so an attacker-controlled odd-length or empty hex value
+ * (anywhere a secret flowed) would surface as an unhelpful TypeError that
+ * bubbled to a 500 response.
  */
 export function hexToBytes(hex: string): Uint8Array<ArrayBuffer> {
-  return new Uint8Array(
-    hex.match(/.{2}/g)!.map((byte) => parseInt(byte, 16)),
-  ) as Uint8Array<ArrayBuffer>;
+  if (typeof hex !== "string") {
+    throw new TypeError("hexToBytes: input must be a string");
+  }
+  if (hex.length === 0) {
+    throw new Error("hexToBytes: input must not be empty");
+  }
+  if (hex.length % 2 !== 0) {
+    throw new Error("hexToBytes: input must have an even number of characters");
+  }
+  if (!/^[0-9a-fA-F]+$/.test(hex)) {
+    throw new Error("hexToBytes: input must contain only hex characters");
+  }
+  const bytes = new Uint8Array(hex.length / 2);
+  for (let i = 0; i < bytes.length; i++) {
+    bytes[i] = parseInt(hex.slice(i * 2, i * 2 + 2), 16);
+  }
+  return bytes as Uint8Array<ArrayBuffer>;
 }
 
 /**
