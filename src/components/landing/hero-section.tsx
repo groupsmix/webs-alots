@@ -24,7 +24,7 @@ export function HeroSection() {
       style={{ backgroundColor: "var(--bone)" }}
     >
       <div
-        className="mx-auto w-full px-[var(--gutter-mobile)] md:px-[var(--gutter-tablet)] lg:px-[var(--gutter-desktop)]"
+        className="hero-headline-override mx-auto w-full px-[var(--gutter-mobile)] md:px-[var(--gutter-tablet)] lg:px-[var(--gutter-desktop)]"
         style={{ maxWidth: "var(--container-max)" }}
       >
         {/* Eyebrow */}
@@ -85,7 +85,7 @@ export function HeroSection() {
         <div className="mt-[var(--space-6)] flex items-center gap-[var(--space-5)] flex-wrap">
           <Link
             href="/register-clinic"
-            className="group inline-flex items-center gap-[var(--space-2)] rounded-[var(--radius)] px-[var(--space-5)] text-[var(--text-small)] font-medium transition-colors"
+            className="group inline-flex items-center gap-[var(--space-2)] rounded-[var(--radius-landing)] px-[var(--space-5)] text-[var(--text-small)] font-medium transition-colors"
             style={{
               backgroundColor: "var(--oltigo-green)",
               color: "var(--bone)",
@@ -156,6 +156,9 @@ export function HeroSection() {
         @media (max-width: 767px) {
           .hero-headline-override h1 {
             font-size: 2.25rem !important;
+            max-width: 100% !important;
+          }
+          .hero-headline-override h1 + p {
             max-width: 100% !important;
           }
         }

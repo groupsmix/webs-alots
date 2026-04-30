@@ -67,7 +67,7 @@ export function DemoSection() {
           className="mt-[var(--space-8)]"
           style={{
             border: "1px solid var(--rule)",
-            borderRadius: "var(--radius)",
+            borderRadius: "var(--radius-landing)",
             overflow: "hidden",
             backgroundColor: "var(--bone)",
           }}

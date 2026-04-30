@@ -87,7 +87,11 @@
   --gutter-tablet: 48px;
   --gutter-desktop: 96px;
   --grid-gap: 24px;
-  --radius: 8px;
+  /* Landing-page radius. Namespaced to avoid collision with the shadcn
+     `--radius` token defined in globals.css (which would otherwise win the
+     CSS cascade because globals.css redeclares :root after importing this
+     file). */
+  --radius-landing: 8px;
 
   /* ── Motion ── */
   --duration: 120ms;

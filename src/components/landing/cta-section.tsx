@@ -53,7 +53,7 @@ export function CtaSection() {
         <div className="flex flex-col items-start gap-[var(--space-4)] lg:col-span-5 lg:items-end lg:justify-center">
           <Link
             href="/register-clinic"
-            className="group inline-flex items-center gap-[var(--space-2)] rounded-[var(--radius)] px-[var(--space-5)] transition-colors"
+            className="group inline-flex items-center gap-[var(--space-2)] rounded-[var(--radius-landing)] px-[var(--space-5)] transition-colors"
             style={{
               backgroundColor: "var(--bone)",
               color: "var(--ink)",

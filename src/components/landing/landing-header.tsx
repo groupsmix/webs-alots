@@ -47,7 +47,6 @@ export function LandingHeader() {
         style={{ maxWidth: "var(--container-max)" }}
       >
         {/* Wordmark */}
-        {/* eslint-disable-next-line i18next/no-literal-string -- brand wordmark is not translatable */}
         <Link
           href="/"
           style={{
@@ -58,6 +57,7 @@ export function LandingHeader() {
             textDecoration: "none",
           }}
         >
+          {/* eslint-disable-next-line i18next/no-literal-string -- brand wordmark is not translatable */}
           Oltigo
         </Link>
 
@@ -103,7 +103,7 @@ export function LandingHeader() {
           </Link>
           <Link
             href="/register-clinic"
-            className="inline-flex items-center rounded-[var(--radius)] px-[var(--space-5)] transition-colors"
+            className="inline-flex items-center rounded-[var(--radius-landing)] px-[var(--space-5)] transition-colors"
             style={{
               fontSize: "var(--text-small)",
               fontWeight: 500,
