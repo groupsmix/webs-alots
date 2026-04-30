@@ -267,15 +267,21 @@ export async function POST(request: NextRequest) {
         senderPhone: msgInfo.senderPhone,
       });
 
-      // Patient lookup is now always scoped to the resolved clinic
+      // Patient lookup is now always scoped to the resolved clinic.
+      // C-05: Use .maybeSingle() instead of .single() to avoid crashing
+      // when two patients share a phone (family WhatsApp). Order by
+      // created_at DESC so the most recent patient record wins deterministically.
+      // The migration 00071 adds a partial UNIQUE index to prevent new
+      // duplicates, but this handles any legacy data.
       const { data: patient } = await supabase
         .from("users")
         .select("id, name, clinic_id")
         .eq("phone", msgInfo.senderPhone)
         .eq("role", "patient")
         .eq("clinic_id", clinicId)
+        .order("created_at", { ascending: false })
         .limit(1)
-        .single();
+        .maybeSingle();
 
       const patientName = patient?.name ?? "Patient";
       const patientId = patient?.id ?? null;
