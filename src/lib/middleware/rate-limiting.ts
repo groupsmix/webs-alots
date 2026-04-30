@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { rateLimitRules, extractClientIp } from "@/lib/rate-limit";
+import { rateLimitRules, extractClientIp, globalPageLimiter } from "@/lib/rate-limit";
 import type { CspHeaderValues } from "./security-headers";
 
 /**
@@ -54,26 +54,22 @@ export async function applyRateLimit(
       };
     }
   } else if (!pathname.startsWith("/_next/") && !pathname.match(/\.(ico|png|jpg|jpeg|svg|css|js|woff2?|ttf|eot)$/i)) {
-    // Audit 3: Apply a global rate limit to non-API paths (HTML pages, etc.)
-    // to prevent subdomain enumeration DDoS attacks.
-    // Allow 100 requests per minute per IP per Host
-    // AUDIT-06: The catch-all API rule uses prefix "/api/" (with trailing slash).
-    // Previously this lookup used "/api" (without slash), so the global limiter
-    // was never found and non-API paths were silently unprotected.
-    const globalLimiter = rateLimitRules.find(r => r.prefix === "/api/")?.limiter;
-    if (globalLimiter) {
-      const allowed = await globalLimiter.check(`global_${rateLimitKey}`);
-      if (!allowed) {
-        const response = withSecurityHeaders(
-          NextResponse.json(
-            { error: "Too many requests. Please try again later.", code: "RATE_LIMIT_EXCEEDED" },
-            { status: 429 },
-          ),
-          csp,
-        );
-        response.headers.set("Retry-After", "60");
-        return { response };
-      }
+    // A36.4: Apply a dedicated global rate limiter for non-API paths (HTML
+    // pages, etc.) to prevent subdomain-enumeration DDoS attacks.
+    // Previously this depended on a lookup against the /api/ catch-all rule
+    // in rateLimitRules, which silently disappeared if that rule was absent.
+    // The dedicated `globalPageLimiter` is now independent of API rules.
+    const allowed = await globalPageLimiter.check(`global_${rateLimitKey}`);
+    if (!allowed) {
+      const response = withSecurityHeaders(
+        NextResponse.json(
+          { error: "Too many requests. Please try again later.", code: "RATE_LIMIT_EXCEEDED" },
+          { status: 429 },
+        ),
+        csp,
+      );
+      response.headers.set("Retry-After", "60");
+      return { response };
     }
   }
 

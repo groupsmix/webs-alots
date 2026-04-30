@@ -20,6 +20,36 @@ import { cmiCallbackFieldsSchema } from "@/lib/validations";
 const MAX_CMI_CALLBACK_BYTES = 10 * 1024;
 
 /**
+ * A39.5: CMI (Centre Monétique Interbancaire) publishes a known set of
+ * callback source IPs. When `CMI_ALLOWED_IPS` env var is set (comma-
+ * separated), we enforce an IP allowlist as defense-in-depth alongside
+ * the HMAC verification.
+ *
+ * When unset, the check is skipped (HMAC-only, backward compatible).
+ * On Cloudflare, `CF-Connecting-IP` is authoritative; we fall back to
+ * X-Forwarded-For for non-CF environments (dev/staging).
+ */
+function isCmiSourceAllowed(request: NextRequest): boolean {
+  const raw = process.env.CMI_ALLOWED_IPS;
+  if (!raw) return true; // IP allowlist not configured — rely on HMAC only
+
+  const allowedIps = new Set(raw.split(",").map((ip) => ip.trim()).filter(Boolean));
+  const clientIp =
+    request.headers.get("cf-connecting-ip") ??
+    request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
+    null;
+
+  if (!clientIp) {
+    logger.warn("CMI callback: no client IP available for allowlist check", {
+      context: "payments/cmi/callback",
+    });
+    return false; // Fail closed when IP is unknown and allowlist is configured
+  }
+
+  return allowedIps.has(clientIp);
+}
+
+/**
  * S-15: Read the request body while enforcing a hard byte cap. Returns null
  * if the body exceeds the limit. Works even when the client omits the
  * Content-Length header (e.g. chunked transfer encoding) because we stream
@@ -59,6 +89,15 @@ async function readBodyWithLimit(
 
 export async function POST(request: NextRequest) {
   try {
+    // A39.5: Source IP allowlist — defense-in-depth alongside HMAC.
+    if (!isCmiSourceAllowed(request)) {
+      logger.warn("CMI callback rejected: source IP not in allowlist", {
+        context: "payments/cmi/callback",
+        ip: request.headers.get("cf-connecting-ip") ?? request.headers.get("x-forwarded-for") ?? "unknown",
+      });
+      return apiError("Forbidden", 403);
+    }
+
     // S-15: Enforce a body size cap before parsing formData to prevent
     // memory exhaustion from an attacker-controlled payload. We check
     // Content-Length first for a cheap early reject, but also enforce the

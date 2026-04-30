@@ -56,6 +56,30 @@ const nextConfig: NextConfig = {
           },
         ],
       },
+      {
+        // A36.8: Prevent shared caches (CDN, ISP proxies) from storing
+        // authenticated dashboard pages. Without this, Next.js may emit a
+        // default Cache-Control that allows intermediate caches to store
+        // the rendered admin shell, potentially leaking PHI to the wrong
+        // tenant or an unauthenticated user.
+        source: "/dashboard/:path*",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "private, no-store, no-cache, must-revalidate",
+          },
+        ],
+      },
+      {
+        // A36.8: Same treatment for admin pages.
+        source: "/admin/:path*",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "private, no-store, no-cache, must-revalidate",
+          },
+        ],
+      },
     ];
   },
 

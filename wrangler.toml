@@ -64,8 +64,10 @@ RATE_LIMIT_BACKEND = "supabase"
 # cpu_ms = 50  # Default: 50ms CPU time per request (Workers Paid plan)
 
 # ── Observability ─────────────────────────────────────────────────────
-# [observability]
-# enabled = true  # Enables Workers Logs (beta)
+# A40.2: Enable Workers Logs for request-rate, 4xx-rate, and cold-start
+# metrics visibility. Sentry catches exceptions but not operational telemetry.
+[observability]
+enabled = true
 
 # ── Build ─────────────────────────────────────────────────────────────
 # The build command is handled by CI (npm run build:cf), not by wrangler.

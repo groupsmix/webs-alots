@@ -107,6 +107,15 @@ jobs:
             HTTP_CODE=$(curl -s -o /dev/null -w '%{http_code}' --max-time 10 "${SITE_URL}/api/health" || echo "000")
             if [ -n "$STATUS" ] && [ "$HTTP_CODE" -ge 200 ] && [ "$HTTP_CODE" -lt 400 ]; then
               echo "Health check passed (HTTP ${HTTP_CODE}, body contains ok:true)"
+
+              # A40.7: Verify critical security headers are present.
+              # A deploy-but-broken scenario includes missing HSTS or CSP.
+              HEADERS=$(curl -s -I --max-time 10 "${SITE_URL}/api/health" 2>/dev/null || echo "")
+              HSTS=$(echo "$HEADERS" | grep -i "strict-transport-security" || echo "")
+              if [ -z "$HSTS" ]; then
+                echo "::warning::HSTS header missing from /api/health response"
+              fi
+
               exit 0
             fi
             echo "Attempt ${i}: HTTP ${HTTP_CODE}, body ok marker: '${STATUS}', retrying in 10s..."

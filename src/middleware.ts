@@ -14,6 +14,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { DEMO_SUBDOMAIN, shouldBlockDemoRequest } from "@/lib/demo";
 import { generateTraceId, TRACE_ID_HEADER } from "@/lib/logger";
 import { validateCsrf } from "@/lib/middleware/csrf";
+import { checkGeoRestriction } from "@/lib/middleware/geo-restriction";
 import { applyRateLimit } from "@/lib/middleware/rate-limiting";
 import {
   isPublicRoute,
@@ -161,6 +162,10 @@ export async function middleware(request: NextRequest) {
   // --- CSRF protection (delegated to composable module) ---
   const csrfResult = validateCsrf(request, hostname, cspHeaders, withSecurityHeaders);
   if (csrfResult) return csrfResult;
+
+  // --- A36.7: Geo-restriction for admin endpoints ---
+  const geoResult = checkGeoRestriction(request);
+  if (geoResult) return withSecurityHeaders(geoResult, cspHeaders);
 
   // --- Fast path for lightweight API routes (health checks, etc.) ---
   if (LIGHTWEIGHT_API_PATHS.has(pathname)) {
