@@ -38,9 +38,17 @@ export default function RegisterPage() {
   const [age, setAge] = useState("");
   const [gender, setGender] = useState("");
   const [insurance, setInsurance] = useState("");
+  const [guardianName, setGuardianName] = useState("");
+  const [guardianPhone, setGuardianPhone] = useState("");
+  const [guardianEmail, setGuardianEmail] = useState("");
+  const [guardianConsent, setGuardianConsent] = useState(false);
   const [otp, setOtp] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  // A200: Morocco legal majority is 18
+  const MAJORITY_AGE = 18;
+  const isMinor = age !== "" && parseInt(age, 10) < MAJORITY_AGE && parseInt(age, 10) > 0;
   async function handleRegister(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
@@ -52,6 +60,20 @@ export default function RegisterPage() {
 
     setLoading(true);
 
+    // A200: Block registration of minors without guardian consent
+    if (isMinor && !guardianConsent) {
+      setError(t(locale, "register.guardianConsentRequired" as TranslationKey));
+      return;
+    }
+    if (isMinor && !guardianName.trim()) {
+      setError(t(locale, "register.guardianNameRequired" as TranslationKey));
+      return;
+    }
+    if (isMinor && !guardianPhone.trim()) {
+      setError(t(locale, "register.guardianPhoneRequired" as TranslationKey));
+      return;
+    }
+
     try {
       const result = await registerPatient({
         phone,
@@ -60,6 +82,11 @@ export default function RegisterPage() {
         age: age ? parseInt(age, 10) : undefined,
         gender: gender || undefined,
         insurance: insurance || undefined,
+        // A200: Guardian data for minors
+        isMinor: isMinor || false,
+        guardianName: isMinor ? guardianName : undefined,
+        guardianPhone: isMinor ? guardianPhone : undefined,
+        guardianEmail: isMinor ? guardianEmail : undefined,
       });
 
       if (result.error) {
@@ -261,7 +288,67 @@ export default function RegisterPage() {
                   </SelectContent>
                 </Select>
               </div>
-              <Button type="submit" className="w-full" disabled={loading}>
+              {/* A200: Guardian consent section for minor patients */}
+              {isMinor && (
+                <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 space-y-4">
+                  <div className="flex items-start gap-2">
+                    <ShieldCheck className="h-5 w-5 text-amber-600 mt-0.5 shrink-0" />
+                    <div>
+                      <p className="text-sm font-medium text-amber-800">
+                        {t(locale, "register.minorNotice" as TranslationKey)}
+                      </p>
+                      <p className="text-xs text-amber-700 mt-1">
+                        {t(locale, "register.minorNoticeDesc" as TranslationKey)}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="guardianName">{t(locale, "register.guardianName" as TranslationKey)}</Label>
+                    <Input
+                      id="guardianName"
+                      placeholder={t(locale, "register.guardianNamePlaceholder" as TranslationKey)}
+                      value={guardianName}
+                      onChange={(e) => setGuardianName(e.target.value)}
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="guardianPhone">{t(locale, "register.guardianPhone" as TranslationKey)}</Label>
+                    <Input
+                      id="guardianPhone"
+                      type="tel"
+                      placeholder="+212 6XX XX XX XX"
+                      value={guardianPhone}
+                      onChange={(e) => setGuardianPhone(e.target.value)}
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="guardianEmail">{t(locale, "register.guardianEmailOptional" as TranslationKey)}</Label>
+                    <Input
+                      id="guardianEmail"
+                      type="email"
+                      placeholder="parent@email.com"
+                      value={guardianEmail}
+                      onChange={(e) => setGuardianEmail(e.target.value)}
+                    />
+                  </div>
+                  <label className="flex items-start gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={guardianConsent}
+                      onChange={(e) => setGuardianConsent(e.target.checked)}
+                      className="mt-1 h-4 w-4 rounded border-gray-300"
+                      required
+                    />
+                    <span className="text-xs text-amber-800">
+                      {t(locale, "register.guardianConsentLabel" as TranslationKey)}
+                    </span>
+                  </label>
+                </div>
+              )}
+
+              <Button type="submit" className="w-full" disabled={loading || (isMinor && !guardianConsent)}>
                 {loading ? t(locale, "register.creating") : t(locale, "register.createAccount")}
               </Button>
             </form>

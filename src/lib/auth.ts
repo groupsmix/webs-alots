@@ -243,6 +243,11 @@ export async function registerPatient(data: {
   age?: number;
   gender?: string;
   insurance?: string;
+  // A200: Guardian data for minor patients (Loi 09-08 / GDPR-K)
+  isMinor?: boolean;
+  guardianName?: string;
+  guardianPhone?: string;
+  guardianEmail?: string;
 }): Promise<{ error: string | null }> {
   if (!isPhoneAuthEnabled()) {
     return { error: "auth.phoneDisabled" };
@@ -270,6 +275,11 @@ export async function registerPatient(data: {
         age: data.age,
         gender: data.gender,
         insurance: data.insurance,
+        // A200: Guardian data persisted in user metadata for minor patients
+        is_minor: data.isMinor ?? false,
+        guardian_name: data.guardianName,
+        guardian_phone: data.guardianPhone,
+        guardian_email: data.guardianEmail,
       },
     },
   });

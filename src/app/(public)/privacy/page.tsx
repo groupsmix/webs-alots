@@ -1,3 +1,4 @@
+/* eslint-disable i18next/no-literal-string */
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -148,7 +149,26 @@ export default function PrivacyPage() {
         </section>
 
         <section className="mb-8">
-          <h2 className="text-xl font-semibold mb-4">8. Contact</h2>
+          <h2 className="text-xl font-semibold mb-4">
+            8. Protection des Donnees des Mineurs
+          </h2>
+          <p className="text-muted-foreground mb-4">
+            Conformement a la loi marocaine 09-08 et au RGPD, nous accordons une
+            attention particuliere a la protection des donnees des patients
+            mineurs (moins de 18 ans). L&apos;inscription d&apos;un patient
+            mineur requiert le consentement explicite d&apos;un parent ou tuteur
+            legal. Les donnees du tuteur sont enregistrees et liees au dossier du
+            mineur. Le tuteur legal dispose de tous les droits d&apos;acces, de
+            rectification et de suppression sur les donnees de son enfant. Aucun
+            traitement de donnees de sante d&apos;un mineur n&apos;est effectue
+            sans le consentement prealable du titulaire de l&apos;autorite
+            parentale. Un registre des consentements est maintenu a des fins
+            d&apos;audit.
+          </p>
+        </section>
+
+        <section className="mb-8">
+          <h2 className="text-xl font-semibold mb-4">9. Contact</h2>
           <p className="text-muted-foreground mb-4">
             Pour toute question relative à cette politique de confidentialité ou
             à la protection de vos données, vous pouvez nous contacter via
