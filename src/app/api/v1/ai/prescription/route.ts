@@ -362,10 +362,18 @@ export const POST = withAuthValidation(
       // Log AI usage for billing (fire-and-forget)
       void logAiUsage(supabase, clinicId, doctorId);
 
+      // A199: Medical-legal disclaimer — required by Moroccan medical liability
+      // law and EU MDR/AI-Act for clinical decision-support systems. The
+      // prescribing clinician retains full responsibility for the prescription.
       return apiSuccess({
         prescription,
         patientId: data.patientId,
         diagnosis: data.diagnosis,
+        disclaimer:
+          "Cette ordonnance est générée par intelligence artificielle à titre d'aide à la décision. " +
+          "Elle ne constitue pas un avis médical définitif. Le médecin prescripteur conserve " +
+          "l'entière responsabilité de la prescription finale et doit vérifier chaque médicament, " +
+          "posologie et interaction avant validation.",
       });
     } catch (err) {
       if (err instanceof DOMException && err.name === "AbortError") {

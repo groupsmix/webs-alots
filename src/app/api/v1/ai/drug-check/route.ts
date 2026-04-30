@@ -256,12 +256,19 @@ export const POST = withAuthValidation(
         });
     }
 
-    return apiSuccess<DrugCheckResponse>({
+    // A199: Medical-legal disclaimer — required by Moroccan medical liability
+    // law and EU MDR/AI-Act for clinical decision-support systems. The
+    // prescribing clinician retains full responsibility for drug choices.
+    return apiSuccess<DrugCheckResponse & { disclaimer: string }>({
       overallSeverity: localResult.overallSeverity,
       alerts: localResult.alerts,
       dangerousCount: localResult.dangerousCount,
       cautionCount: localResult.cautionCount,
       aiEnhanced,
+      disclaimer:
+        "Cet outil est une aide à la décision clinique et ne constitue pas un avis médical. " +
+        "Le médecin prescripteur conserve l'entière responsabilité de la prescription. " +
+        "Vérifiez toujours les interactions avec les sources de référence officielles.",
     });
   },
   ["doctor", "clinic_admin"],
