@@ -60,6 +60,9 @@ import { logger } from "@/lib/logger";
 /** Cached CryptoKey promise — the key doesn't change at runtime. */
 let _cachedKey: Promise<CryptoKey | null> | undefined;
 
+/** Cached old CryptoKey promise for key rotation fallback (F-A99-10). */
+let _cachedOldKey: Promise<CryptoKey | null> | undefined;
+
 /**
  * Derive a CryptoKey from the hex-encoded master key in environment.
  * The result is cached so that repeated encrypt/decrypt calls avoid
@@ -95,6 +98,30 @@ async function importEncryptionKey(): Promise<CryptoKey | null> {
     false,
     ["encrypt", "decrypt"],
   );
+}
+
+/**
+ * Import the old/rotated encryption key from PHI_ENCRYPTION_KEY_OLD.
+ * Used during key rotation so that files encrypted with the previous key
+ * can still be decrypted (F-A99-10 / A100-01).
+ */
+function getOldEncryptionKey(): Promise<CryptoKey | null> {
+  if (_cachedOldKey !== undefined) return _cachedOldKey;
+  _cachedOldKey = importOldEncryptionKey();
+  return _cachedOldKey;
+}
+
+async function importOldEncryptionKey(): Promise<CryptoKey | null> {
+  const hexKey = process.env.PHI_ENCRYPTION_KEY_OLD;
+  if (!hexKey) return null;
+  if (hexKey.length !== 64) {
+    logger.error("PHI_ENCRYPTION_KEY_OLD must be exactly 64 hex characters (256 bits)", {
+      context: "encryption",
+    });
+    return null;
+  }
+  const keyBytes = hexToBytes(hexKey);
+  return crypto.subtle.importKey("raw", keyBytes, { name: "AES-GCM" }, false, ["decrypt"]);
 }
 
 /**
@@ -170,6 +197,27 @@ export async function decryptBuffer(
 
     return Buffer.from(plaintext);
   } catch (err) {
+    // F-A99-10 / A100-01: During key rotation, files encrypted with the
+    // old key will fail to decrypt with the new key. Try the old key
+    // before giving up, so patients can still view their prescriptions
+    // mid-rotation.
+    const oldKey = await getOldEncryptionKey();
+    if (oldKey) {
+      try {
+        const plaintext = await crypto.subtle.decrypt(
+          { name: "AES-GCM", iv },
+          oldKey,
+          ciphertext,
+        );
+        logger.warn("Decrypted with PHI_ENCRYPTION_KEY_OLD — file needs re-encryption", {
+          context: "encryption",
+        });
+        return Buffer.from(plaintext);
+      } catch {
+        // Old key also failed — fall through to error below
+      }
+    }
+
     logger.error("AES-GCM decryption failed — wrong key or corrupted data", {
       context: "encryption",
       error: err,

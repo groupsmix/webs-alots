@@ -73,7 +73,12 @@ const DEAD_LETTER_NEXT_ATTEMPT = "9999-12-31T23:59:59Z";
  */
 export function calculateNextRetry(attempt: number): Date {
   const delay = BASE_RETRY_DELAY_MS * Math.pow(2, attempt);
-  const jitter = Math.floor(Math.random() * 5000);
+  // F-A98-K-01: Use crypto.getRandomValues instead of Math.random() so
+  // jitter actually fans out under thundering-herd conditions. V8's PRNG
+  // can cluster when many isolates seed at the same wall-clock moment.
+  const buf = new Uint32Array(1);
+  crypto.getRandomValues(buf);
+  const jitter = buf[0] % 5000;
   return new Date(Date.now() + delay + jitter);
 }
 

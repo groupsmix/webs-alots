@@ -453,6 +453,10 @@ export const CHAT_MESSAGE_CONTENT_MAX = 4000;
 
 export const chatRequestSchema = z.object({
   clinicId: z.string().optional(),
+  // V-01: Cap the messages array at a reasonable maximum to prevent token-cost
+  // DoS. The route handler further slices to MAX_HISTORY_LENGTH (20), but
+  // bounding at the schema level avoids Zod spending CPU validating hundreds
+  // of messages that would be discarded anyway.
   messages: z
     .array(
       z.object({
@@ -460,7 +464,8 @@ export const chatRequestSchema = z.object({
         content: safeText.pipe(z.string().min(1).max(CHAT_MESSAGE_CONTENT_MAX)),
       }),
     )
-    .min(1),
+    .min(1)
+    .max(50),
 });
 
 // ── Branding ────────────────────────────────────────────────────────────
