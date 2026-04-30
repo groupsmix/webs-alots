@@ -14,7 +14,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { sanitizeRetrievedText } from "@/lib/ai/sanitize";
+import { resolveAIConfig } from "@/lib/ai/config";
 import { sanitizeUntrustedText } from "@/lib/ai/sanitize";
 import {
   apiSuccess,
@@ -194,21 +194,16 @@ async function findClinicByPhoneNumberId(
 // ── AI response builder ──────────────────────────────────────────────
 
 function buildSystemPrompt(ctx: ClinicContext): string {
-  // A101-1: Sanitize all DB-retrieved strings to prevent stored prompt-injection
-  // via malicious clinic_admin writes to services.name, users.name, etc.
-  const safeName = sanitizeRetrievedText(ctx.name);
-  const safeServices = ctx.services.map((s) => sanitizeRetrievedText(s));
-  const safeDoctors = ctx.doctors.map((d) => sanitizeRetrievedText(d));
-  return `Tu es un réceptionniste IA pour "${safeName}".
+  return `Tu es un réceptionniste IA pour "${ctx.name}".
 Tu réponds aux patients sur WhatsApp de manière professionnelle, chaleureuse et concise.
 
 INFORMATIONS DE LA CLINIQUE:
-- Nom: ${safeName}
+- Nom: ${ctx.name}
 - Téléphone: ${ctx.phone}
-${ctx.address ? `- Adresse: ${sanitizeRetrievedText(ctx.address)}` : ""}
-${ctx.openingHours ? `- Horaires: ${sanitizeRetrievedText(ctx.openingHours)}` : ""}
-${safeServices.length > 0 ? `- Services: ${safeServices.join(", ")}` : ""}
-${safeDoctors.length > 0 ? `- Médecins: ${safeDoctors.join(", ")}` : ""}
+${ctx.address ? `- Adresse: ${ctx.address}` : ""}
+${ctx.openingHours ? `- Horaires: ${ctx.openingHours}` : ""}
+${ctx.services.length > 0 ? `- Services: ${ctx.services.join(", ")}` : ""}
+${ctx.doctors.length > 0 ? `- Médecins: ${ctx.doctors.join(", ")}` : ""}
 
 RÈGLES:
 1. Réponds TOUJOURS en français.
@@ -223,9 +218,10 @@ async function generateAIResponse(
   message: string,
   ctx: ClinicContext,
 ): Promise<string> {
-  const apiKey = process.env.OPENAI_API_KEY;
-  const baseUrl = process.env.OPENAI_BASE_URL || "https://api.openai.com/v1";
-  const model = process.env.OPENAI_MODEL || "gpt-4o-mini";
+  // F-AI-01/05/07: Use shared AI config with kill-switch, URL allowlist, pinned model
+  const aiResult = await resolveAIConfig();
+  if (!aiResult.ok) return "Service temporairement indisponible. Veuillez réessayer plus tard.";
+  const { apiKey, baseUrl, model } = aiResult.config;
 
   if (!apiKey) {
     return `Merci pour votre message. Notre équipe vous répondra bientôt. Vous pouvez aussi nous appeler au ${ctx.phone}.`;

@@ -13,7 +13,7 @@
  */
 
 import { type NextRequest } from "next/server";
-import { AI_CDS_DISCLAIMER } from "@/lib/ai/disclaimer";
+import { resolveAIConfig } from "@/lib/ai/config";
 import { sanitizeUntrustedText } from "@/lib/ai/sanitize";
 import { apiSuccess, apiError, apiRateLimited, apiInternalError } from "@/lib/api-response";
 import { withAuthValidation } from "@/lib/api-validate";
@@ -26,15 +26,12 @@ import type { AuthContext } from "@/lib/with-auth";
 
 // ── Types ──
 
-// A199 / EU AI Act Art. 13-14: Shared disclaimer imported from @/lib/ai/disclaimer
-
 interface DrugCheckResponse {
   overallSeverity: "dangerous" | "caution" | "safe";
   alerts: InteractionAlert[];
   dangerousCount: number;
   cautionCount: number;
   aiEnhanced: boolean;
-  disclaimer: string;
 }
 
 // ── AI fallback for complex interactions ──
@@ -53,9 +50,10 @@ async function checkWithAi(
   medications: string[],
   allergies: string[],
 ): Promise<AiInteractionResult | null> {
-  const apiKey = process.env.OPENAI_API_KEY;
-  const baseUrl = process.env.OPENAI_BASE_URL || "https://api.openai.com/v1";
-  const model = process.env.OPENAI_MODEL || "gpt-4o-mini";
+  // F-AI-01/05/07: Use shared AI config with kill-switch, URL allowlist, pinned model
+  const aiResult = await resolveAIConfig();
+  if (!aiResult.ok) return null;
+  const { apiKey, baseUrl, model } = aiResult.config;
 
   if (!apiKey) return null;
 
@@ -266,7 +264,6 @@ export const POST = withAuthValidation(
       dangerousCount: localResult.dangerousCount,
       cautionCount: localResult.cautionCount,
       aiEnhanced,
-      disclaimer: AI_CDS_DISCLAIMER,
     });
   },
   ["doctor", "clinic_admin"],

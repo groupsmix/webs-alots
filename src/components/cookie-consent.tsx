@@ -163,6 +163,8 @@ export function CookieConsent() {
     }
     applyAnalyticsConsent(prefs.analytics);
     logConsentToServer(prefs);
+    // A80-1 fix: Dispatch custom event so PlausibleScript's same-tab listener updates
+    window.dispatchEvent(new CustomEvent("cookie-consent:changed"));
     setVisible(false);
     setShowPreferences(false);
   }, []);

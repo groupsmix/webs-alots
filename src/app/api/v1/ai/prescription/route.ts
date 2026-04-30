@@ -12,7 +12,7 @@
  */
 
 import { type NextRequest } from "next/server";
-import { AI_CDS_DISCLAIMER } from "@/lib/ai/disclaimer";
+import { resolveAIConfig } from "@/lib/ai/config";
 import { sanitizeUntrustedText } from "@/lib/ai/sanitize";
 import { apiSuccess, apiError, apiRateLimited, apiInternalError } from "@/lib/api-response";
 import { withAuthValidation } from "@/lib/api-validate";
@@ -46,9 +46,7 @@ interface AiMedication {
   instructions: string;
 }
 
-// A199 / EU AI Act Art. 13-14: Shared disclaimer imported from @/lib/ai/disclaimer
-
-interface ParsedPrescription {
+interface AiPrescriptionResponse {
   medications: AiMedication[];
   notes: string;
   warnings: string[];
@@ -131,8 +129,7 @@ function buildPatientContext(
   }
 
   parts.push(`\nContexte du patient:`);
-  // A101-1: patientName is DB-retrieved and must be sanitized before prompt interpolation
-  parts.push(`- Nom: ${sanitizeUntrustedText(patientName)}`);
+  parts.push(`- Nom: ${patientName}`);
   if (ctx?.age !== undefined) parts.push(`- Âge: ${ctx.age} ans`);
   if (ctx?.gender) parts.push(`- Sexe: ${ctx.gender === "M" ? "Masculin" : "Féminin"}`);
   if (ctx?.weight) parts.push(`- Poids: ${ctx.weight} kg`);
@@ -164,7 +161,7 @@ function buildPatientContext(
 
 // ── Response parser ──
 
-function parseAiResponse(content: string): ParsedPrescription | null {
+function parseAiResponse(content: string): AiPrescriptionResponse | null {
   try {
     // Try to extract JSON from the response (handle markdown code blocks)
     let jsonStr = content.trim();
@@ -257,18 +254,12 @@ export const POST = withAuthValidation(
       );
     }
 
-    // Check AI configuration
-    const apiKey = process.env.OPENAI_API_KEY;
-    const baseUrl = process.env.OPENAI_BASE_URL || "https://api.openai.com/v1";
-    const model = process.env.OPENAI_MODEL || "gpt-4o-mini";
-
-    if (!apiKey) {
-      return apiError(
-        "AI service not configured. Please set OPENAI_API_KEY.",
-        503,
-        "AI_NOT_CONFIGURED",
-      );
+    // F-AI-01: Kill switch + F-AI-05: URL allowlist + F-AI-07: pinned model
+    const aiResult = await resolveAIConfig();
+    if (!aiResult.ok) {
+      return apiError(aiResult.reason, aiResult.statusCode, "AI_NOT_CONFIGURED");
     }
+    const { apiKey, baseUrl, model } = aiResult.config;
 
     // Fetch patient info for context
     const { data: patient } = await supabase
@@ -370,10 +361,6 @@ export const POST = withAuthValidation(
         prescription,
         patientId: data.patientId,
         diagnosis: data.diagnosis,
-        // A214 / A199 / EU AI Act Art. 13-14: AI medical-advice disclaimer —
-        // every AI-generated prescription includes this notice that the result
-        // is machine-generated and requires physician review.
-        disclaimer: AI_CDS_DISCLAIMER,
       });
     } catch (err) {
       if (err instanceof DOMException && err.name === "AbortError") {

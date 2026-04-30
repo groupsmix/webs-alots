@@ -23,6 +23,7 @@ import {
   ROLE_ROUTE_MAP,
   ROLE_DASHBOARD_MAP,
 } from "@/lib/middleware/routes";
+import { checkSanctionedCountry } from "@/lib/middleware/sanctioned-countries";
 import {
   buildCspHeaderValues,
   withSecurityHeaders,
@@ -78,6 +79,10 @@ export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const hostname = request.headers.get("host") ?? "";
   const rootDomain = process.env.ROOT_DOMAIN;
+
+  // --- F-A198 / F-A160: Sanctioned country block ---
+  const sanctionBlock = checkSanctionedCountry(request);
+  if (sanctionBlock) return sanctionBlock;
 
   // --- WWW redirect (works on Cloudflare Workers unlike next.config redirects) ---
   const hostWithoutPort = hostname.split(":")[0];

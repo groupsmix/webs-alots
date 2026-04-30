@@ -9,9 +9,9 @@ import {
   buildBookedSlotsSet,
 } from "@/lib/find-alternative-slots";
 import { logger } from "@/lib/logger";
+import { enqueueNotification } from "@/lib/notification-queue";
 import { requireTenant, getClinicConfig } from "@/lib/tenant";
 import { doctorUnavailabilitySchema } from "@/lib/validations";
-import { sendInteractiveMessage } from "@/lib/whatsapp";
 import { withAuth } from "@/lib/with-auth";
 
 /**
@@ -208,8 +208,11 @@ export const POST = withAuth(async (request, auth) => {
         sent_at: new Date().toISOString(),
       });
 
-      // Send WhatsApp with interactive buttons
-      let whatsappSent = false;
+      // A73-F2: Enqueue WhatsApp sends via notification_queue instead of
+      // sending inline. For a 1-month unavailability the result set could be
+      // hundreds of appointments — sending inline creates O(N) external calls
+      // with no backpressure. The queue provides retry, backoff, and rate limiting.
+      let whatsappEnqueued = false;
       if (patient.phone && alternatives.length > 0) {
         const doctorName = doctor?.name ?? "your doctor";
         const serviceName = service?.name ?? "appointment";
@@ -217,24 +220,25 @@ export const POST = withAuth(async (request, auth) => {
           `Hello ${patient.name}, your ${serviceName} with ${doctorName} ` +
           `on ${appt.appointment_date} at ${appt.start_time?.slice(0, 5) ?? ""} ` +
           `has been cancelled because the doctor is unavailable.\n\n` +
-          `Please choose a new time slot:`;
-
-        const buttons = alternatives.slice(0, 3).map((alt, idx) => ({
-          id: `REBOOK_${appt.id}_${idx + 1}`,
-          title: alt.label.slice(0, 20),
-        }));
+          `Please choose a new time slot:\n` +
+          alternatives.slice(0, 3).map((alt, idx) => `${idx + 1}. ${alt.label}`).join("\n");
 
         try {
-          const result = await sendInteractiveMessage({
-            to: patient.phone,
+          const queueId = await enqueueNotification({
+            clinicId,
+            channel: "whatsapp",
+            recipient: patient.phone,
             body: messageBody,
-            buttons,
-            header: "Appointment Rebooking",
-            footer: "Reply within 24 hours",
+            trigger: "cancellation",
+            metadata: {
+              appointmentId: appt.id,
+              unavailabilityId: unavailabilityId ?? "",
+              doctorId,
+            },
           });
-          whatsappSent = result.success;
+          whatsappEnqueued = queueId !== null;
         } catch (err) {
-          logger.warn("Failed to send rebooking WhatsApp", {
+          logger.warn("Failed to enqueue rebooking WhatsApp", {
             context: "doctor-unavailability",
             appointmentId: appt.id,
             error: err,
@@ -245,7 +249,7 @@ export const POST = withAuth(async (request, auth) => {
       rebookingResults.push({
         appointmentId: appt.id,
         patientName: patient.name,
-        whatsappSent,
+        whatsappSent: whatsappEnqueued,
       });
     }
 

@@ -352,7 +352,7 @@ export const DCI_DRUG_DATABASE: DCIDrug[] = [
   { id: "d200", dci: "Oxytocine", brands: ["Syntocinon"], category: "hormone", forms: ["Injectable IV/IM"], strengths: ["5 UI", "10 UI"], requiresPrescription: true },
 ];
 
-// ---- Search Utilities ----
+// ---- Pre-built Search Index (A73-F5) ----
 
 /**
  * Normalize text for search: lowercase, remove diacritics.
@@ -365,57 +365,113 @@ function normalize(text: string): string {
 }
 
 /**
+ * A73-F5: Pre-built index for O(1) prefix lookups instead of O(N) linear scan.
+ * Maps normalized DCI names and brand names to their drug entries.
+ * Built once at module load time.
+ */
+interface DrugIndexEntry {
+  drug: DCIDrug;
+  /** "dci" or "brand" — determines base score */
+  matchType: "dci" | "brand";
+  /** The normalized search key */
+  key: string;
+}
+
+const _drugIndex: Map<string, DrugIndexEntry[]> = new Map();
+
+function ensureDrugIndex(): Map<string, DrugIndexEntry[]> {
+  if (_drugIndex.size > 0) return _drugIndex;
+
+  for (const drug of DCI_DRUG_DATABASE) {
+    // Index by normalized DCI name
+    const dciNorm = normalize(drug.dci);
+    const dciEntry: DrugIndexEntry = { drug, matchType: "dci", key: dciNorm };
+    // Add entries for every prefix length >= 2
+    for (let len = 2; len <= dciNorm.length; len++) {
+      const prefix = dciNorm.slice(0, len);
+      const list = _drugIndex.get(prefix) ?? [];
+      list.push(dciEntry);
+      _drugIndex.set(prefix, list);
+    }
+
+    // Index by normalized brand names
+    for (const brand of drug.brands) {
+      const brandNorm = normalize(brand);
+      const brandEntry: DrugIndexEntry = { drug, matchType: "brand", key: brandNorm };
+      for (let len = 2; len <= brandNorm.length; len++) {
+        const prefix = brandNorm.slice(0, len);
+        const list = _drugIndex.get(prefix) ?? [];
+        list.push(brandEntry);
+        _drugIndex.set(prefix, list);
+      }
+    }
+  }
+
+  return _drugIndex;
+}
+
+// ---- Search Utilities ----
+
+/**
  * Search the drug database by DCI name or brand name.
  * Returns matching drugs sorted by relevance.
+ *
+ * A73-F5: Uses pre-built prefix index for fast lookups instead of
+ * scanning the entire 43k-line database on every request.
  */
 export function searchDrugs(query: string, limit = 20): DCIDrug[] {
   if (!query || query.length < 2) return [];
 
   const q = normalize(query);
+  const index = ensureDrugIndex();
 
   type ScoredDrug = { drug: DCIDrug; score: number };
+  const seen = new Set<string>();
   const results: ScoredDrug[] = [];
 
-  for (const drug of DCI_DRUG_DATABASE) {
-    let score = 0;
-    const dciNorm = normalize(drug.dci);
+  // Fast path: look up candidates from the prefix index using the query
+  // as a prefix key. This avoids scanning all ~200 drugs on every request.
+  const candidates = index.get(q) ?? [];
 
-    // Exact DCI match
-    if (dciNorm === q) {
-      score = 100;
-    }
-    // DCI starts with query
-    else if (dciNorm.startsWith(q)) {
-      score = 80;
-    }
-    // DCI contains query
-    else if (dciNorm.includes(q)) {
-      score = 60;
-    }
-    // Brand name match
-    else {
-      for (const brand of drug.brands) {
-        const brandNorm = normalize(brand);
-        if (brandNorm === q) {
-          score = 90;
-          break;
-        } else if (brandNorm.startsWith(q)) {
-          score = 70;
-          break;
-        } else if (brandNorm.includes(q)) {
-          score = 50;
-          break;
-        }
+  // A80-3 fix: Fallback to substring search when prefix index has no results.
+  // Previously `dciNorm.includes(q)` matched "oxicam" → "Piroxicam" (score 60),
+  // but prefix-only indexing drops mid-string matches. Add a lightweight fallback
+  // that scans DCI names for substring matches to preserve this behavior.
+  const fallbackResults: ScoredDrug[] = [];
+  if (candidates.length === 0) {
+    for (const drug of DCI_DRUG_DATABASE) {
+      const dciNorm = normalize(drug.dci);
+      if (dciNorm.includes(q) || drug.brands.some((b) => normalize(b).includes(q))) {
+        fallbackResults.push({ drug, score: 40 }); // Substring match gets lower priority
       }
+    }
+  }
+
+  for (const entry of candidates) {
+    if (seen.has(entry.drug.id)) continue;
+    seen.add(entry.drug.id);
+
+    let score = 0;
+    if (entry.matchType === "dci") {
+      if (entry.key === q) score = 100;
+      else if (entry.key.startsWith(q)) score = 80;
+      else score = 60; // contains match (indexed via substring prefix)
+    } else {
+      if (entry.key === q) score = 90;
+      else if (entry.key.startsWith(q)) score = 70;
+      else score = 50;
     }
 
     if (score > 0) {
-      results.push({ drug, score });
+      results.push({ drug: entry.drug, score });
     }
   }
 
   results.sort((a, b) => b.score - a.score);
-  return results.slice(0, limit).map((r) => r.drug);
+  // A80-3 fix: Merge fallback results and sort together
+  const merged = [...results, ...fallbackResults];
+  merged.sort((a, b) => b.score - a.score);
+  return merged.slice(0, limit).map((r) => r.drug);
 }
 
 /**
