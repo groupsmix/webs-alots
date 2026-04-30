@@ -6,9 +6,18 @@ on:
       - main
       - staging
 
-# Least-privilege permissions — deploy only needs to read repo contents
+# Least-privilege permissions — deploy only needs to read repo contents.
+# A34.8: Consider adding `id-token: write` here so wrangler-action can
+# use OIDC to authenticate to Cloudflare instead of long-lived API tokens.
+# Until Cloudflare supports OIDC natively for Workers deploys, we fall
+# back to secrets.CLOUDFLARE_API_TOKEN.
 permissions:
   contents: read
+
+# A34.12: Prevent duplicate deploys from racing each other.
+concurrency:
+  group: deploy-${{ github.ref_name }}
+  cancel-in-progress: false
 
 jobs:
   lint:
@@ -25,10 +34,12 @@ jobs:
           node-version: 22
           cache: npm
 
+      # A34.6: Use --ignore-scripts flag instead of global npm config mutation.
+      # `npm config set` mutates the runner's global .npmrc, which leaks to
+      # subsequent steps on self-hosted runners.
       - name: Install dependencies
         run: |
-          npm config set ignore-scripts true
-          npm ci
+          npm ci --ignore-scripts
           node scripts/patch-opennext.mjs || true
 
       - name: Run ESLint
@@ -55,12 +66,17 @@ jobs:
           node-version: 22
           cache: npm
 
+      # A34.6: Use --ignore-scripts flag instead of global npm config mutation.
       - name: Install dependencies
         run: |
-          npm config set ignore-scripts true
-          npm ci
+          npm ci --ignore-scripts
           node scripts/patch-opennext.mjs || true
 
+      # A34.7: NEXT_PUBLIC_* env vars are inlined into the JS bundle at build
+      # time by Next.js. The anon key is designed to be public, but the
+      # URL+anon-key combination is permanently baked into the deployed
+      # artifact. A leaked staging anon key cannot be rotated without a
+      # full redeploy. Keep this in mind when triaging credential leaks.
       - name: Build for Cloudflare
         run: |
           bash scripts/pre-deploy-check.sh
@@ -71,6 +87,14 @@ jobs:
           GITHUB_REF_NAME: ${{ github.ref_name }}
           STAGING_SUPABASE_URL: ${{ secrets.STAGING_SUPABASE_URL }}
 
+      # A34.9: Both prod and staging deploy use the same CLOUDFLARE_API_TOKEN.
+      # TODO(A34.9): Create environment-scoped Cloudflare API tokens:
+      #   - production token: scoped to Workers:Edit on the production worker only
+      #   - staging token: scoped to Workers:Edit on the staging worker only
+      # Store them as CLOUDFLARE_API_TOKEN in the respective GitHub
+      # Environments (production / staging) and reference via
+      # secrets.CLOUDFLARE_API_TOKEN, which is already environment-aware.
+      # Also implement token rotation on a 90-day cadence.
       - name: Deploy to Cloudflare Workers (Production)
         id: deploy_production
         if: github.ref_name == 'main'

@@ -8,6 +8,12 @@ on:
 permissions:
   contents: read
 
+# A34.12: Prevent duplicate runs on the same PR from racing each other.
+# Only the latest push to a given PR branch runs; previous runs are cancelled.
+concurrency:
+  group: ci-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
 jobs:
   ci:
     runs-on: ubuntu-latest
@@ -125,23 +131,26 @@ jobs:
           # base SHA is unknown and `git log base^..head` fails.
           fetch-depth: 0
 
+      # A34.2: Pin CodeQL actions to full SHA to prevent tag-mutation attacks
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@v4
+        uses: github/codeql-action/init@95e58e9a2cdfd71adc6e0353d5c52f41a045d225 # v4
         with:
           languages: javascript, typescript
 
       - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@v4
+        uses: github/codeql-action/analyze@95e58e9a2cdfd71adc6e0353d5c52f41a045d225 # v4
         with:
           category: "/language:javascript,typescript"
 
+      # A34.3: Pin third-party Gitleaks action to SHA — floating v2 tag is
+      # a supply-chain risk since this action receives secrets.GITHUB_TOKEN.
       - name: Run Gitleaks
-        uses: gitleaks/gitleaks-action@v2
+        uses: gitleaks/gitleaks-action@ff98106e4c7b2bc287b24eaf42907196329070c7 # v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Setup Node.js
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
         with:
           node-version: 22
           cache: 'npm'
@@ -164,7 +173,7 @@ jobs:
       #     --certificate-identity-regexp ... \
       #     --certificate-oidc-issuer https://token.actions.githubusercontent.com
       - name: Install cosign
-        uses: sigstore/cosign-installer@v4.1.1
+        uses: sigstore/cosign-installer@cad07c2e89fa2edd6e2d7bab4c1aa38e53f76003 # v4.1.1
 
       # Skip on fork PRs: keyless cosign signing requires an OIDC token,
       # which GitHub does not issue to workflows triggered by pull_request
@@ -186,12 +195,12 @@ jobs:
       # provenance API needs a writable id-token / attestations token.
       - name: Attest SBOM build provenance (SLSA)
         if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
-        uses: actions/attest-build-provenance@v3.1.0
+        uses: actions/attest-build-provenance@00014ed6ed5efc5b1ab7f7f34a39eb55d41aa4f8 # v3.1.0
         with:
           subject-path: bom.json
 
       - name: Upload SBOM
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         if: always()
         with:
           name: sbom
@@ -199,14 +208,17 @@ jobs:
             bom.json
             bom.json.bundle
 
+      # A34.11: Semgrep is fail-closed. If the scan itself errors out (e.g.
+      # network failure fetching rules), the step fails and blocks the PR.
+      # The `|| true` on the semgrep command was removed so real failures
+      # are not silently swallowed.
       - name: Run Semgrep
-        continue-on-error: true
         run: |
           python3 -m pip install --upgrade semgrep
-          semgrep --config p/javascript --sarif --output semgrep.sarif . || true
+          semgrep --config p/javascript --sarif --output semgrep.sarif .
 
       - name: Upload Semgrep SARIF
-        uses: github/codeql-action/upload-sarif@v4
+        uses: github/codeql-action/upload-sarif@95e58e9a2cdfd71adc6e0353d5c52f41a045d225 # v4
         if: always() && hashFiles('semgrep.sarif') != ''
         with:
           sarif_file: semgrep.sarif
@@ -232,8 +244,9 @@ jobs:
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
 
+      # A34.4: Pin supabase/setup-cli to SHA
       - name: Start Supabase (ephemeral CI project)
-        uses: supabase/setup-cli@v1
+        uses: supabase/setup-cli@b60b5899c73b63a2d2d651b1e90db8d4c9392f51 # v1
         with:
           version: latest
 
@@ -308,7 +321,7 @@ jobs:
           SEED_USERS_DELETED: "true"
 
       - name: Upload Playwright report
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         if: always()
         with:
           name: playwright-report

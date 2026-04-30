@@ -32,15 +32,19 @@ compatibility_flags = ["nodejs_compat"]
 # ]
 
 # ── KV Namespaces ─────────────────────────────────────────────────────
-# Rate limiting counters (shared across all edge locations).
-# Binding name must match what the rate-limit code checks for.
-# The actual namespace ID is environment-specific.
+# A33.2: Explicitly bind KV namespaces so they are isolated per-worker
+# and declared as IaC rather than configured only in the dashboard.
+# The namespace IDs are injected via CI secrets / wrangler.toml overrides.
+# To activate, set the KV namespace ID in your Cloudflare dashboard and
+# uncomment:
 # [[kv_namespaces]]
 # binding = "RATE_LIMIT_KV"
-# id = ""           # Set per-environment in Cloudflare dashboard or CI
+# id = ""           # TODO(A33.2): Set per-environment KV namespace ID
 
 # ── R2 Buckets ────────────────────────────────────────────────────────
-# PHI file storage (encrypted uploads).
+# A33.2: Explicitly bind R2 buckets for PHI file storage. Declaring
+# bindings here ensures each Worker deployment has isolated R2 access.
+# To activate, uncomment after creating the bucket:
 # [[r2_buckets]]
 # binding = "UPLOADS_BUCKET"
 # bucket_name = "webs-alots-uploads"
@@ -60,12 +64,16 @@ NODE_ENV = "production"
 RATE_LIMIT_BACKEND = "supabase"
 
 # ── Limits ────────────────────────────────────────────────────────────
-# [limits]
-# cpu_ms = 50  # Default: 50ms CPU time per request (Workers Paid plan)
+# A33.2: Enable CPU limits to prevent runaway requests (Workers Paid plan).
+# Without this, a single request can consume unbounded CPU time.
+[limits]
+cpu_ms = 50
 
 # ── Observability ─────────────────────────────────────────────────────
-# [observability]
-# enabled = true  # Enables Workers Logs (beta)
+# A33.2: Enable Workers Logs for runtime observability. Without this,
+# errors and performance issues on the edge are invisible.
+[observability]
+enabled = true
 
 # ── Build ─────────────────────────────────────────────────────────────
 # The build command is handled by CI (npm run build:cf), not by wrangler.

@@ -1,6 +1,12 @@
 name: Rotate PHI Encryption Key
 
 on:
+  # A35.5: Automated rotation reminder on a 90-day cadence. The scheduled
+  # run will fail (new_key input is empty) but the failure notification
+  # serves as a reminder to rotate the key manually. For fully automated
+  # rotation, supply a generated key via the workflow_dispatch API.
+  schedule:
+    - cron: '0 9 1 */3 *' # 09:00 UTC on the 1st of every 3rd month
   workflow_dispatch:
     inputs:
       new_key:
@@ -29,6 +35,14 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      # A35.5: Guard against scheduled runs where no key is provided
+      - name: Check rotation key provided
+        run: |
+          if [ -z "${{ inputs.new_key }}" ]; then
+            echo "::error::PHI encryption key rotation is due (90-day cadence). Run this workflow manually via workflow_dispatch with a new 64-char hex key. See docs/SOP-PHI-KEY-ROTATION.md."
+            exit 1
+          fi
 
       - name: Run rotation script
         env:

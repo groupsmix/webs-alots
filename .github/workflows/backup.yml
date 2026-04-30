@@ -28,9 +28,12 @@ jobs:
     env:
       SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
       R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
-      R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
-      R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
       R2_BACKUP_BUCKET: ${{ secrets.R2_BACKUP_BUCKET }}
+      # A34.14: Pass R2 credentials as AWS_* env vars so the AWS CLI picks
+      # them up automatically, instead of writing to ~/.aws/credentials.
+      AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+      AWS_DEFAULT_REGION: auto
     steps:
       # Audit 3.11: Health check the DB connection before attempting backup
       - name: Health check database connection
@@ -57,18 +60,9 @@ jobs:
         run: |
           pip install awscli
 
-      - name: Configure R2 credentials
-        run: |
-          mkdir -p ~/.aws
-          cat > ~/.aws/credentials << EOF
-          [default]
-          aws_access_key_id=${{ secrets.R2_ACCESS_KEY_ID }}
-          aws_secret_access_key=${{ secrets.R2_SECRET_ACCESS_KEY }}
-          EOF
-          cat > ~/.aws/config << EOF
-          [default]
-          region=auto
-          EOF
+      # A34.14: Use AWS_* environment variables instead of writing long-lived
+      # credentials to ~/.aws/credentials on disk. Env vars are scoped to
+      # the process and not persisted on the runner filesystem.
 
       - name: Determine backup type
         id: backup_type
@@ -172,28 +166,17 @@ jobs:
     if: github.event.inputs.backup_type == 'verify' || github.event.schedule != ''
     env:
       R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
-      R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
-      R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
       R2_BACKUP_BUCKET: ${{ secrets.R2_BACKUP_BUCKET }}
+      # A34.14: Use AWS_* env vars instead of writing to ~/.aws/credentials
+      AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+      AWS_DEFAULT_REGION: auto
     steps:
       - name: Install tools
         run: |
           sudo apt-get update
           sudo apt-get install -y postgresql-client
           pip install awscli
-
-      - name: Configure R2 credentials
-        run: |
-          mkdir -p ~/.aws
-          cat > ~/.aws/credentials << EOF
-          [default]
-          aws_access_key_id=${{ secrets.R2_ACCESS_KEY_ID }}
-          aws_secret_access_key=${{ secrets.R2_SECRET_ACCESS_KEY }}
-          EOF
-          cat > ~/.aws/config << EOF
-          [default]
-          region=auto
-          EOF
 
       - name: Download latest backup
         run: |
@@ -277,7 +260,7 @@ jobs:
     steps:
       - name: Slack notification
         if: vars.SLACK_BACKUP_WEBHOOK_URL != ''
-        uses: slackapi/slack-github-action@v3.0.2
+        uses: slackapi/slack-github-action@03ea5433c137af7c0495bc0cad1af10403fc800c # v3.0.2
         with:
           webhook: ${{ vars.SLACK_BACKUP_WEBHOOK_URL }}
           webhook-type: incoming-webhook

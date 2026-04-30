@@ -1,4 +1,8 @@
 version: 2
+# A34.17: Dependabot does not sign commits by default. Branch protection
+# should NOT require signed commits until GitHub adds Dependabot signing
+# support, or use a merge-bot that re-signs. Track:
+# https://github.com/dependabot/dependabot-core/issues/1039
 updates:
   # Enable automated npm dependency updates
   - package-ecosystem: "npm"
@@ -16,6 +20,8 @@ updates:
       - "security"
 
   # Enable automated GitHub Actions updates
+  # A34.16: Dependabot will propose SHA-pinned updates for actions,
+  # keeping our supply-chain hardening up to date automatically.
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:

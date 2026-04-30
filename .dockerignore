@@ -1,0 +1,64 @@
+# A32.2: Prevent credentials and sensitive files from being copied into
+# Docker images if a Dockerfile is added in the future (COPY . .).
+#
+# GitHub Actions runners write temporary credentials (e.g. ~/.aws/credentials)
+# into the workspace. Without a .dockerignore, a naive `COPY . .` would ship
+# those secrets inside the image layer.
+
+# Environment files (may contain secrets)
+.env
+.env.*
+!.env.example
+
+# Git metadata
+.git
+.gitignore
+
+# CI/CD configuration (contains secret references)
+.github/
+
+# Node modules (should be installed fresh in the image)
+node_modules/
+
+# Build output
+.next/
+.open-next/
+out/
+build/
+coverage/
+
+# IDE / editor config
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Database dumps (Audit P1 #14)
+full_backup.sql
+*.dump
+*.sql.gz
+*.sql.gz.gpg
+
+# Credentials that CI runners may write
+.aws/
+.npmrc
+*.pem
+*.key
+
+# Documentation (not needed at runtime)
+docs/
+*.md
+LICENSE
+
+# Test fixtures
+e2e/
+playwright-report/
+test-results/
+
+# Supabase local dev
+supabase/.temp/
