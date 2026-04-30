@@ -14,7 +14,10 @@
  * three env vars above. Tests are skipped when SUPABASE_LOCAL is not set,
  * or when any of the URL/anon/service-key env vars are missing.
  *
- * AUDIT F-03: Implemented real RLS assertions (previously only TODO stubs).
+ * AUDIT F-03 / F-A89-04: Implemented real RLS assertions (previously only
+ * TODO stubs). However, the suite is gated behind `describe.skipIf(SKIP)`,
+ * meaning in standard CI runs the RLS coverage is effectively skipped.
+ * Open audit finding: ensure CI runs this suite with SUPABASE_LOCAL=true.
  * When SUPABASE_LOCAL is not set, tests still run but verify the test
  * infrastructure itself (schema assertions, client creation). When set,
  * they execute real SQL against the local Supabase Postgres instance.
