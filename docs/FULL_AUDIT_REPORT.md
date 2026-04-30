@@ -123,9 +123,9 @@ UPDATE notifications n SET clinic_id = u.clinic_id FROM users u WHERE n.user_id 
 ALTER TABLE notifications ALTER COLUMN clinic_id SET NOT NULL;
 ```
 
-#### 6. 71 Migration Files -- Well-Structured
+#### 6. Migration Files -- Well-Structured
 **Type:** Improvement (positive) | **Priority:** N/A | **Layer:** Database
-**File(s):** `supabase/migrations/00001_*` through `00071_*`
+**File(s):** `supabase/migrations/` (68 files; sequence numbers up to ~00071_*, with some skipped)
 **Problem:** None. Migrations use sequential 5-digit prefixes, include IF NOT EXISTS/IF EXISTS guards, and consistently add RLS policies for new tables. The `00018_missing_rls_policies.sql` through `00071_security_audit_remediation.sql` show a clear pattern of security hardening over time.
 
 #### 7. Missing Index on `appointments.slot_start` for Cron Reminder Queries
@@ -356,12 +356,12 @@ WHERE status IN ('pending', 'confirmed');
 **File(s):** `src/app/api/__tests__/`, `src/lib/__tests__/`
 **Problem:** None. Tests cover: booking flow, cancellation, webhooks, billing, auth flow, impersonation, CSP reporting, rate limiting (including chaos tests), encryption, email, notifications, timezone handling, tenant resolution, subdomain parsing, cron auth, upload validation, and integration flows.
 
-#### 43. E2E Tests Present but Limited
+#### 43. E2E Tests Present but Coverage Has Gaps
 **Type:** Testing | **Priority:** MEDIUM | **Layer:** Testing
-**File(s):** `e2e/admin-dashboard.spec.ts`, `e2e/booking-flow.spec.ts`, `e2e/booking-full-cycle.spec.ts`
-**Problem:** Only 3 E2E test files. Critical user flows not covered: patient login/portal, doctor dashboard, receptionist check-in, payment flow, file upload/download, MFA enrollment.
-**Impact:** Regressions in these flows would only be caught manually.
-**Solution:** Add E2E specs for: patient registration + login, appointment confirmation via WhatsApp, payment checkout, file upload with PHI encryption verification.
+**File(s):** `e2e/` (18 spec files: admin-dashboard, booking-flow, booking-full-cycle, csp-headers, landing-navigation, locale-switcher, login-flow, mobile-flows, payment-processing, payment-webhooks-e2e, pricing, rbac, registration-flow, rtl, smoke, tenant-isolation, whatsapp-notification, whatsapp-webhook)
+**Problem:** 18 E2E spec files exist with reasonable breadth (auth, booking, payments, RBAC, tenant isolation, WhatsApp, mobile, RTL, CSP). Remaining coverage gaps: patient portal interactions, doctor dashboard end-to-end, receptionist check-in walkthrough, file upload with PHI encryption verification, MFA enrollment flow.
+**Impact:** The flagged gap is narrower than originally stated; regressions in the listed un-covered flows would still only be caught manually.
+**Solution:** Add E2E specs for the remaining gap areas (patient portal, doctor dashboard, file upload + encryption verification, MFA enrollment).
 
 #### 44. TypeScript Strict Mode Passing -- Zero Errors
 **Type:** Improvement (positive) | **Priority:** N/A | **Layer:** Testing
@@ -382,12 +382,10 @@ WHERE status IN ('pending', 'confirmed');
 **File(s):** `docs/` directory (14 files including compliance subdirectory)
 **Problem:** None. Includes: SLOs with error budgets, incident response runbook with severity classifications, backup recovery runbook, PHI key rotation SOP, secret rotation SOP, VAPID rotation SOP, data residency documentation, DB rollback constraints, on-call guide, and compliance documentation (CNDP, DPIA, data flow map, retention policy).
 
-#### 47. README Missing `.env.example` File
-**Type:** Documentation | **Priority:** LOW | **Layer:** Documentation
-**File(s):** [`README.md:33`](README.md:33)
-**Problem:** README says `cp .env.example .env.local` but there is no `.env.example` file. There is a `secrets-template.env` which serves the same purpose.
-**Impact:** New developers follow README instructions and get a "file not found" error.
-**Solution:** Either rename `secrets-template.env` to `.env.example` or update README to reference `secrets-template.env`.
+#### 47. (Withdrawn) README `.env.example` reference
+**Type:** Documentation | **Priority:** N/A | **Layer:** Documentation
+**File(s):** [`README.md:33`](README.md:33), [`.env.example`](.env.example)
+**Problem:** Original finding claimed `.env.example` did not exist. On re-verification, the file is present at the repo root (9,416 bytes) and the README instruction `cp .env.example .env.local` works as written. **Finding withdrawn — no action required.**
 
 #### 48. AGENTS.md -- Excellent Agent/Developer Guide
 **Type:** Improvement (positive) | **Priority:** N/A | **Layer:** Documentation
@@ -407,7 +405,6 @@ The following conditions must be met before serving real patient data:
 | 1 | Add `clinic_id` to `notifications` table | #5 | 2 hours |
 | 2 | Replace `createAdminClient` in sitemap.ts | #8 | 30 min |
 | 3 | Add `wrangler.toml` to repo | #39 | 2 hours |
-| 4 | Fix README `.env.example` reference | #47 | 5 min |
 
 ---
 
@@ -443,7 +440,6 @@ The following conditions must be met before serving real patient data:
 - [ ] Add `clinic_id` to `notifications` table (Finding #5)
 - [ ] Replace `createAdminClient` in sitemap.ts with anon client (Finding #8)
 - [ ] Add `wrangler.toml` to repository (Finding #39)
-- [ ] Fix README `.env.example` reference (Finding #47)
 - [ ] Add `loading.tsx` to missing route groups (Finding #13)
 
 ### Week 2 (High)
