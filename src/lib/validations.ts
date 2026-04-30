@@ -132,7 +132,9 @@ const stripeWebhookEventObjectSchema = z.object({
   // AUDIT-05: Stripe PaymentIntent uses `amount`, while Checkout Session uses
   // `amount_total`. Both are optional since the event type determines which
   // field is present.
+  /** PaymentIntent.amount — present on payment_intent.* events. */
   amount: z.number().optional(),
+  /** Checkout Session.amount_total — present on checkout.session.* events. */
   amount_total: z.number().optional(),
   currency: z.string().optional(),
   payment_status: z.string().optional(),

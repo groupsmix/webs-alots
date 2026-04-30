@@ -107,7 +107,7 @@ export const GET = withAuth(async (request: NextRequest, { supabase, profile }) 
       action: "patient_data_exported",
       type: "patient",
       actor: profile.id,
-      clinic_id: null,
+      clinic_id: profile.clinic_id,
       description: `Patient exported personal data in ${format} format`,
       timestamp: new Date().toISOString(),
     });

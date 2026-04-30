@@ -5,9 +5,11 @@ import type { CspHeaderValues } from "./security-headers";
 const MUTATION_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 
 /**
- * API routes that receive legitimate external requests (webhooks, callbacks, cron).
+ * API routes that receive legitimate external requests (webhooks, callbacks, cron)
+ * or browser-initiated requests that don't carry a matching Origin header.
  *
- * AUDIT-18: Every CSRF-exempt route MUST have its own authentication mechanism:
+ * AUDIT-18: Every CSRF-exempt route MUST have its own authentication mechanism
+ * or be otherwise safe (no state mutation):
  *
  * | Prefix                        | Auth mechanism                              |
  * |-------------------------------|---------------------------------------------|
@@ -15,6 +17,7 @@ const MUTATION_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
  * | /api/payments/webhook         | Stripe HMAC-SHA256 via stripe-signature     |
  * | /api/payments/cmi/callback    | CMI HMAC hash verification via verifyCmi    |
  * | /api/cron/                    | CRON_SECRET Bearer token                    |
+ * | /api/csp-report               | No-auth (validated JSON schema, no mutation)|
  *
  * Adding a new exempt route without a corresponding signature/token check
  * creates an unauthenticated, CSRF-unprotected mutation endpoint.
@@ -26,6 +29,12 @@ const CSRF_EXEMPT_PREFIXES = [
   // CSRF-01: All cron endpoints are authenticated via CRON_SECRET bearer token
   // and may be triggered by external schedulers (Cloudflare Cron Triggers).
   "/api/cron/",             // Cron: CRON_SECRET Bearer token
+  // CSP-RPT: Browsers send Content-Security-Policy violation reports as POST
+  // requests with a `report-uri` or `report-to` directive. The Origin header
+  // may not match the site URL (some browsers use `null` or omit it entirely),
+  // so the endpoint must be CSRF-exempt. The payload is a fixed JSON schema
+  // that the handler validates — no state mutation occurs.
+  "/api/csp-report",
 ];
 
 function isCsrfExempt(pathname: string): boolean {

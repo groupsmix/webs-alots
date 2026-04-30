@@ -3,6 +3,7 @@ import { NextRequest } from "next/server";
 import { apiSuccess, apiInternalError } from "@/lib/api-response";
 import { verifyCronSecret } from "@/lib/cron-auth";
 import { logger } from "@/lib/logger";
+import { deleteFromR2, isR2Configured } from "@/lib/r2";
 import { withSentryCron } from "@/lib/sentry-cron";
 import { createAdminClient } from "@/lib/supabase-server";
 
@@ -66,7 +67,39 @@ async function handler(request: NextRequest) {
 
     for (const user of usersToDelete) {
       try {
-        // 1. Delete dependent records in order (FK-safe)
+        // 1a. GDPR-PHI: Collect encrypted patient file keys from R2 BEFORE
+        // deleting the `documents` table rows. Querying after the delete
+        // below would always return empty, leaving PHI files orphaned on
+        // R2 indefinitely (violates Moroccan Law 09-08 / GDPR erasure).
+        const storageKeysToDelete: string[] = [];
+        if (user.clinic_id && isR2Configured()) {
+          try {
+            // AGENTS.md tenant-isolation rule #1: every query must filter by
+            // clinic_id. The admin client bypasses RLS, so application-level
+            // scoping is the only remaining defense in depth here.
+            const { data: docs } = await supabase
+              .from("documents")
+              .select("storage_key")
+              .eq("patient_id", user.id)
+              .eq("clinic_id", user.clinic_id);
+
+            if (docs && docs.length > 0) {
+              for (const doc of docs) {
+                if (doc.storage_key) {
+                  storageKeysToDelete.push(doc.storage_key);
+                }
+              }
+            }
+          } catch (r2QueryErr) {
+            logger.warn("Failed to query documents for R2 cleanup", {
+              context: "cron/gdpr-purge",
+              userId: user.id,
+              error: r2QueryErr,
+            });
+          }
+        }
+
+        // 1b. Delete dependent records in order (FK-safe)
         // These tables reference users.id as patient_id or user_id
         const dependentTables = [
           { table: "appointments", column: "patient_id" },
@@ -115,6 +148,27 @@ async function handler(request: NextRequest) {
             userId: user.id,
             error: consentError,
           });
+        }
+
+        // 2b. GDPR-PHI: Delete encrypted patient files from R2 storage.
+        // Files are keyed as `clinics/{clinic_id}/{category}/{filename}.enc`.
+        // Keys were collected in step 1a *before* the documents rows were
+        // deleted. Without this step, PHI would persist on R2 indefinitely
+        // after DB records are removed, violating Moroccan Law 09-08 and
+        // GDPR right-to-erasure obligations.
+        for (const storageKey of storageKeysToDelete) {
+          try {
+            // Delete both the encrypted (.enc) and any plaintext version
+            await deleteFromR2(storageKey);
+            await deleteFromR2(`${storageKey}.enc`);
+          } catch (r2Err) {
+            logger.warn("Failed to delete R2 object during GDPR purge", {
+              context: "cron/gdpr-purge",
+              userId: user.id,
+              key: storageKey,
+              error: r2Err,
+            });
+          }
         }
 
         // 3. Delete the user record itself

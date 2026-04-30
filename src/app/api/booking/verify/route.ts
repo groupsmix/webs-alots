@@ -16,9 +16,10 @@
 
 import { NextRequest } from "next/server";
 import { z } from "zod";
-import { apiError, apiSuccess } from "@/lib/api-response";
+import { apiError, apiRateLimited, apiSuccess } from "@/lib/api-response";
 import { withValidation } from "@/lib/api-validate";
 import { logger } from "@/lib/logger";
+import { createRateLimiter, extractClientIp } from "@/lib/rate-limit";
 import { requireTenantWithConfig } from "@/lib/tenant";
 const bookingVerifySchema = z.object({
   phone: z.string().min(6).max(30),
@@ -27,7 +28,19 @@ const bookingVerifySchema = z.object({
 /** Token validity period: 15 minutes. */
 const TOKEN_TTL_MS = 15 * 60 * 1000;
 
-export const POST = withValidation(bookingVerifySchema, async (data, _request: NextRequest) => {
+// SECURITY FIX: Rate limit token issuance to prevent bots from flooding
+// the system with booking tokens. 10 requests per IP per 15 minutes,
+// fail-closed to prevent abuse during rate-limit backend outages.
+const verifyLimiter = createRateLimiter({ windowMs: 15 * 60 * 1000, max: 10, failClosed: true });
+
+export const POST = withValidation(bookingVerifySchema, async (data, request: NextRequest) => {
+  // Rate limit before any processing
+  const clientIp = extractClientIp(request);
+  const allowed = await verifyLimiter.check(`booking-verify:${clientIp}`);
+  if (!allowed) {
+    return apiRateLimited("Too many verification requests. Please try again later.");
+  }
+
   // Ensure we are in a valid tenant context (subdomain resolved)
   await requireTenantWithConfig();
 

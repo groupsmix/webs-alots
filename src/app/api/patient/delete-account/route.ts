@@ -61,7 +61,7 @@ export const POST = withAuth(async (_request, { supabase, profile }) => {
       action: "patient_deletion_requested",
       type: "patient",
       actor: profile.id,
-      clinic_id: null,
+      clinic_id: profile.clinic_id,
       description: `Patient requested account deletion. Permanent deletion scheduled for ${permanentDeletionAt}`,
       timestamp: new Date().toISOString(),
     });
@@ -107,7 +107,7 @@ export const DELETE = withAuth(async (_request, { supabase, profile }) => {
       action: "patient_deletion_cancelled",
       type: "patient",
       actor: profile.id,
-      clinic_id: null,
+      clinic_id: profile.clinic_id,
       description: "Patient cancelled pending account deletion request",
       timestamp: new Date().toISOString(),
     });
