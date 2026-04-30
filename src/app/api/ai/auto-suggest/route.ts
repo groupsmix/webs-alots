@@ -17,11 +17,11 @@
  */
 
 import { type NextRequest } from "next/server";
+import { resolveAIConfig } from "@/lib/ai/config";
 import { sanitizeUntrustedText } from "@/lib/ai/sanitize";
 import { apiSuccess, apiError, apiRateLimited, apiInternalError } from "@/lib/api-response";
 import { withAuthValidation } from "@/lib/api-validate";
 import { DCI_DRUG_DATABASE, CATEGORY_LABELS } from "@/lib/dci-drug-database";
-import { isAIEnabled } from "@/lib/features";
 import { logger } from "@/lib/logger";
 import { aiAutoSuggestLimiter } from "@/lib/rate-limit";
 import type { PatientMetadata } from "@/lib/types/patient-metadata";
@@ -266,8 +266,9 @@ export const POST = withAuthValidation(
     const doctorId = profile.id;
 
     // F-11: AI kill-switch — reject all AI requests when the global
-    // `ai.enabled` flag is explicitly set to "false" in FEATURE_FLAGS_KV.
-    if (!(await isAIEnabled())) {
+    // F-AI-01: Kill switch + F-AI-05: URL allowlist + F-AI-07: pinned model
+    const aiResult = await resolveAIConfig();
+    if (!aiResult.ok) {
       return apiError(
         "Les fonctionnalités IA sont temporairement désactivées.",
         503,
@@ -287,18 +288,8 @@ export const POST = withAuthValidation(
       );
     }
 
-    // Check AI configuration
-    const apiKey = process.env.OPENAI_API_KEY;
-    const baseUrl = process.env.OPENAI_BASE_URL || "https://api.openai.com/v1";
-    const model = process.env.OPENAI_MODEL || "gpt-4o-mini";
-
-    if (!apiKey) {
-      return apiError(
-        "AI service not configured. Please set OPENAI_API_KEY.",
-        503,
-        "AI_NOT_CONFIGURED",
-      );
-    }
+    // AI config already validated by resolveAIConfig() above
+    const { apiKey, baseUrl, model } = aiResult.config;
 
     // Fetch patient info if patientId provided
     let patientName: string | undefined;

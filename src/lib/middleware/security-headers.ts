@@ -238,6 +238,15 @@ export function applyAllSecurityHeaders(
   response.headers.set("Permissions-Policy", "camera=(), microphone=(), geolocation=(self), payment=(self)");
   response.headers.set("X-DNS-Prefetch-Control", "on");
 
+  // F-A56-9: Cross-Origin isolation headers for Spectre mitigation.
+  // COOP prevents cross-origin windows from getting a reference to this window.
+  // COEP requires all sub-resources to opt-in via CORS or CORP.
+  // CORP restricts who can load this resource cross-origin.
+  // Using "same-origin-allow-popups" for COOP to avoid breaking OAuth popups.
+  response.headers.set("Cross-Origin-Opener-Policy", "same-origin-allow-popups");
+  response.headers.set("Cross-Origin-Embedder-Policy", "credentialless");
+  response.headers.set("Cross-Origin-Resource-Policy", "same-origin");
+
   // Report-To header for CSP violation reporting (Reporting API v1)
   if (process.env.NODE_ENV !== "development") {
     response.headers.set(

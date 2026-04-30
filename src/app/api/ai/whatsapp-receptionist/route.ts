@@ -14,6 +14,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
+import { resolveAIConfig } from "@/lib/ai/config";
 import { sanitizeUntrustedText } from "@/lib/ai/sanitize";
 import {
   apiSuccess,
@@ -217,9 +218,10 @@ async function generateAIResponse(
   message: string,
   ctx: ClinicContext,
 ): Promise<string> {
-  const apiKey = process.env.OPENAI_API_KEY;
-  const baseUrl = process.env.OPENAI_BASE_URL || "https://api.openai.com/v1";
-  const model = process.env.OPENAI_MODEL || "gpt-4o-mini";
+  // F-AI-01/05/07: Use shared AI config with kill-switch, URL allowlist, pinned model
+  const aiResult = await resolveAIConfig();
+  if (!aiResult.ok) return "Service temporairement indisponible. Veuillez réessayer plus tard.";
+  const { apiKey, baseUrl, model } = aiResult.config;
 
   if (!apiKey) {
     return `Merci pour votre message. Notre équipe vous répondra bientôt. Vous pouvez aussi nous appeler au ${ctx.phone}.`;

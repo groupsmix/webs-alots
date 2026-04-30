@@ -1,0 +1,55 @@
+# F-A31-21: Supabase project configuration
+# This file ensures JWT TTL, MFA, and auth settings are version-controlled
+# rather than dashboard-only.
+#
+# Reference: https://supabase.com/docs/guides/cli/config
+
+[project]
+id = "" # Fill with Supabase project ID
+
+[auth]
+# JWT expiry — 1 hour (3600s). Short-lived to limit token theft window.
+jwt_expiry = 3600
+
+# Enable email confirmations
+enable_signup = true
+enable_email_autoconfirm = false
+
+# MFA — enable TOTP for doctors and admins
+[auth.mfa]
+enabled = true
+# Maximum number of enrolled MFA factors per user
+max_enrolled_factors = 5
+
+[auth.mfa.totp]
+enroll_enabled = true
+verify_enabled = true
+
+# Rate limiting for auth endpoints
+[auth.rate_limit]
+# Max email sends per hour
+email_sent = 30
+# Max SMS sends per hour
+sms_sent = 10
+
+# Password requirements
+[auth.password]
+min_length = 8
+
+# Session settings
+[auth.sessions]
+# Inactivity timeout — 30 minutes (matches session-timeout-warning.tsx)
+inactivity_timeout = "30m"
+
+[db]
+# Statement timeout for queries (prevents runaway queries)
+statement_timeout = "30s"
+
+[db.pooler]
+# Connection pool mode
+pool_mode = "transaction"
+default_pool_size = 15
+
+[storage]
+# Max file upload size: 50MB
+file_size_limit = "50MiB"
