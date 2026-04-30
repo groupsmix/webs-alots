@@ -98,6 +98,11 @@ export function ChatbotWidget() {
             </div>
           </div>
 
+          {/* A214: AI medical-advice disclaimer */}
+          <div className="px-3 py-1.5 text-[10px] text-center text-muted-foreground bg-muted/50 border-b">
+            Aide &agrave; la d&eacute;cision — ne remplace pas l&apos;avis m&eacute;dical.
+          </div>
+
           {/* Messages */}
           <ScrollArea className="flex-1 p-4" ref={scrollRef}>
             {messages.length === 0 && (

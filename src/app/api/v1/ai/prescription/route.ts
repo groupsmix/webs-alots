@@ -366,6 +366,11 @@ export const POST = withAuthValidation(
         prescription,
         patientId: data.patientId,
         diagnosis: data.diagnosis,
+        // A214: AI medical-advice disclaimer — appended to every AI-generated
+        // prescription so the consuming UI always has it available.
+        disclaimer:
+          "Cette ordonnance a \u00e9t\u00e9 g\u00e9n\u00e9r\u00e9e par IA \u00e0 titre indicatif. " +
+          "Le m\u00e9decin reste seul responsable de la prescription finale.",
       });
     } catch (err) {
       if (err instanceof DOMException && err.name === "AbortError") {
