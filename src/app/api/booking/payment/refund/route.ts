@@ -162,9 +162,13 @@ export const POST = withAuthValidation(paymentRefundSchema, async (body: RefundB
         version: currentVersion + 1,
       } as Record<string, unknown>)
       .eq("id", body.paymentId)
+      .eq("clinic_id", clinicId) // Tenant isolation: ensure payment belongs to this clinic
       .eq("version" as string, currentVersion)
       .select("id")
       .single();
+
+    // Detect version conflict: PGRST116 means 0 rows matched (version changed)
+    const isVersionConflict = updateError?.code === "PGRST116";
 
     if (updateError || !updated) {
       // Mark idempotency key as failed if we recorded one
@@ -175,7 +179,7 @@ export const POST = withAuthValidation(paymentRefundSchema, async (body: RefundB
           .eq("clinic_id", clinicId);
       }
 
-      if (!updated && !updateError) {
+      if (isVersionConflict) {
         return apiError(
           "Payment was modified concurrently. Please refresh and retry.",
           409,
