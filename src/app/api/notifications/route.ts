@@ -98,10 +98,16 @@ export const GET = withAuth(async (request, { supabase, profile }) => {
     const limit = Math.min(parseInt(searchParams.get("limit") ?? "50", 10) || 50, 100);
     const offset = parseInt(searchParams.get("offset") ?? "0", 10) || 0;
 
+    // F-A96-02: Always filter by clinic_id for tenant isolation (AGENTS.md rule #1).
+    // Even with RLS, application-level scoping is required as defense-in-depth.
     let query = supabase
       .from("notifications")
       .select("*", { count: "exact" })
       .eq("user_id", userId);
+
+    if (profile.clinic_id) {
+      query = query.eq("clinic_id", profile.clinic_id);
+    }
 
     if (channel) {
       query = query.eq("channel", channel as DBNotificationChannel);
@@ -118,7 +124,8 @@ export const GET = withAuth(async (request, { supabase, profile }) => {
     const { data: notifications, error, count } = await query;
 
     if (error) {
-      logger.warn("Operation failed", { context: "notifications", error });
+      // F-A93-03: Use logger.error for actual failures, not logger.warn
+      logger.error("Failed to fetch notifications", { context: "notifications", error });
       return apiInternalError("Failed to fetch notifications");
     }
 
@@ -127,7 +134,8 @@ export const GET = withAuth(async (request, { supabase, profile }) => {
       total: count ?? 0,
     });
   } catch (err) {
-    logger.warn("Operation failed", { context: "notifications", error: err });
+    // F-A93-03: Use logger.error for actual failures
+    logger.error("Unhandled error fetching notifications", { context: "notifications", error: err });
     return apiInternalError("Failed to fetch notifications");
   }
 }, ALL_AUTHENTICATED_ROLES);

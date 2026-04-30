@@ -65,6 +65,30 @@ function formatError(err: unknown): Record<string, unknown> {
   return { raw: String(err) };
 }
 
+// F-A93-07: PHI field names that must be auto-redacted from log metadata.
+// Developers may accidentally pass these in `meta.extra`; the logger
+// strips them before serialization so PHI never reaches log sinks.
+const PHI_FIELD_PATTERNS = new Set([
+  "email", "phone", "name", "patient_name", "patient_email", "patient_phone",
+  "cin", "date_of_birth", "dob", "address", "ssn", "insurance_number",
+  "medical_record", "prescription", "diagnosis",
+]);
+
+/** Recursively redact known PHI fields from a metadata object. */
+function redactPhi(obj: Record<string, unknown>): Record<string, unknown> {
+  const result: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(obj)) {
+    if (PHI_FIELD_PATTERNS.has(key.toLowerCase())) {
+      result[key] = "[REDACTED]";
+    } else if (value && typeof value === "object" && !Array.isArray(value)) {
+      result[key] = redactPhi(value as Record<string, unknown>);
+    } else {
+      result[key] = value;
+    }
+  }
+  return result;
+}
+
 function emit(level: LogLevel, message: string, meta?: LogMeta): void {
   const { context, clinicId, traceId, error, ...extra } = meta ?? {};
   const payload: Record<string, unknown> = {
@@ -76,7 +100,8 @@ function emit(level: LogLevel, message: string, meta?: LogMeta): void {
   if (context) payload.context = context;
   if (clinicId !== undefined) payload.clinicId = clinicId;
   if (error !== undefined) payload.error = formatError(error);
-  if (Object.keys(extra).length > 0) Object.assign(payload, extra);
+  // F-A93-07: Auto-redact PHI fields from extra metadata
+  if (Object.keys(extra).length > 0) Object.assign(payload, redactPhi(extra));
 
   // Use console.error for structured output to stderr.
   // In Cloudflare Workers this is captured by `wrangler tail`.
@@ -88,23 +113,38 @@ function emit(level: LogLevel, message: string, meta?: LogMeta): void {
   for (const transport of transports) {
     try {
       transport(payload);
-    } catch {
-      // Silently ignore transport errors to prevent logging loops
+    } catch (_transportErr) {
+      // F-A91-06: Bind error; silently ignore to prevent logging loops
     }
   }
 }
 
 // ── Sentry Integration ──
-// Lazily imports @sentry/nextjs to avoid circular dependencies and to
-// keep the logger functional even when Sentry is not configured.
+// F-A93-02: One-time cached import of @sentry/nextjs to avoid per-call
+// dynamic import overhead on hot paths (rate-limited 429s, validation 422s).
+// The promise is created once and reused; V8 module cache ensures the
+// actual resolution is near-instant after the first await.
+type SentryModule = {
+  captureException?: (err: unknown, ctx?: Record<string, unknown>) => void;
+  withScope?: (cb: (scope: { setTag: (k: string, v: string) => void; setExtra: (k: string, v: unknown) => void }) => void) => void;
+  addBreadcrumb?: (crumb: Record<string, unknown>) => void;
+};
+
+let _sentryPromise: Promise<SentryModule> | null = null;
+function getSentry(): Promise<SentryModule> {
+  if (!_sentryPromise) {
+    _sentryPromise = import("@sentry/nextjs").catch(() => ({} as SentryModule));
+  }
+  return _sentryPromise;
+}
 
 async function captureSentryError(message: string, meta?: LogMeta): Promise<void> {
   try {
-    const Sentry = await import("@sentry/nextjs");
+    const Sentry = await getSentry();
     if (!Sentry?.captureException) return;
 
     const error = meta?.error instanceof Error ? meta.error : new Error(message);
-    Sentry.withScope((scope: { setTag: (k: string, v: string) => void; setExtra: (k: string, v: unknown) => void }) => {
+    Sentry.withScope?.((scope) => {
       if (meta?.context) scope.setTag("context", meta.context);
       if (meta?.clinicId) scope.setTag("clinicId", meta.clinicId);
       if (meta?.traceId) scope.setTag("traceId", meta.traceId);
@@ -112,7 +152,7 @@ async function captureSentryError(message: string, meta?: LogMeta): Promise<void
       for (const [k, v] of Object.entries(extra)) {
         scope.setExtra(k, v);
       }
-      Sentry.captureException(error);
+      Sentry.captureException?.(error);
     });
   } catch {
     // Silently ignore — Sentry unavailable should never break logging
@@ -121,7 +161,7 @@ async function captureSentryError(message: string, meta?: LogMeta): Promise<void
 
 async function captureSentryBreadcrumb(level: string, message: string, meta?: LogMeta): Promise<void> {
   try {
-    const Sentry = await import("@sentry/nextjs");
+    const Sentry = await getSentry();
     if (!Sentry?.addBreadcrumb) return;
 
     Sentry.addBreadcrumb({
