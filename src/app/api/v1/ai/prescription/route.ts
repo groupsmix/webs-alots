@@ -376,6 +376,9 @@ export const POST = withAuthValidation(
         prescription,
         patientId: data.patientId,
         diagnosis: data.diagnosis,
+        // A214 / A199 / EU AI Act Art. 13-14: AI medical-advice disclaimer —
+        // every AI-generated prescription includes this notice that the result
+        // is machine-generated and requires physician review.
         disclaimer: AI_CDS_DISCLAIMER,
       });
     } catch (err) {

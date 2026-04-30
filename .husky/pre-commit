@@ -1,2 +1,12 @@
 npx lint-staged
 npx tsc --noEmit
+
+# A206: Run gitleaks on staged changes to catch secrets before they reach CI.
+# Requires gitleaks to be installed locally (brew install gitleaks / go install).
+# If gitleaks is not installed, warn but do not block the commit — CI will
+# still catch secrets via the gitleaks GitHub Action in the security job.
+if command -v gitleaks &> /dev/null; then
+  gitleaks protect --staged --verbose
+else
+  echo "warning: gitleaks is not installed locally — secrets will still be scanned in CI"
+fi
