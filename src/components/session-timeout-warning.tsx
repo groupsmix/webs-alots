@@ -95,7 +95,9 @@ export function SessionTimeoutWarning({
   const seconds = remainingSeconds % 60;
 
   return (
-    <div className="fixed inset-0 z-[90] flex items-center justify-center bg-black/60" role="alertdialog" aria-labelledby="session-timeout-title" aria-live="assertive">
+    // A80-2 fix: role="alertdialog" already implies assertive live-region - remove explicit aria-live
+      // to prevent screen readers (NVDA, JAWS) from double-announcing the dialog content.
+      <div className="fixed inset-0 z-[90] flex items-center justify-center bg-black/60" role="alertdialog" aria-labelledby="session-timeout-title">
       <div className="mx-4 w-full max-w-sm rounded-lg border bg-background p-6 shadow-xl">
         <div className="flex items-center gap-3 mb-4">
           <div className="flex h-10 w-10 items-center justify-center rounded-full bg-yellow-100 dark:bg-yellow-900">

@@ -433,6 +433,20 @@ export function searchDrugs(query: string, limit = 20): DCIDrug[] {
   // as a prefix key. This avoids scanning all ~200 drugs on every request.
   const candidates = index.get(q) ?? [];
 
+  // A80-3 fix: Fallback to substring search when prefix index has no results.
+  // Previously `dciNorm.includes(q)` matched "oxicam" → "Piroxicam" (score 60),
+  // but prefix-only indexing drops mid-string matches. Add a lightweight fallback
+  // that scans DCI names for substring matches to preserve this behavior.
+  const fallbackResults: ScoredDrug[] = [];
+  if (candidates.length === 0) {
+    for (const drug of DCI_DRUG_DATABASE) {
+      const dciNorm = normalize(drug.dci);
+      if (dciNorm.includes(q) || drug.brands.some((b) => normalize(b).includes(q))) {
+        fallbackResults.push({ drug, score: 40 }); // Substring match gets lower priority
+      }
+    }
+  }
+
   for (const entry of candidates) {
     if (seen.has(entry.drug.id)) continue;
     seen.add(entry.drug.id);
@@ -454,7 +468,10 @@ export function searchDrugs(query: string, limit = 20): DCIDrug[] {
   }
 
   results.sort((a, b) => b.score - a.score);
-  return results.slice(0, limit).map((r) => r.drug);
+  // A80-3 fix: Merge fallback results and sort together
+  const merged = [...results, ...fallbackResults];
+  merged.sort((a, b) => b.score - a.score);
+  return merged.slice(0, limit).map((r) => r.drug);
 }
 
 /**
