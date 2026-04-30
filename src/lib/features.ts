@@ -350,7 +350,7 @@ export async function setGlobalFeatureFlag(
         supabase,
         action: "feature_flag.global_updated",
         type: "config",
-        clinicId: "global",
+        clinicId: null as unknown as string, // Use null for global scope (FK constraint allows NULL)
         actor,
         description: `Global feature flag "${key}" set to ${enabled} (was ${current[key] ?? "unset"})`,
         metadata: {
