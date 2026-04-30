@@ -340,6 +340,33 @@ export async function setGlobalFeatureFlag(
       actor: actor ?? "system",
     });
 
+    // F-A90-05: Write audit event for global flag changes (higher-impact
+    // than per-clinic overrides, so compliance requires an audit trail).
+    try {
+      const { createAdminClient } = await import("@/lib/supabase-server");
+      const { logAuditEvent } = await import("@/lib/audit-log");
+      const supabase = createAdminClient();
+      await logAuditEvent({
+        supabase,
+        action: "feature_flag.global_updated",
+        type: "config",
+        clinicId: "global",
+        actor,
+        description: `Global feature flag "${key}" set to ${enabled} (was ${current[key] ?? "unset"})`,
+        metadata: {
+          key,
+          previous: current[key] ?? null,
+          current: enabled,
+        },
+      });
+    } catch (auditErr) {
+      logger.warn("Failed to write audit log for global feature flag change", {
+        context: "features",
+        error: auditErr,
+        key,
+      });
+    }
+
     return true;
   } catch (error) {
     logger.error("Failed to set global feature flag", { context: "features", error, key });
@@ -380,9 +407,14 @@ export async function isFeatureEnabledForClinic(
     return kvOverride[key] === true;
   }
 
-  // If no KV override, fallback to DB config
-  // Note: This requires the caller to fetch the clinic type config
-  // For now, return the default value if no override exists
+  // F-A90-01: Check global KV flags (set via setGlobalFeatureFlag kill-switch)
+  // before falling back to hardcoded defaults.
+  const globalFlags = await getKVFeatureFlags();
+  if (key in globalFlags) {
+    return globalFlags[key] === true;
+  }
+
+  // Final fallback to hardcoded defaults
   return DEFAULT_FEATURES[key] ?? false;
 }
 

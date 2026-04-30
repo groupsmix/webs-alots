@@ -80,7 +80,13 @@ function redactPhi(obj: Record<string, unknown>): Record<string, unknown> {
   for (const [key, value] of Object.entries(obj)) {
     if (PHI_FIELD_PATTERNS.has(key.toLowerCase())) {
       result[key] = "[REDACTED]";
-    } else if (value && typeof value === "object" && !Array.isArray(value)) {
+    } else if (Array.isArray(value)) {
+      result[key] = value.map((item) =>
+        item && typeof item === "object" && !Array.isArray(item)
+          ? redactPhi(item as Record<string, unknown>)
+          : item,
+      );
+    } else if (value && typeof value === "object") {
       result[key] = redactPhi(value as Record<string, unknown>);
     } else {
       result[key] = value;

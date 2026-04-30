@@ -20,7 +20,9 @@ export default defineConfig({
   reporter: "html",
   use: {
     baseURL: process.env.E2E_BASE_URL || "http://localhost:3000",
-    trace: "on-first-retry",
+    // A87-F01: With retries: 0, "on-first-retry" would never capture traces.
+    // Use "retain-on-failure" so trace artifacts are collected on every failure.
+    trace: "retain-on-failure",
   },
   projects: [
     {
