@@ -23,7 +23,7 @@ import {
   ROLE_DASHBOARD_MAP,
 } from "@/lib/middleware/routes";
 import {
-  buildCsp,
+  buildCspHeaderValues,
   withSecurityHeaders,
   secureRedirect,
   applyAllSecurityHeaders,
@@ -82,7 +82,8 @@ export async function middleware(request: NextRequest) {
   // --- Generate a per-request nonce for CSP ---
   const nonceBytes = crypto.getRandomValues(new Uint8Array(16));
   const nonce = btoa(String.fromCharCode(...nonceBytes));
-  const cspHeaderValue = buildCsp(nonce);
+  // Task 2.2: Strict CSP is now enforced. Legacy broad policy removed.
+  const cspHeaders = buildCspHeaderValues(nonce);
 
   // --- Generate a per-request trace ID for structured logging ---
   const traceId = generateTraceId();
@@ -101,7 +102,7 @@ export async function middleware(request: NextRequest) {
         { error: "Payload too large" },
         { status: 413 },
       ),
-      cspHeaderValue,
+      cspHeaders,
     );
   }
 
@@ -109,7 +110,19 @@ export async function middleware(request: NextRequest) {
   //     can read it via headers().get('x-nonce') ---
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set("x-nonce", nonce);
-  requestHeaders.set("Content-Security-Policy", cspHeaderValue);
+  // Forward the enforcing CSP so Server Components that introspect the request
+  // headers see the same policy the browser will enforce. Guard against an
+  // empty `enforce` value (e.g. a future report-only-only mode) so we never
+  // forward a `Content-Security-Policy: ` header with a blank value — Server
+  // Components that check for the header's presence would otherwise see an
+  // empty string instead of either no header or the actual policy. This
+  // mirrors the response-side guards in `withSecurityHeaders` and
+  // `applyAllSecurityHeaders`.
+  if (cspHeaders.enforce) {
+    requestHeaders.set("Content-Security-Policy", cspHeaders.enforce);
+  } else {
+    requestHeaders.delete("Content-Security-Policy");
+  }
   requestHeaders.set(TRACE_ID_HEADER, traceId);
 
   // --- SECURITY: Strip all tenant headers from the incoming request ---
@@ -139,7 +152,7 @@ export async function middleware(request: NextRequest) {
   const subdomain = extractSubdomain(hostname, rootDomain);
 
   // --- CSRF protection (delegated to composable module) ---
-  const csrfResult = validateCsrf(request, hostname, cspHeaderValue, withSecurityHeaders);
+  const csrfResult = validateCsrf(request, hostname, cspHeaders, withSecurityHeaders);
   if (csrfResult) return csrfResult;
 
   // --- Fast path for lightweight API routes (health checks, etc.) ---
@@ -147,12 +160,12 @@ export async function middleware(request: NextRequest) {
     const lightResponse = NextResponse.next({
       request: { headers: requestHeaders },
     });
-    applyAllSecurityHeaders(lightResponse, cspHeaderValue, nonce);
+    applyAllSecurityHeaders(lightResponse, cspHeaders, nonce);
     return lightResponse;
   }
 
   // --- Rate limiting (delegated to composable module) ---
-  const { response: rateLimitResponse, rateLimitInfo } = await applyRateLimit(request, cspHeaderValue, withSecurityHeaders);
+  const { response: rateLimitResponse, rateLimitInfo } = await applyRateLimit(request, cspHeaders, withSecurityHeaders);
   if (rateLimitResponse) {
     // Add rate limit headers to the response
     if (rateLimitInfo) {
@@ -163,14 +176,33 @@ export async function middleware(request: NextRequest) {
     return rateLimitResponse;
   }
 
-  // If Supabase is not configured, allow all requests through
-  // so the site renders with demo data instead of crashing
-  if (
-    !process.env.NEXT_PUBLIC_SUPABASE_URL ||
-    !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-  ) {
-    // For protected routes without Supabase, redirect to login
-    // (login page will show an appropriate message)
+  // Supabase configuration check.
+  //
+  // Production MUST fail closed: if NEXT_PUBLIC_SUPABASE_URL or
+  // NEXT_PUBLIC_SUPABASE_ANON_KEY is missing in a production runtime,
+  // we have a misconfigured deploy that could partially serve the app
+  // without auth (and therefore without tenant scoping / RLS). For a
+  // healthcare platform handling PHI this must never silently degrade —
+  // we return 503 so a failing health check trips deployment rollback
+  // and operators are alerted, instead of leaking a half-functional UI.
+  //
+  // In non-production runtimes we keep the legacy demo-mode behavior:
+  // public routes render with demo data and protected routes redirect
+  // to /login. This preserves the local-dev experience without affecting
+  // production safety.
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  const isSupabaseConfigured = !!supabaseUrl && !!supabaseAnonKey;
+
+  if (!supabaseUrl || !supabaseAnonKey || !isSupabaseConfigured) {
+    if (process.env.NODE_ENV === "production") {
+      return withSecurityHeaders(
+        new NextResponse("Server misconfigured", { status: 503 }),
+        cspHeaders,
+      );
+    }
+
+    // Non-production: allow demo-mode rendering.
     if (isProtectedRoute(pathname)) {
       const loginUrl = new URL("/login", request.url);
       loginUrl.searchParams.set("redirect", pathname);
@@ -179,21 +211,21 @@ export async function middleware(request: NextRequest) {
     const noSupabaseResponse = NextResponse.next({
       request: { headers: requestHeaders },
     });
-    applyAllSecurityHeaders(noSupabaseResponse, cspHeaderValue, nonce);
+    applyAllSecurityHeaders(noSupabaseResponse, cspHeaders, nonce);
     return noSupabaseResponse;
   }
 
   let supabaseResponse = NextResponse.next({
     request: { headers: requestHeaders },
   });
-  applyAllSecurityHeaders(supabaseResponse, cspHeaderValue, nonce);
+  applyAllSecurityHeaders(supabaseResponse, cspHeaders, nonce);
 
   // Note: Real rate-limit state is enforced by the rate limiter above.
   // These placeholder headers are omitted to avoid misleading API consumers.
 
   const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+    supabaseUrl,
+    supabaseAnonKey,
     {
       cookies: {
         getAll() {
@@ -206,7 +238,7 @@ export async function middleware(request: NextRequest) {
           supabaseResponse = NextResponse.next({
             request: { headers: requestHeaders },
           });
-          applyAllSecurityHeaders(supabaseResponse, cspHeaderValue, nonce);
+          applyAllSecurityHeaders(supabaseResponse, cspHeaders, nonce);
           // Re-apply tenant headers so they survive token-refresh responses
           if (resolvedClinic) {
             setTenantHeaders(supabaseResponse, resolvedClinic);
@@ -241,8 +273,8 @@ export async function middleware(request: NextRequest) {
       // By omitting cookies, the query always runs as unauthenticated,
       // ensuring subdomain resolution works for all users.
       const anonSupabase = createServerClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+        supabaseUrl,
+        supabaseAnonKey,
         {
           cookies: {
             getAll() { return []; },
@@ -285,7 +317,7 @@ export async function middleware(request: NextRequest) {
           { ok: false, error: "Les modifications ne sont pas autorisées en mode démo." },
           { status: 403 },
         ),
-        cspHeaderValue,
+        cspHeaders,
       );
     }
 
@@ -334,13 +366,13 @@ export async function middleware(request: NextRequest) {
       //       entirely. Downstream `withAuth` then performs the authoritative DB lookup —
       //       there is no literal fallback key that could be used to forge a signature.
       if (profile) {
-        const sigHex = await signProfileHeader({
+        const signed = await signProfileHeader({
           id: profile.id,
           role: profile.role,
           clinic_id: profile.clinic_id,
         });
 
-        if (sigHex) {
+        if (signed) {
           // Set on the forwarded request headers so API routes (and `withAuth`)
           // can read them. These are stripped from the inbound request above so
           // a client cannot forge them.
@@ -351,7 +383,9 @@ export async function middleware(request: NextRequest) {
           } else {
             requestHeaders.delete(PROFILE_HEADER_NAMES.clinic);
           }
-          requestHeaders.set(PROFILE_HEADER_NAMES.sig, sigHex);
+          requestHeaders.set(PROFILE_HEADER_NAMES.sig, signed.sig);
+          // C-02: Include the issued-at timestamp so withAuth can reject expired headers
+          requestHeaders.set(PROFILE_HEADER_NAMES.iat, String(signed.iat));
 
           // Re-create the response so the new request headers are forwarded
           // downstream, but preserve any Set-Cookie headers (e.g. refreshed
@@ -369,16 +403,14 @@ export async function middleware(request: NextRequest) {
             }
           });
 
-          // Set the auth-profile response headers (informational; the request
-          // headers above are what `withAuth` reads). Re-apply security and
-          // tenant headers since the response was just recreated.
-          supabaseResponse.headers.set(PROFILE_HEADER_NAMES.id, profile.id);
-          supabaseResponse.headers.set(PROFILE_HEADER_NAMES.role, profile.role);
-          if (profile.clinic_id) {
-            supabaseResponse.headers.set(PROFILE_HEADER_NAMES.clinic, profile.clinic_id);
-          }
-          supabaseResponse.headers.set(PROFILE_HEADER_NAMES.sig, sigHex);
-          applyAllSecurityHeaders(supabaseResponse, cspHeaderValue, nonce);
+          // Do NOT mirror the signed x-auth-profile-* headers onto the
+          // outgoing response. They are an internal trust contract between
+          // middleware and `withAuth` carried via the forwarded *request*
+          // headers; emitting them on the response leaks the user id, role,
+          // clinic id and HMAC signature to the browser and any
+          // intermediaries. Re-apply security and tenant headers since the
+          // response was just recreated.
+          applyAllSecurityHeaders(supabaseResponse, cspHeaders, nonce);
           if (resolvedClinic) setTenantHeaders(supabaseResponse, resolvedClinic);
         }
       }

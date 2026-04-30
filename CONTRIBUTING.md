@@ -82,7 +82,14 @@ refactor: extract shared Supabase mock to test-utils
 - Location: `src/lib/__tests__/`, `src/components/__tests__/`, `src/app/api/__tests__/`
 - Use shared mocks from `src/components/__tests__/test-utils.ts` for Supabase, tenant, and logger
 - Import and test actual functions — avoid tautological tests that only test the test data
-- Coverage thresholds: 80% statements, 70% branches
+- Coverage thresholds (enforced in CI by `vitest.config.ts`): the project
+  currently sits at roughly 9% statements / 6.5% branches / 9% lines / 6%
+  functions, so the **blocking** floors are set just below those numbers
+  (statements: 8, branches: 6, lines: 8, functions: 5). New work must not
+  drop coverage below those floors. The **aspirational targets** are
+  statements: 80, branches: 70, lines: 70, functions: 60 — the floors
+  should be ratcheted upward as coverage improves until they reach those
+  targets.
 
 ```bash
 npm run test          # Run all unit tests

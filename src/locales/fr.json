@@ -640,5 +640,21 @@
   "superAdmin.manage": "Gérer",
   "superAdmin.recentActivity": "Activité récente",
   "superAdmin.newClinic": "Nouvelle clinique",
-  "superAdmin.announce": "Annoncer"
+  "superAdmin.announce": "Annoncer",
+  "lab.report.title": "Rapport de laboratoire",
+  "lab.report.documentTitle": "Rapport de laboratoire — {orderNumber}",
+  "lab.report.patient": "Patient",
+  "lab.report.order": "Commande",
+  "lab.report.date": "Date",
+  "lab.report.colTest": "Analyse",
+  "lab.report.colValue": "Valeur",
+  "lab.report.colUnit": "Unité",
+  "lab.report.colReference": "Valeurs de référence",
+  "lab.report.colFlag": "Indicateur",
+  "lab.report.flagNormal": "Normal",
+  "lab.report.flagHigh": "ÉLEVÉ",
+  "lab.report.flagLow": "BAS",
+  "lab.report.flagCriticalHigh": "CRITIQUE ÉLEVÉ",
+  "lab.report.flagCriticalLow": "CRITIQUE BAS",
+  "lab.report.footer": "Généré le {generatedAt}"
 }

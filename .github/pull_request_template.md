@@ -32,6 +32,12 @@
 - [ ] Manual testing performed
 - [ ] E2E tests pass locally
 
+## Observability
+
+- [ ] This PR adds/modifies logging (structured via `@/lib/logger`)
+- [ ] This PR changes Sentry configuration or error handling
+- [ ] N/A — no observability changes
+
 ## Checklist
 
 - [ ] Code follows the project's style guide
@@ -39,3 +45,5 @@
 - [ ] No secrets or PHI in the diff
 - [ ] `npm run lint` passes
 - [ ] `npm run typecheck` passes
+- [ ] Coverage thresholds still met (`npm run test:coverage`)
+- [ ] New API endpoints have rate limiting (fail-closed for PHI endpoints)

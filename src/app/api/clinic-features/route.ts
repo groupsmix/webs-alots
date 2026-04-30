@@ -2,14 +2,14 @@ import { NextRequest } from "next/server";
 import { apiError, apiInternalError, apiNotFound, apiSuccess } from "@/lib/api-response";
 import { logger } from "@/lib/logger";
 import { createClient } from "@/lib/supabase-server";
-import { withAuth } from "@/lib/with-auth";
+import { withAuthAnyRole } from "@/lib/with-auth";
 /**
  * GET /api/clinic-features?type_key=general_medicine
  *
  * Returns the features_config for a given clinic type key.
  * S4: Protected — requires authentication.
  */
-export const GET = withAuth(async (request: NextRequest) => {
+export const GET = withAuthAnyRole(async (request: NextRequest) => {
   try {
     const typeKey = request.nextUrl.searchParams.get("type_key");
 
@@ -38,4 +38,4 @@ export const GET = withAuth(async (request: NextRequest) => {
     logger.warn("Operation failed", { context: "clinic-features", error: err });
     return apiInternalError("Failed to fetch clinic features");
   }
-}, null);
+});

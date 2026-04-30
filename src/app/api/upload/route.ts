@@ -8,15 +8,27 @@
  *
  * Returns: { url: string, key: string }
  *
- * GET /api/upload — Get a pre-signed URL for direct browser upload
+ * GET /api/upload — Get a pre-signed POST policy for direct browser upload
  *   Query params: filename, contentType, category, clinicId
- *   Returns: { uploadUrl: string, publicUrl: string, key: string }
+ *   Returns: { uploadUrl, fields, key, publicUrl?, thumbnails? }
  *
- * PUT /api/upload — Confirm a pre-signed upload (S13 magic-byte validation)
+ *   The client uploads via:
+ *     const fd = new FormData();
+ *     for (const [k, v] of Object.entries(fields)) fd.append(k, v);
+ *     fd.append("file", file);
+ *     await fetch(uploadUrl, { method: "POST", body: fd });
+ *
+ *   R2 enforces both `content-length-range` (max size) and the exact
+ *   `Content-Type` from the policy at upload time, so oversized or
+ *   wrong-type uploads are rejected before bytes are stored.
+ *
+ * PUT /api/upload — Confirm a direct upload (S13 magic-byte validation +
+ *   HeadObject size/content-type cross-check).
  *   Body: { key: string, contentType: string }
  *   Returns: { valid: true } or deletes the object and returns 400
  */
 
+// S-26: Upload route requires tenant context — never write to a shared/ prefix
 import { apiError, apiForbidden, apiInternalError, apiNotFound, apiSuccess } from "@/lib/api-response";
 import { withAuthValidation } from "@/lib/api-validate";
 import { requiresEncryption } from "@/lib/encryption";
@@ -25,7 +37,8 @@ import {
   uploadToR2,
   isR2Configured,
   buildUploadKey,
-  getPresignedUploadUrl,
+  getPresignedUploadPost,
+  getR2ObjectMetadata,
   readR2ObjectHead,
   deleteFromR2,
   getResponsiveImageUrls,
@@ -34,7 +47,82 @@ import { encryptAndUpload } from "@/lib/r2-encrypted";
 import { uploadConfirmSchema } from "@/lib/validations";
 import { withAuth } from "@/lib/with-auth";
 
-const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2 MB
+/**
+ * Per-category upload size limits (issue #10).
+ *
+ * 2 MB is too small for real clinical workflows: PDFs, scanned scripts,
+ * lab reports, and radiology images routinely exceed it. We size each
+ * category to its real-world payload, capped at MAX_UPLOAD_BYTES so the
+ * middleware-level body limit (`MAX_BODY_BYTES` in `src/middleware.ts`)
+ * is the global ceiling.
+ *
+ * Keys are normalized via `normalizeCategory()` so callers may use
+ * either hyphen- or underscore-separated forms (e.g. `lab-report` or
+ * `lab_report`). Unknown categories fall back to DEFAULT_LIMIT.
+ */
+const KB = 1024;
+const MB = 1024 * KB;
+
+export const MAX_UPLOAD_BYTES = 25 * MB;
+export const DEFAULT_UPLOAD_LIMIT = 10 * MB;
+
+export const LIMITS_BY_CATEGORY: Readonly<Record<string, number>> = {
+  // Profile / branding (small images)
+  avatar: 2 * MB,
+  avatars: 2 * MB,
+  photos: 2 * MB,
+  logo: 2 * MB,
+  logos: 2 * MB,
+  clinic_logo: 2 * MB,
+  // Clinical documents (PDFs, scans, lab reports)
+  document: DEFAULT_UPLOAD_LIMIT,
+  documents: DEFAULT_UPLOAD_LIMIT,
+  prescriptions: DEFAULT_UPLOAD_LIMIT,
+  lab_report: DEFAULT_UPLOAD_LIMIT,
+  lab_results: DEFAULT_UPLOAD_LIMIT,
+  medical_records: DEFAULT_UPLOAD_LIMIT,
+  patient_files: DEFAULT_UPLOAD_LIMIT,
+  // Imaging (DICOM-style radiology, MRIs)
+  radiology: 25 * MB,
+  x_rays: 25 * MB,
+  xrays: 25 * MB,
+};
+
+/**
+ * Normalize a category key for limit lookup. Lower-cases and folds
+ * hyphens to underscores so `lab-report` and `lab_report` resolve to
+ * the same limit, matching the existing `PHI_CATEGORIES` set in
+ * `@/lib/encryption`.
+ */
+export function normalizeCategory(category: string): string {
+  return category.trim().toLowerCase().replace(/-/g, "_");
+}
+
+/**
+ * Resolve the maximum byte count for a given upload category. Unknown
+ * categories receive `DEFAULT_UPLOAD_LIMIT` so the API does not silently
+ * relax limits for typos. Exported for tests and the GET handler that
+ * passes the limit into the R2 presigned-POST policy.
+ */
+export function limitForCategory(category: string): number {
+  return LIMITS_BY_CATEGORY[normalizeCategory(category)] ?? DEFAULT_UPLOAD_LIMIT;
+}
+
+function formatLimit(bytes: number): string {
+  return `${Math.round(bytes / MB)} MB`;
+}
+
+/**
+ * Extract the {category} segment from a key produced by
+ * `buildUploadKey()` — `clinics/{clinicId}/{category}/{filename}`. The
+ * PUT handler uses this so the HeadObject size check honours the same
+ * per-category cap the POST/GET handlers enforce.
+ */
+export function categoryFromKey(key: string): string | null {
+  const parts = key.split("/");
+  if (parts.length < 4 || parts[0] !== "clinics") return null;
+  return parts[2] || null;
+}
 
 const ALLOWED_TYPES = new Set([
   "image/jpeg",
@@ -66,6 +154,27 @@ function validateFileContent(buffer: Buffer, declaredType: string): boolean {
   );
 }
 
+/**
+ * Compute the R2 key prefix that the authenticated profile is allowed to
+ * confirm. Keys produced by `buildUploadKey()` are of the form
+ *   clinics/{clinicId}/{category}/{filename}
+ * so non-super-admin users must own a key starting with their clinic prefix.
+ * Super-admins may confirm any key under the shared `clinics/` namespace.
+ *
+ * Returns `null` when the profile cannot legitimately confirm any upload
+ * (e.g. a non-super-admin staff user with no `clinic_id`).
+ *
+ * Exported for testability.
+ */
+export function expectedKeyPrefixForProfile(
+  role: string,
+  clinicId: string | null | undefined,
+): string | null {
+  if (role === "super_admin") return "clinics/";
+  if (clinicId) return `clinics/${clinicId}/`;
+  return null;
+}
+
 export const POST = withAuth(async (request, { profile }) => {
   if (!isR2Configured()) {
     logger.warn("Upload attempted but R2 storage is not configured", { context: "upload" });
@@ -75,16 +184,21 @@ export const POST = withAuth(async (request, { profile }) => {
   const formData = await request.formData();
   const file = formData.get("file");
   const category = (formData.get("category") as string) || "uploads";
-  // Derive clinicId from the authenticated user's profile to prevent
-  // cross-tenant file access. Fall back to "shared" only for super_admins.
-  const clinicId = profile.clinic_id ?? (profile.role === "super_admin" ? ((formData.get("clinicId") as string) || "shared") : "shared");
+  // S-26: Derive clinicId from the authenticated user's profile. Never
+  // write to a "shared" prefix — if the user has no clinic context the
+  // upload is rejected. Super-admins may specify a target clinicId.
+  const clinicId = profile.clinic_id ?? (profile.role === "super_admin" ? (formData.get("clinicId") as string) : null);
+  if (!clinicId) {
+    return apiError("Clinic context required for uploads", 403);
+  }
 
   if (!file || !(file instanceof File)) {
     return apiError("No file provided");
   }
 
-  if (file.size > MAX_FILE_SIZE) {
-    return apiError("File too large (max 2 MB)");
+  const maxSize = limitForCategory(category);
+  if (file.size > maxSize) {
+    return apiError(`File too large (max ${formatLimit(maxSize)} for category "${category}")`, 413);
   }
 
   if (!ALLOWED_TYPES.has(file.type)) {
@@ -139,16 +253,58 @@ export const PUT = withAuthValidation(uploadConfirmSchema, async (body, request,
   const { key, contentType } = body;
 
   // Tenant isolation: verify the R2 key belongs to this user's clinic.
-  // Keys follow the pattern: {clinicId}/{category}/{filename}
-  const clinicId = profile.clinic_id ?? (profile.role === "super_admin" ? null : null);
-  if (clinicId && !key.startsWith(`${clinicId}/`)) {
-    return apiForbidden("Access denied: file does not belong to your clinic");
+  // Keys are produced by `buildUploadKey()` and follow the pattern:
+  //   clinics/{clinicId}/{category}/{filename}
+  // Super-admins are allowed to confirm any key under `clinics/`.
+  const expectedPrefix = expectedKeyPrefixForProfile(profile.role, profile.clinic_id);
+
+  if (!expectedPrefix || !key.startsWith(expectedPrefix)) {
+    return apiForbidden("Upload key does not belong to your clinic");
   }
 
   if (!ALLOWED_TYPES.has(contentType)) {
     // Delete the object — the content type was not in the allowlist
     await deleteFromR2(key);
     return apiError(`File type not allowed: ${contentType}`);
+  }
+
+  // Defense-in-depth: although the presigned POST policy enforces
+  // `content-length-range` and `eq $Content-Type` at upload time, an attacker
+  // who reuses a stale policy or a misconfigured bucket could still produce
+  // an object that violates the limits. Confirm via HeadObject before any
+  // downstream code trusts the upload, and delete on mismatch.
+  const metadata = await getR2ObjectMetadata(key);
+  if (!metadata) {
+    return apiNotFound("Uploaded file not found or unreadable");
+  }
+
+  // Derive the per-category cap from the key the client confirmed.
+  // Unknown categories fall back to DEFAULT_UPLOAD_LIMIT, so the policy is
+  // never silently widened by an unrecognised category segment.
+  const keyCategory = categoryFromKey(key);
+  const maxSize = keyCategory ? limitForCategory(keyCategory) : DEFAULT_UPLOAD_LIMIT;
+
+  if (metadata.contentLength > maxSize) {
+    logger.warn("Pre-signed upload exceeded max size, deleting", {
+      context: "upload",
+      key,
+      category: keyCategory,
+      contentLength: metadata.contentLength,
+      maxSize,
+    });
+    await deleteFromR2(key);
+    return apiError(`File too large (max ${formatLimit(maxSize)})`, 413);
+  }
+
+  if (metadata.contentType && metadata.contentType !== contentType) {
+    logger.warn("Pre-signed upload content-type mismatch, deleting", {
+      context: "upload",
+      key,
+      declaredType: contentType,
+      actualType: metadata.contentType,
+    });
+    await deleteFromR2(key);
+    return apiError("File content type does not match declared type");
   }
 
   // Read the first bytes of the uploaded object to validate magic bytes
@@ -180,8 +336,12 @@ export const GET = withAuth(async (request, { profile }) => {
   const filename = searchParams.get("filename");
   const contentType = searchParams.get("contentType");
   const category = searchParams.get("category") || "uploads";
-  // Derive clinicId from session, not from untrusted query params
-  const clinicId = profile.clinic_id ?? (profile.role === "super_admin" ? (searchParams.get("clinicId") || "shared") : "shared");
+  // S-26: Derive clinicId from session. Super-admins may specify a target.
+  // Never fall back to "shared" — reject if no clinic context.
+  const clinicId = profile.clinic_id ?? (profile.role === "super_admin" ? searchParams.get("clinicId") : null);
+  if (!clinicId) {
+    return apiError("Clinic context required for uploads", 403);
+  }
 
   if (!filename || !contentType) {
     return apiError("filename and contentType are required");
@@ -192,9 +352,10 @@ export const GET = withAuth(async (request, { profile }) => {
   }
 
   const key = buildUploadKey(clinicId, category, filename);
-  const uploadUrl = await getPresignedUploadUrl(key, contentType);
+  const maxSize = limitForCategory(category);
+  const presigned = await getPresignedUploadPost(key, contentType, maxSize);
 
-  if (!uploadUrl) {
+  if (!presigned) {
     return apiInternalError("Failed to generate upload URL");
   }
 
@@ -207,5 +368,12 @@ export const GET = withAuth(async (request, { profile }) => {
   const isImage = contentType.startsWith("image/");
   const thumbnails = isImage && publicUrl ? getResponsiveImageUrls(publicUrl) : undefined;
 
-  return apiSuccess({ uploadUrl, publicUrl, key, thumbnails });
+  return apiSuccess({
+    uploadUrl: presigned.url,
+    fields: presigned.fields,
+    key: presigned.key,
+    publicUrl,
+    thumbnails,
+    maxSize,
+  });
 }, ["super_admin", "clinic_admin", "receptionist", "doctor"]);

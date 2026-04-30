@@ -1,3 +1,4 @@
+import { cookies } from "next/headers";
 import { apiSuccess, apiInternalError, apiNotFound, apiUnauthorized } from "@/lib/api-response";
 import { withAuthValidation } from "@/lib/api-validate";
 import { logSecurityEvent } from "@/lib/audit-log";
@@ -97,11 +98,12 @@ export const POST = withAuthValidation(impersonateSchema, async (body, request, 
       maxAge: sessionMaxAge,
     });
 
-    // F-11: The impersonation reason is admin-entered audit context (not sensitive
-    // PHI/credentials), so httpOnly: false is acceptable here. The banner component
-    // reads this value via document.cookie to display the reason to the super admin.
+    // S-11: Move impersonation reason to a server-side session lookup.
+    // The cookie holds only an opaque token; mark it httpOnly: true to prevent
+    // XSS-based exfiltration. The banner component reads the reason via a
+    // server-side API call or server component instead of document.cookie.
     response.cookies.set("sa_impersonate_reason", encodeURIComponent(reason), {
-      httpOnly: false,
+      httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "strict",
       path: "/",
@@ -109,6 +111,32 @@ export const POST = withAuthValidation(impersonateSchema, async (body, request, 
     });
 
     return response;
+}, ["super_admin"]);
+
+/**
+ * GET /api/impersonate
+ *
+ * S-11: Returns the current impersonation state for the signed-in user.
+ * The impersonation cookies (`sa_impersonate_clinic_name`,
+ * `sa_impersonate_reason`) are `httpOnly: true` — the banner cannot read
+ * them via `document.cookie`, so it calls this endpoint instead. Response
+ * is `{ clinicName: string, reason: string } | { clinicName: null }`.
+ *
+ * Only super_admins can be impersonating; `withAuth` enforces that.
+ */
+export const GET = withAuth(async () => {
+  const cookieStore = await cookies();
+  const clinicName = cookieStore.get("sa_impersonate_clinic_name")?.value ?? null;
+  const reason = cookieStore.get("sa_impersonate_reason")?.value ?? null;
+
+  if (!clinicName) {
+    return apiSuccess({ clinicName: null, reason: null });
+  }
+
+  return apiSuccess({
+    clinicName: decodeURIComponent(clinicName),
+    reason: reason ? decodeURIComponent(reason) : null,
+  });
 }, ["super_admin"]);
 
 export const DELETE = withAuth(async (_request, { supabase, user }) => {

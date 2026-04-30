@@ -10,7 +10,15 @@
  *   - routes.ts           — Route classification (public, protected, role maps)
  */
 
-export { buildCsp, withSecurityHeaders, secureRedirect, applyAllSecurityHeaders } from "./security-headers";
+export {
+  buildCsp,
+  buildLegacyCsp,
+  buildCspHeaderValues,
+  withSecurityHeaders,
+  secureRedirect,
+  applyAllSecurityHeaders,
+} from "./security-headers";
+export type { CspHeaderValues, BuildCspOptions } from "./security-headers";
 export { validateCsrf } from "./csrf";
 export { applyRateLimit } from "./rate-limiting";
 export {

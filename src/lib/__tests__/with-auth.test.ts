@@ -1,9 +1,19 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { createClient } from "@/lib/supabase-server";
-import { withAuth, type AuthContext } from "../with-auth";
+import { withAuth, withAuthAnyRole, type AuthContext } from "../with-auth";
 
 vi.mock("@/lib/supabase-server", () => ({
   createClient: vi.fn(),
+}));
+
+// Default mock keeps tenant-context a no-op so the existing happy-path tests
+// (which use synthetic non-UUID clinic IDs like "clinic-1") don't trip the
+// new fail-closed 503 behavior. Individual tests that need to exercise the
+// fail-closed path override `setTenantContext` per-call.
+const setTenantContextMock = vi.fn().mockResolvedValue(undefined);
+vi.mock("@/lib/tenant-context", () => ({
+  setTenantContext: (...args: unknown[]) => setTenantContextMock(...args),
+  logTenantContext: vi.fn(),
 }));
 
 function createMockRequest(initialHeaders?: Record<string, string>): {
@@ -125,7 +135,7 @@ describe("withAuth", () => {
     expect(authArg.profile.clinic_id).toBe("clinic-1");
   });
 
-  it("skips role check when allowedRoles is null", async () => {
+  it("allows any authenticated user via withAuthAnyRole", async () => {
     const mockUser = { id: "user-1" };
     const mockProfile = { id: "profile-1", role: "patient", clinic_id: null };
     const mockSupabase = createMockSupabase(mockUser, mockProfile);
@@ -134,7 +144,7 @@ describe("withAuth", () => {
     const handler = vi.fn().mockResolvedValue(
       new Response(JSON.stringify({ ok: true }), { status: 200 }),
     );
-    const wrappedHandler = withAuth(handler, null);
+    const wrappedHandler = withAuthAnyRole(handler);
 
     await wrappedHandler(createMockRequest() as never);
 
@@ -145,7 +155,7 @@ describe("withAuth", () => {
     vi.mocked(createClient).mockRejectedValue(new Error("DB down"));
 
     const handler = vi.fn();
-    const wrappedHandler = withAuth(handler, null);
+    const wrappedHandler = withAuth(handler, ["clinic_admin"]);
 
     const response = await wrappedHandler(createMockRequest() as never);
     const body = await response.json();
@@ -247,6 +257,92 @@ describe("withAuth", () => {
       const response = await wrappedHandler(request as never);
       expect(response.status).toBe(403);
       expect(handler).not.toHaveBeenCalled();
+    });
+  });
+
+  // Fail-closed tenant context: a `setTenantContext` failure on a tenant-
+  // scoped route MUST abort with 503 by default. Continuing would leave the
+  // request relying on weaker fallback isolation checks (`get_user_clinic_id`
+  // alone), which is unsafe in a multi-tenant RLS model.
+  describe("setTenantContext failure handling", () => {
+    beforeEach(() => {
+      setTenantContextMock.mockReset();
+      setTenantContextMock.mockResolvedValue(undefined);
+    });
+
+    it("returns 503 from withAuth when setTenantContext throws (fail-closed default)", async () => {
+      const mockSupabase = createMockSupabase(
+        { id: "user-1" },
+        { id: "profile-1", role: "clinic_admin", clinic_id: "clinic-1" },
+      );
+      vi.mocked(createClient).mockResolvedValue(mockSupabase as never);
+      setTenantContextMock.mockRejectedValueOnce(new Error("RPC unavailable"));
+
+      const handler = vi.fn();
+      const wrappedHandler = withAuth(handler, ["clinic_admin"]);
+
+      const response = await wrappedHandler(createMockRequest() as never);
+      const body = await response.json();
+
+      expect(response.status).toBe(503);
+      expect(body.error).toBe("Tenant context unavailable");
+      expect(handler).not.toHaveBeenCalled();
+    });
+
+    it("returns 503 from withAuthAnyRole when setTenantContext throws (fail-closed default)", async () => {
+      const mockSupabase = createMockSupabase(
+        { id: "user-1" },
+        { id: "profile-1", role: "patient", clinic_id: "clinic-1" },
+      );
+      vi.mocked(createClient).mockResolvedValue(mockSupabase as never);
+      setTenantContextMock.mockRejectedValueOnce(new Error("RPC unavailable"));
+
+      const handler = vi.fn();
+      const wrappedHandler = withAuthAnyRole(handler);
+
+      const response = await wrappedHandler(createMockRequest() as never);
+      const body = await response.json();
+
+      expect(response.status).toBe(503);
+      expect(body.error).toBe("Tenant context unavailable");
+      expect(handler).not.toHaveBeenCalled();
+    });
+
+    it("invokes the handler when failOpen=true even if setTenantContext throws", async () => {
+      const mockUser = { id: "user-1" };
+      const mockProfile = { id: "profile-1", role: "clinic_admin", clinic_id: "clinic-1" };
+      const mockSupabase = createMockSupabase(mockUser, mockProfile);
+      vi.mocked(createClient).mockResolvedValue(mockSupabase as never);
+      setTenantContextMock.mockRejectedValueOnce(new Error("RPC unavailable"));
+
+      const handler = vi.fn().mockResolvedValue(
+        new Response(JSON.stringify({ ok: true }), { status: 200 }),
+      );
+      const wrappedHandler = withAuth(handler, ["clinic_admin"], { failOpen: true });
+
+      const response = await wrappedHandler(createMockRequest() as never);
+
+      expect(response.status).toBe(200);
+      expect(handler).toHaveBeenCalledTimes(1);
+    });
+
+    it("does not call setTenantContext when profile.clinic_id is null (super_admin)", async () => {
+      const mockSupabase = createMockSupabase(
+        { id: "user-1" },
+        { id: "profile-1", role: "super_admin", clinic_id: null },
+      );
+      vi.mocked(createClient).mockResolvedValue(mockSupabase as never);
+
+      const handler = vi.fn().mockResolvedValue(
+        new Response(JSON.stringify({ ok: true }), { status: 200 }),
+      );
+      const wrappedHandler = withAuth(handler, ["super_admin"]);
+
+      const response = await wrappedHandler(createMockRequest() as never);
+
+      expect(response.status).toBe(200);
+      expect(setTenantContextMock).not.toHaveBeenCalled();
+      expect(handler).toHaveBeenCalledTimes(1);
     });
   });
 });

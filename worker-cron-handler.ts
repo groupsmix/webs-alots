@@ -6,8 +6,10 @@
  * the Next.js cron API routes with the correct CRON_SECRET auth.
  *
  * Cron schedule (from wrangler.toml):
- *   - Every 30 min  →  /api/cron/reminders  (appointment reminders)
- *   - Daily at 2 AM →  /api/cron/billing    (subscription renewals)
+ *   - Every 30 min  →  /api/cron/reminders     (appointment reminders)
+ *   - Every 15 min  →  /api/cron/notifications (queued notifications)
+ *   - Hourly        →  /api/cron/r2-cleanup    (abandoned R2 uploads)
+ *   - Daily at 2 AM →  /api/cron/billing       (subscription renewals)
  *
  * @see https://opennext.js.org/cloudflare/howtos/custom-worker
  */
@@ -23,6 +25,7 @@ import { default as handler } from "./.open-next/worker.js";
 const CRON_ROUTES: Record<string, string> = {
   "*/30 * * * *": "/api/cron/reminders",
   "*/15 * * * *": "/api/cron/notifications",
+  "0 * * * *": "/api/cron/r2-cleanup",
   "0 2 * * *": "/api/cron/billing",
 };
 
@@ -43,9 +46,11 @@ export default {
 
     console.log(`[Cron] Firing ${controller.cron} → ${route}`);
 
-    // Build a request to the Next.js API route via the same Worker fetch handler.
-    // Use Authorization: Bearer header — both cron routes expect this format.
-    const url = new URL(route, "http://localhost");
+    // B-03: Build a request to the Next.js API route via the same Worker fetch handler.
+    // Use a configurable base URL (defaulted to the prod host) so downstream
+    // subdomain/CSRF/signed-URL helpers see the real host instead of localhost.
+    const cronBaseUrl = env.CRON_SELF_BASE_URL || `https://${env.ROOT_DOMAIN || "oltigo.com"}`;
+    const url = new URL(route, cronBaseUrl);
     const headers: HeadersInit = {};
 
     const cronSecret = env.CRON_SECRET;

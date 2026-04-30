@@ -70,3 +70,21 @@ This standard operating procedure outlines the exact steps to detect, revoke, an
 1. Update `BOOKING_TOKEN_SECRET` in GitHub Secrets.
 2. Run `update-secrets.yml`.
 **Impact:** Existing unconfirmed booking links sent to patients will instantly become invalid. Support staff must be ready to manually confirm these bookings if patients call.
+
+## 8. `R2_SIGNED_URL_SECRET`
+**Detection:** Unauthorized access to PHI files served via `/r2?b=…&k=…&s=…` URLs, signatures validating for unexpected keys, or the finding that the value has leaked (e.g. committed to a public repo, appeared in a log dump). Any evidence that the pre-fix `"default-salt"` fallback was ever used in production (see audit finding #8) also qualifies.
+**Revoke & Rotate:**
+1. Generate a new high-entropy secret: `openssl rand -hex 32`.
+**Propagate:**
+1. Update `R2_SIGNED_URL_SECRET` in GitHub Repository Secrets.
+2. Also set it as a Cloudflare Worker secret directly: `wrangler secret put R2_SIGNED_URL_SECRET` (so the R2 proxy worker that runs `validateSignedR2Url()` uses the same value as the Next.js app).
+3. Run `.github/workflows/update-secrets.yml` to push the new secret to all deployed Workers.
+**Verify:**
+1. Confirm the app boots — startup env validation in `src/lib/env.ts` hard-fails when the variable is missing in production.
+2. Hit `/api/files/download` (or any route that returns a signed R2 URL) as an authenticated clinic user and confirm the returned URL resolves to a 200 through the R2 proxy.
+3. Confirm a previously generated URL (signed with the old secret) now 403s — this is the desired invalidation behavior.
+**Impact:**
+- Every outstanding signed URL is instantly invalidated. Patients and staff with open-tab downloads must re-request the file.
+- Existing R2 object keys are unaffected; only future `buildUploadKey()` calls use the new secret for filename hashing, so old and new uploads coexist safely.
+- PHI files remain accessible through the R2 proxy because authorization re-signs on each request — rotation does **not** require re-uploading files.
+**Backfill:** Query `audit_logs` for `action = 'file.download'` entries during the suspected compromise window. If the old secret was "default-salt" or the R2 access key, treat every signed URL issued before the rotation as potentially predictable and review download patterns per-clinic for anomalies.

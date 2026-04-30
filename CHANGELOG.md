@@ -16,6 +16,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - API route handler tests for booking/cancel and impersonate endpoints (testing actual handlers, not just schemas)
 - Integration tests for prescription-to-notification and clinic onboarding flows
 - "How to obtain" links in `.env.example` for third-party service credentials
+- CI-11: Auto-rollback to the previous Cloudflare Worker version when the post-deploy health check fails. The deploy workflow runs `wrangler rollback`, verifies the previous version is healthy, and still fails the run so on-call gets a red signal.
+- `docs/db-rollback-constraints.md` documenting why database migrations are forward-only, what the auto-rollback does and does not revert, the expand-migrate-contract pattern required for schema changes, and the manual recovery procedures when a Worker rollback is insufficient.
 
 ### Changed
 

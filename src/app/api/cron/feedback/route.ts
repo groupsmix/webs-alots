@@ -4,7 +4,8 @@ import { verifyCronSecret } from "@/lib/cron-auth";
 import { logger } from "@/lib/logger";
 import { sendFeedbackRequest } from "@/lib/post-appointment-feedback";
 import { withSentryCron } from "@/lib/sentry-cron";
-import { createClient } from "@/lib/supabase-server";
+// B-02: Cron jobs have no user session — use service-role client.
+import { createAdminClient } from "@/lib/supabase-server";
 
 /**
  * GET /api/cron/feedback
@@ -20,7 +21,7 @@ async function handler(request: NextRequest) {
   if (authError) return authError;
 
   try {
-    const supabase = await createClient();
+    const supabase = createAdminClient();
 
     // Audit 7.1: Short-circuit if there are no active clinics to save DB compute
     const { count } = await supabase.from("clinics").select("*", { count: "exact", head: true }).eq("status", "active");

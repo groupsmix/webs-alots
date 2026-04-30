@@ -15,9 +15,73 @@ import { cmiCallbackFieldsSchema } from "@/lib/validations";
  *
  * Also handles the customer redirect (GET) after payment.
  */
+/** S-15: Max body size for CMI callback (10 KB). CMI callbacks are small
+ *  form-encoded payloads; anything larger is suspicious. */
+const MAX_CMI_CALLBACK_BYTES = 10 * 1024;
+
+/**
+ * S-15: Read the request body while enforcing a hard byte cap. Returns null
+ * if the body exceeds the limit. Works even when the client omits the
+ * Content-Length header (e.g. chunked transfer encoding) because we stream
+ * the body and abort as soon as the cumulative byte count exceeds the cap.
+ */
+async function readBodyWithLimit(
+  request: NextRequest,
+  maxBytes: number,
+): Promise<Uint8Array | null> {
+  const reader = request.body?.getReader();
+  if (!reader) return new Uint8Array(0);
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    if (!value) continue;
+    total += value.byteLength;
+    if (total > maxBytes) {
+      try {
+        await reader.cancel();
+      } catch {
+        // best effort
+      }
+      return null;
+    }
+    chunks.push(value);
+  }
+  const out = new Uint8Array(total);
+  let offset = 0;
+  for (const chunk of chunks) {
+    out.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  return out;
+}
+
 export async function POST(request: NextRequest) {
   try {
-    const formData = await request.formData();
+    // S-15: Enforce a body size cap before parsing formData to prevent
+    // memory exhaustion from an attacker-controlled payload. We check
+    // Content-Length first for a cheap early reject, but also enforce the
+    // cap on the actual bytes read — Content-Length is optional and a
+    // client using chunked transfer encoding can omit it entirely.
+    const contentLength = request.headers.get("content-length");
+    if (contentLength && Number(contentLength) > MAX_CMI_CALLBACK_BYTES) {
+      return apiError("Payload too large", 413);
+    }
+
+    const body = await readBodyWithLimit(request, MAX_CMI_CALLBACK_BYTES);
+    if (body === null) {
+      return apiError("Payload too large", 413);
+    }
+
+    const contentType =
+      request.headers.get("content-type") || "application/x-www-form-urlencoded";
+    // Re-parse the size-limited body as formData. TextDecoder is safe here
+    // because CMI callbacks are form-urlencoded (ASCII).
+    const bodyText = new TextDecoder().decode(body);
+    const formData = await new Response(bodyText, {
+      headers: { "content-type": contentType },
+    }).formData();
     const params: Record<string, string> = {};
     formData.forEach((value, key) => {
       params[key] = String(value);

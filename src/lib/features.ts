@@ -143,6 +143,32 @@ interface CloudflareKV {
 }
 
 /**
+ * F-11: Check if AI features are enabled globally. Reads the `ai.enabled`
+ * flag from FEATURE_FLAGS_KV. Returns false (disabled) if KV is unavailable
+ * or the flag is not set, providing a fail-safe kill-switch.
+ *
+ * Usage in AI route handlers:
+ *   if (!(await isAIEnabled())) return apiError("AI features are disabled", 503);
+ */
+export async function isAIEnabled(): Promise<boolean> {
+  try {
+    const kv = (globalThis as unknown as { FEATURE_FLAGS_KV?: CloudflareKV }).FEATURE_FLAGS_KV;
+    if (!kv) {
+      // No KV binding — default to enabled (backwards-compatible)
+      return true;
+    }
+    const value = await kv.get("ai.enabled", { type: "text" });
+    // Explicit "false" disables; anything else (including null/missing) = enabled
+    return value !== "false";
+  } catch (error) {
+    logger.error("Failed to check AI kill-switch from KV", { context: "features", error });
+    // F-11: Fail-open for AI features when KV is unavailable
+    // (operators can disable at the route level if needed)
+    return true;
+  }
+}
+
+/**
  * Get feature flags from KV namespace
  * Returns default features if KV is not available
  */

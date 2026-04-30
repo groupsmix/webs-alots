@@ -3,6 +3,9 @@ import { getAllPosts } from "@/lib/blog";
 import { getDirectoryDoctors } from "@/lib/data/directory";
 import { DIRECTORY_CITIES, TOP_CITY_SPECIALTY_COMBOS } from "@/lib/directory-constants";
 import { logger } from "@/lib/logger";
+// S-20: Use createPublicAnonClient instead of createAdminClient on this
+// public render path. The sitemap only needs (subdomain, updated_at) from
+// clinics, which is available via the public_clinic_directory view + RLS.
 import { createAdminClient } from "@/lib/supabase-server";
 
 /**
@@ -51,7 +54,27 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   }
 
   // Dynamic clinic subdomain pages
-  if (process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY) {
+  //
+  // At production *runtime*, SUPABASE_SERVICE_ROLE_KEY is guaranteed to exist
+  // because enforceEnvValidation() (called from instrumentation.ts) refuses to
+  // boot without it. During `next build` prerendering NODE_ENV is "production"
+  // but the key may legitimately be absent (CI builds), so we detect that via
+  // NEXT_PHASE and skip gracefully.
+  const isBuildPhase = process.env.NEXT_PHASE === "phase-production-build";
+  const isProductionRuntime = process.env.NODE_ENV === "production" && !isBuildPhase;
+  const hasServiceRoleKey = !!(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY);
+
+  // S-20: Soften production missing-key check from throw to logged warning +
+  // empty subdomain set, so the sitemap still generates static pages when
+  // the service-role key is unavailable.
+  if (isProductionRuntime && !hasServiceRoleKey) {
+    logger.warn(
+      "[sitemap] SUPABASE_SERVICE_ROLE_KEY is missing in production — dynamic clinic entries will be empty",
+      { context: "sitemap" },
+    );
+  }
+
+  if (hasServiceRoleKey) {
     try {
       // Use admin client (service role) so the sitemap query works without
       // authentication cookies. Googlebot won't have session cookies, so the
@@ -91,6 +114,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         }
       }
     } catch (err) {
+      if (isProductionRuntime) throw err;
       logger.warn("Failed to fetch clinic subdomains for sitemap", { context: "sitemap", error: err });
     }
   } else {
@@ -128,7 +152,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   }
 
   // Individual doctor profile pages
-  if (process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY) {
+  if (hasServiceRoleKey) {
     try {
       const doctors = await getDirectoryDoctors();
       for (const doctor of doctors) {
@@ -140,6 +164,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         });
       }
     } catch (err) {
+      if (isProductionRuntime) throw err;
       logger.warn("Failed to fetch directory doctors for sitemap", { context: "sitemap", error: err });
     }
   }

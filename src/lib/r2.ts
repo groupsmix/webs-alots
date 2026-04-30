@@ -19,11 +19,53 @@
  *   R2_SECRET_ACCESS_KEY — R2 API token secret key
  *   R2_BUCKET_NAME       — R2 bucket name (e.g., "webs-alots-uploads")
  *   R2_PUBLIC_URL        — (Deprecated) Legacy public URL; use signed URLs instead
- *   R2_SIGNED_URL_SECRET — Secret for generating per-request signed URLs (optional, defaults to R2_SECRET_ACCESS_KEY)
+ *   R2_SIGNED_URL_SECRET — Secret for generating per-request signed URLs and
+ *                          hashing upload filenames. **Required in production.**
+ *                          Must be a high-entropy random string (e.g. `openssl rand -hex 32`).
+ *                          Rotate per `docs/SOP-SECRET-ROTATION.md` §8.
  */
 
 import { createHmac } from "crypto";
 import { logger } from "@/lib/logger";
+
+/**
+ * Resolve the HMAC secret used for R2 signed URLs and upload-key filename
+ * hashing.
+ *
+ * Audit finding #8: production must never fall back to a hardcoded salt. The
+ * same applies to falling back to the R2 access key, since that couples URL
+ * signing to the AWS credential (rotating one forces rotating the other).
+ *
+ * Behaviour:
+ *   - Returns `R2_SIGNED_URL_SECRET` when set.
+ *   - In production, throws if the variable is missing. Startup validation in
+ *     `src/lib/env.ts` should have already prevented the server from booting,
+ *     but this is defense-in-depth for code paths that run before or outside
+ *     the instrumentation hook.
+ *   - In non-production environments, falls back to `R2_SECRET_ACCESS_KEY` for
+ *     developer convenience (historical behaviour). If neither is set, throws
+ *     with a helpful error rather than silently using a shared constant.
+ */
+function getR2SigningSecret(): string {
+  const keySecret = process.env.R2_SIGNED_URL_SECRET;
+  if (keySecret) return keySecret;
+
+  if (process.env.NODE_ENV === "production") {
+    throw new Error(
+      "R2_SIGNED_URL_SECRET is required in production. " +
+        "Generate one with `openssl rand -hex 32` and deploy it as a Cloudflare Worker secret.",
+    );
+  }
+
+  const fallback = process.env.R2_SECRET_ACCESS_KEY;
+  if (!fallback) {
+    throw new Error(
+      "R2 signing secret is missing. Set R2_SIGNED_URL_SECRET in your .env.local " +
+        "(or R2_SECRET_ACCESS_KEY for historical compatibility in development).",
+    );
+  }
+  return fallback;
+}
 
 // ---------------------------------------------------------------------------
 // Signed URL Generation (R-16 Fix)
@@ -42,14 +84,15 @@ import { logger } from "@/lib/logger";
 export function generateSignedR2Url(key: string, expiresIn = 3600): string {
   const accountId = process.env.R2_ACCOUNT_ID;
   const bucketName = process.env.R2_BUCKET_NAME;
-  const secret = process.env.R2_SIGNED_URL_SECRET || process.env.R2_SECRET_ACCESS_KEY;
 
-  if (!accountId || !bucketName || !secret) {
+  if (!accountId || !bucketName) {
     // R2 is not configured — return a best-effort placeholder URL.
     // Callers should check isR2Configured() before using signed URLs.
     logger.warn("generateSignedR2Url called but R2 is not fully configured", { context: "r2", key });
     return `https://r2-not-configured.invalid/${key}`;
   }
+
+  const secret = getR2SigningSecret();
 
   // R-16 Fix: Generate HMAC-signed URL for per-request authorization.
   // The signature covers (bucket, key, expires) so an attacker who obtains a
@@ -95,8 +138,13 @@ export function validateSignedR2Url(
     return false;
   }
 
-  const secret = process.env.R2_SIGNED_URL_SECRET || process.env.R2_SECRET_ACCESS_KEY;
-  if (!secret) return false;
+  let secret: string;
+  try {
+    secret = getR2SigningSecret();
+  } catch {
+    // Misconfiguration — reject rather than accept unsigned URLs.
+    return false;
+  }
 
   const signatureBase = `${bucket}:${key}:${expires}`;
   const expectedSignature = createHmac("sha256", secret).update(signatureBase).digest("hex").slice(0, 32);
@@ -114,6 +162,24 @@ export function validateSignedR2Url(
 // out of the main bundle (see PERF-01 audit finding).
 type S3ClientType = import("@aws-sdk/client-s3").S3Client;
 type PutObjectCommandInputType = import("@aws-sdk/client-s3").PutObjectCommandInput;
+
+/**
+ * Default maximum size enforced by direct-upload presigned POST policies.
+ * Individual call-sites may pass a smaller bound when they know the
+ * acceptable upper limit for that upload kind.
+ */
+export const DEFAULT_PRESIGNED_POST_MAX_SIZE = 2 * 1024 * 1024; // 2 MB
+
+/**
+ * Returned by {@link getPresignedUploadPost}. Clients submit the file as the
+ * `file` field of a `multipart/form-data` POST to `url`, including every
+ * field returned in `fields`.
+ */
+export interface PresignedUploadPost {
+  url: string;
+  fields: Record<string, string>;
+  key: string;
+}
 
 function getR2Config() {
   const accountId = process.env.R2_ACCOUNT_ID;
@@ -239,7 +305,7 @@ function hashFilename(key: string): string {
   const dotIndex = filename.lastIndexOf(".");
   const extension = dotIndex > 0 ? filename.substring(dotIndex) : "";
 
-  const hash = createHmac("sha256", process.env.R2_SIGNED_URL_SECRET || process.env.R2_SECRET_ACCESS_KEY || "default-salt")
+  const hash = createHmac("sha256", getR2SigningSecret())
     .update(filename + Date.now().toString())
     .digest("hex")
     .slice(0, 16);
@@ -268,75 +334,64 @@ export async function deleteFromR2(key: string): Promise<void> {
 }
 
 /**
- * Generate a pre-signed URL for direct browser upload.
- * Allows clients to upload directly to R2 without going through the server.
+ * Generate a pre-signed POST policy for direct browser upload.
+ *
+ * Audit 3.7 / HIGH-07 Fix: PUT pre-signed URLs cannot enforce a maximum object
+ * size — a malicious client could upload multi-gigabyte files before the
+ * server confirmation route ever runs. Presigned POST policies *can* enforce
+ * size via the `content-length-range` condition, so R2 itself rejects
+ * oversized uploads at write time rather than after the fact.
+ *
+ * The returned `fields` must be sent verbatim as `multipart/form-data` fields
+ * alongside the file (which goes in a final `file` part). The S3/R2 server
+ * validates the policy before accepting any bytes.
+ *
+ * Conditions enforced server-side by R2:
+ *   - `content-length-range`: file size must be within `[0, maxSize]`.
+ *   - `eq $Content-Type`: declared MIME type must match `contentType` exactly.
+ *
+ * S13-FIX: `Content-Disposition: attachment` is locked into the policy so
+ * browsers never render uploaded files inline (defense-in-depth against
+ * stored XSS via HTML/JS uploads that bypass magic-byte validation).
  *
  * @param key          Object key
- * @param contentType  Expected MIME type
- * @param expiresIn    URL validity in seconds (default: 3600 = 1 hour)
- * @returns Pre-signed upload URL, or null if R2 is not configured
+ * @param contentType  Expected MIME type (locked into the POST policy)
+ * @param maxSize      Maximum bytes accepted (default: 2 MB)
+ * @param expiresIn    Policy validity in seconds (default: 600 = 10 min)
+ * @returns Presigned POST URL + fields, or null if R2 is not configured
  */
-export async function getPresignedUploadUrl(
+export async function getPresignedUploadPost(
   key: string,
   contentType: string,
+  maxSize: number = DEFAULT_PRESIGNED_POST_MAX_SIZE,
   expiresIn = 600,
-): Promise<string | null> {
+): Promise<PresignedUploadPost | null> {
   const client = await getClient();
   const config = getR2Config();
   if (!client || !config) return null;
 
-  const { PutObjectCommand } = await import("@aws-sdk/client-s3");
+  const { createPresignedPost } = await import("@aws-sdk/s3-presigned-post");
 
-  // Audit 3.7 Fix: Use POST pre-signed URLs instead of PUT to enforce content-length-range.
-  // PUT presigned URLs in S3 do not support max-size enforcement, allowing malicious
-  // clients to upload 5GB files before confirming.
-  try {
-    const { createPresignedPost: _createPresignedPost } = await import("@aws-sdk/s3-presigned-post");
-    await _createPresignedPost(client, {
-      Bucket: config.bucketName,
-      Key: key,
-      Conditions: [
-        ["content-length-range", 0, 5 * 1024 * 1024], // Max 5 MB enforced by R2
-        ["eq", "$Content-Type", contentType],
-      ],
-      Fields: {
-        "Content-Type": contentType,
-      },
-      Expires: expiresIn,
-    });
-    
-    // We return a JSON string that the client will need to parse to do the POST upload.
-    // To maintain backward compatibility with existing PUT clients that expect a simple URL string,
-    // we would need to change the client code as well. Since we only want to fix the backend vulnerability,
-    // and PUT doesn't support content-length-range, we will stick to PUT but add a note, or we can just 
-    // implement a cleanup cron job as suggested by the audit.
-    //
-    // Actually, Cloudflare R2 DOES support `content-length-range` but ONLY via POST policies.
-    // If we return a POST policy here, all client-side `fetch(uploadUrl, { method: 'PUT' })` will break.
-    // Let's implement the cleanup approach instead, or simply add a TODO for the cleanup cron job
-    // since building a full cleanup cron job requires DB state for "unconfirmed" uploads.
-  } catch {
-    // Ignore, just exploring options
-  }
-
-  const { getSignedUrl } = await import("@aws-sdk/s3-request-presigner");
-
-  // HIGH-07 / Audit 3.7: PUT pre-signed URLs do not support maximum size enforcement
-  // natively in S3/R2 (unlike POST policies). A malicious client could upload up to 5GB.
-  // Mitigation implemented: We enforce the 2MB limit on the server-side confirmation route (PUT /api/upload).
-  // Unconfirmed orphaned uploads must be cleaned up via a bucket lifecycle rule or a cron job.
-  //
-  // S13-FIX: Set Content-Disposition to "attachment" so browsers will never
-  // render uploaded files inline (prevents stored XSS via HTML/JS uploads
-  // that bypass the server-side magic-byte validation).
-  const command = new PutObjectCommand({
+  const presigned = await createPresignedPost(client, {
     Bucket: config.bucketName,
     Key: key,
-    ContentType: contentType,
-    ContentDisposition: "attachment",
+    Conditions: [
+      ["content-length-range", 0, maxSize],
+      ["eq", "$Content-Type", contentType],
+      ["eq", "$Content-Disposition", "attachment"],
+    ],
+    Fields: {
+      "Content-Type": contentType,
+      "Content-Disposition": "attachment",
+    },
+    Expires: expiresIn,
   });
 
-  return getSignedUrl(client, command, { expiresIn });
+  return {
+    url: presigned.url,
+    fields: presigned.fields,
+    key,
+  };
 }
 
 /**
@@ -373,6 +428,103 @@ export async function getPresignedDownloadUrl(
   // on the R2 bucket or a dedicated download proxy route.
 
   return getSignedUrl(client, command, { expiresIn });
+}
+
+/**
+ * Object metadata retrieved from R2 via HeadObject.
+ */
+export interface R2ObjectMetadata {
+  contentLength: number;
+  contentType: string | null;
+}
+
+/**
+ * Fetch object metadata (size + content type) from R2 without downloading the
+ * body. Used by the upload confirmation route to validate that a direct
+ * upload actually matched the declared content-type and size, even though the
+ * presigned POST policy already enforces these server-side.
+ *
+ * Returns `null` if the object does not exist or R2 is not configured.
+ */
+export async function getR2ObjectMetadata(
+  key: string,
+): Promise<R2ObjectMetadata | null> {
+  const client = await getClient();
+  const config = getR2Config();
+  if (!client || !config) return null;
+
+  const { HeadObjectCommand } = await import("@aws-sdk/client-s3");
+
+  try {
+    const response = await client.send(
+      new HeadObjectCommand({
+        Bucket: config.bucketName,
+        Key: key,
+      }),
+    );
+    return {
+      contentLength: response.ContentLength ?? 0,
+      contentType: response.ContentType ?? null,
+    };
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * List objects stored in R2 under the given key prefix, paginating over every
+ * page returned by `ListObjectsV2`. Used by the cleanup library
+ * (`r2-cleanup.ts`) to enumerate uploads for orphan reconciliation without
+ * caring about the 1 000-key page limit enforced by S3-compatible APIs.
+ *
+ * Returns an empty array when R2 is not configured so callers can safely
+ * invoke it during smoke runs without triggering credential errors.
+ *
+ * @param prefix    R2 key prefix to scan (e.g. `"clinics/"`). Required — an
+ *                  empty prefix would enumerate the entire bucket.
+ * @param opts.limit     Optional hard cap on the total number of keys
+ *                       returned across all pages. Defaults to no cap.
+ * @param opts.pageSize  Page size forwarded as `MaxKeys` (default: 1 000,
+ *                       the S3 maximum).
+ */
+export async function listR2Objects(
+  prefix: string,
+  opts: { limit?: number; pageSize?: number } = {},
+): Promise<string[]> {
+  const client = await getClient();
+  const config = getR2Config();
+  if (!client || !config) return [];
+
+  const limit = opts.limit ?? Number.POSITIVE_INFINITY;
+  const pageSize = opts.pageSize ?? 1000;
+  if (limit <= 0) return [];
+
+  const { ListObjectsV2Command } = await import("@aws-sdk/client-s3");
+
+  const keys: string[] = [];
+  let continuationToken: string | undefined;
+
+  do {
+    const response = await client.send(
+      new ListObjectsV2Command({
+        Bucket: config.bucketName,
+        Prefix: prefix,
+        MaxKeys: pageSize,
+        ContinuationToken: continuationToken,
+      }),
+    );
+
+    for (const obj of response.Contents ?? []) {
+      if (typeof obj.Key === "string") {
+        keys.push(obj.Key);
+        if (keys.length >= limit) return keys;
+      }
+    }
+
+    continuationToken = response.IsTruncated ? response.NextContinuationToken ?? undefined : undefined;
+  } while (continuationToken);
+
+  return keys;
 }
 
 /**
@@ -449,10 +601,7 @@ export function buildUploadKey(
     const dotIndex = safeFilename.lastIndexOf(".");
     const extension = dotIndex > 0 ? safeFilename.substring(dotIndex) : "";
 
-    const hash = createHmac(
-      "sha256",
-      process.env.R2_SIGNED_URL_SECRET || process.env.R2_SECRET_ACCESS_KEY || "default-salt",
-    )
+    const hash = createHmac("sha256", getR2SigningSecret())
       .update(safeFilename + timestamp.toString())
       .digest("hex")
       .slice(0, 16);

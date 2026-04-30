@@ -9,6 +9,8 @@
  *   R-02: PROFILE_HEADER_HMAC_KEY is read first; CRON_SECRET only acts
  *         as a transitional fallback. Headers signed with one key MUST
  *         NOT verify under the other.
+ *   C-02: The HMAC payload now includes an `iat` (issued-at) timestamp.
+ *         Headers older than 300 seconds are rejected to prevent replay.
  */
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -49,46 +51,43 @@ describe("profile-header-hmac", () => {
       role: "x-auth-profile-role",
       clinic: "x-auth-profile-clinic",
       sig: "x-auth-profile-sig",
+      iat: "x-auth-profile-iat",
     });
   });
 
   describe("R-01: no fallback key", () => {
     it("signProfileHeader returns null when no key is configured", async () => {
-      const sig = await signProfileHeader({
+      const result = await signProfileHeader({
         id: "profile-1",
         role: "super_admin",
         clinic_id: null,
       });
-      expect(sig).toBeNull();
+      expect(result).toBeNull();
     });
 
     it("verifyProfileHeader rejects forged headers when no key is configured", async () => {
-      // An attacker submits headers that *look* valid. With no configured
-      // HMAC key there is nothing to verify against, so verification MUST
-      // fail (the previous fallback literal would have accepted this).
       const result = await verifyProfileHeader({
         id: "attacker-profile-id",
         role: "super_admin",
         clinic_id: "victim-clinic",
         signature: "a".repeat(64),
+        iat: String(Math.floor(Date.now() / 1000)),
       });
       expect(result).toBeNull();
     });
 
     it("verifyProfileHeader rejects headers signed with the literal 'fallback_secret_key'", async () => {
-      // Demonstrates the previous vulnerability: a signature produced
-      // with the public fallback key MUST NOT verify under the new code,
-      // regardless of whether any key is configured.
       const profile = { id: "p", role: "super_admin", clinic_id: "c" };
-      const fallbackSig = await signWithRawKey("fallback_secret_key", profile);
+      const iat = Math.floor(Date.now() / 1000);
+      const fallbackSig = await signWithRawKey("fallback_secret_key", profile, iat);
 
       // Case A: no key configured — must reject.
-      let result = await verifyProfileHeader({ ...profile, signature: fallbackSig });
+      let result = await verifyProfileHeader({ ...profile, signature: fallbackSig, iat: String(iat) });
       expect(result).toBeNull();
 
       // Case B: a real key is configured — must reject (key mismatch).
       process.env.PROFILE_HEADER_HMAC_KEY = "real-production-key";
-      result = await verifyProfileHeader({ ...profile, signature: fallbackSig });
+      result = await verifyProfileHeader({ ...profile, signature: fallbackSig, iat: String(iat) });
       expect(result).toBeNull();
     });
   });
@@ -99,36 +98,36 @@ describe("profile-header-hmac", () => {
       process.env.CRON_SECRET = "cron-key";
 
       const profile = { id: "p", role: "doctor", clinic_id: "c" };
-      const sig = await signProfileHeader(profile);
-      expect(sig).not.toBeNull();
+      const signed = await signProfileHeader(profile);
+      expect(signed).not.toBeNull();
 
-      const verified = await verifyProfileHeader({ ...profile, signature: sig });
+      const verified = await verifyProfileHeader({
+        ...profile,
+        signature: signed!.sig,
+        iat: String(signed!.iat),
+      });
       expect(verified).toEqual(profile);
     });
 
     it("a signature made with CRON_SECRET does NOT verify when PROFILE_HEADER_HMAC_KEY is set", async () => {
-      // Simulates a deployment that has rotated to a dedicated profile
-      // key. Old signatures (or signatures forged using a leaked
-      // CRON_SECRET) must be rejected.
       const profile = { id: "p", role: "clinic_admin", clinic_id: "c" };
-      const cronSig = await signWithRawKey("cron-key", profile);
+      const iat = Math.floor(Date.now() / 1000);
+      const cronSig = await signWithRawKey("cron-key", profile, iat);
 
       process.env.PROFILE_HEADER_HMAC_KEY = "profile-key";
       process.env.CRON_SECRET = "cron-key";
 
-      const verified = await verifyProfileHeader({ ...profile, signature: cronSig });
+      const verified = await verifyProfileHeader({ ...profile, signature: cronSig, iat: String(iat) });
       expect(verified).toBeNull();
     });
 
-    it("falls back to CRON_SECRET only when PROFILE_HEADER_HMAC_KEY is unset (transitional)", async () => {
+    it("S-05: does NOT fall back to CRON_SECRET when PROFILE_HEADER_HMAC_KEY is unset", async () => {
+      delete process.env.PROFILE_HEADER_HMAC_KEY;
       process.env.CRON_SECRET = "legacy-key";
 
       const profile = { id: "p", role: "receptionist", clinic_id: null };
-      const sig = await signProfileHeader(profile);
-      expect(sig).not.toBeNull();
-
-      const verified = await verifyProfileHeader({ ...profile, signature: sig });
-      expect(verified).toEqual(profile);
+      const result = await signProfileHeader(profile);
+      expect(result).toBeNull();
     });
   });
 
@@ -138,7 +137,7 @@ describe("profile-header-hmac", () => {
     });
 
     it("rejects when the role is tampered with", async () => {
-      const sig = await signProfileHeader({
+      const signed = await signProfileHeader({
         id: "p",
         role: "patient",
         clinic_id: "c",
@@ -147,13 +146,14 @@ describe("profile-header-hmac", () => {
         id: "p",
         role: "super_admin", // attacker bumps role
         clinic_id: "c",
-        signature: sig,
+        signature: signed!.sig,
+        iat: String(signed!.iat),
       });
       expect(verified).toBeNull();
     });
 
     it("rejects when the clinic_id is tampered with", async () => {
-      const sig = await signProfileHeader({
+      const signed = await signProfileHeader({
         id: "p",
         role: "doctor",
         clinic_id: "clinic-a",
@@ -162,39 +162,107 @@ describe("profile-header-hmac", () => {
         id: "p",
         role: "doctor",
         clinic_id: "clinic-b", // cross-tenant attempt
-        signature: sig,
+        signature: signed!.sig,
+        iat: String(signed!.iat),
       });
       expect(verified).toBeNull();
     });
 
     it("rejects when any required header is missing", async () => {
-      const sig = await signProfileHeader({
+      const signed = await signProfileHeader({
         id: "p",
         role: "doctor",
         clinic_id: null,
       });
 
       expect(
-        await verifyProfileHeader({ id: null, role: "doctor", clinic_id: null, signature: sig }),
+        await verifyProfileHeader({ id: null, role: "doctor", clinic_id: null, signature: signed!.sig, iat: String(signed!.iat) }),
       ).toBeNull();
       expect(
-        await verifyProfileHeader({ id: "p", role: null, clinic_id: null, signature: sig }),
+        await verifyProfileHeader({ id: "p", role: null, clinic_id: null, signature: signed!.sig, iat: String(signed!.iat) }),
       ).toBeNull();
       expect(
-        await verifyProfileHeader({ id: "p", role: "doctor", clinic_id: null, signature: null }),
+        await verifyProfileHeader({ id: "p", role: "doctor", clinic_id: null, signature: null, iat: String(signed!.iat) }),
       ).toBeNull();
+    });
+  });
+
+  describe("C-02: iat-based replay protection", () => {
+    beforeEach(() => {
+      process.env.PROFILE_HEADER_HMAC_KEY = "test-key";
+    });
+
+    it("signProfileHeader returns sig + iat", async () => {
+      const result = await signProfileHeader({ id: "p", role: "doctor", clinic_id: "c" });
+      expect(result).not.toBeNull();
+      expect(result).toHaveProperty("sig");
+      expect(result).toHaveProperty("iat");
+      expect(typeof result!.sig).toBe("string");
+      expect(typeof result!.iat).toBe("number");
+    });
+
+    it("rejects headers with an expired iat (> 300s old)", async () => {
+      const profile = { id: "p", role: "doctor", clinic_id: "c" };
+      const expiredIat = Math.floor(Date.now() / 1000) - 400; // 400s ago
+      const sig = await signWithRawKey("test-key", profile, expiredIat);
+
+      const verified = await verifyProfileHeader({
+        ...profile,
+        signature: sig,
+        iat: String(expiredIat),
+      });
+      expect(verified).toBeNull();
+    });
+
+    it("rejects headers with a future iat (> 300s ahead)", async () => {
+      const profile = { id: "p", role: "doctor", clinic_id: "c" };
+      const futureIat = Math.floor(Date.now() / 1000) + 400; // 400s in the future
+      const sig = await signWithRawKey("test-key", profile, futureIat);
+
+      const verified = await verifyProfileHeader({
+        ...profile,
+        signature: sig,
+        iat: String(futureIat),
+      });
+      expect(verified).toBeNull();
+    });
+
+    it("accepts headers with a recent iat (within 300s)", async () => {
+      const profile = { id: "p", role: "doctor", clinic_id: "c" };
+      const signed = await signProfileHeader(profile);
+      expect(signed).not.toBeNull();
+
+      const verified = await verifyProfileHeader({
+        ...profile,
+        signature: signed!.sig,
+        iat: String(signed!.iat),
+      });
+      expect(verified).toEqual(profile);
+    });
+
+    it("rejects when iat is missing", async () => {
+      const profile = { id: "p", role: "doctor", clinic_id: "c" };
+      const signed = await signProfileHeader(profile);
+
+      const verified = await verifyProfileHeader({
+        ...profile,
+        signature: signed!.sig,
+        iat: null, // missing
+      });
+      expect(verified).toBeNull();
     });
   });
 });
 
 /**
- * Sign a profile payload with an arbitrary raw key — used by the tests
- * to simulate forged headers without going through the helper's env
- * lookup logic.
+ * Sign a profile payload with an arbitrary raw key and explicit iat — used
+ * by the tests to simulate forged/expired headers without going through
+ * the helper's env lookup logic.
  */
 async function signWithRawKey(
   rawKey: string,
   profile: { id: string; role: string; clinic_id: string | null },
+  iat: number,
 ): Promise<string> {
   const key = await crypto.subtle.importKey(
     "raw",
@@ -203,7 +271,7 @@ async function signWithRawKey(
     false,
     ["sign"],
   );
-  const payload = `${profile.id}:${profile.role}:${profile.clinic_id ?? ""}`;
+  const payload = `${profile.id}:${profile.role}:${profile.clinic_id ?? ""}:${iat}`;
   const sig = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(payload));
   return Array.from(new Uint8Array(sig))
     .map((b) => b.toString(16).padStart(2, "0"))

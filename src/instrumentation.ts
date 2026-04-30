@@ -79,6 +79,80 @@ export function register() {
       tracesSampler(samplingContext) {
         return getSampleRate(samplingContext);
       },
+
+      // S-35: Strip PHI from Sentry events before they leave the server.
+      // Request bodies, known PHI fields, and breadcrumb data that could
+      // contain patient information are scrubbed. This is defense-in-depth
+      // on top of sendDefaultPii: false.
+      beforeSend(event) {
+        // Strip request bodies — they may contain patient data.
+        if (event.request) {
+          delete event.request.data;
+          delete event.request.cookies;
+          if (event.request.headers) {
+            // Remove auth-related headers that could contain session tokens.
+            const safeHeaders: Record<string, string> = {};
+            const SAFE_HEADER_NAMES = new Set([
+              "content-type", "accept", "user-agent", "referer",
+              "x-trace-id", "host",
+            ]);
+            for (const [k, v] of Object.entries(event.request.headers)) {
+              if (SAFE_HEADER_NAMES.has(k.toLowerCase())) {
+                safeHeaders[k] = String(v);
+              }
+            }
+            event.request.headers = safeHeaders;
+          }
+        }
+        // Strip known PHI field names anywhere arbitrary key/value data is
+        // attached to the event — event.extra, event.contexts (walked
+        // recursively; these may be nested via Sentry.setContext()), and
+        // event.tags (flat via Sentry.setTag()).
+        const PHI_KEYS = new Set([
+          "phone", "email", "name", "patientname", "patient_name",
+          "name_ar", "full_name", "address", "notes", "content",
+          "message", "file_name", "date_of_birth", "dob",
+          "insurance_number", "cin", "ssn",
+        ]);
+        const scrubPHI = (value: unknown, depth = 0): unknown => {
+          if (depth > 10 || value === null || value === undefined) return value;
+          if (Array.isArray(value)) {
+            return value.map((v) => scrubPHI(v, depth + 1));
+          }
+          if (typeof value === "object") {
+            const obj = value as Record<string, unknown>;
+            for (const key of Object.keys(obj)) {
+              if (PHI_KEYS.has(key.toLowerCase())) {
+                obj[key] = "[REDACTED]";
+              } else {
+                obj[key] = scrubPHI(obj[key], depth + 1);
+              }
+            }
+            return obj;
+          }
+          return value;
+        };
+        if (event.extra) scrubPHI(event.extra);
+        if (event.contexts) scrubPHI(event.contexts);
+        if (event.tags) {
+          for (const key of Object.keys(event.tags)) {
+            if (PHI_KEYS.has(key.toLowerCase())) {
+              event.tags[key] = "[REDACTED]";
+            }
+          }
+        }
+        return event;
+      },
+
+      // S-35: Strip PHI from breadcrumbs (e.g. fetch body data).
+      beforeBreadcrumb(breadcrumb) {
+        if (breadcrumb.data) {
+          delete breadcrumb.data.body;
+          delete breadcrumb.data.request_body;
+          delete breadcrumb.data.response_body;
+        }
+        return breadcrumb;
+      },
     });
   }
   // Validate all required environment variables at startup so missing

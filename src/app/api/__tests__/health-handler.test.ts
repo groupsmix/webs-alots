@@ -36,8 +36,10 @@ describe("GET /api/health — route handler", () => {
     vi.unstubAllEnvs();
   });
 
-  it("returns 200 with degraded status when env vars are missing", async () => {
-    // Ensure Supabase env vars are NOT set
+  it("returns 200 with ok:true when degraded but not down", async () => {
+    // Ensure Supabase env vars are NOT set — this puts the database
+    // check in a "degraded" state, but the overall endpoint still
+    // returns 200 because nothing is fully down.
     vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "");
     vi.stubEnv("NEXT_PUBLIC_SUPABASE_ANON_KEY", "");
 
@@ -48,10 +50,7 @@ describe("GET /api/health — route handler", () => {
 
     expect(response.status).toBe(200);
     expect(body.ok).toBe(true);
-    expect(body.data.status).toBeDefined();
-    expect(body.data.checks).toBeDefined();
-    expect(body.data.checks.database).toBeDefined();
-    expect(body.data.timestamp).toBeDefined();
+    expect(body.data.ok).toBe(true);
   });
 
   it("returns response with correct Cache-Control header", async () => {
@@ -64,7 +63,7 @@ describe("GET /api/health — route handler", () => {
     expect(response.headers.get("Cache-Control")).toBe("public, max-age=30");
   });
 
-  it("reports r2 as degraded when not configured", async () => {
+  it("O-04: anon response is exactly { ok: boolean } with no extra fields", async () => {
     vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "");
     vi.stubEnv("NEXT_PUBLIC_SUPABASE_ANON_KEY", "");
 
@@ -72,36 +71,12 @@ describe("GET /api/health — route handler", () => {
     const response = await GET();
     const body = await response.json();
 
-    expect(body.data.checks.r2.status).toBe("degraded");
-  });
-
-  it("reports whatsapp as degraded when tokens are missing", async () => {
-    vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "");
-    vi.stubEnv("NEXT_PUBLIC_SUPABASE_ANON_KEY", "");
-    vi.stubEnv("WHATSAPP_PHONE_NUMBER_ID", "");
-    vi.stubEnv("WHATSAPP_ACCESS_TOKEN", "");
-    vi.stubEnv("TWILIO_ACCOUNT_SID", "");
-    vi.stubEnv("TWILIO_AUTH_TOKEN", "");
-
-    const { GET } = await import("@/app/api/health/route");
-    const response = await GET();
-    const body = await response.json();
-
-    expect(body.data.checks.whatsapp.status).toBe("degraded");
-  });
-
-  it("includes all expected component checks in response", async () => {
-    vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "");
-    vi.stubEnv("NEXT_PUBLIC_SUPABASE_ANON_KEY", "");
-
-    const { GET } = await import("@/app/api/health/route");
-    const response = await GET();
-    const body = await response.json();
-
-    const checkKeys = Object.keys(body.data.checks);
-    expect(checkKeys).toContain("database");
-    expect(checkKeys).toContain("r2");
-    expect(checkKeys).toContain("whatsapp");
-    expect(checkKeys).toContain("rateLimiter");
+    // O-04: data payload must be exactly { ok: boolean } — no granular
+    // dependency status, no overall status string, and no timestamp.
+    expect(typeof body.data.ok).toBe("boolean");
+    expect(Object.keys(body.data)).toEqual(["ok"]);
+    expect(body.data.checks).toBeUndefined();
+    expect(body.data.status).toBeUndefined();
+    expect(body.data.timestamp).toBeUndefined();
   });
 });

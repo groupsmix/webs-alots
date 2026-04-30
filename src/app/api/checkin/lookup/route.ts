@@ -2,18 +2,33 @@ import { NextRequest } from "next/server";
 import { apiSuccess, apiError, apiInternalError } from "@/lib/api-response";
 import { logger } from "@/lib/logger";
 import { createTenantClient } from "@/lib/supabase-server";
+import { getTenant } from "@/lib/tenant";
 
 /**
  * GET /api/checkin/lookup?phone=...&clinicId=...
  *
  * Look up today's appointments for a patient by phone number.
+ *
+ * S-02: clinicId is now derived from the subdomain via `getTenant()`.
+ * A URL-supplied clinicId is accepted only for backward compatibility
+ * but MUST match the subdomain-resolved value; mismatches are rejected
+ * to prevent cross-tenant enumeration.
  */
 export async function GET(request: NextRequest) {
   const phone = request.nextUrl.searchParams.get("phone");
-  const clinicId = request.nextUrl.searchParams.get("clinicId");
+  const urlClinicId = request.nextUrl.searchParams.get("clinicId");
+
+  // S-02: Derive clinicId from the subdomain (set by middleware).
+  const tenant = await getTenant();
+  const clinicId = tenant?.clinicId ?? urlClinicId;
 
   if (!phone || !clinicId) {
     return apiError("Missing phone or clinicId", 400);
+  }
+
+  // S-02: If a URL-supplied clinicId disagrees with the subdomain, reject.
+  if (urlClinicId && tenant?.clinicId && urlClinicId !== tenant.clinicId) {
+    return apiError("clinicId does not match subdomain", 403);
   }
 
   try {

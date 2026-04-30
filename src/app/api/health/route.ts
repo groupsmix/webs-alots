@@ -96,12 +96,13 @@ export async function GET() {
       ? "down"
       : "degraded";
 
+  // O-04: Anon /api/health returns only `{ ok: boolean }` plus the HTTP
+  // status code (200 when healthy/degraded, 503 when down). Status
+  // strings, timestamps, and per-dependency detail are reserved for the
+  // gated /api/health/internal endpoint so unauthenticated callers cannot
+  // fingerprint our infrastructure.
   return apiSuccess(
-    {
-      status: overallStatus,
-      timestamp: new Date().toISOString(),
-      checks,
-    },
+    { ok: overallStatus !== "down" },
     overallStatus === "down" ? 503 : 200,
     { "Cache-Control": "public, max-age=30" },
   );

@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { buildUploadKey, isR2Configured } from "../r2";
 
 describe("isR2Configured", () => {
@@ -97,5 +97,47 @@ describe("buildUploadKey", () => {
   it("starts with 'clinics/' prefix", () => {
     const key = buildUploadKey("any-clinic", "any-category", "any-file.txt");
     expect(key.startsWith("clinics/")).toBe(true);
+  });
+});
+
+// Audit finding #8 — the HMAC secret used for upload-key filename hashing
+// must not fall back to a hardcoded "default-salt" in production. If the
+// secret is missing at runtime, buildUploadKey() must throw rather than
+// silently derive guessable PHI file paths.
+describe("buildUploadKey secret enforcement (audit finding #8)", () => {
+  const originalEnv = { ...process.env };
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    process.env = { ...originalEnv };
+  });
+
+  it("throws in production when R2_SIGNED_URL_SECRET is missing", () => {
+    delete process.env.R2_SIGNED_URL_SECRET;
+    delete process.env.R2_SECRET_ACCESS_KEY;
+    vi.stubEnv("NODE_ENV", "production");
+
+    expect(() =>
+      buildUploadKey("clinic-1", "documents", "file.pdf"),
+    ).toThrow(/R2_SIGNED_URL_SECRET is required in production/);
+  });
+
+  it("does not silently derive a key from a hardcoded salt in production", () => {
+    delete process.env.R2_SIGNED_URL_SECRET;
+    delete process.env.R2_SECRET_ACCESS_KEY;
+    vi.stubEnv("NODE_ENV", "production");
+
+    // Regression guard: if a future refactor reintroduces a `|| "default-salt"`
+    // fallback, this assertion will start returning a string and fail.
+    expect(() => buildUploadKey("clinic-1", "documents", "file.pdf")).toThrow();
+  });
+
+  it("uses R2_SIGNED_URL_SECRET when set (production)", () => {
+    process.env.R2_SIGNED_URL_SECRET = "a-real-production-secret-abcdef0123456789";
+    delete process.env.R2_SECRET_ACCESS_KEY;
+    vi.stubEnv("NODE_ENV", "production");
+
+    const key = buildUploadKey("clinic-1", "documents", "file.pdf");
+    expect(key).toMatch(/^clinics\/clinic-1\/documents\/\d+-[a-f0-9]{8}-[a-f0-9]{16}\.pdf$/);
   });
 });

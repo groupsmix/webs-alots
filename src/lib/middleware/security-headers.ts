@@ -4,9 +4,6 @@ import { NextResponse } from "next/server";
 const HSTS_VALUE = "max-age=63072000; includeSubDomains; preload";
 
 /**
- * Build the Content-Security-Policy header value with a per-request nonce.
- */
-/**
  * CSP reporting endpoint. In production, violations are sent to Sentry's
  * CSP reporting ingestion endpoint. The project ID and key should be
  * configured via the SENTRY_CSP_REPORT_URI environment variable.
@@ -16,43 +13,186 @@ const HSTS_VALUE = "max-age=63072000; includeSubDomains; preload";
 const CSP_REPORT_URI =
   process.env.SENTRY_CSP_REPORT_URI || "/api/csp-report";
 
-export function buildCsp(nonce: string): string {
-  const isDev = process.env.NODE_ENV === "development";
+/**
+ * R-08: Derive the project-specific Supabase hostname from
+ * NEXT_PUBLIC_SUPABASE_URL instead of allowing *.supabase.co.
+ */
+function getSupabaseHost(): string {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  if (url) {
+    try {
+      return new URL(url).hostname;
+    } catch {
+      // fall through to default
+    }
+  }
+  return "placeholder.supabase.co";
+}
+
+/**
+ * Derive the Plausible analytics host so the CSP allows beacon requests.
+ * Falls back to the Plausible Cloud default when not configured.
+ */
+function getPlausibleHost(): string | null {
+  const domain = process.env.NEXT_PUBLIC_PLAUSIBLE_DOMAIN;
+  if (!domain) return null;
+  const host = process.env.NEXT_PUBLIC_PLAUSIBLE_HOST ?? "https://plausible.io";
+  try {
+    return new URL(host).host;
+  } catch {
+    return "plausible.io";
+  }
+}
+
+export interface BuildCspOptions {
+  /**
+   * When true, indicates the policy is intended for the Report-Only header.
+   * The directives are identical either way; this flag is used by callers
+   * to decide which HTTP header to set.
+   * @default false
+   */
+  reportOnly?: boolean;
+}
+
+/**
+ * Build the strict Content-Security-Policy header value with a per-request
+ * nonce.
+ *
+ * R-08: Wildcards (*.supabase.co, *.googleapis.com) replaced with the
+ * project-specific Supabase hostname (derived from NEXT_PUBLIC_SUPABASE_URL)
+ * and the exact Google endpoints the app uses.
+ *
+ * Task 2.2: This policy is now **enforced** (no longer report-only).
+ * The legacy broad CSP has been removed.
+ *
+ * Hardened production `script-src`: in production we drop `'unsafe-inline'`,
+ * `https:`, and `http:` and rely on `'self'` + nonce + `'strict-dynamic'`.
+ * Older browsers without `'strict-dynamic'` support fall back to `'self'`
+ * (no inline/eval), so production is fail-closed against XSS via injected
+ * inline or third-party scripts. `'unsafe-eval'` remains dev-only.
+ */
+export function buildCsp(nonce: string, _options?: BuildCspOptions): string {
+  const isDev = process.env.NODE_ENV !== "production";
+  const sbHost = getSupabaseHost();
+  const plausibleHost = getPlausibleHost();
+
+  const connectSources = [
+    "'self'",
+    sbHost,
+    `wss://${sbHost}`,
+    "https://fonts.googleapis.com",
+    "https://maps.googleapis.com",
+    "https://www.googleapis.com/calendar",
+    "https://cloudflareinsights.com",
+    "https://static.cloudflareinsights.com",
+    "https://challenges.cloudflare.com",
+    ...(plausibleHost ? [`https://${plausibleHost}`] : []),
+  ].join(" ");
+
+  const scriptSrc = isDev
+    ? ["'self'", `'nonce-${nonce}'`, "'strict-dynamic'", "'unsafe-eval'"]
+    : ["'self'", `'nonce-${nonce}'`, "'strict-dynamic'"];
+
   return [
     "default-src 'self'",
-    // F-25: Use 'strict-dynamic' instead of 'self' to prevent same-origin script injection.
-    // 'unsafe-inline' is a no-op when nonce is present but required for legacy browser fallback.
-    `script-src 'nonce-${nonce}' 'strict-dynamic' 'unsafe-inline' https: http:${isDev ? " 'unsafe-eval'" : ""}`,
-    `style-src 'self' 'nonce-${nonce}'`,
-    // blob: is required for QR code download in qr-code-generator.tsx (Blob URL for SVG download).
-    "img-src 'self' data: blob: *.supabase.co uploads.oltigo.com",
-    // data: removed from font-src — Google Fonts via next/font are self-hosted and don't
-    // need data: URIs. Removing data: prevents font-based CSS data exfiltration attacks.
+    `script-src ${scriptSrc.join(" ")}`,
+    // C-01: Add 'unsafe-inline' as a fallback for style-src. CSP3 nonces do NOT
+    // apply to inline style="" attributes (only <style> blocks), so the 46+
+    // React components using style={{}} would have their styles blocked in
+    // production. 'unsafe-inline' is ignored by browsers that support nonces
+    // (CSP3), but provides the necessary fallback for style attributes.
+    // Long-term fix: migrate all style={{}} to Tailwind/CSS modules.
+    `style-src 'self' 'unsafe-inline' 'nonce-${nonce}'`,
+    `img-src 'self' data: blob: ${sbHost} uploads.oltigo.com`,
     "font-src 'self'",
-    // F-37: Cloudflare Insights beacon is auto-injected by Workers runtime.
-    // SRI cannot be applied to auto-injected scripts; CSP strict-dynamic + nonce
-    // provides equivalent protection by only allowing nonced script execution.
-    "connect-src 'self' *.supabase.co wss://*.supabase.co *.googleapis.com https://cloudflareinsights.com https://static.cloudflareinsights.com",
-    "frame-src 'self'",
+    `connect-src ${connectSources}`,
+    "frame-src 'self' https://challenges.cloudflare.com",
     "form-action 'self'",
     "base-uri 'self'",
     "frame-ancestors 'none'",
+    "object-src 'none'",
     ...(isDev ? [] : ["upgrade-insecure-requests"]),
     ...(isDev ? [] : [`report-uri ${CSP_REPORT_URI}`]),
-    ...(isDev
-      ? []
-      : [`report-to csp-endpoint`]),
+    ...(isDev ? [] : ["report-to csp-endpoint"]),
   ].join("; ");
 }
 
 /**
+ * When true, the strict CSP is emitted as `Content-Security-Policy-Report-Only`
+ * instead of the enforcing header. Used for staged rollouts of policy changes:
+ * deploy with `CSP_REPORT_ONLY=true`, watch the CSP report endpoint for 24-72h
+ * for unexpected violations, then unset to enforce.
+ *
+ * Only honored in production — in dev/test the policy is always enforced so
+ * regressions surface immediately.
+ */
+function isCspReportOnly(): boolean {
+  return (
+    process.env.NODE_ENV === "production" &&
+    process.env.CSP_REPORT_ONLY === "true"
+  );
+}
+
+/**
+ * @deprecated The legacy broad CSP has been removed (Task 2.2).
+ * Use `buildCsp` directly — it is now the enforced policy.
+ *
+ * This stub remains temporarily for backward compatibility with any
+ * call-sites that haven't been updated yet. It delegates to buildCsp.
+ */
+export function buildLegacyCsp(nonce: string): string {
+  return buildCsp(nonce, { reportOnly: false });
+}
+
+/**
+ * CSP values used by the response-header helpers.
+ *
+ * Task 2.2: The strict policy is now the enforced policy.
+ * `reportOnly` is kept as an empty string — the Report-Only header is
+ * no longer emitted.
+ */
+export interface CspHeaderValues {
+  /** Value for the enforcing `Content-Security-Policy` header. */
+  enforce: string;
+  /**
+   * @deprecated No longer used. The Report-Only header has been removed.
+   * Kept for interface compatibility; always empty string.
+   */
+  reportOnly: string;
+}
+
+/**
+ * Build the CSP header values. The strict policy is enforced directly
+ * unless `CSP_REPORT_ONLY=true` is set in production, in which case the
+ * same policy is emitted on the Report-Only header for staged rollout.
+ */
+export function buildCspHeaderValues(nonce: string): CspHeaderValues {
+  const policy = buildCsp(nonce, { reportOnly: false });
+  if (isCspReportOnly()) {
+    return { enforce: "", reportOnly: policy };
+  }
+  return { enforce: policy, reportOnly: "" };
+}
+
+/**
  * Apply defense-in-depth security headers to early-return error responses.
+ *
+ * Task 2.2: Enforces the strict CSP. The Report-Only header is removed.
  */
 export function withSecurityHeaders(
   response: NextResponse,
-  cspHeaderValue: string,
+  csp: CspHeaderValues,
 ): NextResponse {
-  response.headers.set("Content-Security-Policy", cspHeaderValue);
+  if (csp.enforce) {
+    response.headers.set("Content-Security-Policy", csp.enforce);
+    response.headers.delete("Content-Security-Policy-Report-Only");
+  } else if (csp.reportOnly) {
+    response.headers.set("Content-Security-Policy-Report-Only", csp.reportOnly);
+    response.headers.delete("Content-Security-Policy");
+  } else {
+    response.headers.delete("Content-Security-Policy");
+    response.headers.delete("Content-Security-Policy-Report-Only");
+  }
   response.headers.set("Strict-Transport-Security", HSTS_VALUE);
   response.headers.set("X-Content-Type-Options", "nosniff");
   response.headers.set("X-Frame-Options", "DENY");
@@ -72,15 +212,25 @@ export function secureRedirect(url: string | URL, init?: number | ResponseInit):
 
 /**
  * Apply all standard security headers to a response.
+ *
+ * Task 2.2: The strict CSP is now the enforced policy. The legacy broad CSP
+ * and Report-Only header have been removed.
  */
 export function applyAllSecurityHeaders(
   response: NextResponse,
-  cspHeaderValue: string,
+  csp: CspHeaderValues,
   _nonce: string, // Unused but kept for API compatibility
 ): void {
-  response.headers.set("Content-Security-Policy", cspHeaderValue);
-  // Audit 7 Fix: Do not echo x-nonce in response headers to reduce exposure
-  // response.headers.set("x-nonce", nonce);
+  if (csp.enforce) {
+    response.headers.set("Content-Security-Policy", csp.enforce);
+    response.headers.delete("Content-Security-Policy-Report-Only");
+  } else if (csp.reportOnly) {
+    response.headers.set("Content-Security-Policy-Report-Only", csp.reportOnly);
+    response.headers.delete("Content-Security-Policy");
+  } else {
+    response.headers.delete("Content-Security-Policy");
+    response.headers.delete("Content-Security-Policy-Report-Only");
+  }
   response.headers.set("Strict-Transport-Security", HSTS_VALUE);
   response.headers.set("X-Content-Type-Options", "nosniff");
   response.headers.set("X-Frame-Options", "DENY");

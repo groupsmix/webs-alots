@@ -14,14 +14,15 @@ import { verifyCronSecret } from "@/lib/cron-auth";
 import { logger } from "@/lib/logger";
 import { withSentryCron } from "@/lib/sentry-cron";
 import { processRenewal } from "@/lib/subscription-billing";
-import { createClient } from "@/lib/supabase-server";
+// B-02: Cron jobs have no user session — use service-role client.
+import { createAdminClient } from "@/lib/supabase-server";
 
 async function handler(request: NextRequest) {
   // DRY: Use shared cron secret verification helper
   const authError = verifyCronSecret(request);
   if (authError) return authError;
 
-  const supabase = await createClient();
+  const supabase = createAdminClient();
 
   // Fetch all active subscriptions that may need renewal
   const today = new Date().toISOString().split("T")[0];

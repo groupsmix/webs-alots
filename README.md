@@ -157,6 +157,17 @@ For local development, subdomains work automatically via `*.localhost` (e.g., `d
 - Client Components use `useTenant()` from `src/components/tenant-provider.tsx`
 - Unknown subdomains redirect to the root domain
 
+### Custom Domains via Cloudflare DNS
+
+Automated subdomain provisioning through the Cloudflare API is gated behind an explicit feature flag so the `/api/dns/*` routes never run with a half-wired Cloudflare integration.
+
+**Enable the feature:**
+
+1. Set `NEXT_PUBLIC_ENABLE_CUSTOM_DOMAINS=true`
+2. Provide all three Cloudflare env vars: `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ZONE_ID`, `CLOUDFLARE_ZONE_NAME`
+
+When the flag is `true` the app refuses to boot if any of those vars are missing. When it is `false` (the default) the env vars are optional and the `/api/dns/*` endpoints respond with `503 CUSTOM_DOMAINS_DISABLED`.
+
 ## Per-Client Deployment
 
 To deploy for a new client, only edit `src/config/clinic.config.ts` with their details (name, contact, features, working hours).
@@ -191,7 +202,8 @@ Images and documents (clinic logos, doctor photos, patient files) are stored in 
 ### API Endpoints
 
 - **`POST /api/upload`** — Server-side upload (multipart form data: `file`, `category`, `clinicId`)
-- **`GET /api/upload?filename=...&contentType=...&category=...&clinicId=...`** — Get a pre-signed URL for direct browser upload
+- **`GET /api/upload?filename=...&contentType=...&category=...&clinicId=...`** — Get a pre-signed POST policy for direct browser upload. Returns `{ uploadUrl, fields, key, maxSize, ... }`. Clients submit a `multipart/form-data` POST containing every entry of `fields` followed by a `file` field. R2 enforces `content-length-range` and the exact `Content-Type` from the policy at upload time, so oversized or wrong-type uploads are rejected before any bytes are stored.
+- **`PUT /api/upload`** — Confirm a direct upload. Body: `{ key, contentType }`. Performs HeadObject + magic-byte validation; deletes the object on mismatch. See [docs/r2-lifecycle.md](docs/r2-lifecycle.md) for the bucket lifecycle rule that cleans up unconfirmed uploads.
 
 ### Usage in Code
 

@@ -640,5 +640,21 @@
   "superAdmin.manage": "إدارة",
   "superAdmin.recentActivity": "النشاط الأخير",
   "superAdmin.newClinic": "عيادة جديدة",
-  "superAdmin.announce": "إعلان"
+  "superAdmin.announce": "إعلان",
+  "lab.report.title": "تقرير المختبر",
+  "lab.report.documentTitle": "تقرير المختبر — {orderNumber}",
+  "lab.report.patient": "المريض",
+  "lab.report.order": "الطلب",
+  "lab.report.date": "التاريخ",
+  "lab.report.colTest": "التحليل",
+  "lab.report.colValue": "القيمة",
+  "lab.report.colUnit": "الوحدة",
+  "lab.report.colReference": "النطاق المرجعي",
+  "lab.report.colFlag": "المؤشر",
+  "lab.report.flagNormal": "طبيعي",
+  "lab.report.flagHigh": "مرتفع",
+  "lab.report.flagLow": "منخفض",
+  "lab.report.flagCriticalHigh": "مرتفع حرج",
+  "lab.report.flagCriticalLow": "منخفض حرج",
+  "lab.report.footer": "تم الإنشاء في {generatedAt}"
 }
