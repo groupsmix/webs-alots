@@ -40,8 +40,8 @@ export function getOpenAIBaseUrl(): string {
   // Check allowlist
   const isAllowed =
     ALLOWED_OPENAI_BASE_URLS.includes(normalised) ||
-    // Allow Azure OpenAI endpoints (*.openai.azure.com)
-    /^https:\/\/[a-z0-9-]+\.openai\.azure\.com/i.test(normalised);
+    // Allow Azure OpenAI endpoints (*.openai.azure.com/*) with proper hostname boundary
+    /^https:\/\/[a-z0-9-]+\.openai\.azure\.com(\/|$|:)/i.test(normalised);
 
   if (!isAllowed) {
     if (process.env.NODE_ENV === "production") {
