@@ -200,6 +200,102 @@ describe("bookingCancelSchema", () => {
   });
 });
 
+// ── A169-01: Extended refund schema tests ─────────────────────────────────
+
+describe("paymentRefundSchema — A169-01 idempotency & concurrency fields", () => {
+  it("accepts idempotencyKey", () => {
+    const result = safeParse(paymentRefundSchema, {
+      paymentId: "pay-001",
+      amount: 100,
+      idempotencyKey: "idem-abc-123",
+    });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.idempotencyKey).toBe("idem-abc-123");
+    }
+  });
+
+  it("accepts expectedVersion", () => {
+    const result = safeParse(paymentRefundSchema, {
+      paymentId: "pay-001",
+      expectedVersion: 3,
+    });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.expectedVersion).toBe(3);
+    }
+  });
+
+  it("accepts reason", () => {
+    const result = safeParse(paymentRefundSchema, {
+      paymentId: "pay-001",
+      reason: "Patient requested cancellation",
+    });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.reason).toBe("Patient requested cancellation");
+    }
+  });
+
+  it("rejects empty idempotencyKey", () => {
+    const result = safeParse(paymentRefundSchema, {
+      paymentId: "pay-001",
+      idempotencyKey: "",
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects idempotencyKey exceeding 128 characters", () => {
+    const result = safeParse(paymentRefundSchema, {
+      paymentId: "pay-001",
+      idempotencyKey: "x".repeat(129),
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects non-integer expectedVersion", () => {
+    const result = safeParse(paymentRefundSchema, {
+      paymentId: "pay-001",
+      expectedVersion: 1.5,
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects zero expectedVersion", () => {
+    const result = safeParse(paymentRefundSchema, {
+      paymentId: "pay-001",
+      expectedVersion: 0,
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects reason exceeding 1000 characters", () => {
+    const result = safeParse(paymentRefundSchema, {
+      paymentId: "pay-001",
+      reason: "x".repeat(1001),
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("accepts all fields together", () => {
+    const result = safeParse(paymentRefundSchema, {
+      paymentId: "pay-001",
+      amount: 50,
+      idempotencyKey: "key-123",
+      expectedVersion: 2,
+      reason: "Partial refund requested",
+    });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.paymentId).toBe("pay-001");
+      expect(result.data.amount).toBe(50);
+      expect(result.data.idempotencyKey).toBe("key-123");
+      expect(result.data.expectedVersion).toBe(2);
+      expect(result.data.reason).toBe("Partial refund requested");
+    }
+  });
+});
+
 describe("safeParse error formatting", () => {
   it("produces human-readable error messages for multiple issues", () => {
     const result = safeParse(paymentInitiateSchema, {

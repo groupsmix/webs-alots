@@ -144,6 +144,11 @@ export const paymentInitiateSchema = z.object({
 export const paymentRefundSchema = z.object({
   paymentId: z.string().min(1),
   amount: z.number().positive().finite().optional(),
+  /** A169-01: Client-supplied idempotency key to prevent duplicate refunds */
+  idempotencyKey: z.string().min(1).max(128).optional(),
+  /** A169-01: Expected version for optimistic concurrency control */
+  expectedVersion: z.number().int().positive().finite().optional(),
+  reason: z.string().max(1000).optional(),
 });
 
 // ── Payments ────────────────────────────────────────────────────────────
