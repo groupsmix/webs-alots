@@ -90,11 +90,13 @@ export function withAuth(
       // R-01: If the header HMAC key is unset, `verifyProfileHeader` returns null so we
       //       fall through to the authoritative DB lookup below. We never trust these
       //       headers without a valid signature.
+      // C-02: The `iat` header is now required for verification — expired headers are rejected.
       const verified = await verifyProfileHeader({
         id: request.headers.get(PROFILE_HEADER_NAMES.id),
         role: request.headers.get(PROFILE_HEADER_NAMES.role),
         clinic_id: request.headers.get(PROFILE_HEADER_NAMES.clinic),
         signature: request.headers.get(PROFILE_HEADER_NAMES.sig),
+        iat: request.headers.get(PROFILE_HEADER_NAMES.iat),
       });
 
       let profile: { id: string; role: UserRole; clinic_id: string | null } | null = verified
@@ -254,11 +256,13 @@ export function withAuthAnyRole(
       }
 
       // Check for signed profile headers from middleware
+      // C-02: The `iat` header is now required for verification — expired headers are rejected.
       const verified = await verifyProfileHeader({
         id: request.headers.get(PROFILE_HEADER_NAMES.id),
         role: request.headers.get(PROFILE_HEADER_NAMES.role),
         clinic_id: request.headers.get(PROFILE_HEADER_NAMES.clinic),
         signature: request.headers.get(PROFILE_HEADER_NAMES.sig),
+        iat: request.headers.get(PROFILE_HEADER_NAMES.iat),
       });
 
       let profile: { id: string; role: UserRole; clinic_id: string | null } | null = verified

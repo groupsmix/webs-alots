@@ -366,13 +366,13 @@ export async function middleware(request: NextRequest) {
       //       entirely. Downstream `withAuth` then performs the authoritative DB lookup —
       //       there is no literal fallback key that could be used to forge a signature.
       if (profile) {
-        const sigHex = await signProfileHeader({
+        const signed = await signProfileHeader({
           id: profile.id,
           role: profile.role,
           clinic_id: profile.clinic_id,
         });
 
-        if (sigHex) {
+        if (signed) {
           // Set on the forwarded request headers so API routes (and `withAuth`)
           // can read them. These are stripped from the inbound request above so
           // a client cannot forge them.
@@ -383,7 +383,9 @@ export async function middleware(request: NextRequest) {
           } else {
             requestHeaders.delete(PROFILE_HEADER_NAMES.clinic);
           }
-          requestHeaders.set(PROFILE_HEADER_NAMES.sig, sigHex);
+          requestHeaders.set(PROFILE_HEADER_NAMES.sig, signed.sig);
+          // C-02: Include the issued-at timestamp so withAuth can reject expired headers
+          requestHeaders.set(PROFILE_HEADER_NAMES.iat, String(signed.iat));
 
           // Re-create the response so the new request headers are forwarded
           // downstream, but preserve any Set-Cookie headers (e.g. refreshed

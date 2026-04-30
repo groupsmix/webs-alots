@@ -103,6 +103,24 @@ describe("encryption - requiresEncryption", () => {
     expect(requiresEncryption("patient-files")).toBe(true);
   });
 
+  // Audit Finding C-08: hyphen / underscore / case variants must all
+  // resolve to the same encryption decision so a typo or stray
+  // capitalization does not bypass PHI encryption.
+  it("normalizes hyphens, underscores, and case for PHI categories", async () => {
+    const { requiresEncryption } = await import("../encryption");
+
+    expect(requiresEncryption("X-Rays")).toBe(true);
+    expect(requiresEncryption("X_RAYS")).toBe(true);
+    expect(requiresEncryption("xrays")).toBe(true); // legacy no-separator form
+    expect(requiresEncryption("Lab-Results")).toBe(true);
+    expect(requiresEncryption("PATIENT_FILES")).toBe(true);
+    // Categories shared with LIMITS_BY_CATEGORY in upload route that were
+    // historically missing from the PHI set:
+    expect(requiresEncryption("lab_report")).toBe(true);
+    expect(requiresEncryption("lab-report")).toBe(true);
+    expect(requiresEncryption("radiology")).toBe(true);
+  });
+
   it("does not encrypt non-PHI categories", async () => {
     const { requiresEncryption } = await import("../encryption");
 
