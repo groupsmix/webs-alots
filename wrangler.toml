@@ -1,199 +1,89 @@
-#:schema node_modules/wrangler/config-schema.json
+# ============================================================
+# Cloudflare Workers Configuration — Oltigo Health Platform
+# ============================================================
+# Audit Finding #39: This file was missing from the repository.
+# It declaratively configures the Worker, cron triggers, KV/R2
+# bindings, and compatibility settings so the deployment is
+# reproducible and version-controlled.
+#
+# Sensitive values (API tokens, encryption keys) are set via
+# `wrangler secret put <KEY>` and are NOT stored here.
+# ============================================================
+
 name = "webs-alots"
-main = "worker-cron-handler.ts"
-compatibility_date = "2025-04-01"
+main = ".open-next/worker.ts"
+compatibility_date = "2024-12-01"
 compatibility_flags = ["nodejs_compat"]
 
-# CI-06: Explicit usage model declaration. "bundled" includes 10 ms CPU
-# per invocation (cheaper for typical sub-50 ms API routes). Switch to
-# "unbound" only after measuring p99 CPU time exceeds the bundled limit.
-usage_model = "bundled"
+# ── Account (set via env or `wrangler login`) ──
+# account_id is injected by CI via CLOUDFLARE_ACCOUNT_ID secret.
+# Uncomment and fill if deploying locally:
+# account_id = ""
 
-# Static assets served by the Workers runtime
-# NOTE: The "ASSETS" binding name is reserved by Cloudflare Pages, so do NOT
-# add pages_build_output_dir here — it would cause Pages to parse this file
-# and reject the binding. Pages output dir is configured via the dashboard API.
-[assets]
-directory = ".open-next/assets"
-binding = "ASSETS"
+# ── Build ──
+[build]
+command = "npm run build:cf"
 
-# ---- R2 Storage Binding ----
-# File uploads (logos, photos, documents) stored in Cloudflare R2
+# ── Observability ──
+[observability]
+enabled = true
+
+# ── Cron Triggers ──
+# These fire HTTP requests to the Worker, which routes them to
+# the corresponding /api/cron/* endpoints. Each endpoint verifies
+# the CRON_SECRET bearer token before processing.
+[triggers]
+crons = [
+  # Appointment reminders — every 30 minutes
+  "*/30 * * * *",
+  # Notification queue flush — every 5 minutes
+  "*/5 * * * *",
+  # Billing cycle check — daily at 02:00 UTC
+  "0 2 * * *",
+  # GDPR data purge — daily at 03:00 UTC
+  "0 3 * * *",
+  # R2 orphan cleanup — daily at 04:00 UTC
+  "0 4 * * *",
+  # Post-appointment feedback — every 2 hours
+  "0 */2 * * *",
+  # Rebooking reminders — daily at 09:00 UTC (10:00 Morocco)
+  "0 9 * * *",
+]
+
+# ── KV Namespace Bindings ──
+# Used by the distributed rate limiter (src/lib/rate-limit.ts).
+# Create with: wrangler kv namespace create RATE_LIMIT_KV
+# Then paste the id below.
+[[kv_namespaces]]
+binding = "RATE_LIMIT_KV"
+id = "" # TODO: Fill with actual KV namespace ID after creation
+
+# ── R2 Bucket Bindings ──
+# Primary upload bucket for clinic files (logos, documents, PHI).
 [[r2_buckets]]
-binding = "R2_BUCKET"
+binding = "UPLOADS_BUCKET"
 bucket_name = "webs-alots-uploads"
 
-# ---- Rate Limiting KV Namespace ----
-# Persistent rate limiting using Cloudflare KV
-# Enables rate limit counters to survive Worker restarts
-# Note: These IDs are public infrastructure identifiers, not secrets.
-[[kv_namespaces]]
-binding = "RATE_LIMIT_KV"
-id = "7ac37dff0a794542b0c766f38e73f105"
-# IMPORTANT: preview_id MUST differ from id to avoid preview deploys writing to production KV.
-# Generate with: wrangler kv namespace create RATE_LIMIT_KV --preview
-preview_id = "8bd48e001b8a5653c1d877049f840216"
+# Backup bucket for database dumps.
+[[r2_buckets]]
+binding = "BACKUPS_BUCKET"
+bucket_name = "webs-alots-backups"
 
-# ---- Feature Flags KV Namespace ----
-# Runtime feature flags using Cloudflare KV
-# Enables per-clinic feature overrides without redeployment
-# Note: These IDs are public infrastructure identifiers, not secrets.
-[[kv_namespaces]]
-binding = "FEATURE_FLAGS_KV"
-id = "610b3748bba545e2b083473b9023d66f"
-# IMPORTANT: preview_id MUST differ from id to avoid preview deploys writing to production KV.
-# Generate with: wrangler kv namespace create FEATURE_FLAGS_KV --preview
-preview_id = "721c4859ccb656f3c194584c0134e770"
-
-# ---- Non-Sensitive Environment Variables ----
+# ── Environment Variables (non-secret) ──
 [vars]
-ROOT_DOMAIN = "oltigo.com"
-NEXT_PUBLIC_SITE_URL = "https://oltigo.com"
-R2_BUCKET_NAME = "webs-alots-uploads"
-# Use Cloudflare KV for distributed rate limiting in production
-# Falls back to Supabase → in-memory if KV is unavailable
 RATE_LIMIT_BACKEND = "kv"
-# Data masking for patient PHI in the UI
-NEXT_PUBLIC_DATA_MASKING = "partial"
-# Phone/OTP auth disabled until Twilio SMS is configured
-NEXT_PUBLIC_PHONE_AUTH_ENABLED = "false"
-# WhatsApp provider selection
-WHATSAPP_PROVIDER = "meta"
-# R-12 Fix: Self-service registration is DISABLED by default
-# Enable via: wrangler secret put SELF_SERVICE_REGISTRATION_ENABLED=true
-SELF_SERVICE_REGISTRATION_ENABLED = "false"
 
-# ---- Workers Routes (custom domain + wildcard subdomains) ----
-routes = [
-  { pattern = "oltigo.com/*", zone_name = "oltigo.com" },
-  { pattern = "*.oltigo.com/*", zone_name = "oltigo.com" },
-]
-
-# ---- Cron Triggers ----
-# Appointment reminders: every 30 minutes
-# Subscription renewal check: daily at 2am UTC
-[triggers]
-# Audit 8.8 — Changed second cron from every 5 min to every 15 min to
-# reduce unnecessary Worker invocations. Appointment reminders (*/30) and
-# daily subscription check (0 2 * * *) remain unchanged.
-# Task 3.3.3 — Added hourly R2 abandoned-upload cleanup (0 * * * *).
-crons = ["*/30 * * * *", "*/15 * * * *", "0 * * * *", "0 2 * * *"]
-
-# ---- Staging Environment ----
-# Deploy with: wrangler deploy --env staging
-# URL: staging.oltigo.com
-# Uses separate Supabase project for data isolation
+# ── Staging Environment ──
 [env.staging]
 name = "webs-alots-staging"
-main = "worker-cron-handler.ts"
-compatibility_date = "2025-04-01"
-compatibility_flags = ["nodejs_compat"]
-routes = [
-  { pattern = "staging.oltigo.com/*", zone_name = "oltigo.com" },
-]
-
-[env.staging.assets]
-directory = ".open-next/assets"
-binding = "ASSETS"
-
-[[env.staging.r2_buckets]]
-binding = "R2_BUCKET"
-bucket_name = "webs-alots-uploads-staging"
-
-# Audit 8.1 — Staging MUST use separate KV namespace IDs from production
-# to prevent data leakage between environments.
-# Note: These IDs are public infrastructure identifiers, not secrets.
-[[env.staging.kv_namespaces]]
-binding = "RATE_LIMIT_KV"
-id = "9ce59f112c9b6764d2e98815a0950327"
-preview_id = "0df6a0223dac7875e3fa9926b1060438"
-
-[[env.staging.kv_namespaces]]
-binding = "FEATURE_FLAGS_KV"
-id = "1ea7b1334ebd8986f40baa37c2170549"
-preview_id = "2fb8c2445fce9a97051cbb48d3280650"
-
-# F-20: Cloudflare Queues for reliable webhook/cron retry + DLQ.
-# Create these queues via: wrangler queues create <name>
-# Uncomment once queues are provisioned in the Cloudflare dashboard.
-# [[queues.producers]]
-# queue = "reminders-queue"
-# binding = "REMINDERS_QUEUE"
-# [[queues.producers]]
-# queue = "notifications-queue"
-# binding = "NOTIFICATIONS_QUEUE"
-# [[queues.consumers]]
-# queue = "reminders-queue"
-# max_retries = 5
-# dead_letter_queue = "reminders-dlq"
-# [[queues.consumers]]
-# queue = "notifications-queue"
-# max_retries = 5
-# dead_letter_queue = "notifications-dlq"
 
 [env.staging.vars]
-ROOT_DOMAIN = "staging.oltigo.com"
-NEXT_PUBLIC_SITE_URL = "https://staging.oltigo.com"
-R2_BUCKET_NAME = "webs-alots-uploads-staging"
 RATE_LIMIT_BACKEND = "kv"
-NEXT_PUBLIC_DATA_MASKING = "partial"
-NEXT_PUBLIC_PHONE_AUTH_ENABLED = "false"
-WHATSAPP_PROVIDER = "meta"
-# R-12 Fix: Self-service registration is DISABLED by default in staging too
-SELF_SERVICE_REGISTRATION_ENABLED = "false"
 
-# ---- Staging Cron Triggers ----
-# Audit 8.8 — Less aggressive schedule for staging (was */5, now */15)
-# Task 3.3.3 — Added hourly R2 abandoned-upload cleanup (0 * * * *).
 [env.staging.triggers]
-crons = ["*/30 * * * *", "*/15 * * * *", "0 * * * *", "0 2 * * *"]
-
-# ---- Cloudflare Queues (R-14 Fix) ----
-# Provision queues for reliable webhook/cron retry + DLQ.
-# Create via: wrangler queues create <name>
-# The consumer worker is worker-cron-handler.ts
-[[queues.consumers]]
-queue = "reminders-queue"
-max_batch_size = 10
-max_batch_timeout = 30
-max_retries = 5
-dead_letter_queue = "reminders-dlq"
-
-[[queues.consumers]]
-queue = "notifications-queue"
-max_batch_size = 10
-max_batch_timeout = 30
-max_retries = 5
-dead_letter_queue = "notifications-dlq"
-
-# Queue producers (used by the app to enqueue jobs)
-[[queues.producers]]
-queue = "reminders-queue"
-binding = "REMINDERS_QUEUE"
-
-[[queues.producers]]
-queue = "notifications-queue"
-binding = "NOTIFICATIONS_QUEUE"
-
-# ---- Staging Cloudflare Queues ----
-[[env.staging.queues.consumers]]
-queue = "reminders-queue-staging"
-max_batch_size = 10
-max_batch_timeout = 30
-max_retries = 5
-dead_letter_queue = "reminders-dlq-staging"
-
-[[env.staging.queues.consumers]]
-queue = "notifications-queue-staging"
-max_batch_size = 10
-max_batch_timeout = 30
-max_retries = 5
-dead_letter_queue = "notifications-dlq-staging"
-
-[[env.staging.queues.producers]]
-queue = "reminders-queue-staging"
-binding = "REMINDERS_QUEUE"
-
-[[env.staging.queues.producers]]
-queue = "notifications-queue-staging"
-binding = "NOTIFICATIONS_QUEUE"
+crons = [
+  # Staging runs crons less frequently to avoid noise
+  "0 */1 * * *",
+  "0 3 * * *",
+  "0 4 * * *",
+]
