@@ -84,6 +84,12 @@ const ENV_RULES: EnvRule[] = [
   { name: "CLOUDFLARE_ACCOUNT_ID", required: false, description: "Cloudflare account ID for Workers AI", group: "ai" },
   { name: "CLOUDFLARE_AI_API_TOKEN", required: false, description: "Cloudflare AI API token", group: "ai" },
 
+  // ── PHI Encryption (C-08) ──────────────────────────────────────────
+  // C-08: PHI_ENCRYPTION_KEY is required in production. Without it, any code
+  // path that calls encryptAndUpload silently fails, and any code path that
+  // calls uploadToR2 directly stores plaintext PHI on R2.
+  { name: "PHI_ENCRYPTION_KEY", required: process.env.NODE_ENV === "production", description: "AES-256-GCM key for PHI file encryption (64 hex chars, required in production; `openssl rand -hex 32`)", group: "security" },
+
   // ── Observability ────────────────────────────────────────────────────
   // O-06: Sentry DSN is required in production so errors are not silently lost.
   { name: "NEXT_PUBLIC_SENTRY_DSN", required: process.env.NODE_ENV === "production", description: "Sentry DSN for error monitoring (required in production)", group: "observability" },
@@ -224,18 +230,17 @@ export function enforceEnvValidation(): void {
     throw new Error(message);
   }
 
+  // C-08: Validate PHI_ENCRYPTION_KEY shape (64 hex chars = AES-256-GCM).
+  // The ENV_RULES check above only ensures the key is set; this validates
+  // that the value is actually usable for encryption. An invalid key would
+  // silently disable encryption at first use.
+  enforcePhiEncryptionConfigured();
+
   // Audit Finding #7 — enforce safe PHI masking defaults in production.
   // Production must default to a masked view of PHI ("partial" or "full").
   // Explicitly disabling masking ("none") is only permitted when the operator
   // has set ALLOW_UNMASKED_PHI=true. See SECURITY.md → "PHI Masking Defaults".
   enforcePhiMaskingPolicy();
-
-  // Audit Finding C-08 — refuse to boot in production without a valid PHI
-  // master key. The general ENV_RULES check above already requires the key
-  // to be set, but this guard additionally validates the key shape so an
-  // invalid value (wrong length, non-hex) cannot silently disable the
-  // encryption code path at first use.
-  enforcePhiEncryptionConfigured();
 
   // S-05: Assert PROFILE_HEADER_HMAC_KEY !== CRON_SECRET to prevent a
   // leaked cron token from also forging session headers.
