@@ -15,7 +15,7 @@ jobs:
     steps:
       # C-14: Pin all GH Actions to full SHA to prevent tag-mutation supply-chain attacks
       - name: Checkout
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
       - name: Setup Node.js
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
@@ -118,7 +118,7 @@ jobs:
       attestations: write
     steps:
       - name: Checkout
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           # Gitleaks scans the base..head range on PRs, so it needs full
           # history. With the default shallow clone (fetch-depth: 1) the
@@ -218,7 +218,7 @@ jobs:
     steps:
       # C-14: Pin all GH Actions to full SHA
       - name: Checkout
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
       - name: Setup Node.js
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
@@ -260,39 +260,63 @@ jobs:
         # Build runs after `supabase start` so the local Supabase URL/anon
         # key are inlined into the client bundle. Falls back to placeholder
         # values only if the local stack failed to publish them.
+        #
+        # CI-03 fixture fix: NEXT_PUBLIC_PHONE_AUTH_ENABLED must be set
+        # at build time (NEXT_PUBLIC_* vars are inlined by Next.js),
+        # otherwise the login/register pages render without the OTP step
+        # and the E2E suite fails.
         run: npm run build
         env:
           NEXT_PUBLIC_SUPABASE_URL: ${{ env.SUPABASE_LOCAL_URL || 'https://placeholder.supabase.co' }}
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ env.SUPABASE_LOCAL_ANON_KEY || 'placeholder' }}
+          NEXT_PUBLIC_PHONE_AUTH_ENABLED: "true"
 
-      - name: Run E2E tests (advisory)
-        # R-11 made E2E blocking, but the test suite assumes CI scaffolding
-        # that is not yet in place: a seeded clinic record, a working
-        # subdomain (e.g. demo.localhost) routed to that clinic, and the
-        # NEXT_PUBLIC_PHONE_AUTH_ENABLED feature flag turned on. Without
-        # those, pages that depend on tenant context render partial/empty
-        # content and tests like /api/branding=200 fail with 400 because no
-        # clinic is resolvable from plain localhost. Until that fixture
-        # work lands (tracked separately), keep the suite advisory so a
-        # broken-but-pre-existing baseline does not block unrelated PRs.
-        # The Playwright report is still uploaded as an artifact.
-        continue-on-error: true
+      - name: Run E2E tests (blocking)
+        # CI-03: Previously ran with `continue-on-error: true` (advisory)
+        # because the suite assumed CI scaffolding that was missing —
+        # a seeded clinic, a subdomain routed to that clinic, and the
+        # NEXT_PUBLIC_PHONE_AUTH_ENABLED flag. Those fixtures are now
+        # provided:
+        #   1. supabase start applies migration 00053, which seeds the
+        #      demo clinic with subdomain='demo'.
+        #   2. E2E_BASE_URL targets demo.localhost, so middleware can
+        #      resolve tenant context (Chromium resolves *.localhost to
+        #      127.0.0.1 per RFC 6761).
+        #   3. NEXT_PUBLIC_PHONE_AUTH_ENABLED is set at build time above.
+        # The suite is now REQUIRED and failures block the PR.
         run: npx playwright test --project=chromium
         env:
           CI: true
-          E2E_BASE_URL: http://localhost:3000
+          E2E_BASE_URL: http://demo.localhost:3000
           NEXT_PUBLIC_SUPABASE_URL: ${{ env.SUPABASE_LOCAL_URL || secrets.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co' }}
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ env.SUPABASE_LOCAL_ANON_KEY || secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder' }}
+          NEXT_PUBLIC_PHONE_AUTH_ENABLED: "true"
           SUPABASE_SERVICE_ROLE_KEY: ${{ env.SUPABASE_LOCAL_SERVICE_ROLE_KEY || '' }}
           BOOKING_TOKEN_SECRET: ci-e2e-booking-token-secret-placeholder
           ROOT_DOMAIN: localhost
-          NEXT_PUBLIC_SITE_URL: http://localhost:3000
+          NEXT_PUBLIC_SITE_URL: http://demo.localhost:3000
           CRON_SECRET: ci-e2e-cron-secret-placeholder
           # R-02: PROFILE_HEADER_HMAC_KEY is required in production mode (and
           # `next start` runs in production). Without it, env validation in
           # src/lib/env.ts hard-fails on startup and Playwright never gets a
           # running web server, so every test fails with a connect error.
           PROFILE_HEADER_HMAC_KEY: ci-e2e-profile-header-hmac-key-placeholder
+          # Audit #8: R2_SIGNED_URL_SECRET is required in production mode;
+          # env validation hard-fails on startup otherwise. R2 itself is
+          # disabled in CI (no R2_* creds), so this value is never used to
+          # sign a real URL — it only satisfies the startup health check.
+          R2_SIGNED_URL_SECRET: ci-e2e-r2-signed-url-secret-placeholder
+          # O-06: NEXT_PUBLIC_SENTRY_DSN is required in production mode.
+          # The placeholder DSN has valid Sentry format so `Sentry.init`
+          # parses it without throwing; Sentry's transport will silently
+          # fail to reach the (unresolvable) host, which is fine for CI.
+          NEXT_PUBLIC_SENTRY_DSN: https://ci-e2e-sentry-dsn-placeholder@o0.ingest.sentry.io/0
+          # F-10: enforceEmailProviderExclusivity throws at production boot
+          # when no email provider is configured. The Resend API isn't
+          # reachable from the runner and we never actually send mail in
+          # E2E, so a syntactically valid placeholder satisfies the
+          # startup health check without provisioning a real account.
+          RESEND_API_KEY: ci-e2e-resend-api-key-placeholder
           # C-08: PHI_ENCRYPTION_KEY is now required in production mode.
           # Must be exactly 64 hex chars (AES-256-GCM key shape).
           PHI_ENCRYPTION_KEY: "0000000000000000000000000000000000000000000000000000000000000000"

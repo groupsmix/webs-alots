@@ -70,6 +70,29 @@ const eslintConfig = defineConfig([
     },
   },
   {
+    // A87-F10: Prevent .skip from slipping into main on test files.
+    // describe.skip / it.skip / test.skip silently disable coverage and let
+    // regressions through (the skipped RLS suite is the canonical example).
+    // Use describe.skipIf() with a documented env guard when genuinely needed.
+    files: ["src/**/*.test.{ts,tsx}", "e2e/**/*.spec.ts"],
+    rules: {
+      "no-restricted-syntax": ["error",
+        {
+          selector: "CallExpression[callee.property.name='skip'][callee.object.name='describe']",
+          message: "A87-F10: describe.skip is forbidden in CI. Use describe.skipIf(condition) with a documented env guard, or remove the skip.",
+        },
+        {
+          selector: "CallExpression[callee.property.name='skip'][callee.object.name='it']",
+          message: "A87-F10: it.skip is forbidden in CI. Use it.skipIf(condition) with a documented env guard, or remove the skip.",
+        },
+        {
+          selector: "CallExpression[callee.property.name='skip'][callee.object.name='test']",
+          message: "A87-F10: test.skip is forbidden in CI. Use test.skipIf(condition) with a documented env guard, or remove the skip.",
+        },
+      ],
+    },
+  },
+  {
     // Enforce no-literal-string strictly on the fully translated auth/2fa folders
     files: [
       "src/app/(auth)/setup-2fa/**/*.{ts,tsx}",

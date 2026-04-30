@@ -4,29 +4,37 @@
 #
 # WHY THIS EXISTS
 # ───────────────
-# The Cloudflare Pages GitHub integration triggers a full build on every
-# PR commit using Pages' own build infrastructure.  This routinely takes
-# hours due to:
-#   • Pages free-tier build queue (1 concurrent build)
-#   • Cold npm cache on every build
+# A Cloudflare Pages GitHub integration is also connected to this repo (see
+# README.md). It triggers a full OpenNext + Next.js build on every PR commit
+# using Pages' own build infrastructure. That routinely takes hours because:
+#
+#   • Pages free-tier build queue is serial (1 concurrent build per project)
+#   • Every build starts with a cold npm cache
 #   • Heavy OpenNext + Next.js 16 compilation on limited-resource runners
 #
 # This workflow runs the same `npm run build:cf` (OpenNext → Cloudflare
-# Workers) on GitHub Actions, which completes in ~10-15 minutes thanks
-# to npm caching and faster runners.
+# Workers) on GitHub Actions, which completes in ~10–15 minutes thanks to
+# npm caching, faster runners, and parallelism across PRs. It gives PRs a
+# fast green signal that the Cloudflare Workers build actually compiles,
+# so the "Cloudflare Pages" check can be demoted / disconnected.
 #
-# SETUP (one-time, required)
-# ──────────────────────────
+# REQUIRED MANUAL FOLLOW-UP (one-time, after this PR is merged)
+# ─────────────────────────────────────────────────────────────
 #   1. Cloudflare Dashboard → Pages → webs-alots project → Settings →
-#      Builds & deployments → **Pause deployments** (or disconnect the
-#      GitHub integration entirely).  This stops the slow auto-build.
+#      Builds & deployments:
+#        • Set "Preview deployments" → Branch control → None
+#          (or "Pause deployments" to stop all builds), OR
+#        • Disconnect the GitHub integration entirely.
+#      Production deploys happen via `deploy.yml` / wrangler, not Pages,
+#      so this does not affect the live site.
 #
-#   2. If "Cloudflare Pages" was a required status check in GitHub
-#      branch protection (Settings → Branches → main → Edit), remove
-#      it and add **"Cloudflare Workers Build"** instead.
+#   2. If "Cloudflare Pages" was a required status check in GitHub branch
+#      protection (Settings → Branches → main → Edit), remove it and add
+#      "Cloudflare Workers Build" (the job name below) instead.
 #
-#   3. Secrets CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID are
-#      already configured for deploy.yml — no new secrets needed.
+#   3. No new secrets are required — the build uses placeholder Supabase
+#      env values (same as ci.yml) because the build is compile-only and
+#      never runs against a real backend.
 # =============================================================================
 
 name: PR Preview
@@ -35,12 +43,13 @@ on:
   pull_request:
     branches: [main, staging]
 
-# Least-privilege permissions
+# Least-privilege permissions — build only needs to read the repo.
 permissions:
   contents: read
 
 # Cancel stale builds — no point finishing an old build when a newer
-# commit has been pushed to the same PR.
+# commit has been pushed to the same PR. This is exactly the "stale
+# queue" behavior we're trying to get away from on Cloudflare Pages.
 concurrency:
   group: pr-preview-${{ github.event.pull_request.number }}
   cancel-in-progress: true
@@ -49,8 +58,18 @@ jobs:
   build-cf:
     runs-on: ubuntu-latest
     name: Cloudflare Workers Build
+    # The heavy step is `npm run build:cf`. Give it a hard ceiling so a
+    # hung build fails fast instead of burning GHA minutes for hours —
+    # which is precisely the Pages failure mode this workflow replaces.
+    timeout-minutes: 25
+
+    # Skip Dependabot PRs — they cannot read repo secrets and don't
+    # exercise product code; the existing ci.yml already validates them.
+    if: github.actor != 'dependabot[bot]'
+
     steps:
-      # C-14: Pin all GH Actions to full SHA to prevent tag-mutation attacks
+      # C-14: Pin all GH Actions to full SHA to prevent tag-mutation
+      # supply-chain attacks (same policy as ci.yml / deploy.yml).
       - name: Checkout
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
@@ -60,25 +79,27 @@ jobs:
           node-version: 22
           cache: npm
 
-      # C-04: --ignore-scripts prevents malicious postinstall on CI
+      # C-04: --ignore-scripts prevents malicious postinstall on CI.
+      # The project's legitimate postinstall (patch-opennext.mjs) is
+      # invoked explicitly below, matching deploy.yml's pattern.
       - name: Install dependencies
         run: |
           npm config set ignore-scripts true
           npm ci
           node scripts/patch-opennext.mjs || true
 
-      # This is the same build that deploy.yml runs before wrangler
-      # deploy.  Validating it on PRs catches OpenNext/Cloudflare
-      # build failures before they hit the deploy pipeline.
+      # Same build that deploy.yml runs before `wrangler deploy`.
+      # Validating it on PRs catches OpenNext / Cloudflare build
+      # failures before they hit the deploy pipeline.
       - name: Build for Cloudflare Workers
         run: npm run build:cf
         env:
           NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
           NEXT_PUBLIC_SUPABASE_ANON_KEY: placeholder
 
-      # Verify the worker entry point was emitted — catches silent
-      # build misconfigurations where the build "succeeds" but the
-      # output is missing.
+      # Verify the Worker entry point was actually emitted — catches
+      # silent OpenNext misconfigurations where the build "succeeds"
+      # but the output is missing or moved.
       - name: Verify build output
         run: |
           if [ ! -f .open-next/worker.js ]; then

@@ -47,6 +47,18 @@ The following are **out of scope**:
 - Denial of service (DoS) attacks
 - Issues requiring physical access
 
+### Safe Harbor
+
+Oltigo Health supports safe harbor for security researchers who:
+
+1. Make a good-faith effort to avoid privacy violations, data destruction, and service disruption.
+2. Only interact with accounts they own or with explicit permission of the account holder.
+3. Do not exploit a security issue for purposes beyond what is necessary to demonstrate the vulnerability.
+4. Report the vulnerability through the channels described above before disclosing publicly.
+5. Allow a reasonable time (at least 90 days) for remediation before any public disclosure.
+
+**We will not pursue civil or criminal legal action, or send notice to law enforcement, against researchers who follow these guidelines.** If legal action is initiated by a third party against a researcher who has complied with this policy, we will take steps to make it known that the researcher's actions were conducted in compliance with this policy.
+
 ## Supported Versions
 
 | Version | Supported |

@@ -202,7 +202,8 @@ export async function POST(request: NextRequest) {
 
     return apiSuccess({ received: true });
   } catch (err) {
-    logger.warn("Operation failed", { context: "payments/webhook", error: err });
+    // F-A93-03: Webhook processing failure is an error, not a warning
+    logger.error("Stripe webhook processing failed", { context: "payments/webhook", error: err });
     return apiInternalError("Failed to process webhook");
   }
 }

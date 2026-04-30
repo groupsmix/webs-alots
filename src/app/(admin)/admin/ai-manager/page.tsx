@@ -17,6 +17,7 @@ import {
   Calendar,
   TrendingUp,
   AlertTriangle,
+  Info,
   Sparkles,
   Trash2,
 } from "lucide-react";
@@ -309,6 +310,15 @@ function AiManagerChat() {
             Effacer
           </Button>
         )}
+      </div>
+
+      {/* A214: AI medical-advice disclaimer */}
+      <div className="flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 mb-3 dark:border-amber-800 dark:bg-amber-950/30">
+        <Info className="h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
+        <p className="text-xs text-amber-800 dark:text-amber-300">
+          Outil d&apos;aide &agrave; la d&eacute;cision uniquement. Ne remplace
+          pas le jugement clinique du professionnel de sant&eacute;.
+        </p>
       </div>
 
       {/* Chat area */}

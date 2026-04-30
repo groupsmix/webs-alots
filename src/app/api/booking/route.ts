@@ -256,7 +256,8 @@ export const POST = withValidation(bookingRequestSchema, async (body, request: N
 
     const validation = await validateBookingRequest(body, tenantConfig.timezone, tenantConfig.workingHours);
     if (validation.error) {
-      return apiError(validation.error);
+      // F-A91-01: Always include error code for client localization
+      return apiError(validation.error, 400, "VALIDATION_ERROR");
     }
 
     // Reuse data already fetched during validation (avoids duplicate queries)
@@ -284,11 +285,11 @@ export const POST = withValidation(bookingRequestSchema, async (body, request: N
     ]);
 
     if (!doctorCheck.data) {
-      return apiError("Doctor not found in this clinic");
+      return apiError("Doctor not found in this clinic", 404, "NOT_FOUND");
     }
 
     if (!serviceCheck.data) {
-      return apiError("Service not found in this clinic");
+      return apiError("Service not found in this clinic", 404, "NOT_FOUND");
     }
 
     // Find or create a patient record using the SECURITY DEFINER RPC
@@ -312,7 +313,7 @@ export const POST = withValidation(bookingRequestSchema, async (body, request: N
     const duration = service?.duration ?? tenantConfig.booking.slotDuration;
     const { endTime, overflows } = computeEndTime(body.time, duration);
     if (overflows) {
-      return apiError("Appointment would extend past midnight. Please choose an earlier time.");
+      return apiError("Appointment would extend past midnight. Please choose an earlier time.", 400, "SLOT_OVERFLOW");
     }
 
     // Determine initial status based on clinic payment requirements
@@ -326,66 +327,56 @@ export const POST = withValidation(bookingRequestSchema, async (body, request: N
     const slotStart = `${body.date}T${body.time}:00`;
     const slotEnd = `${body.date}T${endTime}:00`;
 
-    const { data: appointment, error: apptError } = await supabase
-      .from("appointments")
-      .insert({
-        clinic_id: clinicId,
-        patient_id: patientId,
-        doctor_id: body.doctorId,
-        service_id: body.serviceId,
-        appointment_date: body.date,
-        start_time: body.time,
-        end_time: endTime,
-        slot_start: slotStart,
-        slot_end: slotEnd,
-        status: initialStatus,
-        is_first_visit: body.isFirstVisit,
-        insurance_flag: body.hasInsurance,
-        booking_source: BOOKING_SOURCE.ONLINE,
-        notes: body.patient.reason ?? null,
-        is_emergency: false,
-      })
-      .select("id")
-      .single();
+    // ── F-A96-01 / DI-HIGH-02: Atomic booking via advisory-lock RPC ──
+    // The previous insert-then-count-then-delete pattern was subject to a
+    // TOCTOU race under concurrent requests (CVE-2026-XXXXX). The
+    // booking_atomic_insert RPC wraps slot-count check + insert inside a
+    // single transaction with a pg_advisory_xact_lock, guaranteeing that
+    // maxPerSlot can never be exceeded.
+    const maxPerSlot = tenantConfig.booking.maxPerSlot;
+    const { data: appointmentId, error: apptError } = await supabase
+      .rpc("booking_atomic_insert", {
+        p_clinic_id: clinicId,
+        p_patient_id: patientId,
+        p_doctor_id: body.doctorId,
+        p_service_id: body.serviceId,
+        p_date: body.date,
+        p_start_time: body.time,
+        p_end_time: endTime,
+        p_slot_start: slotStart,
+        p_slot_end: slotEnd,
+        p_status: initialStatus,
+        p_is_first_visit: body.isFirstVisit,
+        p_has_insurance: body.hasInsurance,
+        p_booking_source: BOOKING_SOURCE.ONLINE,
+        p_notes: body.patient.reason ?? null,
+        p_is_emergency: false,
+        p_max_per_slot: maxPerSlot,
+      });
 
-    if (apptError || !appointment) {
-      // Handle unique constraint violation (double-booking race condition)
+    if (apptError || !appointmentId) {
+      // Handle slot-full or unique constraint violation
       if (apptError?.code === "23505") {
-        return apiError("This slot has already been booked. Please choose another time.", 409);
+        return apiError("This slot has already been booked. Please choose another time.", 409, "SLOT_FULL");
       }
-      // Production: error logged via audit trail; no console output
+      // Handle tenant-isolation violations from the RPC
+      if (apptError?.code === "42501") {
+        logger.error("Booking RPC tenant validation failed", {
+          context: "booking/route",
+          clinicId,
+          error: apptError,
+        });
+        return apiError("Invalid booking parameters", 400, "INVALID_TENANT");
+      }
+      logger.error("Booking atomic insert failed", {
+        context: "booking/route",
+        clinicId,
+        error: apptError,
+      });
       return apiInternalError("Failed to create booking");
     }
 
-    // ── DI-HIGH-02: Post-insert maxPerSlot enforcement ──────────────
-    // The pre-insert availability check (validateBookingRequest) is
-    // subject to a TOCTOU race when maxPerSlot > 1.  After inserting we
-    // count how many active bookings now exist for this slot.  If the
-    // count exceeds maxPerSlot the just-inserted row lost the race and
-    // must be rolled back.  This guarantees the cap is never exceeded.
-    const maxPerSlot = tenantConfig.booking.maxPerSlot;
-    const { count: slotCount } = await supabase
-      .from("appointments")
-      .select("id", { count: "exact", head: true })
-      .eq("clinic_id", clinicId)
-      .eq("doctor_id", body.doctorId)
-      .eq("appointment_date", body.date)
-      .eq("start_time", body.time)
-      .in("status", [
-        APPOINTMENT_STATUS.CONFIRMED,
-        APPOINTMENT_STATUS.PENDING,
-        APPOINTMENT_STATUS.RESCHEDULED,
-      ]);
-
-    if (slotCount !== null && slotCount > maxPerSlot) {
-      // Roll back the appointment that lost the race
-      await supabase
-        .from("appointments")
-        .delete()
-        .eq("id", appointment.id);
-
-      return apiError("This slot has just been fully booked. Please choose another time.", 409);
-    }
+    const appointment = { id: appointmentId };
 
     // Audit log for healthcare compliance
     await logAuditEvent({
@@ -452,7 +443,7 @@ export async function GET(request: NextRequest) {
     const date = searchParams.get("date");
 
     if (!doctorId || !date) {
-      return apiError("doctorId and date are required");
+      return apiError("doctorId and date are required", 400, "VALIDATION_ERROR");
     }
 
     const { config: tenantCfg } = await requireTenantWithConfig();

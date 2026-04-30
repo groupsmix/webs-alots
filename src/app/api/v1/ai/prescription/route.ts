@@ -12,6 +12,7 @@
  */
 
 import { type NextRequest } from "next/server";
+import { AI_CDS_DISCLAIMER } from "@/lib/ai/disclaimer";
 import { sanitizeUntrustedText } from "@/lib/ai/sanitize";
 import { apiSuccess, apiError, apiRateLimited, apiInternalError } from "@/lib/api-response";
 import { withAuthValidation } from "@/lib/api-validate";
@@ -45,7 +46,9 @@ interface AiMedication {
   instructions: string;
 }
 
-interface AiPrescriptionResponse {
+// A199 / EU AI Act Art. 13-14: Shared disclaimer imported from @/lib/ai/disclaimer
+
+interface ParsedPrescription {
   medications: AiMedication[];
   notes: string;
   warnings: string[];
@@ -160,7 +163,7 @@ function buildPatientContext(
 
 // ── Response parser ──
 
-function parseAiResponse(content: string): AiPrescriptionResponse | null {
+function parseAiResponse(content: string): ParsedPrescription | null {
   try {
     // Try to extract JSON from the response (handle markdown code blocks)
     let jsonStr = content.trim();
@@ -366,6 +369,10 @@ export const POST = withAuthValidation(
         prescription,
         patientId: data.patientId,
         diagnosis: data.diagnosis,
+        // A214 / A199 / EU AI Act Art. 13-14: AI medical-advice disclaimer —
+        // every AI-generated prescription includes this notice that the result
+        // is machine-generated and requires physician review.
+        disclaimer: AI_CDS_DISCLAIMER,
       });
     } catch (err) {
       if (err instanceof DOMException && err.name === "AbortError") {

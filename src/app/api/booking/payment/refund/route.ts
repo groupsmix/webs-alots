@@ -1,6 +1,7 @@
 import { apiError, apiInternalError, apiNotFound, apiSuccess } from "@/lib/api-response";
 import { withAuthValidation } from "@/lib/api-validate";
 import { logAuditEvent } from "@/lib/audit-log";
+import { logger } from "@/lib/logger";
 import { requireTenant } from "@/lib/tenant";
 import type { UserRole } from "@/lib/types/database";
 import { paymentRefundSchema } from "@/lib/validations";
@@ -59,10 +60,13 @@ export const POST = withAuthValidation(paymentRefundSchema, async (body, request
         status: isFullyRefunded ? "refunded" : "partially_refunded",
         refunded_amount: newRefundedTotal,
       })
-      .eq("id", body.paymentId);
+      .eq("id", body.paymentId)
+      .eq("clinic_id", clinicId) // A164: Tenant isolation - ensure payment belongs to this clinic
+      .select("id")
+      .single();
 
     if (updateError) {
-      void updateError;
+      logger.error("Refund update failed", { context: "refund", clinicId, error: updateError });
       return apiInternalError("Failed to refund payment");
     }
 

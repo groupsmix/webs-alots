@@ -44,47 +44,46 @@ export function hexToBytes(hex: string): Uint8Array<ArrayBuffer> {
 }
 
 /**
- * Maximum length, in characters, accepted by {@link timingSafeEqual} on
- * either side of the comparison.
+ * Maximum accepted input length for {@link timingSafeEqual}.
  *
- * A6-06: When `b` is attacker-controlled (e.g. a signature received in
- * a token / header), an unbounded input would force `padEnd(maxLen, "\0")`
- * to allocate a string of length `maxLen` per side. That turns a
- * comparison into a memory-amplification primitive. We cap the inputs
- * well above any legitimate use:
+ * All current callers compare fixed-length tokens, hex-encoded SHA-256 /
+ * HMAC-SHA256 outputs, or short bearer secrets — none exceed a few hundred
+ * bytes. Capping inputs at 1 KiB prevents an attacker who controls one side
+ * of the comparison (e.g. the `signature` header on a webhook) from
+ * triggering CPU exhaustion by submitting an arbitrarily large value.
  *
- *   - hex SHA-256 / HMAC-SHA256 digests:                64 chars
- *   - Stripe signatures (`v1=`):                        64 chars
- *   - WhatsApp `X-Hub-Signature-256` (`sha256=`):       71 chars
- *   - API keys (`k_<32-byte hex>`):                    ≤ 96 chars
- *   - CMI HASH parameter:                              ≤ 88 chars
- *
- * A 1 KiB cap is two orders of magnitude above any of those and well
- * below anything that would meaningfully consume memory.
+ * A2-02 / A6-06: Both inputs are capped; oversized values short-circuit to
+ * `false` so neither side can be used to amplify CPU work.
  */
-const TIMING_SAFE_EQUAL_MAX_LEN = 1024;
+export const TIMING_SAFE_EQUAL_MAX_LENGTH = 1024;
 
 /**
  * Constant-time string comparison to prevent timing attacks.
  *
- * Pads the shorter string to avoid leaking length information via early
- * return. Inputs longer than {@link TIMING_SAFE_EQUAL_MAX_LEN} are
- * rejected up-front so an attacker cannot force an unbounded allocation
- * by submitting a multi-megabyte signature (A6-06).
+ * Both inputs are capped at {@link TIMING_SAFE_EQUAL_MAX_LENGTH}; oversized
+ * values short-circuit to `false` so neither side can be used to amplify
+ * CPU work. Differing lengths also short-circuit because every caller in
+ * this codebase compares values whose length is a public constant (hex
+ * hash widths, fixed token sizes), so length mismatch leaks no secret.
+ * When the lengths match, the comparison runs in time proportional to the
+ * shared length without padding allocations.
+ *
+ * A2-02 / A6-06: No padding allocations — the implementation checks lengths
+ * first and directly compares equal-length strings.
  */
 export function timingSafeEqual(a: string, b: string): boolean {
   if (
-    a.length > TIMING_SAFE_EQUAL_MAX_LEN ||
-    b.length > TIMING_SAFE_EQUAL_MAX_LEN
+    a.length > TIMING_SAFE_EQUAL_MAX_LENGTH ||
+    b.length > TIMING_SAFE_EQUAL_MAX_LENGTH
   ) {
     return false;
   }
-  const maxLen = Math.max(a.length, b.length);
-  const paddedA = a.padEnd(maxLen, "\0");
-  const paddedB = b.padEnd(maxLen, "\0");
-  let mismatch = a.length !== b.length ? 1 : 0;
-  for (let i = 0; i < maxLen; i++) {
-    mismatch |= paddedA.charCodeAt(i) ^ paddedB.charCodeAt(i);
+  if (a.length !== b.length) {
+    return false;
+  }
+  let mismatch = 0;
+  for (let i = 0; i < a.length; i++) {
+    mismatch |= a.charCodeAt(i) ^ b.charCodeAt(i);
   }
   return mismatch === 0;
 }

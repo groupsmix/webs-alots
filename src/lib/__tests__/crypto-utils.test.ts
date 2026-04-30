@@ -5,6 +5,7 @@ import {
   hmacSha256Hex,
   sha256Hex,
   timingSafeEqual,
+  TIMING_SAFE_EQUAL_MAX_LENGTH,
 } from "../crypto-utils";
 
 describe("hexToBytes", () => {
@@ -74,11 +75,35 @@ describe("timingSafeEqual", () => {
     expect(timingSafeEqual("héllo", "hello")).toBe(false);
   });
 
-  // A6-06: defence against memory-amplification via attacker-controlled
-  // length on the `b` (or `a`) side. Inputs longer than 1 KiB must be
-  // rejected up-front so `padEnd` never allocates a multi-megabyte
-  // string under attacker control.
-  it("rejects oversized inputs up-front (A6-06)", () => {
+  // A2-02 / A6-06: Reject oversized inputs to prevent CPU-exhaustion DoS when an
+  // attacker controls one side of the comparison (e.g. webhook signature).
+  it("returns false when either input exceeds the max length", () => {
+    const huge = "a".repeat(TIMING_SAFE_EQUAL_MAX_LENGTH + 1);
+    const small = "a".repeat(TIMING_SAFE_EQUAL_MAX_LENGTH);
+    expect(timingSafeEqual(huge, small)).toBe(false);
+    expect(timingSafeEqual(small, huge)).toBe(false);
+    expect(timingSafeEqual(huge, huge)).toBe(false);
+  });
+
+  it("accepts inputs at exactly the max length", () => {
+    const equal = "z".repeat(TIMING_SAFE_EQUAL_MAX_LENGTH);
+    expect(timingSafeEqual(equal, equal)).toBe(true);
+  });
+
+  // A2-02 / A6-06 regression: the previous implementation padded the shorter input
+  // to max(len(a), len(b)) and iterated, allowing an attacker to force the
+  // function to allocate and iterate over an arbitrarily large value.
+  it("does not allocate proportional to a hostile oversized input", () => {
+    const trustedSecret = "a".repeat(64);
+    const hostile = "b".repeat(2_000_000);
+    const start = Date.now();
+    expect(timingSafeEqual(trustedSecret, hostile)).toBe(false);
+    expect(timingSafeEqual(hostile, trustedSecret)).toBe(false);
+    // 100 ms is generous; the rejection should be effectively instant.
+    expect(Date.now() - start).toBeLessThan(100);
+  });
+
+  it("rejects oversized inputs up-front (A2-02 / A6-06)", () => {
     const expected = "a".repeat(64);
     const oversize = "x".repeat(1025);
     expect(timingSafeEqual(expected, oversize)).toBe(false);
@@ -87,7 +112,7 @@ describe("timingSafeEqual", () => {
     expect(timingSafeEqual(oversize, oversize)).toBe(false);
   });
 
-  it("accepts inputs at the 1024-char boundary (A6-06)", () => {
+  it("accepts inputs at the 1024-char boundary (A2-02 / A6-06)", () => {
     const a = "a".repeat(1024);
     expect(timingSafeEqual(a, a)).toBe(true);
   });

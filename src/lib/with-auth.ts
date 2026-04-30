@@ -266,17 +266,23 @@ export function withAuth(
         );
       }
 
-      // F-13: Downsample per-request API read access log to 1% in production.
-      // Full audit trail is still available via audit_log entries for mutations.
+      // F-A93-04: Log 100% of read access for PHI-bearing endpoints.
+      // Under Moroccan Law 09-08 (HIPAA-equivalent), access logs for patient
+      // data must be fully retained. Non-PHI endpoints (health, docs, features)
+      // can be downsampled to reduce volume.
       if (request.method === "GET") {
-        const shouldLog = process.env.NODE_ENV !== "production" || Math.random() < 0.01;
+        const pathname = request.nextUrl.pathname;
+        const isPhiEndpoint = /^\/(api\/)?(patient|appointments|booking|prescriptions|consultations|medical|lab)/.test(pathname);
+        const shouldLog = process.env.NODE_ENV !== "production"
+          || isPhiEndpoint
+          || Math.random() < 0.01;
         if (shouldLog) {
-          logger.debug(`API Read Access: ${request.method} ${request.nextUrl.pathname}`, {
+          logger.info(`API Read Access: ${request.method} ${pathname}`, {
             context: "audit-read",
             userId: profile.id,
             role: profile.role,
             clinicId: profile.clinic_id,
-            path: request.nextUrl.pathname,
+            path: pathname,
             method: request.method,
           });
         }

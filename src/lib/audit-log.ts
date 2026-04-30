@@ -100,7 +100,8 @@ export async function logAuditEvent({
             extra: { action, type, clinicId, error },
           },
         );
-      } catch {
+      } catch (_sentryErr) {
+        // F-A91-06: Bind error for potential Sentry/debugging visibility
         // Sentry unavailable — structured log above is the fallback
       }
 

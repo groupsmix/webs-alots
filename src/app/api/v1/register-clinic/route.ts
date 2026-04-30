@@ -7,7 +7,6 @@
  *
  * R-12 Fix: Requires ONE of:
  *   - DNS TXT record verification on the clinic's website domain
- *   - Trade license PDF + manual review (pending)
  *   - Phone OTP to a pre-listed clinic registry (pending)
  */
 
@@ -199,12 +198,10 @@ const registerClinicSchema = z.object({
   // and the verification-token endpoint accepts the same shapes so the
   // value the user supplies to both endpoints is identical.
   website_domain: z.string().min(1, "Domain is required").max(255).optional(),
-  // Option 2: Trade license (base64 encoded PDF)
-  trade_license_base64: z.string().optional(),
-  // Option 3: Phone OTP from pre-listed registry
+  // Option 2: Phone OTP from pre-listed registry
   phone_otp: z.string().optional(),
   phone_otp_id: z.string().optional(),
-});
+}).strict();
 
 // ---------------------------------------------------------------------------
 // Handler
@@ -280,24 +277,7 @@ export async function POST(request: NextRequest) {
       );
     }
   }
-  // Option 2: Trade license (manual review workflow not yet implemented)
-  else if (data.trade_license_base64) {
-    // R-12: Trade-license verification requires a manual review workflow
-    // (queueing the submission, ops review, approve/reject). Until that
-    // workflow ships we fail-closed rather than auto-approving registrations.
-    logger.info("Registration with trade license rejected — manual review not yet available", {
-      context: "register-clinic",
-      clinicName: data.clinic_name,
-      doctorName: data.doctor_name,
-      email: data.email,
-    });
-    return apiError(
-      "Trade-license verification is not yet available. Please use DNS TXT verification by adding 'oltigo-verify=<token>' as a TXT record on your domain.",
-      400,
-      "TRADE_LICENSE_NOT_IMPLEMENTED",
-    );
-  }
-  // Option 3: Phone OTP to pre-listed registry (not yet implemented)
+  // Option 2: Phone OTP to pre-listed registry (not yet implemented)
   else if (data.phone_otp && data.phone_otp_id) {
     // R-12: Phone OTP verification not yet implemented
     return apiError(
@@ -311,7 +291,6 @@ export async function POST(request: NextRequest) {
     return apiError(
       "Identity verification is required. Please provide one of:\n" +
       "- DNS TXT record on your website domain (set website_domain — token is issued via /api/v1/register-clinic/verification-token)\n" +
-      "- Trade license PDF (trade_license_base64)\n" +
       "- Phone OTP from pre-listed registry (coming soon)",
       400,
       "VERIFICATION_REQUIRED",

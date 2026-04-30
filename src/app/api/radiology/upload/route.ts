@@ -14,6 +14,7 @@
 import { apiError, apiInternalError, apiSuccess } from "@/lib/api-response";
 import { STAFF_ROLES } from "@/lib/auth-roles";
 import { createRadiologyImage } from "@/lib/data/server";
+import { logger } from "@/lib/logger";
 import { uploadToR2, isR2Configured, buildUploadKey } from "@/lib/r2";
 import { withAuth } from "@/lib/with-auth";
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB (aligned with main upload route)
@@ -105,7 +106,19 @@ export const POST = withAuth(async (request, { profile }) => {
 
   const url = await uploadToR2(key, buffer, file.type);
   if (!url) {
-    return apiInternalError("Upload failed");
+    // A84-F3: User-friendly error with structured logging for R2 outages.
+    logger.error("Radiology upload failed — R2 storage unavailable or write error", {
+      context: "radiology/upload",
+      clinicId,
+      orderId,
+      contentType: file.type,
+      fileSize: file.size,
+    });
+    return apiError(
+      "Image upload failed. Please try again later or contact support if the problem persists.",
+      502,
+      "STORAGE_UNAVAILABLE",
+    );
   }
 
   const imageRecord = await createRadiologyImage({

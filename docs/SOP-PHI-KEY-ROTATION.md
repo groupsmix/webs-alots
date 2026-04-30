@@ -4,6 +4,18 @@
 This document outlines the procedure for rotating the `PHI_ENCRYPTION_KEY` used to encrypt Patient Health Information (PHI) stored in Cloudflare R2.
 Under Moroccan Law 09-08 and GDPR, encryption keys must be rotated periodically or immediately upon suspected compromise.
 
+## Rotation Cadence
+
+| Trigger | Timeline |
+|---------|----------|
+| Scheduled rotation | Every **90 days** (quarterly) |
+| Suspected compromise | **Immediately** — follow incident-response.md first |
+| Staff departure (with key access) | Within **24 hours** |
+| Compliance audit request | As directed by auditor |
+
+Calendar reminders should be set by the on-call engineer at the start of each quarter.
+The `rotate-phi-key.yml` GitHub Actions workflow can be triggered manually from the Actions tab.
+
 ## Prerequisites
 - Super-admin access to the GitHub repository (to trigger workflows).
 - Access to the Cloudflare dashboard (to update Worker secrets).

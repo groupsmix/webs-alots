@@ -248,6 +248,75 @@ export function enforceEnvValidation(): void {
 
   // F-10: Ensure exactly one email provider is configured (not both).
   enforceEmailProviderExclusivity();
+
+  // A2-08: Refuse to boot in production when a security-posture flag is
+  // enabled without an explicit acknowledgment.
+  enforceSecurityFlagAcknowledgments();
+}
+
+/**
+ * Security-posture feature flags that meaningfully change the application's
+ * authn/authz attack surface. Each entry pairs the flag itself with the
+ * acknowledgement variable an operator must also set in production to
+ * confirm they understand the change.
+ *
+ * The {@link enforceSecurityFlagAcknowledgments} guard hard-fails startup
+ * when any of these flags is `"true"` in production but the matching
+ * acknowledgment is not. This prevents accidental enablement (e.g. someone
+ * exports `SELF_SERVICE_REGISTRATION_ENABLED=true` in a shell snippet) from
+ * silently widening the attack surface — the operator has to also set the
+ * acknowledgement, which forces a deliberate decision.
+ */
+export const SECURITY_FLAG_ACKNOWLEDGMENTS: ReadonlyArray<{
+  flag: string;
+  ack: string;
+  /** Short summary of what enabling the flag changes. */
+  posture: string;
+}> = [
+  {
+    flag: "SELF_SERVICE_REGISTRATION_ENABLED",
+    ack: "SELF_SERVICE_REGISTRATION_ACK",
+    posture:
+      "exposes /api/v1/register-clinic to unauthenticated public traffic, " +
+      "creating clinics and admin users with only Turnstile + DNS verification",
+  },
+  {
+    flag: "NEXT_PUBLIC_PHONE_AUTH_ENABLED",
+    ack: "PHONE_AUTH_ACK",
+    posture:
+      "enables phone/OTP login (Twilio SMS); requires Twilio credentials in " +
+      "Supabase and changes the authentication surface and rate-limit profile",
+  },
+];
+
+/**
+ * A2-08: Enforce explicit acknowledgement for every enabled security flag.
+ *
+ * Exported for unit tests.
+ */
+export function enforceSecurityFlagAcknowledgments(): void {
+  if (process.env.NODE_ENV !== "production") return;
+
+  const violations = SECURITY_FLAG_ACKNOWLEDGMENTS.filter(
+    ({ flag, ack }) =>
+      process.env[flag] === "true" && process.env[ack] !== "true",
+  );
+
+  if (violations.length === 0) return;
+
+  const lines = violations.map(
+    ({ flag, ack, posture }) =>
+      `  - ${flag}=true is set but ${ack}=true is missing.\n` +
+      `    Posture change: ${posture}.\n` +
+      `    Set ${ack}=true in your deployment environment to confirm.`,
+  );
+  const message =
+    "[STARTUP HEALTH CHECK FAILED] Security-posture feature flags are enabled in\n" +
+    "production without an explicit acknowledgement:\n\n" +
+    lines.join("\n\n") +
+    "\n\nThis check exists so flipping these flags is always a deliberate decision.";
+  logger.error(message, { context: "env-validation", check: "security-flag-ack" });
+  throw new Error(message);
 }
 
 /**
@@ -358,18 +427,28 @@ export function enforceRateLimitBackend(): void {
     throw new Error(message);
   }
 
-  if (
-    process.env.NODE_ENV === "production" &&
-    backend === "memory" &&
-    process.env.GITHUB_ACTIONS !== "true"
-  ) {
+  if (process.env.NODE_ENV === "production" && backend === "memory") {
     // GitHub Actions runs `next start` (NODE_ENV=production) on a single
-    // instance for E2E tests, where in-memory rate limiting is acceptable.
-    // We gate on GITHUB_ACTIONS rather than the generic CI variable
-    // because CI=true is easy to set accidentally on a real deployment;
-    // GITHUB_ACTIONS is only set inside GitHub-hosted runners, so the
-    // production guard still applies to Cloudflare Workers / staging /
-    // prod even if a deploy script happens to export CI=true.
+    // instance for E2E tests, where in-memory rate limiting is acceptable —
+    // the ephemeral local Supabase instance's rate-limit RPC is not
+    // guaranteed to be available during boot, and forcing it trips the
+    // failClosed circuit breaker and 429s every auth request.
+    //
+    // We gate on GITHUB_ACTIONS rather than the generic CI variable because
+    // CI=true is easy to set accidentally on a real deployment; GITHUB_ACTIONS
+    // is only set inside GitHub-hosted runners, so the production guard still
+    // applies to Cloudflare Workers / staging / prod even if a deploy script
+    // happens to export CI=true.
+    if (process.env.GITHUB_ACTIONS === "true") {
+      logger.warn(
+        "RATE_LIMIT_BACKEND=memory accepted in production mode because GITHUB_ACTIONS=true. " +
+          "This path is permitted only for the E2E Playwright runner and must " +
+          "never be set in a real production deployment.",
+        { context: "env-validation", check: "rate-limit-backend" },
+      );
+      return;
+    }
+
     const message =
       "[STARTUP HEALTH CHECK FAILED] RATE_LIMIT_BACKEND=memory is not allowed in production.\n" +
       "In-memory rate limiting is per-isolate and provides no real protection in a " +

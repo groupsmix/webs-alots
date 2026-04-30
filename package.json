@@ -25,7 +25,7 @@
     "@aws-sdk/s3-request-presigner": "^3.1037.0",
     "@base-ui/react": "^1.4.1",
     "@sentry/nextjs": "^10.50.0",
-    "@supabase/ssr": "^0.9.0",
+    "@supabase/ssr": "^0.10.2",
     "@supabase/supabase-js": "^2.99.3",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
@@ -86,7 +86,7 @@
     "react-copy-to-clipboard": "^5.1.1"
   },
   "_overrides_rationale": {
-    "postcss": "CI-16: Pin postcss to >=8.5.10 to fix CVE-2024-XXXXX (prototype pollution). OpenNext and tailwindcss depend on older postcss; this override ensures the patched version is used across the tree.",
+    "postcss": "CI-16: Pin postcss to >=8.5.10 to fix CVE-2026-41305 (XSS via unescaped </style> in CSS stringify output, GHSA-qx2v-qp2m-jg93). OpenNext and tailwindcss depend on older postcss; this override ensures the patched version is used across the tree.",
     "@hono/node-server": "CI-16: Pin to >=1.19.13 to fix a body-parsing regression in Cloudflare Workers. OpenNext's @opennextjs/cloudflare transitively depends on hono; this override prevents the broken version from being resolved.",
     "react-copy-to-clipboard": "CI-16: Pin to latest to resolve a peer dependency conflict with React 19."
   }

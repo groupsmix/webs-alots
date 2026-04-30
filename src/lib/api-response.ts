@@ -109,12 +109,13 @@ export function apiInternalError(message = "Internal server error"): NextRespons
  *   const { data, error } = await supabase.from("patients").select();
  *   if (error) return handleSupabaseError(error, "Failed to fetch patients", "patients");
  */
+// F-A93-03: Use logger.error for actual database failures, not logger.warn
 export function handleSupabaseError(
   error: { message: string; code?: string; details?: string },
   clientMessage: string,
   context: string,
 ): NextResponse<ApiErrorBody> {
-  logger.warn(clientMessage, { context, error });
+  logger.error(clientMessage, { context, error });
   return apiInternalError(clientMessage);
 }
 
@@ -137,7 +138,8 @@ export function apiSupabaseError(
   error: { message: string; code?: string; details?: string },
   context: string,
 ): NextResponse<ApiErrorBody> {
-  logger.warn("Supabase error", { context, error });
+  // F-A93-03: Database errors are errors, not warnings
+  logger.error("Supabase error", { context, error });
 
   switch (error.code) {
     case "23505":

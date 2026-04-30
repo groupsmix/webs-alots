@@ -13,6 +13,7 @@
  */
 
 import { type NextRequest } from "next/server";
+import { AI_CDS_DISCLAIMER } from "@/lib/ai/disclaimer";
 import { sanitizeUntrustedText } from "@/lib/ai/sanitize";
 import { apiSuccess, apiError, apiRateLimited, apiInternalError } from "@/lib/api-response";
 import { withAuthValidation } from "@/lib/api-validate";
@@ -25,11 +26,14 @@ import type { AuthContext } from "@/lib/with-auth";
 
 // ── Types ──
 
+// A199 / EU AI Act Art. 13-14: Shared disclaimer imported from @/lib/ai/disclaimer
+
 interface PatientSummaryResponse {
   summary: string;
   generatedAt: string;
   patientId: string;
   cached: boolean;
+  disclaimer: string;
 }
 
 // ── Patient context fetcher ──
@@ -292,6 +296,7 @@ export const POST = withAuthValidation(
             generatedAt: cachedSummary.generated_at,
             patientId: data.patientId,
             cached: true,
+            disclaimer: AI_CDS_DISCLAIMER,
           });
         }
       }
@@ -434,6 +439,7 @@ export const POST = withAuthValidation(
         generatedAt,
         patientId: data.patientId,
         cached: false,
+        disclaimer: AI_CDS_DISCLAIMER,
       });
     } catch (err) {
       if (err instanceof DOMException && err.name === "AbortError") {

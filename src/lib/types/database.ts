@@ -8619,6 +8619,27 @@ export type Database = {
         }
         Returns: string
       }
+      booking_atomic_insert: {
+        Args: {
+          p_clinic_id: string
+          p_patient_id: string
+          p_doctor_id: string
+          p_service_id: string
+          p_date: string
+          p_start_time: string
+          p_end_time: string
+          p_slot_start: string
+          p_slot_end: string
+          p_status: string
+          p_is_first_visit: boolean
+          p_has_insurance: boolean
+          p_booking_source: string
+          p_notes?: string | null
+          p_is_emergency?: boolean
+          p_max_per_slot?: number
+        }
+        Returns: string
+      }
     }
     Enums: {
       [_ in never]: never
