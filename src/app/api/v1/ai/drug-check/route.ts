@@ -49,13 +49,12 @@ interface AiInteractionResult {
 async function checkWithAi(
   medications: string[],
   allergies: string[],
-  aiConfig?: { apiKey: string; baseUrl: string; model: string },
+  aiConfig: { apiKey: string; baseUrl: string; model: string },
 ): Promise<AiInteractionResult | null> {
-  // Use pre-validated config when provided (from getAIConfig()),
-  // otherwise fall back to env vars for backwards compat.
-  const apiKey = aiConfig?.apiKey ?? process.env.OPENAI_API_KEY;
-  const baseUrl = aiConfig?.baseUrl ?? process.env.OPENAI_BASE_URL ?? "https://api.openai.com/v1";
-  const model = aiConfig?.model ?? process.env.OPENAI_MODEL ?? "gpt-4o-mini";
+  // A102-1 fix: aiConfig is now required (no env var fallback) to prevent bypassing egress allowlist
+  const apiKey = aiConfig.apiKey;
+  const baseUrl = aiConfig.baseUrl;
+  const model = aiConfig.model;
 
   if (!apiKey) return null;
 

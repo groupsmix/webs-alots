@@ -169,7 +169,8 @@ export function buildSystemPrompt(ctx: ChatbotClinicContext): string {
     : "Aucun service configuré";
 
   const doctorsText = doctors.length > 0
-    ? doctors.map((d) => `- Dr. ${d.name}`).join("\n")
+    // A102-2 fix: Doctor names are clinic-admin-writable - sanitize to prevent prompt injection
+    ? doctors.map((d) => `- Dr. ${sanitizeUntrustedText(d.name)}`).join("\n")
     : "Aucun médecin configuré";
 
   // A101-1 / A102: FAQ content is clinic_admin-writable and must be treated
@@ -178,18 +179,19 @@ export function buildSystemPrompt(ctx: ChatbotClinicContext): string {
     ? faqs.map((f) => `Q: ${sanitizeUntrustedText(f.question)}\nR: ${sanitizeUntrustedText(f.answer)}`).join("\n\n")
     : "";
 
+  // A102-2 fix: All clinic contact fields are clinic-admin-writable - sanitize to prevent prompt injection
   const contactParts: string[] = [];
   if (clinic.phone) contactParts.push(`Téléphone: ${clinic.phone}`);
-  if (clinic.email) contactParts.push(`Email: ${clinic.email}`);
-  if (clinic.address) contactParts.push(`Adresse: ${clinic.address}`);
-  if (clinic.city) contactParts.push(`Ville: ${clinic.city}`);
-  if (clinic.domain) contactParts.push(`Site web: ${clinic.domain}`);
+  if (clinic.email) contactParts.push(`Email: ${sanitizeUntrustedText(clinic.email)}`);
+  if (clinic.address) contactParts.push(`Adresse: ${sanitizeUntrustedText(clinic.address)}`);
+  if (clinic.city) contactParts.push(`Ville: ${sanitizeUntrustedText(clinic.city)}`);
+  if (clinic.domain) contactParts.push(`Site web: ${sanitizeUntrustedText(clinic.domain)}`);
 
-  return `Tu es l'assistant virtuel de "${clinic.name}", un(e) ${typeLabels[clinic.type] ?? clinic.type}.
+  return `Tu es l'assistant virtuel de "${sanitizeUntrustedText(clinic.name)}", un(e) ${typeLabels[clinic.type] ?? clinic.type}.
 Tu aides les patients avec leurs questions sur les rendez-vous, services, horaires et informations du cabinet.
 
 === INFORMATIONS DU CABINET ===
-Nom: ${clinic.name}
+Nom: ${sanitizeUntrustedText(clinic.name)}
 Type: ${typeLabels[clinic.type] ?? clinic.type}
 ${contactParts.length > 0 ? contactParts.join("\n") : "Contact: non renseigné"}
 
