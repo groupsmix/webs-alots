@@ -21,10 +21,14 @@ type UntypedClient = SupabaseClient<any, any, any>;
  * than 30 days and permanently deletes their data while preserving
  * anonymized consent log records (GDPR-02).
  *
- * Deletion order respects foreign-key constraints:
- * 1. Delete dependent records (appointments, prescriptions, etc.)
- * 2. Anonymize consent_logs (set user_id = NULL, keep anonymized_user_id)
- * 3. Delete the user row itself
+ * Deletion order respects foreign-key constraints AND right-to-erasure:
+ * 1a. Collect R2 storage keys from `documents` (before any DB delete).
+ * 1b. Delete encrypted PHI files from R2. If this fails, abort the user
+ *     purge so the next cron run can retry — DB rows still link to the
+ *     orphaned R2 keys until R2 cleanup succeeds.
+ * 1c. Delete dependent records (appointments, prescriptions, etc.)
+ * 2.  Anonymize consent_logs (set user_id = NULL, keep anonymized_user_id)
+ * 3.  Delete the user row itself
  */
 async function handler(request: NextRequest) {
   const authError = verifyCronSecret(request);
@@ -99,7 +103,54 @@ async function handler(request: NextRequest) {
           }
         }
 
-        // 1b. Delete dependent records in order (FK-safe)
+        // 1b. GDPR-PHI: Delete encrypted patient files from R2 storage BEFORE
+        // any DB row is deleted. If R2 deletion fails, abort the user purge
+        // while documents/users rows are still intact, so the next cron run
+        // can re-collect the storage keys and retry. Doing R2 cleanup after
+        // the dependent-table delete (the previous order) meant a transient
+        // R2 error would orphan PHI files on R2 forever — the only link to
+        // those keys was the deleted documents rows.
+        let r2CleanupFailed = false;
+        let r2CleanupErrorKey: string | undefined;
+        let r2CleanupError: unknown;
+        for (const storageKey of storageKeysToDelete) {
+          try {
+            // Delete both the encrypted (.enc) and any plaintext version
+            await deleteFromR2(storageKey);
+            await deleteFromR2(`${storageKey}.enc`);
+          } catch (r2Err) {
+            // GDPR right-to-erasure: a failed R2 deletion is a compliance
+            // failure, not a minor warning. Use error-level logging so it
+            // shows up on monitoring dashboards.
+            logger.error("Failed to delete R2 object during GDPR purge", {
+              context: "cron/gdpr-purge",
+              userId: user.id,
+              key: storageKey,
+              error: r2Err,
+            });
+            r2CleanupFailed = true;
+            r2CleanupErrorKey = storageKey;
+            r2CleanupError = r2Err;
+            break;
+          }
+        }
+
+        if (r2CleanupFailed) {
+          results.push({
+            userId: user.id,
+            success: false,
+            error: `R2 PHI cleanup failed for key ${r2CleanupErrorKey ?? "unknown"}: ${
+              r2CleanupError instanceof Error
+                ? r2CleanupError.message
+                : "unknown error"
+            }`,
+          });
+          // Skip the rest of the purge so the user, documents, and other
+          // dependent rows remain available for the next cron run to retry.
+          continue;
+        }
+
+        // 1c. Delete dependent records in order (FK-safe)
         // These tables reference users.id as patient_id or user_id
         const dependentTables = [
           { table: "appointments", column: "patient_id" },
@@ -148,27 +199,6 @@ async function handler(request: NextRequest) {
             userId: user.id,
             error: consentError,
           });
-        }
-
-        // 2b. GDPR-PHI: Delete encrypted patient files from R2 storage.
-        // Files are keyed as `clinics/{clinic_id}/{category}/{filename}.enc`.
-        // Keys were collected in step 1a *before* the documents rows were
-        // deleted. Without this step, PHI would persist on R2 indefinitely
-        // after DB records are removed, violating Moroccan Law 09-08 and
-        // GDPR right-to-erasure obligations.
-        for (const storageKey of storageKeysToDelete) {
-          try {
-            // Delete both the encrypted (.enc) and any plaintext version
-            await deleteFromR2(storageKey);
-            await deleteFromR2(`${storageKey}.enc`);
-          } catch (r2Err) {
-            logger.warn("Failed to delete R2 object during GDPR purge", {
-              context: "cron/gdpr-purge",
-              userId: user.id,
-              key: storageKey,
-              error: r2Err,
-            });
-          }
         }
 
         // 3. Delete the user record itself
