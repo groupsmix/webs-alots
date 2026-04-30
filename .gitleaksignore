@@ -9,3 +9,8 @@
 # at runtime, but the historical commit still trips the scanner.
 a2c1bd63387d9939dcda9b3d197c9452cdb60ba0:src/lib/__tests__/env-phi-encryption.test.ts:generic-api-key:60
 a2c1bd63387d9939dcda9b3d197c9452cdb60ba0:src/lib/__tests__/env-phi-encryption.test.ts:generic-api-key:66
+
+# False positive: `landing.footerLaw0908` is an i18n translation key referencing
+# Moroccan Law 09-08 (PHI compliance), not an API key. The mixed-case + digits
+# pattern triggers the `generic-api-key` rule via the entropy heuristic.
+9d4e69468eb5042f59788a60b4f9ca4098eb5a06:src/components/landing/landing-footer.tsx:generic-api-key:34
