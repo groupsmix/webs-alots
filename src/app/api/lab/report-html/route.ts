@@ -45,7 +45,16 @@ function resolveLocale(request: Request): Locale {
   const cookieHeader = request.headers.get("cookie") ?? "";
   const cookieMatch = /(?:^|;\s*)preferred-locale=([^;]+)/.exec(cookieHeader);
   if (cookieMatch) {
-    return normalizeLocale(decodeURIComponent(cookieMatch[1]));
+    // A14-06: decodeURIComponent throws URIError on malformed escape
+    // sequences (e.g. a stray "%" or unpaired surrogate). A request that
+    // produces a 500 here would also bypass the locale-switcher entirely,
+    // so fall through to the default locale instead of letting the route
+    // crash.
+    try {
+      return normalizeLocale(decodeURIComponent(cookieMatch[1]));
+    } catch {
+      // fall through to header / default below
+    }
   }
   const tenantLocale = request.headers.get("x-tenant-locale");
   if (tenantLocale) {

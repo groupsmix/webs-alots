@@ -20,12 +20,13 @@ import {
   isDnsVerificationConfigured,
   normalizeDomain,
 } from "@/lib/dns-verification";
+import { escapeSlackMrkdwn } from "@/lib/escape-slack";
 import { generateSubdomain } from "@/lib/generate-subdomain";
 import { logger } from "@/lib/logger";
 import { phoneToWhatsApp } from "@/lib/morocco";
 import { createRateLimiter, extractClientIp } from "@/lib/rate-limit";
 import { createAdminClient } from "@/lib/supabase-server";
-import { safeParse } from "@/lib/validations";
+import { normalizeText, safeParse } from "@/lib/validations";
 import { sendTextMessage } from "@/lib/whatsapp";
 
 // ---------------------------------------------------------------------------
@@ -60,6 +61,9 @@ async function sendSlackRegistrationAlert(data: {
     return;
   }
 
+  // A15 fix: every interpolated value is user-supplied and reaches a
+  // `mrkdwn` block, so escape `<`, `>`, and `&` to neutralise mention /
+  // link injection (`<!channel>`, `<@U123>`, `<https://evil|x>`).
   const message = {
     text: "New clinic registration",
     blocks: [
@@ -70,14 +74,17 @@ async function sendSlackRegistrationAlert(data: {
       {
         type: "section",
         fields: [
-          { type: "mrkdwn", text: `*Clinic:*\n${data.clinicName}` },
-          { type: "mrkdwn", text: `*Doctor:*\n${data.doctorName}` },
-          { type: "mrkdwn", text: `*Email:*\n${data.email}` },
-          { type: "mrkdwn", text: `*Phone:*\n${data.phone}` },
-          { type: "mrkdwn", text: `*Specialty:*\n${data.specialty}` },
-          { type: "mrkdwn", text: `*City:*\n${data.city || "N/A"}` },
-          { type: "mrkdwn", text: `*Verification:*\n${data.verificationMethod}` },
-          { type: "mrkdwn", text: `*IP:*\n${data.clientIp}` },
+          { type: "mrkdwn", text: `*Clinic:*\n${escapeSlackMrkdwn(data.clinicName)}` },
+          { type: "mrkdwn", text: `*Doctor:*\n${escapeSlackMrkdwn(data.doctorName)}` },
+          { type: "mrkdwn", text: `*Email:*\n${escapeSlackMrkdwn(data.email)}` },
+          { type: "mrkdwn", text: `*Phone:*\n${escapeSlackMrkdwn(data.phone)}` },
+          { type: "mrkdwn", text: `*Specialty:*\n${escapeSlackMrkdwn(data.specialty)}` },
+          { type: "mrkdwn", text: `*City:*\n${escapeSlackMrkdwn(data.city) || "N/A"}` },
+          {
+            type: "mrkdwn",
+            text: `*Verification:*\n${escapeSlackMrkdwn(data.verificationMethod)}`,
+          },
+          { type: "mrkdwn", text: `*IP:*\n${escapeSlackMrkdwn(data.clientIp)}` },
         ],
       },
     ],
@@ -154,13 +161,30 @@ async function verifyDnsTxtRecord(hostname: string, token: string): Promise<bool
 // Validation schema
 // ---------------------------------------------------------------------------
 
+// A14-04 / A14-05: name fields are normalized to NFC and stripped of NUL
+// bytes before length checks, so attackers cannot register two visually
+// identical clinics using composed-vs-decomposed Unicode and cannot smuggle
+// `\u0000` past downstream consumers.
 const registerClinicSchema = z.object({
-  clinic_name: z.string().min(2, "Le nom de la clinique est requis").max(200),
-  doctor_name: z.string().min(2, "Le nom du docteur est requis").max(200),
+  clinic_name: z
+    .string()
+    .transform(normalizeText)
+    .pipe(z.string().min(2, "Le nom de la clinique est requis").max(200)),
+  doctor_name: z
+    .string()
+    .transform(normalizeText)
+    .pipe(z.string().min(2, "Le nom du docteur est requis").max(200)),
   email: z.string().email("Email invalide").max(254),
   phone: z.string().min(8, "Numéro de téléphone invalide").max(30),
-  specialty: z.string().min(1, "La spécialité est requise").max(200),
-  city: z.string().max(200).optional(),
+  specialty: z
+    .string()
+    .transform(normalizeText)
+    .pipe(z.string().min(1, "La spécialité est requise").max(200)),
+  city: z
+    .string()
+    .transform(normalizeText)
+    .pipe(z.string().max(200))
+    .optional(),
   // F-28: Cloudflare Turnstile token for bot protection
   turnstile_token: z.string().min(1, "Turnstile verification required").optional(),
   // R-12: Identity verification
