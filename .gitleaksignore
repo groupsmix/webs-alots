@@ -10,6 +10,16 @@
 a2c1bd63387d9939dcda9b3d197c9452cdb60ba0:src/lib/__tests__/env-phi-encryption.test.ts:generic-api-key:60
 a2c1bd63387d9939dcda9b3d197c9452cdb60ba0:src/lib/__tests__/env-phi-encryption.test.ts:generic-api-key:66
 
+# F-03 historical false positives. Commit 7491d72d added the well-known
+# public Supabase local demo JWTs (`iss: supabase-demo`) as fallbacks
+# in `rls-real-postgres.test.ts`. These are not real secrets -- they
+# are baked into every `supabase start` install and documented in the
+# Supabase CLI source. The literals were removed in the next commit
+# (6c31db91) in favour of strict env-var requirements, but the historical
+# commit still trips gitleaks's `jwt` rule.
+7491d72dad4521bcc700a81029c0d03ea8e0ed0d:src/lib/__tests__/integration/rls-real-postgres.test.ts:jwt:25
+7491d72dad4521bcc700a81029c0d03ea8e0ed0d:src/lib/__tests__/integration/rls-real-postgres.test.ts:jwt:26
+
 # False positive: `landing.footerLaw0908` is an i18n translation key referencing
 # Moroccan Law 09-08 (PHI compliance), not an API key. The mixed-case + digits
 # pattern triggers the `generic-api-key` rule via the entropy heuristic.

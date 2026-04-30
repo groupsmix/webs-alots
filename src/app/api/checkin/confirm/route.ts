@@ -11,19 +11,22 @@ import { checkinConfirmSchema } from "@/lib/validations";
  * Confirm patient arrival: update appointment status to "checked_in"
  * and calculate queue position / estimated wait.
  *
- * S-02: clinicId is derived from the subdomain. A body-supplied clinicId
- * is accepted for backward compatibility but must match.
+ * AUDIT F-04: clinicId is now ALWAYS derived from the subdomain via
+ * requireTenant(). The body-supplied clinicId fallback has been removed
+ * to prevent cross-tenant check-ins when requests arrive on the root domain.
  */
 export const POST = withValidation(checkinConfirmSchema, async (body) => {
     const { appointmentId, clinicId: bodyClinicId } = body;
 
-    // S-02: Prefer subdomain-derived tenant over client-supplied clinicId.
+    // AUDIT F-04: Always require subdomain-derived tenant. No fallback to body.
     const tenant = await getTenant();
-    const clinicId = tenant?.clinicId ?? bodyClinicId;
-    if (!clinicId) {
-      return apiError("Clinic context required", 400);
+    if (!tenant?.clinicId) {
+      return apiError("Clinic context required — use a clinic subdomain", 400);
     }
-    if (bodyClinicId && tenant?.clinicId && bodyClinicId !== tenant.clinicId) {
+    const clinicId = tenant.clinicId;
+
+    // If a body-supplied clinicId is present, it must match the subdomain.
+    if (bodyClinicId && bodyClinicId !== clinicId) {
       return apiError("clinicId does not match subdomain", 403);
     }
 
