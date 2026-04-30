@@ -18,12 +18,15 @@ export const POST = withValidation(checkinConfirmSchema, async (body) => {
     const { appointmentId, clinicId: bodyClinicId } = body;
 
     // S-02: Prefer subdomain-derived tenant over client-supplied clinicId.
+    // SECURITY FIX: Never fall back to body-supplied clinicId when there is
+    // no subdomain. On root-domain requests an attacker could check in to
+    // appointments in any clinic by passing arbitrary clinicId values.
     const tenant = await getTenant();
-    const clinicId = tenant?.clinicId ?? bodyClinicId;
-    if (!clinicId) {
-      return apiError("Clinic context required", 400);
+    if (!tenant?.clinicId) {
+      return apiError("Clinic context required. Use a clinic subdomain.", 400);
     }
-    if (bodyClinicId && tenant?.clinicId && bodyClinicId !== tenant.clinicId) {
+    const clinicId = tenant.clinicId;
+    if (bodyClinicId && bodyClinicId !== clinicId) {
       return apiError("clinicId does not match subdomain", 403);
     }
 

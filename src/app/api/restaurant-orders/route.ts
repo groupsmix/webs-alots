@@ -25,13 +25,17 @@ import { withAuth } from "@/lib/with-auth";
  */
 export const GET = withAuth(async (request, { supabase, profile }) => {
   try {
+    if (!profile.clinic_id) {
+      return apiError("No clinic associated with this account", 403);
+    }
+
     const status = request.nextUrl.searchParams.get("status");
     const tableId = request.nextUrl.searchParams.get("table_id");
 
     let query = supabase
       .from("restaurant_orders")
       .select("*")
-      .eq("clinic_id", profile.clinic_id!)
+      .eq("clinic_id", profile.clinic_id)
       .order("created_at", { ascending: false });
 
     if (status) {
@@ -62,6 +66,10 @@ export const GET = withAuth(async (request, { supabase, profile }) => {
  * Calculates subtotal, tax (20% TVA Morocco), and total from items.
  */
 export const POST = withAuthValidation(restaurantOrderCreateSchema, async (body, _request, { supabase, profile }) => {
+  if (!profile.clinic_id) {
+    return apiError("No clinic associated with this account", 403);
+  }
+
   // Calculate totals from items
   const subtotal = body.items.reduce(
     (sum, item) => sum + item.unit_price * item.quantity,
@@ -73,7 +81,7 @@ export const POST = withAuthValidation(restaurantOrderCreateSchema, async (body,
   const { data, error } = await supabase
     .from("restaurant_orders")
     .insert({
-      clinic_id: profile.clinic_id!,
+      clinic_id: profile.clinic_id,
       table_id: body.table_id ?? null,
       appointment_id: body.appointment_id ?? null,
       items: body.items as unknown as Json,
@@ -100,6 +108,9 @@ export const POST = withAuthValidation(restaurantOrderCreateSchema, async (body,
  * Update an order's status, items, or notes.
  */
 export const PATCH = withAuthValidation(restaurantOrderUpdateSchema, async (body, _request, { supabase, profile }) => {
+  if (!profile.clinic_id) {
+    return apiError("No clinic associated with this account", 403);
+  }
   const { id, ...updates } = body;
 
   const updatePayload: Record<string, unknown> = {
@@ -128,7 +139,7 @@ export const PATCH = withAuthValidation(restaurantOrderUpdateSchema, async (body
     .from("restaurant_orders")
     .update(updatePayload)
     .eq("id", id)
-    .eq("clinic_id", profile.clinic_id!)
+    .eq("clinic_id", profile.clinic_id)
     .select()
     .single();
 
@@ -146,6 +157,10 @@ export const PATCH = withAuthValidation(restaurantOrderUpdateSchema, async (body
  * Cancel an order (set status to 'cancelled').
  */
 export const DELETE = withAuth(async (request, { supabase, profile }) => {
+  if (!profile.clinic_id) {
+    return apiError("No clinic associated with this account", 403);
+  }
+
   const id = request.nextUrl.searchParams.get("id");
 
   if (!id) {
@@ -156,7 +171,7 @@ export const DELETE = withAuth(async (request, { supabase, profile }) => {
     .from("restaurant_orders")
     .update({ status: "cancelled", updated_at: new Date().toISOString() })
     .eq("id", id)
-    .eq("clinic_id", profile.clinic_id!);
+    .eq("clinic_id", profile.clinic_id);
 
   if (error) {
     logger.warn("Failed to cancel order", { context: "restaurant-orders", error });

@@ -36,7 +36,21 @@ export const POST = withValidation(doctorUnavailabilitySchema, async (body, _req
       return apiUnauthorized();
     }
 
-    const { doctorId, clinicId, startDate, endDate, reason } = body;
+    const { doctorId, startDate, endDate, reason } = body;
+
+    // SECURITY FIX: Derive clinicId from the authenticated user's profile
+    // instead of trusting body.clinicId, which could allow cross-tenant
+    // unavailability injection. The client-supplied clinicId is ignored.
+    const { data: callerProfile } = await supabase
+      .from("users")
+      .select("clinic_id")
+      .eq("auth_id", user.id)
+      .single();
+
+    const clinicId = callerProfile?.clinic_id;
+    if (!clinicId) {
+      return apiError("No clinic associated with this account", 403);
+    }
 
     // 1. Record the unavailability in doctor_unavailability table
     // doctor_unavailability & rebooking_requests not yet in generated types — cast through unknown

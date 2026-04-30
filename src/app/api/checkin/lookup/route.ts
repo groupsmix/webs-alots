@@ -20,14 +20,23 @@ export async function GET(request: NextRequest) {
 
   // S-02: Derive clinicId from the subdomain (set by middleware).
   const tenant = await getTenant();
-  const clinicId = tenant?.clinicId ?? urlClinicId;
 
-  if (!phone || !clinicId) {
-    return apiError("Missing phone or clinicId", 400);
+  // SECURITY FIX: Never fall back to a URL-supplied clinicId when there is
+  // no subdomain. On root-domain requests an attacker could enumerate patients
+  // across all clinics by iterating clinicId values. The URL clinicId is only
+  // accepted for backward compatibility when it matches the subdomain value.
+  if (!tenant?.clinicId) {
+    return apiError("Clinic context required. Use a clinic subdomain.", 400);
+  }
+
+  const clinicId = tenant.clinicId;
+
+  if (!phone) {
+    return apiError("Missing phone parameter", 400);
   }
 
   // S-02: If a URL-supplied clinicId disagrees with the subdomain, reject.
-  if (urlClinicId && tenant?.clinicId && urlClinicId !== tenant.clinicId) {
+  if (urlClinicId && urlClinicId !== clinicId) {
     return apiError("clinicId does not match subdomain", 403);
   }
 

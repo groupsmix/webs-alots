@@ -24,6 +24,10 @@ import { withAuth } from "@/lib/with-auth";
  */
 export const GET = withAuth(async (request, { supabase, profile }) => {
   try {
+    if (!profile.clinic_id) {
+      return apiError("No clinic associated with this account", 403);
+    }
+
     const ownerId = request.nextUrl.searchParams.get("owner_id");
     const petId = request.nextUrl.searchParams.get("id");
 
@@ -33,7 +37,7 @@ export const GET = withAuth(async (request, { supabase, profile }) => {
         .from("pet_profiles")
         .select("*")
         .eq("id", petId)
-        .eq("clinic_id", profile.clinic_id!)
+        .eq("clinic_id", profile.clinic_id ?? "")
         .single();
 
       if (error || !data) {
@@ -47,7 +51,7 @@ export const GET = withAuth(async (request, { supabase, profile }) => {
     let query = supabase
       .from("pet_profiles")
       .select("*")
-      .eq("clinic_id", profile.clinic_id!)
+      .eq("clinic_id", profile.clinic_id ?? "")
       .eq("is_active", true)
       .order("created_at", { ascending: false });
 
@@ -78,7 +82,7 @@ export const POST = withAuthValidation(petProfileCreateSchema, async (body, _req
   const { data, error } = await supabase
     .from("pet_profiles")
     .insert({
-      clinic_id: profile.clinic_id!,
+      clinic_id: profile.clinic_id ?? "",
       owner_id: body.owner_id,
       name: body.name,
       species: body.species,
@@ -123,7 +127,7 @@ export const PATCH = withAuthValidation(petProfileUpdateSchema, async (body, _re
     .from("pet_profiles")
     .update(updatePayload)
     .eq("id", id)
-    .eq("clinic_id", profile.clinic_id!)
+    .eq("clinic_id", profile.clinic_id ?? "")
     .select()
     .single();
 
@@ -151,7 +155,7 @@ export const DELETE = withAuth(async (request, { supabase, profile }) => {
     .from("pet_profiles")
     .update({ is_active: false, updated_at: new Date().toISOString() })
     .eq("id", id)
-    .eq("clinic_id", profile.clinic_id!);
+    .eq("clinic_id", profile.clinic_id ?? "");
 
   if (error) {
     logger.warn("Failed to delete pet profile", { context: "pets", error });
