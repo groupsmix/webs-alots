@@ -14,6 +14,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
+import { sanitizeRetrievedText } from "@/lib/ai/sanitize";
 import { sanitizeUntrustedText } from "@/lib/ai/sanitize";
 import {
   apiSuccess,
@@ -193,16 +194,21 @@ async function findClinicByPhoneNumberId(
 // ── AI response builder ──────────────────────────────────────────────
 
 function buildSystemPrompt(ctx: ClinicContext): string {
-  return `Tu es un réceptionniste IA pour "${ctx.name}".
+  // A101-1: Sanitize all DB-retrieved strings to prevent stored prompt-injection
+  // via malicious clinic_admin writes to services.name, users.name, etc.
+  const safeName = sanitizeRetrievedText(ctx.name);
+  const safeServices = ctx.services.map((s) => sanitizeRetrievedText(s));
+  const safeDoctors = ctx.doctors.map((d) => sanitizeRetrievedText(d));
+  return `Tu es un réceptionniste IA pour "${safeName}".
 Tu réponds aux patients sur WhatsApp de manière professionnelle, chaleureuse et concise.
 
 INFORMATIONS DE LA CLINIQUE:
-- Nom: ${ctx.name}
+- Nom: ${safeName}
 - Téléphone: ${ctx.phone}
-${ctx.address ? `- Adresse: ${ctx.address}` : ""}
+${ctx.address ? `- Adresse: ${sanitizeRetrievedText(ctx.address)}` : ""}
 ${ctx.openingHours ? `- Horaires: ${ctx.openingHours}` : ""}
-${ctx.services.length > 0 ? `- Services: ${ctx.services.join(", ")}` : ""}
-${ctx.doctors.length > 0 ? `- Médecins: ${ctx.doctors.join(", ")}` : ""}
+${safeServices.length > 0 ? `- Services: ${safeServices.join(", ")}` : ""}
+${safeDoctors.length > 0 ? `- Médecins: ${safeDoctors.join(", ")}` : ""}
 
 RÈGLES:
 1. Réponds TOUJOURS en français.

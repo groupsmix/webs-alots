@@ -102,7 +102,7 @@ describe("Cron reminders — cron authentication", () => {
         get: () => null,
       },
     };
-    process.env.CRON_SECRET = "test-secret";
+    process.env.CRON_SECRET = "test-secret-that-is-at-least-32chars";
     const result = verifyCronSecret(mockReq as never);
     expect(result).not.toBeNull();
     expect(result!.status).toBe(401);

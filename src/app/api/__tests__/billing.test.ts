@@ -131,7 +131,7 @@ describe("Billing API — cron authentication", () => {
         get: (name: string) => name.toLowerCase() === "authorization" ? "Bearer wrong" : null,
       },
     };
-    process.env.CRON_SECRET = "correct-secret";
+    process.env.CRON_SECRET = "correct-secret-at-least-32-chars!";
     const result = verifyCronSecret(mockReq as never);
     expect(result).not.toBeNull();
     expect(result!.status).toBe(401);
@@ -141,10 +141,10 @@ describe("Billing API — cron authentication", () => {
     const { verifyCronSecret } = await import("@/lib/cron-auth");
     const mockReq = {
       headers: {
-        get: (name: string) => name.toLowerCase() === "authorization" ? "Bearer correct-secret" : null,
+        get: (name: string) => name.toLowerCase() === "authorization" ? "Bearer correct-secret-at-least-32-chars!" : null,
       },
     };
-    process.env.CRON_SECRET = "correct-secret";
+    process.env.CRON_SECRET = "correct-secret-at-least-32-chars!";
     const result = verifyCronSecret(mockReq as never);
     expect(result).toBeNull();
   });

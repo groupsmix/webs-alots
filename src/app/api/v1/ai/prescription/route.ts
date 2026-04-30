@@ -128,7 +128,8 @@ function buildPatientContext(
   }
 
   parts.push(`\nContexte du patient:`);
-  parts.push(`- Nom: ${patientName}`);
+  // A101-1: patientName is DB-retrieved and must be sanitized before prompt interpolation
+  parts.push(`- Nom: ${sanitizeUntrustedText(patientName)}`);
   if (ctx?.age !== undefined) parts.push(`- Âge: ${ctx.age} ans`);
   if (ctx?.gender) parts.push(`- Sexe: ${ctx.gender === "M" ? "Masculin" : "Féminin"}`);
   if (ctx?.weight) parts.push(`- Poids: ${ctx.weight} kg`);

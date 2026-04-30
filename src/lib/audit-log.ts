@@ -114,16 +114,15 @@ export async function logAuditEvent({
       extra: { action, type, clinicId, actor },
     });
     
-    // Fallback: If KV is available, push to a durable retry queue (Audit P2 #19)
-    try {
-      const kv = (globalThis as unknown as { AUDIT_LOG_RETRY_KV?: { put: (k: string, v: string) => Promise<void> } }).AUDIT_LOG_RETRY_KV;
-      if (kv) {
-        const payload = JSON.stringify({ action, type, actor, clinicId, clinicName, description, ipAddress, userAgent, metadata, timestamp: new Date().toISOString() });
-        await kv.put(`audit_retry:${Date.now()}:${crypto.randomUUID()}`, payload);
-      }
-    } catch (kvErr) {
-      logger.error("Failed to write audit log to fallback KV", { context: "audit-log", error: kvErr });
-    }
+    // F-A98-K-02 / F-A99-06: The previous globalThis-based KV lookup was dead
+    // code on Cloudflare Workers (KV bindings are exposed via env, not
+    // globalThis, when using OpenNext). Removed to avoid giving false
+    // assurance that a durable retry queue exists.
+    //
+    // TODO(Audit P2 #19): Implement a proper durable retry queue by accepting
+    // the KV binding from the Workers env object (passed through OpenNext
+    // middleware context) or by writing failed entries to a Supabase
+    // `audit_retry_queue` table via the admin client.
   }
 }
 

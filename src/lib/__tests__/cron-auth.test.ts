@@ -31,14 +31,14 @@ describe("verifyCronSecret", () => {
   });
 
   it("returns null (authorized) when token matches", () => {
-    process.env.CRON_SECRET = "my-cron-secret";
-    const req = createMockRequest("Bearer my-cron-secret");
+    process.env.CRON_SECRET = "my-cron-secret-that-is-at-least-32c";
+    const req = createMockRequest("Bearer my-cron-secret-that-is-at-least-32c");
     const result = verifyCronSecret(req as never);
     expect(result).toBeNull();
   });
 
   it("returns 401 when token does not match", () => {
-    process.env.CRON_SECRET = "my-cron-secret";
+    process.env.CRON_SECRET = "my-cron-secret-that-is-at-least-32c";
     const req = createMockRequest("Bearer wrong-secret");
     const result = verifyCronSecret(req as never);
     expect(result).not.toBeNull();
@@ -46,7 +46,7 @@ describe("verifyCronSecret", () => {
   });
 
   it("returns 401 when no Authorization header", () => {
-    process.env.CRON_SECRET = "my-cron-secret";
+    process.env.CRON_SECRET = "my-cron-secret-that-is-at-least-32c";
     const req = createMockRequest();
     const result = verifyCronSecret(req as never);
     expect(result).not.toBeNull();
@@ -54,7 +54,7 @@ describe("verifyCronSecret", () => {
   });
 
   it("returns 401 when Authorization header is not Bearer format", () => {
-    process.env.CRON_SECRET = "my-cron-secret";
+    process.env.CRON_SECRET = "my-cron-secret-that-is-at-least-32c";
     const req = createMockRequest("Basic some-token");
     const result = verifyCronSecret(req as never);
     expect(result).not.toBeNull();
@@ -62,7 +62,7 @@ describe("verifyCronSecret", () => {
   });
 
   it("returns 401 for empty Bearer token", () => {
-    process.env.CRON_SECRET = "my-cron-secret";
+    process.env.CRON_SECRET = "my-cron-secret-that-is-at-least-32c";
     const req = createMockRequest("Bearer ");
     const result = verifyCronSecret(req as never);
     expect(result).not.toBeNull();

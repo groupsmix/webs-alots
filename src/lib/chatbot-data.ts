@@ -4,6 +4,7 @@
  * questions about services, doctors, hours, etc.
  */
 
+import { sanitizeRetrievedText } from "@/lib/ai/sanitize";
 import { createClient } from "@/lib/supabase-server";
 
 /** Shape of the `clinics.config` JSONB column (subset used by chatbot). */
@@ -156,22 +157,24 @@ export function buildSystemPrompt(ctx: ChatbotClinicContext): string {
         .join("\n")
     : "Non renseigné";
 
+  // A101-1: Sanitize all DB-retrieved strings before interpolation into the
+  // system prompt to prevent stored prompt-injection via clinic_admin writes.
   const servicesText = services.length > 0
     ? services
         .map((s) => {
           const price = s.price != null ? `${s.price} MAD` : "Prix sur demande";
-          const cat = s.category ? ` (${s.category})` : "";
-          return `- ${s.name}${cat}: ${price} — ${s.duration_minutes} min`;
+          const cat = s.category ? ` (${sanitizeRetrievedText(s.category)})` : "";
+          return `- ${sanitizeRetrievedText(s.name)}${cat}: ${price} — ${s.duration_minutes} min`;
         })
         .join("\n")
     : "Aucun service configuré";
 
   const doctorsText = doctors.length > 0
-    ? doctors.map((d) => `- Dr. ${d.name}`).join("\n")
+    ? doctors.map((d) => `- Dr. ${sanitizeRetrievedText(d.name)}`).join("\n")
     : "Aucun médecin configuré";
 
   const faqsText = faqs.length > 0
-    ? faqs.map((f) => `Q: ${f.question}\nR: ${f.answer}`).join("\n\n")
+    ? faqs.map((f) => `Q: ${sanitizeRetrievedText(f.question)}\nR: ${sanitizeRetrievedText(f.answer)}`).join("\n\n")
     : "";
 
   const contactParts: string[] = [];

@@ -87,7 +87,7 @@ function makeAdminClient(clinics: ClinicRow[], queryError: unknown = null) {
 function buildAuthorizedRequest(): Request {
   return new Request("http://localhost/api/cron/r2-cleanup", {
     headers: {
-      authorization: "Bearer test-secret",
+      authorization: "Bearer test-secret-that-is-at-least-32chars",
     },
   }) as unknown as Request;
 }
@@ -107,7 +107,7 @@ describe("Cron r2-cleanup — authentication", () => {
   });
 
   it("rejects requests without a bearer token (401)", async () => {
-    process.env.CRON_SECRET = "test-secret";
+    process.env.CRON_SECRET = "test-secret-that-is-at-least-32chars";
     const { GET } = await import("@/app/api/cron/r2-cleanup/route");
     const req = new Request(
       "http://localhost/api/cron/r2-cleanup",
@@ -117,7 +117,7 @@ describe("Cron r2-cleanup — authentication", () => {
   });
 
   it("rejects requests with the wrong bearer token (401)", async () => {
-    process.env.CRON_SECRET = "test-secret";
+    process.env.CRON_SECRET = "test-secret-that-is-at-least-32chars";
     const { GET } = await import("@/app/api/cron/r2-cleanup/route");
     const req = new Request("http://localhost/api/cron/r2-cleanup", {
       headers: { authorization: "Bearer not-the-secret" },
@@ -134,7 +134,7 @@ describe("Cron r2-cleanup — authentication", () => {
   });
 
   it("does NOT call any cleanup primitives on a 401", async () => {
-    process.env.CRON_SECRET = "test-secret";
+    process.env.CRON_SECRET = "test-secret-that-is-at-least-32chars";
     const { GET } = await import("@/app/api/cron/r2-cleanup/route");
     await GET(
       new Request(
@@ -151,7 +151,7 @@ describe("Cron r2-cleanup — per-clinic iteration (AGENTS.md rule #6)", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    process.env.CRON_SECRET = "test-secret";
+    process.env.CRON_SECRET = "test-secret-that-is-at-least-32chars";
   });
 
   afterEach(() => {
@@ -245,7 +245,7 @@ describe("Cron r2-cleanup — aggregate response", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    process.env.CRON_SECRET = "test-secret";
+    process.env.CRON_SECRET = "test-secret-that-is-at-least-32chars";
   });
 
   afterEach(() => {
@@ -361,7 +361,7 @@ describe("Cron r2-cleanup — per-clinic resilience", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    process.env.CRON_SECRET = "test-secret";
+    process.env.CRON_SECRET = "test-secret-that-is-at-least-32chars";
   });
 
   afterEach(() => {
