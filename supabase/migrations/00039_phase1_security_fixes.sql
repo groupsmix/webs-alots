@@ -18,8 +18,8 @@
 -- ============================================================
 -- PART 1: DELETE SEED USERS
 --
--- Migration 00019 created seed users with the well-known password
--- "seed-password-change-me". These MUST NOT exist in production.
+-- Migration 00019 created seed users with a well-known default
+-- password (see supabase/seed.sql). These MUST NOT exist in production.
 -- Deleting from auth.users cascades to auth.identities.
 -- Deleting from public.users removes the application profile.
 -- ============================================================

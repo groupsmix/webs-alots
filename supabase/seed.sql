@@ -45,16 +45,11 @@ $$;
 -- this block is a fail-fast at the script level so no seed statements execute
 -- at all when run against a non-local Supabase project.
 DO $$
-DECLARE
-  _db_name text;
 BEGIN
-  -- Supabase local dev uses a database named 'postgres' on localhost.
-  -- Production/staging projects use a hosted endpoint. Check both the
-  -- hostname and a marker config variable.
-  _db_name := current_setting('db.name', true);
-
   -- If someone explicitly sets app.environment to production/staging,
-  -- refuse to proceed.
+  -- refuse to proceed. Supabase local dev should either leave this unset
+  -- (in which case the later `SET app.environment = 'local'` applies) or
+  -- explicitly set it to 'local' / 'development' / 'test'.
   IF current_setting('app.environment', true) IN ('production', 'staging') THEN
     RAISE EXCEPTION 'SEED ABORT: Refusing to run seed data in % environment', current_setting('app.environment', true);
   END IF;

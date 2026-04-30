@@ -41,7 +41,43 @@ DECLARE
   v_lock_key   bigint;
   v_slot_count integer;
   v_appt_id    uuid;
+  v_doctor_ok  boolean;
+  v_service_ok boolean;
+  v_patient_ok boolean;
 BEGIN
+  -- AUDIT-17 HARDENING: Because this function is SECURITY DEFINER and granted
+  -- to `anon` (the public booking flow is unauthenticated), it bypasses RLS.
+  -- Without the validations below, any unauthenticated client could call this
+  -- RPC with arbitrary (clinic_id, doctor_id, service_id, patient_id) tuples
+  -- and insert rows into another clinic's appointments table.
+  --
+  -- Enforce that doctor, service, and patient all belong to the supplied
+  -- clinic before acquiring the advisory lock. This replaces the RLS check
+  -- that SECURITY DEFINER suppresses and keeps the RPC safe for `anon`.
+  SELECT EXISTS (
+    SELECT 1 FROM doctors WHERE id = p_doctor_id AND clinic_id = p_clinic_id
+  ) INTO v_doctor_ok;
+  IF NOT v_doctor_ok THEN
+    RAISE EXCEPTION 'INVALID_TENANT: doctor does not belong to clinic'
+      USING ERRCODE = '42501'; -- insufficient_privilege
+  END IF;
+
+  SELECT EXISTS (
+    SELECT 1 FROM services WHERE id = p_service_id AND clinic_id = p_clinic_id
+  ) INTO v_service_ok;
+  IF NOT v_service_ok THEN
+    RAISE EXCEPTION 'INVALID_TENANT: service does not belong to clinic'
+      USING ERRCODE = '42501';
+  END IF;
+
+  SELECT EXISTS (
+    SELECT 1 FROM users WHERE id = p_patient_id AND clinic_id = p_clinic_id
+  ) INTO v_patient_ok;
+  IF NOT v_patient_ok THEN
+    RAISE EXCEPTION 'INVALID_TENANT: patient does not belong to clinic'
+      USING ERRCODE = '42501';
+  END IF;
+
   -- Compute a deterministic lock key from the slot identity.
   -- pg_advisory_xact_lock is released automatically at transaction end.
   v_lock_key := hashtext(p_clinic_id::text || p_doctor_id::text || p_date::text || p_start_time);

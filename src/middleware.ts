@@ -435,6 +435,23 @@ export async function middleware(request: NextRequest) {
     return supabaseResponse;
   }
 
+  // AUDIT-12 (P0-01): Deny-by-default for /api/ routes.
+  // Any /api/* path not in the public allowlist must require an authenticated
+  // session at the middleware layer. Without this explicit block, non-public
+  // API routes would fall through the remaining checks (which only handle
+  // PROTECTED_PREFIXES page routes) and reach `return supabaseResponse`
+  // unauthenticated, making every newly-added API route publicly accessible
+  // by default.
+  if (pathname.startsWith("/api/") && !user) {
+    return withSecurityHeaders(
+      NextResponse.json(
+        { ok: false, error: "Unauthorized", code: "UNAUTHORIZED" },
+        { status: 401 },
+      ),
+      cspHeaders,
+    );
+  }
+
   // If protected route and not authenticated, redirect to login
   if (isProtectedRoute(pathname) && !user) {
     const loginUrl = new URL("/login", request.url);

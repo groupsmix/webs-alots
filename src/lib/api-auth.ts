@@ -55,14 +55,26 @@ export async function authenticateApiKey(
   // By iterating over candidates, we gracefully handle collisions.
   //
   // AUDIT-13: Select `expires_at` and `scopes` for enforcement.
-  // These columns may not exist yet in the generated DB types — use an
-  // untyped query to avoid TS errors while the migration is pending.
-  const { data: candidates } = await supabase
+  // These columns may not yet be in the generated DB types, so cast the
+  // client to `any` just for this query. Row shape is validated at use.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const untypedClient = supabase as any;
+  const { data: candidates } = await untypedClient
     .from("clinic_api_keys")
-    .select("clinic_id, active, key_hash")
+    .select("clinic_id, active, key_hash, expires_at, scopes")
     .eq("key_prefix", keyPrefix)
     .eq("active", true)
-    .limit(50);
+    .limit(50) as {
+      data:
+        | Array<{
+            clinic_id: string;
+            active: boolean;
+            key_hash: string | null;
+            expires_at: string | null;
+            scopes: string[] | null;
+          }>
+        | null;
+    };
 
   if (!candidates || candidates.length === 0) return null;
 
@@ -75,9 +87,7 @@ export async function authenticateApiKey(
       // AUDIT-13: Enforce key expiry. Keys with a non-null `expires_at` in
       // the past are rejected even if `active` is still true. This prevents
       // forgotten API keys from being valid indefinitely.
-      // Cast to unknown first since `expires_at` may not be in generated types yet.
-      const row = candidate as unknown as Record<string, unknown>;
-      const expiresAt = row.expires_at as string | null | undefined;
+      const expiresAt = candidate.expires_at;
       if (expiresAt && expiresAt < now) {
         logger.warn("Expired API key used", {
           context: "api-auth",
@@ -90,7 +100,7 @@ export async function authenticateApiKey(
       // AUDIT-13: Enforce scopes. If the key has a `scopes` array and a
       // `requiredScope` was specified by the caller, the key must include
       // that scope. Keys without scopes (null) are unrestricted.
-      const scopes = row.scopes as string[] | null | undefined;
+      const scopes = candidate.scopes;
       if (requiredScope && scopes && Array.isArray(scopes)) {
         if (!scopes.includes(requiredScope)) {
           logger.warn("API key missing required scope", {
