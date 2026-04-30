@@ -32,9 +32,10 @@ export const GET = withAuth(async (request, { supabase, profile }) => {
     const status = request.nextUrl.searchParams.get("status");
     const tableId = request.nextUrl.searchParams.get("table_id");
 
+    // API3: Explicit column list to avoid over-fetching.
     let query = supabase
       .from("restaurant_orders")
-      .select("*")
+      .select("id, clinic_id, table_id, items, subtotal, tax_amount, total, status, order_source, created_at, updated_at")
       .eq("clinic_id", profile.clinic_id)
       .order("created_at", { ascending: false });
 

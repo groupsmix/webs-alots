@@ -54,9 +54,11 @@ async function sendSlackRegistrationAlert(data: {
   clientIp: string;
 }): Promise<void> {
   if (!SLACK_WEBHOOK_URL) {
+    // A8-01: Do not log PII (name, email, phone) to structured logs.
+    // Only log non-sensitive identifiers.
     logger.info("New clinic registration (no Slack webhook configured)", {
       context: "register-clinic",
-      ...data,
+      verificationMethod: data.verificationMethod,
     });
     return;
   }
@@ -187,8 +189,7 @@ const registerClinicSchema = z.object({
     .optional(),
   // F-28: Cloudflare Turnstile token for bot protection
   turnstile_token: z.string().min(1, "Turnstile verification required").optional(),
-  // R-12: Identity verification
-  // Option 1: DNS TXT record verification.
+  // R-12: Identity verification — DNS TXT record verification.
   // The token is NOT supplied by the client — the server derives it from
   // (email, website_domain) so attackers cannot self-verify by supplying
   // their own token alongside their own domain. Clients must first call
@@ -199,11 +200,11 @@ const registerClinicSchema = z.object({
   // and the verification-token endpoint accepts the same shapes so the
   // value the user supplies to both endpoints is identical.
   website_domain: z.string().min(1, "Domain is required").max(255).optional(),
-  // Option 2: Trade license (base64 encoded PDF)
-  trade_license_base64: z.string().optional(),
-  // Option 3: Phone OTP from pre-listed registry
-  phone_otp: z.string().optional(),
-  phone_otp_id: z.string().optional(),
+  // A2-01: trade_license_base64, phone_otp, phone_otp_id removed.
+  // These verification methods had no implemented workflow (manual review
+  // for trade license, phone OTP for registry). Keeping them in the schema
+  // allowed callers to submit data into a dead-end code path. They will be
+  // re-added when the corresponding workflows are built.
 });
 
 // ---------------------------------------------------------------------------
@@ -280,32 +281,8 @@ export async function POST(request: NextRequest) {
       );
     }
   }
-  // Option 2: Trade license (manual review workflow not yet implemented)
-  else if (data.trade_license_base64) {
-    // R-12: Trade-license verification requires a manual review workflow
-    // (queueing the submission, ops review, approve/reject). Until that
-    // workflow ships we fail-closed rather than auto-approving registrations.
-    logger.info("Registration with trade license rejected — manual review not yet available", {
-      context: "register-clinic",
-      clinicName: data.clinic_name,
-      doctorName: data.doctor_name,
-      email: data.email,
-    });
-    return apiError(
-      "Trade-license verification is not yet available. Please use DNS TXT verification by adding 'oltigo-verify=<token>' as a TXT record on your domain.",
-      400,
-      "TRADE_LICENSE_NOT_IMPLEMENTED",
-    );
-  }
-  // Option 3: Phone OTP to pre-listed registry (not yet implemented)
-  else if (data.phone_otp && data.phone_otp_id) {
-    // R-12: Phone OTP verification not yet implemented
-    return apiError(
-      "Phone OTP verification is not yet available. Please use DNS verification.",
-      400,
-      "PHONE_OTP_NOT_IMPLEMENTED",
-    );
-  }
+  // A2-01: trade_license_base64 and phone_otp branches removed — dead code
+  // with no implemented workflow. Only DNS TXT verification is supported.
   // No verification method provided
   else {
     return apiError(

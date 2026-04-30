@@ -60,9 +60,11 @@ export async function GET(request: NextRequest) {
 
   // Fetch limit+1 so we can tell whether another page exists without an
   // extra round-trip or a COUNT query.
+  // API3: Explicit column list — avoids leaking internal metadata or
+  // future columns (e.g. staff notes) to public API consumers.
   let query = supabase
     .from("appointments")
-    .select("*")
+    .select("id, clinic_id, patient_id, doctor_id, service_id, appointment_date, start_time, end_time, status, created_at, updated_at")
     .eq("clinic_id", auth.clinicId)
     .order("appointment_date", { ascending: false })
     .order("start_time", { ascending: false })

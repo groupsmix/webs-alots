@@ -27,9 +27,10 @@ export const GET = withAuth(async (_request: NextRequest, auth: AuthContext) => 
   const clinicId = auth.profile.clinic_id;
   if (!clinicId) return apiSuccess([]);
 
+  // API3: Explicit column list to avoid over-fetching.
   const { data, error } = await auth.supabase
     .from("restaurant_tables")
-    .select("*")
+    .select("id, clinic_id, name, capacity, zone, is_active, sort_order, created_at, updated_at")
     .eq("clinic_id", clinicId)
     .order("sort_order", { ascending: true });
 

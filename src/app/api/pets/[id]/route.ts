@@ -37,9 +37,10 @@ export const GET = withAuth(async (request: NextRequest, auth: AuthContext) => {
   const clinicId = auth.profile.clinic_id;
   if (!clinicId) return apiNotFound("No clinic context");
 
+  // API3: Explicit column list to avoid over-fetching.
   const { data, error } = await auth.supabase
     .from("pet_profiles")
-    .select("*")
+    .select("id, clinic_id, owner_id, name, species, breed, weight_kg, date_of_birth, photo_url, notes, is_active, created_at, updated_at")
     .eq("id", id)
     .eq("clinic_id", clinicId)
     .single();

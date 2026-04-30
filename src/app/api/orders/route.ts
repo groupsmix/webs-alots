@@ -36,9 +36,10 @@ export const GET = withAuth(async (request: NextRequest, auth: AuthContext) => {
 
   const status = request.nextUrl.searchParams.get("status");
 
+  // API3: Explicit column list to avoid over-fetching.
   let query = auth.supabase
     .from("orders")
-    .select("*")
+    .select("id, clinic_id, reservation_id, table_id, items, subtotal, tax_amount, total, status, order_source, created_at, updated_at")
     .eq("clinic_id", clinicId)
     .order("created_at", { ascending: false });
 

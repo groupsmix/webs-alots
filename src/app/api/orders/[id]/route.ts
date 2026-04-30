@@ -38,9 +38,10 @@ export const GET = withAuth(async (request: NextRequest, auth: AuthContext) => {
   const clinicId = auth.profile.clinic_id;
   if (!clinicId) return apiNotFound("No clinic context");
 
+  // API3: Explicit column list to avoid over-fetching.
   const { data, error } = await auth.supabase
     .from("orders")
-    .select("*")
+    .select("id, clinic_id, reservation_id, table_id, items, subtotal, tax_amount, total, status, order_source, created_at, updated_at")
     .eq("id", id)
     .eq("clinic_id", clinicId)
     .single();

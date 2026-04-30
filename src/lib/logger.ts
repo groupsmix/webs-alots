@@ -65,6 +65,33 @@ function formatError(err: unknown): Record<string, unknown> {
   return { raw: String(err) };
 }
 
+/**
+ * A8-01: PII key pattern — matches metadata keys whose values are likely
+ * to contain personally identifiable information (names, emails, phone
+ * numbers, national ID, date of birth, etc.). Values for matching keys
+ * are replaced with "[REDACTED]" before the log entry is emitted.
+ *
+ * This is a defense-in-depth measure. Callers should avoid passing PII
+ * into log metadata in the first place, but this filter catches
+ * accidental leaks that slip through code review.
+ */
+const PII_KEY_PATTERN = /email|phone|name|cin|dob|date_of_birth|address|full_name|doctor_name|clinic_name|patient_name/i;
+
+/**
+ * Shallow-redact an extras object: any key matching {@link PII_KEY_PATTERN}
+ * has its value replaced with `"[REDACTED]"`. Non-string values (objects,
+ * arrays) are replaced entirely rather than recursively walked, since
+ * structured PII (e.g. `{ patient: { name, phone } }`) should not be
+ * logged at all.
+ */
+function redactPii(obj: Record<string, unknown>): Record<string, unknown> {
+  const out: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(obj)) {
+    out[k] = PII_KEY_PATTERN.test(k) ? "[REDACTED]" : v;
+  }
+  return out;
+}
+
 function emit(level: LogLevel, message: string, meta?: LogMeta): void {
   const { context, clinicId, traceId, error, ...extra } = meta ?? {};
   const payload: Record<string, unknown> = {
@@ -76,7 +103,7 @@ function emit(level: LogLevel, message: string, meta?: LogMeta): void {
   if (context) payload.context = context;
   if (clinicId !== undefined) payload.clinicId = clinicId;
   if (error !== undefined) payload.error = formatError(error);
-  if (Object.keys(extra).length > 0) Object.assign(payload, extra);
+  if (Object.keys(extra).length > 0) Object.assign(payload, redactPii(extra));
 
   // Use console.error for structured output to stderr.
   // In Cloudflare Workers this is captured by `wrangler tail`.

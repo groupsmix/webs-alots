@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   CHAT_MESSAGE_CONTENT_MAX,
+  CHAT_MESSAGES_MAX,
   chatRequestSchema,
   labReportSchema,
   normalizeText,
@@ -74,6 +75,28 @@ describe("chatRequestSchema (A14-01)", () => {
     if (result.success) {
       expect(result.data.messages[0].content).toBe("hithere");
     }
+  });
+});
+
+describe("chatRequestSchema messages array cap (A1-01 / API4)", () => {
+  it("accepts exactly CHAT_MESSAGES_MAX messages", () => {
+    const messages = Array.from({ length: CHAT_MESSAGES_MAX }, (_, i) => ({
+      role: i % 2 === 0 ? "user" : "assistant",
+      content: `msg ${i}`,
+    }));
+    // Ensure last message is from user (required by schema role enum)
+    messages[messages.length - 1] = { role: "user", content: "last" };
+    const result = chatRequestSchema.safeParse({ messages });
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects more than CHAT_MESSAGES_MAX messages", () => {
+    const messages = Array.from({ length: CHAT_MESSAGES_MAX + 1 }, () => ({
+      role: "user",
+      content: "x",
+    }));
+    const result = chatRequestSchema.safeParse({ messages });
+    expect(result.success).toBe(false);
   });
 });
 

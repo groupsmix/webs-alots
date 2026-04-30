@@ -34,9 +34,10 @@ export const GET = withAuth(async (request: NextRequest, auth: AuthContext) => {
 
   const menuId = request.nextUrl.searchParams.get("menuId");
 
+  // API3: Explicit column list to avoid over-fetching internal metadata.
   let query = auth.supabase
     .from("menu_items")
-    .select("*")
+    .select("id, menu_id, clinic_id, category, name, description, price, photo_url, is_available, allergens, is_halal, sort_order, created_at, updated_at")
     .eq("clinic_id", clinicId)
     .order("sort_order", { ascending: true });
 

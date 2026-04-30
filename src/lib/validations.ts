@@ -334,8 +334,6 @@ export const customFieldValuesSchema = z.object({
 
 export const labReportSchema = z.object({
   orderId: z.string().min(1),
-  /** @deprecated Ignored by the server — clinicId is derived from the authenticated user's profile. Remove after v2 API migration (all clients updated). */
-  clinicId: z.string().optional(),
   patientName: z.string().min(1).max(200),
   orderNumber: z.string().min(1).max(100),
   results: z
@@ -357,8 +355,6 @@ export const labReportSchema = z.object({
 // ── Radiology ───────────────────────────────────────────────────────────
 
 export const radiologyOrderCreateSchema = z.object({
-  /** @deprecated Ignored by the server — clinicId is derived from the authenticated user's profile. Remove after v2 API migration (all clients updated). */
-  clinicId: z.string().optional(),
   patientId: z.string().min(1),
   modality: z.string().min(1).max(100),
   bodyPart: z.string().max(200).optional(),
@@ -451,6 +447,16 @@ export type AiPrescriptionRequest = z.infer<typeof aiPrescriptionRequestSchema>;
  */
 export const CHAT_MESSAGE_CONTENT_MAX = 4000;
 
+/**
+ * Maximum number of conversation-history messages accepted per request.
+ * Keeps payload size bounded and aligns with the runtime truncation in
+ * the chat route handler (`MAX_HISTORY_LENGTH`).
+ *
+ * A1-01 / API4: Without this cap, a client could submit thousands of
+ * messages in a single request, exhausting memory and upstream LLM tokens.
+ */
+export const CHAT_MESSAGES_MAX = 20;
+
 export const chatRequestSchema = z.object({
   clinicId: z.string().optional(),
   messages: z
@@ -460,7 +466,8 @@ export const chatRequestSchema = z.object({
         content: safeText.pipe(z.string().min(1).max(CHAT_MESSAGE_CONTENT_MAX)),
       }),
     )
-    .min(1),
+    .min(1)
+    .max(CHAT_MESSAGES_MAX),
 });
 
 // ── Branding ────────────────────────────────────────────────────────────
