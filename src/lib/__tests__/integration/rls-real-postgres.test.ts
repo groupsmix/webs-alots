@@ -4,26 +4,38 @@
  * These tests require a running Supabase local instance (supabase start).
  * They verify that RLS policies actually block cross-tenant operations.
  *
- * Run: SUPABASE_LOCAL=true npm run test -- --run rls-real-postgres
+ * Run: SUPABASE_LOCAL=true \
+ *      SUPABASE_LOCAL_URL=http://127.0.0.1:54321 \
+ *      SUPABASE_LOCAL_ANON_KEY=$(supabase status -o json | jq -r .ANON_KEY) \
+ *      SUPABASE_LOCAL_SERVICE_KEY=$(supabase status -o json | jq -r .SERVICE_ROLE_KEY) \
+ *      npm run test -- --run rls-real-postgres
  *
- * In CI, this requires the `supabase start` step in the workflow.
- * Tests are skipped when SUPABASE_LOCAL is not set.
+ * In CI, this requires the `supabase start` step in the workflow plus the
+ * three env vars above. Tests are skipped when SUPABASE_LOCAL is not set,
+ * or when any of the URL/anon/service-key env vars are missing.
  *
  * AUDIT F-03: Implemented real RLS assertions (previously only TODO stubs).
  * When SUPABASE_LOCAL is not set, tests still run but verify the test
  * infrastructure itself (schema assertions, client creation). When set,
  * they execute real SQL against the local Supabase Postgres instance.
+ *
+ * NOTE: We deliberately do NOT hardcode the well-known Supabase local
+ * demo JWTs as fallbacks. Even though they are public dev keys, gitleaks
+ * (correctly) flags any JWT-shaped literal in source.
  */
 
 import { createClient } from "@supabase/supabase-js";
 import { describe, it, expect, beforeAll } from "vitest";
 
-const SKIP = !process.env.SUPABASE_LOCAL;
+const SUPABASE_URL = process.env.SUPABASE_LOCAL_URL ?? "";
+const SUPABASE_ANON_KEY = process.env.SUPABASE_LOCAL_ANON_KEY ?? "";
+const SUPABASE_SERVICE_KEY = process.env.SUPABASE_LOCAL_SERVICE_KEY ?? "";
 
-// Supabase local defaults (supabase start output)
-const SUPABASE_URL = process.env.SUPABASE_LOCAL_URL ?? "http://127.0.0.1:54321";
-const SUPABASE_ANON_KEY = process.env.SUPABASE_LOCAL_ANON_KEY ?? "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0";
-const SUPABASE_SERVICE_KEY = process.env.SUPABASE_LOCAL_SERVICE_KEY ?? "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU";
+const SKIP =
+  !process.env.SUPABASE_LOCAL ||
+  !SUPABASE_URL ||
+  !SUPABASE_ANON_KEY ||
+  !SUPABASE_SERVICE_KEY;
 
 const CLINIC_A_ID = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa";
 const CLINIC_B_ID = "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb";
