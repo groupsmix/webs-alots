@@ -7,6 +7,20 @@
 -- C-06: Change users.clinic_id and appointments.clinic_id from
 --       ON DELETE CASCADE to ON DELETE RESTRICT, add clinics.deleted_at
 --       for soft-delete support.
+--
+-- A16-09: Soft-delete scope documentation.
+-- `deleted_at` is intentionally added ONLY to the `clinics` table — not to
+-- `users`, `appointments`, or `patients`. Rationale:
+--   - Clinic-level soft-delete is sufficient for GDPR/Law 09-08 erasure
+--     requests: marking a clinic as deleted logically tombstones all its
+--     tenant-scoped data behind the ON DELETE RESTRICT FK constraints.
+--   - Row-level soft-delete on high-volume tables (appointments, users)
+--     would require filtered UNIQUE indexes and complicate RLS policies
+--     for marginal benefit, since per-row deletion is not a product
+--     requirement today.
+--   - If per-row soft-delete is needed in the future, add `deleted_at` to
+--     the target table AND update all RLS policies to include
+--     `WHERE deleted_at IS NULL`.
 -- =============================================================================
 
 BEGIN;

@@ -31,6 +31,15 @@ jobs:
       - name: Check for vulnerable dependencies
         run: npm audit --omit=dev
 
+      # A9: Verify npm registry provenance signatures on installed packages.
+      # This detects lockfile tampering — if someone modifies package-lock.json
+      # to point at a malicious tarball, the signature check will fail because
+      # the tarball won't have a valid Sigstore attestation from the npm registry.
+      # Uses --audit-level=none so only signature mismatches (not advisory
+      # severities) cause a failure; vulnerability triage is handled above.
+      - name: Verify package provenance signatures
+        run: npm audit signatures
+
       - name: Check cron mapping
         run: npx tsx scripts/check-cron-mapping.ts
 

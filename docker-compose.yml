@@ -41,6 +41,9 @@ services:
       - db
 
   # ---------- MinIO (S3-compatible, replaces R2 locally) ----------
+  # A13-05: The credentials below are LOCAL-DEV-ONLY defaults.
+  # They must NEVER be used in staging or production environments.
+  # Production R2 access uses Cloudflare Workers bindings (no static creds).
   minio:
     image: minio/minio:latest
     ports:
@@ -48,7 +51,7 @@ services:
       - "9001:9001"
     environment:
       MINIO_ROOT_USER: minioadmin
-      MINIO_ROOT_PASSWORD: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin  # nosec — local-dev only, see A13-05
     command: server /data --console-address ":9001"
     volumes:
       - minio-data:/data
