@@ -44,6 +44,7 @@ import {
   getResponsiveImageUrls,
 } from "@/lib/r2";
 import { encryptAndUpload } from "@/lib/r2-encrypted";
+import { canStripMetadata, stripJpegMetadata } from "@/lib/strip-exif";
 import { uploadConfirmSchema } from "@/lib/validations";
 import { withAuth } from "@/lib/with-auth";
 
@@ -206,12 +207,19 @@ export const POST = withAuth(async (request, { profile }) => {
   }
 
   const key = buildUploadKey(clinicId, category, file.name);
-  const buffer = Buffer.from(await file.arrayBuffer());
+  let buffer = Buffer.from(await file.arrayBuffer());
 
   // HIGH-05: Validate file content matches declared MIME type via magic bytes.
   // Prevents attackers from uploading malicious HTML/JS with a spoofed Content-Type.
   if (!validateFileContent(buffer, file.type)) {
     return apiError("File content does not match declared type");
+  }
+
+  // A52.8: Strip EXIF/IPTC metadata from JPEG images before storage.
+  // Patient X-rays and clinical photos may contain DICOM-like metadata
+  // revealing PII (patient name, DOB, hospital ID, GPS coordinates).
+  if (canStripMetadata(file.type)) {
+    buffer = stripJpegMetadata(buffer);
   }
 
   // PHI compliance (Law 09-08): encrypt patient documents at rest

@@ -96,6 +96,11 @@ export function sanitizeHtml(dirty: string): string {
   return DOMPurify.sanitize(dirty, {
     ALLOWED_TAGS,
     ALLOWED_ATTR,
+    // A58.3: Explicitly forbid dangerous tags even if they somehow
+    // sneak through the ALLOWED_TAGS allowlist (defense-in-depth).
+    FORBID_TAGS: ["script", "style", "iframe", "object", "embed", "form", "link", "meta", "base", "svg", "math"],
+    // A58.3: Forbid event handler attributes and other XSS vectors
+    FORBID_ATTR: ["onerror", "onload", "onclick", "onmouseover", "onfocus", "onblur", "srcdoc", "formaction"],
     // Block all URL schemes other than http/https/mailto/tel and
     // data:image/* (DOMPurify allows http/https/mailto/tel/ftp/file by
     // default; we further restrict via ALLOWED_URI_REGEXP below).

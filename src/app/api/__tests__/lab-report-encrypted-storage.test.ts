@@ -333,8 +333,10 @@ describe("GET /api/files/download — auth and tenant scoping", () => {
     );
 
     expect(response.status).toBe(200);
-    expect(response.headers.get("Content-Type")).toMatch(/^text\/html/);
-    expect(response.headers.get("Content-Disposition")).toMatch(/^inline/);
+    // A52.7: HTML files are now served as octet-stream with attachment
+    // disposition to prevent XSS via uploaded HTML files.
+    expect(response.headers.get("Content-Type")).toBe("application/octet-stream");
+    expect(response.headers.get("Content-Disposition")).toMatch(/^attachment/);
     expect(response.headers.get("Cache-Control")).toMatch(/no-store/);
     // Defense-in-depth XSS hardening: decrypted HTML PHI must be served with a
     // strict per-response CSP, nosniff, and no-referrer so any future un-escaped
@@ -367,7 +369,8 @@ describe("GET /api/files/download — auth and tenant scoping", () => {
     // Non-HTML PHI is offered as an attachment so the browser doesn't render
     // it — a CSP would be a no-op here, so we don't attach one.
     expect(response.headers.get("Content-Disposition")).toMatch(/^attachment/);
-    expect(response.headers.get("Content-Security-Policy")).toBeNull();
+    // A52.7: All PHI downloads now receive a strict CSP as defense-in-depth
+    expect(response.headers.get("Content-Security-Policy")).toContain("default-src 'none'");
     expect(response.headers.get("Referrer-Policy")).toBe("no-referrer");
   });
 
@@ -475,7 +478,8 @@ describe("download route helpers", () => {
 
   it("contentTypeForKey derives MIME from the key extension", async () => {
     const { contentTypeForKey } = await import("@/app/api/files/download/route");
-    expect(contentTypeForKey("clinics/x/lab-reports/file.html")).toMatch(/^text\/html/);
+    // A52.7: HTML files now return octet-stream to prevent XSS
+    expect(contentTypeForKey("clinics/x/lab-reports/file.html")).toBe("application/octet-stream");
     expect(contentTypeForKey("clinics/x/lab-reports/file.pdf")).toBe("application/pdf");
     expect(contentTypeForKey("clinics/x/photos/file.jpg")).toBe("image/jpeg");
     expect(contentTypeForKey("clinics/x/files/unknown.xyz")).toBe("application/octet-stream");

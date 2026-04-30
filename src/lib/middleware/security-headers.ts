@@ -4,6 +4,45 @@ import { NextResponse } from "next/server";
 const HSTS_VALUE = "max-age=63072000; includeSubDomains; preload";
 
 /**
+ * A56.5: Comprehensive Permissions-Policy that denies all features by default
+ * and re-enables only what the app actually needs. This replaces the previous
+ * minimal policy that only covered camera/microphone/geolocation/payment.
+ *
+ * Best practice: deny-all, re-enable per feature.
+ */
+const PERMISSIONS_POLICY = [
+  "camera=()",
+  "microphone=()",
+  "geolocation=(self)",
+  "payment=(self)",
+  // A56.5: Additional features denied (previously missing)
+  "interest-cohort=()",
+  "browsing-topics=()",
+  "attribution-reporting=()",
+  "display-capture=()",
+  "document-domain=()",
+  "encrypted-media=(self)",
+  "fullscreen=(self)",
+  "gamepad=()",
+  "gyroscope=()",
+  "hid=()",
+  "idle-detection=()",
+  "local-fonts=()",
+  "magnetometer=()",
+  "midi=()",
+  "otp-credentials=()",
+  "picture-in-picture=(self)",
+  "publickey-credentials-create=(self)",
+  "publickey-credentials-get=(self)",
+  "screen-wake-lock=()",
+  "serial=()",
+  "sync-xhr=()",
+  "usb=()",
+  "web-share=(self)",
+  "xr-spatial-tracking=()",
+].join(", ");
+
+/**
  * CSP reporting endpoint. In production, violations are sent to Sentry's
  * CSP reporting ingestion endpoint. The project ID and key should be
  * configured via the SENTRY_CSP_REPORT_URI environment variable.
@@ -178,6 +217,10 @@ export function buildCspHeaderValues(nonce: string): CspHeaderValues {
  * Apply defense-in-depth security headers to early-return error responses.
  *
  * Task 2.2: Enforces the strict CSP. The Report-Only header is removed.
+ *
+ * A56.7: Now includes Referrer-Policy and Permissions-Policy so that error
+ * responses (CSRF block, rate-limit 429, 503) carry the same header set
+ * as normal 200 responses.
  */
 export function withSecurityHeaders(
   response: NextResponse,
@@ -196,17 +239,25 @@ export function withSecurityHeaders(
   response.headers.set("Strict-Transport-Security", HSTS_VALUE);
   response.headers.set("X-Content-Type-Options", "nosniff");
   response.headers.set("X-Frame-Options", "DENY");
+  // A56.7: Consistent with applyAllSecurityHeaders
+  response.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
+  response.headers.set("Permissions-Policy", PERMISSIONS_POLICY);
   return response;
 }
 
 /**
  * Apply security headers to redirect responses.
+ *
+ * A56.8: Now includes Referrer-Policy and Permissions-Policy so redirect
+ * responses carry the same header set as normal responses.
  */
 export function secureRedirect(url: string | URL, init?: number | ResponseInit): NextResponse {
   const response = NextResponse.redirect(url, init);
   response.headers.set("Strict-Transport-Security", HSTS_VALUE);
   response.headers.set("X-Content-Type-Options", "nosniff");
   response.headers.set("X-Frame-Options", "DENY");
+  response.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
+  response.headers.set("Permissions-Policy", PERMISSIONS_POLICY);
   return response;
 }
 
@@ -235,8 +286,13 @@ export function applyAllSecurityHeaders(
   response.headers.set("X-Content-Type-Options", "nosniff");
   response.headers.set("X-Frame-Options", "DENY");
   response.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
-  response.headers.set("Permissions-Policy", "camera=(), microphone=(), geolocation=(self), payment=(self)");
+  // A56.5: Use comprehensive deny-all Permissions-Policy
+  response.headers.set("Permissions-Policy", PERMISSIONS_POLICY);
   response.headers.set("X-DNS-Prefetch-Control", "on");
+  // A56.9: Spectre-class isolation headers
+  response.headers.set("Cross-Origin-Opener-Policy", "same-origin");
+  response.headers.set("Cross-Origin-Embedder-Policy", "credentialless");
+  response.headers.set("Cross-Origin-Resource-Policy", "same-origin");
 
   // Report-To header for CSP violation reporting (Reporting API v1)
   if (process.env.NODE_ENV !== "development") {

@@ -8,6 +8,20 @@ import { impersonateSchema } from "@/lib/validations";
 import { withAuth } from "@/lib/with-auth";
 
 /**
+ * A54.2: Use __Host- prefix in production to prevent Domain= attribute
+ * on the cookie, which would allow subdomain leakage between clinic tenants
+ * (e.g. clinic-a.oltigo.com setting a cookie readable by clinic-b.oltigo.com).
+ *
+ * __Host- cookies require: Secure, Path=/, no Domain attribute.
+ * In dev (non-HTTPS), fall back to unprefixed names since __Host- requires Secure.
+ */
+const IS_PROD = process.env.NODE_ENV === "production";
+const COOKIE_PREFIX = IS_PROD ? "__Host-" : "";
+const COOKIE_CLINIC_ID = `${COOKIE_PREFIX}sa_impersonate_clinic_id`;
+const COOKIE_CLINIC_NAME = `${COOKIE_PREFIX}sa_impersonate_clinic_name`;
+const COOKIE_REASON = `${COOKIE_PREFIX}sa_impersonate_reason`;
+
+/**
  * POST /api/impersonate
  *
  * Allows a super_admin to impersonate a clinic by storing the target clinic_id
@@ -82,21 +96,18 @@ export const POST = withAuthValidation(impersonateSchema, async (body, request, 
 
     const sessionMaxAge = 60 * 30; // 30 minutes — time-limited for safety
 
-    response.cookies.set("sa_impersonate_clinic_id", clinicId, {
+    // A54.2: __Host- prefixed cookies (production) prevent Domain= attribute,
+    // blocking subdomain leakage between clinic tenants.
+    const cookieOpts = {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
+      secure: IS_PROD,
+      sameSite: "strict" as const,
       path: "/",
       maxAge: sessionMaxAge,
-    });
+    };
 
-    response.cookies.set("sa_impersonate_clinic_name", encodeURIComponent(clinicName || clinic.name), {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
-      path: "/",
-      maxAge: sessionMaxAge,
-    });
+    response.cookies.set(COOKIE_CLINIC_ID, clinicId, cookieOpts);
+    response.cookies.set(COOKIE_CLINIC_NAME, encodeURIComponent(clinicName || clinic.name), cookieOpts);
 
     // S-11 / AUDIT-14: The impersonation reason is stored in an httpOnly cookie
     // for now. This prevents JS-based exfiltration but the reason text still
@@ -111,13 +122,7 @@ export const POST = withAuthValidation(impersonateSchema, async (body, request, 
     //
     // This eliminates reason text from HTTP headers and enables server-side
     // session invalidation, audit queries, and concurrent session limits.
-    response.cookies.set("sa_impersonate_reason", encodeURIComponent(reason), {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
-      path: "/",
-      maxAge: sessionMaxAge,
-    });
+    response.cookies.set(COOKIE_REASON, encodeURIComponent(reason), cookieOpts);
 
     return response;
 }, ["super_admin"]);
@@ -135,8 +140,8 @@ export const POST = withAuthValidation(impersonateSchema, async (body, request, 
  */
 export const GET = withAuth(async () => {
   const cookieStore = await cookies();
-  const clinicName = cookieStore.get("sa_impersonate_clinic_name")?.value ?? null;
-  const reason = cookieStore.get("sa_impersonate_reason")?.value ?? null;
+  const clinicName = cookieStore.get(COOKIE_CLINIC_NAME)?.value ?? null;
+  const reason = cookieStore.get(COOKIE_REASON)?.value ?? null;
 
   if (!clinicName) {
     return apiSuccess({ clinicName: null, reason: null });
@@ -163,29 +168,17 @@ export const DELETE = withAuth(async (_request, { supabase, user }) => {
 
     const response = apiSuccess({ success: true });
 
-    response.cookies.set("sa_impersonate_clinic_id", "", {
+    const clearOpts = {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
+      secure: IS_PROD,
+      sameSite: "strict" as const,
       path: "/",
       maxAge: 0,
-    });
+    };
 
-    response.cookies.set("sa_impersonate_clinic_name", "", {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
-      path: "/",
-      maxAge: 0,
-    });
-
-    response.cookies.set("sa_impersonate_reason", "", {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
-      path: "/",
-      maxAge: 0,
-    });
+    response.cookies.set(COOKIE_CLINIC_ID, "", clearOpts);
+    response.cookies.set(COOKIE_CLINIC_NAME, "", clearOpts);
+    response.cookies.set(COOKIE_REASON, "", clearOpts);
 
     return response;
   } catch (err) {
