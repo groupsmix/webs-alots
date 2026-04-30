@@ -5,14 +5,18 @@
  * Stores consent type, timestamp, and IP for audit trail.
  *
  * POST /api/consent — Log a consent event
+ *
+ * AUDIT F-02: Replaced inline createServerClient() with createClient() /
+ * createTenantClient() to ensure the tenant context header (x-clinic-id)
+ * is set on all database operations.
  */
 
-import { createServerClient } from "@supabase/ssr";
 import { NextRequest } from "next/server";
-import { apiError, apiSuccess, apiRateLimited } from "@/lib/api-response";
+import { apiSuccess, apiRateLimited } from "@/lib/api-response";
 import { withValidation } from "@/lib/api-validate";
 import { logger } from "@/lib/logger";
 import { createRateLimiter, extractClientIp } from "@/lib/rate-limit";
+import { createClient, createTenantClient } from "@/lib/supabase-server";
 import { getTenant } from "@/lib/tenant";
 import { consentSchema } from "@/lib/validations";
 
@@ -29,25 +33,16 @@ export const POST = withValidation(consentSchema, async (data, request: NextRequ
     return apiRateLimited("Too many consent requests. Please try again later.");
   }
 
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-  if (!supabaseUrl || !supabaseAnonKey) {
-    return apiError("Service unavailable", 503);
-  }
-
   const { consentType, granted } = data;
 
-  const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
-    cookies: {
-      getAll() {
-        return request.cookies.getAll();
-      },
-      setAll() {
-        /* read-only */
-      },
-    },
-  });
+  // AUDIT F-02: Use the standard Supabase client factories so the tenant
+  // context header (x-clinic-id) is set, keeping consent records properly
+  // scoped by RLS policies. If a tenant subdomain is resolved, use the
+  // tenant-scoped client; otherwise fall back to the plain server client
+  // (e.g. consent recorded on the root domain before any clinic context).
+  const supabase = tenant?.clinicId
+    ? await createTenantClient(tenant.clinicId)
+    : await createClient();
 
   // User may or may not be authenticated (cookie consent can happen pre-login)
   const {
@@ -66,7 +61,16 @@ export const POST = withValidation(consentSchema, async (data, request: NextRequ
 
   const ip = extractClientIp(request);
 
-  const { error } = await supabase.from("consent_logs").insert({
+  // consent_logs is not yet in the generated Database types — cast through
+  // unknown until types are regenerated (pre-existing issue, not introduced
+  // by AUDIT F-02).
+  type ConsentInsertClient = {
+    from(t: string): {
+      insert(row: Record<string, unknown>): Promise<{ error: { message: string } | null }>;
+    };
+  };
+  const consentClient = supabase as unknown as ConsentInsertClient;
+  const { error } = await consentClient.from("consent_logs").insert({
     user_id: userId,
     consent_type: consentType as string,
     granted,

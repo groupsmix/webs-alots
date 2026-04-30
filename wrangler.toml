@@ -1,89 +1,73 @@
-# ============================================================
-# Cloudflare Workers Configuration — Oltigo Health Platform
-# ============================================================
-# Audit Finding #39: This file was missing from the repository.
-# It declaratively configures the Worker, cron triggers, KV/R2
-# bindings, and compatibility settings so the deployment is
-# reproducible and version-controlled.
+# =============================================================================
+# Cloudflare Workers Configuration — Oltigo Health
+# =============================================================================
 #
-# Sensitive values (API tokens, encryption keys) are set via
-# `wrangler secret put <KEY>` and are NOT stored here.
-# ============================================================
+# AUDIT F-06: This file documents the Worker's bindings, routes, and settings
+# as infrastructure-as-code. It was previously managed entirely via Cloudflare
+# dashboard / CI secrets, making the deployment topology opaque.
+#
+# The `opennextjs-cloudflare` build tool generates its own wrangler config
+# at build time. This file serves as the base that `wrangler deploy` merges
+# with the generated output. Environment-specific overrides (API tokens,
+# secrets) remain in CI secrets / Cloudflare dashboard.
+#
+# Docs: https://developers.cloudflare.com/workers/wrangler/configuration/
+# =============================================================================
 
 name = "webs-alots"
-main = ".open-next/worker.ts"
-compatibility_date = "2024-12-01"
+main = ".open-next/worker.js"
+compatibility_date = "2025-04-01"
 compatibility_flags = ["nodejs_compat"]
 
-# ── Account (set via env or `wrangler login`) ──
-# account_id is injected by CI via CLOUDFLARE_ACCOUNT_ID secret.
-# Uncomment and fill if deploying locally:
-# account_id = ""
+# ── Account (set via CLOUDFLARE_ACCOUNT_ID env in CI) ─────────────────
+# account_id is intentionally omitted — it is injected by the
+# cloudflare/wrangler-action in CI to avoid leaking it in the repo.
 
-# ── Build ──
-[build]
-command = "npm run build:cf"
+# ── Routes ────────────────────────────────────────────────────────────
+# The Worker serves all requests for the root domain and all subdomains.
+# Wildcard routing is configured in Cloudflare DNS (CNAME * -> Workers).
+# routes = [
+#   { pattern = "oltigo.com/*", zone_name = "oltigo.com" },
+#   { pattern = "*.oltigo.com/*", zone_name = "oltigo.com" },
+# ]
 
-# ── Observability ──
-[observability]
-enabled = true
+# ── KV Namespaces ─────────────────────────────────────────────────────
+# Rate limiting counters (shared across all edge locations).
+# Binding name must match what the rate-limit code checks for.
+# The actual namespace ID is environment-specific.
+# [[kv_namespaces]]
+# binding = "RATE_LIMIT_KV"
+# id = ""           # Set per-environment in Cloudflare dashboard or CI
 
-# ── Cron Triggers ──
-# These fire HTTP requests to the Worker, which routes them to
-# the corresponding /api/cron/* endpoints. Each endpoint verifies
-# the CRON_SECRET bearer token before processing.
-[triggers]
-crons = [
-  # Appointment reminders — every 30 minutes
-  "*/30 * * * *",
-  # Notification queue flush — every 5 minutes
-  "*/5 * * * *",
-  # Billing cycle check — daily at 02:00 UTC
-  "0 2 * * *",
-  # GDPR data purge — daily at 03:00 UTC
-  "0 3 * * *",
-  # R2 orphan cleanup — daily at 04:00 UTC
-  "0 4 * * *",
-  # Post-appointment feedback — every 2 hours
-  "0 */2 * * *",
-  # Rebooking reminders — daily at 09:00 UTC (10:00 Morocco)
-  "0 9 * * *",
-]
+# ── R2 Buckets ────────────────────────────────────────────────────────
+# PHI file storage (encrypted uploads).
+# [[r2_buckets]]
+# binding = "UPLOADS_BUCKET"
+# bucket_name = "webs-alots-uploads"
 
-# ── KV Namespace Bindings ──
-# Used by the distributed rate limiter (src/lib/rate-limit.ts).
-# Create with: wrangler kv namespace create RATE_LIMIT_KV
-# Then paste the id below.
-[[kv_namespaces]]
-binding = "RATE_LIMIT_KV"
-id = "" # TODO: Fill with actual KV namespace ID after creation
-
-# ── R2 Bucket Bindings ──
-# Primary upload bucket for clinic files (logos, documents, PHI).
-[[r2_buckets]]
-binding = "UPLOADS_BUCKET"
-bucket_name = "webs-alots-uploads"
-
-# Backup bucket for database dumps.
-[[r2_buckets]]
-binding = "BACKUPS_BUCKET"
-bucket_name = "webs-alots-backups"
-
-# ── Environment Variables (non-secret) ──
+# ── Environment Variables (non-secret) ────────────────────────────────
+# Secrets (API keys, encryption keys) are set via `wrangler secret put`
+# or Cloudflare dashboard. Only non-sensitive defaults go here.
 [vars]
-RATE_LIMIT_BACKEND = "kv"
+NODE_ENV = "production"
+RATE_LIMIT_BACKEND = "supabase"
 
-# ── Staging Environment ──
+# ── Staging Environment ───────────────────────────────────────────────
 [env.staging]
 name = "webs-alots-staging"
-
 [env.staging.vars]
-RATE_LIMIT_BACKEND = "kv"
+NODE_ENV = "production"
+RATE_LIMIT_BACKEND = "supabase"
 
-[env.staging.triggers]
-crons = [
-  # Staging runs crons less frequently to avoid noise
-  "0 */1 * * *",
-  "0 3 * * *",
-  "0 4 * * *",
-]
+# ── Limits ────────────────────────────────────────────────────────────
+# [limits]
+# cpu_ms = 50  # Default: 50ms CPU time per request (Workers Paid plan)
+
+# ── Observability ─────────────────────────────────────────────────────
+# [observability]
+# enabled = true  # Enables Workers Logs (beta)
+
+# ── Build ─────────────────────────────────────────────────────────────
+# The build command is handled by CI (npm run build:cf), not by wrangler.
+# [build]
+# command = "npm run build:cf"

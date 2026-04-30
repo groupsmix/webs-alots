@@ -1,19 +1,18 @@
 import {
   apiSuccess,
   apiError,
+  apiForbidden,
   apiInternalError,
-  apiUnauthorized,
 } from "@/lib/api-response";
-import { withValidation } from "@/lib/api-validate";
 import {
   findAlternativeSlots,
   buildBookedSlotsSet,
 } from "@/lib/find-alternative-slots";
 import { logger } from "@/lib/logger";
-import { createClient } from "@/lib/supabase-server";
-import { getClinicConfig } from "@/lib/tenant";
+import { requireTenant, getClinicConfig } from "@/lib/tenant";
 import { doctorUnavailabilitySchema } from "@/lib/validations";
 import { sendInteractiveMessage } from "@/lib/whatsapp";
+import { withAuth } from "@/lib/with-auth";
 
 /**
  * POST /api/doctor-unavailability
@@ -24,19 +23,43 @@ import { sendInteractiveMessage } from "@/lib/whatsapp";
  * 3. Finds alternative slots
  * 4. Sends WhatsApp messages to affected patients with rebooking options
  * 5. Creates rebooking_requests records to track responses
+ *
+ * AUDIT F-01: Replaced raw auth + body-supplied clinicId with withAuth() +
+ * requireTenant(). The clinicId is now derived from the subdomain, preventing
+ * cross-tenant data mutation.
  */
-export const POST = withValidation(doctorUnavailabilitySchema, async (body, _request) => {
-    const supabase = await createClient();
+export const POST = withAuth(async (request, auth) => {
+    const supabase = auth.supabase;
 
-    // Verify the caller is authenticated
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) {
-      return apiUnauthorized();
+    // AUDIT F-01: Derive clinicId from subdomain, not from the request body.
+    const tenant = await requireTenant();
+    const clinicId = tenant.clinicId;
+
+    // Parse and validate the request body
+    const rawBody = await request.json();
+    const parsed = doctorUnavailabilitySchema.safeParse(rawBody);
+    if (!parsed.success) {
+      return apiError(parsed.error.issues.map(i => i.message).join(", "), 422, "VALIDATION_ERROR");
     }
 
-    const { doctorId, clinicId, startDate, endDate, reason } = body;
+    const { doctorId, clinicId: bodyClinicId, startDate, endDate, reason } = parsed.data;
+
+    // AUDIT F-01: If a body-supplied clinicId is present, it MUST match the
+    // subdomain-derived value. This prevents cross-tenant mutations.
+    if (bodyClinicId && bodyClinicId !== clinicId) {
+      logger.error("Tenant mismatch in doctor-unavailability: body clinicId does not match subdomain", {
+        context: "doctor-unavailability",
+        bodyClinicId,
+        subdomainClinicId: clinicId,
+        userId: auth.profile.id,
+      });
+      return apiForbidden("clinicId does not match subdomain");
+    }
+
+    // Verify the doctor belongs to this clinic
+    if (auth.profile.clinic_id !== clinicId) {
+      return apiForbidden("You do not belong to this clinic");
+    }
 
     // 1. Record the unavailability in doctor_unavailability table
     // doctor_unavailability & rebooking_requests not yet in generated types — cast through unknown
@@ -225,31 +248,26 @@ export const POST = withValidation(doctorUnavailabilitySchema, async (body, _req
       alternatives,
       rebookingResults,
     });
-});
+}, ["clinic_admin", "doctor"]);
 
 /**
- * GET /api/doctor-unavailability?clinicId=...&doctorId=...
+ * GET /api/doctor-unavailability?doctorId=...
  *
  * Returns rebooking status for a doctor's unavailability events.
+ *
+ * AUDIT F-01: clinicId is now derived from the subdomain via requireTenant().
+ * The query-param clinicId is ignored to prevent cross-tenant reads.
  */
-export async function GET(request: Request) {
+export const GET = withAuth(async (request, auth) => {
   try {
-    const supabase = await createClient();
+    const supabase = auth.supabase;
 
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) {
-      return apiUnauthorized();
-    }
+    // AUDIT F-01: Derive clinicId from subdomain, not from query params.
+    const tenant = await requireTenant();
+    const clinicId = tenant.clinicId;
 
     const { searchParams } = new URL(request.url);
-    const clinicId = searchParams.get("clinicId");
     const doctorId = searchParams.get("doctorId");
-
-    if (!clinicId) {
-      return apiError("Missing clinicId parameter");
-    }
 
     // rebooking_requests not yet in generated types — cast through unknown
     type RbRow = { id: string; status: string; [k: string]: unknown };
@@ -306,4 +324,4 @@ export async function GET(request: Request) {
     });
     return apiInternalError("Failed to fetch rebooking status");
   }
-}
+}, ["clinic_admin", "doctor"]);
