@@ -409,6 +409,8 @@ export const POST = withAuthValidation(
         suggestions,
         diagnosis: data.diagnosis,
         patientId: data.patientId ?? null,
+        _ai_disclaimer: "Ce contenu a ete genere par un modele d'intelligence artificielle. Il ne constitue pas un avis medical. Le medecin traitant est seul responsable de la decision therapeutique finale.",
+        _ai_generated: true,
       });
     } catch (err) {
       if (err instanceof DOMException && err.name === "AbortError") {

@@ -81,6 +81,7 @@ const ENV_RULES: EnvRule[] = [
 
   // ── AI / Chat ──────────────────────────────────────────────────────
   { name: "OPENAI_API_KEY", required: false, description: "OpenAI API key for advanced chat", group: "ai" },
+  { name: "OPENAI_BASE_URL", required: false, description: "OpenAI-compatible base URL (AI-#5: must be in OPENAI_BASE_URL_ALLOWLIST)", group: "ai" },
   { name: "CLOUDFLARE_ACCOUNT_ID", required: false, description: "Cloudflare account ID for Workers AI", group: "ai" },
   { name: "CLOUDFLARE_AI_API_TOKEN", required: false, description: "Cloudflare AI API token", group: "ai" },
 
@@ -336,6 +337,59 @@ export function enforceHmacKeyIndependence(): void {
     logger.error(message, { context: "env-validation", check: "hmac-key-independence" });
     throw new Error(message);
   }
+}
+
+/**
+ * AI-#5: Validate OPENAI_BASE_URL against an allowlist to prevent
+ * misconfiguration from silently exfiltrating prompts + PHI to a
+ * malicious endpoint. If OPENAI_BASE_URL is not set, the AI routes
+ * default to https://api.openai.com/v1 which is implicitly allowed.
+ *
+ * Exported for unit tests.
+ */
+const OPENAI_BASE_URL_ALLOWLIST = new Set([
+  "https://api.openai.com/v1",
+  "https://api.openai.com",
+  // Azure OpenAI endpoints follow this pattern:
+  // https://<resource>.openai.azure.com/openai/deployments/<model>
+  // We allow the azure.com domain broadly since resource names vary.
+]);
+
+/** Hostname suffixes that are always permitted for OPENAI_BASE_URL. */
+const OPENAI_ALLOWED_HOST_SUFFIXES = [
+  ".openai.com",
+  ".openai.azure.com",
+  ".azure-api.net",
+  "localhost",
+  "127.0.0.1",
+];
+
+export function enforceOpenAIBaseURL(): void {
+  const baseUrl = process.env.OPENAI_BASE_URL;
+  if (!baseUrl) return; // unset → defaults to api.openai.com, which is safe
+
+  // Exact match check
+  if (OPENAI_BASE_URL_ALLOWLIST.has(baseUrl)) return;
+
+  // Hostname suffix check (covers Azure + dev localhost)
+  try {
+    const parsed = new URL(baseUrl);
+    const hostname = parsed.hostname.toLowerCase();
+    const isAllowed = OPENAI_ALLOWED_HOST_SUFFIXES.some(
+      (suffix) => hostname === suffix || hostname.endsWith(suffix),
+    );
+    if (isAllowed) return;
+  } catch {
+    // Malformed URL — fall through to rejection
+  }
+
+  const message =
+    `[STARTUP HEALTH CHECK FAILED] OPENAI_BASE_URL="${baseUrl}" is not in the allowed list.\n` +
+    `Allowed hosts: ${OPENAI_ALLOWED_HOST_SUFFIXES.join(", ")}.\n` +
+    `A misconfigured OPENAI_BASE_URL could silently exfiltrate prompts and PHI to a malicious endpoint.\n` +
+    `If this is a legitimate endpoint, add it to OPENAI_ALLOWED_HOST_SUFFIXES in src/lib/env.ts.`;
+  logger.error(message, { context: "env-validation", check: "openai-base-url" });
+  throw new Error(message);
 }
 
 /**

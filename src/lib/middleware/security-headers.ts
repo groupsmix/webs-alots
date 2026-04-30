@@ -235,7 +235,10 @@ export function applyAllSecurityHeaders(
   response.headers.set("X-Content-Type-Options", "nosniff");
   response.headers.set("X-Frame-Options", "DENY");
   response.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
-  response.headers.set("Permissions-Policy", "camera=(), microphone=(), geolocation=(self), payment=(self)");
+  // A56: Deny all hardware APIs that tenant subdomains should never access.
+  // camera/microphone/usb/bluetooth/serial/hid are explicitly denied;
+  // geolocation and payment are self-only for the clinic's own domain.
+  response.headers.set("Permissions-Policy", "camera=(), microphone=(), geolocation=(self), payment=(self), usb=(), bluetooth=(), serial=(), hid=(), magnetometer=(), gyroscope=(), accelerometer=()");
   response.headers.set("X-DNS-Prefetch-Control", "on");
 
   // Report-To header for CSP violation reporting (Reporting API v1)

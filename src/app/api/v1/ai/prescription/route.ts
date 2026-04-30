@@ -374,6 +374,11 @@ export const POST = withAuthValidation(
         prescription,
         patientId: data.patientId,
         diagnosis: data.diagnosis,
+        // A199: EU AI Act Art. 13 / FDA SaMD transparency requirement.
+        // The client MUST display this disclaimer to the doctor before
+        // they accept the AI-generated prescription.
+        _ai_disclaimer: "Ce contenu a ete genere par un modele d'intelligence artificielle. Il ne constitue pas un avis medical. Le medecin traitant est seul responsable de la decision therapeutique finale.",
+        _ai_generated: true,
       });
     } catch (err) {
       if (err instanceof DOMException && err.name === "AbortError") {
