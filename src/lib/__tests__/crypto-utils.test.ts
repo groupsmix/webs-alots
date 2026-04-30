@@ -1,5 +1,10 @@
 import { describe, it, expect } from "vitest";
-import { timingSafeEqual, sha256Hex, hmacSha256Hex } from "../crypto-utils";
+import {
+  timingSafeEqual,
+  sha256Hex,
+  hmacSha256Hex,
+  TIMING_SAFE_EQUAL_MAX_LENGTH,
+} from "../crypto-utils";
 
 describe("timingSafeEqual", () => {
   it("returns true for identical strings", () => {
@@ -34,6 +39,34 @@ describe("timingSafeEqual", () => {
   it("handles unicode characters", () => {
     expect(timingSafeEqual("héllo", "héllo")).toBe(true);
     expect(timingSafeEqual("héllo", "hello")).toBe(false);
+  });
+
+  // A2-02: Reject oversized inputs to prevent CPU-exhaustion DoS when an
+  // attacker controls one side of the comparison (e.g. webhook signature).
+  it("returns false when either input exceeds the max length", () => {
+    const huge = "a".repeat(TIMING_SAFE_EQUAL_MAX_LENGTH + 1);
+    const small = "a".repeat(TIMING_SAFE_EQUAL_MAX_LENGTH);
+    expect(timingSafeEqual(huge, small)).toBe(false);
+    expect(timingSafeEqual(small, huge)).toBe(false);
+    expect(timingSafeEqual(huge, huge)).toBe(false);
+  });
+
+  it("accepts inputs at exactly the max length", () => {
+    const equal = "z".repeat(TIMING_SAFE_EQUAL_MAX_LENGTH);
+    expect(timingSafeEqual(equal, equal)).toBe(true);
+  });
+
+  // A2-02 regression: the previous implementation padded the shorter input
+  // to max(len(a), len(b)) and iterated, allowing an attacker to force the
+  // function to allocate and iterate over an arbitrarily large value.
+  it("does not allocate proportional to a hostile oversized input", () => {
+    const trustedSecret = "a".repeat(64);
+    const hostile = "b".repeat(2_000_000);
+    const start = Date.now();
+    expect(timingSafeEqual(trustedSecret, hostile)).toBe(false);
+    expect(timingSafeEqual(hostile, trustedSecret)).toBe(false);
+    // 100 ms is generous; the rejection should be effectively instant.
+    expect(Date.now() - start).toBeLessThan(100);
   });
 });
 

@@ -26,3 +26,11 @@ sentry.client.config.ts         @groupsmix
 # Middleware — CSRF, tenant resolution, security headers
 src/middleware.ts                @groupsmix
 src/lib/middleware/*             @groupsmix
+
+# A2-05: Build-time / postinstall patcher scripts.
+# package.json runs these via `postinstall` and `build:cf`, so any change
+# to them ships to every developer machine and to the production build.
+# Treat them as supply-chain critical and require a senior reviewer.
+scripts/patch-opennext.mjs       @groupsmix
+scripts/post-build-patch.mjs     @groupsmix
+scripts/*.mjs                    @groupsmix
