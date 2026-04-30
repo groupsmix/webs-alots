@@ -12,6 +12,7 @@
  */
 
 import { type NextRequest } from "next/server";
+import { getAIConfig } from "@/lib/ai/openai";
 import { sanitizeUntrustedText } from "@/lib/ai/sanitize";
 import { apiSuccess, apiError, apiRateLimited, apiInternalError } from "@/lib/api-response";
 import { withAuthValidation } from "@/lib/api-validate";
@@ -253,18 +254,10 @@ export const POST = withAuthValidation(
       );
     }
 
-    // Check AI configuration
-    const apiKey = process.env.OPENAI_API_KEY;
-    const baseUrl = process.env.OPENAI_BASE_URL || "https://api.openai.com/v1";
-    const model = process.env.OPENAI_MODEL || "gpt-4o-mini";
-
-    if (!apiKey) {
-      return apiError(
-        "AI service not configured. Please set OPENAI_API_KEY.",
-        503,
-        "AI_NOT_CONFIGURED",
-      );
-    }
+    // A107-1: Kill-switch + A103: egress allowlist + A107: model pinning
+    const aiConfigResult = await getAIConfig();
+    if (!aiConfigResult.ok) return aiConfigResult.error.response;
+    const { apiKey, baseUrl, model } = aiConfigResult.config;
 
     // Fetch patient info for context
     const { data: patient } = await supabase

@@ -17,11 +17,11 @@
  */
 
 import { type NextRequest } from "next/server";
+import { getAIConfig } from "@/lib/ai/openai";
 import { sanitizeUntrustedText } from "@/lib/ai/sanitize";
 import { apiSuccess, apiError, apiRateLimited, apiInternalError } from "@/lib/api-response";
 import { withAuthValidation } from "@/lib/api-validate";
 import { DCI_DRUG_DATABASE, CATEGORY_LABELS } from "@/lib/dci-drug-database";
-import { isAIEnabled } from "@/lib/features";
 import { logger } from "@/lib/logger";
 import { aiAutoSuggestLimiter } from "@/lib/rate-limit";
 import type { PatientMetadata } from "@/lib/types/patient-metadata";
@@ -265,38 +265,20 @@ export const POST = withAuthValidation(
     const clinicId = profile.clinic_id;
     const doctorId = profile.id;
 
-    // F-11: AI kill-switch — reject all AI requests when the global
-    // `ai.enabled` flag is explicitly set to "false" in FEATURE_FLAGS_KV.
-    if (!(await isAIEnabled())) {
-      return apiError(
-        "Les fonctionnalités IA sont temporairement désactivées.",
-        503,
-        "AI_DISABLED",
-      );
-    }
-
     if (!clinicId) {
       return apiError("No clinic associated with this account", 403, "NO_CLINIC");
     }
+
+    // A107-1: Kill-switch + A103: egress allowlist + A107: model pinning
+    const aiConfigResult = await getAIConfig();
+    if (!aiConfigResult.ok) return aiConfigResult.error.response;
+    const { apiKey, baseUrl, model } = aiConfigResult.config;
 
     // Rate limit per doctor (100/day)
     const allowed = await aiAutoSuggestLimiter.check(`ai-suggest:${doctorId}`);
     if (!allowed) {
       return apiRateLimited(
         "Limite quotidienne atteinte (100 suggestions IA/jour). Réessayez demain.",
-      );
-    }
-
-    // Check AI configuration
-    const apiKey = process.env.OPENAI_API_KEY;
-    const baseUrl = process.env.OPENAI_BASE_URL || "https://api.openai.com/v1";
-    const model = process.env.OPENAI_MODEL || "gpt-4o-mini";
-
-    if (!apiKey) {
-      return apiError(
-        "AI service not configured. Please set OPENAI_API_KEY.",
-        503,
-        "AI_NOT_CONFIGURED",
       );
     }
 

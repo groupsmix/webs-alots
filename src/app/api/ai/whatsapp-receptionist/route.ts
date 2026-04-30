@@ -14,6 +14,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
+import { getAIConfig } from "@/lib/ai/openai";
 import { sanitizeUntrustedText } from "@/lib/ai/sanitize";
 import {
   apiSuccess,
@@ -217,13 +218,12 @@ async function generateAIResponse(
   message: string,
   ctx: ClinicContext,
 ): Promise<string> {
-  const apiKey = process.env.OPENAI_API_KEY;
-  const baseUrl = process.env.OPENAI_BASE_URL || "https://api.openai.com/v1";
-  const model = process.env.OPENAI_MODEL || "gpt-4o-mini";
-
-  if (!apiKey) {
+  // A107-1: Kill-switch + A103: egress allowlist + A107: model pinning
+  const aiConfigResult = await getAIConfig();
+  if (!aiConfigResult.ok) {
     return `Merci pour votre message. Notre équipe vous répondra bientôt. Vous pouvez aussi nous appeler au ${ctx.phone}.`;
   }
+  const { apiKey, baseUrl, model } = aiConfigResult.config;
 
   try {
     const response = await fetch(`${baseUrl}/chat/completions`, {

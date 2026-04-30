@@ -1,4 +1,5 @@
 import { NextRequest } from "next/server";
+import { getAIConfig } from "@/lib/ai/openai";
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { apiSuccess, apiError, apiRateLimited } from "@/lib/api-response";
 import { withValidation } from "@/lib/api-validate";
@@ -182,16 +183,16 @@ export const POST = withValidation(chatRequestSchema, async (body, request: Next
 
     // --- ADVANCED: OpenAI-compatible API (paid) ---
     // Authentication is already enforced above (SEC-01) for all tiers.
-    const apiKey = process.env.OPENAI_API_KEY;
-    const baseUrl = process.env.OPENAI_BASE_URL || "https://api.openai.com/v1";
-    const model = process.env.OPENAI_MODEL || "gpt-4o-mini";
-
-    if (!apiKey) {
+    // A107-1: Kill-switch + A103: egress allowlist + A107: model pinning
+    const aiConfigResult = await getAIConfig();
+    if (!aiConfigResult.ok) {
+      // Gracefully degrade to basic keyword matching
       const reply = getBasicResponse(lastMessage.content, ctx);
       return apiSuccess({
         message: { role: "assistant" as const, content: reply },
       });
     }
+    const { apiKey, baseUrl, model } = aiConfigResult.config;
 
     const systemPrompt = buildSystemPrompt(ctx);
     const apiMessages = [

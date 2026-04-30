@@ -13,6 +13,7 @@
  */
 
 import { type NextRequest } from "next/server";
+import { getAIConfig } from "@/lib/ai/openai";
 import { sanitizeUntrustedText } from "@/lib/ai/sanitize";
 import { apiSuccess, apiError, apiRateLimited, apiInternalError } from "@/lib/api-response";
 import { withAuthValidation } from "@/lib/api-validate";
@@ -48,10 +49,13 @@ interface AiInteractionResult {
 async function checkWithAi(
   medications: string[],
   allergies: string[],
+  aiConfig?: { apiKey: string; baseUrl: string; model: string },
 ): Promise<AiInteractionResult | null> {
-  const apiKey = process.env.OPENAI_API_KEY;
-  const baseUrl = process.env.OPENAI_BASE_URL || "https://api.openai.com/v1";
-  const model = process.env.OPENAI_MODEL || "gpt-4o-mini";
+  // Use pre-validated config when provided (from getAIConfig()),
+  // otherwise fall back to env vars for backwards compat.
+  const apiKey = aiConfig?.apiKey ?? process.env.OPENAI_API_KEY;
+  const baseUrl = aiConfig?.baseUrl ?? process.env.OPENAI_BASE_URL ?? "https://api.openai.com/v1";
+  const model = aiConfig?.model ?? process.env.OPENAI_MODEL ?? "gpt-4o-mini";
 
   if (!apiKey) return null;
 
@@ -183,9 +187,19 @@ export const POST = withAuthValidation(
     const localResult = checkAllInteractions(data.medications, patientAllergies);
 
     // 2. AI fallback for complex interactions (only if requested and meds > 1)
+    // A107-1: Kill-switch + A103: egress allowlist + A107: model pinning
     let aiEnhanced = false;
+    let aiConfig: { apiKey: string; baseUrl: string; model: string } | undefined;
     if (data.useAiFallback !== false && data.medications.length > 1) {
-      const aiResult = await checkWithAi(data.medications, patientAllergies);
+      const aiConfigResult = await getAIConfig();
+      if (aiConfigResult.ok) {
+        aiConfig = aiConfigResult.config;
+      }
+      // If AI is disabled/blocked, we silently skip AI enhancement and
+      // still return the local drug-check results (graceful degradation).
+      const aiResult = aiConfig
+        ? await checkWithAi(data.medications, patientAllergies, aiConfig)
+        : null;
       if (aiResult?.interactions?.length) {
         // Merge AI results with local results (avoid duplicates)
         const existingPairs = new Set(
