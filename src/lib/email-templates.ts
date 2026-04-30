@@ -8,8 +8,17 @@ import { escapeHtml } from "@/lib/escape-html";
 import type { Locale } from "@/lib/i18n";
 import { formatCurrency } from "@/lib/utils";
 
+/**
+ * A150-F2: Build the notification preferences URL for email footers.
+ */
+function getPreferencesUrl(): string {
+  const rootDomain = process.env.ROOT_DOMAIN || "oltigo.com";
+  return `https://${rootDomain}/patient/preferences`;
+}
+
 function wrap(brandName: string, subject: string, bodyHtml: string): { subject: string; html: string } {
   const safeBrand = escapeHtml(brandName);
+  const preferencesUrl = getPreferencesUrl();
   const html = `<!DOCTYPE html>
 <html lang="en">
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
@@ -27,8 +36,11 @@ function wrap(brandName: string, subject: string, bodyHtml: string): { subject: 
     </tr>
     <tr>
       <td style="padding:16px 32px;background:#f8fafc;border-top:1px solid #e2e8f0;text-align:center;">
-        <p style="margin:0;font-size:12px;color:#94a3b8;">
+        <p style="margin:0 0 8px;font-size:12px;color:#94a3b8;">
           ${safeBrand} &mdash; Healthcare Management Platform
+        </p>
+        <p style="margin:0;font-size:11px;color:#94a3b8;">
+          <a href="${preferencesUrl}" style="color:#64748b;text-decoration:underline;">Manage notification preferences</a>
         </p>
       </td>
     </tr>

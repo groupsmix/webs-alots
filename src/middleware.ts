@@ -308,11 +308,17 @@ export async function middleware(request: NextRequest) {
     }
 
     if (!clinic) {
-      // Unknown subdomain → redirect to root domain
-      const rootUrl = rootDomain
-        ? `${request.nextUrl.protocol}//${rootDomain}`
-        : request.nextUrl.origin;
-      return secureRedirect(rootUrl);
+      // A146-F2: Unknown subdomain — return a hard 404 with X-Robots-Tag
+      // to prevent search engines from indexing attacker-chosen subdomains.
+      // Previously this redirected to the root domain, but that could leak
+      // SEO juice to wildcard subdomains via Cloudflare's wildcard proxy.
+      const notFoundResponse = withSecurityHeaders(
+        new NextResponse("Not Found", { status: 404 }),
+        cspHeaders,
+      );
+      notFoundResponse.headers.set("X-Robots-Tag", "noindex, nofollow");
+      notFoundResponse.headers.set("Cache-Control", "no-store");
+      return notFoundResponse;
     }
 
     resolvedClinic = clinic;

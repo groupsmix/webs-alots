@@ -34,6 +34,8 @@ interface EmailPayload {
   html: string;
   from?: string;
   replyTo?: string;
+  /** Additional headers passed through to the email provider (e.g. List-Unsubscribe). */
+  headers?: Record<string, string>;
 }
 
 // ---- Provider detection ----
@@ -72,6 +74,7 @@ async function sendViaResend(payload: EmailPayload): Promise<EmailSendResult> {
         subject: payload.subject,
         html: payload.html,
         reply_to: payload.replyTo,
+        headers: payload.headers,
       }),
       signal: AbortSignal.timeout(10_000),
     });
@@ -179,7 +182,27 @@ export async function sendEmail(payload: EmailPayload): Promise<EmailSendResult>
 }
 
 /**
+ * Build RFC 8058 List-Unsubscribe headers for outbound emails.
+ *
+ * A150-F1: Gmail/Yahoo require List-Unsubscribe and
+ * List-Unsubscribe-Post for bulk senders (>5k/day) since Feb 2024.
+ * Even for transactional mail, including these headers improves
+ * deliverability and prevents spam classification.
+ */
+function buildUnsubscribeHeaders(to: string): Record<string, string> {
+  const rootDomain = process.env.ROOT_DOMAIN || "oltigo.com";
+  const baseUrl = `https://${rootDomain}`;
+  return {
+    "List-Unsubscribe": `<${baseUrl}/api/unsubscribe?email=${encodeURIComponent(to)}>, <mailto:unsubscribe@${rootDomain}?subject=unsubscribe>`,
+    "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
+  };
+}
+
+/**
  * Send a notification email with the clinic branding wrapper.
+ *
+ * A150-F1: Includes List-Unsubscribe / List-Unsubscribe-Post headers.
+ * A150-F2: Footer includes a notification preferences link.
  */
 export async function sendNotificationEmail(
   to: string,
@@ -190,6 +213,8 @@ export async function sendNotificationEmail(
   const safeBrandName = escapeHtml(clinicName || "Oltigo");
   const safeSubject = escapeHtml(subject);
   const safeBody = escapeHtml(body);
+  const rootDomain = process.env.ROOT_DOMAIN || "oltigo.com";
+  const preferencesUrl = `https://${rootDomain}/patient/preferences`;
 
   const html = `
 <!DOCTYPE html>
@@ -212,8 +237,11 @@ export async function sendNotificationEmail(
     </tr>
     <tr>
       <td style="padding:16px 32px;background:#f8fafc;border-top:1px solid #e2e8f0;text-align:center;">
-        <p style="margin:0;font-size:12px;color:#94a3b8;">
+        <p style="margin:0 0 8px;font-size:12px;color:#94a3b8;">
           ${safeBrandName} &mdash; Plateforme de gestion m&eacute;dicale
+        </p>
+        <p style="margin:0;font-size:11px;color:#94a3b8;">
+          <a href="${preferencesUrl}" style="color:#64748b;text-decoration:underline;">G&eacute;rer vos pr&eacute;f&eacute;rences de notification</a>
         </p>
       </td>
     </tr>
@@ -221,5 +249,5 @@ export async function sendNotificationEmail(
 </body>
 </html>`.trim();
 
-  return sendEmail({ to, subject, html });
+  return sendEmail({ to, subject, html, headers: buildUnsubscribeHeaders(to) });
 }
