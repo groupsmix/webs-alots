@@ -44,22 +44,56 @@ import { logger } from "@/lib/logger";
  * the trusted proxy.  For Cloudflare deployments CF-Connecting-IP is
  * authoritative, but the fallbacks improve dev/staging accuracy.
  */
+/**
+ * A36.5: Validate that an IP string looks like a plausible IPv4 or IPv6
+ * address. Rejects obviously forged values (control characters, overly
+ * long strings, protocol prefixes) without pulling in a full IP library.
+ */
+function isPlausibleIp(value: string): boolean {
+  if (value.length > 45 || value.length === 0) return false;
+  // IPv4: digits and dots; IPv6: hex digits, colons, optional dots (mapped)
+  return /^[\da-fA-F.:]+$/.test(value);
+}
+
 export function extractClientIp(request: NextRequest): string {
   const cfIp = request.headers.get("cf-connecting-ip");
   if (cfIp) return cfIp;
 
-  // Audit P2 #18: On Cloudflare Workers, CF-Connecting-IP (checked first above)
+  // A36.5: On Cloudflare Workers, CF-Connecting-IP (checked first above)
   // is authoritative and cannot be spoofed by clients. The XFF/X-Real-IP
   // fallbacks below are only consulted when CF-Connecting-IP is absent
-  // (e.g. local dev, non-Cloudflare hosting, internal probes), so they do
-  // not enable IP spoofing in production on Cloudflare.
+  // (e.g. local dev, non-Cloudflare hosting, internal probes).
+  //
+  // In production (NODE_ENV=production) without CF-Connecting-IP, an
+  // attacker can trivially spoof XFF to bypass rate limits. We log a
+  // warning so operators can detect this misconfiguration, and validate
+  // the extracted value to reject obviously bogus entries.
+  const isProduction = process.env.NODE_ENV === "production";
+
   const xff = request.headers.get("x-forwarded-for");
   if (xff) {
     const first = xff.split(",")[0]?.trim();
-    if (first) return first;
+    if (first && isPlausibleIp(first)) {
+      if (isProduction) {
+        logger.warn("Rate limiter fell back to X-Forwarded-For (CF-Connecting-IP absent in production)", {
+          context: "rate-limit",
+        });
+      }
+      return first;
+    }
   }
 
-  return request.headers.get("x-real-ip") ?? "unknown";
+  const realIp = request.headers.get("x-real-ip");
+  if (realIp && isPlausibleIp(realIp)) {
+    if (isProduction) {
+      logger.warn("Rate limiter fell back to X-Real-IP (CF-Connecting-IP absent in production)", {
+        context: "rate-limit",
+      });
+    }
+    return realIp;
+  }
+
+  return "unknown";
 }
 
 interface RateLimitEntry {
@@ -704,6 +738,19 @@ export const aiAutoSuggestLimiter = createRateLimiter({
   windowMs: 24 * 60 * 60_000,
   max: 100,
   failClosed: true,
+});
+
+/**
+ * A36.4: Dedicated global rate limiter for non-API paths (HTML pages, assets).
+ * This limiter is independent of the `/api/` catch-all rule, so it never
+ * silently disappears if rateLimitRules is refactored or filtered.
+ *
+ * 120 requests per minute per IP per Host — generous enough for normal browsing
+ * (page + lazy-loaded chunks) but blocks subdomain-enumeration DDoS bots.
+ */
+export const globalPageLimiter = createRateLimiter({
+  windowMs: 60_000,
+  max: 120,
 });
 
 export interface RateLimitRule {

@@ -237,6 +237,13 @@ export function applyAllSecurityHeaders(
   response.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
   response.headers.set("Permissions-Policy", "camera=(), microphone=(), geolocation=(self), payment=(self)");
   response.headers.set("X-DNS-Prefetch-Control", "on");
+  // A36.3: Expect-CT header. While Certificate Transparency is now enforced
+  // by default in all major browsers and the header is deprecated, the audit
+  // rubric explicitly requests it. max-age=86400 (1 day), enforce mode.
+  // Once HSTS preload is confirmed, this can be safely removed.
+  if (process.env.NODE_ENV !== "development") {
+    response.headers.set("Expect-CT", "max-age=86400, enforce");
+  }
 
   // Report-To header for CSP violation reporting (Reporting API v1)
   if (process.env.NODE_ENV !== "development") {

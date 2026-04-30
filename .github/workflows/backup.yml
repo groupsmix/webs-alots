@@ -90,6 +90,7 @@ jobs:
       - name: Create database dump and encrypt
         env:
           BACKUP_GPG_KEY: ${{ secrets.BACKUP_GPG_KEY }}
+          BACKUP_GPG_FINGERPRINT: ${{ secrets.BACKUP_GPG_FINGERPRINT }}
         run: |
           TIMESTAMP=$(date +%Y%m%d_%H%M%S)
           BACKUP_TYPE="${{ steps.backup_type.outputs.type }}"
@@ -105,8 +106,18 @@ jobs:
           # Import the GPG public key
           echo "$BACKUP_GPG_KEY" | gpg --import
 
-          # Extract the recipient key ID from the imported key
+          # A37.12: Extract the recipient key fingerprint and pin it against
+          # BACKUP_GPG_FINGERPRINT if configured. This prevents a bad key in
+          # the keyring from silently encrypting backups to the wrong recipient.
           RECIPIENT=$(gpg --list-keys --with-colons | grep "^pub" | head -n 1 | cut -d: -f5)
+          if [ -n "${BACKUP_GPG_FINGERPRINT:-}" ]; then
+            FULL_FP=$(gpg --list-keys --with-colons | grep "^fpr" | head -n 1 | cut -d: -f10)
+            if [ "$FULL_FP" != "$BACKUP_GPG_FINGERPRINT" ]; then
+              echo "::error::GPG key fingerprint mismatch! Expected: $BACKUP_GPG_FINGERPRINT, Got: $FULL_FP"
+              exit 1
+            fi
+            echo "GPG fingerprint verified: ${FULL_FP}"
+          fi
 
           pg_dump "${SUPABASE_DB_URL}" \
             --no-owner \
@@ -163,7 +174,13 @@ jobs:
 
       - name: Cleanup
         if: always()
-        run: rm -f "${filepath}"
+        run: |
+          rm -f "${filepath}"
+          # A38.4: Wipe AWS/R2 credentials from the runner filesystem.
+          # On shared/self-hosted runners, a parallel job could read these.
+          rm -rf ~/.aws
+          # Clear GPG keyring to avoid key leakage
+          rm -rf ~/.gnupg
 
   verify:
     runs-on: ubuntu-latest

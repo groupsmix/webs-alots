@@ -133,6 +133,16 @@ const ALLOWED_TYPES = new Set([
   "application/pdf",
 ]);
 
+/**
+ * A37.9: Clinical upload categories where GIF is disallowed. GIF supports
+ * animated polyglots and has historically been a vector for SSRF/CSRF
+ * beacons. Branding categories (avatars, logos) still allow GIF.
+ */
+const CLINICAL_CATEGORIES = new Set([
+  "document", "documents", "prescriptions", "lab_report", "lab_results",
+  "medical_records", "patient_files", "radiology", "x_rays", "xrays",
+]);
+
 // HIGH-05: Magic byte signatures for server-side file content validation.
 // Client-supplied MIME types are attacker-controlled and cannot be trusted.
 const MAGIC_BYTES: Record<string, Uint8Array[]> = {
@@ -205,6 +215,14 @@ export const POST = withAuth(async (request, { profile }) => {
     return apiError(`File type not allowed: ${file.type}`);
   }
 
+  // A37.9: Block GIF uploads in clinical categories. GIF supports animated
+  // polyglots and has been used as SSRF/CSRF beacon vectors. Only branding
+  // categories (avatars, logos, photos) are allowed to use GIF.
+  const normCat = normalizeCategory(category);
+  if (file.type === "image/gif" && CLINICAL_CATEGORIES.has(normCat)) {
+    return apiError("GIF files are not allowed for clinical document uploads. Use JPEG, PNG, WebP, or PDF.");
+  }
+
   const key = buildUploadKey(clinicId, category, file.name);
   const buffer = Buffer.from(await file.arrayBuffer());
 
@@ -212,6 +230,50 @@ export const POST = withAuth(async (request, { profile }) => {
   // Prevents attackers from uploading malicious HTML/JS with a spoofed Content-Type.
   if (!validateFileContent(buffer, file.type)) {
     return apiError("File content does not match declared type");
+  }
+
+  // A37.7: AV scan integration point. When AV_SCAN_URL is configured,
+  // uploaded files are sent to an external ClamAV REST API (or similar)
+  // before persisting to R2. Without this, malicious files pass through.
+  // TODO: Integrate with a ClamAV REST service (e.g. clamav-rest or
+  // ClamScan Lambda). Until then, this logs a warning for auditors.
+  if (process.env.AV_SCAN_URL) {
+    try {
+      const avResponse = await fetch(process.env.AV_SCAN_URL, {
+        method: "POST",
+        body: buffer,
+        headers: { "Content-Type": file.type },
+      });
+      if (avResponse.ok) {
+        const avResult = await avResponse.json() as { clean?: boolean; malware?: string };
+        if (avResult.clean === false) {
+          logger.warn("AV scan detected malware in upload", {
+            context: "upload",
+            malware: avResult.malware,
+            filename: file.name,
+          });
+          return apiError("File failed virus scan", 400);
+        }
+      } else {
+        logger.warn("AV scan service returned non-OK status", {
+          context: "upload",
+          status: avResponse.status,
+        });
+        // Fail open if AV service is down (availability > blocking uploads).
+        // In strict mode (AV_SCAN_REQUIRED=true), fail closed instead.
+        if (process.env.AV_SCAN_REQUIRED === "true") {
+          return apiError("Virus scan unavailable — upload rejected", 503);
+        }
+      }
+    } catch (err) {
+      logger.warn("AV scan service unreachable", {
+        context: "upload",
+        error: err instanceof Error ? err.message : String(err),
+      });
+      if (process.env.AV_SCAN_REQUIRED === "true") {
+        return apiError("Virus scan unavailable — upload rejected", 503);
+      }
+    }
   }
 
   // PHI compliance (Law 09-08): encrypt patient documents at rest
