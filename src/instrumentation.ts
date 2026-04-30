@@ -189,8 +189,8 @@ export function register() {
       const message =
         "[STARTUP HEALTH CHECK FAILED] Seed user passwords have not been rotated.\n" +
         "\n" +
-        "Migration 00019 created users with the default password\n" +
-        '"seed-password-change-me". These credentials are publicly known.\n' +
+        "Migration 00019 created users with a well-known default password\n" +
+        "(see supabase/seed.sql). These credentials are publicly known.\n" +
         "\n" +
         "To fix:\n" +
         "  1. DELETE all seed users from auth.users and public.users, OR\n" +

@@ -205,6 +205,11 @@ export function normalizePhiCategory(category: string): string {
  * to the input.
  */
 export const PHI_CATEGORIES = new Set([
+  // AUDIT-02: Both singular and plural forms must be listed so that a
+  // category of "document" (singular, present in LIMITS_BY_CATEGORY) is
+  // correctly recognised as PHI. Previously only "documents" was listed,
+  // meaning uploads with category="document" bypassed encryption.
+  "document",
   "documents",
   "prescriptions",
   "lab_report",

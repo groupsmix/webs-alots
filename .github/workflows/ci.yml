@@ -44,6 +44,27 @@ jobs:
             exit 1
           fi
 
+      # AUDIT-20: Block seed credentials from appearing outside seed/test fixtures.
+      # The well-known password and seed emails must never leak into production
+      # code, configs, or non-test files.
+      - name: Check for seed credentials in non-fixture files
+        run: |
+          # Search for the well-known seed password outside seed.sql and test files
+          HITS=$(git grep -l 'seed-password-change-me' -- ':!supabase/seed.sql' ':!*test*' ':!*.md' ':!AGENTS.md' ':!CLAUDE.md' ':!*.test.*' ':!scripts/seed-data.sql' ':!.github/workflows/' || true)
+          if [ -n "$HITS" ]; then
+            echo "::error::Seed password 'seed-password-change-me' found in non-fixture files:"
+            echo "$HITS"
+            exit 1
+          fi
+          # Search for seed user emails outside seed/test files
+          SEED_EMAILS=$(git grep -l 'admin@demo-clinic\|doctor@demo-clinic\|receptionist@demo-clinic\|patient[0-9]*@demo-clinic' -- ':!supabase/seed.sql' ':!*test*' ':!*.md' ':!AGENTS.md' ':!CLAUDE.md' ':!*.test.*' ':!scripts/seed-data.sql' ':!.github/workflows/' || true)
+          if [ -n "$SEED_EMAILS" ]; then
+            echo "::error::Seed user emails found in non-fixture files:"
+            echo "$SEED_EMAILS"
+            exit 1
+          fi
+          echo "No seed credentials found outside fixtures."
+
       - name: Type check
         run: npx tsc --noEmit
 

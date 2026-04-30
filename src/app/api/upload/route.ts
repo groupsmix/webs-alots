@@ -262,6 +262,25 @@ export const PUT = withAuthValidation(uploadConfirmSchema, async (body, request,
     return apiForbidden("Upload key does not belong to your clinic");
   }
 
+  // AUDIT-14: Block confirmation of presigned uploads for PHI categories.
+  // PHI files MUST go through the POST handler which encrypts server-side.
+  // If a presigned upload somehow landed in a PHI category, delete it and
+  // reject — it would be unencrypted plaintext on R2.
+  const confirmCategory = categoryFromKey(key);
+  if (confirmCategory && requiresEncryption(confirmCategory)) {
+    logger.warn("Presigned upload confirmation blocked for PHI category — deleting unencrypted object", {
+      context: "upload",
+      key,
+      category: confirmCategory,
+    });
+    await deleteFromR2(key);
+    return apiError(
+      "PHI file categories cannot use presigned uploads. Use the POST endpoint instead.",
+      400,
+      "PHI_DIRECT_UPLOAD_BLOCKED",
+    );
+  }
+
   if (!ALLOWED_TYPES.has(contentType)) {
     // Delete the object — the content type was not in the allowlist
     await deleteFromR2(key);
@@ -349,6 +368,18 @@ export const GET = withAuth(async (request, { profile }) => {
 
   if (!ALLOWED_TYPES.has(contentType)) {
     return apiError(`File type not allowed: ${contentType}`);
+  }
+
+  // AUDIT-01: PHI categories MUST go through the POST handler which encrypts
+  // the file server-side before storing to R2. Presigned direct uploads bypass
+  // server-side encryption and would store plaintext PHI — a compliance
+  // violation under Moroccan Law 09-08.
+  if (requiresEncryption(category)) {
+    return apiError(
+      "Direct upload is not allowed for PHI file categories. Use the POST endpoint instead.",
+      400,
+      "PHI_DIRECT_UPLOAD_BLOCKED",
+    );
   }
 
   const key = buildUploadKey(clinicId, category, filename);
