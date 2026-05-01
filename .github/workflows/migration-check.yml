@@ -87,6 +87,7 @@ jobs:
 
       - name: Run Supabase and RLS Tests
         run: |
+          supabase init --force
           supabase start
           # We run the specific RLS assertion suite against the fresh local DB
           npx vitest run src/lib/__tests__/integration/rls-assertions.test.ts
