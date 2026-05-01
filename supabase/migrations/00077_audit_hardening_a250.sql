@@ -24,6 +24,25 @@ DO $$ BEGIN
   END IF;
 END $$;
 
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.tables
+    WHERE table_schema = 'public' AND table_name = 'audit_logs'
+  ) THEN
+    CREATE TABLE audit_logs (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      table_name TEXT NOT NULL,
+      record_id TEXT NOT NULL,
+      action TEXT NOT NULL,
+      old_data JSONB,
+      new_data JSONB,
+      changed_by TEXT,
+      clinic_id UUID,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    );
+  END IF;
+END $$;
+
 -- ============================================================================
 -- F-A167: Audit triggers on money tables
 -- ============================================================================
