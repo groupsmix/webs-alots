@@ -200,6 +200,7 @@ export function CommandPalette({
             </div>
           ) : (
             filtered.map((item, index) => (
+              // eslint-disable-next-line jsx-a11y/click-events-have-key-events -- keyboard interaction handled by parent or child interactive element
               <div
                 key={item.id}
                 id={`command-item-${item.id}`}

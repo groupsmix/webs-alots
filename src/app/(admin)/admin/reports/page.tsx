@@ -11,6 +11,7 @@ export default function ReportsPage() {
   return (
     <>
       <Breadcrumb items={[{ label: "Admin", href: "/admin/dashboard" }, { label: "Reports" }]} />
+      {/* eslint-disable-next-line jsx-a11y/aria-role -- role prop is a business-logic attribute, not an ARIA role */}
       <AnalyticsDashboard role="admin" />
     </>
   );

@@ -127,6 +127,7 @@ export async function createPregnancy(data: {
 
 export async function updatePregnancy(id: string, updates: Record<string, unknown>): Promise<boolean> {
   const supabase = createClient();
+  // @ts-expect-error -- Supabase generated types lag behind actual DB schema
   const { error } = await supabase.from("pregnancies").update(updates).eq("id", id);
   if (error) { logger.warn("Mutation failed", { context: "data/client", error }); return false; }
   return true;

@@ -90,6 +90,7 @@ export const GET = withAuth(async (request: NextRequest, { supabase, profile }) 
     supabase
       .from("documents")
       .select("id, name, category, created_at")
+      // @ts-expect-error -- Supabase generated types lag behind actual DB schema
       .eq("patient_id", profile.id)
       .order("created_at", { ascending: false })
       .limit(EXPORT_ROW_LIMIT),

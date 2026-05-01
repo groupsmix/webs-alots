@@ -1049,6 +1049,7 @@ export async function updateAppointmentStatus(
       updateData.cancellation_reason = extra.cancellation_reason;
     }
   }
+  // @ts-expect-error -- Supabase generated types lag behind actual DB schema
   const { error } = await supabase.from("appointments").update(updateData).eq("id", appointmentId);
   if (error) {
     logger.warn("Mutation failed", { context: "data/server", error });
@@ -1185,6 +1186,7 @@ export async function updateRadiologyOrderStatus(
   }
   const { error } = await supabase
     .from("radiology_orders")
+    // @ts-expect-error -- Supabase generated types lag behind actual DB schema
     .update(updateData)
     .eq("id", orderId);
   if (error) {

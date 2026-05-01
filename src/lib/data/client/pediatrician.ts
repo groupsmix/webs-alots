@@ -162,6 +162,7 @@ export async function createVaccination(data: {
 
 export async function updateVaccination(id: string, updates: Record<string, unknown>): Promise<boolean> {
   const supabase = createClient();
+  // @ts-expect-error -- Supabase generated types lag behind actual DB schema
   const { error } = await supabase.from("vaccinations").update(updates).eq("id", id);
   if (error) { logger.warn("Mutation failed", { context: "data/client", error }); return false; }
   return true;
@@ -239,6 +240,7 @@ export async function createMilestone(data: {
 
 export async function updateMilestone(id: string, updates: Record<string, unknown>): Promise<boolean> {
   const supabase = createClient();
+  // @ts-expect-error -- Supabase generated types lag behind actual DB schema
   const { error } = await supabase.from("developmental_milestones").update(updates).eq("id", id);
   if (error) { logger.warn("Mutation failed", { context: "data/client", error }); return false; }
   return true;

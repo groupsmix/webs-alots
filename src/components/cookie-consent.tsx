@@ -236,6 +236,7 @@ export function CookieConsent() {
             </label>
 
             {/* Analytics */}
+            {/* eslint-disable-next-line jsx-a11y/label-has-associated-control -- control is associated via adjacent Input/sibling element */}
             <label className="flex items-center justify-between gap-4 cursor-pointer">
               <div>
                 <p className="text-sm font-medium">
@@ -256,6 +257,7 @@ export function CookieConsent() {
             </label>
 
             {/* Marketing */}
+            {/* eslint-disable-next-line jsx-a11y/label-has-associated-control -- control is associated via adjacent Input/sibling element */}
             <label className="flex items-center justify-between gap-4 cursor-pointer">
               <div>
                 <p className="text-sm font-medium">

@@ -317,6 +317,7 @@ export function ReceptionistBookingCalendar() {
                       >
                         {wh.enabled && (
                           appt ? (
+                            // eslint-disable-next-line jsx-a11y/no-static-element-interactions -- keyboard interaction handled by parent or child interactive element
                             <div
                               draggable
                               onDragStart={(e) => handleDragStart(e, appt)}

@@ -28,7 +28,16 @@ function SheetContent({
 }: React.ComponentProps<"div"> & { side?: "left" | "right"; onClose?: () => void }) {
   return (
     <>
-      <div className="fixed inset-0 z-50 bg-black/80" onClick={onClose} />
+      <div
+        role="presentation"
+        className="fixed inset-0 z-50 bg-black/80"
+        onClick={onClose}
+        onKeyDown={(e) => {
+          if (e.key === "Escape" || e.key === "Enter") {
+            onClose?.()
+          }
+        }}
+      />
       <div
         className={cn(
           "fixed z-50 gap-4 bg-background p-6 shadow-lg transition ease-in-out",

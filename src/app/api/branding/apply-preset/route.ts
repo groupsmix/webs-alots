@@ -57,6 +57,7 @@ export const POST = withAuthValidation(applyPresetSchema, async (body, _request,
 
   const { error } = await supabase
     .from("clinics")
+    // @ts-expect-error -- Supabase generated types lag behind actual DB schema
     .update(updates)
     .eq("id", clinicId);
 

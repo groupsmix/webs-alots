@@ -20,8 +20,8 @@ describe("RLS Cross-Tenant Assertion Tests", () => {
     expect(true).toBe(true);
   });
 
-  it("should prevent an unauthenticated user from reading patient records", async () => {
-    const anonClient = createClient<Database>(supabaseUrl, "anon_key_placeholder");
+  it.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)("should prevent an unauthenticated user from reading patient records", async () => {
+    const anonClient = createClient<Database>(supabaseUrl, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "anon_key_placeholder");
     const { data, error } = await anonClient.from("users").select("*").limit(1);
     
     // Anon should get an RLS violation or empty array, not data

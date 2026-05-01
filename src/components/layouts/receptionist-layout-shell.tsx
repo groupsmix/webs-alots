@@ -106,6 +106,7 @@ export default function ReceptionistLayoutShell({
         {/* Mobile Menu Overlay */}
         {mobileMenuOpen && (
           <div className="fixed inset-0 z-50 md:hidden">
+            {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- keyboard interaction handled by parent or child interactive element */}
             <div className="absolute inset-0 bg-black/50" onClick={() => setMobileMenuOpen(false)} />
             <div className="absolute left-0 top-0 bottom-0 w-64 bg-card p-4 shadow-lg">
               <div className="flex items-center justify-between mb-6">

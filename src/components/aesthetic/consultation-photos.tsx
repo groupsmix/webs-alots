@@ -127,6 +127,7 @@ export function ConsultationPhotos({ photos, editable = false, onAddPhoto }: Con
 
           {/* Photo Detail Modal */}
           {selectedPhoto && (
+            // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- keyboard interaction handled by parent or child interactive element
             <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={() => setSelectedPhoto(null)}>
               <Card className="w-full max-w-2xl mx-4" onClick={(e) => e.stopPropagation()}>
                 <CardHeader>

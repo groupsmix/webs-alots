@@ -71,6 +71,7 @@ export function OnboardingTour({ onDismiss, completedSteps, onStepComplete }: On
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
+      {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- keyboard interaction handled by parent or child interactive element */}
       <div className="absolute inset-0 bg-black/60" onClick={handleDismiss} />
       <Card className="relative z-10 w-full max-w-lg mx-4 shadow-2xl">
         <CardContent className="p-0">

@@ -817,6 +817,7 @@ export async function getPublicBlogPosts(): Promise<PublicBlogPost[]> {
     .from("blog_posts")
     .select("id, title, excerpt, published_at, read_time, category")
     .eq("clinic_id", clinicId)
+    // @ts-expect-error -- Supabase generated types lag behind actual DB schema
     .eq("published", true)
     .order("published_at", { ascending: false });
 

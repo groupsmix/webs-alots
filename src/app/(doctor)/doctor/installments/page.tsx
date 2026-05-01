@@ -117,6 +117,7 @@ export default function DoctorInstallmentsPage() {
         </TabsList>
 
         <TabsContent value="tracker" className="mt-4">
+          {/* eslint-disable jsx-a11y/aria-role -- role prop is a business-logic attribute, not an ARIA role */}
           <InstallmentTracker
             plans={plans}
             role="doctor"
@@ -124,6 +125,7 @@ export default function DoctorInstallmentsPage() {
             onSendReminder={handleSendReminder}
             onGenerateReceipt={handleGenerateReceipt}
           />
+          {/* eslint-enable jsx-a11y/aria-role */}
         </TabsContent>
 
         <TabsContent value="create" className="mt-4">

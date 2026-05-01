@@ -91,6 +91,8 @@ function DropdownMenuItem({
 }: React.ComponentProps<"div"> & { onClose?: () => void }) {
   return (
     <div
+      role="menuitem"
+      tabIndex={0}
       className={cn(
         "relative flex cursor-pointer select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none transition-colors hover:bg-accent hover:text-accent-foreground",
         className
@@ -98,6 +100,13 @@ function DropdownMenuItem({
       onClick={(e) => {
         onClick?.(e)
         onClose?.()
+      }}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault()
+          onClick?.(e as unknown as React.MouseEvent<HTMLDivElement>)
+          onClose?.()
+        }
       }}
       {...props}
     >

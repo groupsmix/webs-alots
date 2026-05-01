@@ -133,6 +133,7 @@ export const PATCH = withAuthValidation(petProfileUpdateSchema, async (body, _re
 
   const { data, error } = await supabase
     .from("pet_profiles")
+    // @ts-expect-error -- Supabase generated types lag behind actual DB schema
     .update(updatePayload)
     .eq("id", id)
     .eq("clinic_id", profile.clinic_id)

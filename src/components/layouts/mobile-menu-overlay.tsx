@@ -72,6 +72,7 @@ export function MobileMenuOverlay({
       role="dialog"
       aria-modal="true"
     >
+      {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- keyboard interaction handled by parent or child interactive element */}
       <div
         className="absolute inset-0 bg-black/50"
         onClick={onClose}

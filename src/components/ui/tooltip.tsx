@@ -37,6 +37,7 @@ export function Tooltip({ content, children, side = "top", className }: TooltipP
   };
 
   return (
+    // eslint-disable-next-line jsx-a11y/no-static-element-interactions -- wrapper delegates focus/blur to children; no interactive role needed
     <div
       className="relative inline-flex"
       onMouseEnter={show}
