@@ -22,31 +22,31 @@ jobs:
         run: |
           echo "Checking migration file numbering..."
           files=$(ls supabase/migrations/*.sql 2>/dev/null | sort)
-          prev_num=""
+          prev_version=""
           has_error=false
 
           for file in $files; do
             basename=$(basename "$file")
-            num=$(echo "$basename" | grep -oP '^\d+')
+            version=$(echo "$basename" | cut -d'_' -f1)
 
             # Check for duplicate prefixes
-            if [ "$num" = "$prev_num" ]; then
-              echo "ERROR: Duplicate migration number $num found:"
+            if [ "$version" = "$prev_version" ]; then
+              echo "ERROR: Duplicate migration version $version found:"
               echo "  - Previous file with same number exists"
               echo "  - $basename"
               has_error=true
             fi
 
-            prev_num="$num"
+            prev_version="$version"
           done
 
           if [ "$has_error" = true ]; then
             echo ""
-            echo "FAILED: Migration files must have unique sequential numbers."
+            echo "FAILED: Migration files must have unique version identifiers."
             exit 1
           fi
 
-          echo "All migration numbers are unique."
+          echo "All migration versions are unique."
 
       - name: Validate SQL syntax (basic)
         run: |
@@ -87,6 +87,7 @@ jobs:
 
       - name: Run Supabase and RLS Tests
         run: |
+          supabase init --force
           supabase start
           # We run the specific RLS assertion suite against the fresh local DB
           npx vitest run src/lib/__tests__/integration/rls-assertions.test.ts

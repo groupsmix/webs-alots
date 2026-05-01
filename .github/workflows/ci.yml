@@ -270,6 +270,7 @@ jobs:
           NEXT_PUBLIC_SUPABASE_URL: ${{ env.SUPABASE_LOCAL_URL || 'https://placeholder.supabase.co' }}
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ env.SUPABASE_LOCAL_ANON_KEY || 'placeholder' }}
           NEXT_PUBLIC_PHONE_AUTH_ENABLED: "true"
+          PHONE_AUTH_ACK: "true"
 
       - name: Run E2E tests (blocking)
         # CI-03: Previously ran with `continue-on-error: true` (advisory)
@@ -291,6 +292,7 @@ jobs:
           NEXT_PUBLIC_SUPABASE_URL: ${{ env.SUPABASE_LOCAL_URL || secrets.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co' }}
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ env.SUPABASE_LOCAL_ANON_KEY || secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder' }}
           NEXT_PUBLIC_PHONE_AUTH_ENABLED: "true"
+          PHONE_AUTH_ACK: "true"
           SUPABASE_SERVICE_ROLE_KEY: ${{ env.SUPABASE_LOCAL_SERVICE_ROLE_KEY || '' }}
           BOOKING_TOKEN_SECRET: ci-e2e-booking-token-secret-placeholder
           ROOT_DOMAIN: localhost

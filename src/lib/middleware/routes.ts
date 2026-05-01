@@ -10,6 +10,7 @@ const PUBLIC_ROUTES = [
   "/contact",
   "/blog",
   "/book",
+  "/booking",
   "/reviews",
   "/login",
   "/register",
@@ -31,6 +32,7 @@ const PUBLIC_PREFIXES = [
 
 /** Protected route prefixes (require authentication) */
 const PROTECTED_PREFIXES = [
+  "/dashboard",
   "/patient",
   "/doctor",
   "/receptionist",
