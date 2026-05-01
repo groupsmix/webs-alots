@@ -180,6 +180,7 @@ export const POST = withAuthValidation(wizardSchema, async (body, request, { sup
       if (Object.keys(brandingUpdate).length > 0) {
         const { error: brandError } = await supabase
           .from("clinics")
+          // @ts-expect-error -- Supabase generated types lag behind actual DB schema
           .update(brandingUpdate)
           .eq("id", body.clinic_id);
 

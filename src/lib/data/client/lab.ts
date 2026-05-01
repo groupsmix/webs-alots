@@ -335,6 +335,7 @@ export async function updateLabOrderStatus(
   }
   const { error } = await supabase
     .from("lab_test_orders")
+    // @ts-expect-error -- Supabase generated types lag behind actual DB schema
     .update(updateData)
     .eq("id", orderId);
   if (error) {

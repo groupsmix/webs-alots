@@ -93,11 +93,13 @@ export default function PatientPaymentPlanPage() {
       {myPlans.length === 0 ? (
         <p className="text-muted-foreground">No payment plans found.</p>
       ) : (
+        /* eslint-disable jsx-a11y/aria-role -- role prop is a business-logic attribute, not an ARIA role */
         <InstallmentTracker
           plans={myPlans}
           role="patient"
           onGenerateReceipt={handleGenerateReceipt}
         />
+        /* eslint-enable jsx-a11y/aria-role */
       )}
     </div>
   );

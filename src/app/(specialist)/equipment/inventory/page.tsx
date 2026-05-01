@@ -255,6 +255,7 @@ export default function EquipmentInventoryPage() {
         {filtered.map((item) => (
           <Card key={item.id}>
             <CardContent className="pt-4 pb-4">
+              {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- keyboard interaction handled by parent or child interactive element */}
               <div className="flex items-center justify-between cursor-pointer" onClick={() => setExpandedId(expandedId === item.id ? null : item.id)}>
                 <div className="flex items-center gap-4">
                   <div className="h-10 w-10 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">

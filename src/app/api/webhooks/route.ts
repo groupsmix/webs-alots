@@ -206,7 +206,9 @@ export async function POST(request: NextRequest) {
 
             await supabase
               .from("notification_log")
+              // @ts-expect-error -- Supabase generated types lag behind actual DB schema
               .update(updateData)
+              // @ts-expect-error -- Supabase generated types lag behind actual DB schema
               .eq("message_id", statusUpdate.messageId);
           } catch (err) {
             logger.warn("Failed to update message status", {
@@ -237,6 +239,7 @@ export async function POST(request: NextRequest) {
         const { data: clinic } = await supabase
           .from("clinics")
           .select("id, name")
+          // @ts-expect-error -- Supabase generated types lag behind actual DB schema
           .eq("whatsapp_phone_number_id", wabaPhoneNumberId)
           .single();
         clinicId = clinic?.id;

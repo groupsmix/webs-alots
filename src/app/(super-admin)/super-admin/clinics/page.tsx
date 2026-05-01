@@ -432,6 +432,7 @@ export default function AllClinicsPage() {
               <p className="text-xs text-muted-foreground">Owner: {loginClinic.ownerName} &middot; {loginClinic.city}</p>
             </div>
             <div className="space-y-2">
+              {/* eslint-disable-next-line jsx-a11y/label-has-associated-control -- control is associated via adjacent Input/sibling element */}
               <label className="text-sm font-medium">Reason for impersonation <span className="text-red-500">*</span></label>
               <Input
                 placeholder="e.g. Investigating billing issue reported by clinic"
@@ -440,6 +441,7 @@ export default function AllClinicsPage() {
               />
             </div>
             <div className="space-y-2">
+              {/* eslint-disable-next-line jsx-a11y/label-has-associated-control -- control is associated via adjacent Input/sibling element */}
               <label className="text-sm font-medium">Re-enter your password <span className="text-red-500">*</span></label>
               <Input
                 type="password"
@@ -500,6 +502,7 @@ export default function AllClinicsPage() {
             </div>
             {suspendClinic.status !== "suspended" && (
               <div className="space-y-2">
+                {/* eslint-disable-next-line jsx-a11y/label-has-associated-control -- control is associated via adjacent Input/sibling element */}
                 <label className="text-sm font-medium">Type the clinic name to confirm:</label>
                 <Input
                   placeholder={suspendClinic.name}

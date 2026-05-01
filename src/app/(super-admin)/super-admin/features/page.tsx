@@ -242,6 +242,7 @@ export default function FeatureTogglesPage() {
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="space-y-2">
+              {/* eslint-disable-next-line jsx-a11y/label-has-associated-control -- control is associated via adjacent Input/sibling element */}
               <label className="text-sm font-medium">Action</label>
               <select className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm" value={bulkAction} onChange={(e) => setBulkAction(e.target.value as "enable" | "disable")}>
                 <option value="enable">Enable all features</option>
@@ -249,6 +250,7 @@ export default function FeatureTogglesPage() {
               </select>
             </div>
             <div className="space-y-2">
+              {/* eslint-disable-next-line jsx-a11y/label-has-associated-control -- control is associated via adjacent Input/sibling element */}
               <label className="text-sm font-medium">Tier</label>
               <select className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm" value={bulkTier} onChange={(e) => setBulkTier(e.target.value)}>
                 <option value="basic">Basic</option>

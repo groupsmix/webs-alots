@@ -49,6 +49,7 @@ export const POST = withAuthValidation(createTableSchema, async (body, _request,
 
   const { data, error } = await auth.supabase
     .from("restaurant_tables")
+    // @ts-expect-error -- Supabase generated types lag behind actual DB schema
     .insert({
       clinic_id: clinicId,
       name: body.name,

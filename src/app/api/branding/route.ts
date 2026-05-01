@@ -163,6 +163,7 @@ export const PUT = withAuthValidation(brandingUpdateSchema, async (body, request
 
   const { error } = await supabase
     .from("clinics")
+    // @ts-expect-error -- Supabase generated types lag behind actual DB schema
     .update(updates)
     .eq("id", clinicId);
 
@@ -240,6 +241,7 @@ export const POST = withAuth(async (request, { supabase }) => {
   const column = FIELD_MAP[field];
   const { error } = await supabase
     .from("clinics")
+    // @ts-expect-error -- Supabase generated types lag behind actual DB schema
     .update({ [column]: url })
     .eq("id", clinicId);
 

@@ -67,6 +67,7 @@ export const PATCH = withAuth(async (request: NextRequest, auth: AuthContext) =>
 
   const { data, error } = await auth.supabase
     .from("restaurant_tables")
+    // @ts-expect-error -- Supabase generated types lag behind actual DB schema
     .update(result.data)
     .eq("id", id)
     .eq("clinic_id", clinicId)

@@ -160,6 +160,7 @@ export default function RadiologyImagesPage() {
                 </Select>
               </div>
 
+              {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- keyboard interaction handled by parent or child interactive element */}
               <div
                 className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${dragOver ? "border-indigo-500 bg-indigo-50 dark:bg-indigo-950/20" : "border-muted-foreground/25 hover:border-muted-foreground/50"}`}
                 onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}

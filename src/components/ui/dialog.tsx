@@ -25,8 +25,14 @@ function DialogPortal({ children }: { children: React.ReactNode }) {
 function DialogOverlay({ className, onClick, ...props }: React.ComponentProps<"div">) {
   return (
     <div
+      role="presentation"
       className={cn("fixed inset-0 z-50 bg-black/80 animate-in fade-in-0", className)}
       onClick={onClick}
+      onKeyDown={(e) => {
+        if (e.key === "Escape" || e.key === "Enter") {
+          onClick?.(e as unknown as React.MouseEvent<HTMLDivElement>)
+        }
+      }}
       {...props}
     />
   )

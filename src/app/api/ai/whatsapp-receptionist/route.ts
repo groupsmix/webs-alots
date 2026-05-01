@@ -129,6 +129,7 @@ async function fetchClinicContext(
         .from("services")
         .select("name")
         .eq("clinic_id", clinicId)
+        // @ts-expect-error -- Supabase generated types lag behind actual DB schema
         .eq("active", true)
         .limit(20),
       supabase

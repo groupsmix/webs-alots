@@ -114,12 +114,21 @@ interface SelectItemProps extends React.ComponentProps<"div"> {
 function SelectItem({ className, children, onSelect, isSelected, ...props }: SelectItemProps) {
   return (
     <div
+      role="option"
+      tabIndex={0}
+      aria-selected={isSelected}
       className={cn(
         "relative flex w-full cursor-pointer select-none items-center rounded-sm py-1.5 px-2 text-sm outline-none hover:bg-accent hover:text-accent-foreground",
         isSelected && "bg-accent text-accent-foreground",
         className
       )}
       onClick={onSelect}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault()
+          onSelect?.()
+        }
+      }}
       {...props}
     >
       {children}

@@ -93,6 +93,7 @@ export async function createParapharmacySale(data: {
   const total = data.items.reduce((sum, item) => sum + item.quantity * item.unit_price, 0);
   const now = new Date();
   const { data: result, error } = await supabase.from("sales")
+    // @ts-expect-error -- Supabase generated types lag behind actual DB schema
     .insert({
       clinic_id: data.clinic_id,
       patient_name: data.patient_name,

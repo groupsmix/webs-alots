@@ -148,6 +148,7 @@ export function OdontogramChart({ entries, editable = false, onUpdateEntry }: Od
             {editable ? (
               <div className="space-y-3">
                 <div>
+                  {/* eslint-disable-next-line jsx-a11y/label-has-associated-control -- control is associated via adjacent Input/sibling element */}
                   <label className="text-xs text-muted-foreground block mb-1">Status</label>
                   <select
                     value={editStatus}
@@ -160,6 +161,7 @@ export function OdontogramChart({ entries, editable = false, onUpdateEntry }: Od
                   </select>
                 </div>
                 <div>
+                  {/* eslint-disable-next-line jsx-a11y/label-has-associated-control -- control is associated via adjacent Input/sibling element */}
                   <label className="text-xs text-muted-foreground block mb-1">Notes</label>
                   <Textarea
                     value={editNotes}

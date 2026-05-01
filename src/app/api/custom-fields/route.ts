@@ -120,6 +120,7 @@ export const PATCH = withAuthValidation(customFieldUpdateSchema, async (body, re
 
     const { data, error } = await supabase
       .from("custom_field_definitions")
+      // @ts-expect-error -- Supabase generated types lag behind actual DB schema
       .update(allowedUpdates)
       .eq("id", id)
       .select()
