@@ -27,6 +27,12 @@ import { createRateLimiter, extractClientIp } from "@/lib/rate-limit";
 import { createAdminClient } from "@/lib/supabase-server";
 import { normalizeText, safeParse } from "@/lib/validations";
 import { sendTextMessage } from "@/lib/whatsapp";
+import { handlePreflight } from "@/lib/cors";
+
+/** Handle CORS preflight requests. */
+export function OPTIONS(request: NextRequest) {
+  return handlePreflight(request);
+}
 
 // ---------------------------------------------------------------------------
 // Anti-Abuse Rate Limiter

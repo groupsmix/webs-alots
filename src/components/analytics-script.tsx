@@ -1,4 +1,35 @@
+"use client";
+
 import Script from "next/script";
+import { useSyncExternalStore } from "react";
+import { getStoredCookiePreferences } from "@/components/cookie-consent";
+
+/** Subscribe to cookie-consent localStorage events for AnalyticsScript. */
+function subscribeToConsent(callback: () => void): () => void {
+  const onStorage = (e: StorageEvent) => {
+    if (e.key === "cookie-consent") callback();
+  };
+  const onCustom = () => callback();
+  if (typeof window !== "undefined") {
+    window.addEventListener("storage", onStorage);
+    window.addEventListener("cookie-consent:changed", onCustom);
+    return () => {
+      window.removeEventListener("storage", onStorage);
+      window.removeEventListener("cookie-consent:changed", onCustom);
+    };
+  }
+  return () => {};
+}
+
+function getMarketingConsented(): boolean {
+  const prefs = getStoredCookiePreferences();
+  // We treat GA/GTM as marketing/analytics combined.
+  return prefs?.analytics === true || prefs?.marketing === true;
+}
+
+function getServerSnapshot(): boolean {
+  return false;
+}
 
 /**
  * Sanitize a tracking ID to prevent script injection.
@@ -27,18 +58,19 @@ export function AnalyticsScript({
   gaId,
   gtmId,
   nonce,
-  consentGiven,
 }: {
   gaId?: string | null;
   gtmId?: string | null;
-  /** CSP nonce — required for inline scripts under strict CSP */
   nonce?: string;
-  /** A60.3: Only inject tracking scripts after user consent */
-  consentGiven?: boolean;
 }) {
-  // A60.3 / A85-1 fix: Only block on explicit opt-out (=== false), not falsy undefined.
-  // This preserves functionality for existing callers that don't pass consentGiven.
-  if (consentGiven === false) return null;
+  const isConsented = useSyncExternalStore(
+    subscribeToConsent,
+    getMarketingConsented,
+    getServerSnapshot,
+  );
+
+  // A60.3 / A85-1 fix: Only load tracking scripts after explicit consent.
+  if (!isConsented) return null;
 
   if (gtmId) {
     return (

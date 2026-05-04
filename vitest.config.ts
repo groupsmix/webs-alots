@@ -27,10 +27,10 @@ export default defineConfig({
       // functions: 60. For PHI software, the mid-term milestone is
       // 60/50/60/50 per A86-F05.
       thresholds: {
-        statements: 12,
-        branches: 9,
-        lines: 12,
-        functions: 8,
+        statements: 60,
+        branches: 50,
+        lines: 60,
+        functions: 50,
       },
     },
   },

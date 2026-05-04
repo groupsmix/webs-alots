@@ -100,6 +100,13 @@ export default function PrivacyPage() {
             praticiens et le personnel médical impliqués dans votre prise en
             charge. Nous ne vendons ni ne louons vos données à des tiers.
           </p>
+          <p className="text-muted-foreground mb-4">
+            Certains de nos sous-traitants techniques peuvent avoir un accès limité et sécurisé à certaines données pour le fonctionnement du service :
+          </p>
+          <ul className="list-disc pl-6 text-muted-foreground space-y-2 mb-4">
+            <li><strong>Sentry :</strong> Outil de suivi des erreurs techniques. Les données médicales (PHI) sont automatiquement masquées avant envoi.</li>
+            <li><strong>OpenAI :</strong> (Optionnel) Utilisé par certains professionnels de santé pour l&apos;assistance médicale. Vos données sont anonymisées/minimisées et ne sont pas utilisées pour l&apos;entraînement de leurs modèles.</li>
+          </ul>
         </section>
 
         <section className="mb-8">
@@ -110,6 +117,9 @@ export default function PrivacyPage() {
             Vos données sont conservées pendant la durée nécessaire aux
             finalités pour lesquelles elles ont été collectées, et conformément
             aux délais de conservation prévus par la réglementation en vigueur.
+          </p>
+          <p className="text-muted-foreground mb-4">
+            En cas de demande de suppression de compte, un délai de grâce de 30 jours est appliqué avant l&apos;effacement définitif de vos données (rendez-vous, ordonnances, documents), afin de prévenir toute suppression accidentelle.
           </p>
         </section>
 

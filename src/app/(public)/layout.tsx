@@ -1,5 +1,6 @@
 import { AnalyticsScript } from "@/components/analytics-script";
 import { Chatbot } from "@/components/chatbot";
+import { headers } from "next/headers";
 import { CookieConsent } from "@/components/cookie-consent";
 import { DemoBanner } from "@/components/demo-banner";
 import { PublicFooter } from "@/components/public/footer";
@@ -12,6 +13,8 @@ export default async function PublicLayout({
 }: {
   children: React.ReactNode;
 }) {
+  const h = await headers();
+  const nonce = h.get("x-nonce") || undefined;
   const tenant = await getTenant();
 
   // Root domain (no tenant) → render children directly.
@@ -42,7 +45,7 @@ export default async function PublicLayout({
       }
     >
       {isDemo && <DemoBanner />}
-      <AnalyticsScript gaId={gaId} gtmId={gtmId} />
+      <AnalyticsScript gaId={gaId} gtmId={gtmId} nonce={nonce} />
       <a
         href="#main-content"
         className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[100] focus:rounded-lg focus:bg-primary focus:px-4 focus:py-2 focus:text-primary-foreground focus:text-sm focus:font-medium"

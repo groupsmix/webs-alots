@@ -211,7 +211,7 @@ export function CookieConsent() {
             >
               {t(locale, "cookie.managePreferences")}
             </Button>
-            <Button size="sm" onClick={acceptAll}>
+            <Button variant="outline" size="sm" onClick={acceptAll}>
               {t(locale, "cookie.acceptAll")}
             </Button>
           </div>

@@ -195,6 +195,7 @@ const CMI_ALLOWED_PARAMS = new Set([
   'PAResSyntaxOK', 'PAResVerified', 'cavv', 'cavvAlgorithm', 'eci',
   'xid', 'md', 'rnd', 'EXTRA.TRXDATE', 'EXTRA.CARDBRAND',
   'EXTRA.CARDISSUER', 'EXTRA.CARDTYPE', 'EXTRA.HOSTMSG',
+  'avs', 'AVS', 'cvv', 'CVV', 'cvvStatus'
 ]);
 
 export const cmiCallbackFieldsSchema = z.object({
@@ -416,6 +417,16 @@ export const v1AppointmentCreateSchema = z.object({
 
 export const v1PatientCreateSchema = z.object({
   full_name: z.string().min(1).max(200),
+  email: z.string().email().max(254).optional().or(z.literal("")),
+  phone: z.string().max(30).optional(),
+  date_of_birth: z.string().optional(),
+  gender: z.string().max(20).optional(),
+  insurance_type: z.string().max(100).optional(),
+  address: z.string().max(500).optional(),
+});
+
+export const patientProfileUpdateSchema = z.object({
+  full_name: z.string().min(1).max(200).optional(),
   email: z.string().email().max(254).optional().or(z.literal("")),
   phone: z.string().max(30).optional(),
   date_of_birth: z.string().optional(),

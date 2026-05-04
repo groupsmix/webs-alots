@@ -68,6 +68,21 @@ jobs:
       - name: Type check
         run: npx tsc --noEmit
 
+      # Start ephemeral Supabase instance so RLS integration tests run
+      - name: Start Supabase (ephemeral CI project)
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Boot local Supabase
+        run: |
+          supabase init --force
+          supabase start
+          echo "SUPABASE_LOCAL_URL=$(supabase status --output json | jq -r '.API_URL')" >> "$GITHUB_ENV"
+          echo "SUPABASE_LOCAL_ANON_KEY=$(supabase status --output json | jq -r '.ANON_KEY')" >> "$GITHUB_ENV"
+          echo "SUPABASE_LOCAL_SERVICE_KEY=$(supabase status --output json | jq -r '.SERVICE_ROLE_KEY')" >> "$GITHUB_ENV"
+          echo "SUPABASE_LOCAL=true" >> "$GITHUB_ENV"
+
       # CI-08: Coverage thresholds are defined in vitest.config.ts and
       # enforced here. @vitest/coverage-v8 is a devDependency installed by
       # `npm ci` above; failing this step blocks the PR.

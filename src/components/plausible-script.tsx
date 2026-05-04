@@ -51,7 +51,7 @@ function getServerSnapshot(): boolean {
  * tracking. Rendering conditionally eliminates the race window where the
  * script could phone home before the consent check runs on mount.
  */
-export function PlausibleScript() {
+export function PlausibleScript({ nonce }: { nonce?: string }) {
   const domain = process.env.NEXT_PUBLIC_PLAUSIBLE_DOMAIN;
   const analyticsConsented = useSyncExternalStore(
     subscribeToConsent,
@@ -70,6 +70,7 @@ export function PlausibleScript() {
       strategy="afterInteractive"
       data-domain={domain}
       src={`${host}/js/script.js`}
+      nonce={nonce}
     />
   );
 }

@@ -23,6 +23,37 @@ import { APPOINTMENT_STATUS, BOOKING_SOURCE } from "@/lib/types/database";
 // For the anonymous booking flow we use the booking_find_or_create_patient RPC instead
 // (SECURITY DEFINER function that bypasses users-table RLS).
 
+// ── A46.6: Idempotency-Key support ────────────────────────────────────
+// Protects against duplicate bookings from flaky mobile networks. A client
+// that retries a POST /api/booking with the same Idempotency-Key within the
+// TTL window receives the cached response instead of a new appointment.
+//
+// In-memory store (per-isolate): acceptable for the booking endpoint because:
+//   1. The booking_atomic_insert RPC is the authoritative deduplication layer.
+//   2. This cache only prevents duplicate *network* retries; the DB handles
+//      true concurrent duplicates via advisory lock + unique constraint.
+//   3. TTL is short (15 min) — aligns with booking token TTL.
+const IDEMPOTENCY_TTL_MS = 15 * 60 * 1000;
+const MAX_IDEMPOTENCY_KEYS = 5_000;
+
+interface IdempotencyEntry {
+  result: ReturnType<typeof apiSuccess>;
+  expiresAt: number;
+}
+const idempotencyCache = new Map<string, IdempotencyEntry>();
+
+function pruneIdempotencyCache(now: number): void {
+  for (const [key, entry] of idempotencyCache) {
+    if (entry.expiresAt <= now) idempotencyCache.delete(key);
+  }
+  // If still over limit, drop oldest (insertion-order eviction)
+  if (idempotencyCache.size >= MAX_IDEMPOTENCY_KEYS) {
+    const oldest = idempotencyCache.keys().next().value;
+    if (oldest !== undefined) idempotencyCache.delete(oldest);
+  }
+}
+// ──────────────────────────────────────────────────────────────────────
+
 const bookingRequestSchema = z.object({
   specialtyId: z.string().min(1),
   doctorId: z.string().min(1),
@@ -219,6 +250,27 @@ export const POST = withValidation(bookingRequestSchema, async (body, request: N
       return apiRateLimited("Too many booking requests. Please try again later.");
     }
 
+    // A46.6: Idempotency-Key deduplication.
+    // If the client retries a request with the same key, return the cached
+    // response without creating a duplicate appointment.
+    const idempotencyKey = request.headers.get("idempotency-key");
+    if (idempotencyKey) {
+      // Sanitize: keys must be 1–128 printable ASCII chars
+      const safeKey = idempotencyKey.replace(/[^\x20-\x7E]/g, "").slice(0, 128);
+      if (safeKey.length > 0) {
+        const now = Date.now();
+        pruneIdempotencyCache(now);
+        const cached = idempotencyCache.get(safeKey);
+        if (cached && cached.expiresAt > now) {
+          logger.info("Returning cached idempotent booking response", {
+            context: "booking/idempotency",
+            key: safeKey,
+          });
+          return cached.result;
+        }
+      }
+    }
+
     // CRITICAL-02: Require a booking verification token.
     // The token is issued after phone/email OTP verification via
     // POST /api/booking/verify. Without it, bots can flood the
@@ -413,7 +465,8 @@ export const POST = withValidation(bookingRequestSchema, async (body, request: N
       logger.warn("Booking notification dispatch failed", { context: "booking/route", error: err });
     });
 
-    return apiSuccess({
+    // ── A46.6: Store result in idempotency cache ──────────────────────
+    const successResponse = apiSuccess({
       status: "created",
       message: "Appointment booked successfully",
       appointment: {
@@ -429,6 +482,18 @@ export const POST = withValidation(bookingRequestSchema, async (body, request: N
         hasInsurance: body.hasInsurance,
       },
     });
+
+    if (idempotencyKey) {
+      const safeKey = idempotencyKey.replace(/[^\x20-\x7E]/g, "").slice(0, 128);
+      if (safeKey.length > 0) {
+        idempotencyCache.set(safeKey, {
+          result: successResponse,
+          expiresAt: Date.now() + IDEMPOTENCY_TTL_MS,
+        });
+      }
+    }
+
+    return successResponse;
 });
 
 /**

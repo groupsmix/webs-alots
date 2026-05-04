@@ -51,11 +51,12 @@ export const viewport: Viewport = {
  * pick up the correct language.
  */
 export async function generateMetadata(): Promise<Metadata> {
-  // Default locale — will be dynamically resolved once per-tenant locale
-  // headers are available (see TODO in RootLayout below).
+  // F-A89-01: Resolved locale from request headers instead of hardcoding "fr".
+  // The middleware sets x-tenant-locale from the clinic's DB config JSONB.
+  const h = await headers();
   const cookieStore = await import("next/headers").then(m => m.cookies());
   const preferredLocale = cookieStore.get("preferred-locale")?.value as Locale;
-  const locale = preferredLocale || ("fr" as Locale);
+  const locale: Locale = preferredLocale || (h.get("x-tenant-locale") as Locale) || "fr";
 
   return {
     manifest: "/manifest.webmanifest",
@@ -152,7 +153,7 @@ export default async function RootLayout({
           </ToastProvider>
         </ThemeProvider>
         <ServiceWorkerRegister />
-        <PlausibleScript />
+        <PlausibleScript nonce={h.get("x-nonce") || undefined} />
       </body>
     </html>
   );
