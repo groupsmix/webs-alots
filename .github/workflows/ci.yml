@@ -186,7 +186,7 @@ jobs:
       # provenance API needs a writable id-token / attestations token.
       - name: Attest SBOM build provenance (SLSA)
         if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
-        uses: actions/attest-build-provenance@v3.1.0
+        uses: actions/attest-build-provenance@v4.1.0
         with:
           subject-path: bom.json
 
