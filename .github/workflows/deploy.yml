@@ -1,0 +1,366 @@
+name: Deploy to Cloudflare Workers
+
+on:
+  push:
+    branches:
+      - main
+      - staging
+
+# Least-privilege permissions — deploy only needs to read repo contents
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    name: Lint Check
+    steps:
+      - name: Checkout
+        # F-19: Pin to SHA for supply-chain hardening
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Setup Node.js
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: |
+          npm config set ignore-scripts true
+          npm ci
+          node scripts/patch-opennext.mjs || true
+
+      - name: Run ESLint
+        run: npm run lint
+
+      - name: Type check
+        run: npx tsc --noEmit
+
+      - name: Run unit tests
+        run: npm run test
+
+  # CI-03: E2E tests are REQUIRED before deploy. No continue-on-error,
+  # no advisory mode — a red E2E run blocks the deploy job.
+  e2e:
+    runs-on: ubuntu-latest
+    needs: lint
+    name: E2E Tests (Playwright, required)
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Setup Node.js
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Install Supabase CLI
+        # F-19: Pin to SHA for supply-chain hardening
+        uses: supabase/setup-cli@b60b5899c73b63a2d2d651b1e90db8d4c9392f51 # v1.6.0
+        with:
+          version: latest
+
+      - name: Boot local Supabase and seed fixtures
+        # `supabase start` boots the local stack and applies every file
+        # in supabase/migrations/ in order. That includes migration
+        # 00053_demo_tenant_enhance.sql, which seeds the "demo" clinic
+        # with subdomain='demo'. Tests reach that tenant via the
+        # demo.localhost base URL below — Chromium resolves *.localhost
+        # to 127.0.0.1 per RFC 6761, so no /etc/hosts edit is needed.
+        #
+        # Must run BEFORE `npm run build` because NEXT_PUBLIC_* env
+        # vars are inlined at build time.
+        run: |
+          supabase init --force
+          supabase start
+          echo "SUPABASE_LOCAL_URL=$(supabase status --output json | jq -r '.API_URL')" >> "$GITHUB_ENV"
+          echo "SUPABASE_LOCAL_ANON_KEY=$(supabase status --output json | jq -r '.ANON_KEY')" >> "$GITHUB_ENV"
+          echo "SUPABASE_LOCAL_SERVICE_ROLE_KEY=$(supabase status --output json | jq -r '.SERVICE_ROLE_KEY')" >> "$GITHUB_ENV"
+
+      - name: Build application
+        run: npm run build
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ env.SUPABASE_LOCAL_URL || 'https://placeholder.supabase.co' }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ env.SUPABASE_LOCAL_ANON_KEY || 'placeholder' }}
+          # CI-03 fixture fix: phone-auth flag must be baked into the
+          # client bundle at build time, otherwise the login/register
+          # pages render without the OTP step and tests fail.
+          NEXT_PUBLIC_PHONE_AUTH_ENABLED: "true"
+
+      - name: Run E2E tests (blocking)
+        run: npx playwright test --project=chromium
+        env:
+          CI: true
+          # CI-03 fixture fix: target the seeded "demo" tenant via the
+          # demo.localhost subdomain so middleware can resolve a clinic
+          # and tenant-scoped pages (/api/branding, /booking, etc.)
+          # return real data instead of empty/400 responses.
+          E2E_BASE_URL: http://demo.localhost:3000
+          ROOT_DOMAIN: localhost
+          NEXT_PUBLIC_SITE_URL: http://demo.localhost:3000
+          NEXT_PUBLIC_SUPABASE_URL: ${{ env.SUPABASE_LOCAL_URL || 'https://placeholder.supabase.co' }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ env.SUPABASE_LOCAL_ANON_KEY || 'placeholder' }}
+          NEXT_PUBLIC_PHONE_AUTH_ENABLED: "true"
+          SUPABASE_SERVICE_ROLE_KEY: ${{ env.SUPABASE_LOCAL_SERVICE_ROLE_KEY || '' }}
+          BOOKING_TOKEN_SECRET: ci-e2e-booking-token-secret-placeholder
+          CRON_SECRET: ci-e2e-cron-secret-placeholder
+          # R-02: PROFILE_HEADER_HMAC_KEY is required in production mode
+          # (`next start` runs in production), so env validation would
+          # otherwise hard-fail before Playwright boots the web server.
+          PROFILE_HEADER_HMAC_KEY: ci-e2e-profile-header-hmac-key-placeholder
+          # Audit #8: R2_SIGNED_URL_SECRET is required in production mode.
+          # R2 itself is disabled in CI (no R2_* creds) so this value is
+          # never used to sign a real URL — it only satisfies the startup
+          # health check.
+          R2_SIGNED_URL_SECRET: ci-e2e-r2-signed-url-secret-placeholder
+          # O-06: NEXT_PUBLIC_SENTRY_DSN is required in production mode.
+          # The placeholder DSN has valid Sentry format so `Sentry.init`
+          # parses it without throwing; transport sends silently fail to
+          # reach the unresolvable host, which is fine for CI.
+          NEXT_PUBLIC_SENTRY_DSN: https://ci-e2e-sentry-dsn-placeholder@o0.ingest.sentry.io/0
+          # F-10: enforceEmailProviderExclusivity throws at production boot
+          # when no email provider is configured. The Resend API isn't
+          # reachable from the runner and we never actually send mail in
+          # E2E, so a syntactically valid placeholder satisfies the
+          # startup health check without provisioning a real account.
+          RESEND_API_KEY: ci-e2e-resend-api-key-placeholder
+          # C-08: PHI_ENCRYPTION_KEY is required in production mode
+          # (`next start` runs in production), and enforcePhiEncryptionConfigured()
+          # throws on startup when absent — that crash blocks Playwright before
+          # it ever connects. Must be exactly 64 hex chars (AES-256-GCM key shape).
+          # Mirrors the placeholder used in ci.yml.
+          PHI_ENCRYPTION_KEY: "0000000000000000000000000000000000000000000000000000000000000000"
+          # Force in-memory rate limiter — the Supabase rate-limit RPC
+          # isn't reliably available on the ephemeral CLI instance.
+          RATE_LIMIT_BACKEND: memory
+          SEED_PASSWORDS_ROTATED: "true"
+          SEED_USERS_DELETED: "true"
+
+      - name: Upload Playwright report
+        # F-19: Pin to SHA for supply-chain hardening
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        if: always()
+        with:
+          name: playwright-report-deploy-${{ github.ref_name }}
+          path: playwright-report/
+          retention-days: 14
+
+  # CI-01: Blocking database migration job. Runs BEFORE wrangler deploy
+  # so a bad migration cannot ship to a broken schema. Uses the target
+  # environment (production/staging), so the production environment's
+  # required reviewers gate enforces human approval on main. A dry-run
+  # (`db push --dry-run --include-all`) runs first and fails the job
+  # on any unsafe DDL before the real push.
+  migrate:
+    runs-on: ubuntu-latest
+    needs: [lint, e2e]
+    name: DB Migrations (Supabase, blocking)
+    environment: ${{ github.ref_name == 'staging' && 'staging' || 'production' }}
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_DB_PASSWORD: ${{ github.ref_name == 'staging' && secrets.STAGING_SUPABASE_DB_PASSWORD || secrets.SUPABASE_DB_PASSWORD }}
+      SUPABASE_PROJECT_REF: ${{ github.ref_name == 'staging' && secrets.STAGING_SUPABASE_PROJECT_REF || secrets.SUPABASE_PROJECT_REF }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Preflight — required secrets
+        # Fail-closed if any required secret for the target environment
+        # is missing. Avoids accidentally no-op'ing the migration and
+        # deploying against an out-of-date schema.
+        run: |
+          missing=0
+          for v in SUPABASE_ACCESS_TOKEN SUPABASE_DB_PASSWORD SUPABASE_PROJECT_REF; do
+            if [ -z "${!v:-}" ]; then
+              echo "::error::Required secret '$v' is not set for environment '${{ github.ref_name == 'staging' && 'staging' || 'production' }}'."
+              missing=1
+            fi
+          done
+          if [ "$missing" -eq 1 ]; then exit 1; fi
+
+      - name: Install Supabase CLI
+        # F-19: Pin to SHA for supply-chain hardening
+        uses: supabase/setup-cli@b60b5899c73b63a2d2d651b1e90db8d4c9392f51 # v1.6.0
+        with:
+          version: latest
+
+      - name: Link to Supabase project
+        run: supabase link --project-ref "$SUPABASE_PROJECT_REF"
+
+      - name: Dry-run — show pending migrations
+        # `db push --dry-run --include-all` prints the SQL the CLI
+        # would execute without applying it, so an operator can
+        # inspect the diff in the job log before the real push runs.
+        # Any failure (e.g. parse error, unreachable DB) fails the
+        # pipeline here, before any destructive change.
+        run: supabase db push --include-all --dry-run
+
+      - name: Apply migrations (blocking)
+        # Real push. Keep --include-all so repair-only / out-of-order
+        # migrations are applied in their declared order. Failure
+        # here blocks the downstream deploy job.
+        run: supabase db push --include-all
+
+  deploy:
+    runs-on: ubuntu-latest
+    # CI-01 / CI-03: deploy is gated on lint, E2E, and migrations.
+    # Any failure upstream blocks the wrangler deploy step.
+    needs: [lint, e2e, migrate]
+    name: Build & Deploy
+    environment: ${{ github.ref_name == 'staging' && 'staging' || 'production' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Setup Node.js
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: |
+          npm config set ignore-scripts true
+          npm ci
+          node scripts/patch-opennext.mjs || true
+
+      - name: Build for Cloudflare
+        run: |
+          bash scripts/pre-deploy-check.sh
+          npm run build:cf
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ github.ref_name == 'staging' && secrets.STAGING_SUPABASE_URL || secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ github.ref_name == 'staging' && secrets.STAGING_SUPABASE_ANON_KEY || secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+          GITHUB_REF_NAME: ${{ github.ref_name }}
+          STAGING_SUPABASE_URL: ${{ secrets.STAGING_SUPABASE_URL }}
+
+      - name: Deploy to Cloudflare Workers (Production)
+        id: deploy_production
+        if: github.ref_name == 'main'
+        # A34.3: Use environment-scoped CLOUDFLARE_API_TOKEN_PROD for production
+        # Token should be scoped to Workers/R2 resources only with IP restrictions
+        uses: cloudflare/wrangler-action@392082e815bfc9e70d4d8011e40fb8779b5c1564 # v3.14.0
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN_PROD }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+      - name: Deploy to Cloudflare Workers (Staging)
+        id: deploy_staging
+        if: github.ref_name == 'staging'
+        # A34.3: Use environment-scoped CLOUDFLARE_API_TOKEN_STAGING for staging
+        # Token should be scoped to Workers/R2 resources only with IP restrictions
+        uses: cloudflare/wrangler-action@392082e815bfc9e70d4d8011e40fb8779b5c1564 # v3.14.0
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN_STAGING }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: deploy --env staging
+
+      # CI-07: Post-deploy health check verifies response body markers,
+      # not just HTTP status, to catch deploy-but-broken scenarios.
+      #
+      # CI-11: `continue-on-error: true` lets the job proceed to the
+      # auto-rollback step below when this check fails. The final
+      # "Fail workflow on health check failure" step still surfaces the
+      # failure so the deploy run is correctly marked red.
+      - name: Health Check
+        id: health
+        continue-on-error: true
+        run: |
+          SITE_URL="${{ github.ref_name == 'staging' && 'https://staging.oltigo.com' || 'https://oltigo.com' }}"
+          echo "Running health check against ${SITE_URL}..."
+          for i in 1 2 3 4 5; do
+            BODY=$(curl -s --max-time 10 "${SITE_URL}/api/health" || echo "")
+            STATUS=$(echo "$BODY" | grep -o '"ok":\s*true' || echo "")
+            HTTP_CODE=$(curl -s -o /dev/null -w '%{http_code}' --max-time 10 "${SITE_URL}/api/health" || echo "000")
+            if [ -n "$STATUS" ] && [ "$HTTP_CODE" -ge 200 ] && [ "$HTTP_CODE" -lt 400 ]; then
+              echo "Health check passed (HTTP ${HTTP_CODE}, body contains ok:true)"
+
+              # A40.7: Verify critical security headers are present.
+              # A deploy-but-broken scenario includes missing HSTS or CSP.
+              HEADERS=$(curl -s -I --max-time 10 "${SITE_URL}/api/health" 2>/dev/null || echo "")
+              HSTS=$(echo "$HEADERS" | grep -i "strict-transport-security" || echo "")
+              if [ -z "$HSTS" ]; then
+                echo "::warning::HSTS header missing from /api/health response"
+              fi
+
+              exit 0
+            fi
+            echo "Attempt ${i}: HTTP ${HTTP_CODE}, body ok marker: '${STATUS}', retrying in 10s..."
+            sleep 10
+          done
+          echo "Health check FAILED after 5 attempts — response body did not contain {\"ok\":true}"
+          exit 1
+
+      # CI-11: Auto-rollback to the previous Cloudflare Worker version when
+      # the post-deploy health check fails. `wrangler rollback` defaults to
+      # the immediately previous deployment when no deployment id is given.
+      # Piping `yes` answers the interactive confirmation prompt that
+      # wrangler emits even when --message is supplied.
+      #
+      # IMPORTANT: this only rolls back the Worker (code + bindings). It
+      # does NOT roll back any database migrations that ran as part of the
+      # release — see docs/db-rollback-constraints.md for the manual
+      # procedures that DB changes require.
+      - name: Auto-rollback Worker on failed health check
+        id: rollback
+        if: steps.health.outcome == 'failure'
+        continue-on-error: true
+        env:
+          # A34.3: Use environment-scoped API token
+          CLOUDFLARE_API_TOKEN: ${{ github.ref_name == 'staging' && secrets.CLOUDFLARE_API_TOKEN_STAGING || secrets.CLOUDFLARE_API_TOKEN_PROD }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          if [ "${{ github.ref_name }}" = "staging" ]; then
+            WORKER_NAME="webs-alots-staging"
+          else
+            WORKER_NAME="webs-alots"
+          fi
+          echo "::warning::Health check failed — rolling back ${WORKER_NAME} to the previous Cloudflare Worker version"
+          yes | npx wrangler rollback \
+            --name "${WORKER_NAME}" \
+            --message "Auto-rollback: post-deploy health check failed (commit ${{ github.sha }}, run ${{ github.run_id }})"
+
+      # CI-11: Confirm the previous version is healthy after rollback.
+      # If the rollback target is also broken, we want the run to clearly
+      # flag that manual intervention is required.
+      - name: Verify rollback health
+        id: rollback_health
+        if: always() && steps.health.outcome == 'failure' && steps.rollback.outcome == 'success'
+        run: |
+          SITE_URL="${{ github.ref_name == 'staging' && 'https://staging.oltigo.com' || 'https://oltigo.com' }}"
+          echo "Verifying rollback health against ${SITE_URL}..."
+          for i in 1 2 3 4 5; do
+            BODY=$(curl -s --max-time 10 "${SITE_URL}/api/health" || echo "")
+            STATUS=$(echo "$BODY" | grep -o '"ok":\s*true' || echo "")
+            HTTP_CODE=$(curl -s -o /dev/null -w '%{http_code}' --max-time 10 "${SITE_URL}/api/health" || echo "000")
+            if [ -n "$STATUS" ] && [ "$HTTP_CODE" -ge 200 ] && [ "$HTTP_CODE" -lt 400 ]; then
+              echo "Rollback verified — previous version is healthy (HTTP ${HTTP_CODE})"
+              exit 0
+            fi
+            echo "Verify attempt ${i}: HTTP ${HTTP_CODE}, body ok marker: '${STATUS}', retrying in 10s..."
+            sleep 10
+          done
+          echo "::error::Rollback completed but the previous version is also unhealthy. Manual intervention required — see docs/db-rollback-constraints.md and docs/incident-response.md."
+          exit 1
+
+      # CI-11: Always fail the workflow if the original health check failed,
+      # regardless of whether the rollback succeeded. The deploy is broken
+      # and on-call needs a red signal even when the Worker has been
+      # automatically reverted.
+      - name: Fail workflow on health check failure
+        if: always() && steps.health.outcome == 'failure'
+        run: |
+          if [ "${{ steps.rollback.outcome }}" = "success" ]; then
+            echo "::error::Deploy was rolled back to the previous Worker version because the post-deploy health check failed. Investigate the failed commit (${{ github.sha }}) before re-deploying. DB migrations from this release are NOT reverted — see docs/db-rollback-constraints.md."
+          else
+            echo "::error::Post-deploy health check FAILED and the automatic rollback also failed. Production may be broken — follow docs/incident-response.md and consider running scripts/staging-swap.sh --rollback manually."
+          fi
+          exit 1

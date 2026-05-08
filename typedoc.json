@@ -1,0 +1,24 @@
+{
+  "$schema": "https://typedoc.org/schema.json",
+  "entryPoints": ["src/lib"],
+  "entryPointStrategy": "expand",
+  "out": "docs/api",
+  "name": "Oltigo Health SaaS — Internal API",
+  "readme": "none",
+  "excludePrivate": true,
+  "excludeInternal": true,
+  "excludeExternals": true,
+  "exclude": [
+    "src/lib/__tests__/**",
+    "src/lib/__fixtures__/**",
+    "src/lib/hooks/**",
+    "src/lib/types/**",
+    "src/lib/config/**",
+    "src/lib/data/**"
+  ],
+  "categorizeByGroup": true,
+  "sort": ["source-order"],
+  "plugin": [],
+  "tsconfig": "tsconfig.json",
+  "skipErrorChecking": true
+}

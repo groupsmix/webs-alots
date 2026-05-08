@@ -1,0 +1,289 @@
+# Implementation Plan: Phase 2 Infrastructure & Security Hardening (A31-A60)
+
+- [x] 1. Write bug condition exploration tests
+  - **Property 1: Bug Condition** - Infrastructure Security Hardening Gaps
+  - **CRITICAL**: These tests MUST FAIL on unfixed infrastructure - failure confirms the security gaps exist
+  - **DO NOT attempt to fix the tests or the infrastructure when they fail**
+  - **NOTE**: These tests encode the expected secure behavior - they will validate the fixes when they pass after implementation
+  - **GOAL**: Surface counterexamples that demonstrate the security gaps exist across 11 categories
+  - **Scoped PBT Approach**: For deterministic security gaps, scope properties to concrete failing cases to ensure reproducibility
+  - Test implementation details from Bug Condition in design:
+    - Docker services bound to 0.0.0.0 instead of 127.0.0.1
+    - GitHub Actions using floating tags (@v4, @v6) instead of SHA pins
+    - Secrets documented as plaintext in .env.example
+    - PII (email, phone, name) appearing in logs
+    - Sentry capturing PHI in request bodies without beforeSend filter
+    - No WAF rules blocking SQL injection/XSS payloads
+    - No cost ceilings (cpu_ms commented out)
+    - Cron schedules only in dashboard, not in wrangler.toml
+    - No object-lock on R2 backups (deletable)
+    - Rate limits bypassable via IP spoofing
+  - The test assertions should match the Expected Behavior Properties from design
+  - Run tests on UNFIXED infrastructure
+  - **EXPECTED OUTCOME**: Tests FAIL (this is correct - it proves the security gaps exist)
+  - Document counterexamples found to understand root cause:
+    - Which Docker ports are exposed to 0.0.0.0
+    - Which GitHub Actions use floating tags
+    - Which secrets are plaintext
+    - Which PII fields leak to logs
+    - Which PHI fields leak to Sentry
+    - Which malicious payloads bypass WAF
+    - Which requests exceed cost budgets
+    - Which cron schedules drift between IaC and dashboard
+    - Which backups can be deleted
+    - Which rate limits can be bypassed
+  - Mark task complete when tests are written, run, and failures are documented
+  - _Requirements: 1.1-1.10, 2.1-2.6, 3.1-3.4, 4.1-4.5, 5.1-5.7, 6.1-6.5, 7.1-7.3, 8.1-8.4, 9.1-9.4, 10.1-10.4, 11.1-11.3_
+
+- [x] 2. Write preservation property tests (BEFORE implementing fixes)
+  - **Property 2: Preservation** - Existing Functionality Preservation
+  - **IMPORTANT**: Follow observation-first methodology
+  - Observe behavior on UNFIXED infrastructure for legitimate operations:
+    - Docker Compose provides working local dev stack
+    - GitHub Actions execute linting, testing, building, deployment successfully
+    - Cloudflare Workers serve production traffic without downtime
+    - Rate limiting allows legitimate users without false-positive blocks
+    - R2 storage supports file upload and download
+    - Secret rotation operates without service interruption
+    - Monitoring captures errors and metrics without performance degradation
+    - Cron jobs execute scheduled tasks on time
+    - Sentry provides stack traces and debugging information
+    - Health checks validate service availability
+    - External API calls (OpenAI, Stripe, CMI, WhatsApp, Resend) work correctly
+  - Write property-based tests capturing observed behavior patterns from Preservation Requirements
+  - Property-based testing generates many test cases for stronger guarantees
+  - Run tests on UNFIXED infrastructure
+  - **EXPECTED OUTCOME**: Tests PASS (this confirms baseline behavior to preserve)
+  - Mark task complete when tests are written, run, and passing on unfixed infrastructure
+  - _Requirements: 3.1-3.15_
+
+- [x] 3. Fix for Phase 2 Infrastructure & Security Hardening (A31-A60)
+
+  - [x] 3.1 IaC Security Hardening (A31)
+    - Update `docker-compose.yml`:
+      - Change all port bindings to localhost: `"127.0.0.1:54322:5432"`, `"127.0.0.1:54323:8000"`, `"127.0.0.1:9000:9000"`, `"127.0.0.1:9001:9001"`
+      - Pin all images to SHA256 digests (e.g., `supabase/postgres@sha256:...`)
+      - Replace hard-coded credentials with environment variables: `${POSTGRES_PASSWORD}`, `${MINIO_ROOT_USER}`, `${MINIO_ROOT_PASSWORD}`
+      - Add Studio authentication: `STUDIO_AUTH_ENABLED: true`, `STUDIO_PASSWORD: ${STUDIO_PASSWORD}`
+      - Create separate networks: `db_network`, `storage_network`, `studio_network`
+      - Add security hardening: `read_only: true`, `cap_drop: [ALL]`, `security_opt: [no-new-privileges:true]`, `user: "1000:1000"`
+      - Add resource limits: `cpus: "1.0"`, `memory: "2G"`
+    - Update `wrangler.toml`:
+      - Uncomment `[[kv_namespaces]]` and `[[r2_buckets]]` bindings
+      - Uncomment `cpu_ms = 50` to set cost ceiling
+      - Uncomment `observability` block to enable Workers Logs
+      - Add cron schedules: `[[triggers]].crons = ["0 */6 * * *"]` for r2-sync, `["0 9 * * *"]` for reminders, `["0 0 * * *"]` for billing
+      - Uncomment `routes = [{ pattern = "*.oltigo.health", custom_domain = true }]`
+    - Create `supabase/config.toml`:
+      - Add encryption-at-rest config
+      - Set JWT expiry to 1 hour
+      - Enable MFA enforcement
+      - Set email rate-limits to 10/hour
+      - Add password policy (min 12 chars, complexity requirements)
+    - _Bug_Condition: isBugCondition(input) where input.dockerPortsBindTo = "0.0.0.0" OR input.dockerImagesUseTags = true OR input.hardCodedCredentials = true OR input.iacBindingsCommentedOut = true OR input.observabilityDisabled = true OR input.cronSchedulesNotInIaC = true OR input.supabaseConfigMissing = true_
+    - _Expected_Behavior: result.dockerPortsBindTo = "127.0.0.1" AND result.dockerImagesUseSha256 = true AND result.hardCodedCredentials = false AND result.iacBindingsInVersionControl = true AND result.observabilityEnabled = true AND result.cronSchedulesInIaC = true AND result.supabaseConfigExists = true_
+    - _Preservation: Docker Compose SHALL CONTINUE TO provide working local dev stack_
+    - _Requirements: 1.1-1.10, 2.1, 2.5-2.9_
+
+  - [x] 3.2 CI/CD Security Hardening (A34)
+    - Update `.github/workflows/ci.yml` and `.github/workflows/deploy.yml`:
+      - Pin all actions to full commit SHAs (replace `@v4`, `@v6`, `@v7` with `@48b55a01...`)
+      - Remove `continue-on-error: true` and `|| true` from Semgrep step
+      - Use separate `CLOUDFLARE_API_TOKEN_PROD` and `CLOUDFLARE_API_TOKEN_STAGING` secrets
+      - Add cosign step to sign deployed Worker bundle (not just SBOM)
+      - Replace long-lived R2 keys with OIDC-vended ephemeral credentials
+    - Create `.github/branch-protection.yml`:
+      - Declare required reviewers (2 approvals)
+      - Require signed commits
+      - Require status checks: lint, test, build, semgrep
+    - _Bug_Condition: input.githubActionsUseFloatingTags = true OR input.semgrepSoftFail = true OR input.singleApiTokenForAllEnvs = true OR input.sbomSignedButNotBundle = true OR input.r2LongLivedKeys = true_
+    - _Expected_Behavior: result.githubActionsPinnedToSha = true AND result.semgrepFailsOnFindings = true AND result.environmentScopedTokens = true AND result.workerBundleSigned = true AND result.r2UsesOidc = true_
+    - _Preservation: GitHub Actions SHALL CONTINUE TO execute linting, testing, building, deployment successfully_
+    - _Requirements: 2.1-2.6, 2.11-2.16_
+
+  - [x] 3.3 Cloud IAM Hardening (A35)
+    - Document token scoping in `docs/iam-policy.md`:
+      - R2 tokens: scope to specific buckets, add IP restrictions, set 90-day expiry
+      - Cloudflare API tokens: scope to Workers/R2 resources only, add IP restrictions
+      - SUPABASE_SERVICE_ROLE_KEY: document MFA requirement for sensitive operations
+      - Bearer API keys: document MFA gates, scoping, expiry, rotation cadence
+    - Update `src/app/api/admin/impersonate/route.ts`:
+      - Add `requireMfa()` check before granting impersonation token
+    - _Bug_Condition: input.tokensNoScoping = true OR input.serviceRoleKeyNoMFA = true OR input.bearerKeysNoMFA = true OR input.impersonationNoMFA = true_
+    - _Expected_Behavior: result.tokensHaveScoping = true AND result.serviceRoleKeyHasMFA = true AND result.bearerKeysHaveMFA = true AND result.impersonationHasMFA = true_
+    - _Preservation: Authentication and authorization flows SHALL CONTINUE TO work_
+    - _Requirements: 3.1-3.4, 2.17-2.20_
+
+  - [x] 3.4 Public Endpoint Hardening (A36)
+    - Update `wrangler.toml`:
+      - Uncomment `routes = [{ pattern = "*.oltigo.health", custom_domain = true }]`
+      - Add WAF rules using Cloudflare Ruleset Engine:
+        - Block SQL injection patterns
+        - Block XSS patterns
+        - Block path traversal patterns
+        - Block rate-limit bypass attempts
+      - Add geo-fencing rule: block non-Moroccan IPs from `/admin/*` endpoints
+    - Update `src/middleware.ts`:
+      - Add `TRUSTED_PROXIES = ["103.21.244.0/22", ...]` (Cloudflare IP ranges)
+      - Validate `CF-Connecting-IP` header against trusted proxies
+      - Add global rate-limit fallback: `rateLimitRules.set("/*", { limit: 100, window: 60 })`
+    - _Bug_Condition: input.routesCommentedOut = true OR input.rateLimitNoGlobalFallback = true OR input.ipExtractionTrustsHeaders = true OR input.noWafRules = true OR input.noGeoFencing = true_
+    - _Expected_Behavior: result.routesInIaC = true AND result.rateLimitHasFallback = true AND result.ipExtractionValidated = true AND result.wafRulesExist = true AND result.geoFencingEnabled = true_
+    - _Preservation: Rate limiting SHALL CONTINUE TO allow legitimate users without false-positive blocks_
+    - _Requirements: 4.1-4.5, 2.21-2.25_
+
+  - [x] 3.5 Storage Security Hardening (A37)
+    - Update `r2-lifecycle.json`:
+      - Add expiration rule: expire objects in `backups/` after 90 days
+      - Add versioning rule: expire non-current versions after 30 days
+      - Add NCV expiration rule: delete non-current versions after 7 days
+    - Document R2 configuration in `docs/r2-security.md`:
+      - Enable versioning on all buckets
+      - Enable object-lock/WORM on `backups/` bucket
+      - Enable access logging (Cloudflare R2 SQL log push)
+      - Document antivirus scanning requirement for file uploads
+      - Enable public-access block on all buckets
+      - Document native cross-region replication (replace cron job)
+    - Update `src/app/api/upload/route.ts`:
+      - Add antivirus scan before persisting to R2 (placeholder for future ClamAV integration)
+    - _Bug_Condition: input.r2LifecycleIncomplete = true OR input.r2VersioningNotEnabled = true OR input.noObjectLock = true OR input.noAccessLogging = true OR input.replicationViaCron = true OR input.noAntivirusScan = true_
+    - _Expected_Behavior: result.r2LifecycleComplete = true AND result.r2VersioningEnabled = true AND result.objectLockEnabled = true AND result.accessLoggingEnabled = true AND result.nativeReplication = true AND result.antivirusScanEnabled = true_
+    - _Preservation: R2 storage SHALL CONTINUE TO support file upload and download_
+    - _Requirements: 5.1-5.7, 2.26-2.32_
+
+  - [x] 3.6 Secret Management Hardening (A38)
+    - Update `.env.example` and `secrets-template.env`:
+      - Replace plaintext secrets with Vault/KMS references: `SUPABASE_SERVICE_ROLE_KEY=vault://secret/supabase/service-role-key`
+      - Document dynamic secret vending approach
+    - Update `docs/SOP-SECRET-ROTATION.md`:
+      - Add automated rotation workflow (90-day cadence)
+      - Document break-glass procedure with automated kill-switch endpoint
+    - Update `scripts/rotate-phi-key.ts`:
+      - Add cron trigger for automated rotation
+    - _Bug_Condition: input.secretsLongLived = true OR input.secretsPlaintext = true OR input.r2CredsPlaintext = true OR input.noRotationEnforcement = true OR input.noBreakGlass = true_
+    - _Expected_Behavior: result.secretsDynamicVending = true AND result.secretsUseVaultKms = true AND result.r2UsesOidc = true AND result.rotationEnforced = true AND result.breakGlassAutomated = true_
+    - _Preservation: Secret rotation SHALL CONTINUE TO operate without service interruption_
+    - _Requirements: 6.1-6.5, 2.33-2.37_
+
+  - [x] 3.7 Network Segmentation Hardening (A39)
+    - Update `src/middleware.ts`:
+      - Add egress filtering: `ALLOWED_HOSTS = ["api.openai.com", "api.stripe.com", "api.twilio.com", "graph.facebook.com", "api.resend.com", "cmi.co.ma"]`
+      - Validate `fetch()` URLs against allowlist
+      - Add DNS sanitization: `sanitizeHostname()` to strip control characters
+    - Update `src/app/api/webhooks/cmi/route.ts`:
+      - Add CMI IP allowlist: `CMI_IP_RANGES = ["196.200.0.0/16", ...]`
+      - Reject requests from non-CMI IPs
+    - _Bug_Condition: input.noEgressFiltering = true OR input.cmiNoIpAllowlist = true OR input.dnsNoSanitization = true_
+    - _Expected_Behavior: result.egressFilteringEnabled = true AND result.cmiIpAllowlist = true AND result.dnsSanitized = true_
+    - _Preservation: External API calls (OpenAI, Stripe, CMI, WhatsApp, Resend) SHALL CONTINUE TO work_
+    - _Requirements: 7.1-7.3, 2.38-2.40_
+
+  - [x] 3.8 Monitoring & Observability Hardening (A40)
+    - Update `wrangler.toml`:
+      - Uncomment `observability` block to enable Workers Logs
+    - Create `docs/alerting-config.yml`:
+      - Add Cloudflare Alerts API config for error rate > 5%
+      - Add latency alert for p99 > 1000ms
+      - Add billing anomaly alert for cost > 2x baseline
+    - Create `e2e/chaos-tests.spec.ts`:
+      - Add chaos test for database connection failure
+      - Add chaos test for R2 unavailability
+      - Add chaos test for external API timeout
+    - Update `src/app/api/health/route.ts`:
+      - Add Supabase connectivity check
+      - Add R2 bucket access check
+      - Add per-tenant routing check (verify subdomain resolution)
+    - _Bug_Condition: input.observabilityDisabled = true OR input.noAlertingCode = true OR input.noChaosTests = true OR input.healthCheckBasicOnly = true_
+    - _Expected_Behavior: result.observabilityEnabled = true AND result.alertingCodeExists = true AND result.chaosTestsExist = true AND result.healthCheckEnhanced = true_
+    - _Preservation: Monitoring SHALL CONTINUE TO capture errors and metrics without performance degradation_
+    - _Requirements: 8.1-8.4, 2.41-2.44_
+
+  - [x] 3.9 Observability Privacy Hardening (A41)
+    - Update `src/lib/logger.ts`:
+      - Enhance `redactPhi()` to strip `hostname`, `email`, `phone`, `name`, `r2Key` from all log entries
+      - Add R2 key hashing: `r2KeyHash: sha256(r2Key).slice(0, 8)`
+    - Update `sentry.server.config.ts`, `sentry.client.config.ts`, `sentry.edge.config.ts`:
+      - Add `beforeSend: (event) => stripPhi(event)` to strip PHI from request bodies, headers, breadcrumbs
+      - Add `maxBreadcrumbs: 50`, `maxValueLength: 250` to limit data capture
+    - Create `src/lib/sentry-phi-filter.ts`:
+      - Implement `stripPhi()` function to redact patient names, emails, phones, IDs from Sentry events
+    - Document log retention policy in `docs/log-retention.md`:
+      - Sentry: 30 days
+      - Workers Logs: 7 days
+      - Audit logs: 7 years (compliance requirement)
+    - _Bug_Condition: input.loggerNoPiiRedaction = true OR input.r2KeyLogged = true OR input.sentryNoBeforeSend = true OR input.noLogRetentionPolicy = true_
+    - _Expected_Behavior: result.piiRedactionEnabled = true AND result.r2KeyHashed = true AND result.sentryHasBeforeSend = true AND result.logRetentionPolicyExists = true_
+    - _Preservation: Sentry SHALL CONTINUE TO provide stack traces and debugging information; PII redaction SHALL CONTINUE TO provide sufficient debugging capability with UUIDs_
+    - _Requirements: 9.1-9.4, 2.45-2.48_
+
+  - [x] 3.10 Autoscaling & Cost Control Hardening (A42)
+    - Update `wrangler.toml`:
+      - Uncomment `cpu_ms = 50` to set cost ceiling
+    - Create `docs/billing-alarms.yml`:
+      - Add billing anomaly alarm for cost > 2x baseline
+      - Add alarm for CPU usage > 80% of limit
+      - Add alarm for KV read/write > 90% of quota
+    - Update `src/lib/ai-budget.ts`:
+      - Add `checkConcurrentAiRequests()` to limit in-flight LLM calls per clinic (max 5 concurrent)
+    - Update `src/middleware.ts`:
+      - Add per-user rate limiting at edge: `rateLimitByUser.set(userId, { limit: 100, window: 60 })`
+      - Add per-API-key rate limiting: `rateLimitByApiKey.set(apiKey, { limit: 1000, window: 60 })`
+    - _Bug_Condition: input.cpuLimitsCommentedOut = true OR input.noBillingAlarms = true OR input.llmNoPerClinicLimit = true OR input.noPerUserRateLimit = true_
+    - _Expected_Behavior: result.costCeilingsSet = true AND result.billingAlarmsExist = true AND result.llmPerClinicLimited = true AND result.perUserRateLimited = true_
+    - _Preservation: Cost controls SHALL CONTINUE TO allow legitimate usage within budget_
+    - _Requirements: 10.1-10.4, 2.49-2.52_
+
+  - [x] 3.11 Cron Job Hardening (A43)
+    - Update `wrangler.toml`:
+      - Add cron schedules: `[[triggers]].crons = ["0 */6 * * *"]` for r2-sync, `["0 9 * * *"]` for reminders, `["0 0 * * *"]` for billing
+    - Update `src/app/api/cron/route.ts`:
+      - Add idempotency lock using KV: `await kv.get("cron:lock:${jobName}")` before execution
+      - Add DLQ tracking: store failed runs in KV with retry logic
+      - Add retry mechanism: retry failed jobs up to 3 times with exponential backoff
+    - _Bug_Condition: input.cronSchedulesNotInIaC = true OR input.cronNoDlq = true OR input.cronNoIdempotency = true_
+    - _Expected_Behavior: result.cronSchedulesInIaC = true AND result.cronDlqExists = true AND result.cronIdempotencyEnabled = true_
+    - _Preservation: Cron jobs SHALL CONTINUE TO execute scheduled tasks on time_
+    - _Requirements: 11.1-11.3, 2.53-2.55_
+
+  - [x] 3.12 Verify bug condition exploration tests now pass
+    - **Property 1: Expected Behavior** - Infrastructure Security Hardening Complete
+    - **IMPORTANT**: Re-run the SAME tests from task 1 - do NOT write new tests
+    - The tests from task 1 encode the expected secure behavior
+    - When these tests pass, it confirms the security hardening is complete
+    - Run bug condition exploration tests from step 1
+    - **EXPECTED OUTCOME**: Tests PASS (confirms security gaps are fixed)
+    - Verify all security controls are in place:
+      - Docker services bound to 127.0.0.1
+      - GitHub Actions pinned to SHAs
+      - Secrets use Vault/KMS references
+      - PII redacted from logs
+      - Sentry strips PHI with beforeSend
+      - WAF blocks malicious payloads
+      - Cost ceilings prevent overruns
+      - Cron schedules in IaC match dashboard
+      - Backups protected with object-lock
+      - Rate limits cannot be bypassed
+    - _Requirements: Expected Behavior Properties from design (2.1-2.55)_
+
+  - [x] 3.13 Verify preservation tests still pass
+    - **Property 2: Preservation** - Existing Functionality Preserved
+    - **IMPORTANT**: Re-run the SAME tests from task 2 - do NOT write new tests
+    - Run preservation property tests from step 2
+    - **EXPECTED OUTCOME**: Tests PASS (confirms no regressions)
+    - Confirm all existing functionality still works:
+      - Docker Compose provides working local dev stack
+      - GitHub Actions execute successfully
+      - Cloudflare Workers serve production traffic
+      - Rate limiting allows legitimate users
+      - R2 storage supports file operations
+      - Secret rotation operates without interruption
+      - Monitoring captures errors and metrics
+      - Cron jobs execute on time
+      - Sentry provides debugging information
+      - Health checks validate availability
+      - External API calls work correctly
+
+- [x] 4. Checkpoint - Ensure all tests pass
+  - Ensure all tests pass (bug condition tests + preservation tests)
+  - Verify no regressions in existing functionality
+  - Ask the user if questions arise about security controls, compliance requirements, or operational impact

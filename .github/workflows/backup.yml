@@ -1,0 +1,323 @@
+name: Automated Database Backups
+
+on:
+  schedule:
+    # Run nightly at 2:00 AM UTC
+    - cron: "0 2 * * *"
+  workflow_dispatch:
+    inputs:
+      backup_type:
+        description: "Type of backup to run"
+        required: false
+        default: "daily"
+        type: choice
+        options:
+          - daily
+          - weekly
+          - monthly
+          - verify
+
+# Least-privilege permissions — scheduled backup only needs to read the repo
+permissions:
+  contents: read
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    name: Supabase Backup to R2
+    env:
+      SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+      R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+      R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+      R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+      R2_BACKUP_BUCKET: ${{ secrets.R2_BACKUP_BUCKET }}
+    steps:
+      # Audit 3.11: Health check the DB connection before attempting backup
+      - name: Health check database connection
+        run: |
+          if ! psql "${SUPABASE_DB_URL}" -c "SELECT 1;" > /dev/null 2>&1; then
+            echo "::error::Database connection failed. SUPABASE_DB_URL may be invalid or rotated."
+            exit 1
+          fi
+      # AUDIT-16: Pin GH Actions to SHA for supply-chain hardening
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Setup Node.js
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version: 22
+
+      - name: Install PostgreSQL client
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client
+
+      - name: Install AWS CLI (for S3-compatible R2)
+        run: |
+          pip install awscli
+
+      - name: Configure R2 credentials
+        run: |
+          mkdir -p ~/.aws
+          cat > ~/.aws/credentials << EOF
+          [default]
+          aws_access_key_id=${{ secrets.R2_ACCESS_KEY_ID }}
+          aws_secret_access_key=${{ secrets.R2_SECRET_ACCESS_KEY }}
+          EOF
+          cat > ~/.aws/config << EOF
+          [default]
+          region=auto
+          EOF
+
+      - name: Determine backup type
+        id: backup_type
+        run: |
+          if [ "${{ github.event.inputs.backup_type }}" != "" ]; then
+            echo "type=${{ github.event.inputs.backup_type }}" >> $GITHUB_OUTPUT
+          else
+            DOW=$(date +%u)
+            DOM=$(date +%d)
+            if [ "$DOM" -eq "1" ]; then
+              echo "type=monthly" >> $GITHUB_OUTPUT
+            elif [ "$DOW" -eq "7" ]; then
+              echo "type=weekly" >> $GITHUB_OUTPUT
+            else
+              echo "type=daily" >> $GITHUB_OUTPUT
+            fi
+          fi
+
+      - name: Create database dump and encrypt
+        env:
+          BACKUP_GPG_KEY: ${{ secrets.BACKUP_GPG_KEY }}
+          BACKUP_GPG_FINGERPRINT: ${{ secrets.BACKUP_GPG_FINGERPRINT }}
+        run: |
+          TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+          BACKUP_TYPE="${{ steps.backup_type.outputs.type }}"
+          FILENAME="backup_${BACKUP_TYPE}_${TIMESTAMP}.sql.gz.gpg"
+
+          echo "Creating encrypted backup: ${FILENAME}"
+
+          if [ -z "$BACKUP_GPG_KEY" ]; then
+            echo "::error::BACKUP_GPG_KEY secret is not set. Cannot encrypt backup."
+            exit 1
+          fi
+
+          # Import the GPG public key
+          echo "$BACKUP_GPG_KEY" | gpg --import
+
+          # A37.12: Extract the recipient key fingerprint and pin it against
+          # BACKUP_GPG_FINGERPRINT if configured. This prevents a bad key in
+          # the keyring from silently encrypting backups to the wrong recipient.
+          RECIPIENT=$(gpg --list-keys --with-colons | grep "^pub" | head -n 1 | cut -d: -f5)
+          if [ -n "${BACKUP_GPG_FINGERPRINT:-}" ]; then
+            FULL_FP=$(gpg --list-keys --with-colons | grep "^fpr" | head -n 1 | cut -d: -f10)
+            if [ "$FULL_FP" != "$BACKUP_GPG_FINGERPRINT" ]; then
+              echo "::error::GPG key fingerprint mismatch! Expected: $BACKUP_GPG_FINGERPRINT, Got: $FULL_FP"
+              exit 1
+            fi
+            echo "GPG fingerprint verified: ${FULL_FP}"
+          fi
+
+          pg_dump "${SUPABASE_DB_URL}" \
+            --no-owner \
+            --no-acl \
+            --clean \
+            --if-exists \
+            --format=plain \
+            | gzip | gpg --encrypt --recipient "$RECIPIENT" --trust-model always > "/tmp/${FILENAME}"
+
+          echo "filename=${FILENAME}" >> $GITHUB_ENV
+          echo "filepath=/tmp/${FILENAME}" >> $GITHUB_ENV
+
+          SIZE=$(du -h "/tmp/${FILENAME}" | cut -f1)
+          echo "Encrypted backup size: ${SIZE}"
+
+      - name: Upload to R2
+        run: |
+          BACKUP_TYPE="${{ steps.backup_type.outputs.type }}"
+          R2_ENDPOINT="https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com"
+
+          aws s3 cp "${filepath}" \
+            "s3://${R2_BACKUP_BUCKET}/backups/${BACKUP_TYPE}/${filename}" \
+            --endpoint-url "${R2_ENDPOINT}"
+
+          echo "Uploaded to R2: backups/${BACKUP_TYPE}/${filename}"
+
+      - name: Rotate old backups
+        run: |
+          R2_ENDPOINT="https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com"
+
+          rotate_backups() {
+            local TYPE=$1
+            local KEEP=$2
+
+            echo "Rotating ${TYPE} backups (keeping last ${KEEP})..."
+
+            aws s3 ls "s3://${R2_BACKUP_BUCKET}/backups/${TYPE}/" \
+              --endpoint-url "${R2_ENDPOINT}" \
+              | sort -r \
+              | tail -n +$((KEEP + 1)) \
+              | while read -r _ _ _ KEY; do
+                  if [ -n "${KEY}" ]; then
+                    echo "Deleting old backup: ${KEY}"
+                    aws s3 rm "s3://${R2_BACKUP_BUCKET}/backups/${TYPE}/${KEY}" \
+                      --endpoint-url "${R2_ENDPOINT}"
+                  fi
+                done
+          }
+
+          # Keep last 7 daily, 4 weekly, 3 monthly
+          rotate_backups "daily" 7
+          rotate_backups "weekly" 4
+          rotate_backups "monthly" 3
+
+      - name: Cleanup
+        if: always()
+        run: |
+          rm -f "${filepath}"
+          # A38.4: Wipe AWS/R2 credentials from the runner filesystem.
+          # On shared/self-hosted runners, a parallel job could read these.
+          rm -rf ~/.aws
+          # Clear GPG keyring to avoid key leakage
+          rm -rf ~/.gnupg
+
+  verify:
+    runs-on: ubuntu-latest
+    name: Verify Latest Backup
+    needs: backup
+    if: github.event.inputs.backup_type == 'verify' || github.event.schedule != ''
+    env:
+      R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+      R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+      R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+      R2_BACKUP_BUCKET: ${{ secrets.R2_BACKUP_BUCKET }}
+    steps:
+      - name: Install tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client
+          pip install awscli
+
+      - name: Configure R2 credentials
+        run: |
+          mkdir -p ~/.aws
+          cat > ~/.aws/credentials << EOF
+          [default]
+          aws_access_key_id=${{ secrets.R2_ACCESS_KEY_ID }}
+          aws_secret_access_key=${{ secrets.R2_SECRET_ACCESS_KEY }}
+          EOF
+          cat > ~/.aws/config << EOF
+          [default]
+          region=auto
+          EOF
+
+      - name: Download latest backup
+        run: |
+          R2_ENDPOINT="https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com"
+
+          LATEST=$(aws s3 ls "s3://${R2_BACKUP_BUCKET}/backups/daily/" \
+            --endpoint-url "${R2_ENDPOINT}" \
+            | sort -r | head -1 | awk '{print $4}')
+
+          if [ -z "${LATEST}" ]; then
+            echo "No daily backup found, checking weekly..."
+            LATEST=$(aws s3 ls "s3://${R2_BACKUP_BUCKET}/backups/weekly/" \
+              --endpoint-url "${R2_ENDPOINT}" \
+              | sort -r | head -1 | awk '{print $4}')
+            PREFIX="weekly"
+          else
+            PREFIX="daily"
+          fi
+
+          echo "Downloading: backups/${PREFIX}/${LATEST}"
+          aws s3 cp "s3://${R2_BACKUP_BUCKET}/backups/${PREFIX}/${LATEST}" \
+            /tmp/verify_backup.sql.gz \
+            --endpoint-url "${R2_ENDPOINT}"
+
+      - name: Start local PostgreSQL
+        run: |
+          sudo systemctl start postgresql
+          sudo -u postgres createuser -s runner 2>/dev/null || true
+          createdb backup_verify_test 2>/dev/null || true
+
+      - name: Install Supabase-compatible extensions
+        run: |
+          # Supabase dumps reference extensions that aren't in default PostgreSQL.
+          # Install common ones so the restore can create tables that depend on them.
+          PG_VERSION=$(pg_config --version | grep -oP '\d+' | head -1)
+          sudo apt-get install -y \
+            postgresql-${PG_VERSION}-pgcrypto 2>/dev/null || true
+
+          # Pre-create extensions that Supabase uses so CREATE EXTENSION doesn't fail
+          psql backup_verify_test -c "CREATE EXTENSION IF NOT EXISTS pgcrypto;" 2>/dev/null || true
+          psql backup_verify_test -c "CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\";" 2>/dev/null || true
+
+      - name: Test restore
+        run: |
+          # The dump uses --clean which generates DROP/ALTER for objects that
+          # don't exist in a fresh database. Pipe through psql with ON_ERROR_STOP
+          # disabled so those harmless errors don't abort the restore.
+          gunzip -c /tmp/verify_backup.sql.gz \
+            | psql -v ON_ERROR_STOP=0 backup_verify_test 2>&1 \
+            | tail -20
+
+          # Verify key tables exist in public schema
+          TABLES=$(psql backup_verify_test -t -c \
+            "SELECT count(*) FROM information_schema.tables WHERE table_schema = 'public';" \
+            | tr -d '[:space:]')
+          echo "Tables restored: ${TABLES}"
+
+          if [ -z "${TABLES}" ] || [ "${TABLES}" = "" ]; then
+            echo "ERROR: Could not count tables. Backup may be corrupt."
+            exit 1
+          fi
+
+          if [ "${TABLES}" -lt 5 ] 2>/dev/null; then
+            echo "ERROR: Too few tables restored (${TABLES}). Backup may be corrupt."
+            exit 1
+          fi
+
+          echo "Backup verification PASSED"
+
+      - name: Cleanup
+        if: always()
+        run: |
+          dropdb backup_verify_test 2>/dev/null || true
+          rm -f /tmp/verify_backup.sql.gz
+
+  notify:
+    runs-on: ubuntu-latest
+    name: Notify on Failure
+    needs: [backup, verify]
+    if: failure()
+    steps:
+      - name: Slack notification
+        if: vars.SLACK_BACKUP_WEBHOOK_URL != ''
+        uses: slackapi/slack-github-action@v3.0.2
+        with:
+          webhook: ${{ vars.SLACK_BACKUP_WEBHOOK_URL }}
+          webhook-type: incoming-webhook
+          payload: |
+            {
+              "text": ":rotating_light: *Database backup failed*\nWorkflow: ${{ github.workflow }}\nRun: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}\nTriggered by: ${{ github.event_name }}"
+            }
+
+      - name: Email notification (via Resend)
+        if: vars.BACKUP_ALERT_EMAIL != ''
+        env:
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+        run: |
+          if [ -z "${RESEND_API_KEY}" ]; then
+            echo "Skipping email notification: RESEND_API_KEY secret not configured"
+            exit 0
+          fi
+          curl -s -X POST https://api.resend.com/emails \
+            -H "Authorization: Bearer ${RESEND_API_KEY}" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "from": "backups@'"${{ vars.BACKUP_ALERT_FROM || 'noreply@yourdomain.com' }}"'",
+              "to": ["'"${{ vars.BACKUP_ALERT_EMAIL }}"'"],
+              "subject": "[webs-alots] Database backup failed",
+              "text": "The automated database backup workflow failed.\n\nRun: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}\nTriggered by: ${{ github.event_name }}\n\nPlease investigate immediately."
+            }'

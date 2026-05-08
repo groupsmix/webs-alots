@@ -1,0 +1,54 @@
+# F-26: CODEOWNERS — require senior reviewer approval for security-critical files.
+#
+# Lines starting with '#' are comments.
+# Each line is a file pattern followed by one or more owners (GitHub usernames or teams).
+
+# Security-critical: encryption, audit logging, authentication
+src/lib/encryption.ts           @groupsmix
+src/lib/audit-log.ts            @groupsmix
+src/lib/with-auth.ts            @groupsmix
+src/lib/auth.ts                 @groupsmix
+src/lib/tenant.ts               @groupsmix
+src/lib/tenant-context.ts       @groupsmix
+src/lib/rate-limit.ts           @groupsmix
+
+# Database migrations — must be reviewed for RLS, data safety
+supabase/migrations/*           @groupsmix
+
+# Infrastructure config — deployment, secrets, KV namespaces
+wrangler.toml                   @groupsmix
+.github/workflows/*             @groupsmix
+
+# AUDIT A9: Build/deploy scripts run during install (postinstall) and CI.
+# Any change here can introduce a postinstall hijack vector, so require a
+# senior reviewer.
+scripts/*                       @groupsmix
+
+# Sentry config — PII scrubbing
+sentry.server.config.ts         @groupsmix
+sentry.client.config.ts         @groupsmix
+
+# Middleware — CSRF, tenant resolution, security headers
+src/middleware.ts                @groupsmix
+src/lib/middleware/*             @groupsmix
+
+# A2-05: Build-time / postinstall patcher scripts.
+# package.json runs these via `postinstall` and `build:cf`, so any change
+# to them ships to every developer machine and to the production build.
+# Treat them as supply-chain critical and require a senior reviewer.
+scripts/patch-opennext.mjs       @groupsmix
+scripts/post-build-patch.mjs     @groupsmix
+scripts/*.mjs                    @groupsmix
+
+# A2-04, A2-05: Supply chain security (Phase 3)
+# package.json controls dependency versions and postinstall script execution.
+# Any modification can introduce supply chain attack vectors (malicious
+# dependency pins, fake CVE IDs, or postinstall hijacking). Require security
+# team review for all changes.
+/package.json                    @groupsmix
+
+# A2-05: Scripts directory protection (Phase 3)
+# All scripts in this directory can be executed via postinstall hooks or
+# during CI/CD pipelines. Malicious modifications could exfiltrate secrets,
+# inject backdoors, or compromise the build. Require security team review.
+/scripts/                        @groupsmix

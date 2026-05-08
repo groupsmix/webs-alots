@@ -1,0 +1,758 @@
+"use client";
+
+import { ChevronLeft, ChevronRight, Check, Stethoscope, User, Clock, Phone, Loader2, MessageCircle } from "lucide-react";
+import { useState, useMemo, useEffect, useRef, useCallback } from "react";
+import { useTenant } from "@/components/tenant-provider";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { useToast } from "@/components/ui/toast";
+import { fetchDoctors, fetchServices, type DoctorView, type ServiceView } from "@/lib/data/client";
+import { useFormValidation, commonRules } from "@/lib/hooks/use-form-validation";
+import { t } from "@/lib/i18n";
+import { logger } from "@/lib/logger";
+import { formatDisplayDate } from "@/lib/utils";
+import { BookingCalendar } from "./calendar";
+import { TimeSlotPicker } from "./time-slots";
+
+/** Defaults used until tenant booking config is loaded from the DB. */
+const DEFAULT_SLOT_DURATION = 30;
+const DEFAULT_BUFFER_TIME = 5;
+const DEFAULT_MAX_PER_SLOT = 1;
+const DEFAULT_SHOW_WAITING_LIST = true;
+
+// Simplified 3-step booking flow
+// Step 1: Select Service (with doctor)
+// Step 2: Pick Date & Time
+// Step 3: Confirm (phone number only, no account required)
+
+const STEPS = ["Service", "Date & Heure", "Confirmation"];
+
+/**
+ * Validate Moroccan phone numbers.
+ * Accepted formats: +212 6XXXXXXXX, +212 7XXXXXXXX, 06XXXXXXXX, 07XXXXXXXX
+ * (with or without spaces/dashes).
+ */
+function isValidMoroccanPhone(phone: string): boolean {
+  const digits = phone.replace(/[\s\-().]/g, "");
+  return /^(?:\+212|0)[67]\d{8}$/.test(digits);
+}
+
+interface Doctor {
+  id: string;
+  name: string;
+  specialtyId: string;
+  specialty: string;
+  phone: string;
+  email: string;
+  avatar?: string;
+  consultationFee: number;
+  languages: string[];
+}
+
+interface Service {
+  id: string;
+  name: string;
+  description: string;
+  duration: number;
+  price: number;
+  currency: string;
+  active: boolean;
+}
+
+function mapDoctor(d: DoctorView): Doctor {
+  return {
+    id: d.id,
+    name: d.name,
+    specialtyId: d.specialtyId,
+    specialty: d.specialty,
+    phone: d.phone,
+    email: d.email,
+    avatar: d.avatar,
+    consultationFee: d.consultationFee,
+    languages: d.languages,
+  };
+}
+
+function mapService(s: ServiceView): Service {
+  return {
+    id: s.id,
+    name: s.name,
+    description: s.description,
+    duration: s.duration,
+    price: s.price,
+    currency: s.currency,
+    active: s.active,
+  };
+}
+
+export function BookingForm() {
+  const [step, setStep] = useState(0);
+  const tenant = useTenant();
+
+  // Selections
+  const [selectedDoctor, setSelectedDoctor] = useState("");
+  const [selectedService, setSelectedService] = useState("");
+  const [selectedDate, setSelectedDate] = useState("");
+  const [selectedTime, setSelectedTime] = useState("");
+  // Simplified patient info: phone only required for first booking
+  const [patientPhone, setPatientPhone] = useState("");
+  const [patientName, setPatientName] = useState("");
+  const [isFirstVisit, setIsFirstVisit] = useState(true);
+  const [submitted, setSubmitted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [bookingId, setBookingId] = useState<string | null>(null);
+  const [bookingError, setBookingError] = useState<string | null>(null);
+  const [phoneError, setPhoneError] = useState<string | null>(null);
+  const [verificationStatus, setVerificationStatus] = useState<string | null>(null);
+  // Honeypot field for basic bot protection (invisible to real users)
+  const [honeypot, setHoneypot] = useState("");
+  const [confirmChecked, setConfirmChecked] = useState(false);
+  // Issue 7: Track per-field touched state for inline real-time validation
+  const [touchedFields, setTouchedFields] = useState<Record<string, boolean>>({});
+  const markTouched = useCallback((field: string) => {
+    setTouchedFields((prev) => (prev[field] ? prev : { ...prev, [field]: true }));
+  }, []);
+  // Also keep stepAttempted for "Next" button press fallback
+  const [stepAttempted, setStepAttempted] = useState(false);
+
+  // Refs for focus management on step transitions (Issue 25)
+  const stepHeadingRefs = useRef<(HTMLHeadingElement | null)[]>([null, null, null]);
+  const stepAnnouncerRef = useRef<HTMLDivElement>(null);
+
+  // Inline validation via useFormValidation hook
+  const validationRules = useMemo(() => ({
+    phone: [commonRules.required("Le numéro de téléphone est obligatoire"), commonRules.phone()],
+  }), []);
+  const { onFieldChange: onValidationChange, onFieldBlur: onValidationBlur, getFieldError } = useFormValidation<{ phone: string }>(validationRules);
+  const { addToast } = useToast();
+  const [isJoiningWaitlist, setIsJoiningWaitlist] = useState(false);
+
+  // Supabase-loaded data
+  const [doctors, setDoctors] = useState<Doctor[]>([]);
+  const [services, setServices] = useState<Service[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // Slot data (fetched dynamically via API when date/doctor change)
+  const [slotData, setSlotData] = useState<{
+    available: string[];
+    all: string[];
+    counts: Record<string, number>;
+  }>({ available: [], all: [], counts: {} });
+
+  // Load doctors and services from Supabase on mount
+  useEffect(() => {
+    const clinicId = tenant?.clinicId;
+    if (!clinicId) return;
+
+    let cancelled = false;
+    setLoading(true);
+    Promise.all([
+      fetchDoctors(clinicId),
+      fetchServices(clinicId),
+    ]).then(([dbDoctors, dbServices]) => {
+      if (cancelled) return;
+      setDoctors(dbDoctors.map(mapDoctor));
+      setServices(dbServices.map(mapService));
+      setLoading(false);
+    }).catch((err) => {
+      logger.warn("Operation failed", { context: "booking-form", error: err });
+      if (!cancelled) setLoading(false);
+    });
+    return () => { cancelled = true; };
+  }, [tenant?.clinicId]);
+
+  // Fetch available slots when date or doctor changes
+  useEffect(() => {
+    if (!selectedDate || !selectedDoctor) return;
+
+    let cancelled = false;
+
+    fetch(`/api/booking?date=${selectedDate}&doctorId=${selectedDoctor}`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (cancelled) return;
+        setSlotData(data
+          ? { available: data.slots ?? [], all: data.allSlots ?? [], counts: data.bookedCounts ?? {} }
+          : { available: [], all: [], counts: {} });
+      })
+      .catch(() => {
+        if (!cancelled) setSlotData({ available: [], all: [], counts: {} });
+      });
+
+    return () => { cancelled = true; };
+  }, [selectedDate, selectedDoctor]);
+
+  // Derive slot arrays
+  const availableSlots = (selectedDate && selectedDoctor) ? slotData.available : [];
+  const allSlots = (selectedDate && selectedDoctor) ? slotData.all : [];
+  const slotCounts = (selectedDate && selectedDoctor) ? slotData.counts : {};
+
+  const activeServices = useMemo(() => services.filter((s) => s.active), [services]);
+
+  const doctor = doctors.find((d) => d.id === selectedDoctor);
+  const service = services.find((s) => s.id === selectedService);
+
+  // Move focus to the new step's heading on step transitions (Issue 25)
+  const goToStep = useCallback((newStep: number) => {
+    setStep(newStep);
+    // Use requestAnimationFrame to wait for the new step content to render
+    requestAnimationFrame(() => {
+      stepHeadingRefs.current[newStep]?.focus();
+    });
+    // Announce step change to screen readers
+    if (stepAnnouncerRef.current) {
+      stepAnnouncerRef.current.textContent = `${STEPS[newStep]}, étape ${newStep + 1} sur ${STEPS.length}`;
+    }
+  }, []);
+
+  const canNext = () => {
+    if (step === 0) return !!selectedService && !!selectedDoctor;
+    if (step === 1) return !!selectedDate && !!selectedTime;
+    if (step === 2) return !!patientPhone.trim() && isValidMoroccanPhone(patientPhone) && confirmChecked;
+    return true;
+  };
+
+  // Issue 7: Inline validation error messages per step field.
+  // Errors show when a field is touched (blur/interaction) OR when the user
+  // clicks "Next" without completing required fields (stepAttempted fallback).
+  const stepErrors = useMemo(() => {
+    const show = (field: string) => touchedFields[field] || stepAttempted;
+    return {
+      doctor: show("doctor") && step === 0 && !selectedDoctor ? "Veuillez choisir un médecin" : null,
+      service: show("service") && step === 0 && selectedDoctor && !selectedService ? "Veuillez choisir un service" : null,
+      date: show("date") && step === 1 && !selectedDate ? "Veuillez sélectionner une date" : null,
+      time: show("time") && step === 1 && selectedDate && !selectedTime ? "Veuillez sélectionner un créneau" : null,
+      phone: show("phone") && step === 2 && patientPhone.trim() !== "" && !isValidMoroccanPhone(patientPhone) ? "Numéro de téléphone invalide" : null,
+      phoneRequired: show("phone") && step === 2 && patientPhone.trim() === "" ? "Le numéro de téléphone est obligatoire" : null,
+      confirm: show("confirm") && step === 2 && !confirmChecked ? "Veuillez confirmer vos informations" : null,
+    };
+  }, [touchedFields, stepAttempted, step, selectedDoctor, selectedService, selectedDate, selectedTime, patientPhone, confirmChecked]);
+
+  const handleJoinWaitingList = async (slot: string) => {
+    // Require a valid phone before joining the waiting list (Issue 17)
+    if (!patientPhone.trim() || !isValidMoroccanPhone(patientPhone)) {
+      addToast("Veuillez saisir un numéro de téléphone valide avant de rejoindre la liste d\u2019attente.", "warning");
+      return;
+    }
+    // Prevent double-clicks while request is in-flight (Issue 51)
+    if (isJoiningWaitlist) return;
+    setIsJoiningWaitlist(true);
+    try {
+      const res = await fetch("/api/booking/waiting-list", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          patientPhone: patientPhone,
+          patientName: patientName || "Patient",
+          doctorId: selectedDoctor,
+          preferredDate: selectedDate,
+          preferredTime: slot,
+          serviceId: selectedService,
+          website: honeypot,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        addToast(`Vous avez \u00e9t\u00e9 ajout\u00e9(e) \u00e0 la liste d'attente pour le ${selectedDate} \u00e0 ${slot}.`, "success");
+      } else {
+        addToast(data.error ?? "Impossible de rejoindre la liste d'attente.", "error");
+      }
+    } catch (err) {
+      logger.warn("Failed to join waiting list", { context: "booking-form", error: err });
+      addToast("Impossible de rejoindre la liste d'attente.", "error");
+    } finally {
+      setIsJoiningWaitlist(false);
+    }
+  };
+
+  // Idempotency key to prevent duplicate bookings from double-clicks or
+  // network retries. Generated once per confirm attempt.
+  const idempotencyKeyRef = useRef<string | null>(null);
+
+  const handleConfirm = async () => {
+    if (isSubmitting) return;
+    // Honeypot check: if the hidden field was filled, silently reject
+    if (honeypot) {
+      setSubmitted(true);
+      return;
+    }
+    setIsSubmitting(true);
+    setBookingError(null);
+
+    // Generate a unique idempotency key for this submission attempt
+    idempotencyKeyRef.current = crypto.randomUUID();
+    const idempotencyKey = idempotencyKeyRef.current;
+
+    try {
+      // Unified progress: verify phone + create booking in one flow (Issue 3).
+      // The verify endpoint issues an HMAC token (no OTP) so we present
+      // a single "Confirmation en cours..." status to the user.
+      setVerificationStatus(t("fr", "booking.confirming"));
+      const verifyRes = await fetch("/api/booking/verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone: patientPhone }),
+      });
+      const verifyData = await verifyRes.json();
+      if (!verifyRes.ok) {
+        const errorMsg =
+          verifyRes.status === 503
+            ? t("fr", "booking.errorServiceUnavailable")
+            : verifyRes.status === 400
+              ? t("fr", "booking.errorInvalidPhone")
+              : (verifyData.error as string | undefined) ?? t("fr", "booking.errorConnection");
+        setBookingError(errorMsg);
+        setVerificationStatus(null);
+        return;
+      }
+      const bookingToken = verifyData.token as string;
+      const specialtyId = doctor?.specialtyId ?? "";
+
+      const res = await fetch("/api/booking", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-booking-token": bookingToken,
+          "x-idempotency-key": idempotencyKey,
+        },
+        body: JSON.stringify({
+          specialtyId,
+          doctorId: selectedDoctor,
+          serviceId: selectedService,
+          date: selectedDate,
+          time: selectedTime,
+          isFirstVisit,
+          hasInsurance: false,
+          patient: {
+            name: patientName || patientPhone,
+            phone: patientPhone,
+          },
+          slotDuration: DEFAULT_SLOT_DURATION,
+          bufferTime: DEFAULT_BUFFER_TIME,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        const serverMsg = data.error as string | undefined;
+        if (res.status === 403) {
+          setBookingError(t("fr", "booking.errorTokenExpired"));
+        } else if (res.status === 429) {
+          setBookingError(t("fr", "booking.errorRateLimit"));
+        } else if (res.status === 409 || serverMsg?.includes("slot")) {
+          setBookingError(t("fr", "booking.errorSlotTaken"));
+        } else {
+          setBookingError(serverMsg ?? t("fr", "booking.errorGeneric"));
+        }
+        return;
+      }
+      if (data.appointment?.id) {
+        setBookingId(data.appointment.id);
+      }
+      setSubmitted(true);
+    } catch (err) {
+      logger.warn("Booking confirmation failed", { context: "booking-form", error: err });
+      setBookingError(t("fr", "booking.errorConnection"));
+    } finally {
+      setIsSubmitting(false);
+      setVerificationStatus(null);
+    }
+  };
+
+  // Success screen
+  if (submitted) {
+    const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
+    const manageUrl = bookingId ? `${baseUrl}/book/manage?id=${bookingId}` : "";
+
+    return (
+      <Card>
+        <CardContent className="py-12 text-center">
+          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-green-100">
+            <Check className="h-8 w-8 text-green-600" />
+          </div>
+          <h2 className="text-2xl font-bold mb-2">Rendez-vous confirm\u00e9 !</h2>
+          <p className="text-muted-foreground mb-4">
+            Vous recevrez une confirmation par WhatsApp au {patientPhone}.
+          </p>
+
+          <div className="rounded-lg border p-4 max-w-sm mx-auto text-left text-sm space-y-1">
+            <p><span className="text-muted-foreground">Service :</span> {service?.name ?? "—"}</p>
+            <p><span className="text-muted-foreground">M\u00e9decin :</span> {doctor?.name ?? "—"}</p>
+            <p><span className="text-muted-foreground">Date :</span> {formatDisplayDate(selectedDate, "fr", "long")}</p>
+            <p><span className="text-muted-foreground">Heure :</span> {selectedTime}</p>
+            <p><span className="text-muted-foreground">Dur\u00e9e :</span> {service?.duration ?? "—"} min</p>
+            <p><span className="text-muted-foreground">Prix :</span> {service?.price ?? "—"} {service?.currency ?? ""}</p>
+          </div>
+
+          {manageUrl && (
+            <div className="mt-4">
+              <a
+                href={manageUrl}
+                className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow hover:bg-primary/90 transition-colors"
+              >
+                G\u00e9rer mon rendez-vous
+              </a>
+            </div>
+          )}
+
+          <div className="flex items-center justify-center gap-2 mt-2 text-xs text-muted-foreground">
+            <MessageCircle className="h-3.5 w-3.5" />
+            <span>Confirmation WhatsApp envoy\u00e9e avec les d\u00e9tails</span>
+          </div>
+
+          <Button className="mt-6" onClick={() => {
+            setSubmitted(false);
+            setStep(0);
+            setSelectedDoctor("");
+            setSelectedService("");
+            setSelectedDate("");
+            setSelectedTime("");
+            setPatientPhone("");
+            setPatientName("");
+            setIsFirstVisit(true);
+            setBookingId(null);
+            setBookingError(null);
+          }}>
+            Prendre un autre rendez-vous
+          </Button>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // Loading state
+  if (loading) {
+    return (
+      <Card>
+        <CardContent className="py-12 text-center">
+          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground mx-auto" />
+          <p className="text-sm text-muted-foreground mt-2">Chargement des services\u2026</p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Prendre un rendez-vous</CardTitle>
+        {/* 3-step indicator */}
+        <div className="flex items-center gap-1 mt-4">
+          {STEPS.map((s, i) => (
+            <div key={s} className="flex items-center flex-1">
+              <div
+                className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-medium shrink-0 ${
+                  i <= step
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-muted text-muted-foreground"
+                }`}
+              >
+                {i < step ? <Check className="h-4 w-4" /> : i + 1}
+              </div>
+              <span className={`text-xs ml-2 hidden sm:block ${i <= step ? "font-medium" : "text-muted-foreground"}`}>
+                {s}
+              </span>
+              {i < STEPS.length - 1 && (
+                <div className={`h-0.5 flex-1 mx-2 ${i < step ? "bg-primary" : "bg-muted"}`} />
+              )}
+            </div>
+          ))}
+        </div>
+      </CardHeader>
+
+      <CardContent>
+        {/* Screen reader announcer for step changes (Issue 25) */}
+        <div ref={stepAnnouncerRef} className="sr-only" aria-live="assertive" aria-atomic="true" />
+
+        {/* Step 1: Select Service (with doctor) */}
+        {step === 0 && (
+          <div className="space-y-6" role="tabpanel" aria-labelledby="step-heading-0">
+            {/* Select doctor */}
+            <div>
+              <p id="step-heading-0" ref={(el) => { stepHeadingRefs.current[0] = el; }} tabIndex={-1} className="text-sm font-medium mb-3 flex items-center gap-2 outline-none">
+                <User className="h-4 w-4 text-primary" />
+                Choisissez votre m\u00e9decin :
+              </p>
+              {stepErrors.doctor && (
+                <p className="text-xs text-destructive mb-2" role="alert">{stepErrors.doctor}</p>
+              )}
+              <div className="grid gap-2">
+                {doctors.map((d) => (
+                  <button
+                    key={d.id}
+                    onClick={() => { setSelectedDoctor(d.id); setSelectedService(""); }}
+                    className={`rounded-lg border p-3 min-h-11 text-left transition-colors ${
+                      selectedDoctor === d.id ? "border-primary bg-primary/5" : "hover:bg-muted/50"
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10">
+                        <User className="h-4 w-4 text-primary" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-sm">{d.name}</p>
+                        <p className="text-xs text-muted-foreground">{d.specialty}</p>
+                      </div>
+                      <Badge variant="outline" className="text-xs shrink-0">{d.consultationFee} MAD</Badge>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Select service */}
+            {selectedDoctor && (
+              <div>
+                <p className="text-sm font-medium mb-3 flex items-center gap-2">
+                  <Stethoscope className="h-4 w-4 text-primary" />
+                  Choisissez le service :
+                </p>
+                {stepErrors.service && (
+                  <p className="text-xs text-destructive mb-2" role="alert">{stepErrors.service}</p>
+                )}
+                <div className="grid gap-2">
+                  {activeServices.map((s) => (
+                    <button
+                      key={s.id}
+                      onClick={() => setSelectedService(s.id)}
+                      className={`rounded-lg border p-3 min-h-11 text-left transition-colors ${
+                        selectedService === s.id ? "border-primary bg-primary/5" : "hover:bg-muted/50"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="font-medium text-sm">{s.name}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {s.description} \u00b7 {s.duration} min
+                          </p>
+                        </div>
+                        <Badge variant="outline" className="text-xs shrink-0">{s.price} {s.currency}</Badge>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Step 2: Pick Date & Time */}
+        {step === 1 && (
+          <div className="space-y-6" role="tabpanel" aria-labelledby="step-heading-1">
+            <div>
+              <p id="step-heading-1" ref={(el) => { stepHeadingRefs.current[1] = el; }} tabIndex={-1} className="text-sm text-muted-foreground mb-3 flex items-center gap-2 outline-none">
+                <Clock className="h-4 w-4" />
+                S\u00e9lectionnez une date et un cr\u00e9neau :
+              </p>
+              {stepErrors.date && (
+                <p className="text-xs text-destructive mb-2" role="alert">{stepErrors.date}</p>
+              )}
+              <BookingCalendar
+                selectedDate={selectedDate}
+                onSelectDate={(date) => { setSelectedDate(date); setSelectedTime(""); }}
+              />
+            </div>
+            {selectedDate && (
+              <div>
+                <p className="text-sm text-muted-foreground mb-3">Cr\u00e9neaux disponibles :</p>
+                {stepErrors.time && (
+                  <p className="text-xs text-destructive mb-2" role="alert">{stepErrors.time}</p>
+                )}
+                <TimeSlotPicker
+                  slots={availableSlots}
+                  allSlots={allSlots}
+                  slotCounts={slotCounts}
+                  maxPerSlot={DEFAULT_MAX_PER_SLOT}
+                  selectedSlot={selectedTime}
+                  onSelectSlot={setSelectedTime}
+                  showWaitingList={DEFAULT_SHOW_WAITING_LIST}
+                  onJoinWaitingList={handleJoinWaitingList}
+                />
+              </div>
+            )}
+
+            {/* Selected summary */}
+            {selectedDate && selectedTime && (
+              <div className="rounded-lg bg-muted/50 p-3 text-sm space-y-1">
+                <p className="font-medium text-xs text-muted-foreground uppercase tracking-wide">R\u00e9sum\u00e9</p>
+                <p>{service?.name ?? "—"} avec {doctor?.name ?? "—"}</p>
+                <p>{formatDisplayDate(selectedDate, "fr", "long")} \u00e0 {selectedTime} \u00b7 {service?.duration ?? "—"} min</p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Step 3: Confirm (phone only) */}
+        {step === 2 && (
+          <div className="space-y-6" role="tabpanel" aria-labelledby="step-heading-2">
+            {/* Booking summary */}
+            <div className="rounded-lg border p-4 space-y-2 text-sm">
+              <h3 id="step-heading-2" ref={(el) => { stepHeadingRefs.current[2] = el; }} tabIndex={-1} className="font-semibold text-base mb-3 outline-none">R\u00e9capitulatif</h3>
+              <div className="grid gap-1.5">
+                <div className="flex justify-between"><span className="text-muted-foreground">Service</span><span className="font-medium">{service?.name ?? "—"}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">M\u00e9decin</span><span className="font-medium">{doctor?.name ?? "—"}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Sp\u00e9cialit\u00e9</span><span className="font-medium">{doctor?.specialty ?? "—"}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Date</span><span className="font-medium">{formatDisplayDate(selectedDate, "fr", "long")}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Heure</span><span className="font-medium">{selectedTime}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Dur\u00e9e</span><span className="font-medium">{service?.duration ?? "—"} min</span></div>
+                <hr />
+                <div className="flex justify-between font-medium"><span>Prix</span><span>{service?.price ?? "—"} {service?.currency ?? ""}</span></div>
+              </div>
+            </div>
+
+            {/* Phone number - the only required field */}
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="b-phone" className="flex items-center gap-2">
+                  <Phone className="h-4 w-4 text-primary" />
+                  Num\u00e9ro de t\u00e9l\u00e9phone *
+                </Label>
+                <Input
+                  id="b-phone"
+                  value={patientPhone}
+                  onChange={(e) => {
+                    setPatientPhone(e.target.value);
+                    if (phoneError) setPhoneError(null);
+                    onValidationChange("phone", e.target.value);
+                    // Issue 7: Mark field as touched on first input so
+                    // real-time validation feedback appears immediately
+                    markTouched("phone");
+                  }}
+                  onBlur={() => {
+                    onValidationBlur("phone", patientPhone);
+                    markTouched("phone");
+                    if (patientPhone.trim() && !isValidMoroccanPhone(patientPhone)) {
+                      setPhoneError(t("fr", "booking.invalidPhone"));
+                    }
+                  }}
+                  placeholder="+212 6XX XX XX XX"
+                  type="tel"
+                  required
+                  autoFocus
+                  className={phoneError || stepErrors.phone || stepErrors.phoneRequired ? "border-destructive" : patientPhone.trim() && isValidMoroccanPhone(patientPhone) ? "border-green-500" : ""}
+                  aria-invalid={!!phoneError}
+                  aria-describedby={phoneError ? "phone-error" : undefined}
+                />
+                {(phoneError || getFieldError("phone") || stepErrors.phone || stepErrors.phoneRequired) ? (
+                  <p id="phone-error" className="text-xs text-destructive">{phoneError || getFieldError("phone") || stepErrors.phone || stepErrors.phoneRequired}</p>
+                ) : (
+                  <p className="text-xs text-muted-foreground">
+                    Vous recevrez la confirmation par WhatsApp. Aucun compte requis.
+                  </p>
+                )}
+              </div>
+
+              {/* Optional name */}
+              <div className="space-y-2">
+                <Label htmlFor="b-name" className="text-sm">Nom (optionnel)</Label>
+                <Input
+                  id="b-name"
+                  value={patientName}
+                  onChange={(e) => setPatientName(e.target.value)}
+                  placeholder="Votre nom"
+                />
+              </div>
+
+              {/* First visit toggle (Issue 49) */}
+              <div className="flex items-center gap-3">
+                <input
+                  id="b-first-visit"
+                  type="checkbox"
+                  checked={isFirstVisit}
+                  onChange={(e) => setIsFirstVisit(e.target.checked)}
+                  className="h-5 w-5 rounded border-gray-300 text-primary focus:ring-primary"
+                />
+                <Label htmlFor="b-first-visit" className="text-sm cursor-pointer">
+                  {t("fr", "booking.isFirstVisit")}
+                </Label>
+              </div>
+
+              {/* Confirmation checkbox (Issue 18) */}
+              <div className="flex items-start gap-3">
+                <input
+                  id="b-confirm"
+                  type="checkbox"
+                  checked={confirmChecked}
+                  onChange={(e) => { setConfirmChecked(e.target.checked); markTouched("confirm"); }}
+                  className="h-5 w-5 mt-0.5 rounded border-gray-300 text-primary focus:ring-primary"
+                />
+                <Label htmlFor="b-confirm" className="text-sm cursor-pointer leading-snug">
+                  Je confirme que ces informations sont correctes
+                </Label>
+              </div>
+              {stepErrors.confirm && (
+                <p className="text-xs text-destructive" role="alert">{stepErrors.confirm}</p>
+              )}
+
+              {/* Honeypot field - hidden from real users, catches bots */}
+              <div className="absolute -left-[9999px]" aria-hidden="true">
+                <label htmlFor="b-website">Website</label>
+                <input
+                  id="b-website"
+                  name="website"
+                  type="text"
+                  tabIndex={-1}
+                  autoComplete="off"
+                  value={honeypot}
+                  onChange={(e) => setHoneypot(e.target.value)}
+                />
+              </div>
+            </div>
+
+            {/* Error message */}
+            {bookingError && (
+              <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+                {bookingError}
+              </div>
+            )}
+
+            {/* WhatsApp note */}
+            <div className="flex items-start gap-2 rounded-lg bg-green-50 p-3 text-xs text-green-800">
+              <MessageCircle className="h-4 w-4 shrink-0 mt-0.5" />
+              <span>
+                Apr\u00e8s confirmation, vous recevrez un message WhatsApp avec les d\u00e9tails du rendez-vous,
+                le nom du m\u00e9decin, l&apos;adresse du cabinet et un lien pour g\u00e9rer ou annuler votre rendez-vous.
+              </span>
+            </div>
+          </div>
+        )}
+
+        {/* Navigation */}
+        <div className="flex justify-between mt-6">
+          <Button
+            variant="outline"
+            onClick={() => goToStep(step - 1)}
+            disabled={step === 0}
+          >
+            <ChevronLeft className="h-4 w-4 mr-1" />
+            {t("fr", "action.back")}
+          </Button>
+          {step < 2 ? (
+            <Button
+              onClick={() => {
+                if (!canNext()) {
+                  setStepAttempted(true);
+                  return;
+                }
+                setStepAttempted(false);
+                goToStep(step + 1);
+              }}
+            >
+              {t("fr", "booking.next")}
+              <ChevronRight className="h-4 w-4 ml-1" />
+            </Button>
+          ) : (
+            <Button onClick={handleConfirm} disabled={isSubmitting || !canNext()}>
+              {isSubmitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              {isSubmitting
+                ? (verificationStatus ?? t("fr", "booking.submitting"))
+                : t("fr", "booking.confirm")}
+            </Button>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}

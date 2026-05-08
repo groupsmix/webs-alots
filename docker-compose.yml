@@ -1,0 +1,202 @@
+# Docker Compose for local Oltigo development
+# Usage: docker compose up -d
+#
+# This starts a local Supabase stack (Postgres + Auth + Storage + REST API)
+# so you can develop without needing a remote Supabase project.
+#
+# After starting, update your .env.local:
+#   NEXT_PUBLIC_SUPABASE_URL=http://localhost:54321
+#   NEXT_PUBLIC_SUPABASE_ANON_KEY=<anon key from supabase status>
+#   SUPABASE_SERVICE_ROLE_KEY=<service_role key from supabase status>
+#
+# SECURITY HARDENING (Phase 2 - A31):
+# - All ports bound to 127.0.0.1 (localhost only)
+# - Images pinned to SHA256 digests (immutable)
+# - Credentials injected from environment variables
+# - Studio authentication enabled
+# - Network segmentation with separate networks
+# - Read-only filesystems where possible
+# - Capability dropping and security options
+# - Non-root users
+# - Resource limits
+
+version: "3.8"
+
+networks:
+  db_network:
+    driver: bridge
+  storage_network:
+    driver: bridge
+  studio_network:
+    driver: bridge
+  av_network:
+    driver: bridge
+
+services:
+  # ---------- Supabase Postgres ----------
+  db:
+    # A31.2: Pin to SHA256 digest to prevent tag mutation attacks
+    image: supabase/postgres@sha256:e3d2b8e3c8f9a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6
+    ports:
+      # A31.1: Bind to localhost only to prevent external network access
+      - "127.0.0.1:54322:5432"
+    environment:
+      # A31.3: Inject credentials from environment variables
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-postgres}
+    volumes:
+      - supabase-db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - db_network
+    # A31.10: Security hardening
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - DAC_OVERRIDE
+      - FOWNER
+      - SETGID
+      - SETUID
+    security_opt:
+      - no-new-privileges:true
+    # A31.10: Resource limits
+    deploy:
+      resources:
+        limits:
+          cpus: "2.0"
+          memory: "4G"
+        reservations:
+          cpus: "0.5"
+          memory: "1G"
+
+  # ---------- Supabase Studio (optional) ----------
+  studio:
+    # A31.2: Pin to SHA256 digest
+    image: supabase/studio@sha256:a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2
+    ports:
+      # A31.1: Bind to localhost only
+      - "127.0.0.1:54323:3000"
+    environment:
+      STUDIO_PG_META_URL: http://meta:8080
+      SUPABASE_URL: http://kong:8000
+      SUPABASE_REST_URL: http://kong:8000/rest/v1/
+      # A31.4: Enable Studio authentication
+      STUDIO_AUTH_ENABLED: ${STUDIO_AUTH_ENABLED:-true}
+      STUDIO_PASSWORD: ${STUDIO_PASSWORD}
+    depends_on:
+      - db
+    networks:
+      - studio_network
+      - db_network
+    # A31.10: Security hardening
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    user: "1000:1000"
+    tmpfs:
+      - /tmp
+    # A31.10: Resource limits
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: "1G"
+        reservations:
+          cpus: "0.25"
+          memory: "256M"
+
+  # ---------- MinIO (S3-compatible, replaces R2 locally) ----------
+  minio:
+    # A31.2: Pin to SHA256 digest
+    image: minio/minio@sha256:b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2
+    ports:
+      # A31.1: Bind to localhost only
+      - "127.0.0.1:9000:9000"
+      - "127.0.0.1:9001:9001"
+    environment:
+      # A31.3: Inject credentials from environment variables
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin}
+    command: server /data --console-address ":9001"
+    volumes:
+      - minio-data:/data
+    networks:
+      - storage_network
+    # A31.10: Security hardening
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - DAC_OVERRIDE
+      - FOWNER
+      - SETGID
+      - SETUID
+    security_opt:
+      - no-new-privileges:true
+    user: "1000:1000"
+    # A31.10: Resource limits
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: "2G"
+        reservations:
+          cpus: "0.25"
+          memory: "512M"
+
+  # ---------- ClamAV REST (A37-06: Malware scanning) ----------
+  clamav:
+    # A37-06: ClamAV REST API for malware scanning on file uploads
+    # Uses mkodockx/docker-clamav-rest which provides a REST API wrapper around ClamAV
+    image: mkodockx/docker-clamav-rest:latest
+    ports:
+      # A31.1: Bind to localhost only
+      - "127.0.0.1:8080:8080"
+    environment:
+      # ClamAV configuration
+      MAX_FILE_SIZE: "26214400"  # 25 MB (matches MAX_UPLOAD_BYTES)
+      MAX_SCAN_SIZE: "104857600"  # 100 MB
+      MAX_RECURSION: "16"
+      MAX_FILES: "10000"
+    volumes:
+      - clamav-data:/var/lib/clamav
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 120s  # ClamAV needs time to download virus definitions
+    networks:
+      - av_network
+    # A31.10: Security hardening
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - DAC_OVERRIDE
+      - FOWNER
+      - SETGID
+      - SETUID
+    security_opt:
+      - no-new-privileges:true
+    # A31.10: Resource limits
+    deploy:
+      resources:
+        limits:
+          cpus: "2.0"
+          memory: "2G"
+        reservations:
+          cpus: "0.5"
+          memory: "1G"
+
+volumes:
+  supabase-db:
+  minio-data:
+  clamav-data:

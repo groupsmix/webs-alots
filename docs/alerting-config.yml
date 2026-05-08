@@ -1,0 +1,258 @@
+# =============================================================================
+# Cloudflare Alerts API Configuration — Oltigo Health
+# =============================================================================
+#
+# A40.2: Alerting code for error rate, latency, and billing anomalies.
+# This file documents the alerting configuration that MUST be deployed via
+# Cloudflare Alerts API or Cloudflare dashboard.
+#
+# Cloudflare does not support declarative alerting configuration via wrangler.toml
+# at this time. This file serves as infrastructure-as-code documentation for
+# audit purposes and can be used to programmatically configure alerts via the
+# Cloudflare API.
+#
+# API Reference: https://developers.cloudflare.com/api/operations/notification-policies-list-notification-policies
+# =============================================================================
+
+# ── Alert 1: High Error Rate ─────────────────────────────────────────────
+# Trigger when 5xx error rate exceeds 5% over a 5-minute window
+error_rate_alert:
+  name: "High Error Rate - Oltigo Health Workers"
+  description: "Alerts when 5xx error rate exceeds 5% threshold"
+  enabled: true
+  alert_type: "workers_alert"
+  
+  # Notification channels (configure in Cloudflare dashboard)
+  # - Email: ops@oltigo.health
+  # - PagerDuty: production-oncall
+  # - Slack: #alerts-production
+  notification_channels:
+    - email: "ops@oltigo.health"
+    - pagerduty: "production-oncall"
+    - slack: "#alerts-production"
+  
+  # Trigger conditions
+  conditions:
+    metric: "error_rate"
+    threshold: 5.0  # 5% error rate
+    comparison: "greater_than"
+    window: 300  # 5 minutes
+    
+  # Filter to specific Workers
+  filters:
+    worker_name: "webs-alots"
+    environment: "production"
+    
+  # Alert severity
+  severity: "critical"
+  
+  # Runbook reference
+  runbook_url: "https://github.com/oltigo/webs-alots/blob/main/docs/incident-response.md#high-error-rate"
+
+# ── Alert 2: High Latency (P99) ──────────────────────────────────────────
+# Trigger when p99 latency exceeds 1000ms over a 5-minute window
+latency_alert:
+  name: "High Latency (P99) - Oltigo Health Workers"
+  description: "Alerts when p99 latency exceeds 1000ms threshold"
+  enabled: true
+  alert_type: "workers_alert"
+  
+  # Notification channels
+  notification_channels:
+    - email: "ops@oltigo.health"
+    - slack: "#alerts-production"
+  
+  # Trigger conditions
+  conditions:
+    metric: "duration_p99"
+    threshold: 1000  # 1000ms (1 second)
+    comparison: "greater_than"
+    window: 300  # 5 minutes
+    
+  # Filter to specific Workers
+  filters:
+    worker_name: "webs-alots"
+    environment: "production"
+    
+  # Alert severity
+  severity: "warning"
+  
+  # Runbook reference
+  runbook_url: "https://github.com/oltigo/webs-alots/blob/main/docs/incident-response.md#high-latency"
+
+# ── Alert 3: Billing Anomaly ─────────────────────────────────────────────
+# Trigger when daily cost exceeds 2x baseline (cost spike detection)
+billing_anomaly_alert:
+  name: "Billing Anomaly - Oltigo Health Workers"
+  description: "Alerts when daily cost exceeds 2x baseline (potential abuse or misconfiguration)"
+  enabled: true
+  alert_type: "billing_alert"
+  
+  # Notification channels
+  notification_channels:
+    - email: "ops@oltigo.health"
+    - email: "finance@oltigo.health"
+    - pagerduty: "production-oncall"
+    - slack: "#alerts-billing"
+  
+  # Trigger conditions
+  conditions:
+    metric: "daily_cost"
+    threshold_multiplier: 2.0  # 2x baseline cost
+    comparison: "greater_than"
+    window: 86400  # 24 hours (1 day)
+    baseline_period: 604800  # 7 days (rolling average)
+    
+  # Filter to specific services
+  filters:
+    service: "workers"
+    account_id: "${CLOUDFLARE_ACCOUNT_ID}"
+    
+  # Alert severity
+  severity: "critical"
+  
+  # Runbook reference
+  runbook_url: "https://github.com/oltigo/webs-alots/blob/main/docs/incident-response.md#billing-anomaly"
+  
+  # Additional context
+  notes: |
+    Billing anomalies can indicate:
+    - DDoS attack or abuse (high request volume)
+    - Runaway cron job or infinite loop
+    - Misconfigured rate limiting
+    - Legitimate traffic spike (marketing campaign, viral content)
+    
+    Investigate request volume, error rate, and CPU usage metrics.
+    Check for unusual traffic patterns or geographic distribution.
+    Review recent deployments and configuration changes.
+
+# ── Alert 4: CPU Limit Exceeded ──────────────────────────────────────────
+# Trigger when requests exceed CPU limit (50ms) more than 1% of the time
+cpu_limit_alert:
+  name: "CPU Limit Exceeded - Oltigo Health Workers"
+  description: "Alerts when requests exceed CPU limit (50ms) threshold"
+  enabled: true
+  alert_type: "workers_alert"
+  
+  # Notification channels
+  notification_channels:
+    - email: "ops@oltigo.health"
+    - slack: "#alerts-production"
+  
+  # Trigger conditions
+  conditions:
+    metric: "cpu_exceeded_rate"
+    threshold: 1.0  # 1% of requests exceed CPU limit
+    comparison: "greater_than"
+    window: 300  # 5 minutes
+    
+  # Filter to specific Workers
+  filters:
+    worker_name: "webs-alots"
+    environment: "production"
+    
+  # Alert severity
+  severity: "warning"
+  
+  # Runbook reference
+  runbook_url: "https://github.com/oltigo/webs-alots/blob/main/docs/incident-response.md#cpu-limit-exceeded"
+  
+  # Additional context
+  notes: |
+    CPU limit exceeded indicates:
+    - Inefficient code paths (N+1 queries, heavy computation)
+    - AI/LLM calls taking too long
+    - Large file processing or encryption operations
+    - Database connection timeouts
+    
+    Review slow request traces in Sentry and Workers Logs.
+    Consider optimizing hot paths or increasing CPU limit.
+
+# ── Alert 5: KV Quota Exceeded ───────────────────────────────────────────
+# Trigger when KV read/write operations exceed 90% of quota
+kv_quota_alert:
+  name: "KV Quota Exceeded - Oltigo Health Workers"
+  description: "Alerts when KV operations exceed 90% of quota"
+  enabled: true
+  alert_type: "workers_alert"
+  
+  # Notification channels
+  notification_channels:
+    - email: "ops@oltigo.health"
+    - slack: "#alerts-production"
+  
+  # Trigger conditions
+  conditions:
+    metric: "kv_operations"
+    threshold: 90.0  # 90% of quota
+    comparison: "greater_than"
+    window: 3600  # 1 hour
+    
+  # Filter to specific KV namespaces
+  filters:
+    kv_namespace: "RATE_LIMIT_KV"
+    environment: "production"
+    
+  # Alert severity
+  severity: "warning"
+  
+  # Runbook reference
+  runbook_url: "https://github.com/oltigo/webs-alots/blob/main/docs/incident-response.md#kv-quota-exceeded"
+
+# ── Deployment Instructions ──────────────────────────────────────────────
+# This configuration must be deployed via Cloudflare API or dashboard.
+#
+# Option 1: Cloudflare Dashboard
+#   1. Navigate to Account Home → Notifications
+#   2. Click "Add" to create a new notification policy
+#   3. Configure each alert using the parameters above
+#   4. Test the notification channels
+#
+# Option 2: Cloudflare API (Programmatic)
+#   Use the Cloudflare API to create notification policies:
+#
+#   curl -X POST "https://api.cloudflare.com/client/v4/accounts/${ACCOUNT_ID}/alerting/v3/policies" \
+#     -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
+#     -H "Content-Type: application/json" \
+#     --data '{
+#       "name": "High Error Rate - Oltigo Health Workers",
+#       "alert_type": "workers_alert",
+#       "enabled": true,
+#       "mechanisms": {
+#         "email": [{"id": "ops@oltigo.health"}],
+#         "pagerduty": [{"id": "production-oncall"}]
+#       },
+#       "filters": {
+#         "worker_name": ["webs-alots"],
+#         "environment": ["production"]
+#       },
+#       "conditions": {
+#         "error_rate": {"threshold": 5.0, "comparison": "greater_than"}
+#       }
+#     }'
+#
+# Option 3: Terraform (Infrastructure-as-Code)
+#   Use the Cloudflare Terraform provider to manage alerts:
+#
+#   resource "cloudflare_notification_policy" "error_rate" {
+#     account_id = var.cloudflare_account_id
+#     name       = "High Error Rate - Oltigo Health Workers"
+#     alert_type = "workers_alert"
+#     enabled    = true
+#     
+#     email_integration {
+#       id = "ops@oltigo.health"
+#     }
+#     
+#     filters {
+#       worker_name = ["webs-alots"]
+#       environment = ["production"]
+#     }
+#   }
+#
+# ── Monitoring & Maintenance ─────────────────────────────────────────────
+# - Review alert thresholds quarterly based on actual traffic patterns
+# - Test notification channels monthly (use Cloudflare "Test" button)
+# - Update runbook URLs when incident response procedures change
+# - Archive or disable alerts for deprecated Workers
+# - Monitor alert fatigue (too many false positives = tune thresholds)

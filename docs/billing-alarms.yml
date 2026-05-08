@@ -1,0 +1,180 @@
+# =============================================================================
+# Cloudflare Billing & Resource Alarms Configuration
+# =============================================================================
+#
+# A42.2: Billing anomaly detection and resource quota monitoring.
+# These alarms MUST be configured in the Cloudflare dashboard to prevent
+# cost overruns and detect abuse patterns.
+#
+# Configuration Path: Cloudflare Dashboard → Notifications → Add
+#
+# IMPORTANT: Cloudflare does not support declarative alarm configuration via
+# wrangler.toml at this time. This file documents the required alarms for
+# audit purposes. Operators MUST manually configure these in the dashboard.
+#
+# See: https://developers.cloudflare.com/fundamentals/notifications/
+# =============================================================================
+
+# ── Billing Anomaly Alarm ─────────────────────────────────────────────
+# Trigger: Daily cost exceeds 2x the 30-day baseline average
+# Purpose: Detect cost spikes from abuse, bugs, or DDoS attacks
+# Action: Email ops@oltigo.health + PagerDuty alert
+#
+# Configuration:
+#   - Notification Type: "Billing"
+#   - Condition: "Daily spend > 2x 30-day average"
+#   - Threshold: 200% of baseline
+#   - Delivery: Email + Webhook (PagerDuty)
+#   - Frequency: Immediate (no throttling)
+#
+# Example Scenario:
+#   - Baseline: $50/day average over 30 days
+#   - Trigger: $100/day (2x baseline)
+#   - Response: Investigate for abuse, check Worker CPU usage, review R2 bandwidth
+billing_anomaly_alarm:
+  name: "Billing Anomaly - 2x Baseline"
+  type: "billing"
+  condition: "daily_spend > 2 * avg_30d_spend"
+  threshold_multiplier: 2.0
+  delivery:
+    - email: "ops@oltigo.health"
+    - webhook: "https://events.pagerduty.com/v2/enqueue"  # PagerDuty integration
+  frequency: "immediate"
+  severity: "critical"
+
+# ── CPU Usage Alarm ───────────────────────────────────────────────────
+# Trigger: Worker CPU usage exceeds 80% of the configured limit (cpu_ms = 50)
+# Purpose: Detect CPU-intensive requests that approach the 50ms limit
+# Action: Email ops@oltigo.health + Slack alert
+#
+# Configuration:
+#   - Notification Type: "Workers"
+#   - Condition: "CPU time > 40ms (80% of 50ms limit)"
+#   - Threshold: 40ms
+#   - Delivery: Email + Webhook (Slack)
+#   - Frequency: Once per hour (throttled to avoid spam)
+#
+# Example Scenario:
+#   - Limit: 50ms CPU time per request (wrangler.toml)
+#   - Trigger: Request consumes 40ms+ CPU
+#   - Response: Profile slow endpoints, optimize hot paths, consider caching
+cpu_usage_alarm:
+  name: "Worker CPU Usage - 80% of Limit"
+  type: "workers"
+  condition: "cpu_ms > 40"
+  threshold_ms: 40
+  limit_ms: 50
+  threshold_percent: 80
+  delivery:
+    - email: "ops@oltigo.health"
+    - webhook: "https://hooks.slack.com/services/YOUR_SLACK_WEBHOOK"  # Slack integration
+  frequency: "hourly"
+  severity: "warning"
+
+# ── KV Read Quota Alarm ───────────────────────────────────────────────
+# Trigger: KV read operations exceed 90% of the daily quota
+# Purpose: Prevent KV quota exhaustion from rate limiting or caching abuse
+# Action: Email ops@oltigo.health
+#
+# Configuration:
+#   - Notification Type: "Workers KV"
+#   - Condition: "Daily KV reads > 90% of quota"
+#   - Threshold: 90% of plan limit (Workers Paid: 10M reads/day)
+#   - Delivery: Email
+#   - Frequency: Once per day
+#
+# Example Scenario:
+#   - Quota: 10M KV reads/day (Workers Paid plan)
+#   - Trigger: 9M reads/day (90% of quota)
+#   - Response: Review rate limiting logic, check for KV read loops, optimize caching
+kv_read_quota_alarm:
+  name: "KV Read Quota - 90% Threshold"
+  type: "workers_kv"
+  condition: "daily_reads > 0.9 * quota"
+  threshold_percent: 90
+  quota_reads: 10_000_000  # Workers Paid plan limit
+  delivery:
+    - email: "ops@oltigo.health"
+  frequency: "daily"
+  severity: "warning"
+
+# ── KV Write Quota Alarm ──────────────────────────────────────────────
+# Trigger: KV write operations exceed 90% of the daily quota
+# Purpose: Prevent KV quota exhaustion from rate limiting or caching abuse
+# Action: Email ops@oltigo.health
+#
+# Configuration:
+#   - Notification Type: "Workers KV"
+#   - Condition: "Daily KV writes > 90% of quota"
+#   - Threshold: 90% of plan limit (Workers Paid: 1M writes/day)
+#   - Delivery: Email
+#   - Frequency: Once per day
+#
+# Example Scenario:
+#   - Quota: 1M KV writes/day (Workers Paid plan)
+#   - Trigger: 900K writes/day (90% of quota)
+#   - Response: Review rate limiting logic, check for KV write loops, optimize caching
+kv_write_quota_alarm:
+  name: "KV Write Quota - 90% Threshold"
+  type: "workers_kv"
+  condition: "daily_writes > 0.9 * quota"
+  threshold_percent: 90
+  quota_writes: 1_000_000  # Workers Paid plan limit
+  delivery:
+    - email: "ops@oltigo.health"
+  frequency: "daily"
+  severity: "warning"
+
+# ── R2 Bandwidth Alarm ────────────────────────────────────────────────
+# Trigger: R2 egress bandwidth exceeds 90% of the monthly quota
+# Purpose: Detect bandwidth abuse or unexpected file download patterns
+# Action: Email ops@oltigo.health
+#
+# Configuration:
+#   - Notification Type: "R2"
+#   - Condition: "Monthly egress > 90% of quota"
+#   - Threshold: 90% of plan limit (R2: 10GB free, then $0.36/GB)
+#   - Delivery: Email
+#   - Frequency: Once per day
+#
+# Example Scenario:
+#   - Quota: 10GB free egress/month
+#   - Trigger: 9GB egress/month (90% of quota)
+#   - Response: Review file download patterns, check for abuse, consider CDN caching
+r2_bandwidth_alarm:
+  name: "R2 Bandwidth - 90% Threshold"
+  type: "r2"
+  condition: "monthly_egress_gb > 0.9 * quota"
+  threshold_percent: 90
+  quota_gb: 10  # R2 free tier limit
+  delivery:
+    - email: "ops@oltigo.health"
+  frequency: "daily"
+  severity: "warning"
+
+# ── Implementation Notes ──────────────────────────────────────────────
+#
+# 1. Manual Configuration Required:
+#    - These alarms MUST be manually configured in the Cloudflare dashboard
+#    - Cloudflare does not support declarative alarm configuration via API
+#    - This file serves as documentation and audit trail
+#
+# 2. Webhook Integration:
+#    - PagerDuty: Create integration key in PagerDuty dashboard
+#    - Slack: Create incoming webhook in Slack workspace settings
+#    - Update webhook URLs in this file and in Cloudflare dashboard
+#
+# 3. Baseline Calculation:
+#    - Billing anomaly baseline is calculated automatically by Cloudflare
+#    - Based on 30-day rolling average of daily spend
+#    - Excludes weekends and holidays to avoid false positives
+#
+# 4. Testing:
+#    - Test alarms by temporarily lowering thresholds in the dashboard
+#    - Verify email delivery and webhook integration
+#    - Restore production thresholds after testing
+#
+# 5. Maintenance:
+#    - Review alarm thresholds quarterly as usage patterns change
+#    - Update this file when adding new alarms or changing thresholds
+#    - Document all changes in CHANGELOG.md

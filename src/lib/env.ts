@@ -1,0 +1,500 @@
+/**
+ * Centralized Environment Variable Validation
+ *
+ * Validates that all required environment variables are set at startup
+ * rather than failing at runtime when the relevant code path executes.
+ *
+ * Called from the Next.js instrumentation hook (src/instrumentation.ts)
+ * so that missing variables are surfaced immediately on server start.
+ *
+ * Variables are grouped by feature. Optional features (e.g. Stripe,
+ * WhatsApp) only warn when partially configured — they do not block
+ * startup.
+ */
+
+import { logger } from "@/lib/logger";
+
+interface EnvRule {
+  /** Environment variable name */
+  name: string;
+  /** If true, the server will refuse to start without this variable */
+  required: boolean;
+  /** Human-readable description shown in error messages */
+  description: string;
+  /** Feature group for log grouping */
+  group: string;
+}
+
+const ENV_RULES: EnvRule[] = [
+  // ── Core (required for the app to function) ────────────────────────
+  { name: "NEXT_PUBLIC_SUPABASE_URL", required: true, description: "Supabase project URL", group: "core" },
+  { name: "NEXT_PUBLIC_SUPABASE_ANON_KEY", required: true, description: "Supabase anonymous key", group: "core" },
+
+  // ── Auth / Security ────────────────────────────────────────────────
+  { name: "BOOKING_TOKEN_SECRET", required: process.env.NODE_ENV === "production", description: "HMAC secret for booking verification tokens (required in production)", group: "auth" },
+
+  // ── Phone Auth (Twilio SMS OTP) ──────────────────────────────────────
+  // These are NOT required at startup. They are only needed when
+  // NEXT_PUBLIC_PHONE_AUTH_ENABLED is set to "true". Documented here
+  // so that `validateEnv()` can warn when phone auth is enabled but
+  // the Twilio credentials are missing.
+  // Configure these in Supabase Dashboard > Auth > Providers > Phone:
+  //   - TWILIO_ACCOUNT_SID
+  //   - TWILIO_AUTH_TOKEN
+  //   - TWILIO_MESSAGE_SERVICE_SID
+
+  // ── Multi-tenant ───────────────────────────────────────────────────
+  { name: "ROOT_DOMAIN", required: process.env.NODE_ENV === "production", description: "Root domain for subdomain routing (required in production)", group: "tenant" },
+  { name: "NEXT_PUBLIC_SITE_URL", required: process.env.NODE_ENV === "production", description: "Public site URL for CSRF and links (required in production)", group: "tenant" },
+
+  // ── Supabase Service Role (needed for rate limiter, cron, admin ops) ─
+  { name: "SUPABASE_SERVICE_ROLE_KEY", required: process.env.NODE_ENV === "production", description: "Required server-only key for admin Supabase operations (required in production)", group: "core" },
+
+  // ── Cloudflare R2 Storage ──────────────────────────────────────────
+  { name: "R2_ACCOUNT_ID", required: false, description: "Cloudflare R2 account ID", group: "storage" },
+  { name: "R2_ACCESS_KEY_ID", required: false, description: "Cloudflare R2 access key", group: "storage" },
+  { name: "R2_SECRET_ACCESS_KEY", required: false, description: "Cloudflare R2 secret key", group: "storage" },
+  { name: "R2_BUCKET_NAME", required: false, description: "Cloudflare R2 bucket name", group: "storage" },
+  // Audit Finding #8: PHI file paths and signed URLs are derived from this
+  // secret. A hardcoded fallback ("default-salt") is never acceptable in
+  // production, so we refuse to boot without a dedicated R2_SIGNED_URL_SECRET.
+  { name: "R2_SIGNED_URL_SECRET", required: process.env.NODE_ENV === "production", description: "HMAC secret for R2 signed URLs and upload filename hashing (required in production; `openssl rand -hex 32`)", group: "storage" },
+  // Consumed by `src/lib/r2-cleanup.ts` — the fraction (0..1) of keys in a
+  // reconciliation pass that, when classified as orphans, triggers a
+  // Sentry alert and an error-level log line. Optional: defaults to 0.1
+  // (10 %) when unset. The library ignores out-of-range or non-numeric
+  // values rather than failing closed — see `readOrphanRateAlertThreshold`.
+  { name: "R2_ORPHAN_RATE_ALERT_THRESHOLD", required: false, description: "Orphan-rate threshold (0..1) above which the R2 cleanup cron emits a Sentry alert. Default: 0.1", group: "storage" },
+
+  // ── Payments ───────────────────────────────────────────────────────
+  { name: "STRIPE_SECRET_KEY", required: false, description: "Stripe secret key", group: "payments" },
+  { name: "STRIPE_WEBHOOK_SECRET", required: false, description: "Stripe webhook signing secret", group: "payments" },
+  { name: "CMI_MERCHANT_ID", required: false, description: "CMI merchant ID", group: "payments" },
+  { name: "CMI_SECRET_KEY", required: false, description: "CMI HMAC secret key", group: "payments" },
+
+  // ── WhatsApp ───────────────────────────────────────────────────────
+  { name: "META_APP_SECRET", required: false, description: "Meta app secret for webhook verification", group: "whatsapp" },
+  { name: "WHATSAPP_VERIFY_TOKEN", required: false, description: "WhatsApp webhook verify token", group: "whatsapp" },
+
+  // ── Email ──────────────────────────────────────────────────────────
+  { name: "RESEND_API_KEY", required: false, description: "Resend API key for email", group: "email" },
+
+  // ── AI / Chat ──────────────────────────────────────────────────────
+  { name: "OPENAI_API_KEY", required: false, description: "OpenAI API key for advanced chat", group: "ai" },
+  { name: "CLOUDFLARE_ACCOUNT_ID", required: false, description: "Cloudflare account ID for Workers AI", group: "ai" },
+  { name: "CLOUDFLARE_AI_API_TOKEN", required: false, description: "Cloudflare AI API token", group: "ai" },
+
+  // ── PHI Encryption (C-08) ──────────────────────────────────────────
+  // C-08: PHI_ENCRYPTION_KEY is required in production. Without it, any code
+  // path that calls encryptAndUpload silently fails, and any code path that
+  // calls uploadToR2 directly stores plaintext PHI on R2.
+  { name: "PHI_ENCRYPTION_KEY", required: process.env.NODE_ENV === "production", description: "AES-256-GCM key for PHI file encryption (64 hex chars, required in production; `openssl rand -hex 32`)", group: "security" },
+
+  // ── Observability ────────────────────────────────────────────────────
+  // O-06: Sentry DSN is required in production so errors are not silently lost.
+  { name: "NEXT_PUBLIC_SENTRY_DSN", required: process.env.NODE_ENV === "production", description: "Sentry DSN for error monitoring (required in production)", group: "observability" },
+
+  // ── Cron ───────────────────────────────────────────────────────────
+  { name: "CRON_SECRET", required: process.env.NODE_ENV === "production", description: "Bearer token for cron endpoints (required in production)", group: "cron" },
+
+  // ── Profile-header HMAC (R-02) ────────────────────────────────────
+  // Distinct key from CRON_SECRET so leaking one does not compromise
+  // both cron invocation and session-header forgery. Falls back to
+  // CRON_SECRET only as a transitional measure (see profile-header-hmac.ts).
+  { name: "PROFILE_HEADER_HMAC_KEY", required: process.env.NODE_ENV === "production", description: "HMAC key used to sign x-auth-profile-* headers between middleware and withAuth (required in production)", group: "auth" },
+
+  // AUDIT-15: Removed duplicate PHI_ENCRYPTION_KEY entry (was listed at
+  // line ~91 under "security" group and again here under "encryption").
+  // The first entry (C-08, group: "security") is the canonical one.
+
+  // ── Custom Domains ─────────────────────────────────────────────────
+  // These are gated by NEXT_PUBLIC_ENABLE_CUSTOM_DOMAINS — when the flag is
+  // "true" they become required, so the app refuses to boot with a half-wired
+  // custom-domain feature. See `isCustomDomainsEnabled()` below.
+  { name: "CLOUDFLARE_API_TOKEN", required: customDomainsEnabledFromEnv(), description: "Cloudflare API token for DNS management (required when NEXT_PUBLIC_ENABLE_CUSTOM_DOMAINS=true)", group: "domains" },
+  { name: "CLOUDFLARE_ZONE_ID", required: customDomainsEnabledFromEnv(), description: "Cloudflare zone ID for DNS management (required when NEXT_PUBLIC_ENABLE_CUSTOM_DOMAINS=true)", group: "domains" },
+  { name: "CLOUDFLARE_ZONE_NAME", required: customDomainsEnabledFromEnv(), description: "Cloudflare zone (root domain) name for DNS management (required when NEXT_PUBLIC_ENABLE_CUSTOM_DOMAINS=true)", group: "domains" },
+];
+
+/**
+ * Whether the custom-domain / Cloudflare DNS feature is enabled.
+ *
+ * Toggled by `NEXT_PUBLIC_ENABLE_CUSTOM_DOMAINS=true`. When disabled, the
+ * `/api/dns/*` handlers refuse with 503 and the related Cloudflare env vars
+ * are *optional*. When enabled, those env vars become required at startup.
+ *
+ * Read it through this helper rather than `process.env` directly so the
+ * gating logic stays in one place.
+ */
+export function isCustomDomainsEnabled(): boolean {
+  return process.env.NEXT_PUBLIC_ENABLE_CUSTOM_DOMAINS === "true";
+}
+
+/**
+ * Internal helper used while building `ENV_RULES` so the `required` flag is
+ * evaluated at module load (matching how the other rules use
+ * `process.env.NODE_ENV === "production"` checks). Kept private to avoid
+ * drift between the two readers — call `isCustomDomainsEnabled()` everywhere
+ * else.
+ */
+function customDomainsEnabledFromEnv(): boolean {
+  return process.env.NEXT_PUBLIC_ENABLE_CUSTOM_DOMAINS === "true";
+}
+
+export interface EnvValidationResult {
+  valid: boolean;
+  missing: { name: string; description: string; group: string }[];
+  warnings: { name: string; description: string; group: string }[];
+}
+
+/**
+ * Validate all environment variables and return a structured result.
+ * Does NOT throw — the caller decides whether to hard-fail or warn.
+ */
+export function validateEnv(): EnvValidationResult {
+  const missing: EnvValidationResult["missing"] = [];
+  const warnings: EnvValidationResult["warnings"] = [];
+
+  for (const rule of ENV_RULES) {
+    if (!process.env[rule.name]) {
+      if (rule.required) {
+        missing.push({ name: rule.name, description: rule.description, group: rule.group });
+      } else {
+        warnings.push({ name: rule.name, description: rule.description, group: rule.group });
+      }
+    }
+  }
+
+  return { valid: missing.length === 0, missing, warnings };
+}
+
+/**
+ * Run env validation and log results.
+ * Called from instrumentation.ts on server startup.
+ *
+ * - Required variables missing → throws (server won't start)
+ * - Optional variables missing → warns (feature degraded)
+ */
+export function enforceEnvValidation(): void {
+  const result = validateEnv();
+
+  // Log warnings for optional missing variables (grouped by feature)
+  if (result.warnings.length > 0) {
+    const grouped = new Map<string, string[]>();
+    for (const w of result.warnings) {
+      const list = grouped.get(w.group) ?? [];
+      list.push(`  ${w.name} — ${w.description}`);
+      grouped.set(w.group, list);
+    }
+
+    for (const [group, vars] of grouped) {
+      logger.info(`Optional env vars missing for "${group}" (feature will be disabled):\n${vars.join("\n")}`, {
+        context: "env-validation",
+        group,
+      });
+    }
+
+    // F-34: Emit Sentry alert for WhatsApp provider degradation in production
+    if (process.env.NODE_ENV === "production") {
+      const whatsappWarnings = result.warnings.filter((w) => w.group === "whatsapp");
+      if (whatsappWarnings.length > 0) {
+        try {
+          import("@sentry/nextjs").then((Sentry) => {
+            Sentry.captureMessage(
+              "WhatsApp primary provider (Meta) unavailable — degrading to Twilio fallback",
+              {
+                level: "warning",
+                tags: { degradation: "whatsapp_meta_to_twilio" },
+                extra: { missingVars: whatsappWarnings.map((w) => w.name) },
+              },
+            );
+          });
+        } catch {
+          // Sentry unavailable
+        }
+      }
+    }
+  }
+
+  // Hard-fail for required variables
+  if (!result.valid) {
+    const lines = result.missing.map((m) => `  ${m.name} — ${m.description}`);
+    const message =
+      `[STARTUP HEALTH CHECK FAILED] Required environment variables are missing:\n${lines.join("\n")}\n\n` +
+      "The application cannot start without these variables.\n" +
+      "Set them in your .env.local (development) or deployment environment (production).";
+    logger.error(message, { context: "env-validation" });
+    throw new Error(message);
+  }
+
+  // C-08: Validate PHI_ENCRYPTION_KEY shape (64 hex chars = AES-256-GCM).
+  // The ENV_RULES check above only ensures the key is set; this validates
+  // that the value is actually usable for encryption. An invalid key would
+  // silently disable encryption at first use.
+  enforcePhiEncryptionConfigured();
+
+  // Audit Finding #7 — enforce safe PHI masking defaults in production.
+  // Production must default to a masked view of PHI ("partial" or "full").
+  // Explicitly disabling masking ("none") is only permitted when the operator
+  // has set ALLOW_UNMASKED_PHI=true. See SECURITY.md → "PHI Masking Defaults".
+  enforcePhiMaskingPolicy();
+
+  // S-05: Assert PROFILE_HEADER_HMAC_KEY !== CRON_SECRET to prevent a
+  // leaked cron token from also forging session headers.
+  enforceHmacKeyIndependence();
+
+  // S-33: Validate RATE_LIMIT_BACKEND against known backends.
+  enforceRateLimitBackend();
+
+  // F-10: Ensure exactly one email provider is configured (not both).
+  enforceEmailProviderExclusivity();
+
+  // A2-08: Refuse to boot in production when a security-posture flag is
+  // enabled without an explicit acknowledgment.
+  enforceSecurityFlagAcknowledgments();
+}
+
+/**
+ * Security-posture feature flags that meaningfully change the application's
+ * authn/authz attack surface. Each entry pairs the flag itself with the
+ * acknowledgement variable an operator must also set in production to
+ * confirm they understand the change.
+ *
+ * The {@link enforceSecurityFlagAcknowledgments} guard hard-fails startup
+ * when any of these flags is `"true"` in production but the matching
+ * acknowledgment is not. This prevents accidental enablement (e.g. someone
+ * exports `SELF_SERVICE_REGISTRATION_ENABLED=true` in a shell snippet) from
+ * silently widening the attack surface — the operator has to also set the
+ * acknowledgement, which forces a deliberate decision.
+ */
+export const SECURITY_FLAG_ACKNOWLEDGMENTS: ReadonlyArray<{
+  flag: string;
+  ack: string;
+  /** Short summary of what enabling the flag changes. */
+  posture: string;
+}> = [
+  {
+    flag: "SELF_SERVICE_REGISTRATION_ENABLED",
+    ack: "SELF_SERVICE_REGISTRATION_ACK",
+    posture:
+      "exposes /api/v1/register-clinic to unauthenticated public traffic, " +
+      "creating clinics and admin users with only Turnstile + DNS verification",
+  },
+  {
+    flag: "NEXT_PUBLIC_PHONE_AUTH_ENABLED",
+    ack: "PHONE_AUTH_ACK",
+    posture:
+      "enables phone/OTP login (Twilio SMS); requires Twilio credentials in " +
+      "Supabase and changes the authentication surface and rate-limit profile",
+  },
+];
+
+/**
+ * A2-08: Enforce explicit acknowledgement for every enabled security flag.
+ *
+ * Exported for unit tests.
+ */
+export function enforceSecurityFlagAcknowledgments(): void {
+  if (process.env.NODE_ENV !== "production") return;
+
+  const violations = SECURITY_FLAG_ACKNOWLEDGMENTS.filter(
+    ({ flag, ack }) =>
+      process.env[flag] === "true" && process.env[ack] !== "true",
+  );
+
+  if (violations.length === 0) return;
+
+  const lines = violations.map(
+    ({ flag, ack, posture }) =>
+      `  - ${flag}=true is set but ${ack}=true is missing.\n` +
+      `    Posture change: ${posture}.\n` +
+      `    Set ${ack}=true in your deployment environment to confirm.`,
+  );
+  const message =
+    "[STARTUP HEALTH CHECK FAILED] Security-posture feature flags are enabled in\n" +
+    "production without an explicit acknowledgement:\n\n" +
+    lines.join("\n\n") +
+    "\n\nThis check exists so flipping these flags is always a deliberate decision.";
+  logger.error(message, { context: "env-validation", check: "security-flag-ack" });
+  throw new Error(message);
+}
+
+/**
+ * Refuse to boot when production is configured with PHI masking disabled
+ * unless the operator has explicitly set ALLOW_UNMASKED_PHI=true.
+ *
+ * Exported for unit tests.
+ */
+export function enforcePhiMaskingPolicy(): void {
+  if (process.env.NODE_ENV !== "production") return;
+
+  const masking = process.env.NEXT_PUBLIC_DATA_MASKING;
+  const allowUnmasked = process.env.ALLOW_UNMASKED_PHI === "true";
+
+  if (masking === "none" && !allowUnmasked) {
+    const message =
+      "[STARTUP HEALTH CHECK FAILED] NEXT_PUBLIC_DATA_MASKING=none is not allowed in production.\n" +
+      "Production must default to \"partial\" or \"full\" so patient PHI is never\n" +
+      "accidentally exposed in the UI. To intentionally disable masking (e.g. for an\n" +
+      "internal staff-only deployment), set ALLOW_UNMASKED_PHI=true alongside\n" +
+      "NEXT_PUBLIC_DATA_MASKING=none. See SECURITY.md → \"PHI Masking Defaults\".";
+    logger.error(message, { context: "env-validation", check: "phi-masking" });
+    throw new Error(message);
+  }
+
+  if (masking === "none" && allowUnmasked) {
+    logger.warn(
+      "PHI masking is DISABLED in production (ALLOW_UNMASKED_PHI=true). " +
+        "This must be approved by the Security Officer / DPO and documented.",
+      { context: "env-validation", check: "phi-masking" },
+    );
+  }
+}
+
+/**
+ * Audit Finding C-08: Refuse to boot in production when PHI_ENCRYPTION_KEY
+ * is missing or malformed. The general required-vars gate above already
+ * blocks an unset key in production; this guard additionally rejects keys
+ * that do not match the AES-256-GCM 64-hex-char shape consumed by
+ * `src/lib/encryption.ts`. Catching the bad shape at startup avoids a
+ * scenario where the key is "set" but every encrypt call silently returns
+ * null and writes through plaintext.
+ *
+ * Exported for unit tests.
+ */
+export function enforcePhiEncryptionConfigured(): void {
+  if (process.env.NODE_ENV !== "production") return;
+
+  const key = process.env.PHI_ENCRYPTION_KEY;
+  if (!key) {
+    // Already handled by enforceEnvValidation() but guard explicitly so
+    // the error message is specific.
+    const message =
+      "[STARTUP HEALTH CHECK FAILED] PHI_ENCRYPTION_KEY is required in production.\n" +
+      "Patient files (Moroccan Law 09-08 PHI) cannot be encrypted without it. Generate a key with: openssl rand -hex 32";
+    logger.error(message, { context: "env-validation", check: "phi-encryption" });
+    throw new Error(message);
+  }
+
+  if (!/^[0-9a-fA-F]{64}$/.test(key)) {
+    const message =
+      "[STARTUP HEALTH CHECK FAILED] PHI_ENCRYPTION_KEY must be exactly 64 hex characters (256 bits).\n" +
+      "Generate a valid key with: openssl rand -hex 32";
+    logger.error(message, { context: "env-validation", check: "phi-encryption" });
+    throw new Error(message);
+  }
+}
+
+/**
+ * S-05: Assert that PROFILE_HEADER_HMAC_KEY and CRON_SECRET are distinct.
+ * Sharing the same value means leaking one (e.g. via a cron-log exposure)
+ * also compromises session-header forgery.
+ *
+ * Exported for unit tests.
+ */
+export function enforceHmacKeyIndependence(): void {
+  if (process.env.NODE_ENV !== "production") return;
+
+  const hmac = process.env.PROFILE_HEADER_HMAC_KEY;
+  const cron = process.env.CRON_SECRET;
+  if (hmac && cron && hmac === cron) {
+    const message =
+      "[STARTUP HEALTH CHECK FAILED] PROFILE_HEADER_HMAC_KEY must not equal CRON_SECRET.\n" +
+      "Using the same value means a leaked cron token also compromises session-header " +
+      "forgery. Generate a distinct key: `openssl rand -hex 32`.";
+    logger.error(message, { context: "env-validation", check: "hmac-key-independence" });
+    throw new Error(message);
+  }
+}
+
+/**
+ * S-33: Validate RATE_LIMIT_BACKEND against known values. A typo would
+ * silently downgrade to in-memory (per-isolate) limiting, which is
+ * effectively no limiting in a multi-isolate Worker deployment.
+ *
+ * Exported for unit tests.
+ */
+export function enforceRateLimitBackend(): void {
+  const backend = process.env.RATE_LIMIT_BACKEND;
+  if (!backend) return; // unset is fine — the rate-limit module picks a default
+
+  const VALID_BACKENDS = new Set(["kv", "supabase", "memory"]);
+  if (!VALID_BACKENDS.has(backend)) {
+    const message =
+      `[STARTUP HEALTH CHECK FAILED] RATE_LIMIT_BACKEND="${backend}" is not a recognized value.\n` +
+      `Valid options: ${[...VALID_BACKENDS].join(", ")}. A typo silently downgrades to in-memory limiting.`;
+    logger.error(message, { context: "env-validation", check: "rate-limit-backend" });
+    throw new Error(message);
+  }
+
+  if (process.env.NODE_ENV === "production" && backend === "memory") {
+    // GitHub Actions runs `next start` (NODE_ENV=production) on a single
+    // instance for E2E tests, where in-memory rate limiting is acceptable —
+    // the ephemeral local Supabase instance's rate-limit RPC is not
+    // guaranteed to be available during boot, and forcing it trips the
+    // failClosed circuit breaker and 429s every auth request.
+    //
+    // We gate on GITHUB_ACTIONS rather than the generic CI variable because
+    // CI=true is easy to set accidentally on a real deployment; GITHUB_ACTIONS
+    // is only set inside GitHub-hosted runners, so the production guard still
+    // applies to Cloudflare Workers / staging / prod even if a deploy script
+    // happens to export CI=true.
+    if (process.env.GITHUB_ACTIONS === "true") {
+      logger.warn(
+        "RATE_LIMIT_BACKEND=memory accepted in production mode because GITHUB_ACTIONS=true. " +
+          "This path is permitted only for the E2E Playwright runner and must " +
+          "never be set in a real production deployment.",
+        { context: "env-validation", check: "rate-limit-backend" },
+      );
+      return;
+    }
+
+    const message =
+      "[STARTUP HEALTH CHECK FAILED] RATE_LIMIT_BACKEND=memory is not allowed in production.\n" +
+      "In-memory rate limiting is per-isolate and provides no real protection in a " +
+      "multi-isolate Worker deployment. Use 'kv' or 'supabase'.";
+    logger.error(message, { context: "env-validation", check: "rate-limit-backend" });
+    throw new Error(message);
+  }
+}
+
+/**
+ * F-10: Ensure exactly one email provider is configured at production boot.
+ *
+ * Refuses to start when both Resend and the HTTP relay (SMTP_HOST /
+ * EMAIL_RELAY_HOST) are configured (risks duplicate sends and ambiguous
+ * routing) or when neither is configured (transactional email silently
+ * fails). The "configured" check for the HTTP relay matches the runtime
+ * detection in `src/lib/email.ts` — host + user + pass must all be set,
+ * since any single one is unusable on its own.
+ *
+ * Exported for unit tests.
+ */
+export function enforceEmailProviderExclusivity(): void {
+  if (process.env.NODE_ENV !== "production") return;
+
+  const hasResend = !!process.env.RESEND_API_KEY;
+  const hasSmtp = !!(
+    (process.env.EMAIL_RELAY_HOST || process.env.SMTP_HOST) &&
+    (process.env.EMAIL_RELAY_USER || process.env.SMTP_USER) &&
+    (process.env.EMAIL_RELAY_PASS || process.env.SMTP_PASS)
+  );
+
+  if (hasResend && hasSmtp) {
+    const message =
+      "[STARTUP HEALTH CHECK FAILED] Both Resend (RESEND_API_KEY) and the HTTP email relay\n" +
+      "(EMAIL_RELAY_HOST/SMTP_HOST + USER + PASS) are configured. Configure exactly one email\n" +
+      "provider — having both risks duplicate sends and ambiguous routing.";
+    logger.error(message, { context: "env-validation", check: "email-provider-exclusivity" });
+    throw new Error(message);
+  }
+
+  if (!hasResend && !hasSmtp) {
+    const message =
+      "[STARTUP HEALTH CHECK FAILED] No email provider is configured. Set either\n" +
+      "RESEND_API_KEY or the HTTP email relay credentials\n" +
+      "(EMAIL_RELAY_HOST/SMTP_HOST + EMAIL_RELAY_USER/SMTP_USER + EMAIL_RELAY_PASS/SMTP_PASS).";
+    logger.error(message, { context: "env-validation", check: "email-provider-exclusivity" });
+    throw new Error(message);
+  }
+}

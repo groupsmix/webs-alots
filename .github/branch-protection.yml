@@ -1,0 +1,128 @@
+# =============================================================================
+# Branch Protection Configuration — Oltigo Health
+# =============================================================================
+# A34.6: Version-controlled branch protection rules for auditability.
+#
+# These rules must be configured in GitHub repository settings:
+# Settings → Branches → Branch protection rules
+#
+# This file serves as documentation and audit trail for the required
+# protection rules. GitHub does not support declarative branch protection
+# via files in the repository (unlike GitLab's .gitlab-ci.yml), so these
+# must be manually configured in the UI.
+#
+# Docs: https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches/about-protected-branches
+# =============================================================================
+
+# ── Main Branch (Production) ──────────────────────────────────────────
+branch: main
+
+protection_rules:
+  # Require pull request reviews before merging
+  require_pull_request_reviews:
+    required_approving_review_count: 2
+    dismiss_stale_reviews: true
+    require_code_owner_reviews: true
+    require_last_push_approval: true
+
+  # Require status checks to pass before merging
+  require_status_checks:
+    strict: true  # Require branches to be up to date before merging
+    contexts:
+      - "Lint, Type Check & Tests"
+      - "Security Scans (Audit P2 #26)"
+      - "E2E Tests (Playwright)"
+      - "Lint Check"
+      - "E2E Tests (Playwright, required)"
+      - "DB Migrations (Supabase, blocking)"
+
+  # Require signed commits
+  require_signed_commits: true
+
+  # Require linear history (no merge commits)
+  require_linear_history: true
+
+  # Include administrators in restrictions
+  include_administrators: true
+
+  # Restrict who can push to matching branches
+  restrictions:
+    users: []
+    teams: ["engineering-leads"]
+    apps: []
+
+  # Allow force pushes: false
+  allow_force_pushes: false
+
+  # Allow deletions: false
+  allow_deletions: false
+
+# ── Staging Branch ────────────────────────────────────────────────────
+branch: staging
+
+protection_rules:
+  # Require pull request reviews before merging
+  require_pull_request_reviews:
+    required_approving_review_count: 1
+    dismiss_stale_reviews: true
+    require_code_owner_reviews: false
+    require_last_push_approval: false
+
+  # Require status checks to pass before merging
+  require_status_checks:
+    strict: true
+    contexts:
+      - "Lint, Type Check & Tests"
+      - "Security Scans (Audit P2 #26)"
+      - "E2E Tests (Playwright)"
+
+  # Require signed commits
+  require_signed_commits: true
+
+  # Require linear history
+  require_linear_history: false
+
+  # Include administrators in restrictions
+  include_administrators: false
+
+  # Allow force pushes: false
+  allow_force_pushes: false
+
+  # Allow deletions: false
+  allow_deletions: false
+
+# ── CODEOWNERS ────────────────────────────────────────────────────────
+# Create .github/CODEOWNERS file to define code ownership:
+#
+# # Infrastructure and security
+# /supabase/migrations/ @engineering-leads @security-team
+# /.github/workflows/ @engineering-leads @devops-team
+# /wrangler.toml @engineering-leads @devops-team
+# /docker-compose.yml @engineering-leads @devops-team
+#
+# # Security-sensitive code
+# /src/lib/encryption.ts @security-team
+# /src/lib/crypto-utils.ts @security-team
+# /src/middleware.ts @security-team
+#
+# # Documentation
+# /docs/compliance/ @compliance-team @legal-team
+# /docs/SOP-*.md @security-team @compliance-team
+#
+# # Default owners for everything else
+# * @engineering-leads
+
+# ── Rulesets (GitHub Enterprise) ──────────────────────────────────────
+# For GitHub Enterprise, consider using Rulesets instead of branch
+# protection rules for more granular control:
+#
+# Settings → Rules → Rulesets → New ruleset
+#
+# Rulesets support:
+# - Tag protection
+# - Bypass lists with audit logging
+# - Metadata restrictions (commit message patterns)
+# - File path restrictions
+# - Max file size limits
+#
+# Docs: https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-rulesets/about-rulesets

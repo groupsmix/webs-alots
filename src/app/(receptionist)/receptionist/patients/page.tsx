@@ -1,0 +1,141 @@
+"use client";
+
+import { Search, Phone, MessageCircle, CheckCircle } from "lucide-react";
+import { useState, useEffect } from "react";
+import { PatientRegistrationDialog } from "@/components/receptionist/patient-registration-dialog";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { DataMask } from "@/components/ui/data-mask";
+import { Input } from "@/components/ui/input";
+import { PageLoader } from "@/components/ui/page-loader";
+import { getCurrentUser, fetchPatients, type PatientView } from "@/lib/data/client";
+
+export default function ReceptionistPatientsPage() {
+  const [patients, setPatients] = useState<PatientView[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [checkedInIds, setCheckedInIds] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    const controller = new AbortController();
+    async function load() {
+      const user = await getCurrentUser();
+      if (controller.signal.aborted) return;
+      if (!user?.clinic_id) { setLoading(false); return; }
+      const data = await fetchPatients(user.clinic_id);
+      setPatients(data);
+      setLoading(false);
+    }
+    load().catch((err) => {
+      if (!controller.signal.aborted) {
+        setError(err instanceof Error ? err : new Error(String(err)));
+        setLoading(false);
+      }
+    });
+    return () => { controller.abort(); };
+  }, []);
+
+  const filteredPatients = patients.filter((p) => {
+    const query = searchQuery.toLowerCase();
+    return (
+      p.name.toLowerCase().includes(query) ||
+      p.phone.toLowerCase().includes(query)
+    );
+  });
+
+  const handleCheckIn = (id: string) => {
+    setCheckedInIds((prev) => new Set(prev).add(id));
+  };
+
+  const handleCallPatient = (phone: string) => {
+    window.open(`tel:${phone.replace(/\s/g, "")}`, "_self");
+  };
+
+  const handleWhatsApp = (phone: string) => {
+    const cleaned = phone.replace(/\s/g, "").replace("+", "");
+    window.open(`https://wa.me/${cleaned}`, "_blank");
+  };
+
+  if (loading) {
+    return <PageLoader message="Loading patients..." />;
+  }
+
+  if (error) {
+    return (
+      <div className="p-8 text-center">
+        <p className="text-red-600 font-medium">Failed to load data. Please try refreshing the page.</p>
+        {error.message && <p className="text-sm text-muted-foreground mt-2">{error.message}</p>}
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-2xl font-bold">Patient Registration</h1>
+        <PatientRegistrationDialog />
+      </div>
+
+      <div className="relative mb-6">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <Input
+          placeholder="Search patients by name, phone, or CIN..."
+          className="pl-10"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+        />
+      </div>
+
+      <div className="space-y-3">
+        {filteredPatients.map((patient) => {
+          const isCheckedIn = checkedInIds.has(patient.id);
+          return (
+            <Card key={patient.id}>
+              <CardContent className="flex items-center gap-4 p-4">
+                <Avatar>
+                  <AvatarFallback className="bg-primary/10 text-primary text-sm">
+                    {patient.name.split(" ").map((n) => n[0]).join("")}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium text-sm">{patient.name}</p>
+                  <DataMask value={patient.phone} type="phone" className="text-xs text-muted-foreground" />
+                </div>
+                <div className="flex items-center gap-2">
+                  <Badge variant={patient.insurance ? "success" : "secondary"}>
+                    {patient.insurance || "No Insurance"}
+                  </Badge>
+                  <span className="text-xs text-muted-foreground">{patient.age}y, {patient.gender}</span>
+                </div>
+                <div className="flex gap-1">
+                  {isCheckedIn ? (
+                    <Badge variant="success" className="text-xs">Checked In</Badge>
+                  ) : (
+                    <Button variant="outline" size="sm" onClick={() => handleCheckIn(patient.id)} title="Check In">
+                      <CheckCircle className="h-3.5 w-3.5 text-green-600 mr-1" />
+                      Check In
+                    </Button>
+                  )}
+                  <Button variant="ghost" size="sm" onClick={() => handleCallPatient(patient.phone)} title="Call">
+                    <Phone className="h-4 w-4 text-blue-600" />
+                  </Button>
+                  <Button variant="ghost" size="sm" onClick={() => handleWhatsApp(patient.phone)} title="WhatsApp">
+                    <MessageCircle className="h-4 w-4 text-green-600" />
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          );
+        })}
+        {filteredPatients.length === 0 && (
+          <div className="text-center py-8 text-muted-foreground">
+            <p className="text-sm">No patients found matching &quot;{searchQuery}&quot;</p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

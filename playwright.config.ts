@@ -1,0 +1,62 @@
+import { defineConfig, devices } from "@playwright/test";
+
+/**
+ * Playwright E2E configuration.
+ *
+ * Run with:
+ *   npx playwright test              # headless
+ *   npx playwright test --ui         # interactive UI mode
+ *   npx playwright test --headed     # see the browser
+ */
+export default defineConfig({
+  testDir: "./e2e",
+  fullyParallel: true,
+  forbidOnly: !!process.env.CI,
+  // A87-F01: Retries in CI hide flaky tests and silently mask real bugs.
+  // Set to 0 so every failure is visible. If a spec is known-flaky, quarantine
+  // it with a skip + tracking issue rather than masking with retries.
+  retries: 0,
+  workers: process.env.CI ? 1 : undefined,
+  reporter: "html",
+  use: {
+    baseURL: process.env.E2E_BASE_URL || "http://localhost:3000",
+    // A87-F01: With retries: 0, "on-first-retry" would never capture traces.
+    // Use "retain-on-failure" so trace artifacts are collected on every failure.
+    trace: "retain-on-failure",
+  },
+  projects: [
+    {
+      name: "chromium",
+      use: { ...devices["Desktop Chrome"] },
+    },
+    {
+      name: "firefox",
+      use: { ...devices["Desktop Firefox"] },
+    },
+    {
+      name: "webkit",
+      use: { ...devices["Desktop Safari"] },
+    },
+    {
+      name: "mobile-chrome",
+      use: { ...devices["Pixel 5"] },
+    },
+    {
+      name: "mobile-safari",
+      use: { ...devices["iPhone 12"] },
+    },
+  ],
+  webServer: process.env.CI
+    ? {
+        command: "npx next start",
+        url: "http://localhost:3000",
+        reuseExistingServer: false,
+        timeout: 30_000,
+      }
+    : {
+        command: "npm run dev",
+        url: "http://localhost:3000",
+        reuseExistingServer: true,
+        timeout: 30_000,
+      },
+});

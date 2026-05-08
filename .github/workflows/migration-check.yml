@@ -1,0 +1,95 @@
+name: Migration Check
+
+on:
+  pull_request:
+    paths:
+      - 'supabase/migrations/**'
+
+# Least-privilege permissions
+permissions:
+  contents: read
+
+jobs:
+  validate-migrations:
+    runs-on: ubuntu-latest
+    name: Validate Migrations
+    steps:
+      # AUDIT-16: Pin GH Actions to SHA for supply-chain hardening
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Check migration file numbering
+        run: |
+          echo "Checking migration file numbering..."
+          files=$(ls supabase/migrations/*.sql 2>/dev/null | sort)
+          prev_num=""
+          has_error=false
+
+          for file in $files; do
+            basename=$(basename "$file")
+            num=$(echo "$basename" | grep -oP '^\d+')
+
+            # Check for duplicate prefixes
+            if [ "$num" = "$prev_num" ]; then
+              echo "ERROR: Duplicate migration number $num found:"
+              echo "  - Previous file with same number exists"
+              echo "  - $basename"
+              has_error=true
+            fi
+
+            prev_num="$num"
+          done
+
+          if [ "$has_error" = true ]; then
+            echo ""
+            echo "FAILED: Migration files must have unique sequential numbers."
+            exit 1
+          fi
+
+          echo "All migration numbers are unique."
+
+      - name: Validate SQL syntax (basic)
+        run: |
+          echo "Running basic SQL validation..."
+          has_error=false
+
+          for file in supabase/migrations/*.sql; do
+            basename=$(basename "$file")
+
+            # Check for unbalanced parentheses
+            open=$(grep -o '(' "$file" | wc -l)
+            close=$(grep -o ')' "$file" | wc -l)
+            if [ "$open" != "$close" ]; then
+              echo "WARNING: $basename has unbalanced parentheses (open: $open, close: $close)"
+            fi
+
+            # Check for missing semicolons at end of statements
+            if grep -qP 'CREATE TABLE|CREATE INDEX|ALTER TABLE|CREATE POLICY|DROP POLICY|INSERT INTO|UPDATE |DELETE FROM' "$file"; then
+              echo "OK: $basename contains valid SQL statements"
+            fi
+          done
+
+          echo "Basic SQL validation complete."
+
+      # Audit 12: Add RLS assertion tests to migration check
+      - name: Setup Node.js for RLS Tests
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version: 22
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Start Local Supabase
+        uses: supabase/setup-cli@v2
+        with:
+          version: latest
+
+      - name: Run Supabase and RLS Tests
+        run: |
+          supabase start
+          # We run the specific RLS assertion suite against the fresh local DB
+          npx vitest run src/lib/__tests__/integration/rls-assertions.test.ts
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: "http://127.0.0.1:54321"
+          SUPABASE_SERVICE_ROLE_KEY: "dummy"

@@ -1,0 +1,248 @@
+# Implementation Plan: Phase 3 Security Fixes
+
+- [x] 1. Write bug condition exploration test
+  - **Property 1: Bug Condition** - Phase 3 Security Gaps
+  - **CRITICAL**: This test MUST FAIL on unfixed code - failure confirms the security gaps exist
+  - **DO NOT attempt to fix the test or the code when it fails**
+  - **NOTE**: This test encodes the expected behavior - it will validate the fixes when it passes after implementation
+  - **GOAL**: Surface counterexamples that demonstrate the security gaps exist across 7 categories
+  - **Scoped PBT Approach**: For deterministic security gaps, scope properties to concrete failing cases to ensure reproducibility
+  - Test implementation details from Bug Condition in design:
+    - Database accepts invalid appointments (slot_end <= slot_start)
+    - Database accepts negative service prices
+    - Database allows duplicate time slots for same doctor/day/time
+    - No regression test prevents cross-tenant RPC calls
+    - hexToBytes throws TypeError on odd-length input
+    - userRateBuckets and subdomainCache grow unbounded
+    - package.json contains CVE placeholder
+    - Dead code exists under feature flag (trade_license_base64)
+    - No production flag validation
+    - Weak input validation (no regex, no max length, no normalization, no null byte stripping)
+    - Malformed locale cookie causes 500 error
+  - The test assertions should match the Expected Behavior Properties from design
+  - Run test on UNFIXED code
+  - **EXPECTED OUTCOME**: Test FAILS (this is correct - it proves the security gaps exist)
+  - Document counterexamples found to understand root cause:
+    - Which invalid appointments are accepted
+    - Which negative prices are accepted
+    - Which duplicate time slots are accepted
+    - Which cross-tenant RPC calls succeed
+    - Which odd-length hex strings cause TypeError
+    - How many entries fill userRateBuckets/subdomainCache before DoS
+    - Which CVE placeholders exist
+    - Which dead code paths execute
+    - Which production flags lack validation
+    - Which invalid inputs pass validation
+    - Which malformed locale cookies cause 500
+  - Mark task complete when test is written, run, and failure is documented
+  - _Requirements: 1.1-1.32_
+
+- [x] 2. Write preservation property tests (BEFORE implementing fixes)
+  - **Property 2: Preservation** - Existing Functionality Preservation
+  - **IMPORTANT**: Follow observation-first methodology
+  - Observe behavior on UNFIXED code for legitimate operations:
+    - Valid appointments with slot_end > slot_start are accepted
+    - Services with positive prices are accepted
+    - Time slots with unique (doctor_id, day_of_week, start_time) are accepted
+    - Same-tenant booking_atomic_insert calls succeed
+    - Even-length hex strings are parsed correctly by hexToBytes
+    - Legitimate users within rate limits are allowed
+    - Valid subdomains are resolved from cache
+    - Legitimate dependencies are installed via npm
+    - OpenNext patches are applied via postinstall
+    - dns_verification and manual_approval registration modes work
+    - Valid phone numbers are accepted by bookingVerifySchema
+    - Valid test names are accepted by labReportSchema
+    - Normalized Unicode text is processed correctly
+    - Valid locale cookies are parsed correctly
+    - Strings without null bytes are accepted
+  - Write property-based tests capturing observed behavior patterns from Preservation Requirements
+  - Property-based testing generates many test cases for stronger guarantees
+  - Run tests on UNFIXED code
+  - **EXPECTED OUTCOME**: Tests PASS (this confirms baseline behavior to preserve)
+  - Mark task complete when tests are written, run, and passing on unfixed code
+  - _Requirements: 3.1-3.27_
+
+- [ ] 3. Fix for Phase 3 Security Fixes
+
+  - [x] 3.1 Database Integrity Constraints (A16-03, A16-04, A16-05)
+    - Create migration file: `supabase/migrations/00075_phase3_database_constraints.sql`
+    - **Data Validation Phase**:
+      - Query existing invalid data: `SELECT * FROM appointments WHERE slot_end <= slot_start;`
+      - Query negative prices: `SELECT * FROM services WHERE price < 0;`
+      - Query duplicate time slots: `SELECT doctor_id, day_of_week, start_time, COUNT(*) FROM time_slots GROUP BY doctor_id, day_of_week, start_time HAVING COUNT(*) > 1;`
+    - **Data Cleanup Phase**:
+      - Fix invalid appointments: swap slot_start/slot_end if reversed, or delete if cannot be fixed
+      - Fix negative prices: set to 0 or delete if service is invalid
+      - Fix duplicate time slots: keep earliest created_at, delete duplicates
+    - **Constraint Addition Phase**:
+      - Add appointments slot check: `ALTER TABLE appointments ADD CONSTRAINT appointments_slot_end_after_start CHECK (slot_end > slot_start) NOT VALID;`
+      - Add services price check: `ALTER TABLE services ADD CONSTRAINT services_price_non_negative CHECK (price >= 0) NOT VALID;`
+      - Add time slots unique constraint: `ALTER TABLE time_slots ADD CONSTRAINT time_slots_doctor_day_start_unique UNIQUE (doctor_id, day_of_week, start_time);`
+    - **Validation Phase**:
+      - Validate constraints: `ALTER TABLE appointments VALIDATE CONSTRAINT appointments_slot_end_after_start;`
+      - Validate constraints: `ALTER TABLE services VALIDATE CONSTRAINT services_price_non_negative;`
+    - _Bug_Condition: isBugCondition(input) where input.appointmentsTableHasSlotCheck = false OR input.servicesTableHasPriceCheck = false OR input.timeSlotsTableHasUniqueConstraint = false_
+    - _Expected_Behavior: result.appointmentsTableHasSlotCheck = true AND result.servicesTableHasPriceCheck = true AND result.timeSlotsTableHasUniqueConstraint = true_
+    - _Preservation: Valid appointments, services, and time slots SHALL CONTINUE TO be accepted_
+    - _Requirements: 1.1-1.5, 2.1-2.5, 3.1-3.4_
+
+  - [x] 3.2 RPC Regression Tests (A2-03)
+    - Create test file: `supabase/tests/booking_atomic_insert_security.sql`
+    - **pgTAP Test Setup**:
+      - Add test header: `BEGIN; SELECT plan(3);`
+      - Create test data: insert test clinics, doctors, services, patients
+    - **Cross-Tenant Test Cases**:
+      - Test 1: Call `booking_atomic_insert` with doctor_id from clinic A and clinic_id for clinic B, assert error
+      - Test 2: Call with service_id from clinic A and clinic_id for clinic B, assert error
+      - Test 3: Call with patient_id from clinic A and clinic_id for clinic B, assert error
+    - **Test Teardown**:
+      - Add test footer: `SELECT * FROM finish(); ROLLBACK;`
+    - Update `.github/workflows/ci.yml`:
+      - Add pgTAP step: `supabase test db` after migrations
+      - Ensure pgTAP failures block CI pipeline
+    - _Bug_Condition: input.bookingRpcHasRegressionTest = false_
+    - _Expected_Behavior: result.bookingRpcHasRegressionTest = true_
+    - _Preservation: Same-tenant booking_atomic_insert calls SHALL CONTINUE TO succeed_
+    - _Requirements: 1.6-1.9, 2.6-2.9, 3.5-3.7_
+
+  - [x] 3.3 Cryptographic Exception Handling (A10-07)
+    - Update `src/lib/crypto-utils.ts`:
+      - Add length validation at start of `hexToBytes`: `if (hex.length % 2 !== 0) throw new Error("Invalid hex string: odd length");`
+      - Add input sanitization: `hex = hex.trim().toLowerCase();`
+      - Add character validation: `if (!/^[0-9a-f]*$/.test(hex)) throw new Error("Invalid hex string: contains non-hex characters");`
+    - Update webhook handlers to catch crypto errors:
+      - `src/app/api/webhooks/stripe/route.ts`: catch crypto errors, return 401
+      - `src/app/api/webhooks/whatsapp/route.ts`: catch crypto errors, return 401
+      - `src/app/api/webhooks/cmi/route.ts`: catch crypto errors, return 401
+    - Add unit tests in `src/lib/__tests__/crypto-utils.test.ts`:
+      - Test odd-length hex throws descriptive error
+      - Test even-length hex parses correctly
+      - Test non-hex characters throw descriptive error
+    - _Bug_Condition: input.hexToBytesValidatesLength = false_
+    - _Expected_Behavior: result.hexToBytesValidatesLength = true_
+    - _Preservation: Even-length hex strings SHALL CONTINUE TO be parsed correctly_
+    - _Requirements: 1.10-1.13, 2.10-2.13, 3.8-3.10_
+
+  - [x] 3.4 Resource Leak Fixes (A12-02, A12-04)
+    - Install LRU cache library: `npm install lru-cache`
+    - Update `src/lib/with-auth.ts`:
+      - Replace `Map` with LRU cache: `import { LRUCache } from 'lru-cache';`
+      - Configure userRateBuckets: `new LRUCache({ max: 10000, ttl: 60000 })`
+      - Add eviction logging: log when entries are evicted
+    - Update `src/lib/subdomain-cache.ts`:
+      - Replace `Map` with LRU cache
+      - Configure subdomain cache: `new LRUCache({ max: 1000, ttl: 300000 })`
+      - Add cache stats: track hit rate, eviction count
+    - Add unit tests:
+      - Test userRateBuckets evicts oldest entries when full
+      - Test subdomainCache evicts oldest entries when full
+      - Test TTL expiration removes stale entries
+    - _Bug_Condition: input.userRateBucketsHasLRU = false OR input.subdomainCacheHasSizeLimit = false_
+    - _Expected_Behavior: result.userRateBucketsHasLRU = true AND result.subdomainCacheHasSizeLimit = true_
+    - _Preservation: Legitimate users and valid subdomains SHALL CONTINUE TO be allowed/resolved_
+    - _Requirements: 1.14-1.18, 2.14-2.18, 3.11-3.16_
+
+  - [x] 3.5 Supply Chain Security (A2-04, A2-05)
+    - Update `package.json`:
+      - Replace CVE placeholder: change `CVE-2024-XXXXX` to actual CVE ID (e.g., `CVE-2023-44270`) or remove if no CVE exists
+      - Update `_overrides_rationale` with clear explanation of why override is needed
+    - Update `.github/CODEOWNERS`:
+      - Add scripts protection: `/scripts/ @security-team`
+      - Add package.json protection: `/package.json @security-team`
+    - Update `.github/workflows/ci.yml`:
+      - Add `npm ci --ignore-scripts` to CI pipeline
+      - Add explicit allowlist step: `npm run postinstall` after security scan
+    - _Bug_Condition: input.packageJsonHasCVEPlaceholder = true OR input.postinstallScriptsUnprotected = true_
+    - _Expected_Behavior: result.packageJsonHasCVEPlaceholder = false AND result.postinstallScriptsProtected = true_
+    - _Preservation: Legitimate dependencies and OpenNext patches SHALL CONTINUE TO work_
+    - _Requirements: 1.19-1.22, 2.19-2.22, 3.17-3.19_
+
+  - [x] 3.6 Feature Flag Security (A2-01, A2-08)
+    - Update `src/lib/validations.ts`:
+      - Remove `trade_license_base64` from `clinicVerificationModeSchema` enum
+      - Update schema to only include `dns_verification` and `manual_approval`
+    - Update `src/app/api/v1/register-clinic/route.ts`:
+      - Remove `trade_license_base64` handling logic
+      - Remove unused imports related to trade license verification
+    - Create `src/lib/feature-flags.ts`:
+      - Implement `validateProductionFlags()` function
+      - Assert `SELF_SERVICE_REGISTRATION_ENABLED !== "true"` in production
+      - Throw descriptive error if validation fails
+    - Update `src/middleware.ts`:
+      - Call `validateProductionFlags()` on first request
+      - Prevent app startup if validation fails
+    - Update `.env.production.example`:
+      - Add comments explaining security implications of each flag
+      - Set `SELF_SERVICE_REGISTRATION_ENABLED=false` as default
+    - _Bug_Condition: input.tradeLicenseCodeExists = true OR input.productionFlagValidationMissing = true_
+    - _Expected_Behavior: result.tradeLicenseCodeRemoved = true AND result.productionFlagValidationExists = true_
+    - _Preservation: dns_verification and manual_approval modes SHALL CONTINUE TO work_
+    - _Requirements: 1.23-1.26, 2.23-2.26, 3.20-3.22_
+
+  - [x] 3.7 Input Validation Enhancements (A14-02, A14-03, A14-04, A14-05, A14-06)
+    - Update `src/lib/validations.ts`:
+      - **Phone Regex (A14-02)**: Update `bookingVerifySchema.phone` to `.regex(/^\+?[0-9()\s-]+$/, "Invalid phone format")`
+      - **Test Name Max (A14-03)**: Update `labReportSchema.results[].testName` to `.max(200, "Test name too long")`
+      - **NFC Normalization (A14-04)**: Create `safeText` transform: `z.string().transform(s => s.normalize("NFC"))`
+      - **Null Byte Stripping (A14-05)**: Update `safeText` to chain `.transform(s => s.replace(/\u0000/g, ''))`
+      - Apply `safeText` to all text fields: clinic_name, doctor_name, patient_name, service_name, etc.
+    - Update `src/app/api/lab/report-html/route.ts`:
+      - **Locale Decoding (A14-06)**: Wrap `decodeURIComponent(cookies.get("locale"))` in try/catch
+      - Catch `URIError` and fallback to `DEFAULT_LOCALE` constant
+      - Log malformed locale attempts for monitoring
+    - Add unit tests in `src/lib/__tests__/validations.test.ts`:
+      - Test phone regex rejects invalid formats
+      - Test test name max length constraint
+      - Test NFC normalization prevents homoglyphs
+      - Test null byte stripping
+      - Test locale decoding fallback
+    - _Bug_Condition: input.phoneValidationHasRegex = false OR input.testNameHasMaxLength = false OR input.textFieldsNormalizeNFC = false OR input.nullBytesStripped = false OR input.localeDecodingUnprotected = true_
+    - _Expected_Behavior: result.phoneValidationHasRegex = true AND result.testNameHasMaxLength = true AND result.textFieldsNormalizeNFC = true AND result.nullBytesStripped = true AND result.localeDecodingProtected = true_
+    - _Preservation: Valid phone numbers, test names, normalized text, and locale cookies SHALL CONTINUE TO be accepted_
+    - _Requirements: 1.27-1.32, 2.27-2.32, 3.23-3.27_
+
+  - [x] 3.8 Verify bug condition exploration test now passes
+    - **Property 1: Expected Behavior** - Phase 3 Security Fixes Complete
+    - **IMPORTANT**: Re-run the SAME test from task 1 - do NOT write a new test
+    - The test from task 1 encodes the expected behavior
+    - When this test passes, it confirms the expected behavior is satisfied
+    - Run bug condition exploration test from step 1
+    - **EXPECTED OUTCOME**: Test PASSES (confirms security gaps are fixed)
+    - Verify all security controls are in place:
+      - Database rejects invalid appointments, negative prices, duplicate time slots
+      - pgTAP test prevents cross-tenant RPC calls
+      - hexToBytes throws descriptive error on odd-length input
+      - userRateBuckets and subdomainCache implement LRU eviction
+      - package.json has no CVE placeholders
+      - Dead code removed from feature flags
+      - Production flag validation prevents misconfiguration
+      - Input validation enforces regex, max length, normalization, null byte stripping
+      - Locale decoding handles malformed cookies gracefully
+    - _Requirements: Expected Behavior Properties from design (2.1-2.32)_
+
+  - [x] 3.9 Verify preservation tests still pass
+    - **Property 2: Preservation** - Existing Functionality Preserved
+    - **IMPORTANT**: Re-run the SAME tests from task 2 - do NOT write new tests
+    - Run preservation property tests from step 2
+    - **EXPECTED OUTCOME**: Tests PASS (confirms no regressions)
+    - Confirm all existing functionality still works:
+      - Valid appointments, services, and time slots are accepted
+      - Same-tenant bookings succeed
+      - Even-length hex strings parse correctly
+      - Legitimate users are allowed
+      - Valid subdomains resolve correctly
+      - Legitimate dependencies install successfully
+      - OpenNext patches apply correctly
+      - dns_verification and manual_approval modes work
+      - Valid phone numbers are accepted
+      - Valid test names are accepted
+      - Normalized text processes correctly
+      - Valid locale cookies parse correctly
+      - Strings without null bytes are accepted
+
+- [x] 4. Checkpoint - Ensure all tests pass
+  - Ensure all tests pass (bug condition test + preservation tests)
+  - Verify no regressions in existing functionality
+  - Run full test suite: `npm run test && npm run test:e2e`
+  - Ask the user if questions arise about security controls, database migrations, or validation logic

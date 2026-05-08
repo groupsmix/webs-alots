@@ -1,0 +1,340 @@
+import { NextRequest } from "next/server";
+import { resolveAIConfig } from "@/lib/ai/config";
+import { isAIEnabled } from "@/lib/features";
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+import { apiSuccess, apiError, apiRateLimited } from "@/lib/api-response";
+import { checkAiTokenBudget, incrementAiTokenUsage, estimateTokens } from "@/lib/ai-budget";
+import { withValidation } from "@/lib/api-validate";
+import { fetchChatbotContext, buildSystemPrompt, getBasicResponse } from "@/lib/chatbot-data";
+import { logger } from "@/lib/logger";
+import { createClient } from "@/lib/supabase-server";
+import { requireTenant } from "@/lib/tenant";
+import { chatRequestSchema } from "@/lib/validations";
+/**
+ * POST /api/chat
+ *
+ * Tenant-aware chatbot endpoint. Supports 3 intelligence levels:
+ *   - basic:    Keyword matching against DB data + custom FAQs (no AI)
+ *   - smart:    Cloudflare Workers AI (free tier)
+ *   - advanced: OpenAI-compatible API (paid)
+ *
+ * The clinic is resolved from the tenant context (set by middleware from subdomain).
+ * clinicId in the request body is ignored — tenant MUST come from request context.
+ */
+/** Max number of conversation history messages sent to the LLM. */
+const MAX_HISTORY_LENGTH = 20;
+
+/** Max length of a single user message (characters). */
+const MAX_MESSAGE_LENGTH = 2000;
+
+/**
+ * Sanitize user-supplied text before it reaches the LLM.
+ *
+ * F-36: DEFENCE-IN-DEPTH ONLY — this regex-based filter is NOT a
+ * security boundary. It can be bypassed by Unicode confusables,
+ * homoglyphs, right-to-left overrides, and novel prompt structures.
+ *
+ * Primary protection comes from:
+ *   1. Labelling user content as a "user" turn at the model-call boundary
+ *   2. The system prompt's instruction-following directives
+ *   3. Output guardrails / content filtering on the response
+ *
+ * This sanitiser provides a lightweight first pass that catches the
+ * most common copy-paste injection attempts. Keep it, but do not
+ * rely on it as the sole defense.
+ */
+function sanitizeUserInput(text: string): string {
+  return (
+    text
+      // Normalize Unicode to NFKC to defeat homoglyph / compatibility-char
+      // bypasses (e.g. fullwidth "ｓｙｓｔｅｍ" → "system")
+      .normalize("NFKC")
+      // Strip zero-width / invisible characters often used to evade filters
+      .replace(/[\u200B-\u200F\u2028-\u202F\uFEFF\u00AD]/g, "")
+      // Strip attempts to impersonate system/assistant roles
+      // (covers whitespace/zero-width tricks between characters)
+      .replace(/^\s*(s\s*y\s*s\s*t\s*e\s*m|a\s*s\s*s\s*i\s*s\s*t\s*a\s*n\s*t)\s*:/gi, "")
+      // Remove markdown-style "instruction" fences
+      .replace(/```(system|instructions?)[\s\S]*?```/gi, "")
+      // Strip ChatML-style markers (e.g. <|im_start|>system)
+      .replace(/<\|im_(start|end)\|>\s*(system|assistant)?/gi, "")
+      // Strip XML-style role tags
+      .replace(/<\/?(system|assistant|instruction)[^>]*>/gi, "")
+      // Strip "ignore all previous instructions" style attacks
+      .replace(/ignore\s+(all\s+)?(previous|prior|above|earlier)\s+(instructions?|prompts?|context)/gi, "[filtered]")
+      // Collapse excessive whitespace
+      .replace(/\n{3,}/g, "\n\n")
+      .trim()
+  );
+}
+
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export const POST = withValidation(chatRequestSchema, async (body, request: NextRequest) => {
+    // Resolve clinic ID strictly from tenant context (middleware headers)
+    const tenant = await requireTenant();
+    const clinicId = tenant.clinicId;
+
+    const lastMessage = body.messages[body.messages.length - 1];
+    if (!lastMessage || lastMessage.role !== "user" || !lastMessage.content.trim()) {
+      return apiError("Last message must be a non-empty user message");
+    }
+
+    // Sanitize and truncate messages; limit conversation history length.
+    // V-01: Truncate assistant messages too — an attacker can fabricate
+    // long assistant turns in the request body to inflate token cost.
+    const sanitizedMessages = body.messages
+      .slice(-MAX_HISTORY_LENGTH)
+      .map((m) => ({
+        ...m,
+        content:
+          m.role === "user"
+            ? sanitizeUserInput(m.content).slice(0, MAX_MESSAGE_LENGTH)
+            : m.content.slice(0, MAX_MESSAGE_LENGTH),
+      }));
+
+    // Fetch clinic context from Supabase
+    const ctx = await fetchChatbotContext(clinicId);
+
+    // Check if chatbot is enabled for this clinic
+    if (ctx.chatbotConfig && !ctx.chatbotConfig.enabled) {
+      return apiError("Chatbot is not enabled for this clinic", 403, "FORBIDDEN");
+    }
+
+    // Determine intelligence level
+    const intelligence = ctx.chatbotConfig?.intelligence ?? "basic";
+
+    // --- BASIC: keyword matching, no AI ---
+    // Basic tier is allowed without authentication since it uses no AI
+    // API and is purely keyword-based. This allows public visitors to
+    // interact with the chatbot quick-reply buttons.
+    if (intelligence === "basic") {
+      const reply = getBasicResponse(lastMessage.content, ctx);
+      return apiSuccess({
+        message: { role: "assistant" as const, content: reply },
+      });
+    }
+
+    // SEC-01: Require authentication for AI-powered tiers (smart / advanced)
+    // to prevent bot-driven abuse of Cloudflare Workers AI quota and OpenAI API.
+    const supabaseForAuth = await createClient();
+    const { data: { user: chatUser } } = await supabaseForAuth.auth.getUser();
+    if (!chatUser) {
+      // Fall back to basic keyword matching for unauthenticated users
+      const reply = getBasicResponse(lastMessage.content, ctx);
+      return apiSuccess({
+        message: { role: "assistant" as const, content: reply },
+      });
+    }
+
+    // A1-01: Check AI token budget before making expensive AI calls
+    // Fetch user profile to get role for budget limits
+    const { data: profile } = await supabaseForAuth
+      .from("users")
+      .select("id, role")
+      .eq("id", chatUser.id)
+      .single();
+
+    if (!profile) {
+      // Fall back to basic if we can't verify budget
+      const reply = getBasicResponse(lastMessage.content, ctx);
+      return apiSuccess({
+        message: { role: "assistant" as const, content: reply },
+      });
+    }
+
+    // Estimate tokens for this request (rough heuristic: 4 chars per token)
+    const estimatedTokens = estimateTokens(
+      sanitizedMessages.map((m) => m.content).join(" ")
+    );
+
+    // Check budget before AI call
+    const { allowed, remaining } = await checkAiTokenBudget(
+      supabaseForAuth,
+      clinicId,
+      profile.role,
+      estimatedTokens,
+    );
+
+    if (!allowed) {
+      return apiError(
+        `Budget de tokens IA dépassé. ${remaining} tokens restants ce mois.`,
+        429,
+        "AI_BUDGET_EXCEEDED",
+      );
+    }
+
+    // --- SMART: Cloudflare Workers AI (free) ---
+    if (intelligence === "smart") {
+      // F-AI-01: Global AI kill-switch — must be checked for ALL AI tiers
+      if (!(await isAIEnabled())) {
+        const reply = getBasicResponse(lastMessage.content, ctx);
+        return apiSuccess({
+          message: { role: "assistant" as const, content: reply },
+        });
+      }
+
+      const cfAccountId = process.env.CLOUDFLARE_ACCOUNT_ID;
+      const cfApiToken = process.env.CLOUDFLARE_AI_API_TOKEN;
+
+      if (!cfAccountId || !cfApiToken) {
+        const reply = getBasicResponse(lastMessage.content, ctx);
+        return apiSuccess({
+          message: { role: "assistant" as const, content: reply },
+        });
+      }
+
+      const systemPrompt = buildSystemPrompt(ctx);
+      const cfMessages = [
+        { role: "system" as const, content: systemPrompt },
+        ...sanitizedMessages,
+      ];
+
+      const cfResponse = await fetch(
+        `https://api.cloudflare.com/client/v4/accounts/${cfAccountId}/ai/run/@cf/meta/llama-3.1-8b-instruct`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${cfApiToken}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            messages: cfMessages,
+            max_tokens: 500,
+          }),
+          signal: AbortSignal.timeout(30_000),
+        },
+      );
+
+      if (cfResponse.ok) {
+        const cfData = (await cfResponse.json()) as { result?: { response?: string } };
+        const content = cfData.result?.response;
+        if (content) {
+          // A1-01: Increment token usage after successful AI response
+          const actualTokens = estimateTokens(content);
+          await incrementAiTokenUsage(supabaseForAuth, clinicId, actualTokens);
+
+          return apiSuccess({
+            message: { role: "assistant" as const, content },
+          });
+        }
+      } else {
+        // Log non-OK responses (including 429 rate-limit / quota exhaustion)
+        logger.warn("Cloudflare AI request failed", {
+          context: "chat/cloudflare-ai",
+          status: cfResponse.status,
+          clinicId,
+          statusText: cfResponse.statusText,
+        });
+      }
+
+      // Fallback to basic keyword matching when AI is unavailable
+      const reply = getBasicResponse(lastMessage.content, ctx);
+      return apiSuccess({
+        message: { role: "assistant" as const, content: reply },
+      });
+    }
+
+    // --- ADVANCED: OpenAI-compatible API (paid) ---
+    // F-AI-01: Kill switch + F-AI-05: URL allowlist + F-AI-07: pinned model
+    const aiResult = await resolveAIConfig();
+    if (!aiResult.ok) {
+      // Graceful fallback to basic matching when AI is unavailable
+      const reply = getBasicResponse(lastMessage.content, ctx);
+      return apiSuccess({
+        message: { role: "assistant" as const, content: reply },
+      });
+    }
+    const { apiKey, baseUrl, model } = aiResult.config;
+
+    const systemPrompt = buildSystemPrompt(ctx);
+    const apiMessages = [
+      { role: "system" as const, content: systemPrompt },
+      ...sanitizedMessages,
+    ];
+
+    const apiResponse = await fetch(`${baseUrl}/chat/completions`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model,
+        messages: apiMessages,
+        stream: true,
+        max_tokens: 500,
+        temperature: 0.7,
+      }),
+      signal: AbortSignal.timeout(30_000),
+    });
+
+    if (!apiResponse.ok) {
+      const reply = getBasicResponse(lastMessage.content, ctx);
+      return apiSuccess({
+        message: { role: "assistant" as const, content: reply },
+      });
+    }
+
+    // Stream the response back to the client
+    const stream = new ReadableStream({
+      async start(controller) {
+        const reader = apiResponse.body?.getReader();
+        if (!reader) {
+          controller.close();
+          return;
+        }
+
+        const decoder = new TextDecoder();
+        const encoder = new TextEncoder();
+        let totalContent = ""; // Track content for token counting
+
+        try {
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+
+            const chunk = decoder.decode(value, { stream: true });
+            const lines = chunk.split("\n").filter((line) => line.trim() !== "");
+
+            for (const line of lines) {
+              if (line === "data: [DONE]") {
+                controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+                
+                // A1-01: Increment token usage after streaming completes
+                if (totalContent) {
+                  const actualTokens = estimateTokens(totalContent);
+                  await incrementAiTokenUsage(supabaseForAuth, clinicId, actualTokens);
+                }
+                continue;
+              }
+              if (line.startsWith("data: ")) {
+                try {
+                  const json = JSON.parse(line.slice(6));
+                  const content = json.choices?.[0]?.delta?.content;
+                  if (content) {
+                    totalContent += content; // Accumulate for token counting
+                    controller.enqueue(
+                      encoder.encode(`data: ${JSON.stringify({ content })}\n\n`),
+                    );
+                  }
+                } catch (parseErr) {
+                  logger.warn("Malformed SSE chunk skipped", { context: "chat/stream", error: parseErr });
+                }
+              }
+            }
+          }
+        } finally {
+          reader.releaseLock();
+          controller.close();
+        }
+      },
+    });
+
+    return new Response(stream, {
+      headers: {
+        "Content-Type": "text/event-stream",
+        "Cache-Control": "no-cache",
+        Connection: "keep-alive",
+      },
+    });
+});

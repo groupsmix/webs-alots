@@ -1,0 +1,72 @@
+# =============================================================================
+# Supabase Configuration — Oltigo Health
+# =============================================================================
+# A31.9: Version-controlled Supabase configuration for encryption-at-rest,
+# JWT expiry, MFA enforcement, email rate-limits, and password policy.
+#
+# This file is used by the Supabase CLI and self-hosted Supabase instances.
+# For Supabase Cloud projects, these settings are configured via the dashboard
+# but should be documented here for auditability.
+#
+# Docs: https://supabase.com/docs/guides/cli/config
+# =============================================================================
+
+[auth]
+# JWT expiry: 1 hour (3600 seconds) to limit token lifetime
+jwt_expiry = 3600
+
+# MFA enforcement: require MFA for all users with elevated privileges
+# (clinic_admin, super_admin roles)
+mfa_enabled = true
+
+# Email rate-limits: 10 emails per hour per user to prevent abuse
+email_rate_limit = 10
+
+# Password policy: minimum 12 characters with complexity requirements
+[auth.password]
+min_length = 12
+require_uppercase = true
+require_lowercase = true
+require_numbers = true
+require_special_chars = true
+
+[db]
+# Encryption-at-rest: enable AES-256 encryption for all database files
+# Note: This requires Supabase Enterprise or self-hosted with encryption enabled
+encryption_at_rest = true
+
+# Connection pooling: limit concurrent connections to prevent resource exhaustion
+max_connections = 100
+pool_size = 20
+
+[storage]
+# File size limits: 50 MB max upload size for patient files
+max_file_size = 52428800  # 50 MB in bytes
+
+# Allowed MIME types for uploads (medical documents, images, PDFs)
+allowed_mime_types = [
+  "image/jpeg",
+  "image/png",
+  "image/gif",
+  "image/webp",
+  "application/pdf",
+  "application/msword",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "application/vnd.ms-excel",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+]
+
+[api]
+# Rate limiting: 100 requests per minute per IP for REST API
+rate_limit = 100
+rate_limit_window = 60  # seconds
+
+# CORS: restrict to known origins only (configured via ALLOWED_API_ORIGINS env var)
+cors_allowed_origins = []  # Set via environment variable
+
+[realtime]
+# Realtime subscriptions: limit concurrent connections per user
+max_connections_per_user = 10
+
+# Presence: enable presence tracking for collaborative features
+presence_enabled = true

@@ -1,0 +1,26 @@
+version: 2
+updates:
+  # Enable automated npm dependency updates
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 10
+    ignore:
+      # Next.js 16.2 is currently explicitly configured and we may not want automatic bumps yet
+      - dependency-name: "next"
+      - dependency-name: "react"
+      - dependency-name: "react-dom"
+    labels:
+      - "dependencies"
+      - "security"
+
+  # Enable automated GitHub Actions updates
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "github_actions"

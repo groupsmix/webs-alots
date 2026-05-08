@@ -1,0 +1,167 @@
+# =============================================================================
+# Cloudflare Workers Configuration — Oltigo Health
+# =============================================================================
+#
+# AUDIT F-06: This file documents the Worker's bindings, routes, and settings
+# as infrastructure-as-code. It was previously managed entirely via Cloudflare
+# dashboard / CI secrets, making the deployment topology opaque.
+#
+# The `opennextjs-cloudflare` build tool generates its own wrangler config
+# at build time. This file serves as the base that `wrangler deploy` merges
+# with the generated output. Environment-specific overrides (API tokens,
+# secrets) remain in CI secrets / Cloudflare dashboard.
+#
+# Docs: https://developers.cloudflare.com/workers/wrangler/configuration/
+# =============================================================================
+
+name = "webs-alots"
+main = ".open-next/worker.js"
+compatibility_date = "2025-04-01"
+compatibility_flags = ["nodejs_compat"]
+
+# ── Account (set via CLOUDFLARE_ACCOUNT_ID env in CI) ─────────────────
+# account_id is intentionally omitted — it is injected by the
+# cloudflare/wrangler-action in CI to avoid leaking it in the repo.
+
+# ── Routes ────────────────────────────────────────────────────────────
+# A36.1: Uncomment routes to version-control TLS termination configuration
+# The Worker serves all requests for the root domain and all subdomains.
+# Wildcard routing is configured in Cloudflare DNS (CNAME * -> Workers).
+routes = [
+  { pattern = "*.oltigo.health/*", custom_domain = true },
+]
+
+# ── WAF Rules (Cloudflare Ruleset Engine) ────────────────────────────
+# A36.4: WAF rules are configured via Cloudflare Dashboard → Security → WAF
+# The following rules MUST be configured for production security:
+#
+# 1. SQL Injection Protection
+#    - Rule: Block requests with SQL injection patterns
+#    - Expression: (http.request.uri.path contains "UNION" or http.request.uri.path contains "SELECT" or http.request.body contains "UNION" or http.request.body contains "SELECT")
+#    - Action: Block
+#    - Priority: 1
+#
+# 2. XSS Protection
+#    - Rule: Block requests with XSS patterns
+#    - Expression: (http.request.uri.path contains "<script" or http.request.body contains "<script" or http.request.uri.path contains "javascript:" or http.request.body contains "javascript:")
+#    - Action: Block
+#    - Priority: 2
+#
+# 3. Path Traversal Protection
+#    - Rule: Block requests with path traversal patterns
+#    - Expression: (http.request.uri.path contains "../" or http.request.uri.path contains "..%2F" or http.request.uri.path contains "%2e%2e")
+#    - Action: Block
+#    - Priority: 3
+#
+# 4. Rate Limit Bypass Prevention
+#    - Rule: Block requests with suspicious header combinations
+#    - Expression: (http.request.headers["x-forwarded-for"][0] contains "," and not cf.bot_management.verified_bot)
+#    - Action: Challenge
+#    - Priority: 4
+#
+# NOTE: These rules are documented here for audit purposes but MUST be
+# configured in the Cloudflare dashboard. Cloudflare does not support
+# declarative WAF configuration via wrangler.toml at this time.
+# See: https://developers.cloudflare.com/waf/custom-rules/
+
+# ── Geo-Fencing Rules ─────────────────────────────────────────────────
+# A36.5: Geo-restriction for admin endpoints handling Moroccan PHI
+# The following geo-fencing rule MUST be configured via Cloudflare Dashboard:
+#
+# Rule: Block non-Moroccan IPs from admin endpoints
+#    - Expression: (http.request.uri.path matches "^/admin/.*" and ip.geoip.country ne "MA")
+#    - Action: Block
+#    - Priority: 5
+#
+# This ensures that admin endpoints handling Protected Health Information (PHI)
+# under Moroccan Law 09-08 are only accessible from Morocco (country code: MA).
+#
+# NOTE: This rule is documented here for audit purposes but MUST be configured
+# in the Cloudflare dashboard under Security → WAF → Custom Rules.
+# The middleware also enforces geo-restriction at the application layer
+# (see src/lib/middleware/geo-restriction.ts) as defense-in-depth.
+
+# ── KV Namespaces ─────────────────────────────────────────────────────
+# A31.5: Uncomment KV bindings to version-control infrastructure
+# Rate limiting counters (shared across all edge locations).
+# Binding name must match what the rate-limit code checks for.
+# The actual namespace ID is environment-specific.
+[[kv_namespaces]]
+binding = "RATE_LIMIT_KV"
+id = ""           # Set per-environment in Cloudflare dashboard or CI
+
+# ── R2 Buckets ────────────────────────────────────────────────────────
+# A31.5: Uncomment R2 bindings to version-control infrastructure
+# PHI file storage (encrypted uploads).
+[[r2_buckets]]
+binding = "UPLOADS_BUCKET"
+bucket_name = "webs-alots-uploads"
+
+# ── Environment Variables (non-secret) ────────────────────────────────
+# Secrets (API keys, encryption keys) are set via `wrangler secret put`
+# or Cloudflare dashboard. Only non-sensitive defaults go here.
+[vars]
+NODE_ENV = "production"
+RATE_LIMIT_BACKEND = "supabase"
+
+# ── Staging Environment ───────────────────────────────────────────────
+[env.staging]
+name = "webs-alots-staging"
+[env.staging.vars]
+NODE_ENV = "production"
+RATE_LIMIT_BACKEND = "supabase"
+
+# ── Limits ────────────────────────────────────────────────────────────
+# A31.6, A42.1: Uncomment CPU limits to prevent unbounded cost from runaway requests
+[limits]
+cpu_ms = 50  # Default: 50ms CPU time per request (Workers Paid plan)
+
+# ── Observability ─────────────────────────────────────────────────────
+# A40.2: Enable Workers Logs for request-rate, 4xx-rate, and cold-start
+# metrics visibility. Sentry catches exceptions but not operational telemetry.
+[observability]
+enabled = true
+
+# ── Build ─────────────────────────────────────────────────────────────
+# The build command is handled by CI (npm run build:cf), not by wrangler.
+# [build]
+# command = "npm run build:cf"
+
+# ── Cron Triggers ─────────────────────────────────────────────────────
+# A31.8, A43.1: Declare cron schedules in IaC to prevent configuration drift
+# All schedules use UTC timezone (Africa/Casablanca is UTC+1 with DST)
+[[triggers.crons]]
+# R2 sync job: replicate uploads to disaster recovery bucket every 6 hours
+crons = ["0 */6 * * *"]
+
+[[triggers.crons]]
+# Appointment reminders: send WhatsApp/SMS reminders at 9 AM UTC
+crons = ["0 9 * * *"]
+
+[[triggers.crons]]
+# Billing aggregation: calculate daily usage and costs at midnight UTC
+crons = ["0 0 * * *"]
+
+[[triggers.crons]]
+# F-A188: WORM audit archive drain — every 5 minutes
+# Drains audit_archive_queue to oltigo-audit-worm R2 bucket with Object Lock.
+# Route: GET /api/cron/audit-archive (requires CRON_SECRET header)
+crons = ["*/5 * * * *"]
+
+[[triggers.crons]]
+# A1-05: Monthly AI token budget reset — 1st of each month at 00:01 UTC
+# Calls reset_monthly_ai_tokens() to archive usage and start fresh counters.
+# Route: GET /api/cron/ai-token-reset (requires CRON_SECRET header)
+crons = ["1 0 1 * *"]
+
+# ── Audit WORM R2 Bucket ───────────────────────────────────────────────
+# F-A188: Tamper-evident audit log archive (Law 09-08, HIPAA §164.312(b))
+# Bucket must be created with Object Lock enabled (Governance, 7 years).
+# Object Lock cannot be enabled after bucket creation — create with:
+#   wrangler r2 bucket create oltigo-audit-worm --jurisdiction eu
+# Then enable Object Lock via Cloudflare dashboard:
+#   Storage → R2 → oltigo-audit-worm → Settings → Object Lock: Enabled
+[[r2_buckets]]
+binding = "AUDIT_WORM_BUCKET"
+bucket_name = "oltigo-audit-worm"
+
