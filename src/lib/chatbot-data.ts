@@ -157,18 +157,19 @@ export function buildSystemPrompt(ctx: ChatbotClinicContext): string {
         .join("\n")
     : "Non renseigné";
 
+  // F-AI-02: Sanitize all DB strings before they enter the system prompt
   const servicesText = services.length > 0
     ? services
         .map((s) => {
           const price = s.price != null ? `${s.price} MAD` : "Prix sur demande";
-          const cat = s.category ? ` (${s.category})` : "";
-          return `- ${s.name}${cat}: ${price} — ${s.duration_minutes} min`;
+          const cat = s.category ? ` (${sanitizeUntrustedText(s.category)})` : "";
+          return `- ${sanitizeUntrustedText(s.name)}${cat}: ${price} — ${s.duration_minutes} min`;
         })
         .join("\n")
     : "Aucun service configuré";
 
   const doctorsText = doctors.length > 0
-    ? doctors.map((d) => `- Dr. ${d.name}`).join("\n")
+    ? doctors.map((d) => `- Dr. ${sanitizeUntrustedText(d.name)}`).join("\n")
     : "Aucun médecin configuré";
 
   // F-AI-02: Sanitize stored FAQ answers to prevent prompt injection via
@@ -178,19 +179,22 @@ export function buildSystemPrompt(ctx: ChatbotClinicContext): string {
     ? faqs.map((f) => `Q: ${sanitizeUntrustedText(f.question)}\nR: ${sanitizeUntrustedText(f.answer)}`).join("\n\n")
     : "";
 
+  // F-AI-02: Sanitize clinic fields before they enter the system prompt
+  const safeClinicName = sanitizeUntrustedText(clinic.name);
+  const safeClinicType = sanitizeUntrustedText(typeLabels[clinic.type] ?? clinic.type);
   const contactParts: string[] = [];
-  if (clinic.phone) contactParts.push(`Téléphone: ${clinic.phone}`);
-  if (clinic.email) contactParts.push(`Email: ${clinic.email}`);
-  if (clinic.address) contactParts.push(`Adresse: ${clinic.address}`);
-  if (clinic.city) contactParts.push(`Ville: ${clinic.city}`);
-  if (clinic.domain) contactParts.push(`Site web: ${clinic.domain}`);
+  if (clinic.phone) contactParts.push(`Téléphone: ${sanitizeUntrustedText(clinic.phone)}`);
+  if (clinic.email) contactParts.push(`Email: ${sanitizeUntrustedText(clinic.email)}`);
+  if (clinic.address) contactParts.push(`Adresse: ${sanitizeUntrustedText(clinic.address)}`);
+  if (clinic.city) contactParts.push(`Ville: ${sanitizeUntrustedText(clinic.city)}`);
+  if (clinic.domain) contactParts.push(`Site web: ${sanitizeUntrustedText(clinic.domain)}`);
 
-  return `Tu es l'assistant virtuel de "${clinic.name}", un(e) ${typeLabels[clinic.type] ?? clinic.type}.
+  return `Tu es l'assistant virtuel de "${safeClinicName}", un(e) ${safeClinicType}.
 Tu aides les patients avec leurs questions sur les rendez-vous, services, horaires et informations du cabinet.
 
 === INFORMATIONS DU CABINET ===
-Nom: ${clinic.name}
-Type: ${typeLabels[clinic.type] ?? clinic.type}
+Nom: ${safeClinicName}
+Type: ${safeClinicType}
 ${contactParts.length > 0 ? contactParts.join("\n") : "Contact: non renseigné"}
 
 === HORAIRES ===

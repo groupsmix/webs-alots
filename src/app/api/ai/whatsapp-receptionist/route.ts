@@ -203,16 +203,24 @@ async function findClinicByPhoneNumberId(
 // ── AI response builder ──────────────────────────────────────────────
 
 function buildSystemPrompt(ctx: ClinicContext): string {
-  return `Tu es un réceptionniste IA pour "${ctx.name}".
+  // F-AI-02: Sanitize all DB-derived strings before they enter the system prompt
+  const safeName = sanitizeUntrustedText(ctx.name);
+  const safePhone = sanitizeUntrustedText(ctx.phone);
+  const safeAddress = ctx.address ? sanitizeUntrustedText(ctx.address) : "";
+  const safeHours = ctx.openingHours ? sanitizeUntrustedText(ctx.openingHours) : "";
+  const safeServices = ctx.services.length > 0 ? ctx.services.map(sanitizeUntrustedText).join(", ") : "";
+  const safeDoctors = ctx.doctors.length > 0 ? ctx.doctors.map(sanitizeUntrustedText).join(", ") : "";
+
+  return `Tu es un réceptionniste IA pour "${safeName}".
 Tu réponds aux patients sur WhatsApp de manière professionnelle, chaleureuse et concise.
 
 INFORMATIONS DE LA CLINIQUE:
-- Nom: ${ctx.name}
-- Téléphone: ${ctx.phone}
-${ctx.address ? `- Adresse: ${ctx.address}` : ""}
-${ctx.openingHours ? `- Horaires: ${ctx.openingHours}` : ""}
-${ctx.services.length > 0 ? `- Services: ${ctx.services.join(", ")}` : ""}
-${ctx.doctors.length > 0 ? `- Médecins: ${ctx.doctors.join(", ")}` : ""}
+- Nom: ${safeName}
+- Téléphone: ${safePhone}
+${safeAddress ? `- Adresse: ${safeAddress}` : ""}
+${safeHours ? `- Horaires: ${safeHours}` : ""}
+${safeServices ? `- Services: ${safeServices}` : ""}
+${safeDoctors ? `- Médecins: ${safeDoctors}` : ""}
 
 RÈGLES:
 1. Réponds TOUJOURS en français.
