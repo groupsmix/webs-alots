@@ -150,31 +150,27 @@ export async function processNotificationQueue(): Promise<ProcessResult> {
     const { createAdminClient } = await import("@/lib/supabase-server");
     const supabase = createAdminClient() as ExtendedClient;
 
-    // Fetch pending items ready for processing
-    const { data: items, error: fetchError } = await supabase
-      .from("notification_queue")
-      .select("id, clinic_id, channel, recipient, payload, status, attempts, max_attempts, next_attempt_at, error_message, created_at")
-      .in("status", ["pending", "failed"])
-      .lte("next_attempt_at", new Date().toISOString())
-      .order("next_attempt_at", { ascending: true })
-      .limit(BATCH_SIZE);
+    // A44.2: Atomically claim pending items using SELECT ... FOR UPDATE SKIP LOCKED.
+    // The previous SELECT-then-UPDATE pattern was racey: two concurrent cron
+    // workers could fetch the same items before either updated them to
+    // 'processing', causing duplicate notifications.
+    const { data: items, error: fetchError } = await (supabase.rpc as (
+      fn: "claim_notification_batch",
+      args: { p_limit: number }
+    ) => ReturnType<typeof supabase.rpc>)(
+      "claim_notification_batch",
+      { p_limit: BATCH_SIZE }
+    );
 
     if (fetchError || !items || items.length === 0) {
       if (fetchError) {
-        logger.error("Failed to fetch notification queue", {
+        logger.error("Failed to claim notification batch", {
           context: "notification-queue",
           error: fetchError,
         });
       }
       return result;
     }
-
-    // Claim items by marking them as 'processing'
-    const itemIds = items.map((item) => item.id);
-    await supabase
-      .from("notification_queue")
-      .update({ status: "processing", updated_at: new Date().toISOString() })
-      .in("id", itemIds);
 
     // Process each item
     for (const item of items) {
