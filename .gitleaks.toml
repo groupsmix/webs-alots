@@ -20,4 +20,7 @@ regexes = [
     # boots the web server. Always of the form
     # `ci-e2e-<name>-placeholder`.
     '''ci-e2e-[a-z0-9-]+-placeholder''',
+    # Deterministic SHA-256 hash of boolean auth flag state in src/config/flags.ts.
+    # This is a guardrail checksum, not a secret.
+    '''6aba9d2a6ce89b121ba75e67a18a08d1ddd3b5a3d0be2483c344c8250bf72c6c''',
 ]
