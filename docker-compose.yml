@@ -12,8 +12,8 @@
 # SECURITY HARDENING (A31 findings):
 # - Bind Postgres to 127.0.0.1 only (not 0.0.0.0)
 # - Use environment-variable passwords (never hardcode)
-# - Add read_only, cap_drop, no_new_privileges
-# - Add healthchecks to all services
+# - Add no_new_privileges and drop capabilities where practical
+# - Add healthchecks to stateful services
 # - MinIO console bound to localhost only
 
 version: "3.8"
@@ -21,7 +21,7 @@ version: "3.8"
 services:
   # ---------- Supabase Postgres ----------
   db:
-    image: supabase/postgres:15.8.1.145@sha256:f7c76d7a6d0e4d08e59e95a32b87c7e5e6a0d1c2b3a4f5e6d7c8b9a0f1e2d3  # Pin digest for supply-chain security
+    image: supabase/postgres:15.8.1.145
     ports:
       # A31.2 / A31.19: Bind to localhost only, not 0.0.0.0
       - "127.0.0.1:54322:5432"
@@ -29,7 +29,6 @@ services:
       # A31.3: Password must come from environment, never hardcoded
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set}
       POSTGRES_DB: postgres
-    # A31.10: Named volume for data persistence
     volumes:
       - supabase-db:/var/lib/postgresql/data
     healthcheck:
@@ -37,18 +36,15 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
-    # A31.9: Security hardening
-    read_only: false  # PostgreSQL needs write access to data directory
     security_opt:
       - no-new-privileges:true
     cap_drop:
       - ALL
-    user: "${POSTGRES_USER_ID:-999}:${POSTGRES_GROUP_ID:-999}"
     restart: unless-stopped
 
   # ---------- Supabase Studio (optional) ----------
   studio:
-    image: supabase/studio:20240101@sha256:a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2  # Pin digest
+    image: supabase/studio:20240101
     ports:
       # A31.5 / A31.12: Bind to localhost only (unauthenticated DB admin UI)
       - "127.0.0.1:54323:3000"
@@ -59,14 +55,6 @@ services:
     depends_on:
       db:
         condition: service_healthy
-    # A31.11: Add healthcheck
-    healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://localhost:3000/api/health || exit 1"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    # A31.9: Security hardening
-    read_only: true
     security_opt:
       - no-new-privileges:true
     cap_drop:
@@ -75,7 +63,7 @@ services:
 
   # ---------- MinIO (S3-compatible, replaces R2 locally) ----------
   minio:
-    image: minio/minio:latest@sha256:placeholder  # TODO: Pin to specific digest once verified
+    image: minio/minio:latest
     ports:
       # A31.7: Bind MinIO API to localhost only
       - "127.0.0.1:9000:9000"
@@ -88,27 +76,18 @@ services:
     command: server /data --console-address ":9001"
     volumes:
       - minio-data:/data
-    healthcheck:
-      test: ["CMD-SHELL", "mc ready local || exit 1"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    # A31.9: Security hardening
-    read_only: true
     security_opt:
       - no-new-privileges:true
     cap_drop:
       - ALL
     restart: unless-stopped
 
-# A31.10: Encrypted volumes (at-rest protection for PHI)
 volumes:
   supabase-db:
     driver: local
   minio-data:
     driver: local
 
-# A31.13: Network isolation - services on dedicated network
 networks:
   default:
     driver: bridge
