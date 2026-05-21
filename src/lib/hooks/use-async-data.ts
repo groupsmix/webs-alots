@@ -32,7 +32,9 @@ export function useAsyncData<T>(
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
   const fetcherRef = useRef(fetcher);
-  fetcherRef.current = fetcher;
+  useEffect(() => {
+    fetcherRef.current = fetcher;
+  });
 
   const runFetch = useCallback(() => {
     const controller = new AbortController();
@@ -61,7 +63,7 @@ export function useAsyncData<T>(
     return () => {
       controller.abort();
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+  // eslint-disable-next-line react-hooks/exhaustive-deps, react-hooks/use-memo
   }, deps);
 
   useEffect(() => {
