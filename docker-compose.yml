@@ -8,6 +8,13 @@
 #   NEXT_PUBLIC_SUPABASE_URL=http://localhost:54321
 #   NEXT_PUBLIC_SUPABASE_ANON_KEY=<anon key from supabase status>
 #   SUPABASE_SERVICE_ROLE_KEY=<service_role key from supabase status>
+#
+# SECURITY HARDENING (A31 findings):
+# - Bind Postgres to 127.0.0.1 only (not 0.0.0.0)
+# - Use environment-variable passwords (never hardcode)
+# - Add no_new_privileges and drop capabilities where practical
+# - Add healthchecks to stateful services
+# - MinIO console bound to localhost only
 
 version: "3.8"
 
@@ -16,9 +23,11 @@ services:
   db:
     image: supabase/postgres:15.8.1.145
     ports:
-      - "54322:5432"
+      # A31.2 / A31.19: Bind to localhost only, not 0.0.0.0
+      - "127.0.0.1:54322:5432"
     environment:
-      POSTGRES_PASSWORD: postgres
+      # A31.3: Password must come from environment, never hardcoded
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set}
       POSTGRES_DB: postgres
     volumes:
       - supabase-db:/var/lib/postgresql/data
@@ -27,34 +36,62 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    restart: unless-stopped
 
   # ---------- Supabase Studio (optional) ----------
   studio:
     image: supabase/studio:20240101
     ports:
-      - "54323:3000"
+      # A31.5 / A31.12: Bind to localhost only (unauthenticated DB admin UI)
+      - "127.0.0.1:54323:3000"
     environment:
       STUDIO_PG_META_URL: http://meta:8080
       SUPABASE_URL: http://kong:8000
       SUPABASE_REST_URL: http://kong:8000/rest/v1/
     depends_on:
-      - db
+      db:
+        condition: service_healthy
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    restart: unless-stopped
 
   # ---------- MinIO (S3-compatible, replaces R2 locally) ----------
   minio:
     image: minio/minio:latest
     ports:
-      - "9000:9000"
-      - "9001:9001"
+      # A31.7: Bind MinIO API to localhost only
+      - "127.0.0.1:9000:9000"
+      # A31.7: Bind MinIO console to localhost only
+      - "127.0.0.1:9001:9001"
     environment:
-      # A13-05: Dummy credentials for local dev only. 
-      # DO NOT USE IN PRODUCTION.
-      MINIO_ROOT_USER: local-dev-admin
-      MINIO_ROOT_PASSWORD: local-dev-password
+      # A31.8 / A13-05: Credentials must come from environment, never defaults.
+      # For local dev, set MINIO_ROOT_USER and MINIO_ROOT_PASSWORD in .env.local
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:?MINIO_ROOT_USER must be set}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?MINIO_ROOT_PASSWORD must be set}
     command: server /data --console-address ":9001"
     volumes:
       - minio-data:/data
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    restart: unless-stopped
 
 volumes:
   supabase-db:
+    driver: local
   minio-data:
+    driver: local
+
+networks:
+  default:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.28.0.0/16
