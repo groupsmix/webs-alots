@@ -1,5 +1,5 @@
 -- =============================================================================
--- Migration 00079: Additional security & schema hardening
+-- Migration 00080: Additional security & schema hardening
 --
 -- Addresses open findings from audit-report10.md:
 -- A2-01 (LOW): Remove trade_license_base64 dormant code path

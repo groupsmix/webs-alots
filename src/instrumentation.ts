@@ -265,9 +265,13 @@ export function register() {
       features.NEXT_PUBLIC_PHONE_AUTH_ENABLED === "true" ||
       features.SELF_SERVICE_REGISTRATION_ENABLED === "true"
     ) {
-      import("crypto").then((crypto) => {
+      (async () => {
         const rawStr = JSON.stringify(features);
-        const hash = crypto.createHash("sha256").update(rawStr).digest("hex");
+        const encoded = new TextEncoder().encode(rawStr);
+        const hashBuffer = await globalThis.crypto.subtle.digest("SHA-256", encoded);
+        const hash = Array.from(new Uint8Array(hashBuffer))
+          .map((b) => b.toString(16).padStart(2, "0"))
+          .join("");
         const expectedHash = process.env.AUTHN_FLAGS_HASH;
 
         if (hash !== expectedHash) {
@@ -282,7 +286,7 @@ export function register() {
           });
           throw new Error(message);
         }
-      });
+      })();
     }
   }
 }

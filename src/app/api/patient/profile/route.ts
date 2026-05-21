@@ -2,7 +2,7 @@ import { NextRequest } from "next/server";
 import { apiSuccess, apiError } from "@/lib/api-response";
 import { logAuditEvent } from "@/lib/audit-log";
 import { createAdminClient } from "@/lib/supabase-server";
-import { withAuthValidation } from "@/lib/with-auth";
+import { withAuthValidation } from "@/lib/api-validate";
 import { patientProfileUpdateSchema } from "@/lib/validations";
 
 /**
@@ -12,10 +12,11 @@ import { patientProfileUpdateSchema } from "@/lib/validations";
  * with before/after diff is correctly inserted into `activity_logs`.
  */
 async function handleUpdateProfile(
+  body: any,
   request: NextRequest,
-  profile: any,
-  body: any
+  auth: { profile: any }
 ) {
+  const profile = auth.profile;
   const clinicId = profile.clinic_id;
   const userId = profile.id;
   
