@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
-import { withAuthValidation } from "@/lib/api-validate";
 import { apiSuccess, apiError } from "@/lib/api-response";
+import { withAuthValidation } from "@/lib/api-validate";
 import { logAuditEvent } from "@/lib/audit-log";
 import { createAdminClient } from "@/lib/supabase-server";
 import { patientProfileUpdateSchema } from "@/lib/validations";
