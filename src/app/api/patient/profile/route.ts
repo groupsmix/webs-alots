@@ -1,9 +1,10 @@
 import { NextRequest } from "next/server";
+import { withAuthValidation } from "@/lib/api-validate";
 import { apiSuccess, apiError } from "@/lib/api-response";
 import { logAuditEvent } from "@/lib/audit-log";
 import { createAdminClient } from "@/lib/supabase-server";
-import { withAuthValidation } from "@/lib/api-validate";
 import { patientProfileUpdateSchema } from "@/lib/validations";
+import type { AuthContext } from "@/lib/with-auth";
 
 /**
  * Update patient profile with Art.16 Rectification Audit Trail.
@@ -12,9 +13,9 @@ import { patientProfileUpdateSchema } from "@/lib/validations";
  * with before/after diff is correctly inserted into `activity_logs`.
  */
 async function handleUpdateProfile(
-  body: any,
+  body: Record<string, unknown>,
   request: NextRequest,
-  auth: { profile: any }
+  auth: AuthContext
 ) {
   const profile = auth.profile;
   const clinicId = profile.clinic_id;

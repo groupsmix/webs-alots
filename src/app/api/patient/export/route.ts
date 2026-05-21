@@ -96,6 +96,7 @@ export const GET = withAuth(async (request: NextRequest, { supabase, profile }) 
             let firstRow = true;
             while (true) {
               const { data } = await supabase
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 .from(table as any)
                 .select(select)
                 .eq("patient_id", profile.id)
@@ -136,8 +137,10 @@ export const GET = withAuth(async (request: NextRequest, { supabase, profile }) 
           // Prescriptions
           offset = 0;
           while (true) {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const { data } = await supabase.from("prescriptions" as any).select("id, medication, dosage, created_at").eq("patient_id", profile.id).order("created_at", { ascending: false }).range(offset, offset + PAGE_SIZE - 1);
             if (!data || data.length === 0) break;
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const rows = data.map((p: any) => ({ type: "prescription", id: p.id, date: p.created_at, status: "", details: `${p.medication} - ${p.dosage}`, amount: "" }));
             controller.enqueue(encoder.encode(toCSV(rows, ["type", "id", "date", "status", "details", "amount"]) + "\n"));
             if (data.length < PAGE_SIZE) break;

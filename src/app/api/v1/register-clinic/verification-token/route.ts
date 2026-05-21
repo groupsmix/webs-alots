@@ -14,6 +14,7 @@
 import { NextRequest } from "next/server";
 import { z } from "zod";
 import { apiSuccess, apiError, apiValidationError } from "@/lib/api-response";
+import { handlePreflight } from "@/lib/cors";
 import {
   generateDnsVerificationToken,
   isDnsVerificationConfigured,
@@ -22,7 +23,6 @@ import {
 import { logger } from "@/lib/logger";
 import { createRateLimiter, extractClientIp } from "@/lib/rate-limit";
 import { safeParse } from "@/lib/validations";
-import { handlePreflight } from "@/lib/cors";
 
 /** Handle CORS preflight requests. */
 export function OPTIONS(request: NextRequest) {

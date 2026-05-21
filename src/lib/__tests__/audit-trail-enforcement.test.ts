@@ -1,6 +1,6 @@
-import { describe, it, expect } from "vitest";
 import { readFileSync } from "fs";
 import { globSync } from "glob";
+import { describe, it, expect } from "vitest";
 
 const STATE_CHANGING_METHODS = [
   "export async function POST",

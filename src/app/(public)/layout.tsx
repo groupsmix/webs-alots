@@ -1,6 +1,6 @@
+import { headers } from "next/headers";
 import { AnalyticsScript } from "@/components/analytics-script";
 import { Chatbot } from "@/components/chatbot";
-import { headers } from "next/headers";
 import { CookieConsent } from "@/components/cookie-consent";
 import { DemoBanner } from "@/components/demo-banner";
 import { PublicFooter } from "@/components/public/footer";
