@@ -43,14 +43,14 @@ async function handleUpdateProfile(
   const { data: updatedProfile, error: updateError } = await adminClient
     .from("users")
     .update({
-      full_name: body.full_name as string,
-      email: body.email as string | null,
-      phone: body.phone as string | null,
+      full_name: body.full_name,
+      email: body.email,
+      phone: body.phone,
       date_of_birth: body.date_of_birth,
       gender: body.gender,
       insurance_type: body.insurance_type,
       address: body.address,
-    })
+    } as never)
     .eq("id", userId)
     .eq("clinic_id", clinicId)
     .select("full_name, email, phone, date_of_birth, gender, insurance_type, address")
