@@ -84,7 +84,7 @@ export default function SubscriptionBillingPage() {
       });
       const json = await response.json();
       if (json.ok && json.data?.url) {
-        window.location.href = json.data.url;
+        window.location.assign(json.data.url);
       } else {
         addToast(json.error || "Échec de la création de la session de paiement", "error");
       }
@@ -106,7 +106,7 @@ export default function SubscriptionBillingPage() {
       });
       const json = await response.json();
       if (json.ok && json.data?.url) {
-        window.location.href = json.data.url;
+        window.location.assign(json.data.url);
       } else {
         addToast(json.error || "Échec de l'ouverture du portail", "error");
       }

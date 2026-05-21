@@ -52,7 +52,9 @@ export function ChatbotProvider({
   // Keep a ref to the latest messages so sendMessage doesn't recreate on
   // every message change (avoids stale closure & unnecessary re-renders).
   const messagesRef = useRef<ChatMessage[]>(messages);
-  messagesRef.current = messages;
+  useEffect(() => {
+    messagesRef.current = messages;
+  });
 
   // Cleanup: abort any in-flight stream when the component unmounts
   useEffect(() => {
