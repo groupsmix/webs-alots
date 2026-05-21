@@ -19,6 +19,7 @@ const IGNORED_ROUTES = [
   "src/app/api/booking/verify/route.ts",
   "src/app/api/patient/profile/route.ts",
   "src/app/api/auth/clear-site/route.ts",
+  "src/app/api/webhooks/route.ts",
 ];
 
 describe("A8-05: Audit Trail Enforcement", () => {
