@@ -23,4 +23,6 @@ regexes = [
     # Deterministic SHA-256 hash of boolean auth flag state in src/config/flags.ts.
     # This is a guardrail checksum, not a secret.
     '''6aba9d2a6ce89b121ba75e67a18a08d1ddd3b5a3d0be2483c344c8250bf72c6c''',
+    # Same as above but for the CI E2E config where PHONE_AUTH_ENABLED=true.
+    '''2242f465ef024d1ed53909819ec5421042a37f9f315d2fa7cdf3179f9cfe46d4''',
 ]
