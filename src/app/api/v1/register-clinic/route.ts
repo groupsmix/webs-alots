@@ -14,6 +14,7 @@ import { NextRequest } from "next/server";
 import { z } from "zod";
 import { apiSuccess, apiError, apiValidationError, apiInternalError } from "@/lib/api-response";
 import { logAuditEvent } from "@/lib/audit-log";
+import { handlePreflight } from "@/lib/cors";
 import {
   generateDnsVerificationToken,
   isDnsVerificationConfigured,
@@ -27,6 +28,11 @@ import { createRateLimiter, extractClientIp } from "@/lib/rate-limit";
 import { createAdminClient } from "@/lib/supabase-server";
 import { normalizeText, safeParse } from "@/lib/validations";
 import { sendTextMessage } from "@/lib/whatsapp";
+
+/** Handle CORS preflight requests. */
+export function OPTIONS(request: NextRequest) {
+  return handlePreflight(request);
+}
 
 // ---------------------------------------------------------------------------
 // Anti-Abuse Rate Limiter

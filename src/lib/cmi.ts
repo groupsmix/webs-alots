@@ -173,7 +173,7 @@ export async function verifyCmiCallback(
     'TransId', 'transid', 'AuthCode', 'authcode', 'Response',
     'mdStatus', 'txstatus', 'iReqCode', 'iReqDetail', 'vendorCode',
     'PAResSyntaxOK', 'PAResVerified', 'cavv', 'cavvAlgorithm', 'eci',
-    'xid', 'md', 'rnd', 'OID', 'AMOUNT',
+    'xid', 'md', 'rnd', 'OID', 'AMOUNT', 'avs', 'AVS', 'cvv', 'CVV', 'cvvStatus'
   ]);
 
   const fieldsToHash: Record<string, string> = {};

@@ -54,7 +54,8 @@ export async function POST(request: NextRequest) {
       const parsed = JSON.parse(rawBody);
       const result = stripeWebhookEventSchema.safeParse(parsed);
       if (!result.success) {
-        logger.warn("Stripe webhook event failed validation", {
+        // F-A93-03: Schema validation failure on a signed webhook is an error.
+        logger.error("Stripe webhook event failed schema validation", {
           context: "payments/webhook",
           error: result.error.issues,
         });
@@ -239,7 +240,8 @@ async function verifyStripeSignature(
 
     return timingSafeEqual(expectedSignature, signature);
   } catch (err) {
-    logger.warn("Operation failed", { context: "payments/webhook", error: err });
+    // F-A93-03: Signature verification failure is a security error, not a warning.
+    logger.error("Stripe signature verification failed unexpectedly", { context: "payments/webhook", error: err });
     return false;
   }
 }

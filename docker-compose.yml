@@ -70,7 +70,8 @@ services:
       # A31.7: Bind MinIO console to localhost only
       - "127.0.0.1:9001:9001"
     environment:
-      # A31.8: Credentials must come from environment, never defaults
+      # A31.8 / A13-05: Credentials must come from environment, never defaults.
+      # For local dev, set MINIO_ROOT_USER and MINIO_ROOT_PASSWORD in .env.local
       MINIO_ROOT_USER: ${MINIO_ROOT_USER:?MINIO_ROOT_USER must be set}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?MINIO_ROOT_PASSWORD must be set}
     command: server /data --console-address ":9001"

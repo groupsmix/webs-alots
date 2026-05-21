@@ -77,7 +77,9 @@ export function useOfflineDrafts<T>(
   });
 
   const latestDraftRef = useRef<T | null>(draft);
-  latestDraftRef.current = draft;
+  useEffect(() => {
+    latestDraftRef.current = draft;
+  });
 
   const saveDraft = useCallback(
     (data: T) => {

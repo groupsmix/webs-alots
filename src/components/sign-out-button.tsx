@@ -15,9 +15,28 @@ async function purgeServiceWorkerCaches(): Promise<void> {
   }
 }
 
+/**
+ * A56.10: Issue a server-side Clear-Site-Data flush via a dedicated API
+ * route before the Supabase signOut redirect.
+ *
+ * The browser enforces Clear-Site-Data: "cookies", "storage" only on a
+ * response header — it cannot be set from a server action's redirect.
+ * We fire a lightweight GET to /api/auth/clear-site that returns the
+ * header, then proceed with signOut (which will redirect to /).
+ *
+ * Best-effort: if the request fails (offline, CORS, etc.) we still sign out.
+ */
+async function clearSiteData(): Promise<void> {
+  try {
+    await fetch("/api/auth/clear-site", { credentials: "include" });
+  } catch {
+    // Intentionally swallowed — logout must proceed regardless
+  }
+}
+
 export function SignOutButton() {
   async function handleSignOut() {
-    await purgeServiceWorkerCaches();
+    await Promise.allSettled([purgeServiceWorkerCaches(), clearSiteData()]);
     await signOut();
   }
 

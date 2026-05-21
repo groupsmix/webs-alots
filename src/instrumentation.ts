@@ -254,5 +254,39 @@ export function register() {
         );
       });
     }
+
+    // A2-08: Feature-flag surface runtime startup assert
+    const features = {
+      NEXT_PUBLIC_PHONE_AUTH_ENABLED: process.env.NEXT_PUBLIC_PHONE_AUTH_ENABLED || "false",
+      SELF_SERVICE_REGISTRATION_ENABLED: process.env.SELF_SERVICE_REGISTRATION_ENABLED || "false",
+    };
+
+    if (
+      features.NEXT_PUBLIC_PHONE_AUTH_ENABLED === "true" ||
+      features.SELF_SERVICE_REGISTRATION_ENABLED === "true"
+    ) {
+      (async () => {
+        const rawStr = JSON.stringify(features);
+        const encoded = new TextEncoder().encode(rawStr);
+        const hashBuffer = await globalThis.crypto.subtle.digest("SHA-256", encoded);
+        const hash = Array.from(new Uint8Array(hashBuffer))
+          .map((b) => b.toString(16).padStart(2, "0"))
+          .join("");
+        const expectedHash = process.env.AUTHN_FLAGS_HASH;
+
+        if (hash !== expectedHash) {
+          const message = `[FATAL] Feature flag hash mismatch! Expected ${expectedHash}, got ${hash}. Set AUTHN_FLAGS_HASH to ${hash} in your production environment to explicitly approve these feature flags.`;
+          import("@/lib/logger").then(({ logger }) => {
+            logger.error("Feature flag hash mismatch! Security posture changed without explicit approval.", {
+              expectedHash,
+              actualHash: hash,
+              features,
+              context: "instrumentation"
+            });
+          });
+          throw new Error(message);
+        }
+      })();
+    }
   }
 }

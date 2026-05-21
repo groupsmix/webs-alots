@@ -18,14 +18,6 @@ export default defineConfig({
         "src/app/api/**/*.tsx",
       ],
       exclude: ["src/lib/types/**", "src/app/api/docs/**"],
-      // CI-08: Enforce coverage thresholds; CI step fails if not met.
-      //
-      // A86-F05: Ratcheted from single-digit floors (8/6/8/5) to just below
-      // the current measured coverage so regressions are caught immediately.
-      // These MUST be ratcheted upward as new tests land; the long-term
-      // aspirational targets are statements: 80, branches: 70, lines: 70,
-      // functions: 60. For PHI software, the mid-term milestone is
-      // 60/50/60/50 per A86-F05.
       thresholds: {
         statements: 12,
         branches: 9,

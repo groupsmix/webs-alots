@@ -59,9 +59,14 @@ name = "webs-alots-staging"
 NODE_ENV = "production"
 RATE_LIMIT_BACKEND = "supabase"
 
+# ── Triggers ──────────────────────────────────────────────────────────
+[triggers]
+# A43.1: Declare crons in IaC to prevent dashboard drift
+crons = ["*/30 * * * *", "*/15 * * * *", "0 * * * *", "0 2 * * *"]
+
 # ── Limits ────────────────────────────────────────────────────────────
-# [limits]
-# cpu_ms = 50  # Default: 50ms CPU time per request (Workers Paid plan)
+[limits]
+cpu_ms = 50  # Default: 50ms CPU time per request (Workers Paid plan)
 
 # ── Observability ─────────────────────────────────────────────────────
 # A40.2: Enable Workers Logs for request-rate, 4xx-rate, and cold-start

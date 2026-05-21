@@ -92,7 +92,8 @@ export async function GET(request: NextRequest) {
   const { data, error } = await query;
 
   if (error) {
-    logger.warn("Operation failed", { context: "v1/appointments", error });
+    // F-A93-03: DB query failure is an error, not a warning.
+    logger.error("Failed to fetch appointments from DB", { context: "v1/appointments", error });
     return apiInternalError("Failed to fetch appointments");
   }
 
@@ -162,7 +163,8 @@ export const POST = withValidation(v1AppointmentCreateSchema, async (body, reque
       .single();
 
     if (error) {
-      logger.warn("Operation failed", { context: "v1/appointments", error });
+      // F-A93-03: DB insert failure is an error, not a warning.
+      logger.error("Failed to create appointment in DB", { context: "v1/appointments", error });
       return apiInternalError("Failed to create appointment");
     }
 

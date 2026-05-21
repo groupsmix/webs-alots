@@ -86,7 +86,7 @@ export const POST = withValidation(chatRequestSchema, async (body, request: Next
         ...m,
         content:
           m.role === "user"
-            ? sanitizeUserInput(m.content).slice(0, MAX_MESSAGE_LENGTH)
+            ? `<user_input>\n${sanitizeUserInput(m.content).slice(0, MAX_MESSAGE_LENGTH)}\n</user_input>`
             : m.content.slice(0, MAX_MESSAGE_LENGTH),
       }));
 

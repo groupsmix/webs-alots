@@ -35,7 +35,7 @@ export const GET = withAuthAnyRole(async (request: NextRequest) => {
       features_config: data.features_config,
     });
   } catch (err) {
-    logger.warn("Operation failed", { context: "clinic-features", error: err });
+    logger.error("Failed to fetch clinic features", { context: "clinic-features", error: err });
     return apiInternalError("Failed to fetch clinic features");
   }
 });

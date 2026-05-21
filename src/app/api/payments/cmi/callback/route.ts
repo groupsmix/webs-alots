@@ -129,7 +129,8 @@ export async function POST(request: NextRequest) {
     // Validate callback fields before HMAC verification
     const fieldResult = cmiCallbackFieldsSchema.safeParse(params);
     if (!fieldResult.success) {
-      logger.warn("CMI callback fields failed validation", {
+      // F-A93-03: Callback validation failure is a security error (potential tampering).
+      logger.error("CMI callback fields failed schema validation", {
         context: "payments/cmi/callback",
         error: fieldResult.error.issues,
       });
@@ -193,6 +194,48 @@ export async function POST(request: NextRequest) {
           } catch {
             // Sentry unavailable
           }
+
+          return new NextResponse("ACTION=POSTAUTH", {
+            status: 200,
+            headers: { "Content-Type": "text/plain" },
+          });
+        }
+
+        // A155: AVS/CVV mismatch handling. CMI may return these signals.
+        // We implement a post-approval decision tree that rejects if AVS or CVV explicitly fails.
+        const rawParams = params as Record<string, string>;
+        const avsSignal = rawParams.avs || rawParams.AVS || rawParams['EXTRA.AVS'];
+        const cvvSignal = rawParams.cvv || rawParams.CVV || rawParams['EXTRA.CVV'] || rawParams.cvvStatus;
+
+        if (avsSignal === 'N' || cvvSignal === 'N') {
+          logger.error("CMI payment rejected due to AVS/CVV mismatch", {
+            context: "payments/cmi/callback",
+            paymentId: payment.id,
+            clinicId: payment.clinic_id,
+            avsSignal,
+            cvvSignal,
+          });
+
+          // Set tenant context for defense-in-depth RLS enforcement
+          if (payment.clinic_id) {
+            try {
+              await setTenantContext(supabase, payment.clinic_id);
+              logTenantContext(payment.clinic_id, "payments/cmi/callback:avs_cvv_reject");
+            } catch (tenantErr) {
+              logger.error("Failed to set tenant context for CMI AVS/CVV reject", {
+                context: "payments/cmi/callback",
+                clinicId: payment.clinic_id,
+                error: tenantErr,
+              });
+            }
+          }
+
+          // Mark as failed due to fraud/mismatch
+          await supabase
+            .from("payments")
+            .update({ status: PAYMENT_STATUS.FAILED })
+            .eq("id", payment.id)
+            .eq("clinic_id", payment.clinic_id);
 
           return new NextResponse("ACTION=POSTAUTH", {
             status: 200,

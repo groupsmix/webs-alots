@@ -46,9 +46,11 @@ export async function GET(request: NextRequest) {
     .range(offset, offset + limit - 1);
 
   if (search) {
-    // MED-05: Sanitize search input to prevent PostgREST filter injection.
-    // Strip %, _, comma, parens AND dots (PostgREST uses . as filter separator).
-    const sanitized = search.replace(/[%_,.()]/g, "");
+    // MED-05 / A46.3: Sanitize search input to prevent PostgREST filter injection.
+    // Strip PostgREST operator characters: %, _, comma, parens, dots, pipes (|),
+    // quotes, and other meta-chars. The `|` is the PostgREST `or` separator and
+    // would allow injection into the `.or(...)` call below.
+    const sanitized = search.replace(/[%_,.()|\[\]{}<>'"\\;:!@#$^&*+=~`]/g, "");
     if (sanitized.length > 0) {
       // B-01: Use `name` (and `name_ar` for Arabic search) instead of the
       // non-existent `full_name` column which caused a 500 on every request.
@@ -59,7 +61,8 @@ export async function GET(request: NextRequest) {
   const { data, count, error } = await query;
 
   if (error) {
-    logger.warn("Operation failed", { context: "v1/patients", error });
+    // F-A93-03: DB query failure is an error, not a warning.
+    logger.error("Failed to fetch patients from DB", { context: "v1/patients", error });
     return apiInternalError("Failed to fetch patients");
   }
 
@@ -97,7 +100,8 @@ export const POST = withValidation(v1PatientCreateSchema, async (body, request: 
       .single();
 
     if (error) {
-      logger.warn("Operation failed", { context: "v1/patients", error });
+      // F-A93-03: DB insert failure is an error, not a warning.
+      logger.error("Failed to insert patient into DB", { context: "v1/patients", error });
       return apiInternalError("Failed to create patient");
     }
 

@@ -10,7 +10,9 @@ import { defineConfig, devices } from "@playwright/test";
  */
 export default defineConfig({
   testDir: "./e2e",
-  fullyParallel: true,
+  // F-A87-02: Disabled fullyParallel because tests share the same local DB
+  // and currently lack tenant isolation boundaries in seed data.
+  fullyParallel: false,
   forbidOnly: !!process.env.CI,
   // A87-F01: Retries in CI hide flaky tests and silently mask real bugs.
   // Set to 0 so every failure is visible. If a spec is known-flaky, quarantine
