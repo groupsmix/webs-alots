@@ -43,9 +43,9 @@ async function handleUpdateProfile(
   const { data: updatedProfile, error: updateError } = await adminClient
     .from("users")
     .update({
-      full_name: body.full_name,
-      email: body.email,
-      phone: body.phone,
+      full_name: body.full_name as string,
+      email: body.email as string | null,
+      phone: body.phone as string | null,
       date_of_birth: body.date_of_birth,
       gender: body.gender,
       insurance_type: body.insurance_type,

@@ -68,7 +68,6 @@ export const POST = withAuthValidation(createOrderSchema, async (body, _request,
   const { data, error } = await auth.supabase
     .from("orders")
     .insert({
-      // @ts-expect-error -- Supabase generated types lag behind actual DB schema
       clinic_id: clinicId,
       reservation_id: body.reservation_id ?? null,
       table_id: body.table_id ?? null,
@@ -78,7 +77,7 @@ export const POST = withAuthValidation(createOrderSchema, async (body, _request,
       total,
       status: "pending",
       order_source: body.order_source,
-    })
+    } as never)
     .select()
     .single();
 
