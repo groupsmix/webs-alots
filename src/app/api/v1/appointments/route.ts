@@ -64,7 +64,7 @@ export async function GET(request: NextRequest) {
   // over-fetching sensitive fields (notes, metadata) via public API.
   let query = supabase
     .from("appointments")
-    .select("id, clinic_id, doctor_id, patient_id, service_id, appointment_date, start_time, end_time, slot_duration, status, type, is_first_visit, has_insurance, insurance_type, created_at, updated_at")
+    .select("id, clinic_id, doctor_id, patient_id, service_id, appointment_date, start_time, end_time, slot_start, slot_end, status, is_first_visit, insurance_flag, is_walk_in, is_emergency, booking_source, source, created_at, updated_at")
     .eq("clinic_id", auth.clinicId)
     .order("appointment_date", { ascending: false })
     .order("start_time", { ascending: false })
