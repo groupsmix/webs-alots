@@ -47,7 +47,9 @@ async function fetchRows<T>(
   },
 ): Promise<T[]> {
   const supabase = createClient();
-  let q = supabase.from(table).select(opts?.select ?? "*");
+  // A23-01: Default to "*" only as a fallback — callers should always
+  // supply an explicit `select` to avoid over-fetching sensitive columns.
+  let q = supabase.from(table).select(opts?.select ?? "id, name, clinic_id, created_at");
   if (opts?.eq) {
     for (const [col, val] of opts.eq) {
       q = q.eq(col, val as string);

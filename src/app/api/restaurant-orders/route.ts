@@ -34,10 +34,9 @@ export const GET = withAuth(async (request, { supabase, profile }) => {
 
     let query = supabase
       .from("restaurant_orders")
-      .select("id, clinic_id, table_id, appointment_id, items, subtotal, tax, total, status, notes, created_at, updated_at")
+      .select("id, clinic_id, table_id, status, items, total, notes, created_at, updated_at")
       .eq("clinic_id", profile.clinic_id)
-      .order("created_at", { ascending: false })
-      .limit(200);
+      .order("created_at", { ascending: false });
 
     if (status) {
       query = query.eq("status", status);

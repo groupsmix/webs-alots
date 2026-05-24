@@ -29,10 +29,9 @@ export const GET = withAuth(async (_request: NextRequest, auth: AuthContext) => 
 
   const { data, error } = await auth.supabase
     .from("restaurant_tables")
-    .select("id, clinic_id, name, capacity, zone, is_active, qr_code_url, sort_order, created_at, updated_at")
+    .select("id, clinic_id, table_number, capacity, status, location, created_at")
     .eq("clinic_id", clinicId)
-    .order("sort_order", { ascending: true })
-    .limit(200);
+    .order("sort_order", { ascending: true });
 
   if (error) return apiSupabaseError(error, "restaurant-tables/list");
 

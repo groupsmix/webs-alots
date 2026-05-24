@@ -38,10 +38,9 @@ export const GET = withAuth(async (request: NextRequest, auth: AuthContext) => {
 
   let query = auth.supabase
     .from("orders")
-    .select("id, clinic_id, reservation_id, table_id, items, subtotal, tax_amount, total, status, order_source, created_at, updated_at")
+    .select("id, clinic_id, table_id, status, items, total, notes, customer_name, created_at, updated_at")
     .eq("clinic_id", clinicId)
-    .order("created_at", { ascending: false })
-    .limit(200);
+    .order("created_at", { ascending: false });
 
   if (status) {
     query = query.eq("status", status);
