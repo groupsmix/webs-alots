@@ -2,22 +2,22 @@
 # This file ensures JWT TTL, MFA, and auth settings are version-controlled
 # rather than dashboard-only.
 #
-# Reference: https://supabase.com/docs/guides/cli/config
+# Reference: https://supabase.com/docs/guides/local-development/cli/config
 
-[project]
-id = "" # Fill with Supabase project ID
+project_id = "oltigo-health"
 
 [auth]
 # JWT expiry — 1 hour (3600s). Short-lived to limit token theft window.
 jwt_expiry = 3600
 
-# Enable email confirmations
+# Allow new signups
 enable_signup = true
-enable_email_autoconfirm = false
+
+# Password requirements
+minimum_password_length = 8
 
 # MFA — enable TOTP for doctors and admins
 [auth.mfa]
-enabled = true
 # Maximum number of enrolled MFA factors per user
 max_enrolled_factors = 5
 
@@ -32,20 +32,22 @@ email_sent = 30
 # Max SMS sends per hour
 sms_sent = 10
 
-# Password requirements
-[auth.password]
-min_length = 8
+# Email settings
+[auth.email]
+# Require email confirmation
+autoconfirm = false
 
 # Session settings
-[auth.sessions]
-# Inactivity timeout — 30 minutes (matches session-timeout-warning.tsx)
-inactivity_timeout = "30m"
+# [auth.sessions]
+# timebox = "24h"
+# inactivity_timeout = "30m"
 
 [db]
-# Statement timeout for queries (prevents runaway queries)
-statement_timeout = "30s"
+# The database major version to use
+major_version = 17
 
 [db.pooler]
+enabled = true
 # Connection pool mode
 pool_mode = "transaction"
 default_pool_size = 15
