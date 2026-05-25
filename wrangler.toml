@@ -60,8 +60,8 @@ NODE_ENV = "production"
 RATE_LIMIT_BACKEND = "supabase"
 
 # ── Limits ────────────────────────────────────────────────────────────
-# [limits]
-# cpu_ms = 50  # Default: 50ms CPU time per request (Workers Paid plan)
+[limits]
+cpu_ms = 50  # Default: 50ms CPU time per request (Workers Paid plan)
 
 # ── Observability ─────────────────────────────────────────────────────
 # A40.2: Enable Workers Logs for request-rate, 4xx-rate, and cold-start

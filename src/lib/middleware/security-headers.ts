@@ -296,16 +296,11 @@ export function applyAllSecurityHeaders(
   if (process.env.NODE_ENV !== "development") {
     response.headers.set("Expect-CT", "max-age=86400, enforce");
   }
-  // A56.9: Spectre-class isolation headers
-  response.headers.set("Cross-Origin-Opener-Policy", "same-origin");
-  response.headers.set("Cross-Origin-Embedder-Policy", "credentialless");
-  response.headers.set("Cross-Origin-Resource-Policy", "same-origin");
-
-  // F-A56-9: Cross-Origin isolation headers for Spectre mitigation.
-  // COOP prevents cross-origin windows from getting a reference to this window.
-  // COEP requires all sub-resources to opt-in via CORS or CORP.
-  // CORP restricts who can load this resource cross-origin.
-  // Using "same-origin-allow-popups" for COOP to avoid breaking OAuth popups.
+  // A56.9 / F-A56-9: Spectre-class isolation headers.
+  // COOP: "same-origin-allow-popups" avoids breaking OAuth popups while still
+  // preventing cross-origin windows from obtaining a reference to this window.
+  // COEP: "credentialless" requires sub-resources to opt-in via CORS/CORP.
+  // CORP: "same-origin" restricts who can load this resource cross-origin.
   response.headers.set("Cross-Origin-Opener-Policy", "same-origin-allow-popups");
   response.headers.set("Cross-Origin-Embedder-Policy", "credentialless");
   response.headers.set("Cross-Origin-Resource-Policy", "same-origin");

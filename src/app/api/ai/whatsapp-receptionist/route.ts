@@ -21,6 +21,7 @@ import {
   apiRateLimited,
 } from "@/lib/api-response";
 import { withValidation } from "@/lib/api-validate";
+import { logAuditEvent } from "@/lib/audit-log";
 import { logger } from "@/lib/logger";
 import { webhookLimiter } from "@/lib/rate-limit";
 import { createAdminClient } from "@/lib/supabase-server";
@@ -310,6 +311,17 @@ async function handleIncomingMessage(
   // For all other intents, generate an AI response
   const aiReply = await generateAIResponse(text, ctx);
   await sendTextMessage(from, aiReply);
+
+  // F-AI-08: Audit log AI invocation
+  const adminClient = createAdminClient();
+  void logAuditEvent({
+    supabase: adminClient,
+    action: "ai_whatsapp_receptionist_invocation",
+    type: "admin",
+    clinicId,
+    description: `WhatsApp AI response to ${contactName} (intent: ${intent})`,
+    metadata: { intent, contact_name: contactName },
+  }).catch(() => {});
 
   // Log the interaction for analytics
   try {

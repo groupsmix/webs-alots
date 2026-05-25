@@ -17,6 +17,7 @@ import { resolveAIConfig } from "@/lib/ai/config";
 import { sanitizeUntrustedText } from "@/lib/ai/sanitize";
 import { apiSuccess, apiError, apiRateLimited, apiInternalError } from "@/lib/api-response";
 import { withAuthValidation } from "@/lib/api-validate";
+import { logAuditEvent } from "@/lib/audit-log";
 import { checkAllInteractions, type InteractionAlert } from "@/lib/check-interactions";
 import { logger } from "@/lib/logger";
 import { aiDrugCheckLimiter } from "@/lib/rate-limit";
@@ -229,6 +230,22 @@ export const POST = withAuthValidation(
 
         aiEnhanced = true;
       }
+    }
+
+    // F-AI-08: Audit log AI invocation (fire-and-forget)
+    if (aiEnhanced) {
+      void logAuditEvent({
+        supabase,
+        action: "ai_drug_check_invocation",
+        type: "admin",
+        clinicId,
+        actor: doctorId,
+        description: "AI-enhanced drug interaction check",
+        metadata: {
+          medications: data.medications,
+          alertCount: localResult.alerts.length,
+        },
+      }).catch(() => {});
     }
 
     // Log AI usage for billing (fire-and-forget)
