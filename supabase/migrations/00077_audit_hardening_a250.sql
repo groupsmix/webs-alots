@@ -25,6 +25,37 @@ DO $$ BEGIN
 END $$;
 
 -- ============================================================================
+-- audit_logs table (required by F-A167 triggers and F-A188 immutability)
+-- Stores row-level change history for money tables (payments, invoices).
+-- Separate from activity_logs (application-level audit trail).
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS audit_logs (
+  id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  table_name    TEXT NOT NULL,
+  record_id     TEXT NOT NULL,
+  action        TEXT NOT NULL,
+  old_data      JSONB,
+  new_data      JSONB,
+  changed_by    TEXT NOT NULL DEFAULT 'system',
+  clinic_id     UUID,
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_audit_logs_clinic_id ON audit_logs(clinic_id);
+CREATE INDEX IF NOT EXISTS idx_audit_logs_table_record ON audit_logs(table_name, record_id);
+
+ALTER TABLE audit_logs ENABLE ROW LEVEL SECURITY;
+
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies WHERE tablename = 'audit_logs' AND policyname = 'audit_logs_service_insert'
+  ) THEN
+    CREATE POLICY audit_logs_service_insert ON audit_logs
+      FOR INSERT TO service_role WITH CHECK (true);
+  END IF;
+END $$;
+
+-- ============================================================================
 -- F-A167: Audit triggers on money tables
 -- ============================================================================
 CREATE OR REPLACE FUNCTION audit_money_change()
