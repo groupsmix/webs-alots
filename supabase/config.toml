@@ -34,8 +34,8 @@ sms_sent = 10
 
 # Email settings
 [auth.email]
-# Require email confirmation
-autoconfirm = false
+# Require email confirmation before signing in
+enable_confirmations = true
 
 # Session settings
 # [auth.sessions]
