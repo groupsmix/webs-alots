@@ -3,6 +3,7 @@ import { resolveAIConfig } from "@/lib/ai/config";
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { apiSuccess, apiError, apiRateLimited } from "@/lib/api-response";
 import { withValidation } from "@/lib/api-validate";
+import { logAuditEvent } from "@/lib/audit-log";
 import { fetchChatbotContext, buildSystemPrompt, getBasicResponse } from "@/lib/chatbot-data";
 import { logger } from "@/lib/logger";
 import { createClient } from "@/lib/supabase-server";
@@ -162,6 +163,16 @@ export const POST = withValidation(chatRequestSchema, async (body, request: Next
         const cfData = (await cfResponse.json()) as { result?: { response?: string } };
         const content = cfData.result?.response;
         if (content) {
+          // F-AI-08: Audit log AI invocation
+          void logAuditEvent({
+            supabase: supabaseForAuth,
+            action: "ai_chat_invocation",
+            type: "admin",
+            clinicId,
+            actor: chatUser.id,
+            description: "Chatbot AI response (smart tier)",
+            metadata: { tier: "smart", model: "llama-3.1-8b-instruct" },
+          }).catch(() => {});
           return apiSuccess({
             message: { role: "assistant" as const, content },
           });
@@ -223,6 +234,17 @@ export const POST = withValidation(chatRequestSchema, async (body, request: Next
         message: { role: "assistant" as const, content: reply },
       });
     }
+
+    // F-AI-08: Audit log AI invocation (advanced tier)
+    void logAuditEvent({
+      supabase: supabaseForAuth,
+      action: "ai_chat_invocation",
+      type: "admin",
+      clinicId,
+      actor: chatUser.id,
+      description: "Chatbot AI response (advanced tier)",
+      metadata: { tier: "advanced", model },
+    }).catch(() => {});
 
     // Stream the response back to the client
     const stream = new ReadableStream({
