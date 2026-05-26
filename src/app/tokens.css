@@ -118,3 +118,44 @@
   /* ── Shadows (minimal — one allowed for sticky bars) ── */
   --shadow-sticky: 0 1px 0 rgba(11, 15, 20, 0.06);
 }
+
+/* ── Dark mode (night-shift navy) ── */
+[data-theme="dark"] {
+  --ink: #E6EDF3;
+  --bone: #161B22;
+  --bone-2: #1C2128;
+  --rule: rgba(230, 237, 243, 0.10);
+  --ink-80: rgba(230, 237, 243, 0.80);
+  --ink-70: rgba(230, 237, 243, 0.70);
+  --ink-60: rgba(230, 237, 243, 0.60);
+  --ink-20: rgba(230, 237, 243, 0.20);
+  --surgical-sage-light: rgba(91, 138, 114, 0.18);
+  --surgical-sage-halo: rgba(91, 138, 114, 0.30);
+  --carnet-ochre-light: rgba(196, 162, 101, 0.20);
+  --lab-linen: #0D1117;
+  --night-navy: #0D1117;
+  --night-navy-surface: #161B22;
+  --graphite: #E6EDF3;
+  --shadow-sticky: 0 1px 0 rgba(230, 237, 243, 0.06);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --ink: #E6EDF3;
+    --bone: #161B22;
+    --bone-2: #1C2128;
+    --rule: rgba(230, 237, 243, 0.10);
+    --ink-80: rgba(230, 237, 243, 0.80);
+    --ink-70: rgba(230, 237, 243, 0.70);
+    --ink-60: rgba(230, 237, 243, 0.60);
+    --ink-20: rgba(230, 237, 243, 0.20);
+    --surgical-sage-light: rgba(91, 138, 114, 0.18);
+    --surgical-sage-halo: rgba(91, 138, 114, 0.30);
+    --carnet-ochre-light: rgba(196, 162, 101, 0.20);
+    --lab-linen: #0D1117;
+    --night-navy: #0D1117;
+    --night-navy-surface: #161B22;
+    --graphite: #E6EDF3;
+    --shadow-sticky: 0 1px 0 rgba(230, 237, 243, 0.06);
+  }
+}

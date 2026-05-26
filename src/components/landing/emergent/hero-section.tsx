@@ -144,7 +144,7 @@ export function EmergentHero({ rtl }: { rtl: boolean }) {
           <div
             className="relative rounded-xl border p-5"
             style={{
-              backgroundColor: "white",
+              backgroundColor: "var(--bone)",
               borderColor: "var(--rule)",
               boxShadow: "inset 0 2px 4px rgba(0,0,0,0.04)",
             }}
