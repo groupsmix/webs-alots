@@ -19,28 +19,38 @@ jobs:
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
       - name: Fetch Latest Encrypted Backup
+        # F-03: Aligned to use R2_BACKUP_BUCKET (same as backup.yml) and
+        # search the backups/daily/ prefix where nightly backups are stored.
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
           AWS_REGION: auto
-          R2_BUCKET: ${{ secrets.R2_BUCKET }}
+          R2_BACKUP_BUCKET: ${{ secrets.R2_BACKUP_BUCKET }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
-          aws s3api list-objects-v2 --bucket "$R2_BUCKET" \
-            --endpoint-url "https://${CLOUDFLARE_ACCOUNT_ID}.r2.cloudflarestorage.com" \
-            --query "sort_by(Contents, &LastModified)[-1].Key" \
-            --output text > latest_key.txt
-          
-          LATEST_KEY=$(cat latest_key.txt)
-          echo "Latest backup key: $LATEST_KEY"
-          
-          if [[ "$LATEST_KEY" == "None" || -z "$LATEST_KEY" ]]; then
+          R2_ENDPOINT="https://${CLOUDFLARE_ACCOUNT_ID}.r2.cloudflarestorage.com"
+
+          # Look in backups/daily/ first (matches backup.yml upload path),
+          # then fall back to backups/weekly/ and backups/monthly/.
+          LATEST=""
+          for PREFIX in daily weekly monthly; do
+            LATEST=$(aws s3 ls "s3://${R2_BACKUP_BUCKET}/backups/${PREFIX}/" \
+              --endpoint-url "${R2_ENDPOINT}" 2>/dev/null \
+              | sort -r | head -1 | awk '{print $4}' || true)
+            if [ -n "${LATEST}" ]; then
+              LATEST_PATH="backups/${PREFIX}/${LATEST}"
+              break
+            fi
+          done
+
+          if [ -z "${LATEST}" ]; then
             echo "::error::No backups found in R2 bucket."
             exit 1
           fi
 
-          aws s3 cp "s3://${R2_BUCKET}/${LATEST_KEY}" latest_backup.sql.gz.gpg \
-            --endpoint-url "https://${CLOUDFLARE_ACCOUNT_ID}.r2.cloudflarestorage.com"
+          echo "Downloading: ${LATEST_PATH}"
+          aws s3 cp "s3://${R2_BACKUP_BUCKET}/${LATEST_PATH}" latest_backup.sql.gz.gpg \
+            --endpoint-url "${R2_ENDPOINT}"
 
       - name: Decrypt and Decompress Backup
         env:
