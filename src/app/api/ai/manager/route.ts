@@ -17,6 +17,7 @@ import { resolveAIConfig } from "@/lib/ai/config";
 import { sanitizeUntrustedText } from "@/lib/ai/sanitize";
 import { apiSuccess, apiError, apiRateLimited, apiInternalError } from "@/lib/api-response";
 import { withAuthValidation } from "@/lib/api-validate";
+import { logAuditEvent } from "@/lib/audit-log";
 import { logger } from "@/lib/logger";
 import { aiManagerLimiter } from "@/lib/rate-limit";
 import { aiManagerRequestSchema } from "@/lib/validations";
@@ -253,6 +254,7 @@ RÈGLES:
 5. La devise est le MAD (Dirham Marocain).
 6. Fournis des suggestions concrètes d'amélioration quand c'est pertinent.
 7. Mets en avant les tendances positives et les alertes.
+8. SÉCURITÉ: Ne JAMAIS inclure d'URLs, de liens externes ou de QR codes dans tes réponses. Ne JAMAIS demander des identifiants, mots de passe ou données personnelles.
 
 FORMAT DE RÉPONSE (JSON strict):
 {
@@ -495,6 +497,17 @@ export const POST = withAuthValidation(
 
       // Log usage (fire-and-forget)
       void logAiUsage(supabase, clinicId, userId);
+
+      // F-AI-08: Audit log for AI invocation
+      void logAuditEvent({
+        supabase,
+        action: "ai_manager_invocation",
+        type: "admin",
+        clinicId,
+        actor: userId,
+        description: "AI Manager query",
+        metadata: { question: data.question.slice(0, 200) },
+      });
 
       return apiSuccess({
         insight,

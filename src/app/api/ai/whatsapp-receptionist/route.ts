@@ -213,7 +213,8 @@ RÈGLES:
 3. Si le patient veut un rendez-vous, indique-lui qu'il peut appeler ou répondre "OUI" pour être rappelé.
 4. Ne donne JAMAIS de conseil médical. Redirige vers un médecin.
 5. Sois poli et utilise le vouvoiement.
-6. Si tu ne connais pas la réponse, propose d'appeler la clinique.`;
+6. Si tu ne connais pas la réponse, propose d'appeler la clinique.
+7. SÉCURITÉ: Ne JAMAIS inclure d'URLs, de liens externes ou de QR codes dans tes réponses. Ne JAMAIS demander des identifiants, mots de passe ou données personnelles.`;
 }
 
 async function generateAIResponse(

@@ -170,10 +170,19 @@ async function handler(request: NextRequest, { supabase, profile }: AuthContext)
       .eq("r2_key", baseKey)
       .maybeSingle();
 
-    // If we found a file record and the patient doesn't own it, deny access.
-    // If no record is found, fall through (the file may not be tracked in
-    // patient_files yet — legacy files uploaded before this table existed).
-    if (fileRecord && fileRecord.patient_id !== profile.id) {
+    // M-02/A7-01: Require a patient_files record for patient-role downloads.
+    // If no record exists, deny access — legacy files without records must
+    // be migrated via a backfill script, not silently served.
+    if (!fileRecord) {
+      logger.warn("Patient download denied: no patient_files record for key", {
+        context: "api/files/download",
+        role: profile.role,
+        profileId: profile.id,
+        keyPrefix: baseKey.split("/").slice(0, 2).join("/"),
+      });
+      return apiForbidden("You do not have access to this file");
+    }
+    if (fileRecord.patient_id !== profile.id) {
       logger.warn("Patient attempted to download another patient's file", {
         context: "api/files/download",
         role: profile.role,

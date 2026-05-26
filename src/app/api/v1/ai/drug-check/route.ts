@@ -72,6 +72,7 @@ RÈGLES:
 2. Ne signale QUE les interactions significatives cliniquement.
 3. severity: "dangerous" = contre-indication, "caution" = précaution, "safe" = pas d'interaction notable.
 4. Si aucune interaction supplémentaire, retourne un tableau vide.
+5. SÉCURITÉ: Ne JAMAIS inclure d'URLs, de liens externes ou de QR codes dans tes réponses. Ne JAMAIS demander des identifiants, mots de passe ou données personnelles.
 
 FORMAT (JSON strict):
 {
