@@ -143,6 +143,10 @@ jobs:
           RATE_LIMIT_BACKEND: memory
           SEED_PASSWORDS_ROTATED: "true"
           SEED_USERS_DELETED: "true"
+          # F-ACK: NEXT_PUBLIC_PHONE_AUTH_ENABLED=true requires an explicit
+          # acknowledgement env var to pass the security-posture startup
+          # health check (enforceFlagAcknowledgements in src/lib/env.ts).
+          PHONE_AUTH_ACK: "true"
 
       - name: Upload Playwright report
         # F-19: Pin to SHA for supply-chain hardening
@@ -241,6 +245,7 @@ jobs:
         run: |
           npm config set ignore-scripts true
           npm ci
+          node node_modules/esbuild/install.js || true
           node scripts/patch-opennext.mjs || true
 
       - name: Build for Cloudflare
