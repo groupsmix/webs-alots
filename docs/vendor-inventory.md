@@ -49,21 +49,27 @@
 
 ## DPA Tracker
 
-| Vendor | DPA Required | DPA Signed | SCCs Included | Expiry | Review Date |
-|--------|-------------|------------|---------------|--------|-------------|
-| Supabase | Yes | Pending | Yes (US sub-processors) | — | — |
-| Cloudflare | Yes | Pending | Yes (global edge) | — | — |
-| GitHub | Yes | Pending | Yes (US) | — | — |
-| Stripe | Yes | Pending | Yes (US) | — | — |
-| Meta (WhatsApp) | Yes | Pending | Yes (US) | — | — |
-| Twilio | Yes | Pending | Yes (US) | — | — |
-| Resend | Yes | Pending | Yes (US) | — | — |
-| Sentry | Yes | Pending | Yes (US) | — | — |
-| OpenAI | Yes | Pending | Yes (US) | — | — |
+All SaaS vendors below provide standard Data Processing Addendums (DPAs) that are
+accepted by agreeing to their Terms of Service or via their online DPA portals.
+The acceptance links below should be visited by the Oltigo Health account holder
+to formally execute each DPA. Most include Standard Contractual Clauses (SCCs)
+by default for EU/international data transfers.
+
+| Vendor | DPA Required | DPA Status | SCCs Included | Acceptance Method | Review Date |
+|--------|-------------|------------|---------------|-------------------|-------------|
+| Supabase | Yes | **Accept online** | Yes (US sub-processors) | [Supabase DPA](https://supabase.com/legal/dpa) — click-through on dashboard or email legal@supabase.io | — |
+| Cloudflare | Yes | **Accept online** | Yes (global edge) | [Cloudflare DPA](https://www.cloudflare.com/cloudflare-customer-dpa/) — auto-accepted with TOS | — |
+| GitHub | Yes | **Accept online** | Yes (US) | [GitHub DPA](https://docs.github.com/en/site-policy/privacy-policies/github-data-protection-agreement) — accepted via org settings | — |
+| Stripe | Yes | **Accept online** | Yes (US) | [Stripe DPA](https://stripe.com/legal/dpa) — auto-included in Stripe agreement | — |
+| Meta (WhatsApp) | Yes | **Accept online** | Yes (US) | [Meta Data Processing Terms](https://www.facebook.com/legal/terms/dataprocessing) — accepted during WABA setup | — |
+| Twilio | Yes | **Accept online** | Yes (US) | [Twilio DPA](https://www.twilio.com/legal/data-protection-addendum) — click-through or email privacy@twilio.com | — |
+| Resend | Yes | **Accept online** | Yes (US) | [Resend DPA](https://resend.com/legal/dpa) — email support@resend.com to countersign | — |
+| Sentry | Yes | **Accept online** | Yes (US) | [Sentry DPA](https://sentry.io/legal/dpa/) — click-through in org settings | — |
+| OpenAI | Yes | **Accept online** | Yes (US) | [OpenAI DPA](https://openai.com/policies/data-processing-addendum) — accepted via API TOS; request countersigned copy via privacy@openai.com | — |
 | Plausible | No (no PII) | N/A | N/A | — | — |
 | CMI | No (local) | N/A | N/A | — | — |
 
-> **Action required:** Sign DPAs with all "Pending" vendors before production launch. Use template in `docs/compliance/dpa-template.md`. For US-based vendors, ensure Standard Contractual Clauses (SCCs) are included per EU Commission Decision 2021/914 (adopted by Morocco under CNDP guidance).
+> **Action required:** The account holder must visit each acceptance link above and formally accept/countersign the DPA from the Oltigo Health account. For US-based vendors, verify that Standard Contractual Clauses (SCCs) are included per EU Commission Decision 2021/914 (adopted by Morocco under CNDP guidance). After accepting each DPA, update this table: change status to "Signed YYYY-MM-DD" and fill in the Review Date (annual).
 
 ---
 
