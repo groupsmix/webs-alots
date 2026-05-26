@@ -18,6 +18,7 @@ const updateTableSchema = z.object({
   capacity: z.number().int().positive().max(100).optional(),
   zone: z.string().max(200).nullable().optional(),
   is_active: z.boolean().optional(),
+  sort_order: z.number().int().min(0).optional(),
 });
 
 /** Extract the table ID from the URL path: /api/restaurant-tables/[id] */
@@ -36,7 +37,7 @@ export const GET = withAuth(async (request: NextRequest, auth: AuthContext) => {
 
   const { data, error } = await auth.supabase
     .from("restaurant_tables")
-    .select("id, clinic_id, name, capacity, zone, is_active, qr_code_url, created_at, updated_at")
+    .select("id, clinic_id, name, capacity, zone, is_active, qr_code_url, sort_order, created_at, updated_at")
     .eq("id", id)
     .eq("clinic_id", clinicId)
     .single();

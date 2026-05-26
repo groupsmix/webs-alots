@@ -17,6 +17,7 @@ const createTableSchema = z.object({
   capacity: z.number().int().positive().max(100),
   zone: z.string().max(200).optional(),
   is_active: z.boolean().optional().default(true),
+  sort_order: z.number().int().min(0).optional().default(0),
 });
 
 /**
@@ -28,9 +29,10 @@ export const GET = withAuth(async (_request: NextRequest, auth: AuthContext) => 
 
   const { data, error } = await auth.supabase
     .from("restaurant_tables")
-    .select("id, clinic_id, name, capacity, zone, is_active, qr_code_url, created_at, updated_at")
+    .select("id, clinic_id, name, capacity, zone, is_active, qr_code_url, sort_order, created_at, updated_at")
     .eq("clinic_id", clinicId)
-    .order("name", { ascending: true });
+    .order("sort_order", { ascending: true })
+    .limit(200);
 
   if (error) return apiSupabaseError(error, "restaurant-tables/list");
 
@@ -48,12 +50,14 @@ export const POST = withAuthValidation(createTableSchema, async (body, _request,
 
   const { data, error } = await auth.supabase
     .from("restaurant_tables")
+    // @ts-expect-error -- Supabase generated types lag behind actual DB schema
     .insert({
       clinic_id: clinicId,
       name: body.name,
       capacity: body.capacity,
       zone: body.zone ?? null,
       is_active: body.is_active,
+      sort_order: body.sort_order,
     })
     .select()
     .single();

@@ -40,7 +40,7 @@ export const GET = withAuth(async (request: NextRequest, auth: AuthContext) => {
 
   const { data, error } = await auth.supabase
     .from("orders")
-    .select("id, clinic_id, table_id, reservation_id, items, total, status, notes, created_at, updated_at")
+    .select("id, clinic_id, reservation_id, table_id, items, subtotal, tax_amount, total, status, order_source, created_at, updated_at")
     .eq("id", id)
     .eq("clinic_id", clinicId)
     .single();
@@ -73,8 +73,9 @@ export const PATCH = withAuth(async (request: NextRequest, auth: AuthContext) =>
   if (result.data.items) {
     updateData.items = result.data.items;
     const subtotal = result.data.items.reduce((sum, item) => sum + item.price * item.quantity, 0);
-    const taxAmount = Math.round(subtotal * 0.20 * 100) / 100;
-    updateData.total = subtotal + taxAmount;
+    updateData.subtotal = subtotal;
+    updateData.tax_amount = Math.round(subtotal * 0.20 * 100) / 100;
+    updateData.total = subtotal + (updateData.tax_amount as number);
   }
 
   const { data, error } = await auth.supabase

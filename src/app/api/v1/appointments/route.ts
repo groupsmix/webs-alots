@@ -60,11 +60,9 @@ export async function GET(request: NextRequest) {
 
   // Fetch limit+1 so we can tell whether another page exists without an
   // extra round-trip or a COUNT query.
-  // A23-01: Explicit column list instead of select("*") to avoid
-  // over-fetching sensitive fields (notes, metadata) via public API.
   let query = supabase
     .from("appointments")
-    .select("id, clinic_id, doctor_id, patient_id, service_id, appointment_date, start_time, end_time, slot_start, slot_end, status, is_first_visit, insurance_flag, is_walk_in, is_emergency, booking_source, source, created_at, updated_at")
+    .select("id, clinic_id, patient_id, doctor_id, service_id, appointment_date, start_time, end_time, slot_start, slot_end, status, is_first_visit, insurance_flag, is_emergency, is_walk_in, booking_source, source, notes, cancellation_reason, cancelled_at, recurrence_group_id, recurrence_index, recurrence_pattern, rescheduled_from, created_at, updated_at")
     .eq("clinic_id", auth.clinicId)
     .order("appointment_date", { ascending: false })
     .order("start_time", { ascending: false })

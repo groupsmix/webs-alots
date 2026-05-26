@@ -53,6 +53,7 @@ export const GET = withAuth(async (request, { supabase, profile }) => {
       .select("id, clinic_id, owner_id, name, species, breed, weight_kg, date_of_birth, photo_url, notes, is_active, created_at, updated_at")
       .eq("clinic_id", profile.clinic_id ?? "")
       .eq("is_active", true)
+      .limit(100)
       .order("created_at", { ascending: false });
 
     if (ownerId) {

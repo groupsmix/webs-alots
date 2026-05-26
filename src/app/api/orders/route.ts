@@ -38,9 +38,10 @@ export const GET = withAuth(async (request: NextRequest, auth: AuthContext) => {
 
   let query = auth.supabase
     .from("orders")
-    .select("id, clinic_id, table_id, reservation_id, items, total, status, notes, created_at, updated_at")
+    .select("id, clinic_id, reservation_id, table_id, items, subtotal, tax_amount, total, status, order_source, created_at, updated_at")
     .eq("clinic_id", clinicId)
-    .order("created_at", { ascending: false });
+    .order("created_at", { ascending: false })
+    .limit(200);
 
   if (status) {
     query = query.eq("status", status);
@@ -68,13 +69,16 @@ export const POST = withAuthValidation(createOrderSchema, async (body, _request,
   const { data, error } = await auth.supabase
     .from("orders")
     .insert({
+      // @ts-expect-error -- Supabase generated types lag behind actual DB schema
       clinic_id: clinicId,
       reservation_id: body.reservation_id ?? null,
       table_id: body.table_id ?? null,
       items: body.items,
+      subtotal,
+      tax_amount: taxAmount,
       total,
       status: "pending",
-      notes: null,
+      order_source: body.order_source,
     })
     .select()
     .single();
