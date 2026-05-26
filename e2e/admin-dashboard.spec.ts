@@ -10,35 +10,34 @@ import { test, expect } from "@playwright/test";
  */
 
 test.describe("Admin dashboard — access control", () => {
-  test("dashboard redirects unauthenticated users to login", async ({ page }) => {
-    const response = await page.goto("/dashboard");
-    // Should either redirect to login or show a 401/403
+  test("admin dashboard redirects unauthenticated users to login", async ({ page }) => {
+    const response = await page.goto("/admin/dashboard");
     const url = page.url();
     const isRedirected = url.includes("/login") || url.includes("/auth");
     const isBlocked = response?.status() === 401 || response?.status() === 403;
-    expect(isRedirected || isBlocked || response?.status() === 200).toBeTruthy();
+    expect(isRedirected || isBlocked).toBeTruthy();
   });
 
   test("admin patients page requires authentication", async ({ page }) => {
-    const response = await page.goto("/dashboard/patients");
+    const response = await page.goto("/admin/patients");
     const url = page.url();
     const isProtected =
       url.includes("/login") ||
       url.includes("/auth") ||
       response?.status() === 401 ||
       response?.status() === 403;
-    expect(isProtected || response?.status() === 200).toBeTruthy();
+    expect(isProtected).toBeTruthy();
   });
 
   test("admin appointments page requires authentication", async ({ page }) => {
-    const response = await page.goto("/dashboard/appointments");
+    const response = await page.goto("/admin/appointments");
     const url = page.url();
     const isProtected =
       url.includes("/login") ||
       url.includes("/auth") ||
       response?.status() === 401 ||
       response?.status() === 403;
-    expect(isProtected || response?.status() === 200).toBeTruthy();
+    expect(isProtected).toBeTruthy();
   });
 });
 

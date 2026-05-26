@@ -26,7 +26,7 @@ const PUBLIC_ROUTES = [
 const PUBLIC_PREFIXES = [
   "/pharmacy",
   "/dentist",
-  "/lab",
+  "/lab/",
 ];
 
 /** Protected route prefixes (require authentication) */

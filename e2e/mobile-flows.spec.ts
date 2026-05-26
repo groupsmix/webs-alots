@@ -40,7 +40,7 @@ test.describe("Mobile — critical page rendering", () => {
   });
 
   test("booking page renders on mobile", async ({ page }) => {
-    const response = await page.goto("/booking");
+    const response = await page.goto("/book");
     expect(response?.status()).toBeLessThan(500);
     await expect(page.locator("body")).not.toBeEmpty();
 
@@ -88,18 +88,23 @@ test.describe("Mobile — form interactions", () => {
   test("login form can be filled and submitted on mobile", async ({
     page,
   }) => {
-    await page.goto("/login");
+    // Use trailing slash to avoid 308 redirect mid-test
+    await page.goto("/login/");
+    await page.waitForLoadState("networkidle");
 
     const emailInput = page.locator('input[type="email"], input[name="email"]');
-    const passwordInput = page.locator('input[type="password"], input[name="password"]');
+    const passwordInput = page.locator(
+      'input[type="password"], input[name="password"]',
+    );
 
-    // Tap and fill email
-    await emailInput.tap();
+    // Fill email
+    await emailInput.click();
     await emailInput.fill("test@example.com");
     await expect(emailInput).toHaveValue("test@example.com");
 
-    // Tap and fill password
-    await passwordInput.tap();
+    // Fill password (wait for field to be ready after any re-render)
+    await expect(passwordInput).toBeVisible();
+    await passwordInput.click();
     await passwordInput.fill("password123");
     await expect(passwordInput).toHaveValue("password123");
 
@@ -127,7 +132,8 @@ test.describe("Mobile — navigation", () => {
     await page.goto("/login");
 
     // Registration link should be visible and tappable
-    const registerLink = page.locator('a[href="/register"]');
+    // trailingSlash: true → Link renders href="/register/"
+    const registerLink = page.locator('a[href="/register/"]');
     await expect(registerLink).toBeVisible();
 
     const box = await registerLink.boundingBox();

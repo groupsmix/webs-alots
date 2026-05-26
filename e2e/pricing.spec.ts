@@ -38,8 +38,8 @@ test.describe("Pricing page", () => {
   });
 
   test("free plan has a signup CTA", async ({ page }) => {
-    // The free plan CTA should link to /register
-    const registerLinks = page.locator('a[href="/register"]');
+    // trailingSlash: true → Link renders href="/register/"
+    const registerLinks = page.locator('a[href="/register/"]');
     await expect(registerLinks.first()).toBeVisible();
   });
 

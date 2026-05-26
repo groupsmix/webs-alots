@@ -9,7 +9,7 @@ import { test, expect } from "@playwright/test";
 
 test.describe("Booking full cycle", () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto("/booking");
+    await page.goto("/book");
   });
 
   test("booking page loads with step indicator or form", async ({ page }) => {
@@ -36,7 +36,7 @@ test.describe("Booking full cycle", () => {
 
   test("booking page is responsive on mobile viewport", async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 667 });
-    await page.goto("/booking");
+    await page.goto("/book");
     await expect(page.locator("body")).not.toBeEmpty();
     // Content should not overflow horizontally
     const bodyWidth = await page.evaluate(() => document.body.scrollWidth);

@@ -24,6 +24,15 @@ export async function applyRateLimit(
   csp: CspHeaderValues,
   withSecurityHeaders: (r: NextResponse, csp: CspHeaderValues) => NextResponse,
 ): Promise<{ response: NextResponse | null; rateLimitInfo?: RateLimitInfo }> {
+  // CI E2E bypass: Playwright tests run all requests from a single IP
+  // (127.0.0.1) which easily exceeds per-IP limits. The CI environment
+  // is not internet-facing so rate limiting provides no security value.
+  // Gate on GITHUB_ACTIONS (not CI) per src/lib/env.ts convention —
+  // CI=true is easy to set accidentally on a real deployment.
+  if (process.env.GITHUB_ACTIONS === "true") {
+    return { response: null };
+  }
+
   const { pathname } = request.nextUrl;
   const hostname = request.headers.get("host") ?? "";
   // F-27: For authenticated AI/booking endpoints, prefer user ID over IP.

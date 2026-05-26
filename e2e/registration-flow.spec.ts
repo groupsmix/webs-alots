@@ -41,7 +41,8 @@ test.describe("Registration flow", () => {
   });
 
   test("has link to login page", async ({ page }) => {
-    const loginLink = page.locator('a[href="/login"]');
+    // trailingSlash: true → Link renders href="/login/"
+    const loginLink = page.locator('a[href="/login/"]');
     await expect(loginLink).toBeVisible();
   });
 
@@ -49,10 +50,9 @@ test.describe("Registration flow", () => {
     const emailInput = page.locator('input[type="email"], input[name="email"]');
     if ((await emailInput.count()) > 0) {
       await emailInput.fill("not-an-email");
-      const submitBtn = page.locator('button[type="submit"]');
-      await submitBtn.click();
+      // Check browser-level validity on the email input itself
       const isInvalid = await emailInput.evaluate(
-        (el) => !(el as HTMLInputElement).checkValidity(),
+        (el) => !(el as HTMLInputElement).validity.valid,
       );
       expect(isInvalid).toBe(true);
     }
