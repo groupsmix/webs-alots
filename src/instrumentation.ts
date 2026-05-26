@@ -159,8 +159,15 @@ export function register() {
   // config is surfaced immediately rather than at runtime.
   // Dynamic import avoids pulling logger into the module graph before
   // Next.js has finished bootstrapping.
+  // AUDIT P1-5: The .then() must re-throw so the error propagates as an
+  // unhandled rejection that crashes the Worker, rather than being swallowed.
   import("@/lib/env").then(({ enforceEnvValidation }) => {
     enforceEnvValidation();
+  }).catch((err) => {
+    // Re-throw to ensure the Worker/server process crashes on missing
+    // required env vars instead of silently serving traffic.
+    console.error("[FATAL] Environment validation failed:", err);
+    throw err;
   });
 
   // F-12: Fatal throw when staging env uses production Supabase.
