@@ -53,9 +53,12 @@ async function sendSlackRegistrationAlert(data: {
   clientIp: string;
 }): Promise<void> {
   if (!SLACK_WEBHOOK_URL) {
+    // A8-01: Never log PII (email, phone, names) — Morocco Law 09-08 / GDPR.
+    // Only log non-PII identifiers; the rest is available via DB lookup.
     logger.info("New clinic registration (no Slack webhook configured)", {
       context: "register-clinic",
-      ...data,
+      verificationMethod: data.verificationMethod,
+      city: data.city,
     });
     return;
   }
