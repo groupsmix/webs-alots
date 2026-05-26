@@ -24,29 +24,32 @@ compatibility_flags = ["nodejs_compat"]
 # cloudflare/wrangler-action in CI to avoid leaking it in the repo.
 
 # ── Routes ────────────────────────────────────────────────────────────
-# The Worker serves all requests for the root domain and all subdomains.
-# Wildcard routing is configured in Cloudflare DNS (CNAME * -> Workers).
-# routes = [
-#   { pattern = "oltigo.com/*", zone_name = "oltigo.com" },
-#   { pattern = "*.oltigo.com/*", zone_name = "oltigo.com" },
-# ]
+# AUDIT-LB3: The Worker serves all requests for the root domain and all
+# subdomains. These routes are deploy-verifiable IaC — if they are
+# missing from wrangler.toml, the Worker will not receive traffic.
+routes = [
+  { pattern = "oltigo.com/*", zone_name = "oltigo.com" },
+  { pattern = "*.oltigo.com/*", zone_name = "oltigo.com" },
+]
 
 # ── KV Namespaces ─────────────────────────────────────────────────────
-# 31.15: IaC — rate-limiting counters (shared across all edge locations).
-# Wrangler requires a non-empty namespace ID at build time, so the actual
-# binding is configured via Cloudflare dashboard per-environment.
-# The binding configuration is:
-#   [[kv_namespaces]]
-#   binding = "RATE_LIMIT_KV"
-#   id = "<KV_NAMESPACE_ID>"     # from `wrangler kv namespace list`
+# Rate-limiting counters (shared across all edge locations).
+# Currently production uses RATE_LIMIT_BACKEND=supabase, so the KV binding
+# is not required for deploy. Uncomment and set the real namespace ID when
+# migrating to KV-backed rate limiting:
+#
+#   wrangler kv namespace create RATE_LIMIT_KV
+#   # Copy the returned ID below
+#
+# [[kv_namespaces]]
+# binding = "RATE_LIMIT_KV"
+# id = "<paste-real-kv-namespace-id-here>"
 
 # ── R2 Buckets ────────────────────────────────────────────────────────
-# 31.15: IaC — PHI file storage (encrypted uploads).
-# R2 binding is configured via Cloudflare dashboard per-environment.
-# The binding configuration is:
-#   [[r2_buckets]]
-#   binding = "UPLOADS_BUCKET"
-#   bucket_name = "webs-alots-uploads"
+# AUDIT-LB3: IaC — PHI file storage (encrypted uploads).
+[[r2_buckets]]
+binding = "UPLOADS_BUCKET"
+bucket_name = "webs-alots-uploads"
 
 # ── Environment Variables (non-secret) ────────────────────────────────
 # Secrets (API keys, encryption keys) are set via `wrangler secret put`
@@ -73,17 +76,17 @@ cpu_ms = 50  # Default: 50ms CPU time per request (Workers Paid plan)
 enabled = true
 
 # ── Cron Triggers ─────────────────────────────────────────────────────
-# 31.18: IaC — scheduled jobs (GDPR purge, reminders, stale-booking sweep).
-# Cron triggers are configured via Cloudflare dashboard because
-# opennextjs-cloudflare generates its own wrangler config at build time
-# and may conflict with user-defined triggers.
-# The intended schedule is:
-#   [triggers]
-#   crons = [
-#     "0 2 * * *",    # 02:00 UTC daily — GDPR patient data purge
-#     "0 8 * * *",    # 08:00 UTC daily — appointment reminders
-#     "*/15 * * * *", # every 15 min — stale booking sweep
-#   ]
+# IaC — scheduled jobs. These must match worker-cron-handler.ts CRON_ROUTES
+# exactly. `wrangler deploy` registers them with Cloudflare automatically.
+# See also: scripts/check-cron-mapping.ts (CI guard).
+[triggers]
+crons = [
+  "*/15 * * * *", # every 15 min — notification queue flush
+  "*/30 * * * *", # every 30 min — appointment reminders
+  "0 * * * *",    # hourly — R2 cleanup + feedback + rebooking reminders
+  "0 2 * * *",    # 02:00 UTC daily — subscription billing
+  "0 3 * * *",    # 03:00 UTC daily — GDPR patient data purge
+]
 
 # ── Build ─────────────────────────────────────────────────────────────
 # The build command is handled by CI (npm run build:cf), not by wrangler.

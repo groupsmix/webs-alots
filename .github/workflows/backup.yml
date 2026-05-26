@@ -192,6 +192,7 @@ jobs:
       R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
       R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
       R2_BACKUP_BUCKET: ${{ secrets.R2_BACKUP_BUCKET }}
+      BACKUP_GPG_PRIVATE_KEY: ${{ secrets.BACKUP_GPG_PRIVATE_KEY }}
     steps:
       - name: Install tools
         run: |
@@ -212,7 +213,17 @@ jobs:
           region=auto
           EOF
 
+      - name: Import GPG private key for decryption
+        run: |
+          if [ -z "${BACKUP_GPG_PRIVATE_KEY}" ]; then
+            echo "::error::BACKUP_GPG_PRIVATE_KEY is not set. Cannot verify encrypted backups."
+            exit 1
+          fi
+          echo "${BACKUP_GPG_PRIVATE_KEY}" | gpg --batch --import
+
       - name: Download latest backup
+        # F-03: Download the actual .sql.gz.gpg file (not .sql.gz).
+        # Backups are encrypted with GPG before upload.
         run: |
           R2_ENDPOINT="https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com"
 
@@ -232,7 +243,7 @@ jobs:
 
           echo "Downloading: backups/${PREFIX}/${LATEST}"
           aws s3 cp "s3://${R2_BACKUP_BUCKET}/backups/${PREFIX}/${LATEST}" \
-            /tmp/verify_backup.sql.gz \
+            /tmp/verify_backup.sql.gz.gpg \
             --endpoint-url "${R2_ENDPOINT}"
 
       - name: Start local PostgreSQL
@@ -252,6 +263,14 @@ jobs:
           # Pre-create extensions that Supabase uses so CREATE EXTENSION doesn't fail
           psql backup_verify_test -c "CREATE EXTENSION IF NOT EXISTS pgcrypto;" 2>/dev/null || true
           psql backup_verify_test -c "CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\";" 2>/dev/null || true
+
+      - name: Decrypt backup
+        # F-03: The backup workflow creates .sql.gz.gpg files (pg_dump | gzip | gpg).
+        # Verification MUST decrypt before decompressing — previously this step
+        # was missing, so verify was testing a corrupt/unreadable file.
+        run: |
+          gpg --batch --yes --decrypt /tmp/verify_backup.sql.gz.gpg > /tmp/verify_backup.sql.gz
+          echo "Decrypted backup successfully ($(du -h /tmp/verify_backup.sql.gz | cut -f1))"
 
       - name: Test restore
         run: |
@@ -284,7 +303,8 @@ jobs:
         if: always()
         run: |
           dropdb backup_verify_test 2>/dev/null || true
-          rm -f /tmp/verify_backup.sql.gz
+          rm -f /tmp/verify_backup.sql.gz /tmp/verify_backup.sql.gz.gpg
+          rm -rf ~/.gnupg
 
   notify:
     runs-on: ubuntu-latest

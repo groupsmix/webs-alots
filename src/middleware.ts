@@ -70,15 +70,32 @@ const MAX_BODY_BYTES = 25 * 1024 * 1024;
 
 export async function middleware(request: NextRequest) {
   // AUDIT-25: Record middleware start time for CPU telemetry.
-  // Cloudflare Workers "bundled" plan has a 10ms CPU limit per invocation.
+  // Cloudflare Workers CPU budget is set to 50ms in wrangler.toml (Paid plan).
   // This timing helps identify when middleware complexity approaches that
-  // threshold so the team can optimize or switch to "unbound" before p99
-  // latency degrades.
+  // threshold so the team can optimize before p99 latency degrades.
   const mwStart = Date.now();
 
   const { pathname } = request.nextUrl;
   const hostname = request.headers.get("host") ?? "";
   const rootDomain = process.env.ROOT_DOMAIN;
+
+  // --- A45.6: Global maintenance-mode kill-switch ---
+  // Set MAINTENANCE_MODE=1 in env to immediately return 503 for all traffic
+  // without redeploying the Worker. Health-check endpoint is exempted so
+  // monitoring can detect when maintenance ends.
+  if (process.env.MAINTENANCE_MODE === "1" && pathname !== "/api/health") {
+    return new NextResponse("Service temporarily unavailable for maintenance", {
+      status: 503,
+      headers: {
+        "Retry-After": "300",
+        "Content-Type": "text/plain",
+        "Strict-Transport-Security": "max-age=63072000; includeSubDomains; preload",
+        "X-Content-Type-Options": "nosniff",
+        "X-Frame-Options": "DENY",
+        "Referrer-Policy": "strict-origin-when-cross-origin",
+      },
+    });
+  }
 
   // --- F-A198 / F-A160: Sanctioned country block ---
   const sanctionBlock = checkSanctionedCountry(request);
@@ -448,9 +465,11 @@ export async function middleware(request: NextRequest) {
   if (isPublicRoute(pathname)) {
     // If authenticated user visits login/register, redirect to their dashboard
     if (user && (pathname === "/login" || pathname === "/register") && profile) {
-      const dashboardPath =
-        ROLE_DASHBOARD_MAP[profile.role] || "/patient/dashboard";
-      return secureRedirect(new URL(dashboardPath, request.url));
+      const dashboardPath = ROLE_DASHBOARD_MAP[profile.role];
+      if (dashboardPath) {
+        return secureRedirect(new URL(dashboardPath, request.url));
+      }
+      // Unknown role with no dashboard — let them stay on login/register
     }
     return supabaseResponse;
   }
@@ -483,6 +502,16 @@ export async function middleware(request: NextRequest) {
   if (user && isProtectedRoute(pathname) && profile) {
     const allowedPrefix = ROLE_ROUTE_MAP[profile.role];
 
+    // AUDIT-LB2: Fail-closed for unmapped roles. If a role is not in
+    // ROLE_ROUTE_MAP, sign the user out and redirect to login. Without
+    // the sign-out, the authenticated-user-on-login handler (below)
+    // would bounce them to /patient/dashboard, creating an infinite
+    // redirect loop.
+    if (!allowedPrefix) {
+      await supabase.auth.signOut();
+      return secureRedirect(new URL("/login?error=unauthorized_role", request.url));
+    }
+
     // Super admin and doctor can access their routes, but MUST complete MFA if configured
     if (profile.role === "super_admin" || profile.role === "doctor") {
       const { data: aalData } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
@@ -503,16 +532,16 @@ export async function middleware(request: NextRequest) {
     }
 
     // Check if user is accessing their allowed routes
-    if (allowedPrefix && !pathname.startsWith(allowedPrefix)) {
+    if (!pathname.startsWith(allowedPrefix)) {
       const dashboardPath =
-        ROLE_DASHBOARD_MAP[profile.role] || "/patient/dashboard";
+        ROLE_DASHBOARD_MAP[profile.role] || allowedPrefix;
       return secureRedirect(new URL(dashboardPath, request.url));
     }
   }
 
   // AUDIT-25: Log middleware execution time for CPU budget monitoring.
-  // On Cloudflare Workers "bundled" plan (10ms CPU limit), sustained p95
-  // above ~7ms should trigger investigation or migration to "unbound".
+  // CPU budget is 50ms per request (wrangler.toml). Sustained p95 above
+  // ~35ms should trigger investigation and optimization.
   const mwDuration = Date.now() - mwStart;
   if (mwDuration > 5) {
     // Only log slow requests to avoid noise. Threshold tuned for edge.

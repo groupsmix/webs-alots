@@ -170,19 +170,19 @@ async function handler(request: NextRequest, { supabase, profile }: AuthContext)
       .eq("r2_key", baseKey)
       .maybeSingle();
 
-    // M-02/A7-01: Require a patient_files record for patient-role downloads.
-    // If no record exists, deny access — legacy files without records must
-    // be migrated via a backfill script, not silently served.
+    // M-02/A7-01: Patients must have a patient_files record linking the
+    // file to their profile. Legacy files without records are NOT accessible
+    // to patients — they must be backfilled by an admin or accessed via
+    // staff roles (doctor, clinic_admin, receptionist).
     if (!fileRecord) {
-      logger.warn("Patient download denied: no patient_files record for key", {
+      logger.warn("Patient denied access to file without patient_files record", {
         context: "api/files/download",
         role: profile.role,
         profileId: profile.id,
         keyPrefix: baseKey.split("/").slice(0, 2).join("/"),
       });
       return apiForbidden("You do not have access to this file");
-    }
-    if (fileRecord.patient_id !== profile.id) {
+    } else if (fileRecord.patient_id !== profile.id) {
       logger.warn("Patient attempted to download another patient's file", {
         context: "api/files/download",
         role: profile.role,

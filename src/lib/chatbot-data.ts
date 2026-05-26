@@ -161,14 +161,14 @@ export function buildSystemPrompt(ctx: ChatbotClinicContext): string {
     ? services
         .map((s) => {
           const price = s.price != null ? `${s.price} MAD` : "Prix sur demande";
-          const cat = s.category ? ` (${s.category})` : "";
-          return `- ${s.name}${cat}: ${price} — ${s.duration_minutes} min`;
+          const cat = s.category ? ` (${sanitizeUntrustedText(s.category)})` : "";
+          return `- ${sanitizeUntrustedText(s.name)}${cat}: ${price} — ${s.duration_minutes} min`;
         })
         .join("\n")
     : "Aucun service configuré";
 
   const doctorsText = doctors.length > 0
-    ? doctors.map((d) => `- Dr. ${d.name}`).join("\n")
+    ? doctors.map((d) => `- Dr. ${sanitizeUntrustedText(d.name)}`).join("\n")
     : "Aucun médecin configuré";
 
   // F-AI-02: Sanitize stored FAQ answers to prevent prompt injection via
