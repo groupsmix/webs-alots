@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono, Noto_Sans_Arabic } from "next/font/google";
+import { Geist, Geist_Mono, IBM_Plex_Sans_Arabic, Noto_Sans_Arabic, Playfair_Display } from "next/font/google";
 import { headers } from "next/headers";
 import "./globals.css";
 import { OfflineIndicator } from "@/components/offline-indicator";
@@ -26,6 +26,20 @@ const geistMono = Geist_Mono({
 
 const notoSansArabic = Noto_Sans_Arabic({
   variable: "--font-noto-arabic",
+  subsets: ["arabic"],
+  weight: ["400", "500", "600", "700"],
+  display: "swap",
+});
+
+const playfairDisplay = Playfair_Display({
+  variable: "--font-playfair",
+  subsets: ["latin"],
+  weight: ["700"],
+  display: "swap",
+});
+
+const ibmPlexArabic = IBM_Plex_Sans_Arabic({
+  variable: "--font-ibm-plex-arabic",
   subsets: ["arabic"],
   weight: ["400", "500", "600", "700"],
   display: "swap",
@@ -128,7 +142,7 @@ export default async function RootLayout({
       lang={locale}
       dir={dir}
       suppressHydrationWarning
-      className={`${geistSans.variable} ${geistMono.variable} ${notoSansArabic.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} ${notoSansArabic.variable} ${playfairDisplay.variable} ${ibmPlexArabic.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
         {/* Skip-to-content link for keyboard / screen-reader accessibility (WCAG 2.4.1) */}

@@ -6,9 +6,7 @@
  *
  * Rules:
  *   - Max two non-neutral hues per viewport (Oltigo Green + one signal).
- *   - No gradients anywhere.
  *   - No purple.
- *   - Dark mode is not shipped at launch.
  */
 
 :root {
@@ -26,6 +24,19 @@
 
   /* ── Accent ── */
   --oltigo-green: #16604A;
+
+  /* ── Emergent Palette ── */
+  --surgical-sage: #5B8A72;
+  --surgical-sage-light: rgba(91, 138, 114, 0.12);
+  --surgical-sage-halo: rgba(91, 138, 114, 0.22);
+  --reassurance-teal: #2D6A6A;
+  --carnet-ochre: #C4A265;
+  --carnet-ochre-light: rgba(196, 162, 101, 0.15);
+  --clinic-coral: #D4746A;
+  --graphite: #1A1D21;
+  --night-navy: #0D1117;
+  --night-navy-surface: #161B22;
+  --lab-linen: #FAF8F3;
 
   /* ── Signal (status only, never for CTAs or branding) ── */
   --signal-green: #1E8E3E;
@@ -53,8 +64,9 @@
      patient portal, and auth surfaces. Same rationale as `--radius-landing`
      below. */
   --font-sans-landing: Inter, ui-sans-serif, system-ui, -apple-system, sans-serif;
-  --font-mono-landing: 'JetBrains Mono', ui-monospace, 'Cascadia Code', monospace;
-  --font-arabic: 'IBM Plex Sans Arabic', 'Noto Sans Arabic', var(--font-noto-arabic), sans-serif;
+  --font-serif-landing: var(--font-playfair), 'Playfair Display', Georgia, 'Times New Roman', serif;
+  --font-mono-landing: 'JetBrains Mono', 'Geist Mono', ui-monospace, 'Cascadia Code', monospace;
+  --font-arabic: var(--font-ibm-plex-arabic), 'IBM Plex Sans Arabic', 'Noto Sans Arabic', var(--font-noto-arabic), sans-serif;
 
   /* Type scale: 16px = 1rem base */
   --text-display: 4.5rem;     /* 72px */
