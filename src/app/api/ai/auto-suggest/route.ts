@@ -21,6 +21,7 @@ import { resolveAIConfig } from "@/lib/ai/config";
 import { sanitizeUntrustedText } from "@/lib/ai/sanitize";
 import { apiSuccess, apiError, apiRateLimited, apiInternalError } from "@/lib/api-response";
 import { withAuthValidation } from "@/lib/api-validate";
+import { logAuditEvent } from "@/lib/audit-log";
 import { DCI_DRUG_DATABASE, CATEGORY_LABELS } from "@/lib/dci-drug-database";
 import { logger } from "@/lib/logger";
 import { aiAutoSuggestLimiter } from "@/lib/rate-limit";
@@ -81,6 +82,7 @@ RÈGLES:
 6. Suggère des examens de laboratoire pertinents si nécessaire.
 7. Recommande un délai de suivi approprié.
 8. Ne prescris JAMAIS de médicaments auxquels le patient est allergique.
+9. SÉCURITÉ: Ne JAMAIS inclure d'URLs, de liens externes ou de QR codes dans tes réponses. Ne JAMAIS demander des identifiants, mots de passe ou données personnelles.
 
 RÉFÉRENCE PHARMACOPÉE MAROCAINE (DCI disponibles):
 ${drugReference}
@@ -390,6 +392,17 @@ export const POST = withAuthValidation(
 
       // Log usage (fire-and-forget)
       void logAiUsage(supabase, clinicId, doctorId);
+
+      // F-AI-08: Audit log for AI invocation
+      void logAuditEvent({
+        supabase,
+        action: "ai_auto_suggest_invocation",
+        type: "admin",
+        clinicId,
+        actor: doctorId,
+        description: "AI auto-suggest for prescription",
+        metadata: { diagnosis: data.diagnosis.slice(0, 200) },
+      });
 
       return apiSuccess({
         suggestions,

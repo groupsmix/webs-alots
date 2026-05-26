@@ -17,6 +17,7 @@ import { createPseudonymMap, depseudonymise, pseudonymise } from "@/lib/ai/pseud
 import { sanitizeUntrustedText } from "@/lib/ai/sanitize";
 import { apiSuccess, apiError, apiRateLimited, apiInternalError } from "@/lib/api-response";
 import { withAuthValidation } from "@/lib/api-validate";
+import { logAuditEvent } from "@/lib/audit-log";
 import { DCI_DRUG_DATABASE, CATEGORY_LABELS } from "@/lib/dci-drug-database";
 import { logger } from "@/lib/logger";
 import { aiPrescriptionLimiter } from "@/lib/rate-limit";
@@ -82,6 +83,7 @@ RÈGLES IMPORTANTES:
 7. Ne prescris JAMAIS de médicaments auxquels le patient est allergique.
 8. Vérifie les interactions avec les médicaments actuels du patient.
 9. Pour les conditions chroniques, adapte le traitement en conséquence.
+10. SÉCURITÉ: Ne JAMAIS inclure d'URLs, de liens externes ou de QR codes dans tes réponses. Ne JAMAIS demander des identifiants, mots de passe ou données personnelles.
 
 RÉFÉRENCE PHARMACOPÉE MAROCAINE (DCI disponibles):
 ${drugReference}
@@ -369,6 +371,21 @@ export const POST = withAuthValidation(
 
       // Log AI usage for billing (fire-and-forget)
       void logAiUsage(supabase, clinicId, doctorId);
+
+      // F-AI-08: Audit log for AI invocation
+      void logAuditEvent({
+        supabase,
+        action: "ai_prescription_invocation",
+        type: "admin",
+        clinicId,
+        actor: doctorId,
+        description: "AI prescription generated",
+        metadata: {
+          patientId: data.patientId,
+          diagnosis: data.diagnosis.slice(0, 200),
+          medicationCount: prescription.medications.length,
+        },
+      });
 
       return apiSuccess({
         prescription,

@@ -334,8 +334,6 @@ export const customFieldValuesSchema = z.object({
 
 export const labReportSchema = z.object({
   orderId: z.string().min(1),
-  /** @deprecated Ignored by the server — clinicId is derived from the authenticated user's profile. Remove after v2 API migration (all clients updated). */
-  clinicId: z.string().optional(),
   patientName: z.string().min(1).max(200),
   orderNumber: z.string().min(1).max(100),
   results: z
@@ -357,8 +355,6 @@ export const labReportSchema = z.object({
 // ── Radiology ───────────────────────────────────────────────────────────
 
 export const radiologyOrderCreateSchema = z.object({
-  /** @deprecated Ignored by the server — clinicId is derived from the authenticated user's profile. Remove after v2 API migration (all clients updated). */
-  clinicId: z.string().optional(),
   patientId: z.string().min(1),
   modality: z.string().min(1).max(100),
   bodyPart: z.string().max(200).optional(),
@@ -391,8 +387,6 @@ export const radiologyOrderPatchSchema = z.discriminatedUnion("action", [
 
 export const radiologyReportPdfSchema = z.object({
   orderId: z.string().min(1),
-  /** @deprecated Ignored by the server — clinicId is derived from the authenticated user's profile. Remove after v2 API migration (all clients updated). */
-  clinicId: z.string().optional(),
   patientName: z.string().min(1).max(200),
   modality: z.string().min(1).max(100),
   bodyPart: z.string().max(200).optional(),
@@ -452,7 +446,6 @@ export type AiPrescriptionRequest = z.infer<typeof aiPrescriptionRequestSchema>;
 export const CHAT_MESSAGE_CONTENT_MAX = 4000;
 
 export const chatRequestSchema = z.object({
-  clinicId: z.string().optional(),
   // V-01: Cap the messages array at a reasonable maximum to prevent token-cost
   // DoS. The route handler further slices to MAX_HISTORY_LENGTH (20), but
   // bounding at the schema level avoids Zod spending CPU validating hundreds
@@ -493,7 +486,6 @@ export const uploadPresignedSchema = z.object({
   filename: z.string().min(1).max(500),
   contentType: z.string().min(1).max(200),
   category: z.string().min(1).max(100),
-  clinicId: z.string().optional(),
 });
 
 export const uploadConfirmSchema = z.object({

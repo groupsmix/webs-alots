@@ -34,16 +34,17 @@ compatibility_flags = ["nodejs_compat"]
 # ── KV Namespaces ─────────────────────────────────────────────────────
 # Rate limiting counters (shared across all edge locations).
 # Binding name must match what the rate-limit code checks for.
-# The actual namespace ID is environment-specific.
-# [[kv_namespaces]]
-# binding = "RATE_LIMIT_KV"
-# id = ""           # Set per-environment in Cloudflare dashboard or CI
+# 31.15: IaC — namespace ID is set per-environment.
+[[kv_namespaces]]
+binding = "RATE_LIMIT_KV"
+id = ""           # Set per-environment via `wrangler deploy --var` or Cloudflare dashboard
 
 # ── R2 Buckets ────────────────────────────────────────────────────────
 # PHI file storage (encrypted uploads).
-# [[r2_buckets]]
-# binding = "UPLOADS_BUCKET"
-# bucket_name = "webs-alots-uploads"
+# 31.15: IaC — bucket name is set per-environment.
+[[r2_buckets]]
+binding = "UPLOADS_BUCKET"
+bucket_name = "webs-alots-uploads"
 
 # ── Environment Variables (non-secret) ────────────────────────────────
 # Secrets (API keys, encryption keys) are set via `wrangler secret put`
@@ -68,6 +69,17 @@ cpu_ms = 50  # Default: 50ms CPU time per request (Workers Paid plan)
 # metrics visibility. Sentry catches exceptions but not operational telemetry.
 [observability]
 enabled = true
+
+# ── Cron Triggers ─────────────────────────────────────────────────────
+# 31.18: IaC — scheduled jobs (GDPR purge, reminders, stale-booking sweep).
+# Cron expressions must match what the runtime handler in src/lib/cron.ts
+# expects. Times are in UTC.
+[triggers]
+crons = [
+  "0 2 * * *",   # 02:00 UTC daily — GDPR patient data purge
+  "0 8 * * *",   # 08:00 UTC daily — appointment reminders
+  "*/15 * * * *", # every 15 min — stale booking sweep
+]
 
 # ── Build ─────────────────────────────────────────────────────────────
 # The build command is handled by CI (npm run build:cf), not by wrangler.

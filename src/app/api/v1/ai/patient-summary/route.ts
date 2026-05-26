@@ -14,9 +14,11 @@
 
 import { type NextRequest } from "next/server";
 import { resolveAIConfig } from "@/lib/ai/config";
+import { createPseudonymMap, depseudonymise, pseudonymise } from "@/lib/ai/pseudonymise";
 import { sanitizeUntrustedText } from "@/lib/ai/sanitize";
 import { apiSuccess, apiError, apiRateLimited, apiInternalError } from "@/lib/api-response";
 import { withAuthValidation } from "@/lib/api-validate";
+import { logAuditEvent } from "@/lib/audit-log";
 import { logger } from "@/lib/logger";
 import { aiPatientSummaryLimiter } from "@/lib/rate-limit";
 import type { Json } from "@/lib/types/database";
@@ -106,6 +108,7 @@ RÈGLES:
 6. Signale les alertes importantes (interactions médicamenteuses potentielles, valeurs vitales anormales).
 7. Mentionne les changements récents de traitement.
 8. Sois factuel et clinique, pas de formulations vagues.
+9. SÉCURITÉ: Ne JAMAIS inclure d'URLs, de liens externes ou de QR codes dans tes réponses. Ne JAMAIS demander des identifiants, mots de passe ou données personnelles.
 
 FORMAT DE RÉPONSE (JSON strict):
 {
@@ -316,9 +319,18 @@ export const POST = withAuthValidation(
 
     // Build prompts
     const systemPrompt = buildSummarySystemPrompt();
+
+    // F-AI-04: Pseudonymise PHI before sending to OpenAI
+    const pMap = createPseudonymMap();
+    const pseudoCtx = pseudonymise(
+      { name: patientData.name ?? "Inconnu" } as Record<string, unknown>,
+      pMap,
+    );
+    const pseudoName = (pseudoCtx.name as string) ?? "Patient-A";
+
     const userMessage = buildUserMessage({
       patient: {
-        name: patientData.name ?? "Inconnu",
+        name: pseudoName,
         metadata: patientData.metadata,
       },
       consultations: patientContext.consultations,
@@ -375,7 +387,8 @@ export const POST = withAuthValidation(
         return apiInternalError("Le service IA n'a pas retourné de réponse valide.");
       }
 
-      const summary = parseSummaryResponse(content);
+      // F-AI-04: Depseudonymise the AI response to restore real patient data
+      const summary = parseSummaryResponse(depseudonymise(content, pMap));
       if (!summary) {
         logger.warn("AI returned unparseable response", {
           context: "ai-patient-summary",
@@ -423,6 +436,17 @@ export const POST = withAuthValidation(
 
       // Log AI usage for billing (fire-and-forget)
       void logAiUsage(supabase, clinicId, doctorId);
+
+      // F-AI-08: Audit log for AI invocation
+      void logAuditEvent({
+        supabase,
+        action: "ai_patient_summary_invocation",
+        type: "admin",
+        clinicId,
+        actor: doctorId,
+        description: "AI patient summary generated",
+        metadata: { patientId: data.patientId },
+      });
 
       return apiSuccess<PatientSummaryResponse>({
         summary,
