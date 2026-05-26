@@ -35,7 +35,7 @@ export function TestimonialsSection() {
 
         <div className="grid gap-8 lg:grid-cols-3">
           {TESTIMONIALS.map((t) => (
-            <div key={t.author} className="rounded-xl border p-8" style={{ borderColor: "var(--rule)", backgroundColor: "white" }}>
+            <div key={t.author} className="rounded-xl border p-8" style={{ borderColor: "var(--rule)", backgroundColor: "var(--bone)", boxShadow: "inset 0 2px 4px rgba(0,0,0,0.04)" }}>
               <p className="text-sm leading-relaxed italic" style={{ color: "var(--ink-70)" }}>
                 &ldquo;{t.quote}&rdquo;
               </p>

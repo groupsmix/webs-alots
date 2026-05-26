@@ -1,5 +1,7 @@
 "use client";
 
+import { SectionHeading } from "./section-heading";
+
 const PIPELINE = [
   { label: "Upload", mono: "multipart/form-data", icon: "↑" },
   { label: "Magic-byte", mono: "magic-byte OK", icon: "◎" },
@@ -19,19 +21,10 @@ export function SecuritySection() {
         style={{ maxWidth: "var(--container-max)" }}
       >
         {/* eslint-disable i18next/no-literal-string */}
-        <h2
-          className="mb-3"
-          style={{
-            fontFamily: "var(--font-sans-landing)",
-            fontSize: "var(--text-h2)",
-            fontWeight: 600,
-          }}
-        >
-          Le dossier patient, chiffré. Et ça veut dire chiffré.
-        </h2>
-        <p className="mb-16" style={{ fontFamily: "var(--font-arabic)", fontSize: "var(--text-h3)", color: "rgba(250,248,243,0.6)", direction: "rtl" }}>
-          ملف المريض، مشفر. وهاد الشي كيعني مشفر فعلا.
-        </p>
+        <SectionHeading
+          fr="Le dossier patient, chiffré. Et ça veut dire chiffré."
+          ar="ملف المريض، مشفر. وهاد الشي كيعني مشفر فعلا."
+        />
 
         {/* Pipeline diagram */}
         <div className="flex flex-wrap items-center justify-center gap-4 lg:gap-2">

@@ -1,5 +1,7 @@
 "use client";
 
+import { SectionHeading } from "./section-heading";
+
 export function PaymentsSection() {
   return (
     <section className="py-24 lg:py-32" style={{ backgroundColor: "var(--lab-linen)" }}>
@@ -8,24 +10,14 @@ export function PaymentsSection() {
         style={{ maxWidth: "var(--container-max)" }}
       >
         {/* eslint-disable i18next/no-literal-string */}
-        <h2
-          className="mb-3"
-          style={{
-            fontFamily: "var(--font-sans-landing)",
-            fontSize: "var(--text-h2)",
-            fontWeight: 600,
-            color: "var(--ink)",
-          }}
-        >
-          Les paiements, sans surprise.
-        </h2>
-        <p className="mb-16" style={{ fontFamily: "var(--font-arabic)", fontSize: "var(--text-h3)", color: "var(--ink-60)", direction: "rtl" }}>
-          الدفع، بلا مفاجآت.
-        </p>
+        <SectionHeading
+          fr="Les paiements, sans surprise."
+          ar="الدفع، بلا مفاجآت."
+        />
 
         <div className="grid gap-8 lg:grid-cols-2">
           {/* CMI */}
-          <div className="rounded-xl border p-6" style={{ borderColor: "var(--rule)", backgroundColor: "white" }}>
+          <div className="rounded-xl border p-6" style={{ borderColor: "var(--rule)", backgroundColor: "var(--bone)", boxShadow: "inset 0 2px 4px rgba(0,0,0,0.04)" }}>
             <div className="mb-4 flex items-center gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-lg text-xs font-bold" style={{ backgroundColor: "var(--reassurance-teal)", color: "white" }}>
                 CMI
@@ -52,7 +44,7 @@ export function PaymentsSection() {
           </div>
 
           {/* Stripe */}
-          <div className="rounded-xl border p-6" style={{ borderColor: "var(--rule)", backgroundColor: "white" }}>
+          <div className="rounded-xl border p-6" style={{ borderColor: "var(--rule)", backgroundColor: "var(--bone)", boxShadow: "inset 0 2px 4px rgba(0,0,0,0.04)" }}>
             <div className="mb-4 flex items-center gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-lg text-xs font-bold" style={{ backgroundColor: "#635BFF", color: "white" }}>
                 S

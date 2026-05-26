@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { BookingSection } from "./booking-section";
 import { CarnetSante } from "./carnet-sante";
 import { DashboardSection } from "./dashboard-section";
@@ -26,20 +26,45 @@ import { WhatsAppSection } from "./whatsapp-section";
  * Emergent cinematic landing page for Oltigo Health.
  *
  * 16 sections + floating carnet de santé + ECG pulse + paper grain.
- * Bilingual FR/AR with RTL toggle. Respects prefers-reduced-motion.
+ * Bilingual FR/AR with RTL toggle. Dark/light mode. Respects prefers-reduced-motion.
  */
 export function EmergentLandingPage() {
   const [lang, setLang] = useState<"fr" | "ar">("fr");
+  const [theme, setTheme] = useState<"light" | "dark">(() => {
+    if (typeof window === "undefined") return "light";
+    const stored = localStorage.getItem("oltigo-theme") as "light" | "dark" | null;
+    if (stored) return stored;
+    return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+  });
   const rtl = lang === "ar";
+
+  useEffect(() => {
+    const mq = window.matchMedia("(prefers-color-scheme: dark)");
+    const handler = (e: MediaQueryListEvent) => {
+      if (!localStorage.getItem("oltigo-theme")) {
+        setTheme(e.matches ? "dark" : "light");
+      }
+    };
+    mq.addEventListener("change", handler);
+    return () => mq.removeEventListener("change", handler);
+  }, []);
+
+  const toggleTheme = () => {
+    const next = theme === "light" ? "dark" : "light";
+    setTheme(next);
+    localStorage.setItem("oltigo-theme", next);
+  };
 
   return (
     <div
       dir={rtl ? "rtl" : "ltr"}
+      data-theme={theme}
       className="relative min-h-screen transition-all duration-300"
       style={{
         backgroundColor: "var(--lab-linen)",
         color: "var(--ink)",
         fontFamily: "var(--font-sans-landing)",
+        cursor: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12'%3E%3Ccircle cx='6' cy='6' r='4' fill='%231A1D21'/%3E%3C/svg%3E\") 6 6, auto",
       }}
     >
       {/* Skip to content */}
@@ -56,7 +81,9 @@ export function EmergentLandingPage() {
 
       <EmergentHeader
         lang={lang}
+        theme={theme}
         onToggleLang={() => setLang(lang === "fr" ? "ar" : "fr")}
+        onToggleTheme={toggleTheme}
       />
 
       <main id="main-content">
@@ -64,43 +91,69 @@ export function EmergentLandingPage() {
         <EmergentHero rtl={rtl} />
 
         {/* 2. Multi-tenant */}
-        <MultiTenantSection />
+        <section className="emergent-section">
+          <MultiTenantSection />
+        </section>
 
         {/* 3. Booking flow */}
-        <BookingSection />
+        <section className="emergent-section">
+          <BookingSection />
+        </section>
 
         {/* 4. WhatsApp */}
-        <WhatsAppSection />
+        <section className="emergent-section">
+          <WhatsAppSection />
+        </section>
 
         {/* 5. Security */}
-        <SecuritySection />
+        <section className="emergent-section">
+          <SecuritySection />
+        </section>
 
         {/* 6. RBAC */}
-        <RbacSection />
+        <section className="emergent-section">
+          <RbacSection />
+        </section>
 
         {/* 7. Insurance */}
-        <InsuranceSection />
+        <section className="emergent-section">
+          <InsuranceSection />
+        </section>
 
         {/* 8. Payments */}
-        <PaymentsSection />
+        <section className="emergent-section">
+          <PaymentsSection />
+        </section>
 
         {/* 9. Dashboard */}
-        <DashboardSection />
+        <section className="emergent-section">
+          <DashboardSection />
+        </section>
 
         {/* 10. Manifesto */}
-        <ManifestoSection />
+        <section className="emergent-section">
+          <ManifestoSection />
+        </section>
 
         {/* 11. Trust strip */}
-        <TrustStripSection />
+        <section className="emergent-section">
+          <TrustStripSection />
+        </section>
 
         {/* 12. Pricing */}
-        <PricingSection />
+        <section className="emergent-section">
+          <PricingSection />
+        </section>
 
         {/* 13. Testimonials */}
-        <TestimonialsSection />
+        <section className="emergent-section">
+          <TestimonialsSection />
+        </section>
 
         {/* 14. FAQ */}
-        <FaqSection />
+        <section className="emergent-section">
+          <FaqSection />
+        </section>
 
         {/* 15. Final CTA */}
         <FinalCtaSection />
@@ -111,6 +164,24 @@ export function EmergentLandingPage() {
 
       {/* Floating carnet de santé */}
       <CarnetSante rtl={rtl} />
+
+      <style>{`
+        .emergent-section {
+          position: relative;
+          z-index: 1;
+        }
+        @media (prefers-reduced-motion: no-preference) {
+          .emergent-section {
+            clip-path: inset(0 0 0 0);
+          }
+        }
+        /* Custom cursor on interactive elements */
+        [data-theme] a,
+        [data-theme] button,
+        [data-theme] [role="button"] {
+          cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20'%3E%3Ccircle cx='10' cy='10' r='8' fill='none' stroke='%235B8A72' stroke-width='2'/%3E%3Ccircle cx='10' cy='10' r='3' fill='%235B8A72'/%3E%3C/svg%3E") 10 10, pointer;
+        }
+      `}</style>
     </div>
   );
 }
