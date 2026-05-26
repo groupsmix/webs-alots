@@ -204,8 +204,8 @@ INFORMATIONS DE LA CLINIQUE:
 - Téléphone: ${ctx.phone}
 ${ctx.address ? `- Adresse: ${ctx.address}` : ""}
 ${ctx.openingHours ? `- Horaires: ${ctx.openingHours}` : ""}
-${ctx.services.length > 0 ? `- Services: ${ctx.services.join(", ")}` : ""}
-${ctx.doctors.length > 0 ? `- Médecins: ${ctx.doctors.join(", ")}` : ""}
+${ctx.services.length > 0 ? `- Services: ${ctx.services.map(sanitizeUntrustedText).join(", ")}` : ""}
+${ctx.doctors.length > 0 ? `- Médecins: ${ctx.doctors.map(sanitizeUntrustedText).join(", ")}` : ""}
 
 RÈGLES:
 1. Réponds TOUJOURS en français.
