@@ -50,17 +50,35 @@ $ npm audit
 found 0 vulnerabilities
 ```
 
+### Updated verification (May 2026 — post audit remediation PRs #545–#555)
+
+```
+$ npm run lint              # eslint
+0 errors
+
+$ npm run typecheck         # tsc --noEmit
+(no errors)
+
+$ npm run test              # vitest run
+ Test Files  82 passed (82)
+      Tests  814 passed | 16 skipped (830)
+
+All 8/8 CI checks green on PR #555.
+```
+
 ### Status per launch sub-task
 
 | Sub-task | Status | Evidence |
 | --- | --- | --- |
 | `npm ci` clean install | green | local run, `added 1432 packages`, `found 0 vulnerabilities` |
 | `npm run build` | green | local + CI (`Build & Deploy` in deploy workflow runs the same steps) |
-| `npm run lint` | green | 0 errors (4855 warnings — see below) |
+| `npm run lint` | green | 0 errors |
 | `npm run typecheck` | green | `tsc --noEmit` clean |
-| Unit tests pass | green | 573 passed / 24 skipped |
-| E2E tests pass | green | CI job `E2E Tests (Playwright)` green on PRs #445–#448 |
+| Unit tests pass | green | 814 passed / 16 skipped (82 test files) |
+| E2E tests pass | green | CI job `E2E Tests (Playwright)` green on PRs #553–#555 |
 | `npm audit` reviewed; remediate high/critical advisories | green | `0 vulnerabilities` (incl. `--omit=dev` in CI step `Check for vulnerable dependencies`) |
+| Tenant isolation tests | green | 17 tests in `src/lib/__tests__/integration/tenant-isolation.test.ts` |
+| RLS assertion tests | green | `src/lib/__tests__/integration/rls-assertions.test.ts` |
 | Document the green CI run | this file | — |
 
 ## Notes & caveats
