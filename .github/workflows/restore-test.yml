@@ -1,8 +1,10 @@
 name: Monthly Database Restore Drill
 
 on:
-  schedule:
-    - cron: '0 4 1 * *' # Run at 04:00 on the 1st of every month
+  # Schedule disabled — depends on backup.yml producing encrypted
+  # backups in R2 first. Re-enable once backups are running.
+  # schedule:
+  #   - cron: '0 4 1 * *'
   workflow_dispatch:
 
 # Least-privilege permissions
