@@ -34,8 +34,12 @@ export async function GET(request: NextRequest) {
   const supabase = await createTenantClient(auth.clinicId);
   const url = new URL(request.url);
   const search = url.searchParams.get("search");
-  const limit = Math.min(Number(url.searchParams.get("limit") || 50), 100);
-  const offset = Number(url.searchParams.get("offset") || 0);
+  // A46.8: Guard against NaN from malformed query params — Number("abc") is NaN,
+  // Math.min(NaN, 100) is NaN, causing undefined Supabase behavior.
+  const rawLimit = Number(url.searchParams.get("limit"));
+  const limit = Math.min(Number.isFinite(rawLimit) && rawLimit > 0 ? rawLimit : 50, 100);
+  const rawOffset = Number(url.searchParams.get("offset"));
+  const offset = Number.isFinite(rawOffset) && rawOffset >= 0 ? rawOffset : 0;
 
   let query = supabase
     .from("users")
@@ -46,9 +50,11 @@ export async function GET(request: NextRequest) {
     .range(offset, offset + limit - 1);
 
   if (search) {
-    // MED-05: Sanitize search input to prevent PostgREST filter injection.
-    // Strip %, _, comma, parens AND dots (PostgREST uses . as filter separator).
-    const sanitized = search.replace(/[%_,.()]/g, "");
+    // MED-05 + A46.3: Sanitize search input to prevent PostgREST filter injection.
+    // Strip %, _, comma, parens, dots (PostgREST filter separator) AND pipes
+    // (PostgREST OR operator token). Without stripping |, an attacker could
+    // inject additional filter clauses like `role.eq.super_admin`.
+    const sanitized = search.replace(/[%_,.()|]/g, "");
     if (sanitized.length > 0) {
       // B-01: Use `name` (and `name_ar` for Arabic search) instead of the
       // non-existent `full_name` column which caused a 500 on every request.
