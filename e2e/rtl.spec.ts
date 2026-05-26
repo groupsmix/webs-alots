@@ -41,8 +41,8 @@ test.describe('RTL (Arabic) Layout Smoke Tests', () => {
     await expect(page.locator('html')).toHaveAttribute('dir', 'rtl');
     await expect(page.locator('html')).toHaveAttribute('lang', 'ar');
 
-    // Register page
-    await page.goto('/register');
+    // Register page (use trailing slash to avoid 308 redirect)
+    await page.goto('/register/');
     await page.waitForLoadState('domcontentloaded');
     await page.waitForFunction(() => document.documentElement.dir === 'rtl', null, { timeout: 10_000 });
     await expect(page.locator('html')).toHaveAttribute('dir', 'rtl');

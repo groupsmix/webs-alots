@@ -18,13 +18,13 @@ test.describe("Clinic public page — navigation & structure", () => {
     await expect(nav).toBeVisible();
 
     // Clinic public page nav links
-    await expect(nav.locator('a[href="/services"]')).toBeVisible();
-    await expect(nav.locator('a[href="/about"]')).toBeVisible();
+    await expect(nav.locator('a[href="/services/"]')).toBeVisible();
+    await expect(nav.locator('a[href="/about/"]')).toBeVisible();
   });
 
   test("header has a booking CTA", async ({ page }) => {
     // Clinic header shows a "Book appointment" button linking to /book
-    const bookCta = page.locator('nav[aria-label="Navigation principale"] a[href="/book"]');
+    const bookCta = page.locator('nav[aria-label="Navigation principale"] a[href="/book/"]');
     await expect(bookCta).toBeVisible();
   });
 
@@ -42,8 +42,8 @@ test.describe("Clinic public page — navigation & structure", () => {
 
   test("footer contains quick links", async ({ page }) => {
     const footer = page.locator("footer");
-    await expect(footer.locator('a[href="/services"]')).toBeVisible();
-    await expect(footer.locator('a[href="/contact"]')).toBeVisible();
+    await expect(footer.locator('a[href="/services/"]')).toBeVisible();
+    await expect(footer.locator('a[href="/contact/"]')).toBeVisible();
   });
 
   test("main content area exists", async ({ page }) => {
@@ -52,8 +52,9 @@ test.describe("Clinic public page — navigation & structure", () => {
   });
 
   test("page has skip-to-content link", async ({ page }) => {
+    // The skip link is sr-only; check that it exists in the DOM
     const skipLink = page.locator('a[href="#main-content"]');
-    await expect(skipLink).toBeAttached();
+    await expect(skipLink).toHaveCount(1);
   });
 
   test("pricing link navigates to pricing page", async ({ page }) => {

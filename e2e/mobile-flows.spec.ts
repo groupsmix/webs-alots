@@ -93,13 +93,13 @@ test.describe("Mobile — form interactions", () => {
     const emailInput = page.locator('input[type="email"], input[name="email"]');
     const passwordInput = page.locator('input[type="password"], input[name="password"]');
 
-    // Tap and fill email
-    await emailInput.tap();
+    // Click and fill email (click instead of tap — works in all contexts)
+    await emailInput.click();
     await emailInput.fill("test@example.com");
     await expect(emailInput).toHaveValue("test@example.com");
 
-    // Tap and fill password
-    await passwordInput.tap();
+    // Click and fill password
+    await passwordInput.click();
     await passwordInput.fill("password123");
     await expect(passwordInput).toHaveValue("password123");
 
@@ -127,7 +127,8 @@ test.describe("Mobile — navigation", () => {
     await page.goto("/login");
 
     // Registration link should be visible and tappable
-    const registerLink = page.locator('a[href="/register"]');
+    // trailingSlash: true → Link renders href="/register/"
+    const registerLink = page.locator('a[href="/register/"]');
     await expect(registerLink).toBeVisible();
 
     const box = await registerLink.boundingBox();

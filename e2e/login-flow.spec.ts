@@ -56,7 +56,8 @@ test.describe("Login flow", () => {
   });
 
   test("has link to registration page", async ({ page }) => {
-    const registerLink = page.locator('a[href="/register"]');
+    // trailingSlash: true → Link renders href="/register/"
+    const registerLink = page.locator('a[href="/register/"]');
     await expect(registerLink).toBeVisible();
   });
 

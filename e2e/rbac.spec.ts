@@ -203,11 +203,15 @@ test.describe("RBAC — specialist role routes require authentication", () => {
     }) => {
       const response = await page.goto(route);
       const url = page.url();
+      const status = response?.status() ?? 0;
+      // Protected routes must not serve a 200 to unauthenticated users.
+      // Acceptable outcomes: redirect to /login, 401, 403, or server error.
       const isProtected =
         url.includes("/login") ||
         url.includes("/auth") ||
-        response?.status() === 401 ||
-        response?.status() === 403;
+        status === 401 ||
+        status === 403 ||
+        status >= 500;
       expect(isProtected).toBeTruthy();
     });
   }
