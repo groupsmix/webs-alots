@@ -13,6 +13,7 @@
 
 import { type NextRequest } from "next/server";
 import { resolveAIConfig } from "@/lib/ai/config";
+import { createPseudonymMap, depseudonymise, pseudonymise } from "@/lib/ai/pseudonymise";
 import { sanitizeUntrustedText } from "@/lib/ai/sanitize";
 import { apiSuccess, apiError, apiRateLimited, apiInternalError } from "@/lib/api-response";
 import { withAuthValidation } from "@/lib/api-validate";
@@ -285,11 +286,21 @@ export const POST = withAuthValidation(
       weight: data.patientContext?.weight ?? patientMeta.weight,
     };
 
+    // F-AI-04: Pseudonymise PHI before sending to OpenAI.
+    // Patient name and any PII in the context is replaced with deterministic
+    // pseudonyms; the mapping is used to restore real values in the response.
+    const pMap = createPseudonymMap();
+    const pseudoCtx = pseudonymise(
+      { name: patient.name, ...mergedContext } as Record<string, unknown>,
+      pMap,
+    );
+    const pseudoName = (pseudoCtx.name as string) ?? "Patient-A";
+
     // Build the prompt
     const systemPrompt = buildPrescriptionSystemPrompt();
     const userMessage = buildPatientContext(
       { diagnosis: data.diagnosis, symptoms: data.symptoms, patientContext: mergedContext },
-      patient.name,
+      pseudoName,
     );
 
     // Call AI API
@@ -341,7 +352,9 @@ export const POST = withAuthValidation(
         return apiInternalError("Le service IA n'a pas retourné de réponse valide.");
       }
 
-      const prescription = parseAiResponse(content);
+      // F-AI-04: De-pseudonymise the AI response to restore real patient names
+      const restoredContent = depseudonymise(content, pMap);
+      const prescription = parseAiResponse(restoredContent);
       if (!prescription) {
         logger.warn("AI returned unparseable response", {
           context: "ai-prescription",

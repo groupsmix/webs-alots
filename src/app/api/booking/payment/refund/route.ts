@@ -17,7 +17,10 @@ export const POST = withAuthValidation(paymentRefundSchema, async (body, request
     const tenant = await requireTenant();
     const clinicId = tenant.clinicId;
 
-    // Fetch the payment (include refunded_amount to track cumulative refunds)
+    // F-A18-02: Fetch the payment with refunded_amount for optimistic
+    // concurrency control. The DB CHECK constraint
+    // (chk_refund_not_exceeds_amount) is the final safety net, but
+    // application-level validation prevents wasted work and clearer errors.
     const { data: payment, error: fetchError } = await supabase
       .from("payments")
       .select("id, status, amount, refunded_amount")
@@ -54,20 +57,34 @@ export const POST = withAuthValidation(paymentRefundSchema, async (body, request
     const newRefundedTotal = alreadyRefunded + refundAmount;
     const isFullyRefunded = newRefundedTotal >= payment.amount;
 
-    const { error: updateError } = await supabase
+    // F-A18-02: Optimistic concurrency — include refunded_amount in the
+    // WHERE clause so a concurrent refund that changed the value between
+    // our SELECT and this UPDATE will find zero rows and fail cleanly.
+    // The DB-level CHECK (chk_refund_not_exceeds_amount) is the final
+    // safety net if this CAS guard is somehow bypassed.
+    const { data: updated, error: updateError } = await supabase
       .from("payments")
       .update({
         status: isFullyRefunded ? "refunded" : "partially_refunded",
         refunded_amount: newRefundedTotal,
       })
       .eq("id", body.paymentId)
-      .eq("clinic_id", clinicId) // A164: Tenant isolation - ensure payment belongs to this clinic
+      .eq("clinic_id", clinicId)
+      .eq("refunded_amount", alreadyRefunded)
       .select("id")
-      .single();
+      .maybeSingle();
 
     if (updateError) {
       logger.error("Refund update failed", { context: "refund", clinicId, error: updateError });
       return apiInternalError("Failed to refund payment");
+    }
+
+    if (!updated) {
+      return apiError(
+        "Concurrent refund detected — please retry",
+        409,
+        "CONCURRENT_REFUND",
+      );
     }
 
     await logAuditEvent({
