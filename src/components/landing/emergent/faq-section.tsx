@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { SectionHeading } from "./section-heading";
 
 const FAQS = [
   {
@@ -39,20 +40,18 @@ export function FaqSection() {
         className="mx-auto w-full px-[var(--gutter-mobile)] md:px-[var(--gutter-tablet)] lg:px-[var(--gutter-desktop)]"
         style={{ maxWidth: 800 }}
       >
-        {/* eslint-disable i18next/no-literal-string */}
-        <h2
-          className="mb-16 text-center"
-          style={{ fontFamily: "var(--font-sans-landing)", fontSize: "var(--text-h2)", fontWeight: 600, color: "var(--ink)" }}
-        >
-          Questions fréquentes
-        </h2>
+        { }
+        <SectionHeading
+          fr="Questions fréquentes"
+          ar="أسئلة شائعة"
+        />
 
         <div className="space-y-2">
           {FAQS.map((faq, i) => (
             <div
               key={i}
               className="rounded-xl border overflow-hidden"
-              style={{ borderColor: "var(--rule)", backgroundColor: "white" }}
+              style={{ borderColor: "var(--rule)", backgroundColor: "var(--bone)" }}
             >
               <button
                 onClick={() => setOpen(open === i ? null : i)}
@@ -82,7 +81,7 @@ export function FaqSection() {
             </div>
           ))}
         </div>
-        {/* eslint-enable i18next/no-literal-string */}
+        { }
       </div>
     </section>
   );

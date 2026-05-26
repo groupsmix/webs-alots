@@ -1,5 +1,7 @@
 "use client";
 
+import { SectionHeading } from "./section-heading";
+
 const PLANS = [
   {
     name: "Cabinet",
@@ -33,15 +35,10 @@ export function PricingSection() {
         style={{ maxWidth: "var(--container-max)" }}
       >
         {/* eslint-disable i18next/no-literal-string */}
-        <h2
-          className="mb-3 text-center"
-          style={{ fontFamily: "var(--font-sans-landing)", fontSize: "var(--text-h2)", fontWeight: 600, color: "var(--ink)" }}
-        >
-          Tarifs
-        </h2>
-        <p className="mb-16 text-center" style={{ fontFamily: "var(--font-arabic)", fontSize: "var(--text-h3)", color: "var(--ink-60)", direction: "rtl" }}>
-          الأسعار
-        </p>
+        <SectionHeading
+          fr="Tarifs"
+          ar="الأسعار"
+        />
 
         <div className="grid gap-8 lg:grid-cols-3">
           {PLANS.map((plan) => (
@@ -50,7 +47,8 @@ export function PricingSection() {
               className="relative rounded-xl border p-8"
               style={{
                 borderColor: plan.highlighted ? "var(--surgical-sage)" : "var(--rule)",
-                backgroundColor: "white",
+                backgroundColor: "var(--bone)",
+                boxShadow: "inset 0 2px 4px rgba(0,0,0,0.04)",
               }}
             >
               {plan.badge && (

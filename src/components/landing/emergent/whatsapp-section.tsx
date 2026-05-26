@@ -1,5 +1,7 @@
 "use client";
 
+import { SectionHeading } from "./section-heading";
+
 const TEMPLATES = [
   { label: "Rappel de rendez-vous (24h)", msg: "سلام، هاد تذكير بموعيدك غدا ف Cabinet Dr. Bennani، 10h30. الله يسهل." },
   { label: "Confirmation de rendez-vous", msg: "سلام، تسجيلك ف Cabinet Dr. Bennani تأكد. موعيد: الخميس 18 أبريل، 10h30. باش تلغي، كتبي 1." },
@@ -19,20 +21,10 @@ export function WhatsAppSection() {
         style={{ maxWidth: "var(--container-max)" }}
       >
         {/* eslint-disable i18next/no-literal-string */}
-        <h2
-          className="mb-3"
-          style={{
-            fontFamily: "var(--font-sans-landing)",
-            fontSize: "var(--text-h2)",
-            fontWeight: 600,
-            color: "var(--ink)",
-          }}
-        >
-          Les rappels en darija. Parce que vos patients lisent en darija.
-        </h2>
-        <p className="mb-16" style={{ fontFamily: "var(--font-arabic)", fontSize: "var(--text-h3)", color: "var(--ink-60)", direction: "rtl" }}>
-          التذكيرات بالدارجة. حيت المرضى كيقراو بالدارجة.
-        </p>
+        <SectionHeading
+          fr="Les rappels en darija. Parce que vos patients lisent en darija."
+          ar="التذكيرات بالدارجة. حيت المرضى كيقراو بالدارجة."
+        />
 
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {TEMPLATES.map((t) => (

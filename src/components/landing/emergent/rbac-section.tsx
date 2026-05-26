@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { SectionHeading } from "./section-heading";
 
 const ROLES = [
   { key: "super_admin", label: "Super Admin", description: "Opérateur de la plateforme", perms: ["Gestion globale", "Configuration système", "Audit complet"] },
@@ -20,20 +21,10 @@ export function RbacSection() {
         style={{ maxWidth: "var(--container-max)" }}
       >
         {/* eslint-disable i18next/no-literal-string */}
-        <h2
-          className="mb-3"
-          style={{
-            fontFamily: "var(--font-sans-landing)",
-            fontSize: "var(--text-h2)",
-            fontWeight: 600,
-            color: "var(--ink)",
-          }}
-        >
-          Cinq rôles. Une seule cohérence.
-        </h2>
-        <p className="mb-16" style={{ fontFamily: "var(--font-arabic)", fontSize: "var(--text-h3)", color: "var(--ink-60)", direction: "rtl" }}>
-          خمسة أدوار. تماسك واحد.
-        </p>
+        <SectionHeading
+          fr="Cinq rôles. Une seule cohérence."
+          ar="خمسة أدوار. تماسك واحد."
+        />
 
         <div className="flex flex-wrap items-start justify-center gap-8">
           {ROLES.map((role, i) => (
@@ -68,7 +59,8 @@ export function RbacSection() {
                   maxHeight: active === i ? 200 : 0,
                   opacity: active === i ? 1 : 0,
                   borderColor: "var(--rule)",
-                  backgroundColor: "white",
+                  backgroundColor: "var(--bone)",
+                  boxShadow: "inset 0 2px 4px rgba(0,0,0,0.04)",
                   minWidth: 140,
                 }}
               >

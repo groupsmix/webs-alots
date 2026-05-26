@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { SectionHeading } from "./section-heading";
 
 type TabKey = "today" | "week" | "month";
 
@@ -54,17 +55,12 @@ export function DashboardSection() {
         style={{ maxWidth: "var(--container-max)" }}
       >
         {/* eslint-disable i18next/no-literal-string */}
-        <h2
-          className="mb-3"
-          style={{ fontFamily: "var(--font-sans-landing)", fontSize: "var(--text-h2)", fontWeight: 600, color: "var(--ink)" }}
-        >
-          Votre tableau de bord. En temps réel.
-        </h2>
-        <p className="mb-12" style={{ fontFamily: "var(--font-arabic)", fontSize: "var(--text-h3)", color: "var(--ink-60)", direction: "rtl" }}>
-          لوحة التحكم. في الوقت الفعلي.
-        </p>
+        <SectionHeading
+          fr="Votre tableau de bord. En temps réel."
+          ar="لوحة التحكم. في الوقت الفعلي."
+        />
 
-        <div className="rounded-xl border" style={{ borderColor: "var(--rule)", backgroundColor: "white" }}>
+        <div className="rounded-xl border" style={{ borderColor: "var(--rule)", backgroundColor: "var(--bone)", boxShadow: "inset 0 2px 4px rgba(0,0,0,0.04)" }}>
           {/* Tabs */}
           <div className="flex border-b" style={{ borderColor: "var(--rule)" }}>
             {TABS.map((t) => (

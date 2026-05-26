@@ -1,13 +1,14 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { SectionHeading } from "./section-heading";
 
 const STEPS = [
   {
     title: "Prendre rendez-vous",
     content: (
       <div className="space-y-3">
-        <div className="rounded-lg border p-4" style={{ borderColor: "var(--rule)", backgroundColor: "white" }}>
+        <div className="rounded-lg border p-4" style={{ borderColor: "var(--rule)", backgroundColor: "var(--bone)" }}>
           <p className="text-sm font-medium" style={{ color: "var(--ink)" }}>Cabinet Dr. Bennani · Cardiologie</p>
           <p className="mt-1 text-xs" style={{ color: "var(--ink-60)" }}>Casablanca · Lun-Ven 8h-18h</p>
           <button
@@ -131,22 +132,11 @@ export function BookingSection() {
           className="mx-auto w-full px-[var(--gutter-mobile)] md:px-[var(--gutter-tablet)] lg:px-[var(--gutter-desktop)]"
           style={{ maxWidth: "var(--container-max)" }}
         >
-          {/* eslint-disable i18next/no-literal-string */}
-          <h2
-            className="mb-3"
-            style={{
-              fontFamily: "var(--font-sans-landing)",
-              fontSize: "var(--text-h2)",
-              lineHeight: "var(--lh-h2)",
-              fontWeight: 600,
-              color: "var(--ink)",
-            }}
-          >
-            Le rendez-vous, sans le téléphone.
-          </h2>
-          <p className="mb-8" style={{ fontFamily: "var(--font-arabic)", fontSize: "var(--text-h3)", color: "var(--ink-60)", direction: "rtl" }}>
-            الموعد، بدون هاتف.
-          </p>
+          { }
+          <SectionHeading
+            fr="Le rendez-vous, sans le téléphone."
+            ar="الموعد، بدون هاتف."
+          />
 
           <div className="grid gap-8 lg:grid-cols-2">
             {/* Step indicator */}
@@ -186,7 +176,7 @@ export function BookingSection() {
               </div>
             </div>
           </div>
-          {/* eslint-enable i18next/no-literal-string */}
+          { }
         </div>
       </div>
     </section>

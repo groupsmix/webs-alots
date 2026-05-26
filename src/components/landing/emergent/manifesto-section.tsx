@@ -1,5 +1,7 @@
 "use client";
 
+import { SectionHeading } from "./section-heading";
+
 const PILLARS = [
   {
     title: "Fuseau Africa/Casablanca",
@@ -25,20 +27,15 @@ export function ManifestoSection() {
         className="mx-auto w-full px-[var(--gutter-mobile)] md:px-[var(--gutter-tablet)] lg:px-[var(--gutter-desktop)]"
         style={{ maxWidth: "var(--container-max)" }}
       >
-        {/* eslint-disable i18next/no-literal-string */}
-        <h2
-          className="mb-3"
-          style={{ fontFamily: "var(--font-sans-landing)", fontSize: "var(--text-h2)", fontWeight: 600, color: "var(--ink)" }}
-        >
-          Pensé pour le Maroc. Pas adapté au Maroc.
-        </h2>
-        <p className="mb-16" style={{ fontFamily: "var(--font-arabic)", fontSize: "var(--text-h3)", color: "var(--ink-60)", direction: "rtl" }}>
-          مصمم للمغرب. ماشي معدّل للمغرب.
-        </p>
+        { }
+        <SectionHeading
+          fr="Pensé pour le Maroc. Pas adapté au Maroc."
+          ar="مصمم للمغرب. ماشي معدّل للمغرب."
+        />
 
         <div className="grid gap-8 lg:grid-cols-3">
           {PILLARS.map((p) => (
-            <div key={p.title} className="rounded-xl border p-8" style={{ borderColor: "var(--rule)", backgroundColor: "white" }}>
+            <div key={p.title} className="rounded-xl border p-8" style={{ borderColor: "var(--rule)", backgroundColor: "var(--bone)", boxShadow: "inset 0 2px 4px rgba(0,0,0,0.04)" }}>
               <h3 className="text-lg font-semibold" style={{ color: "var(--ink)" }}>{p.title}</h3>
               <p className="mt-1 text-sm" style={{ fontFamily: "var(--font-arabic)", color: "var(--ink-60)", direction: "rtl" }}>
                 {p.titleAr}
@@ -49,7 +46,7 @@ export function ManifestoSection() {
             </div>
           ))}
         </div>
-        {/* eslint-enable i18next/no-literal-string */}
+        { }
       </div>
     </section>
   );
