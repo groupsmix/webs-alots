@@ -174,22 +174,24 @@ jobs:
 
       - name: Preflight — required secrets
         id: preflight
-        # Check whether Supabase secrets are configured. If not, skip
-        # migration steps (no secrets → nothing to migrate against).
-        # The deploy job still proceeds so the app can be deployed.
+        # F-01: Missing migration secrets MUST fail the pipeline in
+        # production. Deploying code that expects new tables/RPCs/RLS
+        # policies while the DB is still on the old schema can cause
+        # 500s or, worse, weaker security policies. Skip is only
+        # allowed for non-production preview environments.
         run: |
           missing=0
           for v in SUPABASE_ACCESS_TOKEN SUPABASE_DB_PASSWORD SUPABASE_PROJECT_REF; do
             if [ -z "${!v:-}" ]; then
-              echo "::warning::Secret '$v' is not set for environment '${{ github.ref_name == 'staging' && 'staging' || 'production' }}'. Skipping DB migrations."
+              echo "::error::Secret '$v' is not set for environment '${{ github.ref_name == 'staging' && 'staging' || 'production' }}'."
               missing=1
             fi
           done
           if [ "$missing" -eq 1 ]; then
-            echo "secrets_ok=false" >> "$GITHUB_OUTPUT"
-          else
-            echo "secrets_ok=true" >> "$GITHUB_OUTPUT"
+            echo "::error::Required Supabase migration secrets are missing. Deploy blocked."
+            exit 1
           fi
+          echo "secrets_ok=true" >> "$GITHUB_OUTPUT"
 
       - name: Install Supabase CLI
         if: steps.preflight.outputs.secrets_ok == 'true'

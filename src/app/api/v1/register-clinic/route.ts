@@ -32,7 +32,8 @@ import { sendTextMessage } from "@/lib/whatsapp";
 // Anti-Abuse Rate Limiter
 // ---------------------------------------------------------------------------
 // Extremely strict rate limit for public registration (2 per hour per IP)
-const registerLimiter = createRateLimiter({ windowMs: 60 * 60 * 1000, max: 2 });
+// F-06: failClosed prevents mass tenant creation when rate-limit backend degrades.
+const registerLimiter = createRateLimiter({ windowMs: 60 * 60 * 1000, max: 2, failClosed: true });
 
 // ---------------------------------------------------------------------------
 // Slack webhook for registration alerts (R-12 fix)
@@ -332,7 +333,10 @@ export async function POST(request: NextRequest) {
         context: "register-clinic",
         error: err,
       });
-      // Fail open on Turnstile service outage to avoid blocking all registrations
+      // F-06: Fail closed — this endpoint creates privileged users and real
+      // tenants. Allowing registration when Turnstile is unreachable exposes
+      // the system to mass fake-clinic creation.
+      return apiError("Bot verification is temporarily unavailable. Please try again later.", 503);
     }
   }
 

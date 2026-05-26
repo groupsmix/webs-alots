@@ -17,6 +17,7 @@
  */
 
 import { type NextRequest } from "next/server";
+import { logAuditEvent } from "@/lib/audit-log";
 import { sha256Hex, timingSafeEqual } from "@/lib/crypto-utils";
 import { logger } from "@/lib/logger";
 import { createClient } from "@/lib/supabase-server";
@@ -121,6 +122,20 @@ export async function authenticateApiKey(
         .then(({ error }) => {
           if (error) logger.warn("Failed to update API key last_used_at", { context: "api-auth", error });
         });
+
+      // Append-only audit log for API key usage (durable forensics).
+      logAuditEvent({
+        supabase,
+        action: "api_key_used",
+        type: "security",
+        clinicId: candidate.clinic_id,
+        description: `API key (prefix: ${keyPrefix}) authenticated`,
+        metadata: {
+          key_prefix: keyPrefix,
+          scopes: Array.isArray(scopes) ? scopes : null,
+          required_scope: requiredScope ?? null,
+        },
+      }).catch(() => {});
 
       return {
         clinicId: candidate.clinic_id,

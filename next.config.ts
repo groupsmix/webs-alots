@@ -91,8 +91,14 @@ const nextConfig: NextConfig = {
     remotePatterns: [
       {
         protocol: "https",
-        // Audit P2 #17: Pin to project instead of allowing **.supabase.co
-        hostname: process.env.NEXT_PUBLIC_SUPABASE_URL ? new URL(process.env.NEXT_PUBLIC_SUPABASE_URL).hostname : "**.supabase.co",
+        // Audit P2 #17: Pin to project instead of allowing **.supabase.co.
+        // F-05: No wildcard fallback — if NEXT_PUBLIC_SUPABASE_URL is missing,
+        // restrict to a non-matching placeholder so the build succeeds but
+        // no external Supabase images are optimized. The env validation in
+        // lib/env.ts will catch the missing URL at runtime.
+        hostname: process.env.NEXT_PUBLIC_SUPABASE_URL
+          ? new URL(process.env.NEXT_PUBLIC_SUPABASE_URL).hostname
+          : "supabase-url-not-configured.invalid",
         pathname: "/storage/v1/object/public/**",
       },
       {
