@@ -79,6 +79,24 @@ export async function middleware(request: NextRequest) {
   const hostname = request.headers.get("host") ?? "";
   const rootDomain = process.env.ROOT_DOMAIN;
 
+  // --- A45.6: Global maintenance-mode kill-switch ---
+  // Set MAINTENANCE_MODE=1 in env to immediately return 503 for all traffic
+  // without redeploying the Worker. Health-check endpoint is exempted so
+  // monitoring can detect when maintenance ends.
+  if (process.env.MAINTENANCE_MODE === "1" && pathname !== "/api/health") {
+    return new NextResponse("Service temporarily unavailable for maintenance", {
+      status: 503,
+      headers: {
+        "Retry-After": "300",
+        "Content-Type": "text/plain",
+        "Strict-Transport-Security": "max-age=63072000; includeSubDomains; preload",
+        "X-Content-Type-Options": "nosniff",
+        "X-Frame-Options": "DENY",
+        "Referrer-Policy": "strict-origin-when-cross-origin",
+      },
+    });
+  }
+
   // --- F-A198 / F-A160: Sanctioned country block ---
   const sanctionBlock = checkSanctionedCountry(request);
   if (sanctionBlock) return sanctionBlock;
