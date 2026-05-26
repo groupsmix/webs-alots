@@ -57,10 +57,14 @@ export default {
       return;
     }
 
-    // B-03: Build requests to the Next.js API routes via the same Worker fetch handler.
-    // Use a configurable base URL (defaulted to the prod host) so downstream
-    // subdomain/CSRF/signed-URL helpers see the real host instead of localhost.
-    const cronBaseUrl = env.CRON_SELF_BASE_URL || `https://${env.ROOT_DOMAIN || "oltigo.com"}`;
+    // B-03 / A43.5: Build requests to the Next.js API routes via the same
+    // Worker fetch handler.  CRON_SELF_BASE_URL (or ROOT_DOMAIN) must be set
+    // per-environment so staging crons never accidentally hit production.
+    const cronBaseUrl = env.CRON_SELF_BASE_URL || (env.ROOT_DOMAIN ? `https://${env.ROOT_DOMAIN}` : null);
+    if (!cronBaseUrl) {
+      console.error(`[Cron] Neither CRON_SELF_BASE_URL nor ROOT_DOMAIN is set — refusing to fire ${controller.cron} to avoid cross-environment request`);
+      return;
+    }
 
     for (const route of routes) {
       console.log(`[Cron] Firing ${controller.cron} → ${route}`);
