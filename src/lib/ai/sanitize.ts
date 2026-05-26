@@ -18,7 +18,11 @@ export function sanitizeUntrustedText(s: string | null | undefined): string {
     .normalize("NFKC")
     // Strip zero-width / invisible characters
     .replace(/[\u200B-\u200F\u2028-\u202F\uFEFF\u00AD]/g, "")
-    // F-AI-06: Strip UNTRUSTED delimiter markers
+    // F-AI-06 / A101-2: Strip ALL UNTRUSTED delimiter marker variants.
+    // The prompt templates use <<UNTRUSTED_PATIENT_INPUT_BEGIN/END>> to
+    // fence user content. If an attacker injects these markers they can
+    // close the fence early and inject trusted-mode instructions.
+    .replace(/<<\s*UNTRUSTED[^>]*>>/gi, "")
     .replace(/---\s*UNTRUSTED\s*---/gi, "")
     .replace(/---\s*END\s*UNTRUSTED\s*---/gi, "")
     .replace(/\[UNTRUSTED\]/gi, "")
