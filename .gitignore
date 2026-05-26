@@ -49,6 +49,9 @@ next-env.d.ts
 # Generated API docs (rebuild with: npm run docs:generate)
 /docs/api
 
+# AI eval results (generated, uploaded as CI artifacts)
+evals/results/
+
 # Database dumps
 full_backup.sql
 lint.txt
