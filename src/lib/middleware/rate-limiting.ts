@@ -27,7 +27,9 @@ export async function applyRateLimit(
   // CI E2E bypass: Playwright tests run all requests from a single IP
   // (127.0.0.1) which easily exceeds per-IP limits. The CI environment
   // is not internet-facing so rate limiting provides no security value.
-  if (process.env.CI === "true") {
+  // Gate on GITHUB_ACTIONS (not CI) per src/lib/env.ts convention —
+  // CI=true is easy to set accidentally on a real deployment.
+  if (process.env.GITHUB_ACTIONS === "true") {
     return { response: null };
   }
 
