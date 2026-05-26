@@ -36,7 +36,7 @@ export const GET = withAuth(async (request: NextRequest, auth: AuthContext) => {
 
   const { data, error } = await auth.supabase
     .from("menus")
-    .select("*, menu_items(*)")
+    .select("id, clinic_id, name, description, is_active, sort_order, created_at, updated_at, menu_items(id, category, name, description, price, photo_url, is_available, allergens, is_halal, sort_order)")
     .eq("id", id)
     .eq("clinic_id", clinicId)
     .single();

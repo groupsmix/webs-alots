@@ -40,7 +40,7 @@ export const GET = withAuth(async (request: NextRequest, auth: AuthContext) => {
 
   const { data, error } = await auth.supabase
     .from("orders")
-    .select("*")
+    .select("id, clinic_id, reservation_id, table_id, items, subtotal, tax_amount, total, status, order_source, created_at, updated_at")
     .eq("id", id)
     .eq("clinic_id", clinicId)
     .single();

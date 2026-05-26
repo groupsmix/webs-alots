@@ -239,6 +239,9 @@ export function enforceEnvValidation(): void {
   // has set ALLOW_UNMASKED_PHI=true. See SECURITY.md → "PHI Masking Defaults".
   enforcePhiMaskingPolicy();
 
+  // A100-35: Reject CRON_SECRET shorter than 32 chars in production.
+  enforceCronSecretMinLength();
+
   // S-05: Assert PROFILE_HEADER_HMAC_KEY !== CRON_SECRET to prevent a
   // leaked cron token from also forging session headers.
   enforceHmacKeyIndependence();
@@ -381,6 +384,29 @@ export function enforcePhiEncryptionConfigured(): void {
       "[STARTUP HEALTH CHECK FAILED] PHI_ENCRYPTION_KEY must be exactly 64 hex characters (256 bits).\n" +
       "Generate a valid key with: openssl rand -hex 32";
     logger.error(message, { context: "env-validation", check: "phi-encryption" });
+    throw new Error(message);
+  }
+}
+
+/**
+ * A100-35: Reject CRON_SECRET shorter than 32 characters in production.
+ * A weak or empty secret would allow unauthenticated cron execution
+ * (timingSafeEqual("", "") can return true on some implementations).
+ *
+ * Mirrors the MIN_CRON_SECRET_LENGTH guard in cron-auth.ts but at startup
+ * so operators get a clear boot error instead of silent 401s.
+ *
+ * Exported for unit tests.
+ */
+export function enforceCronSecretMinLength(): void {
+  if (process.env.NODE_ENV !== "production") return;
+
+  const secret = process.env.CRON_SECRET;
+  if (secret && secret.length < 32) {
+    const message =
+      "[STARTUP HEALTH CHECK FAILED] CRON_SECRET must be at least 32 characters.\n" +
+      "A short secret is vulnerable to brute-force. Generate one: `openssl rand -hex 32`.";
+    logger.error(message, { context: "env-validation", check: "cron-secret-length" });
     throw new Error(message);
   }
 }
