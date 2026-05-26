@@ -107,9 +107,9 @@ for VAR in "${REQUIRED_VARS[@]}"; do
   fi
 done
 
-# Cloudflare auth: either API Token or Global Key + Email
+# Cloudflare auth: scoped API Token (preferred) or Global API Key + Email
 if [[ -z "${CLOUDFLARE_API_TOKEN:-}" ]] && { [[ -z "${CLOUDFLARE_API_KEY:-}" ]] || [[ -z "${CLOUDFLARE_EMAIL:-}" ]]; }; then
-  log_error "Missing Cloudflare auth: set CLOUDFLARE_API_TOKEN or CLOUDFLARE_API_KEY+CLOUDFLARE_EMAIL"
+  log_error "Missing Cloudflare auth: set CLOUDFLARE_API_TOKEN (preferred) or CLOUDFLARE_API_KEY+CLOUDFLARE_EMAIL"
   MISSING_REQUIRED=$((MISSING_REQUIRED + 1))
 fi
 
