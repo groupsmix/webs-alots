@@ -33,12 +33,17 @@ routes = [
 ]
 
 # ── KV Namespaces ─────────────────────────────────────────────────────
-# AUDIT-LB3: IaC — rate-limiting counters (shared across all edge
-# locations). Replace the placeholder ID with the actual KV namespace ID
-# from `wrangler kv namespace list` before first deploy.
-[[kv_namespaces]]
-binding = "RATE_LIMIT_KV"
-id = "REPLACE_WITH_PROD_KV_NAMESPACE_ID"
+# Rate-limiting counters (shared across all edge locations).
+# Currently production uses RATE_LIMIT_BACKEND=supabase, so the KV binding
+# is not required for deploy. Uncomment and set the real namespace ID when
+# migrating to KV-backed rate limiting:
+#
+#   wrangler kv namespace create RATE_LIMIT_KV
+#   # Copy the returned ID below
+#
+# [[kv_namespaces]]
+# binding = "RATE_LIMIT_KV"
+# id = "<paste-real-kv-namespace-id-here>"
 
 # ── R2 Buckets ────────────────────────────────────────────────────────
 # AUDIT-LB3: IaC — PHI file storage (encrypted uploads).
@@ -71,13 +76,16 @@ cpu_ms = 50  # Default: 50ms CPU time per request (Workers Paid plan)
 enabled = true
 
 # ── Cron Triggers ─────────────────────────────────────────────────────
-# AUDIT-LB3: IaC — scheduled jobs (GDPR purge, reminders, stale-booking
-# sweep). Defined here so `wrangler deploy` registers them automatically.
+# IaC — scheduled jobs. These must match worker-cron-handler.ts CRON_ROUTES
+# exactly. `wrangler deploy` registers them with Cloudflare automatically.
+# See also: scripts/check-cron-mapping.ts (CI guard).
 [triggers]
 crons = [
-  "0 2 * * *",    # 02:00 UTC daily — GDPR patient data purge
-  "0 8 * * *",    # 08:00 UTC daily — appointment reminders
-  "*/15 * * * *", # every 15 min — stale booking sweep
+  "*/15 * * * *", # every 15 min — notification queue flush
+  "*/30 * * * *", # every 30 min — appointment reminders
+  "0 * * * *",    # hourly — R2 cleanup + feedback + rebooking reminders
+  "0 2 * * *",    # 02:00 UTC daily — subscription billing
+  "0 3 * * *",    # 03:00 UTC daily — GDPR patient data purge
 ]
 
 # ── Build ─────────────────────────────────────────────────────────────

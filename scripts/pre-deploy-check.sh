@@ -4,8 +4,9 @@ set -e
 
 echo "Checking for PLACEHOLDER values in configuration..."
 
-if grep -q "PLACEHOLDER" wrangler.toml; then
-  echo "::error::Found PLACEHOLDER values in wrangler.toml. Please update with actual IDs before deploying."
+# Only check uncommented lines for PLACEHOLDER values
+if grep -v '^\s*#' wrangler.toml | grep -q "PLACEHOLDER"; then
+  echo "::error::Found PLACEHOLDER values in uncommented wrangler.toml lines. Please update with actual IDs before deploying."
   exit 1
 fi
 
