@@ -79,7 +79,6 @@ REQUIRED_VARS=(
   NEXT_PUBLIC_SUPABASE_ANON_KEY
   SUPABASE_SERVICE_ROLE_KEY
   SUPABASE_PROJECT_REF
-  CLOUDFLARE_API_TOKEN
   CLOUDFLARE_ACCOUNT_ID
   NEXT_PUBLIC_SITE_URL
 )
@@ -107,6 +106,12 @@ for VAR in "${REQUIRED_VARS[@]}"; do
     log_info "  ${VAR} ✓"
   fi
 done
+
+# Cloudflare auth: either API Token or Global Key + Email
+if [[ -z "${CLOUDFLARE_API_TOKEN:-}" ]] && { [[ -z "${CLOUDFLARE_API_KEY:-}" ]] || [[ -z "${CLOUDFLARE_EMAIL:-}" ]]; }; then
+  log_error "Missing Cloudflare auth: set CLOUDFLARE_API_TOKEN or CLOUDFLARE_API_KEY+CLOUDFLARE_EMAIL"
+  MISSING_REQUIRED=$((MISSING_REQUIRED + 1))
+fi
 
 if [[ ${MISSING_REQUIRED} -gt 0 ]]; then
   log_error "${MISSING_REQUIRED} required secret(s) missing. Cannot continue."

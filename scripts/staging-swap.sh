@@ -8,7 +8,7 @@
 # 3. Optionally rolling back if something goes wrong
 #
 # Prerequisites:
-#   - wrangler CLI authenticated (CLOUDFLARE_API_TOKEN set)
+#   - wrangler CLI authenticated (CLOUDFLARE_API_TOKEN or CLOUDFLARE_API_KEY+CLOUDFLARE_EMAIL)
 #   - Both production and staging workers deployed
 #
 # Usage:

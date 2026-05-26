@@ -26,9 +26,11 @@ import { logger } from "@/lib/logger";
 // ── Types ────────────────────────────────────────────────────────────
 
 export interface CloudflareConfig {
-  apiToken: string;
   zoneId: string;
   zoneName: string;
+  auth:
+    | { mode: "token"; apiToken: string }
+    | { mode: "global-key"; apiKey: string; email: string };
 }
 
 export interface DnsRecord {
@@ -58,15 +60,25 @@ interface CloudflareApiResponse<T> {
 // ── Configuration ────────────────────────────────────────────────────
 
 function getConfig(): CloudflareConfig | null {
-  const apiToken = process.env.CLOUDFLARE_API_TOKEN;
   const zoneId = process.env.CLOUDFLARE_ZONE_ID;
   const zoneName = process.env.CLOUDFLARE_ZONE_NAME;
 
-  if (!apiToken || !zoneId || !zoneName) {
+  if (!zoneId || !zoneName) {
     return null;
   }
 
-  return { apiToken, zoneId, zoneName };
+  const apiToken = process.env.CLOUDFLARE_API_TOKEN;
+  if (apiToken) {
+    return { zoneId, zoneName, auth: { mode: "token", apiToken } };
+  }
+
+  const apiKey = process.env.CLOUDFLARE_API_KEY;
+  const email = process.env.CLOUDFLARE_EMAIL;
+  if (apiKey && email) {
+    return { zoneId, zoneName, auth: { mode: "global-key", apiKey, email } };
+  }
+
+  return null;
 }
 
 const CF_API_BASE = "https://api.cloudflare.com/client/v4";
@@ -80,10 +92,15 @@ async function cfFetch<T>(
 ): Promise<CloudflareApiResponse<T>> {
   const url = `${CF_API_BASE}/zones/${config.zoneId}${path}`;
 
+  const authHeaders: Record<string, string> =
+    config.auth.mode === "token"
+      ? { Authorization: `Bearer ${config.auth.apiToken}` }
+      : { "X-Auth-Key": config.auth.apiKey, "X-Auth-Email": config.auth.email };
+
   const response = await fetch(url, {
     ...options,
     headers: {
-      Authorization: `Bearer ${config.apiToken}`,
+      ...authHeaders,
       "Content-Type": "application/json",
       ...((options.headers as Record<string, string>) ?? {}),
     },
@@ -116,7 +133,7 @@ export async function provisionSubdomain(
   if (!config) {
     return {
       success: false,
-      error: "Cloudflare DNS not configured. Set CLOUDFLARE_API_TOKEN, CLOUDFLARE_ZONE_ID, CLOUDFLARE_ZONE_NAME.",
+      error: "Cloudflare DNS not configured. Set CLOUDFLARE_API_TOKEN (or CLOUDFLARE_API_KEY + CLOUDFLARE_EMAIL), CLOUDFLARE_ZONE_ID, CLOUDFLARE_ZONE_NAME.",
     };
   }
 
