@@ -94,6 +94,7 @@ jobs:
         run: |
           npm config set ignore-scripts true
           npm ci
+          node node_modules/esbuild/install.js || true
           node scripts/patch-opennext.mjs || true
 
       # Same build that deploy.yml runs before `wrangler deploy`.
