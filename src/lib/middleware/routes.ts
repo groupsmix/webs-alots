@@ -53,13 +53,30 @@ export const LIGHTWEIGHT_API_PATHS = new Set([
   "/api/health",
 ]);
 
-/** Role to allowed route prefix mapping */
+/**
+ * Role to allowed route prefix mapping.
+ *
+ * AUDIT-LB2: Every role that has a PROTECTED_PREFIXES entry MUST appear
+ * here. If a role is missing, the middleware check fails open and the
+ * user bypasses route scoping. Unknown roles are denied in middleware
+ * (see fail-closed block in middleware.ts).
+ */
 export const ROLE_ROUTE_MAP: Record<string, string> = {
   super_admin: "/super-admin",
   clinic_admin: "/admin",
   receptionist: "/receptionist",
   doctor: "/doctor",
   patient: "/patient",
+  pharmacist: "/pharmacist",
+  nutritionist: "/nutritionist",
+  optician: "/optician",
+  parapharmacy: "/parapharmacy",
+  physiotherapist: "/physiotherapist",
+  psychologist: "/psychologist",
+  radiology: "/radiology",
+  speech_therapist: "/speech-therapist",
+  equipment: "/equipment",
+  lab: "/lab-panel",
 };
 
 /** Role to dashboard path mapping */
@@ -69,6 +86,16 @@ export const ROLE_DASHBOARD_MAP: Record<string, string> = {
   receptionist: "/receptionist/dashboard",
   doctor: "/doctor/dashboard",
   patient: "/patient/dashboard",
+  pharmacist: "/pharmacist/dashboard",
+  nutritionist: "/nutritionist/dashboard",
+  optician: "/optician/dashboard",
+  parapharmacy: "/parapharmacy/dashboard",
+  physiotherapist: "/physiotherapist/dashboard",
+  psychologist: "/psychologist/dashboard",
+  radiology: "/radiology/dashboard",
+  speech_therapist: "/speech-therapist/dashboard",
+  equipment: "/equipment/dashboard",
+  lab: "/lab-panel/dashboard",
 };
 
 /**

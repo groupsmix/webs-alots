@@ -448,9 +448,11 @@ export async function middleware(request: NextRequest) {
   if (isPublicRoute(pathname)) {
     // If authenticated user visits login/register, redirect to their dashboard
     if (user && (pathname === "/login" || pathname === "/register") && profile) {
-      const dashboardPath =
-        ROLE_DASHBOARD_MAP[profile.role] || "/patient/dashboard";
-      return secureRedirect(new URL(dashboardPath, request.url));
+      const dashboardPath = ROLE_DASHBOARD_MAP[profile.role];
+      if (dashboardPath) {
+        return secureRedirect(new URL(dashboardPath, request.url));
+      }
+      // Unknown role with no dashboard — let them stay on login/register
     }
     return supabaseResponse;
   }
@@ -483,6 +485,16 @@ export async function middleware(request: NextRequest) {
   if (user && isProtectedRoute(pathname) && profile) {
     const allowedPrefix = ROLE_ROUTE_MAP[profile.role];
 
+    // AUDIT-LB2: Fail-closed for unmapped roles. If a role is not in
+    // ROLE_ROUTE_MAP, sign the user out and redirect to login. Without
+    // the sign-out, the authenticated-user-on-login handler (below)
+    // would bounce them to /patient/dashboard, creating an infinite
+    // redirect loop.
+    if (!allowedPrefix) {
+      await supabase.auth.signOut();
+      return secureRedirect(new URL("/login?error=unauthorized_role", request.url));
+    }
+
     // Super admin and doctor can access their routes, but MUST complete MFA if configured
     if (profile.role === "super_admin" || profile.role === "doctor") {
       const { data: aalData } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
@@ -503,9 +515,9 @@ export async function middleware(request: NextRequest) {
     }
 
     // Check if user is accessing their allowed routes
-    if (allowedPrefix && !pathname.startsWith(allowedPrefix)) {
+    if (!pathname.startsWith(allowedPrefix)) {
       const dashboardPath =
-        ROLE_DASHBOARD_MAP[profile.role] || "/patient/dashboard";
+        ROLE_DASHBOARD_MAP[profile.role] || allowedPrefix;
       return secureRedirect(new URL(dashboardPath, request.url));
     }
   }
