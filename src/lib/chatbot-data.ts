@@ -161,7 +161,7 @@ export function buildSystemPrompt(ctx: ChatbotClinicContext): string {
     ? services
         .map((s) => {
           const price = s.price != null ? `${s.price} MAD` : "Prix sur demande";
-          const cat = s.category ? ` (${s.category})` : "";
+          const cat = s.category ? ` (${sanitizeUntrustedText(s.category)})` : "";
           return `- ${sanitizeUntrustedText(s.name)}${cat}: ${price} — ${s.duration_minutes} min`;
         })
         .join("\n")

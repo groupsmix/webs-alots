@@ -86,7 +86,14 @@ export async function middleware(request: NextRequest) {
   if (process.env.MAINTENANCE_MODE === "1" && pathname !== "/api/health") {
     return new NextResponse("Service temporarily unavailable for maintenance", {
       status: 503,
-      headers: { "Retry-After": "300", "Content-Type": "text/plain" },
+      headers: {
+        "Retry-After": "300",
+        "Content-Type": "text/plain",
+        "Strict-Transport-Security": "max-age=63072000; includeSubDomains; preload",
+        "X-Content-Type-Options": "nosniff",
+        "X-Frame-Options": "DENY",
+        "Referrer-Policy": "strict-origin-when-cross-origin",
+      },
     });
   }
 
