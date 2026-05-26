@@ -39,7 +39,7 @@ export const GET = withAuth(async (request: NextRequest, auth: AuthContext) => {
 
   const { data, error } = await auth.supabase
     .from("pet_profiles")
-    .select("*")
+    .select("id, clinic_id, owner_id, name, species, breed, weight_kg, date_of_birth, photo_url, notes, is_active, created_at, updated_at")
     .eq("id", id)
     .eq("clinic_id", clinicId)
     .single();

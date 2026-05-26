@@ -4,6 +4,12 @@ on:
   pull_request:
     branches: [main, staging]
 
+# A34.12: Cancel redundant runs for the same PR — prevents duplicate
+# CodeQL/Gitleaks/Semgrep jobs from racing and wasting runner minutes.
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 # Least-privilege permissions (only what each job needs)
 permissions:
   contents: read
@@ -233,7 +239,7 @@ jobs:
         run: npx playwright install --with-deps chromium
 
       - name: Start Supabase (ephemeral CI project)
-        uses: supabase/setup-cli@v1
+        uses: supabase/setup-cli@ab058987d8d6c725971f6cf9d0b5c98467e30bd1 # v1.7.1
         with:
           version: latest
 
@@ -332,7 +338,7 @@ jobs:
           SEED_USERS_DELETED: "true"
 
       - name: Upload Playwright report
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         if: always()
         with:
           name: playwright-report

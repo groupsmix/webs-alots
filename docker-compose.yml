@@ -63,7 +63,7 @@ services:
 
   # ---------- MinIO (S3-compatible, replaces R2 locally) ----------
   minio:
-    image: minio/minio:latest
+    image: minio/minio:RELEASE.2025-05-01T22-06-42Z
     ports:
       # A31.7: Bind MinIO API to localhost only
       - "127.0.0.1:9000:9000"

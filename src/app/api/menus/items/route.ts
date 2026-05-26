@@ -36,9 +36,10 @@ export const GET = withAuth(async (request: NextRequest, auth: AuthContext) => {
 
   let query = auth.supabase
     .from("menu_items")
-    .select("*")
+    .select("id, menu_id, clinic_id, category, name, description, price, photo_url, is_available, allergens, is_halal, sort_order, created_at, updated_at")
     .eq("clinic_id", clinicId)
-    .order("sort_order", { ascending: true });
+    .order("sort_order", { ascending: true })
+    .limit(500);
 
   if (menuId) {
     query = query.eq("menu_id", menuId);
