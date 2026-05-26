@@ -9,7 +9,7 @@ import { test, expect } from "@playwright/test";
 
 test.describe("Booking flow", () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto("/booking");
+    await page.goto("/book");
   });
 
   test("booking page shows service selection or appointment form", async ({

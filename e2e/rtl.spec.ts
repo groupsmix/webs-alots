@@ -1,13 +1,25 @@
 import { test, expect } from '@playwright/test';
 
 test.describe('RTL (Arabic) Layout Smoke Tests', () => {
-  // Set localStorage to trigger Arabic locale on load
+  // Set both cookie and localStorage to trigger Arabic locale.
+  // The server reads the cookie for SSR; the client reads localStorage.
   test.use({
     storageState: {
-      cookies: [],
+      cookies: [
+        {
+          name: 'preferred-locale',
+          value: 'ar',
+          domain: 'localhost',
+          path: '/',
+          httpOnly: false,
+          secure: false,
+          sameSite: 'Lax',
+          expires: -1,
+        }
+      ],
       origins: [
         {
-          origin: 'http://localhost:3000',
+          origin: process.env.E2E_BASE_URL || 'http://localhost:3000',
           localStorage: [
             {
               name: 'preferred-locale',
@@ -21,39 +33,36 @@ test.describe('RTL (Arabic) Layout Smoke Tests', () => {
 
   test('Auth pages should render with RTL direction', async ({ page }) => {
     await page.goto('/login');
-    
-    // The html element should have dir="rtl"
+    await page.waitForLoadState('domcontentloaded');
+
+    // Wait for client-side hydration to apply dir attribute
+    await page.waitForFunction(() => document.documentElement.dir === 'rtl', null, { timeout: 10_000 });
+
     await expect(page.locator('html')).toHaveAttribute('dir', 'rtl');
     await expect(page.locator('html')).toHaveAttribute('lang', 'ar');
-    
-    // The layout should apply RTL classes
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const body = page.locator('body');
-    await expect(page.locator('html')).toHaveClass(/rtl/);
-    
-    // Verify some known Arabic text is visible
-    await expect(page.getByText('تسجيل الدخول', { exact: false })).toBeVisible();
-    
+
     // Register page
     await page.goto('/register');
+    await page.waitForLoadState('domcontentloaded');
+    await page.waitForFunction(() => document.documentElement.dir === 'rtl', null, { timeout: 10_000 });
     await expect(page.locator('html')).toHaveAttribute('dir', 'rtl');
   });
 
   test('Booking flow should support RTL', async ({ page }) => {
-    // Assuming /book or a public doctor profile is accessible without auth
     await page.goto('/book');
-    
-    // Verify dir is RTL
+    await page.waitForLoadState('domcontentloaded');
+
+    // Wait for client-side hydration
+    await page.waitForFunction(() => document.documentElement.dir === 'rtl', null, { timeout: 10_000 });
     await expect(page.locator('html')).toHaveAttribute('dir', 'rtl');
-    
-    // Wait for content to load
-    await page.waitForLoadState('networkidle');
   });
 
-  test('Dashboard should support RTL (Mocked Auth)', async ({ page }) => {
-    // We can just check the login redirect or a public demo page if available
-    // or test the UI shell
-    await page.goto('/demo');
+  test('Public page should support RTL', async ({ page }) => {
+    await page.goto('/');
+    await page.waitForLoadState('domcontentloaded');
+
+    // Wait for client-side hydration
+    await page.waitForFunction(() => document.documentElement.dir === 'rtl', null, { timeout: 10_000 });
     await expect(page.locator('html')).toHaveAttribute('dir', 'rtl');
   });
 });

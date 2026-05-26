@@ -301,7 +301,7 @@ jobs:
           BOOKING_TOKEN_SECRET: ci-e2e-booking-token-secret-placeholder
           ROOT_DOMAIN: localhost
           NEXT_PUBLIC_SITE_URL: http://demo.localhost:3000
-          CRON_SECRET: ci-e2e-cron-secret-placeholder
+          CRON_SECRET: ci-e2e-cron-secret-placeholder-0123456789
           # R-02: PROFILE_HEADER_HMAC_KEY is required in production mode (and
           # `next start` runs in production). Without it, env validation in
           # src/lib/env.ts hard-fails on startup and Playwright never gets a

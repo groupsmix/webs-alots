@@ -40,7 +40,7 @@ test.describe("Mobile — critical page rendering", () => {
   });
 
   test("booking page renders on mobile", async ({ page }) => {
-    const response = await page.goto("/booking");
+    const response = await page.goto("/book");
     expect(response?.status()).toBeLessThan(500);
     await expect(page.locator("body")).not.toBeEmpty();
 

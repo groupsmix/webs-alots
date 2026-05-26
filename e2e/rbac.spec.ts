@@ -297,7 +297,7 @@ test.describe("RBAC — public routes remain accessible", () => {
   });
 
   test("booking page is accessible without auth", async ({ page }) => {
-    const response = await page.goto("/booking");
+    const response = await page.goto("/book");
     expect(response?.status()).toBeLessThan(500);
   });
 
