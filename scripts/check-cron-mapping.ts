@@ -30,7 +30,7 @@ if (missingInHandler.length) {
 }
 
 // Check handler → wrangler direction: extract schedule keys from CRON_ROUTES
-const handlerSchedules = [...handler.matchAll(/"([*/\d ]+\*)":\s/g)].map((m) => m[1]);
+const handlerSchedules = [...handler.matchAll(/"([^"]+)":\s/g)].map((m) => m[1]).filter((s) => /^[\d*/,\- a-zA-Z]+$/.test(s));
 const missingInWrangler = handlerSchedules.filter((c) => !cronsBlock.includes(`"${c}"`));
 if (missingInWrangler.length) {
   console.error("Cron mismatch — these handler schedules are not in wrangler.toml:", missingInWrangler);
