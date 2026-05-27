@@ -20,6 +20,7 @@ import {
   getPublicAverageRating,
   getPublicBranding,
 } from "@/lib/data/public";
+import { t, type Locale } from "@/lib/i18n";
 import { safeJsonLdStringify } from "@/lib/json-ld";
 import { logger } from "@/lib/logger";
 import { mergeSectionVisibility } from "@/lib/section-visibility";
@@ -45,17 +46,19 @@ function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise
 export async function generateMetadata(): Promise<Metadata> {
   const tenant = await getTenant();
 
+  const h = await import("next/headers").then(m => m.headers());
+  const locale: Locale = (h.get("x-tenant-locale") as Locale) || "fr";
+
   if (!tenant) {
+    const metaTitle = `Oltigo \u2014 ${t(locale, "public.meta.title")}`;
     return {
-      title: "Oltigo — La plateforme complète pour gérer votre cabinet médical",
-      description:
-        "Créez le site de votre cabinet, gérez les rendez-vous et développez votre activité facilement. Plateforme SaaS pour médecins et cabinets au Maroc.",
+      title: metaTitle,
+      description: t(locale, "public.meta.description"),
       openGraph: {
-        title: "Oltigo — La plateforme complète pour gérer votre cabinet médical",
-        description:
-          "Créez le site de votre cabinet, gérez les rendez-vous et développez votre activité facilement.",
+        title: metaTitle,
+        description: t(locale, "public.meta.ogDescription"),
         type: "website",
-        locale: "fr_MA",
+        locale: locale === "ar" ? "ar_MA" : "fr_MA",
         siteName: "Oltigo",
       },
     };
@@ -63,14 +66,14 @@ export async function generateMetadata(): Promise<Metadata> {
 
   // Pull clinic branding for SEO-rich meta tags
   const branding = await getPublicBranding();
-  const clinicName = branding.clinicName || tenant.clinicName || "Cabinet Médical";
+  const clinicName = branding.clinicName || tenant.clinicName || t(locale, "public.clinicFallback");
   const rootDomain = process.env.ROOT_DOMAIN ?? "oltigo.com";
   const canonicalUrl = `https://${tenant.subdomain}.${rootDomain}`;
 
-  const title = `${clinicName} | Prenez rendez-vous en ligne`;
+  const title = t(locale, "public.bookOnlineSuffix", { clinicName });
   const description = branding.tagline
-    ? `${clinicName} — ${branding.tagline}. Prenez rendez-vous en ligne.`
-    : `${clinicName} — Prenez rendez-vous en ligne, consultez nos services et découvrez notre équipe médicale.`;
+    ? t(locale, "public.clinicMetaDesc", { clinicName, tagline: branding.tagline })
+    : t(locale, "public.clinicMetaDescDefault", { clinicName });
 
   return {
     title,
@@ -111,6 +114,10 @@ export default async function HomePage() {
   if (!tenant) {
     return <LandingPage />;
   }
+
+  const { headers } = await import("next/headers");
+  const h = await headers();
+  const locale: Locale = (h.get("x-tenant-locale") as Locale) || "fr";
 
   // Subdomain → show clinic homepage with tenant data
   let branding;
@@ -182,7 +189,7 @@ export default async function HomePage() {
     potentialAction: {
       "@type": "ReserveAction",
       target: `${canonicalUrl}/book`,
-      name: "Prendre rendez-vous en ligne",
+      name: t(locale, "public.bookOnline"),
     },
   };
 
@@ -218,9 +225,9 @@ export default async function HomePage() {
           <div className="container mx-auto px-4">
             <div className="text-center mb-12">
               <h2 className="text-3xl font-bold mb-4">
-                Ce que disent nos patients
+                {t(locale, "public.reviews.heading")}
               </h2>
-              <p className="text-sm text-muted-foreground mb-2">Meilleurs avis</p>
+              <p className="text-sm text-muted-foreground mb-2">{t(locale, "public.reviews.subtitle")}</p>
               <div className="flex items-center justify-center gap-2">
                 <span className="text-3xl font-bold">{avgRating}</span>
                 <div className="flex gap-0.5" role="img" aria-label={`${avgRating} out of 5 stars`}>
@@ -237,7 +244,7 @@ export default async function HomePage() {
                   ))}
                 </div>
                 <span className="text-sm text-muted-foreground">
-                  ({reviews.length} avis)
+                  {t(locale, "public.reviews.count", { count: reviews.length })}
                 </span>
               </div>
             </div>
@@ -290,7 +297,7 @@ export default async function HomePage() {
             </div>
             <div className="mt-10 text-center">
               <Link href="/reviews" className={linkBtnOutline}>
-                Voir tous les avis
+                {t(locale, "public.reviews.viewAll")}
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Link>
             </div>
