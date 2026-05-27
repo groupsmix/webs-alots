@@ -87,6 +87,12 @@ jobs:
       - name: Run coverage check
         run: npm run test:coverage
 
+      # R-02: Per-file coverage thresholds for security-critical modules.
+      # Reads the JSON summary produced by the coverage step above.
+      - name: Security coverage thresholds
+        run: node scripts/check-security-coverage.mjs
+        continue-on-error: true
+
       # CI-02: Fail-closed bundle budget check.
       #
       # Next 16 (Turbopack) no longer prints the "First Load JS shared by all"
