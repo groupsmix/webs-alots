@@ -129,31 +129,40 @@ export async function POST(request: NextRequest) {
     const supabase = createAdminClient("webhook");
 
     // MEDIUM-2: Stripe event deduplication — reject replayed webhook deliveries.
+    // Wrapped in try-catch so dedup table issues never block payment processing.
     if (stripeEventId) {
-      const clinicIdFromMeta = event.data?.object?.metadata?.clinic_id ?? null;
-      const { error: dedupErr } = await (supabase as never as {
-        from(t: string): {
-          insert(r: Record<string, unknown>): Promise<{ error: { code?: string; message: string } | null }>;
-        };
-      }).from("processed_stripe_events").insert({
-        event_id: stripeEventId,
-        event_type: event.type,
-        clinic_id: clinicIdFromMeta,
-      });
+      try {
+        const clinicIdFromMeta = event.data?.object?.metadata?.clinic_id ?? null;
+        const { error: dedupErr } = await (supabase as never as {
+          from(t: string): {
+            insert(r: Record<string, unknown>): Promise<{ error: { code?: string; message: string } | null }>;
+          };
+        }).from("processed_stripe_events").insert({
+          event_id: stripeEventId,
+          event_type: event.type,
+          clinic_id: clinicIdFromMeta,
+        });
 
-      if (dedupErr) {
-        if (dedupErr.code === "23505") {
-          logger.info("Stripe webhook replay detected — ignoring duplicate", {
+        if (dedupErr) {
+          if (dedupErr.code === "23505") {
+            logger.info("Stripe webhook replay detected — ignoring duplicate", {
+              context: "billing/webhook",
+              eventId: stripeEventId,
+              eventType: event.type,
+            });
+            return apiSuccess({ received: true, duplicate: true });
+          }
+          logger.warn("Stripe event dedup insert failed", {
             context: "billing/webhook",
             eventId: stripeEventId,
-            eventType: event.type,
+            error: dedupErr.message,
           });
-          return apiSuccess({ received: true, duplicate: true });
         }
-        logger.warn("Stripe event dedup insert failed", {
+      } catch (dedupCatchErr) {
+        logger.warn("Stripe event dedup threw — continuing without dedup", {
           context: "billing/webhook",
           eventId: stripeEventId,
-          error: dedupErr.message,
+          error: dedupCatchErr,
         });
       }
     }
