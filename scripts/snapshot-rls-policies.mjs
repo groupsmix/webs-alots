@@ -16,9 +16,10 @@
  * --update: Write the snapshot to pg_policies.snapshot.json (for baselining)
  * Without --update: Print to stdout (for CI diffing)
  */
-import { createClient } from "@supabase/supabase-js";
 import { writeFileSync } from "fs";
 import { resolve } from "path";
+
+import { createClient } from "@supabase/supabase-js";
 
 const SUPABASE_URL = process.env.SUPABASE_LOCAL_URL;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_LOCAL_SERVICE_KEY;
