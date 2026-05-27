@@ -144,6 +144,15 @@ export default async function RootLayout({
       suppressHydrationWarning
       className={`${geistSans.variable} ${geistMono.variable} ${notoSansArabic.variable} ${playfairDisplay.variable} ${ibmPlexArabic.variable} h-full antialiased`}
     >
+      <head>
+        {/* PERF-005: Preconnect to Supabase to shave ~100ms off first SSR fetch */}
+        {process.env.NEXT_PUBLIC_SUPABASE_URL && (
+          <>
+            <link rel="preconnect" href={process.env.NEXT_PUBLIC_SUPABASE_URL} />
+            <link rel="dns-prefetch" href={process.env.NEXT_PUBLIC_SUPABASE_URL} />
+          </>
+        )}
+      </head>
       <body className="min-h-full flex flex-col">
         {/* Skip-to-content link for keyboard / screen-reader accessibility (WCAG 2.4.1) */}
         <a

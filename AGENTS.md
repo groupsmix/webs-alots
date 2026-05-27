@@ -126,6 +126,6 @@ return apiError("Not found", 404, "NOT_FOUND");
 
 ## CI Pipeline
 
-PRs run: ESLint → TypeScript → Unit tests → Bundle size check (250 kB shared JS limit) → E2E tests
+PRs run: ESLint → TypeScript → Unit tests → Bundle size check (1024 kB shared JS limit, see `scripts/check-bundle-budget.mjs`) → E2E tests
 
 Deploy pipeline (main/staging): lint → unit tests → build → deploy to Cloudflare Workers → health check
