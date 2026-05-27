@@ -36,7 +36,6 @@
     "tailwindcss",
     "postcss",
     "eslint-plugin-react-hooks",
-    "tsx",
     "tw-animate-css",
     "shadcn"
   ]
