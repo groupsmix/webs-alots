@@ -111,7 +111,12 @@ const ENV_RULES: EnvRule[] = [
   // These are gated by NEXT_PUBLIC_ENABLE_CUSTOM_DOMAINS — when the flag is
   // "true" they become required, so the app refuses to boot with a half-wired
   // custom-domain feature. See `isCustomDomainsEnabled()` below.
-  { name: "CLOUDFLARE_API_TOKEN", required: customDomainsEnabledFromEnv(), description: "Cloudflare API token for DNS management (required when NEXT_PUBLIC_ENABLE_CUSTOM_DOMAINS=true)", group: "domains" },
+  // Cloudflare auth: either CLOUDFLARE_API_TOKEN (scoped) or
+  // CLOUDFLARE_API_KEY + CLOUDFLARE_EMAIL (global key). Both are optional
+  // here — the cross-field check runs inside validateEnv().
+  { name: "CLOUDFLARE_API_TOKEN", required: false, description: "Cloudflare scoped API token for DNS management", group: "domains" },
+  { name: "CLOUDFLARE_API_KEY", required: false, description: "Cloudflare Global API Key (alternative to API token)", group: "domains" },
+  { name: "CLOUDFLARE_EMAIL", required: false, description: "Cloudflare account email (required with Global API Key)", group: "domains" },
   { name: "CLOUDFLARE_ZONE_ID", required: customDomainsEnabledFromEnv(), description: "Cloudflare zone ID for DNS management (required when NEXT_PUBLIC_ENABLE_CUSTOM_DOMAINS=true)", group: "domains" },
   { name: "CLOUDFLARE_ZONE_NAME", required: customDomainsEnabledFromEnv(), description: "Cloudflare zone (root domain) name for DNS management (required when NEXT_PUBLIC_ENABLE_CUSTOM_DOMAINS=true)", group: "domains" },
 ];
@@ -162,6 +167,20 @@ export function validateEnv(): EnvValidationResult {
       } else {
         warnings.push({ name: rule.name, description: rule.description, group: rule.group });
       }
+    }
+  }
+
+  // Cross-field: when custom domains are enabled, require either
+  // CLOUDFLARE_API_TOKEN or (CLOUDFLARE_API_KEY + CLOUDFLARE_EMAIL).
+  if (customDomainsEnabledFromEnv()) {
+    const hasToken = !!process.env.CLOUDFLARE_API_TOKEN;
+    const hasGlobalKey = !!process.env.CLOUDFLARE_API_KEY && !!process.env.CLOUDFLARE_EMAIL;
+    if (!hasToken && !hasGlobalKey) {
+      missing.push({
+        name: "CLOUDFLARE_API_TOKEN or CLOUDFLARE_API_KEY+CLOUDFLARE_EMAIL",
+        description: "Cloudflare auth required when NEXT_PUBLIC_ENABLE_CUSTOM_DOMAINS=true",
+        group: "domains",
+      });
     }
   }
 
