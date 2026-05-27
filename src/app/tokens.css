@@ -1,20 +1,21 @@
 /*
- * Oltigo Design System Tokens
+ * Oltigo Design System Tokens — Editorial-Institutional
  *
  * Single source of truth for all visual properties on marketing surfaces.
  * Consumed by Tailwind v4 via @theme and directly by component styles.
  *
- * Rules:
- *   - Four core tokens. Every additional color must be argued for in writing.
- *   - No gradient on type. No purple. No glassmorphism.
- *   - Dark mode is a swap of --ink ↔ --bone. Accent and signal do not change brightness.
+ * Rules (from design direction):
+ *   1. Four color tokens max. Every addition must be argued in writing.
+ *   2. No gradient on type. Ever.
+ *   3. --rule is the only border color. No border-gray-200, no shadow-lg.
+ *   4. Dark mode = swap --ink ↔ --bone. Accent/signal unchanged.
+ *   5. WCAG AAA on body, AA-large floor on lightest tier.
  */
 
 :root {
   /* ── Foundation ── */
   --ink: #0B0F0E;
   --bone: #F4F1EA;
-  --bone-2: #ECE9DF;
   --rule: rgba(11, 15, 14, 0.12);
 
   /* Ink opacity helpers */
@@ -31,24 +32,8 @@
   --signal-amber: #F59E0B;
   --signal-red: #B42318;
 
-  /* ── Paper grain (single permitted gradient token) ── */
+  /* Paper grain — the only permitted gradient */
   --paper-grain: linear-gradient(180deg, var(--bone) 0%, rgba(244, 241, 234, 0.98) 100%);
-
-  /* ── Error (system color, not a brand color) ── */
-  --error: #B42318;
-
-  /* ── Legacy aliases (consumed by emergent components — will be removed) ── */
-  --surgical-sage: #5B8A72;
-  --surgical-sage-light: rgba(91, 138, 114, 0.12);
-  --surgical-sage-halo: rgba(91, 138, 114, 0.22);
-  --reassurance-teal: #2D6A6A;
-  --carnet-ochre: #C4A265;
-  --carnet-ochre-light: rgba(196, 162, 101, 0.15);
-  --clinic-coral: #D4746A;
-  --graphite: #1A1D21;
-  --night-navy: #0D1117;
-  --night-navy-surface: #161B22;
-  --lab-linen: #FAF8F3;
 
   /* ── Spacing (4pt base, 8pt grid) ── */
   --space-1: 4px;
@@ -63,17 +48,15 @@
   --space-10: 128px;
 
   /* ── Typography ──
-     One typeface family: Grotesk only. ABC Diatype preferred, Inter as
-     open-source fallback. JetBrains Mono for metadata. IBM Plex Sans
-     Arabic for Arabic (matches Diatype's geometric construction). */
+     Landing-specific font stacks. Namespaced (suffix `-landing`) so they do
+     not clobber --font-sans / --font-mono which are the app-wide theme tokens
+     consumed by Tailwind v4's @theme inline in globals.css. */
   --font-sans-landing: Inter, ui-sans-serif, system-ui, -apple-system, sans-serif;
-  --font-serif-landing: var(--font-playfair), 'Playfair Display', Georgia, 'Times New Roman', serif;
   --font-mono-landing: 'JetBrains Mono', 'Geist Mono', ui-monospace, 'Cascadia Code', monospace;
   --font-arabic: var(--font-ibm-plex-arabic), 'IBM Plex Sans Arabic', 'Noto Sans Arabic', var(--font-noto-arabic), sans-serif;
 
-  /* Type scale: 8 steps, rem-based. 16px = 1rem base.
-     Tight tracking on display, neutral on body. */
-  --text-display: 4.5rem;      /* 72px */
+  /* Type scale (rem-based, 16px root) */
+  --text-display: 4.5rem;     /* 72px */
   --lh-display: 1.02;
   --ls-display: -0.02em;
 
@@ -93,14 +76,14 @@
   --lh-body-lg: 1.50;
   --ls-body-lg: 0;
 
-  --text-body: 1rem;            /* 16px */
+  --text-body: 1rem;           /* 16px */
   --lh-body: 1.55;
   --ls-body: 0;
 
   --text-small: 0.875rem;      /* 14px */
   --lh-small: 1.45;
 
-  --text-mono: 0.75rem;         /* 12px */
+  --text-mono: 0.75rem;        /* 12px */
   --lh-mono: 1.30;
   --ls-mono: 0.04em;
 
@@ -110,64 +93,39 @@
   --gutter-tablet: 24px;
   --gutter-desktop: clamp(20px, 4vw, 64px);
   --grid-gap: 32px;
-  --grid-gap-tablet: 24px;
-  --grid-gap-mobile: 20px;
-
-  /* Radius: one value. Cards, inputs, buttons, badges. */
   --radius-landing: 8px;
 
-  /* ── Motion ── */
+  /* ── Motion (prefers-reduced-motion honored in components) ── */
   --duration: 180ms;
   --easing: cubic-bezier(0.2, 0.7, 0.2, 1);
 
-  /* ── Focus ring (the only permitted shadow) ── */
+  /* ── Focus ring (the only permitted shadow in the system) ── */
   --ring-focus: 0 0 0 2px var(--oltigo-green);
-
-  /* ── Legacy shadow alias ── */
-  --shadow-sticky: 0 1px 0 rgba(11, 15, 14, 0.06);
 }
 
-/* ── Dark mode ── */
+/* ── Dark mode: swap ink ↔ bone ── */
 [data-theme="dark"] {
   --ink: #F4F1EA;
   --bone: #0B0F0E;
-  --bone-2: #141917;
   --rule: rgba(244, 241, 234, 0.14);
-  --ink-80: rgba(244, 241, 234, 0.80);
+  --ink-80: rgba(244, 241, 234, 0.82);
   --ink-70: rgba(244, 241, 234, 0.78);
   --ink-60: rgba(244, 241, 234, 0.62);
   --ink-20: rgba(244, 241, 234, 0.20);
   --oltigo-green: #0E7A52;
   --paper-grain: linear-gradient(180deg, var(--bone) 0%, rgba(11, 15, 14, 0.98) 100%);
-  --surgical-sage-light: rgba(91, 138, 114, 0.18);
-  --surgical-sage-halo: rgba(91, 138, 114, 0.30);
-  --carnet-ochre-light: rgba(196, 162, 101, 0.20);
-  --lab-linen: #0D1117;
-  --night-navy: #0D1117;
-  --night-navy-surface: #161B22;
-  --graphite: #F4F1EA;
-  --shadow-sticky: 0 1px 0 rgba(244, 241, 234, 0.06);
 }
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     --ink: #F4F1EA;
     --bone: #0B0F0E;
-    --bone-2: #141917;
     --rule: rgba(244, 241, 234, 0.14);
-    --ink-80: rgba(244, 241, 234, 0.80);
+    --ink-80: rgba(244, 241, 234, 0.82);
     --ink-70: rgba(244, 241, 234, 0.78);
     --ink-60: rgba(244, 241, 234, 0.62);
     --ink-20: rgba(244, 241, 234, 0.20);
     --oltigo-green: #0E7A52;
     --paper-grain: linear-gradient(180deg, var(--bone) 0%, rgba(11, 15, 14, 0.98) 100%);
-    --surgical-sage-light: rgba(91, 138, 114, 0.18);
-    --surgical-sage-halo: rgba(91, 138, 114, 0.30);
-    --carnet-ochre-light: rgba(196, 162, 101, 0.20);
-    --lab-linen: #0D1117;
-    --night-navy: #0D1117;
-    --night-navy-surface: #161B22;
-    --graphite: #F4F1EA;
-    --shadow-sticky: 0 1px 0 rgba(244, 241, 234, 0.06);
   }
 }

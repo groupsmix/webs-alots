@@ -299,9 +299,16 @@ async function handler(request: NextRequest) {
       }
     }
 
-    // Batch-insert all notification log entries in a single DB call
+    // Batch-insert all notification log entries in a single DB call.
+    // API-008: Use upsert with ignoreDuplicates so the partial unique
+    // index (uq_notification_log_dedup) silently skips already-sent rows.
     if (pendingLogInserts.length > 0) {
-      await supabase.from("notification_log").insert(pendingLogInserts);
+      await supabase
+        .from("notification_log")
+        .upsert(pendingLogInserts, {
+          onConflict: "appointment_id,trigger,channel",
+          ignoreDuplicates: true,
+        });
     }
 
     return apiSuccess({

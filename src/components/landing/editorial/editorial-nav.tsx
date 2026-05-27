@@ -94,7 +94,7 @@ export function EditorialNav() {
               }}
             >
               {t(key)}
-              {hasStatusDot && <StatusDot variant="operational" />}
+              {hasStatusDot && <StatusDot status="operational" />}
             </Link>
           ))}
         </nav>
@@ -210,7 +210,7 @@ export function EditorialNav() {
                   }}
                 >
                   {t(key)}
-                  {hasStatusDot && <StatusDot variant="operational" />}
+                  {hasStatusDot && <StatusDot status="operational" />}
                 </Link>
               </li>
             ))}

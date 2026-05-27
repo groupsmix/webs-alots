@@ -2,38 +2,35 @@
 
 import { StatusDot } from "./status-dot";
 
-type BadgeVariant = "mono" | "signal";
-
 /**
- * Badge / Pill — two variants only.
- *
- * mono:   status, version, region. --ink-60 text on transparent with --rule border.
- * signal: live, operational, synced. --ink text + 6px --signal-green dot prefix, no border.
+ * §5.7 Badge / Pill — two variants only: mono and signal.
+ * 24px height, padding-x 8, radius 4, --text-mono, UC.
  */
 export function Badge({
-  variant = "mono",
   children,
+  variant = "mono",
 }: {
-  variant?: BadgeVariant;
   children: React.ReactNode;
+  variant?: "mono" | "signal";
 }) {
   if (variant === "signal") {
     return (
       <span
-        className="inline-flex items-center gap-[var(--space-1)]"
+        className="inline-flex items-center gap-1.5"
         style={{
-          height: "24px",
-          paddingInline: "var(--space-2)",
-          borderRadius: "4px",
+          height: 24,
+          paddingInline: 8,
+          borderRadius: 4,
           fontFamily: "var(--font-mono-landing)",
           fontSize: "var(--text-mono)",
           lineHeight: "var(--lh-mono)",
           letterSpacing: "var(--ls-mono)",
           textTransform: "uppercase",
+          fontWeight: 500,
           color: "var(--ink)",
         }}
       >
-        <StatusDot variant="operational" />
+        <StatusDot status="operational" />
         {children}
       </span>
     );
@@ -44,15 +41,16 @@ export function Badge({
       style={{
         display: "inline-flex",
         alignItems: "center",
-        height: "24px",
-        paddingInline: "var(--space-2)",
-        borderRadius: "4px",
+        height: 24,
+        paddingInline: 8,
+        borderRadius: 4,
         border: "1px solid var(--rule)",
         fontFamily: "var(--font-mono-landing)",
         fontSize: "var(--text-mono)",
         lineHeight: "var(--lh-mono)",
         letterSpacing: "var(--ls-mono)",
         textTransform: "uppercase",
+        fontWeight: 500,
         color: "var(--ink-60)",
       }}
     >

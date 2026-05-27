@@ -1,5 +1,6 @@
 "use client";
 
+import { CookieConsent } from "@/components/cookie-consent";
 import { EditorialLandingPage } from "./editorial/editorial-landing-page";
 
 /**
@@ -8,9 +9,14 @@ import { EditorialLandingPage } from "./editorial/editorial-landing-page";
  * This page does NOT load any tenant/clinic data.
  * Clinic websites live on subdomains (e.g. dr-ahmed.oltigo.com).
  *
- * Uses the editorial-institutional design: Stripe Docs header treatment,
- * Bloomberg Terminal mono metadata, Linear typographic scale.
+ * Design direction: editorial-institutional (Stripe Docs + Bloomberg Terminal
+ * + Linear typographic restraint). See docs/oltigo-design-direction.md.
  */
 export function LandingPage() {
-  return <EditorialLandingPage />;
+  return (
+    <>
+      <EditorialLandingPage />
+      <CookieConsent />
+    </>
+  );
 }

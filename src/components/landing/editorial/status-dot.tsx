@@ -1,44 +1,40 @@
 "use client";
 
-type StatusDotVariant = "operational" | "degraded" | "down";
-
-const dotColor: Record<StatusDotVariant, string> = {
-  operational: "var(--signal-green)",
-  degraded: "#F59E0B",
-  down: "#B42318",
-};
-
-const dotLabel: Record<StatusDotVariant, string> = {
-  operational: "System operational",
-  degraded: "System degraded",
-  down: "System down",
-};
-
 /**
- * Status dot — 6px round indicator paired with a mono label.
- * Never standalone per spec.
+ * §5.11 Status Dot — 6px round, signal-green when operational.
+ * Always paired with a mono label. Never standalone.
  */
 export function StatusDot({
-  variant = "operational",
-  label,
+  status = "operational",
 }: {
-  variant?: StatusDotVariant;
-  label?: string;
+  status?: "operational" | "degraded" | "down";
 }) {
+  const color =
+    status === "operational"
+      ? "var(--signal-green)"
+      : status === "degraded"
+        ? "var(--signal-amber)"
+        : "var(--signal-red)";
+
+  const label =
+    status === "operational"
+      ? "System operational"
+      : status === "degraded"
+        ? "System degraded"
+        : "System down";
+
   return (
     <span
-      className="inline-flex items-center gap-[var(--space-1)]"
       role="status"
-      aria-label={label ?? dotLabel[variant]}
-    >
-      <span
-        className="inline-block shrink-0 rounded-full"
-        style={{
-          width: "6px",
-          height: "6px",
-          backgroundColor: dotColor[variant],
-        }}
-      />
-    </span>
+      aria-label={label}
+      style={{
+        display: "inline-block",
+        width: 6,
+        height: 6,
+        borderRadius: "50%",
+        backgroundColor: color,
+        flexShrink: 0,
+      }}
+    />
   );
 }

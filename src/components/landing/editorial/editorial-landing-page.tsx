@@ -1,28 +1,29 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { CookieConsent } from "@/components/cookie-consent";
-import { LandingLocaleProvider } from "../landing-locale-provider";
+import { ClosingCtaSection } from "./closing-cta-section";
 import { EditorialFooter } from "./editorial-footer";
-import { EditorialNav } from "./editorial-nav";
-import { ClaimsSection } from "./sections/claims-section";
-import { ClosingCtaSection } from "./sections/closing-cta-section";
-import { CustomersTeaser } from "./sections/customers-teaser";
-import { HeroSection } from "./sections/hero-section";
-import { HowItWorksSection } from "./sections/how-it-works-section";
-import { ManifestoSection } from "./sections/manifesto-section";
-import { MultiTenantSection } from "./sections/multi-tenant-section";
-import { PricingTeaser } from "./sections/pricing-teaser";
-import { ProductAnatomySection } from "./sections/product-anatomy-section";
+import { EditorialHeader } from "./editorial-header";
+import { EditorialHero } from "./hero-section";
+import { HowItWorksSection } from "./how-it-works-section";
+import { ManifestoSection } from "./manifesto-section";
+import { MultiTenantSection } from "./multi-tenant-section";
+import { PricingSection } from "./pricing-section";
+import { ProductSection } from "./product-section";
+import { TestimonialsSection } from "./testimonials-section";
 
 /**
  * Editorial-institutional landing page for Oltigo Health.
  *
- * Visual model: Stripe Docs × Bloomberg Terminal × Linear.
- * One grotesk typeface, four tokens, hairline rules, mono metadata.
- * No gradients on type, no glassmorphism, no Lottie.
+ * Design direction: Stripe Docs header treatment + Bloomberg Terminal mono
+ * metadata + Linear's typographic restraint. No gradients on type, no
+ * parallax, no Lottie, no glassmorphism.
+ *
+ * Sections follow §3.1 order: Hero → Manifesto → Product → How → MultiTenant
+ * → Clients → Pricing → Closing CTA → Footer.
  */
 export function EditorialLandingPage() {
+  const [lang, setLang] = useState<"fr" | "ar" | "en">("fr");
   const [theme, setTheme] = useState<"light" | "dark">(() => {
     if (typeof window === "undefined") return "light";
     const stored = localStorage.getItem("oltigo-theme") as "light" | "dark" | null;
@@ -41,42 +42,59 @@ export function EditorialLandingPage() {
     return () => mq.removeEventListener("change", handler);
   }, []);
 
+  const toggleTheme = () => {
+    const next = theme === "light" ? "dark" : "light";
+    setTheme(next);
+    localStorage.setItem("oltigo-theme", next);
+  };
+
+  const cycleLang = () => {
+    const order: Array<"fr" | "ar" | "en"> = ["fr", "ar", "en"];
+    const next = order[(order.indexOf(lang) + 1) % order.length];
+    setLang(next);
+  };
+
+  const rtl = lang === "ar";
+
   return (
-    <LandingLocaleProvider>
-      <div
-        data-theme={theme}
-        className="relative min-h-screen"
-        style={{
-          backgroundColor: "var(--bone)",
-          color: "var(--ink)",
-          fontFamily: "var(--font-sans-landing)",
-        }}
+    <div
+      dir={rtl ? "rtl" : "ltr"}
+      data-theme={theme}
+      style={{
+        backgroundColor: "var(--bone)",
+        color: "var(--ink)",
+        fontFamily: "var(--font-sans-landing)",
+        minHeight: "100vh",
+      }}
+    >
+      {/* Skip to content */}
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[100] focus:rounded-lg focus:px-4 focus:py-2 focus:text-sm focus:font-medium"
+        style={{ backgroundColor: "var(--oltigo-green)", color: "var(--bone)" }}
       >
-        <a
-          href="#main-content"
-          className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[100] focus:rounded-lg focus:px-4 focus:py-2 focus:text-sm focus:font-medium"
-          style={{ backgroundColor: "var(--oltigo-green)", color: "var(--bone)" }}
-        >
-          {"Aller au contenu principal"}
-        </a>
+        {rtl ? "الانتقال إلى المحتوى الرئيسي" : "Aller au contenu principal"}
+      </a>
 
-        <EditorialNav />
+      <EditorialHeader
+        lang={lang}
+        theme={theme}
+        onToggleLang={cycleLang}
+        onToggleTheme={toggleTheme}
+      />
 
-        <main id="main-content">
-          <HeroSection />
-          <ClaimsSection />
-          <ManifestoSection />
-          <ProductAnatomySection />
-          <HowItWorksSection />
-          <MultiTenantSection />
-          <CustomersTeaser />
-          <PricingTeaser />
-          <ClosingCtaSection />
-        </main>
+      <main id="main-content">
+        <EditorialHero />
+        <ManifestoSection />
+        <ProductSection />
+        <HowItWorksSection />
+        <MultiTenantSection />
+        <TestimonialsSection />
+        <PricingSection />
+        <ClosingCtaSection />
+      </main>
 
-        <EditorialFooter />
-        <CookieConsent />
-      </div>
-    </LandingLocaleProvider>
+      <EditorialFooter />
+    </div>
   );
 }

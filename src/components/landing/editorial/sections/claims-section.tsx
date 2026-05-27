@@ -43,12 +43,11 @@ export function ClaimsSection() {
       >
         {/* eslint-disable i18next/no-literal-string */}
         <div className="grid grid-cols-1 gap-[var(--space-7)] sm:grid-cols-2 lg:grid-cols-4">
-          {CLAIMS.map(({ value, label, description }) => (
+          {CLAIMS.map(({ value, label }) => (
             <StatBlock
               key={label}
               value={value}
               label={label}
-              description={description}
             />
           ))}
         </div>

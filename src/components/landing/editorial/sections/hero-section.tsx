@@ -59,7 +59,7 @@ export function HeroSection() {
           <span>{"\u00B7"}</span>
           <span className="inline-flex items-center gap-[var(--space-1)]">
             {"STATUT"}
-            <StatusDot variant="operational" />
+            <StatusDot status="operational" />
           </span>
         </div>
 

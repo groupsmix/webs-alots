@@ -1,24 +1,21 @@
 "use client";
 
-import { HairlineRule } from "./hairline-rule";
-
 /**
- * Stat block — value + hairline + two lines of context.
- * 4-up on desktop, 2-up on mobile. Never wrapped in a card.
+ * §5.10 Stat Block — value + 1px rule + mono label.
+ * 4-up desktop, 2-up mobile. Never wrapped in a card.
  */
 export function StatBlock({
   value,
   label,
-  description,
 }: {
   value: string;
   label: string;
-  description: string;
 }) {
   return (
-    <div>
-      <p
+    <div className="flex flex-col gap-1">
+      <span
         style={{
+          fontFamily: "var(--font-sans-landing)",
           fontSize: "var(--text-h2)",
           lineHeight: "var(--lh-h2)",
           letterSpacing: "var(--ls-h2)",
@@ -27,9 +24,12 @@ export function StatBlock({
         }}
       >
         {value}
-      </p>
-      <HairlineRule className="my-[var(--space-3)]" />
-      <p
+      </span>
+      <hr
+        style={{ border: "none", borderTop: "1px solid var(--rule)", margin: 0 }}
+        aria-hidden="true"
+      />
+      <span
         style={{
           fontFamily: "var(--font-mono-landing)",
           fontSize: "var(--text-mono)",
@@ -37,20 +37,11 @@ export function StatBlock({
           letterSpacing: "var(--ls-mono)",
           textTransform: "uppercase",
           color: "var(--ink-60)",
+          fontWeight: 500,
         }}
       >
         {label}
-      </p>
-      <p
-        className="mt-[var(--space-1)]"
-        style={{
-          fontSize: "var(--text-body)",
-          lineHeight: "var(--lh-body)",
-          color: "var(--ink-70)",
-        }}
-      >
-        {description}
-      </p>
+      </span>
     </div>
   );
 }

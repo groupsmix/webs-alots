@@ -1,22 +1,19 @@
 "use client";
 
 /**
- * Hairline Rule — 1px --rule separator.
- *
- * The hairline is its own component because it carries information:
- * it separates statements (trust strip), groups (case study sections),
- * and signals scope (nav bottom rule).
+ * §5.12 Hairline Rule — the hairline carries information.
+ * 1px --rule. Separates statements, groups, and signals scope.
  */
-export function HairlineRule({ className }: { className?: string }) {
+export function HairlineRule({ className = "" }: { className?: string }) {
   return (
-    <div
-      role="separator"
+    <hr
       className={className}
       style={{
-        height: "1px",
-        backgroundColor: "var(--rule)",
-        width: "100%",
+        border: "none",
+        borderTop: "1px solid var(--rule)",
+        margin: 0,
       }}
+      aria-hidden="true"
     />
   );
 }
