@@ -1,49 +1,41 @@
 /*
- * Oltigo Design System Tokens
+ * Oltigo Design System Tokens — Editorial-Institutional
  *
  * Single source of truth for all visual properties on marketing surfaces.
  * Consumed by Tailwind v4 via @theme and directly by component styles.
  *
- * Rules:
- *   - Max two non-neutral hues per viewport (Oltigo Green + one signal).
- *   - No purple.
+ * Rules (from design direction):
+ *   1. Four color tokens max. Every addition must be argued in writing.
+ *   2. No gradient on type. Ever.
+ *   3. --rule is the only border color. No border-gray-200, no shadow-lg.
+ *   4. Dark mode = swap --ink ↔ --bone. Accent/signal unchanged.
+ *   5. WCAG AAA on body, AA-large floor on lightest tier.
  */
 
 :root {
   /* ── Foundation ── */
-  --ink: #0B0F14;
-  --bone: #F6F4EE;
-  --bone-2: #ECE9DF;
-  --rule: rgba(11, 15, 20, 0.10);
+  --ink: #0B0F0E;
+  --bone: #F4F1EA;
+  --rule: rgba(11, 15, 14, 0.12);
 
   /* Ink opacity helpers */
-  --ink-80: rgba(11, 15, 20, 0.80);
-  --ink-70: rgba(11, 15, 20, 0.70);
-  --ink-60: rgba(11, 15, 20, 0.60);
-  --ink-20: rgba(11, 15, 20, 0.20);
+  --ink-80: rgba(11, 15, 14, 0.80);
+  --ink-70: rgba(11, 15, 14, 0.72);
+  --ink-60: rgba(11, 15, 14, 0.60);
+  --ink-20: rgba(11, 15, 14, 0.20);
 
-  /* ── Accent ── */
-  --oltigo-green: #16604A;
+  /* ── Accent (action) ── */
+  --oltigo-green: #005A3B;
 
-  /* ── Emergent Palette ── */
-  --surgical-sage: #5B8A72;
-  --surgical-sage-light: rgba(91, 138, 114, 0.12);
-  --surgical-sage-halo: rgba(91, 138, 114, 0.22);
-  --reassurance-teal: #2D6A6A;
-  --carnet-ochre: #C4A265;
-  --carnet-ochre-light: rgba(196, 162, 101, 0.15);
-  --clinic-coral: #D4746A;
-  --graphite: #1A1D21;
-  --night-navy: #0D1117;
-  --night-navy-surface: #161B22;
-  --lab-linen: #FAF8F3;
-
-  /* ── Signal (status only, never for CTAs or branding) ── */
-  --signal-green: #1E8E3E;
-  --signal-amber: #B7791F;
+  /* ── Signal (status only — never decorative) ── */
+  --signal-green: #22C55E;
+  --signal-amber: #F59E0B;
   --signal-red: #B42318;
 
-  /* ── Spacing (4pt grid) ── */
+  /* Paper grain — the only permitted gradient */
+  --paper-grain: linear-gradient(180deg, var(--bone) 0%, rgba(244, 241, 234, 0.98) 100%);
+
+  /* ── Spacing (4pt base, 8pt grid) ── */
   --space-1: 4px;
   --space-2: 8px;
   --space-3: 12px;
@@ -54,108 +46,86 @@
   --space-8: 64px;
   --space-9: 96px;
   --space-10: 128px;
-  --space-11: 192px;
 
   /* ── Typography ──
      Landing-specific font stacks. Namespaced (suffix `-landing`) so they do
-     not clobber `--font-sans` / `--font-mono` which are the app-wide theme
-     tokens consumed by Tailwind v4's `@theme inline` in globals.css — those
-     must continue to resolve to the app's default Geist stack for admin,
-     patient portal, and auth surfaces. Same rationale as `--radius-landing`
-     below. */
+     not clobber --font-sans / --font-mono which are the app-wide theme tokens
+     consumed by Tailwind v4's @theme inline in globals.css. */
   --font-sans-landing: Inter, ui-sans-serif, system-ui, -apple-system, sans-serif;
-  --font-serif-landing: var(--font-playfair), 'Playfair Display', Georgia, 'Times New Roman', serif;
   --font-mono-landing: 'JetBrains Mono', 'Geist Mono', ui-monospace, 'Cascadia Code', monospace;
   --font-arabic: var(--font-ibm-plex-arabic), 'IBM Plex Sans Arabic', 'Noto Sans Arabic', var(--font-noto-arabic), sans-serif;
 
-  /* Type scale: 16px = 1rem base */
+  /* Type scale (rem-based, 16px root) */
   --text-display: 4.5rem;     /* 72px */
-  --lh-display: 1.04;
-  --ls-display: -0.025em;
+  --lh-display: 1.02;
+  --ls-display: -0.02em;
 
-  --text-h1: 3rem;            /* 48px */
-  --lh-h1: 1.08;
-  --ls-h1: -0.02em;
+  --text-h1: 3rem;             /* 48px */
+  --lh-h1: 1.06;
+  --ls-h1: -0.015em;
 
-  --text-h2: 2rem;            /* 32px */
-  --lh-h2: 1.15;
-  --ls-h2: -0.015em;
+  --text-h2: 2rem;             /* 32px */
+  --lh-h2: 1.12;
+  --ls-h2: -0.01em;
 
-  --text-h3: 1.25rem;         /* 20px */
-  --lh-h3: 1.3;
-  --ls-h3: -0.01em;
+  --text-h3: 1.375rem;         /* 22px */
+  --lh-h3: 1.22;
+  --ls-h3: -0.005em;
 
-  --text-body-lg: 1.125rem;   /* 18px */
-  --lh-body-lg: 1.55;
-  --ls-body-lg: -0.005em;
+  --text-body-lg: 1.1875rem;   /* 19px */
+  --lh-body-lg: 1.50;
+  --ls-body-lg: 0;
 
   --text-body: 1rem;           /* 16px */
-  --lh-body: 1.6;
+  --lh-body: 1.55;
   --ls-body: 0;
 
-  --text-small: 0.875rem;     /* 14px */
-  --lh-small: 1.5;
+  --text-small: 0.875rem;      /* 14px */
+  --lh-small: 1.45;
 
-  --text-mono: 0.8125rem;     /* 13px */
-  --lh-mono: 1.4;
+  --text-mono: 0.75rem;        /* 12px */
+  --lh-mono: 1.30;
+  --ls-mono: 0.04em;
 
   /* ── Layout ── */
-  --container-max: 1200px;
-  --gutter-mobile: 24px;
-  --gutter-tablet: 48px;
-  --gutter-desktop: 96px;
-  --grid-gap: 24px;
-  /* Landing-page radius. Namespaced to avoid collision with the shadcn
-     `--radius` token defined in globals.css (which would otherwise win the
-     CSS cascade because globals.css redeclares :root after importing this
-     file). */
+  --container-max: 1280px;
+  --gutter-mobile: 20px;
+  --gutter-tablet: 24px;
+  --gutter-desktop: clamp(20px, 4vw, 64px);
+  --grid-gap: 32px;
   --radius-landing: 8px;
 
-  /* ── Motion ── */
-  --duration: 120ms;
-  --easing: cubic-bezier(0.2, 0.7, 0.3, 1);
+  /* ── Motion (prefers-reduced-motion honored in components) ── */
+  --duration: 180ms;
+  --easing: cubic-bezier(0.2, 0.7, 0.2, 1);
 
-  /* ── Shadows (minimal — one allowed for sticky bars) ── */
-  --shadow-sticky: 0 1px 0 rgba(11, 15, 20, 0.06);
+  /* ── Focus ring (the only permitted shadow in the system) ── */
+  --ring-focus: 0 0 0 2px var(--oltigo-green);
 }
 
-/* ── Dark mode (night-shift navy) ── */
+/* ── Dark mode: swap ink ↔ bone ── */
 [data-theme="dark"] {
-  --ink: #E6EDF3;
-  --bone: #161B22;
-  --bone-2: #1C2128;
-  --rule: rgba(230, 237, 243, 0.10);
-  --ink-80: rgba(230, 237, 243, 0.80);
-  --ink-70: rgba(230, 237, 243, 0.70);
-  --ink-60: rgba(230, 237, 243, 0.60);
-  --ink-20: rgba(230, 237, 243, 0.20);
-  --surgical-sage-light: rgba(91, 138, 114, 0.18);
-  --surgical-sage-halo: rgba(91, 138, 114, 0.30);
-  --carnet-ochre-light: rgba(196, 162, 101, 0.20);
-  --lab-linen: #0D1117;
-  --night-navy: #0D1117;
-  --night-navy-surface: #161B22;
-  --graphite: #E6EDF3;
-  --shadow-sticky: 0 1px 0 rgba(230, 237, 243, 0.06);
+  --ink: #F4F1EA;
+  --bone: #0B0F0E;
+  --rule: rgba(244, 241, 234, 0.14);
+  --ink-80: rgba(244, 241, 234, 0.82);
+  --ink-70: rgba(244, 241, 234, 0.78);
+  --ink-60: rgba(244, 241, 234, 0.62);
+  --ink-20: rgba(244, 241, 234, 0.20);
+  --oltigo-green: #0E7A52;
+  --paper-grain: linear-gradient(180deg, var(--bone) 0%, rgba(11, 15, 14, 0.98) 100%);
 }
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --ink: #E6EDF3;
-    --bone: #161B22;
-    --bone-2: #1C2128;
-    --rule: rgba(230, 237, 243, 0.10);
-    --ink-80: rgba(230, 237, 243, 0.80);
-    --ink-70: rgba(230, 237, 243, 0.70);
-    --ink-60: rgba(230, 237, 243, 0.60);
-    --ink-20: rgba(230, 237, 243, 0.20);
-    --surgical-sage-light: rgba(91, 138, 114, 0.18);
-    --surgical-sage-halo: rgba(91, 138, 114, 0.30);
-    --carnet-ochre-light: rgba(196, 162, 101, 0.20);
-    --lab-linen: #0D1117;
-    --night-navy: #0D1117;
-    --night-navy-surface: #161B22;
-    --graphite: #E6EDF3;
-    --shadow-sticky: 0 1px 0 rgba(230, 237, 243, 0.06);
+    --ink: #F4F1EA;
+    --bone: #0B0F0E;
+    --rule: rgba(244, 241, 234, 0.14);
+    --ink-80: rgba(244, 241, 234, 0.82);
+    --ink-70: rgba(244, 241, 234, 0.78);
+    --ink-60: rgba(244, 241, 234, 0.62);
+    --ink-20: rgba(244, 241, 234, 0.20);
+    --oltigo-green: #0E7A52;
+    --paper-grain: linear-gradient(180deg, var(--bone) 0%, rgba(11, 15, 14, 0.98) 100%);
   }
 }
