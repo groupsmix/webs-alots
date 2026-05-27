@@ -13,6 +13,7 @@ import {
   ImagePlus,
   SkipForward,
 } from "lucide-react";
+import Image from "next/image";
 import { useState, useRef } from "react";
 import { ClinicTypeIcon } from "@/components/clinic-type-icon";
 import { CelebrationPage } from "@/components/onboarding/celebration-page";
@@ -817,10 +818,13 @@ export default function OnboardingPage() {
             className="w-48 h-48 rounded-2xl border-2 border-dashed border-muted-foreground/30 hover:border-primary/50 transition-colors flex flex-col items-center justify-center gap-3 bg-muted/30 hover:bg-muted/50 cursor-pointer"
           >
             {logoPreview ? (
-              <img
+              <Image
                 src={logoPreview}
                 alt="Logo preview"
                 className="w-full h-full object-contain rounded-2xl p-2"
+                width={192}
+                height={192}
+                unoptimized
               />
             ) : (
               <>

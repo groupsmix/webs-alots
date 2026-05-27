@@ -8,6 +8,7 @@ import {
   QrCode,
   MessageCircle,
 } from "lucide-react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import QRCode from "qrcode";
 import { useEffect, useState } from "react";
@@ -113,12 +114,13 @@ export function CelebrationPage({
                 QR Code de votre site
               </p>
               {qrDataUrl ? (
-                <img
+                <Image
                   src={qrDataUrl}
                   alt={`QR Code pour ${clinicUrl}`}
                   className="mx-auto rounded-lg"
                   width={160}
                   height={160}
+                  unoptimized
                 />
               ) : (
                 <div className="h-40 w-40 mx-auto bg-muted rounded-lg animate-pulse" />

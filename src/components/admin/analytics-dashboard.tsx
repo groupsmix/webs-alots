@@ -163,7 +163,7 @@ export function AnalyticsDashboard({
 
   const formatMAD = (amount: number) => formatCurrency(amount, locale, "MAD");
 
-  const now = new Date();
+  const now = useMemo(() => new Date(), []);
   const today = startOfDay(now);
   const yesterday = daysAgo(1);
 

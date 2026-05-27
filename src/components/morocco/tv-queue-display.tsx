@@ -1,6 +1,7 @@
 "use client";
 
 import { Clock, Bell, Stethoscope, Users, Maximize } from "lucide-react";
+import Image from "next/image";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { HealthTipsWidget } from "@/components/morocco/health-tips";
 import { PrayerTimesWidget } from "@/components/morocco/prayer-times";
@@ -232,10 +233,13 @@ export function TVQueueDisplay({
       <div className="flex items-center justify-between px-8 py-4 bg-black/20">
         <div className="flex items-center gap-4">
           {logoUrl ? (
-            <img
+            <Image
               src={logoUrl}
               alt={clinicName}
               className="h-12 w-12 rounded-xl object-contain bg-white/10 p-1"
+              width={48}
+              height={48}
+              unoptimized
             />
           ) : (
             <Stethoscope className="h-8 w-8 text-blue-300" />

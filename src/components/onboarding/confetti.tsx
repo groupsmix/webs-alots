@@ -33,11 +33,10 @@ function generatePieces(count: number): ConfettiPiece[] {
 }
 
 export function Confetti({ duration = 4000 }: { duration?: number }) {
-  const [pieces, setPieces] = useState<ConfettiPiece[]>([]);
+  const [pieces] = useState<ConfettiPiece[]>(() => generatePieces(80));
   const [visible, setVisible] = useState(true);
 
   useEffect(() => {
-    setPieces(generatePieces(80));
     const timer = setTimeout(() => setVisible(false), duration);
     return () => clearTimeout(timer);
   }, [duration]);

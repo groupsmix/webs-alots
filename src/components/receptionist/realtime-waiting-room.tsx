@@ -1,7 +1,7 @@
 "use client";
 
 import { Clock, Phone, MessageCircle, UserCheck } from "lucide-react";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -19,22 +19,21 @@ interface RealtimeWaitingRoomProps {
 export function RealtimeWaitingRoom({ clinicId, onCallIn }: RealtimeWaitingRoomProps) {
   const [waitingPatients, setWaitingPatients] = useState<AppointmentView[]>([]);
 
-  const loadWaitingPatients = useCallback(async () => {
-    const appts = await fetchTodayAppointments(clinicId);
-    const waiting = appts.filter(
-      (a) => a.status === "confirmed" || a.status === "in-progress",
-    );
-    setWaitingPatients(waiting);
-  }, [clinicId]);
-
   useEffect(() => {
+    let cancelled = false;
+
+    async function loadWaitingPatients() {
+      const appts = await fetchTodayAppointments(clinicId);
+      if (cancelled) return;
+      const waiting = appts.filter(
+        (a) => a.status === "confirmed" || a.status === "in-progress",
+      );
+      setWaitingPatients(waiting);
+    }
+
     loadWaitingPatients();
-  }, [loadWaitingPatients]);
 
-  // Set up Supabase Realtime subscription for appointment changes
-  useEffect(() => {
     const supabase = createClient();
-
     const channel = supabase
       .channel("waiting-room-changes")
       .on(
@@ -46,16 +45,16 @@ export function RealtimeWaitingRoom({ clinicId, onCallIn }: RealtimeWaitingRoomP
           filter: `clinic_id=eq.${clinicId}`,
         },
         () => {
-          // Reload waiting list when any appointment changes
           loadWaitingPatients();
         },
       )
       .subscribe();
 
     return () => {
+      cancelled = true;
       supabase.removeChannel(channel);
     };
-  }, [clinicId, loadWaitingPatients]);
+  }, [clinicId]);
 
   const handleCallPatient = (phone: string) => {
     window.open(`tel:${phone.replace(/\s/g, "")}`, "_self");

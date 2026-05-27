@@ -24,16 +24,14 @@ import { TestimonialsSection } from "./testimonials-section";
  */
 export function EditorialLandingPage() {
   const [lang, setLang] = useState<"fr" | "ar" | "en">("fr");
-  const [theme, setTheme] = useState<"light" | "dark">("light");
+  const [theme, setTheme] = useState<"light" | "dark">(() => {
+    if (typeof window === "undefined") return "light";
+    const stored = localStorage.getItem("oltigo-theme") as "light" | "dark" | null;
+    if (stored) return stored;
+    return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+  });
 
   useEffect(() => {
-    const stored = localStorage.getItem("oltigo-theme") as "light" | "dark" | null;
-    if (stored) {
-      setTheme(stored);
-    } else if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
-      setTheme("dark");
-    }
-
     const mq = window.matchMedia("(prefers-color-scheme: dark)");
     const handler = (e: MediaQueryListEvent) => {
       if (!localStorage.getItem("oltigo-theme")) {
