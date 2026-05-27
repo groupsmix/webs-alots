@@ -118,7 +118,7 @@ export interface CreateServiceInput {
   category?: string;
 }
 
-export interface CreateTimeSlotInput {
+interface CreateTimeSlotInput {
   doctor_id: string;
   clinic_id: string;
   day_of_week: number;
@@ -805,7 +805,7 @@ export async function fetchFeatureToggles(): Promise<FeatureToggleRow[]> {
 
 // ---------- Client Subscriptions ----------
 
-export interface ClientInvoice {
+interface ClientInvoice {
   id: string;
   date: string;
   amount: number;
@@ -814,7 +814,7 @@ export interface ClientInvoice {
 }
 
 export type SystemType = "doctor" | "dentist" | "pharmacy";
-export type TierSlug = "vitrine" | "cabinet" | "pro" | "premium" | "saas-monthly";
+type TierSlug = "vitrine" | "cabinet" | "pro" | "premium" | "saas-monthly";
 
 export interface ClientSubscription {
   id: string;

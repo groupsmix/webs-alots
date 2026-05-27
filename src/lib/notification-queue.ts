@@ -19,7 +19,7 @@ type ExtendedClient = SupabaseClient<Database>;
 
 // ── Types ──
 
-export interface QueuedNotification {
+interface QueuedNotification {
   id: string;
   clinic_id: string;
   channel: NotificationChannel;

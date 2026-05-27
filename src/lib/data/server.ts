@@ -25,7 +25,7 @@ type TableName = keyof Database["public"]["Tables"];
 const DEFAULT_QUERY_LIMIT = 1000;
 
 /** Paginated result envelope returned by `queryPaginated`. */
-export interface PaginatedResult<T> {
+interface PaginatedResult<T> {
   data: T[];
   total: number;
   hasMore: boolean;
@@ -144,7 +144,7 @@ async function queryOne<T>(
 // Auth / current user
 // ────────────────────────────────────────────
 
-export interface CurrentUser {
+interface CurrentUser {
   id: string;
   auth_id: string;
   clinic_id: string | null;
@@ -174,7 +174,7 @@ export async function getCurrentUser(): Promise<CurrentUser | null> {
 // Clinics
 // ────────────────────────────────────────────
 
-export interface ClinicRow {
+interface ClinicRow {
   id: string;
   name: string;
   type: string;
@@ -208,7 +208,7 @@ export async function getClinicById(id: string): Promise<ClinicRow | null> {
 // Clinic Branding
 // ────────────────────────────────────────────
 
-export interface ClinicBrandingRow {
+interface ClinicBrandingRow {
   logo_url: string | null;
   favicon_url: string | null;
   primary_color: string | null;
@@ -263,7 +263,7 @@ export async function updateClinicBranding(
 // Users (doctors, patients, receptionists, etc.)
 // ────────────────────────────────────────────
 
-export interface UserRow {
+interface UserRow {
   id: string;
   auth_id: string | null;
   role: string;
@@ -307,7 +307,7 @@ export async function getUserById(userId: string): Promise<UserRow | null> {
 // Services
 // ────────────────────────────────────────────
 
-export interface ServiceRow {
+interface ServiceRow {
   id: string;
   clinic_id: string;
   name: string;
@@ -331,7 +331,7 @@ export async function getServices(clinicId: string): Promise<ServiceRow[]> {
 // Appointments
 // ────────────────────────────────────────────
 
-export interface AppointmentRow {
+interface AppointmentRow {
   id: string;
   clinic_id: string;
   patient_id: string;
@@ -411,7 +411,7 @@ export async function getTodayAppointments(clinicId: string, doctorId?: string):
 // Time Slots
 // ────────────────────────────────────────────
 
-export interface TimeSlotRow {
+interface TimeSlotRow {
   id: string;
   clinic_id: string;
   doctor_id: string;
@@ -437,7 +437,7 @@ export async function getTimeSlots(clinicId: string, doctorId?: string): Promise
 // Payments
 // ────────────────────────────────────────────
 
-export interface PaymentRow {
+interface PaymentRow {
   id: string;
   clinic_id: string;
   appointment_id: string | null;
@@ -470,7 +470,7 @@ export async function getPaymentsByPatient(clinicId: string, patientId: string):
 // Reviews
 // ────────────────────────────────────────────
 
-export interface ReviewRow {
+interface ReviewRow {
   id: string;
   clinic_id: string;
   patient_id: string;
@@ -493,7 +493,7 @@ export async function getReviews(clinicId: string): Promise<ReviewRow[]> {
 // Notifications
 // ────────────────────────────────────────────
 
-export interface NotificationRow {
+interface NotificationRow {
   id: string;
   clinic_id: string;
   user_id: string;
@@ -516,7 +516,7 @@ export async function getNotifications(clinicId: string, userId: string): Promis
 // Documents
 // ────────────────────────────────────────────
 
-export interface DocumentRow {
+interface DocumentRow {
   id: string;
   clinic_id: string;
   user_id: string;
@@ -540,7 +540,7 @@ export async function getDocuments(clinicId: string, userId?: string): Promise<D
 // Prescriptions
 // ────────────────────────────────────────────
 
-export interface PrescriptionRow {
+interface PrescriptionRow {
   id: string;
   clinic_id: string;
   appointment_id: string | null;
@@ -594,7 +594,7 @@ export async function getPatientPrescriptions(clinicId: string, patientId: strin
 // Consultation Notes
 // ────────────────────────────────────────────
 
-export interface ConsultationNoteRow {
+interface ConsultationNoteRow {
   id: string;
   clinic_id: string;
   appointment_id: string;
@@ -617,7 +617,7 @@ export async function getConsultationNotes(clinicId: string, doctorId: string): 
 // Waiting List
 // ────────────────────────────────────────────
 
-export interface WaitingListRow {
+interface WaitingListRow {
   id: string;
   clinic_id: string;
   patient_id: string;
@@ -641,7 +641,7 @@ export async function getWaitingList(clinicId: string): Promise<WaitingListRow[]
 // Family Members
 // ────────────────────────────────────────────
 
-export interface FamilyMemberRow {
+interface FamilyMemberRow {
   id: string;
   primary_user_id: string;
   member_user_id: string;
@@ -659,7 +659,7 @@ export async function getFamilyMembers(clinicId: string, userId: string): Promis
 // Dental: Odontogram
 // ────────────────────────────────────────────
 
-export interface OdontogramRow {
+interface OdontogramRow {
   id: string;
   clinic_id: string;
   patient_id: string;
@@ -680,7 +680,7 @@ export async function getOdontogram(clinicId: string, patientId: string): Promis
 // Dental: Treatment Plans
 // ────────────────────────────────────────────
 
-export interface TreatmentPlanRow {
+interface TreatmentPlanRow {
   id: string;
   clinic_id: string;
   patient_id: string;
@@ -713,7 +713,7 @@ export async function getPatientTreatmentPlans(clinicId: string, patientId: stri
 // Dental: Lab Orders
 // ────────────────────────────────────────────
 
-export interface LabOrderRow {
+interface LabOrderRow {
   id: string;
   clinic_id: string;
   patient_id: string;
@@ -737,7 +737,7 @@ export async function getLabOrders(clinicId: string): Promise<LabOrderRow[]> {
 // Dental: Installments
 // ────────────────────────────────────────────
 
-export interface InstallmentRow {
+interface InstallmentRow {
   id: string;
   clinic_id: string;
   treatment_plan_id: string;
@@ -768,7 +768,7 @@ export async function getPatientInstallments(clinicId: string, patientId: string
 // Dental: Sterilization Log
 // ────────────────────────────────────────────
 
-export interface SterilizationLogRow {
+interface SterilizationLogRow {
   id: string;
   clinic_id: string;
   tool_name: string;
@@ -791,7 +791,7 @@ export async function getSterilizationLog(clinicId: string): Promise<Sterilizati
 // Pharmacy: Products
 // ────────────────────────────────────────────
 
-export interface ProductRow {
+interface ProductRow {
   id: string;
   clinic_id: string;
   name: string;
@@ -820,7 +820,7 @@ export async function getProducts(clinicId: string): Promise<ProductRow[]> {
 // Pharmacy: Stock
 // ────────────────────────────────────────────
 
-export interface StockRow {
+interface StockRow {
   id: string;
   clinic_id: string;
   product_id: string;
@@ -841,7 +841,7 @@ export async function getStock(clinicId: string): Promise<StockRow[]> {
 // Pharmacy: Suppliers
 // ────────────────────────────────────────────
 
-export interface SupplierRow {
+interface SupplierRow {
   id: string;
   clinic_id: string;
   name: string;
@@ -868,7 +868,7 @@ export async function getSuppliers(clinicId: string): Promise<SupplierRow[]> {
 // Pharmacy: Prescription Requests
 // ────────────────────────────────────────────
 
-export interface PrescriptionRequestRow {
+interface PrescriptionRequestRow {
   id: string;
   clinic_id: string;
   patient_id: string;
@@ -891,7 +891,7 @@ export async function getPrescriptionRequests(clinicId: string): Promise<Prescri
 // Pharmacy: Loyalty Points
 // ────────────────────────────────────────────
 
-export interface LoyaltyPointsRow {
+interface LoyaltyPointsRow {
   id: string;
   clinic_id: string;
   patient_id: string;
@@ -979,7 +979,7 @@ async function fetchBaseDashboardStats(clinicId: string): Promise<BaseDashboardS
 // Super Admin Stats
 // ────────────────────────────────────────────
 
-export interface SuperAdminStats {
+interface SuperAdminStats {
   clinics: ClinicRow[];
   totalClinics: number;
   activeClinics: number;
@@ -1564,7 +1564,7 @@ export async function getDoctorDashboardData(clinicId: string, doctorId: string)
 // Patient Dashboard Data (server-side)
 // ────────────────────────────────────────────
 
-export interface PatientAppointmentView {
+interface PatientAppointmentView {
   id: string;
   serviceName: string;
   doctorName: string;
@@ -1573,7 +1573,7 @@ export interface PatientAppointmentView {
   status: string;
 }
 
-export interface PatientPrescriptionView {
+interface PatientPrescriptionView {
   id: string;
   patientId: string;
   doctorName: string;
@@ -1581,7 +1581,7 @@ export interface PatientPrescriptionView {
   medications: { name: string; dosage: string; duration: string }[];
 }
 
-export interface PatientInvoiceView {
+interface PatientInvoiceView {
   id: string;
   amount: number;
   currency: string;
@@ -1589,7 +1589,7 @@ export interface PatientInvoiceView {
   date: string;
 }
 
-export interface PatientNotificationView {
+interface PatientNotificationView {
   id: string;
   read: boolean;
 }

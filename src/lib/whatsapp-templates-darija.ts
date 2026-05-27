@@ -21,7 +21,7 @@ import type {
 
 // ---- Darija Template Definitions ----
 
-export interface DarijaTemplate {
+interface DarijaTemplate {
   id: string;
   trigger: NotificationTrigger;
   name: string;

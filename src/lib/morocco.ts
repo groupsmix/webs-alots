@@ -92,9 +92,9 @@ export const TVA_RATES = {
   exempt: 0,         // 0% - medical acts (some are exempt)
 } as const;
 
-export type TVARate = keyof typeof TVA_RATES;
+type TVARate = keyof typeof TVA_RATES;
 
-export interface TVABreakdown {
+interface TVABreakdown {
   /** Amount before tax */
   amountHT: number;
   /** TVA amount */
@@ -168,9 +168,9 @@ export function formatMADFormal(amount: number): string {
 
 // ---- Insurance Types ----
 
-export type MoroccanInsuranceType = "cnss" | "cnops" | "amo" | "mutuelle" | "ramed" | "private" | "none";
+type MoroccanInsuranceType = "cnss" | "cnops" | "amo" | "mutuelle" | "ramed" | "private" | "none";
 
-export interface InsuranceProvider {
+interface InsuranceProvider {
   id: string;
   type: MoroccanInsuranceType;
   name: string;
@@ -273,13 +273,13 @@ export const INSURANCE_PROVIDERS: InsuranceProvider[] = [
   },
 ];
 
-export interface MutuelleInfo {
+interface MutuelleInfo {
   name: string;
   registrationNumber: string;
   coverageRate: number; // additional coverage on top of base insurance
 }
 
-export interface PatientInsurance {
+interface PatientInsurance {
   primaryInsurance: MoroccanInsuranceType;
   primaryInsuranceId: string;
   affiliationNumber: string;
@@ -329,7 +329,7 @@ export function calculateResteACharge(
 
 // ---- Payment Methods ----
 
-export type MoroccanPaymentMethod =
+type MoroccanPaymentMethod =
   | "cash"
   | "cmi"           // CMI card payment
   | "cashplus"      // CashPlus mobile money
@@ -340,7 +340,7 @@ export type MoroccanPaymentMethod =
   | "insurance"     // Direct insurance payment
   | "online";       // Online (generic)
 
-export interface PaymentMethodInfo {
+interface PaymentMethodInfo {
   id: MoroccanPaymentMethod;
   name: string;
   nameFr: string;
@@ -446,7 +446,7 @@ export const PAYMENT_METHODS: PaymentMethodInfo[] = [
 
 // ---- Ramadan Mode ----
 
-export interface RamadanConfig {
+interface RamadanConfig {
   enabled: boolean;
   startDate: string; // ISO date
   endDate: string;   // ISO date
@@ -494,7 +494,7 @@ export function getEffectiveWorkingHours(
 
 // ---- Installment Payments (Tqsit) ----
 
-export interface InstallmentPayment {
+interface InstallmentPayment {
   /** Payment number (1-based) */
   number: number;
   /** Amount for this payment */
@@ -505,7 +505,7 @@ export interface InstallmentPayment {
   status: "pending" | "paid" | "overdue";
 }
 
-export interface InstallmentPlan {
+interface InstallmentPlan {
   /** Total amount to be paid */
   totalAmount: number;
   /** Number of installments */
@@ -573,9 +573,9 @@ export const MOROCCAN_CITIES = [
 
 // ---- Garde / Astreinte Types ----
 
-export type GardeType = "garde" | "astreinte";
+type GardeType = "garde" | "astreinte";
 
-export interface GardeScheduleEntry {
+interface GardeScheduleEntry {
   id: string;
   doctorId: string;
   doctorName: string;
@@ -589,7 +589,7 @@ export interface GardeScheduleEntry {
 
 // ---- Multi-Cabinet ----
 
-export interface CabinetLocation {
+interface CabinetLocation {
   id: string;
   clinicId: string;
   name: string;

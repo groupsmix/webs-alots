@@ -12,7 +12,7 @@ import { logger } from "@/lib/logger";
 import type { Database, Json } from "@/lib/types/database";
 
 /** Audit event categories for structured filtering. */
-export type AuditEventType =
+type AuditEventType =
   | "booking"
   | "patient"
   | "payment"

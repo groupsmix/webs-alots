@@ -16,7 +16,7 @@ export interface LabDashboardKPIs {
   recentTests: LabDashboardTestView[];
 }
 
-export interface LabDashboardTestView {
+interface LabDashboardTestView {
   id: string;
   patientName: string;
   doctorName: string;
@@ -119,7 +119,7 @@ export interface ClinicCenterDashboardKPIs {
   departmentRevenue: DepartmentRevenue[];
 }
 
-export interface DepartmentPatientLoad {
+interface DepartmentPatientLoad {
   departmentId: string;
   departmentName: string;
   totalBeds: number;
@@ -128,7 +128,7 @@ export interface DepartmentPatientLoad {
   occupancyRate: number;
 }
 
-export interface DepartmentRevenue {
+interface DepartmentRevenue {
   departmentId: string;
   departmentName: string;
   revenue: number;

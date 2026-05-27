@@ -7,7 +7,7 @@ import { fetchRows, ensureLookups, _activeUserMap, _activeServiceMap } from "./_
 // Waiting List
 // ─────────────────────────────────────────────
 
-export interface WaitingListView {
+interface WaitingListView {
   id: string;
   patientId: string;
   patientName: string;
@@ -218,7 +218,7 @@ export async function fetchNotifications(userId: string): Promise<NotificationVi
 // Documents
 // ─────────────────────────────────────────────
 
-export interface DocumentView {
+interface DocumentView {
   id: string;
   type: string;
   fileName: string;
@@ -257,7 +257,7 @@ export async function fetchDocuments(clinicId: string, userId?: string): Promise
 // Family Members
 // ─────────────────────────────────────────────
 
-export interface FamilyMemberView {
+interface FamilyMemberView {
   id: string;
   name: string;
   relationship: string;

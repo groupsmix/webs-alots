@@ -21,7 +21,7 @@ export interface HeaderProps {
 }
 
 /** Navigation item for header/footer navigation. */
-export interface NavItem {
+interface NavItem {
   label: string;
   href: string;
 }

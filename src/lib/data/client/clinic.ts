@@ -7,7 +7,7 @@ import { fetchTodayAppointments } from "./appointments";
 // Clinic Holidays
 // ─────────────────────────────────────────────
 
-export interface HolidayView {
+interface HolidayView {
   id: string;
   title: string;
   startDate: string;
@@ -36,7 +36,7 @@ export async function fetchHolidays(clinicId: string): Promise<HolidayView[]> {
 // Blog Posts (stored in clinic config or static)
 // ─────────────────────────────────────────────
 
-export interface BlogPostView {
+interface BlogPostView {
   id: string;
   title: string;
   excerpt: string;
@@ -84,7 +84,7 @@ export async function fetchWaitingRoom(clinicId: string): Promise<WaitingRoomEnt
 // Emergency Slots
 // ─────────────────────────────────────────────
 
-export interface EmergencySlotView {
+interface EmergencySlotView {
   id: string;
   doctorId: string;
   doctorName: string;

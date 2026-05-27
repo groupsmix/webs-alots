@@ -18,7 +18,7 @@ export interface AlternativeSlot {
   label: string;
 }
 
-export interface AffectedAppointment {
+interface AffectedAppointment {
   id: string;
   patientId: string;
   patientName: string;

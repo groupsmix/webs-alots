@@ -8,7 +8,7 @@ import { ensureLookups, _activeServiceMap } from "./_core";
 // Analytics (computed from real data)
 // ─────────────────────────────────────────────
 
-export interface DailyAnalyticsView {
+interface DailyAnalyticsView {
   date: string;
   patientCount: number;
   revenue: number;
@@ -18,38 +18,38 @@ export interface DailyAnalyticsView {
   onlineBookings: number;
 }
 
-export interface WeeklyRevenueView {
+interface WeeklyRevenueView {
   week: string;
   revenue: number;
   patients: number;
 }
 
-export interface MonthlyRevenueView {
+interface MonthlyRevenueView {
   month: string;
   revenue: number;
   patients: number;
   appointments: number;
 }
 
-export interface ServicePopularityView {
+interface ServicePopularityView {
   serviceName: string;
   count: number;
   revenue: number;
   percentage: number;
 }
 
-export interface HourlyHeatmapView {
+interface HourlyHeatmapView {
   day: string;
   hours: { hour: number; count: number }[];
 }
 
-export interface ReviewTrendView {
+interface ReviewTrendView {
   month: string;
   averageScore: number;
   count: number;
 }
 
-export interface PatientRetentionView {
+interface PatientRetentionView {
   month: string;
   newPatients: number;
   returningPatients: number;
@@ -58,7 +58,7 @@ export interface PatientRetentionView {
 
 export type AnalyticsPeriod = "week" | "month" | "quarter" | "year";
 
-export interface PeriodComparison {
+interface PeriodComparison {
   currentRevenue: number;
   previousRevenue: number;
   revenueChange: number;
@@ -351,21 +351,21 @@ export async function fetchAnalytics(clinicId: string, period: AnalyticsPeriod =
 
 // ── Revenue Analytics (Feature 15) ──────────────────────
 
-export interface DoctorRevenueView {
+interface DoctorRevenueView {
   doctorId: string;
   doctorName: string;
   revenue: number;
   patients: number;
 }
 
-export interface ServiceRevenueView {
+interface ServiceRevenueView {
   serviceId: string;
   serviceName: string;
   revenue: number;
   count: number;
 }
 
-export interface PaymentMethodView {
+interface PaymentMethodView {
   method: string;
   label: string;
   revenue: number;
@@ -373,7 +373,7 @@ export interface PaymentMethodView {
   percentage: number;
 }
 
-export interface RevenueAnalyticsData {
+interface RevenueAnalyticsData {
   revenueByDoctor: DoctorRevenueView[];
   revenueByService: ServiceRevenueView[];
   revenueByMethod: PaymentMethodView[];
@@ -536,7 +536,7 @@ export async function fetchRevenueAnalytics(
 
 // ── Feedback / Review Stats ──────────────────────────────
 
-export interface FeedbackStatsData {
+interface FeedbackStatsData {
   averageRating: number;
   totalReviews: number;
   positiveReviews: number;

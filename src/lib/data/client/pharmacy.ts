@@ -188,7 +188,7 @@ export async function fetchSuppliers(clinicId: string): Promise<SupplierView[]> 
 // Pharmacy: Prescription Requests
 // ─────────────────────────────────────────────
 
-export interface PharmacyPrescriptionItemView {
+interface PharmacyPrescriptionItemView {
   id: string;
   productId: string;
   productName: string;
@@ -346,7 +346,7 @@ export async function fetchLoyaltyMembers(clinicId: string): Promise<LoyaltyMemb
 // Pharmacy: Purchase Orders
 // ─────────────────────────────────────────────
 
-export interface PurchaseOrderItemView {
+interface PurchaseOrderItemView {
   productId: string;
   productName: string;
   quantity: number;

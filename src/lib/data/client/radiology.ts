@@ -30,7 +30,7 @@ export interface RadiologyOrderView {
   updatedAt: string;
 }
 
-export interface RadiologyImageView {
+interface RadiologyImageView {
   id: string;
   orderId: string;
   fileUrl: string;

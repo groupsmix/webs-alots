@@ -7,7 +7,7 @@
 
 // ---- Field Types ----
 
-export type CustomFieldType =
+type CustomFieldType =
   | "text"
   | "number"
   | "date"
@@ -16,7 +16,7 @@ export type CustomFieldType =
   | "file"
   | "tooth_number";
 
-export type CustomFieldEntityType =
+type CustomFieldEntityType =
   | "appointment"
   | "patient"
   | "consultation"
@@ -25,7 +25,7 @@ export type CustomFieldEntityType =
 
 // ---- Select Option ----
 
-export interface CustomFieldOption {
+interface CustomFieldOption {
   value: string;
   label_fr: string;
   label_ar: string;
@@ -33,7 +33,7 @@ export interface CustomFieldOption {
 
 // ---- Validation Rules ----
 
-export interface CustomFieldValidation {
+interface CustomFieldValidation {
   min?: number;
   max?: number;
   step?: number;

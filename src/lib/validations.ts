@@ -222,7 +222,7 @@ export const cmiCallbackFieldsSchema = z.object({
   { message: "Unknown parameter in CMI callback — potential tampering" },
 );
 
-export type CmiCallbackFields = z.infer<typeof cmiCallbackFieldsSchema>;
+type CmiCallbackFields = z.infer<typeof cmiCallbackFieldsSchema>;
 
 export const cmiPaymentSchema = z.object({
   amount: z.number().positive().finite(),
@@ -434,7 +434,7 @@ export const aiPrescriptionRequestSchema = z.object({
   }).optional(),
 });
 
-export type AiPrescriptionRequest = z.infer<typeof aiPrescriptionRequestSchema>;
+type AiPrescriptionRequest = z.infer<typeof aiPrescriptionRequestSchema>;
 
 // ── Chat ────────────────────────────────────────────────────────────────
 
@@ -531,7 +531,7 @@ export const aiPatientSummaryRequestSchema = z.object({
   forceRefresh: z.boolean().optional().default(false),
 });
 
-export type AiPatientSummaryRequest = z.infer<typeof aiPatientSummaryRequestSchema>;
+type AiPatientSummaryRequest = z.infer<typeof aiPatientSummaryRequestSchema>;
 
 // ── AI Drug Interaction Checker ─────────────────────────────────────────
 
@@ -542,7 +542,7 @@ export const aiDrugCheckRequestSchema = z.object({
   useAiFallback: z.boolean().optional().default(true),
 });
 
-export type AiDrugCheckRequest = z.infer<typeof aiDrugCheckRequestSchema>;
+type AiDrugCheckRequest = z.infer<typeof aiDrugCheckRequestSchema>;
 
 export const aiDrugCheckOverrideSchema = z.object({
   patientId: z.string().min(1).optional(),
@@ -553,7 +553,7 @@ export const aiDrugCheckOverrideSchema = z.object({
   medications: z.array(z.string()).min(1),
 });
 
-export type AiDrugCheckOverride = z.infer<typeof aiDrugCheckOverrideSchema>;
+type AiDrugCheckOverride = z.infer<typeof aiDrugCheckOverrideSchema>;
 
 // ── Doctor Unavailability ────────────────────────────────────────────────
 
@@ -658,7 +658,7 @@ export const aiManagerRequestSchema = z.object({
   ).max(20).optional().default([]),
 });
 
-export type AiManagerRequest = z.infer<typeof aiManagerRequestSchema>;
+type AiManagerRequest = z.infer<typeof aiManagerRequestSchema>;
 
 // ── AI Auto-Suggest (Smart Prescription Suggestions) ────────────────────
 
@@ -675,7 +675,7 @@ export const aiAutoSuggestRequestSchema = z.object({
   }).optional(),
 });
 
-export type AiAutoSuggestRequest = z.infer<typeof aiAutoSuggestRequestSchema>;
+type AiAutoSuggestRequest = z.infer<typeof aiAutoSuggestRequestSchema>;
 
 // ── Pet Profiles (Veterinary) ────────────────────────────────────────────
 

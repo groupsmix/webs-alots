@@ -436,7 +436,7 @@ export async function getPublicSpecialties(
 
 // ── Time Slots & Availability ──
 
-export interface TimeSlotConfig {
+interface TimeSlotConfig {
   id: string;
   doctorId: string;
   dayOfWeek: number;
@@ -772,7 +772,7 @@ export async function getPublicNextOnDuty(): Promise<PublicOnDutySchedule | null
 
 // ── Pharmacy: Prescription Requests (public view) ──
 
-export interface PublicPharmacyPrescription {
+interface PublicPharmacyPrescription {
   id: string;
   patientId: string;
   patientName: string;

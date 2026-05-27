@@ -300,7 +300,7 @@ export async function fetchSterilizationLog(clinicId: string): Promise<Steriliza
 // Dental: Installments
 // ─────────────────────────────────────────────
 
-export interface InstallmentView {
+interface InstallmentView {
   id: string;
   treatmentPlanId: string;
   patientId: string;
