@@ -84,7 +84,7 @@ export function getPhonePrefix(phone: string): string {
 export const TVA_RATE = 0.20;
 
 /** Reduced TVA rates */
-export const TVA_RATES = {
+const TVA_RATES = {
   standard: 0.20,    // 20% - default for services
   reduced_14: 0.14,  // 14% - transport, certain food
   reduced_10: 0.10,  // 10% - hospitality, certain goods
@@ -180,7 +180,7 @@ interface InsuranceProvider {
   description: string;
 }
 
-export const INSURANCE_PROVIDERS: InsuranceProvider[] = [
+const INSURANCE_PROVIDERS: InsuranceProvider[] = [
   {
     id: "cnss",
     type: "cnss",
@@ -457,7 +457,7 @@ interface RamadanConfig {
  * Default Ramadan working hours for Moroccan clinics.
  * Typically 9:00-15:00 (shorter days, no lunch break).
  */
-export const DEFAULT_RAMADAN_HOURS: Record<number, { open: string; close: string; enabled: boolean }> = {
+const DEFAULT_RAMADAN_HOURS: Record<number, { open: string; close: string; enabled: boolean }> = {
   0: { open: "09:00", close: "15:00", enabled: false }, // Sunday
   1: { open: "09:00", close: "15:00", enabled: true },  // Monday
   2: { open: "09:00", close: "15:00", enabled: true },
@@ -470,7 +470,7 @@ export const DEFAULT_RAMADAN_HOURS: Record<number, { open: string; close: string
 /**
  * Check if a given date falls within Ramadan period.
  */
-export function isRamadanPeriod(date: Date, config: RamadanConfig): boolean {
+function isRamadanPeriod(date: Date, config: RamadanConfig): boolean {
   if (!config.enabled) return false;
   const d = date.toISOString().split("T")[0];
   return d >= config.startDate && d <= config.endDate;

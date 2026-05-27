@@ -628,7 +628,7 @@ export function buildUploadKey(
 // ── Image Resizing Utilities ──
 
 /** Standard thumbnail widths for responsive images. */
-export const IMAGE_WIDTHS = [100, 300, 800] as const;
+const IMAGE_WIDTHS = [100, 300, 800] as const;
 
 /**
  * Build a Cloudflare Image Resizing URL for a given source image.
@@ -644,7 +644,7 @@ export const IMAGE_WIDTHS = [100, 300, 800] as const;
  *
  * @see https://developers.cloudflare.com/images/transform-images/transform-via-url/
  */
-export function getResizedImageUrl(
+function getResizedImageUrl(
   srcUrl: string,
   width: number,
   options: { quality?: number; fit?: "scale-down" | "contain" | "cover" | "crop" | "pad"; format?: "auto" | "webp" | "avif" } = {},

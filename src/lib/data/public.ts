@@ -447,7 +447,7 @@ interface TimeSlotConfig {
   isAvailable: boolean;
 }
 
-export async function getPublicTimeSlots(
+async function getPublicTimeSlots(
   doctorId?: string,
 ): Promise<TimeSlotConfig[]> {
   const ctx = await createPublicTenantClient();

@@ -110,7 +110,7 @@ interface BuildCspOptions {
  * (no inline/eval), so production is fail-closed against XSS via injected
  * inline or third-party scripts. `'unsafe-eval'` remains dev-only.
  */
-export function buildCsp(nonce: string, _options?: BuildCspOptions): string {
+function buildCsp(nonce: string, _options?: BuildCspOptions): string {
   const isDev = process.env.NODE_ENV !== "production";
   const sbHost = getSupabaseHost();
   const plausibleHost = getPlausibleHost();

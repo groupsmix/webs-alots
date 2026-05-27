@@ -104,7 +104,7 @@ export type FeaturesConfig = Partial<Record<ClinicFeatureKey, boolean>>;
 /**
  * Default feature flags - used when no config is provided
  */
-export const DEFAULT_FEATURES: FeaturesConfig = {
+const DEFAULT_FEATURES: FeaturesConfig = {
   appointments: true,
   prescriptions: true,
   consultations: true,
@@ -179,7 +179,7 @@ export async function isAIEnabled(): Promise<boolean> {
  * swallowed). The function still falls back to defaults for resilience, but
  * operators can monitor for "KV_FETCH_ERROR" in their dashboards.
  */
-export async function getKVFeatureFlags(): Promise<FeaturesConfig> {
+async function getKVFeatureFlags(): Promise<FeaturesConfig> {
   try {
     const kv = (globalThis as unknown as { FEATURE_FLAGS_KV?: CloudflareKV }).FEATURE_FLAGS_KV;
     if (!kv) {
@@ -204,7 +204,7 @@ export async function getKVFeatureFlags(): Promise<FeaturesConfig> {
  * Get feature flag override for a specific clinic
  * Returns clinic-specific override if exists, otherwise null
  */
-export async function getClinicFeatureOverride(
+async function getClinicFeatureOverride(
   clinicId: string,
 ): Promise<FeaturesConfig | null> {
   try {

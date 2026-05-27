@@ -66,7 +66,7 @@ export interface TemplateDefinition {
   productClickBehavior: ProductClickBehavior;
 }
 
-export const templates: Record<TemplateId, TemplateDefinition> = {
+const templates: Record<TemplateId, TemplateDefinition> = {
   modern: {
     id: "modern",
     name: "Modern",

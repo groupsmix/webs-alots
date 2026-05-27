@@ -45,7 +45,7 @@ interface DarijaTemplate {
  * Moroccans actually communicate on WhatsApp — rather than using
  * formal Modern Standard Arabic.
  */
-export const darijaWhatsAppTemplates: DarijaTemplate[] = [
+const darijaWhatsAppTemplates: DarijaTemplate[] = [
   // 1. Appointment Confirmation
   {
     id: "darija_booking_confirmation",

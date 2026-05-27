@@ -38,7 +38,7 @@ export const DEMO_USERS = {
 /**
  * Check if a clinic ID is the demo tenant.
  */
-export function isDemoClinic(clinicId: string | null | undefined): boolean {
+function isDemoClinic(clinicId: string | null | undefined): boolean {
   return clinicId === DEMO_CLINIC_ID;
 }
 
@@ -53,7 +53,7 @@ export function isDemoSubdomain(subdomain: string | null | undefined): boolean {
  * HTTP methods that are considered destructive (mutating).
  * In demo mode, these should be blocked or simulated.
  */
-export const DESTRUCTIVE_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
+const DESTRUCTIVE_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 
 /**
  * API paths that are allowed even in demo mode (e.g., auth, read-only endpoints).
@@ -71,7 +71,7 @@ export const DESTRUCTIVE_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
  * (which legitimately exercise these endpoints under the demo subdomain)
  * to fail before reaching the handler.
  */
-export const DEMO_ALLOWED_PATHS = new Set([
+const DEMO_ALLOWED_PATHS = new Set([
   "/api/auth",
   "/api/v1/register-clinic",
   "/api/webhooks",

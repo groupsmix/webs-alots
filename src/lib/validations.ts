@@ -60,7 +60,7 @@ export const bookingCancelSchema = z.object({
   reason: z.string().max(1000).optional(),
 });
 
-export const emergencySlotCreateSchema = z.object({
+const emergencySlotCreateSchema = z.object({
   action: z.literal("create"),
   doctorId: z.string().min(1),
   date: isoDate,
@@ -69,7 +69,7 @@ export const emergencySlotCreateSchema = z.object({
   reason: z.string().max(1000).optional(),
 });
 
-export const emergencySlotBookSchema = z.object({
+const emergencySlotBookSchema = z.object({
   action: z.literal("book"),
   slotId: z.string().min(1),
   patientId: z.string().min(1),
@@ -83,7 +83,7 @@ export const emergencySlotSchema = z.discriminatedUnion("action", [
   emergencySlotBookSchema,
 ]);
 
-export const recurringCreateSchema = z.object({
+const recurringCreateSchema = z.object({
   action: z.literal("create"),
   patientId: z.string().min(1),
   patientName: z.string().min(1).max(200),
@@ -98,7 +98,7 @@ export const recurringCreateSchema = z.object({
   hasInsurance: z.boolean().optional(),
 });
 
-export const recurringCancelSchema = z.object({
+const recurringCancelSchema = z.object({
   action: z.literal("cancel"),
   groupId: z.string().optional(),
   cancelAll: z.boolean().optional(),

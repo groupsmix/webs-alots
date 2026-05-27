@@ -11,7 +11,7 @@
  * Calculate WCAG 2.1 relative luminance from a hex color.
  * @see https://www.w3.org/TR/WCAG21/#dfn-relative-luminance
  */
-export function luminance(hex: string): number {
+function luminance(hex: string): number {
   const rgb = hex
     .replace(/^#/, "")
     .match(/.{2}/g)

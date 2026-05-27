@@ -198,7 +198,7 @@ export async function unenrollMFA(
  * Get the current user's MFA factors.
  * Returns verified TOTP factors if any exist.
  */
-export async function getMFAFactors(): Promise<{
+async function getMFAFactors(): Promise<{
   factors: Array<{ id: string; friendlyName: string | null; status: string }>;
   error: string | null;
 }> {

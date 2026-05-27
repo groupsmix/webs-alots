@@ -89,7 +89,7 @@ export interface ClinicTypeEntry {
   vertical_id?: string;
 }
 
-export const CLINIC_TYPES: ClinicTypeEntry[] = [
+const CLINIC_TYPES: ClinicTypeEntry[] = [
   // ---- MEDICAL ----
   { type_key: "general_medicine",  name_fr: "Médecine Générale",           name_ar: "الطب العام",                    category: "medical", icon: "Stethoscope" },
   { type_key: "cardiology",        name_fr: "Cardiologie",                  name_ar: "أمراض القلب",                   category: "medical", icon: "Heart" },

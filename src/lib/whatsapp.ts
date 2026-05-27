@@ -359,7 +359,7 @@ export async function sendTextMessage(
  * Falls back to the default (French) templates when no locale-specific
  * set exists.
  */
-export function getTemplatesForLocale(
+function getTemplatesForLocale(
   locale: PatientMessageLocale = "fr",
 ): NotificationTemplate[] {
   switch (locale) {

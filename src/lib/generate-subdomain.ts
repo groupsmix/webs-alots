@@ -20,7 +20,7 @@
  * Normalise a string for use as a subdomain slug.
  * Pure function — no randomness, useful for testing.
  */
-export function slugify(input: string): string {
+function slugify(input: string): string {
   let slug = input
     // Decompose accented characters (é → e + combining accent) then strip accents
     .normalize("NFD")

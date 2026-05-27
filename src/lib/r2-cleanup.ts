@@ -42,7 +42,7 @@ import { deleteFromR2, listR2Objects } from "@/lib/r2";
  * Matches the R2 lifecycle rule (`docs/r2-lifecycle.md`) so the cron
  * and the bucket policy agree on the same cutoff.
  */
-export const DEFAULT_ABANDONED_HOURS = 24;
+const DEFAULT_ABANDONED_HOURS = 24;
 
 /**
  * Default threshold for `emitOrphanRateAlert`. A reconciliation pass

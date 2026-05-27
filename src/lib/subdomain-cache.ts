@@ -42,7 +42,7 @@ export const NEGATIVE_CACHE_TTL_MS = 5 * 60 * 1000;
  * Evict expired entries from the cache.
  * Called periodically to prevent stale entries from accumulating.
  */
-export function evictExpiredEntries(): void {
+function evictExpiredEntries(): void {
   const now = Date.now();
   for (const [key, value] of subdomainCache) {
     if (now - value.cachedAt > SUBDOMAIN_CACHE_TTL_MS) {

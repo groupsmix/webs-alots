@@ -10,7 +10,7 @@
  */
 
 /** Plain-text disclaimer for API JSON responses and WhatsApp messages. */
-export const AI_DISCLAIMER =
+const AI_DISCLAIMER =
   "⚠️ AI-generated draft — review before use. This content was produced by an AI model and may contain errors.";
 
 /** French-language variant for the default UI locale. */
@@ -18,11 +18,11 @@ export const AI_DISCLAIMER_FR =
   "⚠️ Brouillon généré par IA — à vérifier avant utilisation. Ce contenu a été produit par un modèle d'IA et peut contenir des erreurs.";
 
 /** Arabic-language variant. */
-export const AI_DISCLAIMER_AR =
+const AI_DISCLAIMER_AR =
   "⚠️ مسودة مُنشأة بالذكاء الاصطناعي — يُرجى المراجعة قبل الاستخدام. قد يحتوي هذا المحتوى على أخطاء.";
 
 /** Map of locale to disclaimer string. */
-export const AI_DISCLAIMER_I18N: Record<string, string> = {
+const AI_DISCLAIMER_I18N: Record<string, string> = {
   en: AI_DISCLAIMER,
   fr: AI_DISCLAIMER_FR,
   ar: AI_DISCLAIMER_AR,
