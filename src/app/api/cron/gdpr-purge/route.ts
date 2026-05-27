@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { NextRequest } from "next/server";
 import { apiSuccess, apiInternalError } from "@/lib/api-response";
 import { verifyCronSecret } from "@/lib/cron-auth";
+import { sendEmail } from "@/lib/email";
 import { logger } from "@/lib/logger";
 import { deleteFromR2, isR2Configured } from "@/lib/r2";
 import { withSentryCron } from "@/lib/sentry-cron";
@@ -39,7 +40,7 @@ async function handler(request: NextRequest) {
     // Find users whose deletion grace period has expired
     const { data: usersToDelete, error: queryError } = await supabase
       .from("users")
-      .select("id, name, clinic_id")
+      .select("id, name, email, clinic_id")
       .not("deletion_requested_at", "is", null)
       .lte("deletion_requested_at", thirtyDaysAgo)
       .limit(50); // Process in batches to avoid timeouts
@@ -189,6 +190,34 @@ async function handler(request: NextRequest) {
             error: "Failed to delete user record",
           });
           continue;
+        }
+
+        // BL-003: Send erasure confirmation email to the user's last-known
+        // address. GDPR Art. 17 & Moroccan Law 09-08 require user-visible
+        // confirmation that data has been deleted. Best-effort: failure to
+        // send does not roll back the purge.
+        if (user.email) {
+          try {
+            await sendEmail({
+              to: user.email,
+              subject: "Confirmation de suppression de vos données — Oltigo",
+              html: [
+                "<p>Bonjour,</p>",
+                "<p>Conformément à votre demande et aux dispositions de la Loi 09-08, ",
+                "nous vous confirmons que l'ensemble de vos données personnelles a été ",
+                "définitivement supprimé de nos systèmes.</p>",
+                "<p>Si vous n'êtes pas à l'origine de cette demande, veuillez contacter ",
+                "notre support immédiatement.</p>",
+                "<p>Cordialement,<br/>L'équipe Oltigo</p>",
+              ].join(""),
+            });
+          } catch (emailErr) {
+            logger.warn("Failed to send GDPR erasure confirmation email", {
+              context: "cron/gdpr-purge",
+              userId: user.id,
+              error: emailErr,
+            });
+          }
         }
 
         logger.info("GDPR purge completed for user", {
