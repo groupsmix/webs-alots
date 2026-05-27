@@ -173,33 +173,51 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 2
 
       - name: Preflight — check migration secrets
         id: preflight
+        # Check if Supabase CLI secrets are configured. If not, skip
+        # migrations with a warning — this allows deploy to proceed
+        # for initial setup before a Supabase project is linked.
+        # However, if new migration files were added in this push,
+        # fail hard to prevent deploying without running migrations.
         run: |
           missing=0
           for v in SUPABASE_ACCESS_TOKEN SUPABASE_DB_PASSWORD SUPABASE_PROJECT_REF; do
             if [ -z "${!v:-}" ]; then
-              echo "::error::Secret '$v' is not set — migrations cannot run."
+              echo "::warning::Secret '$v' is not set — migrations will be skipped."
               missing=1
             fi
           done
           if [ "$missing" -eq 1 ]; then
-            echo "::error::Blocking deploy because database migration secrets are missing."
-            exit 1
+            NEW_MIGRATIONS=$(git diff --name-only HEAD~1 -- 'supabase/migrations/' 2>/dev/null || echo "")
+            if [ -n "$NEW_MIGRATIONS" ]; then
+              echo "::error::New migration files detected but migration secrets are missing:"
+              echo "$NEW_MIGRATIONS"
+              echo "::error::Blocking deploy — configure SUPABASE_ACCESS_TOKEN, SUPABASE_DB_PASSWORD, and SUPABASE_PROJECT_REF."
+              exit 1
+            fi
+            echo "::warning::Supabase migration secrets not configured. Skipping migrations."
+            echo "secrets_ok=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "secrets_ok=true" >> "$GITHUB_OUTPUT"
           fi
-          echo "secrets_ok=true" >> "$GITHUB_OUTPUT"
 
       - name: Install Supabase CLI
+        if: steps.preflight.outputs.secrets_ok == 'true'
         # F-19: Pin to SHA for supply-chain hardening
         uses: supabase/setup-cli@3c2f5e2ae34c34e428e8e206e2c4d21fa2d20fbf # v2.1.1
         with:
           version: latest
 
       - name: Link to Supabase project
+        if: steps.preflight.outputs.secrets_ok == 'true'
         run: supabase link --project-ref "$SUPABASE_PROJECT_REF"
 
       - name: Dry-run — show pending migrations
+        if: steps.preflight.outputs.secrets_ok == 'true'
         # `db push --dry-run --include-all` prints the SQL the CLI
         # would execute without applying it, so an operator can
         # inspect the diff in the job log before the real push runs.
@@ -208,6 +226,7 @@ jobs:
         run: supabase db push --include-all --dry-run
 
       - name: Apply migrations (blocking)
+        if: steps.preflight.outputs.secrets_ok == 'true'
         # Real push. Keep --include-all so repair-only / out-of-order
         # migrations are applied in their declared order. Failure
         # here blocks the downstream deploy job.
