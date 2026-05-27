@@ -205,7 +205,7 @@ export function getFeaturesByCategory(): Record<ComparisonCategory, ComparisonFe
 /**
  * Count how many "full" or "partial" features each competitor supports.
  */
-export function getCompetitorScores(): Record<CompetitorId, { full: number; partial: number; total: number }> {
+function getCompetitorScores(): Record<CompetitorId, { full: number; partial: number; total: number }> {
   const scores = {} as Record<CompetitorId, { full: number; partial: number; total: number }>;
   for (const competitor of COMPETITORS) {
     scores[competitor.id] = { full: 0, partial: 0, total: COMPARISON_FEATURES.length };

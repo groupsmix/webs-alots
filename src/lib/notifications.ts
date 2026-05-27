@@ -653,6 +653,3 @@ export async function dispatchNotification(
   return results;
 }
 
-// ---- Demo data has been moved to @/lib/__fixtures__/notifications.fixtures.ts ----
-// Re-export for backward compatibility.
-export { demoNotificationLog, demoInAppNotifications } from "@/lib/__fixtures__/notifications.fixtures";

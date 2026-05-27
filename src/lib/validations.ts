@@ -60,7 +60,7 @@ export const bookingCancelSchema = z.object({
   reason: z.string().max(1000).optional(),
 });
 
-export const emergencySlotCreateSchema = z.object({
+const emergencySlotCreateSchema = z.object({
   action: z.literal("create"),
   doctorId: z.string().min(1),
   date: isoDate,
@@ -69,7 +69,7 @@ export const emergencySlotCreateSchema = z.object({
   reason: z.string().max(1000).optional(),
 });
 
-export const emergencySlotBookSchema = z.object({
+const emergencySlotBookSchema = z.object({
   action: z.literal("book"),
   slotId: z.string().min(1),
   patientId: z.string().min(1),
@@ -83,7 +83,7 @@ export const emergencySlotSchema = z.discriminatedUnion("action", [
   emergencySlotBookSchema,
 ]);
 
-export const recurringCreateSchema = z.object({
+const recurringCreateSchema = z.object({
   action: z.literal("create"),
   patientId: z.string().min(1),
   patientName: z.string().min(1).max(200),
@@ -98,7 +98,7 @@ export const recurringCreateSchema = z.object({
   hasInsurance: z.boolean().optional(),
 });
 
-export const recurringCancelSchema = z.object({
+const recurringCancelSchema = z.object({
   action: z.literal("cancel"),
   groupId: z.string().optional(),
   cancelAll: z.boolean().optional(),
@@ -482,7 +482,7 @@ export const applyPresetSchema = z.object({
 
 // ── Upload ──────────────────────────────────────────────────────────────
 
-export const uploadPresignedSchema = z.object({
+const uploadPresignedSchema = z.object({
   filename: z.string().min(1).max(500),
   contentType: z.string().min(1).max(200),
   category: z.string().min(1).max(100),
@@ -509,7 +509,7 @@ export const consentSchema = z.object({
 
 // ── Clinic Features ─────────────────────────────────────────────────────
 
-export const clinicFeaturesQuerySchema = z.object({
+const clinicFeaturesQuerySchema = z.object({
   type_key: z.string().min(1).max(100),
 });
 
@@ -709,14 +709,14 @@ export const petProfileUpdateSchema = z.object({
 
 // ── Menu Management (Restaurant) ────────────────────────────────────────
 
-export const menuCreateSchema = z.object({
+const menuCreateSchema = z.object({
   name: z.string().min(1).max(200),
   description: z.string().max(2000).optional(),
   is_active: z.boolean().optional().default(true),
   sort_order: z.number().int().optional().default(0),
 });
 
-export const menuUpdateSchema = z.object({
+const menuUpdateSchema = z.object({
   id: z.string().min(1),
   name: z.string().min(1).max(200).optional(),
   description: z.string().max(2000).nullable().optional(),
@@ -724,7 +724,7 @@ export const menuUpdateSchema = z.object({
   sort_order: z.number().int().optional(),
 });
 
-export const menuItemCreateSchema = z.object({
+const menuItemCreateSchema = z.object({
   menu_id: z.string().min(1),
   category: z.string().min(1).max(200),
   name: z.string().min(1).max(200),
@@ -737,7 +737,7 @@ export const menuItemCreateSchema = z.object({
   sort_order: z.number().int().optional().default(0),
 });
 
-export const menuItemUpdateSchema = z.object({
+const menuItemUpdateSchema = z.object({
   id: z.string().min(1),
   category: z.string().min(1).max(200).optional(),
   name: z.string().min(1).max(200).optional(),
@@ -752,14 +752,14 @@ export const menuItemUpdateSchema = z.object({
 
 // ── Table Management (Restaurant) ───────────────────────────────────────
 
-export const restaurantTableCreateSchema = z.object({
+const restaurantTableCreateSchema = z.object({
   name: z.string().min(1).max(200),
   capacity: z.number().int().min(1).max(100),
   zone: z.string().max(200).optional(),
   is_active: z.boolean().optional().default(true),
 });
 
-export const restaurantTableUpdateSchema = z.object({
+const restaurantTableUpdateSchema = z.object({
   id: z.string().min(1),
   name: z.string().min(1).max(200).optional(),
   capacity: z.number().int().min(1).max(100).optional(),

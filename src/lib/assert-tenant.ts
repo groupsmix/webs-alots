@@ -82,7 +82,7 @@ export function assertTenantMatch(
  *   const q = supabase.from("clinics").select("*").eq("status", "active");
  *   const { data } = await excludeSoftDeleted(q);
  */
-export function excludeSoftDeleted<
+function excludeSoftDeleted<
   Q extends { is: (column: string, value: null) => Q },
 >(query: Q): Q {
   return query.is("deleted_at", null);
@@ -98,7 +98,7 @@ export function excludeSoftDeleted<
  * @returns The row unchanged (for chaining)
  * @throws Error if row.clinic_id !== expectedClinicId
  */
-export function enforceTenantScope<T extends { clinic_id: string }>(
+function enforceTenantScope<T extends { clinic_id: string }>(
   row: T,
   expectedClinicId: string,
   entityType: string,

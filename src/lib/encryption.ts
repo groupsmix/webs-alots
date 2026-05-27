@@ -239,7 +239,7 @@ export async function decryptBuffer(
  * `x_rays` had a 25 MB limit but bypassed encryption because the PHI set
  * only listed `x-rays` / `xrays`.
  */
-export function normalizePhiCategory(category: string): string {
+function normalizePhiCategory(category: string): string {
   return category.trim().toLowerCase().replace(/-/g, "_");
 }
 
@@ -252,7 +252,7 @@ export function normalizePhiCategory(category: string): string {
  * this set, since `requiresEncryption()` applies the same normalization
  * to the input.
  */
-export const PHI_CATEGORIES = new Set([
+const PHI_CATEGORIES = new Set([
   // AUDIT-02: Both singular and plural forms must be listed so that a
   // category of "document" (singular, present in LIMITS_BY_CATEGORY) is
   // correctly recognised as PHI. Previously only "documents" was listed,

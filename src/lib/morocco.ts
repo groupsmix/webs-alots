@@ -17,7 +17,7 @@ const MOROCCO_COUNTRY_CODE = "+212";
  * Validates a Moroccan phone number.
  * Accepts formats: 0612345678, +212612345678, 212612345678, 06 12 34 56 78
  */
-export function isValidMoroccanPhone(phone: string): boolean {
+function isValidMoroccanPhone(phone: string): boolean {
   const cleaned = phone.replace(/[\s\-().]/g, "");
   // +212 format
   if (cleaned.startsWith("+212") || cleaned.startsWith("212")) {
@@ -35,7 +35,7 @@ export function isValidMoroccanPhone(phone: string): boolean {
  * Formats a phone number to international +212 format.
  * Input: "0612345678" → "+212 6 12 34 56 78"
  */
-export function formatMoroccanPhone(phone: string): string {
+function formatMoroccanPhone(phone: string): string {
   const cleaned = phone.replace(/[\s\-().]/g, "");
   let local: string;
 
@@ -70,7 +70,7 @@ export function phoneToWhatsApp(phone: string): string {
 /**
  * Returns the mobile prefix label for display.
  */
-export function getPhonePrefix(phone: string): string {
+function getPhonePrefix(phone: string): string {
   const cleaned = phone.replace(/[\s\-().]/g, "");
   if (cleaned.startsWith("06") || cleaned.includes("2126")) return "Maroc Telecom / Orange / inwi";
   if (cleaned.startsWith("07") || cleaned.includes("2127")) return "inwi / Orange";
@@ -81,10 +81,10 @@ export function getPhonePrefix(phone: string): string {
 // ---- TVA (Tax) Calculation ----
 
 /** Standard Moroccan TVA rate */
-export const TVA_RATE = 0.20;
+const TVA_RATE = 0.20;
 
 /** Reduced TVA rates */
-export const TVA_RATES = {
+const TVA_RATES = {
   standard: 0.20,    // 20% - default for services
   reduced_14: 0.14,  // 14% - transport, certain food
   reduced_10: 0.10,  // 10% - hospitality, certain goods
@@ -113,7 +113,7 @@ export interface TVABreakdown {
  * @param rate - TVA rate key (default: "standard" = 20%)
  * @param isAmountTTC - If true, amount is TTC (includes tax), calculate backwards
  */
-export function calculateTVA(
+function calculateTVA(
   amount: number,
   rate: TVARate = "standard",
   isAmountTTC = false,
@@ -139,7 +139,7 @@ export function calculateTVA(
  * @param amount - numeric amount
  * @param options - formatting options
  */
-export function formatMAD(
+function formatMAD(
   amount: number,
   options?: { locale?: string; showCurrency?: boolean; decimals?: number },
 ): string {
@@ -159,7 +159,7 @@ export function formatMAD(
  * Format amount in Moroccan Dirhams with centimes.
  * e.g. "1 500,00 DH" (formal) or "1500 MAD" (informal)
  */
-export function formatMADFormal(amount: number): string {
+function formatMADFormal(amount: number): string {
   return new Intl.NumberFormat("fr-MA", {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
@@ -180,7 +180,7 @@ export interface InsuranceProvider {
   description: string;
 }
 
-export const INSURANCE_PROVIDERS: InsuranceProvider[] = [
+const INSURANCE_PROVIDERS: InsuranceProvider[] = [
   {
     id: "cnss",
     type: "cnss",
@@ -291,7 +291,7 @@ export interface PatientInsurance {
  * Calculate the patient's out-of-pocket cost (reste à charge).
  * Takes into account primary insurance + optional mutuelle.
  */
-export function calculateResteACharge(
+function calculateResteACharge(
   totalAmount: number,
   insurance: PatientInsurance,
 ): {
@@ -351,7 +351,7 @@ export interface PaymentMethodInfo {
   isOnline: boolean;
 }
 
-export const PAYMENT_METHODS: PaymentMethodInfo[] = [
+const PAYMENT_METHODS: PaymentMethodInfo[] = [
   {
     id: "cash",
     name: "Cash",
@@ -457,7 +457,7 @@ export interface RamadanConfig {
  * Default Ramadan working hours for Moroccan clinics.
  * Typically 9:00-15:00 (shorter days, no lunch break).
  */
-export const DEFAULT_RAMADAN_HOURS: Record<number, { open: string; close: string; enabled: boolean }> = {
+const DEFAULT_RAMADAN_HOURS: Record<number, { open: string; close: string; enabled: boolean }> = {
   0: { open: "09:00", close: "15:00", enabled: false }, // Sunday
   1: { open: "09:00", close: "15:00", enabled: true },  // Monday
   2: { open: "09:00", close: "15:00", enabled: true },
@@ -470,7 +470,7 @@ export const DEFAULT_RAMADAN_HOURS: Record<number, { open: string; close: string
 /**
  * Check if a given date falls within Ramadan period.
  */
-export function isRamadanPeriod(date: Date, config: RamadanConfig): boolean {
+function isRamadanPeriod(date: Date, config: RamadanConfig): boolean {
   if (!config.enabled) return false;
   const d = date.toISOString().split("T")[0];
   return d >= config.startDate && d <= config.endDate;
@@ -480,7 +480,7 @@ export function isRamadanPeriod(date: Date, config: RamadanConfig): boolean {
  * Get the effective working hours for a given date.
  * Returns Ramadan hours if within Ramadan period, otherwise regular hours.
  */
-export function getEffectiveWorkingHours(
+function getEffectiveWorkingHours(
   date: Date,
   regularHours: Record<number, { open: string; close: string; enabled: boolean }>,
   ramadanConfig?: RamadanConfig,
@@ -527,7 +527,7 @@ export interface InstallmentPlan {
  * @param numberOfPayments - Number of installments (2-12)
  * @param startDate - First payment date (defaults to today)
  */
-export function calculateInstallments(
+function calculateInstallments(
   totalAmount: number,
   numberOfPayments: number,
   startDate?: Date,

@@ -447,7 +447,7 @@ export interface TimeSlotConfig {
   isAvailable: boolean;
 }
 
-export async function getPublicTimeSlots(
+async function getPublicTimeSlots(
   doctorId?: string,
 ): Promise<TimeSlotConfig[]> {
   const ctx = await createPublicTenantClient();
@@ -650,11 +650,11 @@ export async function getPublicPharmacyProducts(): Promise<PublicPharmacyProduct
   });
 }
 
-export function getPublicStockStatus(product: PublicPharmacyProduct): "ok" | "low" | "out" {
+function getPublicStockStatus(product: PublicPharmacyProduct): "ok" | "low" | "out" {
   return product.stockStatus;
 }
 
-export function searchPublicProducts(
+function searchPublicProducts(
   products: PublicPharmacyProduct[],
   query: string,
 ): PublicPharmacyProduct[] {
@@ -800,7 +800,7 @@ export interface PublicPharmacyPrescription {
  * status) so the public pharmacy page can show queue status without
  * exposing any patient data.
  */
-export async function getPublicPharmacyPrescriptions(): Promise<PublicPharmacyPrescription[]> {
+async function getPublicPharmacyPrescriptions(): Promise<PublicPharmacyPrescription[]> {
   // Return empty — prescription data must NEVER be served publicly.
   // Authenticated pharmacy staff should use a separate, auth-gated endpoint.
   return [];

@@ -32,7 +32,7 @@ export interface DrugInteraction {
 
 // ── Interaction Database ──
 
-export const DRUG_INTERACTIONS: DrugInteraction[] = [
+const DRUG_INTERACTIONS: DrugInteraction[] = [
   // ── Anticoagulants / Antiplatelets ──
   {
     drugA: "warfarine",

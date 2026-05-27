@@ -70,12 +70,12 @@ export function getCategories(): BlogCategory[] {
 }
 
 /** Filter posts by category. */
-export function getPostsByCategory(category: BlogCategory): BlogPost[] {
+function getPostsByCategory(category: BlogCategory): BlogPost[] {
   return getAllPosts().filter((p) => p.category === category);
 }
 
 /** Simple search across title, excerpt, tags. */
-export function searchPosts(query: string): BlogPost[] {
+function searchPosts(query: string): BlogPost[] {
   const q = query.toLowerCase().trim();
   if (!q) return getAllPosts();
   return getAllPosts().filter(

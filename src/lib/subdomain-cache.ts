@@ -42,7 +42,7 @@ export const NEGATIVE_CACHE_TTL_MS = 5 * 60 * 1000;
  * Evict expired entries from the cache.
  * Called periodically to prevent stale entries from accumulating.
  */
-export function evictExpiredEntries(): void {
+function evictExpiredEntries(): void {
   const now = Date.now();
   for (const [key, value] of subdomainCache) {
     if (now - value.cachedAt > SUBDOMAIN_CACHE_TTL_MS) {
@@ -151,7 +151,7 @@ function getKV(): KVNamespace | null {
  * F-07: Try to read a subdomain entry from KV cache.
  * Returns null on miss or if KV is not available.
  */
-export async function getSubdomainFromKV(subdomain: string): Promise<CachedClinic | null> {
+async function getSubdomainFromKV(subdomain: string): Promise<CachedClinic | null> {
   const kv = getKV();
   if (!kv) return null;
   try {
@@ -164,7 +164,7 @@ export async function getSubdomainFromKV(subdomain: string): Promise<CachedClini
 /**
  * F-07: Write a subdomain entry to KV cache.
  */
-export async function setSubdomainInKV(subdomain: string, clinic: CachedClinic): Promise<void> {
+async function setSubdomainInKV(subdomain: string, clinic: CachedClinic): Promise<void> {
   const kv = getKV();
   if (!kv) return;
   try {
@@ -179,7 +179,7 @@ export async function setSubdomainInKV(subdomain: string, clinic: CachedClinic):
 /**
  * F-07: Delete a subdomain entry from KV cache.
  */
-export async function deleteSubdomainFromKV(subdomain: string): Promise<void> {
+async function deleteSubdomainFromKV(subdomain: string): Promise<void> {
   const kv = getKV();
   if (!kv) return;
   try {

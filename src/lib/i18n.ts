@@ -13,7 +13,7 @@ import fr from "../locales/fr.json";
 
 export type TranslationKey = keyof typeof fr;
 
-export const translations = {
+const translations = {
   fr,
   ar,
   en
@@ -108,7 +108,7 @@ const BCP47: Record<Locale, string> = {
  *   formatDate("fr", new Date("2026-05-01")) // "1 mai 2026"
  *   formatDate("ar", new Date("2026-05-01")) // "١ مايو ٢٠٢٦"
  */
-export function formatDate(
+function formatDate(
   locale: Locale,
   date: Date | string,
   options?: Intl.DateTimeFormatOptions,
@@ -131,7 +131,7 @@ export function formatDate(
  *   formatNumber("fr", 1234.5)  // "1 234,5"
  *   formatNumber("ar", 1234.5)  // "١٬٢٣٤٫٥"
  */
-export function formatNumber(locale: Locale, value: number, options?: Intl.NumberFormatOptions): string {
+function formatNumber(locale: Locale, value: number, options?: Intl.NumberFormatOptions): string {
   return new Intl.NumberFormat(BCP47[locale], options).format(value);
 }
 
@@ -144,7 +144,7 @@ export function formatNumber(locale: Locale, value: number, options?: Intl.Numbe
  *   formatCurrency("ar", 250)   // "٢٥٠٫٠٠ د.م."
  *   formatCurrency("en", 250)   // "MAD 250.00"
  */
-export function formatCurrency(
+function formatCurrency(
   locale: Locale,
   amount: number,
   currency = "MAD",
@@ -164,7 +164,7 @@ export function formatCurrency(
  *   formatRelativeTime("fr", -3, "hour")  // "il y a 3 heures"
  *   formatRelativeTime("ar", -1, "day")   // "أمس"
  */
-export function formatRelativeTime(
+function formatRelativeTime(
   locale: Locale,
   value: number,
   unit: Intl.RelativeTimeFormatUnit,

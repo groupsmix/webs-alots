@@ -19,7 +19,7 @@ import { NextResponse } from "next/server";
  * Sources: US Treasury OFAC, EU Council Regulation, UN Security Council.
  * Review this list quarterly and after any new sanctions announcement.
  */
-export const SANCTIONED_COUNTRIES = new Set([
+const SANCTIONED_COUNTRIES = new Set([
   "CU", // Cuba
   "IR", // Iran
   "KP", // North Korea (DPRK)

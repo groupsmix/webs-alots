@@ -315,7 +315,7 @@ export async function sendInteractiveMessage(
 /**
  * Send a WhatsApp template message using the configured provider.
  */
-export async function sendWhatsAppMessage(
+async function sendWhatsAppMessage(
   payload: WhatsAppMessagePayload,
 ): Promise<WhatsAppSendResult> {
   const config = getWhatsAppConfig();
@@ -359,7 +359,7 @@ export async function sendTextMessage(
  * Falls back to the default (French) templates when no locale-specific
  * set exists.
  */
-export function getTemplatesForLocale(
+function getTemplatesForLocale(
   locale: PatientMessageLocale = "fr",
 ): NotificationTemplate[] {
   switch (locale) {
@@ -382,7 +382,7 @@ export function getTemplatesForLocale(
  * (e.g. Darija) automatically. The explicit `templates` parameter still takes
  * precedence if supplied so existing call-sites are unaffected.
  */
-export async function sendNotificationWhatsApp(
+async function sendNotificationWhatsApp(
   trigger: NotificationTrigger,
   to: string,
   variables: TemplateVariables,
