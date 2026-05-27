@@ -119,9 +119,14 @@ export async function createTenantClient(clinicId: string) {
     } catch {
       // Sentry unavailable
     }
-    // In production, fail closed. In dev/test, fall back to header-only isolation
-    // so E2E tests can run without the set_tenant_context DB function.
-    if (process.env.NODE_ENV === "production") {
+    // R-14: Fail-closed in production — unless the error is a known permission
+    // denial (e.g. anon/authenticated role cannot call set_tenant_context).
+    // Permission errors mean the GUC layer is unavailable but header-based
+    // isolation (x-clinic-id) is still active. Throwing here would break E2E
+    // tests and any code path that uses a non-service-role client.
+    const isPermissionDenied =
+      err instanceof Error && err.message.includes("permission denied");
+    if (!isPermissionDenied) {
       throw new Error(`Tenant context could not be established for clinic ${clinicId}`);
     }
   }
