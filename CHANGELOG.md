@@ -23,8 +23,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 - `deploy.yml`: Worker secrets now use `wrangler secret put` with stdin piping instead of `echo` + `wrangler secret bulk` to prevent secret leakage in CI logs
 
-### Security
+### Security (2026-05-27 Audit)
 
+- **HIGH-1**: Fixed RLS policies on `ai_usage` and `cmi_callbacks_seen` — replaced non-existent `app.clinic_id` session variable with `get_request_clinic_id()` (migration 00091)
+- **HIGH-2**: Wired `cmi_callbacks_seen` table into CMI callback handler for replay protection
+- **HIGH-3**: Enabled KV rate-limit namespace in `wrangler.toml` (RATE_LIMIT_BACKEND=kv)
+- **HIGH-4**: Added positive assertion in CI that RLS integration tests actually run (not silently skipped)
+- **MEDIUM-1**: Consent route now requires tenant context (400 if missing)
+- **MEDIUM-2**: Added Stripe webhook event dedup (`processed_stripe_events` table, migration 00092) and `Idempotency-Key` headers on all Stripe POST calls
+- **MEDIUM-4**: Added coverage floor regression check in CI
+- **MEDIUM-5**: super_admin now requires MFA enrolled + verified (AAL2) in middleware
+- **MEDIUM-6**: Created `/api/cron/audit-log-flush` to drain `pending_audit_logs` (runs every 15 min)
+- **MEDIUM-8**: Added DB types freshness check in deploy pipeline
+- **MEDIUM-9**: Added `poweredByHeader: false` to `next.config.ts`
+- **MEDIUM-10**: Self-service clinic registration defaults to `pending_review` status
+- **LOW-1**: Bumped `compatibility_date` from `2025-04-01` to `2026-05-01`
 - Fixed insecure secret handling in deploy pipeline where secret values could appear in CI logs if the `echo` command failed
 
 ## [0.1.0] — 2026-03-15
