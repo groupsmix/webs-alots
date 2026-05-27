@@ -67,6 +67,20 @@ function sanitizeUserInput(text: string): string {
   );
 }
 
+/**
+ * API-010: Output validator for AI responses. Hard-rejects content that
+ * contains role-elevation language or unredacted Moroccan PII patterns.
+ * Returns the sanitised string, or null if the response is unsafe.
+ */
+function validateAIOutput(text: string): string | null {
+  const roleElevation = /\b(i am now|role changed to|switched to admin|access granted|patient list|dump all|SELECT \*)\b/i;
+  if (roleElevation.test(text)) return null;
+  // Redact any Moroccan phone numbers that slipped past pseudonymisation
+  const cleaned = text.replace(/(?:\+212|0)([ .\-]?\d){9}/g, "[REDACTED_PHONE]");
+  // Redact anything that looks like a CIN (Moroccan national ID)
+  return cleaned.replace(/\b[A-Z]{1,2}\d{5,7}\b/g, "[REDACTED_ID]");
+}
+
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 export const POST = withValidation(chatRequestSchema, async (body, request: NextRequest) => {
     // Resolve clinic ID strictly from tenant context (middleware headers)
@@ -161,8 +175,20 @@ export const POST = withValidation(chatRequestSchema, async (body, request: Next
 
       if (cfResponse.ok) {
         const cfData = (await cfResponse.json()) as { result?: { response?: string } };
-        const content = cfData.result?.response;
-        if (content) {
+        const rawContent = cfData.result?.response;
+        if (rawContent) {
+          // API-010: Validate AI output before returning to client
+          const content = validateAIOutput(rawContent);
+          if (!content) {
+            logger.warn("AI output rejected by safety validator", {
+              context: "chat/output-safety",
+              clinicId,
+            });
+            const reply = getBasicResponse(lastMessage.content, ctx);
+            return apiSuccess({
+              message: { role: "assistant" as const, content: reply },
+            });
+          }
           // F-AI-08: Audit log AI invocation
           void logAuditEvent({
             supabase: supabaseForAuth,
