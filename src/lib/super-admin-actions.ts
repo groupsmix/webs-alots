@@ -399,7 +399,7 @@ export async function createUser(input: CreateUserInput): Promise<UserRow> {
   return data as UserRow;
 }
 
-export async function fetchClinicUsers(clinicId: string): Promise<UserRow[]> {
+async function _fetchClinicUsers(clinicId: string): Promise<UserRow[]> {
   const supabase = await rawClient();
   const { data, error } = await supabase
     .from("users")
@@ -431,7 +431,7 @@ export async function createService(input: CreateServiceInput): Promise<ServiceR
   return data as ServiceRow;
 }
 
-export async function fetchClinicServices(clinicId: string): Promise<ServiceRow[]> {
+async function _fetchClinicServices(clinicId: string): Promise<ServiceRow[]> {
   const supabase = await rawClient();
   const { data, error } = await supabase
     .from("services")
@@ -444,7 +444,7 @@ export async function fetchClinicServices(clinicId: string): Promise<ServiceRow[
 
 // ---------- Time Slot CRUD ----------
 
-export async function createTimeSlot(input: CreateTimeSlotInput): Promise<TimeSlotRow> {
+async function _createTimeSlot(input: CreateTimeSlotInput): Promise<TimeSlotRow> {
   const supabase = await rawClient();
   const { data, error } = await supabase
     .from("time_slots")

@@ -235,7 +235,8 @@ const ClinicFeaturesContext = createContext<ClinicFeaturesContextValue>({
  *
  * When neither is supplied, all features are enabled by default.
  */
-export function ClinicFeaturesProvider({
+// eslint-disable-next-line @typescript-eslint/no-unused-vars -- React component kept for future use
+function ClinicFeaturesProvider({
   children,
   initialConfig,
   clinicTypeKey,

@@ -419,7 +419,7 @@ function ensureDrugIndex(): Map<string, DrugIndexEntry[]> {
  * A73-F5: Uses pre-built prefix index for fast lookups instead of
  * scanning the entire 43k-line database on every request.
  */
-export function searchDrugs(query: string, limit = 20): DCIDrug[] {
+function _searchDrugs(query: string, limit = 20): DCIDrug[] {
   if (!query || query.length < 2) return [];
 
   const q = normalize(query);
@@ -477,7 +477,7 @@ export function searchDrugs(query: string, limit = 20): DCIDrug[] {
 /**
  * Get all unique drug categories present in the database.
  */
-export function getDrugCategories(): DCIDrugCategory[] {
+function _getDrugCategories(): DCIDrugCategory[] {
   const categories = new Set<DCIDrugCategory>();
   for (const drug of DCI_DRUG_DATABASE) {
     categories.add(drug.category);
@@ -488,6 +488,6 @@ export function getDrugCategories(): DCIDrugCategory[] {
 /**
  * Filter drugs by category.
  */
-export function getDrugsByCategory(category: DCIDrugCategory): DCIDrug[] {
+function _getDrugsByCategory(category: DCIDrugCategory): DCIDrug[] {
   return DCI_DRUG_DATABASE.filter((d) => d.category === category);
 }

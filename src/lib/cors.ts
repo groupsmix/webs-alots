@@ -99,7 +99,7 @@ export function handlePreflight(request: NextRequest): NextResponse {
  * Reset the cached parsed origins so the env var is re-read on the next
  * request. Useful in tests or when hot-reloading env vars in development.
  */
-export function resetCorsCache(): void {
+function _resetCorsCache(): void {
   _parsedOrigins = undefined;
 }
 

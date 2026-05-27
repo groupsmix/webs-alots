@@ -47,7 +47,7 @@ export async function fetchPrescriptions(clinicId: string, doctorId?: string): P
   }));
 }
 
-export async function fetchPatientPrescriptions(clinicId: string, patientId: string): Promise<PrescriptionView[]> {
+async function _fetchPatientPrescriptions(clinicId: string, patientId: string): Promise<PrescriptionView[]> {
   await ensureLookups(clinicId);
   const rows = await fetchRows<PrescriptionRaw>("prescriptions", {
     eq: [["clinic_id", clinicId], ["patient_id", patientId]],

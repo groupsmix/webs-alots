@@ -179,7 +179,7 @@ function isCspReportOnly(): boolean {
  * This stub remains temporarily for backward compatibility with any
  * call-sites that haven't been updated yet. It delegates to buildCsp.
  */
-export function buildLegacyCsp(nonce: string): string {
+function _buildLegacyCsp(nonce: string): string {
   return buildCsp(nonce, { reportOnly: false });
 }
 

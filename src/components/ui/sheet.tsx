@@ -15,7 +15,7 @@ function Sheet({ open, children }: SheetProps) {
   return <>{children}</>
 }
 
-function SheetTrigger({ children, onClick, ...props }: React.ComponentProps<"button"> & { asChild?: boolean }) {
+function _SheetTrigger({ children, onClick, ...props }: React.ComponentProps<"button"> & { asChild?: boolean }) {
   return <button type="button" onClick={onClick} {...props}>{children}</button>
 }
 
@@ -72,4 +72,4 @@ function SheetDescription({ className, ...props }: React.ComponentProps<"p">) {
   return <p className={cn("text-sm text-muted-foreground", className)} {...props} />
 }
 
-export { Sheet, SheetTrigger, SheetContent, SheetHeader, SheetTitle, SheetDescription }
+export { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription }

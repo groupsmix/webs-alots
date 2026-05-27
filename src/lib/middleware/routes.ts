@@ -185,6 +185,6 @@ export function isProtectedRoute(pathname: string): boolean {
 /**
  * Get the dashboard path for a given role.
  */
-export function getDashboardPath(role: string): string {
+function _getDashboardPath(role: string): string {
   return ROLE_DASHBOARD_MAP[role];
 }

@@ -150,7 +150,7 @@ export async function downloadAndDecrypt(
  *
  * @param key  R2 object key (with or without `.enc` suffix)
  */
-export async function deleteEncrypted(key: string): Promise<void> {
+async function _deleteEncrypted(key: string): Promise<void> {
   const encKey = key.endsWith(".enc") ? key : `${key}.enc`;
   return deleteFromR2(encKey);
 }

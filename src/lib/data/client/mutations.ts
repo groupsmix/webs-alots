@@ -44,7 +44,7 @@ export async function updateAppointmentStatus(
   return { success: true, data: { id: updated.id, status: updated.status } };
 }
 
-export async function createPayment(data: {
+async function _createPayment(data: {
   clinic_id: string;
   patient_id: string;
   appointment_id?: string;
@@ -67,7 +67,7 @@ export async function createPayment(data: {
   return { success: true, data: { id: created.id } };
 }
 
-export async function upsertReview(data: {
+async function _upsertReview(data: {
   clinic_id: string;
   patient_id: string;
   stars: number;
@@ -83,7 +83,7 @@ export async function upsertReview(data: {
   return { success: true, data: { id: created.id } };
 }
 
-export async function updateReviewResponse(reviewId: string, response: string): Promise<boolean> {
+async function _updateReviewResponse(reviewId: string, response: string): Promise<boolean> {
   const supabase = createClient();
   const { error } = await supabase.from("reviews").update({ response }).eq("id", reviewId);
   if (!error) clearLookupCache();
@@ -108,7 +108,7 @@ export async function createPrescription(data: {
   return { success: true, data: { id: created.id } };
 }
 
-export async function updatePrescription(
+async function _updatePrescription(
   id: string,
   data: {
     items?: { name: string; dosage: string; duration: string }[];
@@ -172,7 +172,7 @@ export async function updateConsultationNote(
   return true;
 }
 
-export async function deleteConsultationNote(id: string): Promise<boolean> {
+async function _deleteConsultationNote(id: string): Promise<boolean> {
   const supabase = createClient();
   const { error } = await supabase.from("consultation_notes").delete().eq("id", id);
   if (error) {
@@ -206,7 +206,7 @@ export async function upsertOdontogramEntry(data: {
   return { success: true, data: { id: created.id } };
 }
 
-export async function deleteOdontogramEntry(
+async function _deleteOdontogramEntry(
   clinicId: string,
   patientId: string,
   toothNumber: number,
@@ -229,7 +229,7 @@ export async function deleteOdontogramEntry(
 // Treatment Plan Mutations
 // ─────────────────────────────────────────────
 
-export async function createTreatmentPlan(data: {
+async function _createTreatmentPlan(data: {
   clinic_id: string;
   patient_id: string;
   doctor_id: string;
@@ -297,7 +297,7 @@ export async function createSterilizationEntry(data: {
   return result?.id ?? null;
 }
 
-export async function updateSterilizationEntry(
+async function _updateSterilizationEntry(
   id: string,
   data: {
     tool_name?: string;
@@ -345,7 +345,7 @@ export async function createBeforeAfterPhoto(data: {
   return result?.id ?? null;
 }
 
-export async function updateBeforeAfterPhoto(
+async function _updateBeforeAfterPhoto(
   id: string,
   data: {
     description?: string;
@@ -367,7 +367,7 @@ export async function updateBeforeAfterPhoto(
   return true;
 }
 
-export async function deleteBeforeAfterPhoto(id: string): Promise<boolean> {
+async function _deleteBeforeAfterPhoto(id: string): Promise<boolean> {
   const supabase = createClient();
   const { error } = await supabase.from("before_after_photos").delete().eq("id", id);
   if (error) {

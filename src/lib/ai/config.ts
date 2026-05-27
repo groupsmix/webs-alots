@@ -109,7 +109,7 @@ export async function resolveAIConfig(): Promise<
  * F-A199: Standard disclaimer to include in all AI response payloads.
  * Consumers should spread this into their response objects.
  */
-export const AI_RESPONSE_DISCLAIMER = {
+const _AI_RESPONSE_DISCLAIMER = {
   disclaimer: AI_DISCLAIMER_FR,
   aiGenerated: true,
 } as const;

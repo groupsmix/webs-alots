@@ -163,7 +163,7 @@ export function getSpecialtyBySlug(slug: string): DirectorySpecialty | undefined
  * Generate a doctor slug from their name.
  * e.g. "Dr. Ahmed El Fassi" → "dr-ahmed-el-fassi"
  */
-export function doctorNameToSlug(name: string): string {
+function _doctorNameToSlug(name: string): string {
   return name
     .toLowerCase()
     .normalize("NFD")

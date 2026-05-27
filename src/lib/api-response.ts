@@ -123,7 +123,7 @@ export function apiInternalError(message = "Internal server error"): NextRespons
  *   if (error) return handleSupabaseError(error, "Failed to fetch patients", "patients");
  */
 // F-A93-03: Use logger.error for actual database failures, not logger.warn
-export function handleSupabaseError(
+function _handleSupabaseError(
   error: { message: string; code?: string; details?: string },
   clientMessage: string,
   context: string,
