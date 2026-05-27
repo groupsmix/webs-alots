@@ -208,8 +208,9 @@ describe("safeParse error formatting", () => {
     expect(result.success).toBe(false);
     if (!result.success) {
       expect(result.error).toContain("Validation error:");
-      // Should mention at least one missing field
-      expect(result.error).toMatch(/appointmentId|patientId|amount|paymentType/);
+      // A8-01: Error messages now redact field names to prevent info disclosure.
+      // They report the count of invalid fields instead of naming them.
+      expect(result.error).toMatch(/\d+ fields? invalid/);
     }
   });
 });
