@@ -128,5 +128,10 @@ export async function fetchAllowlisted(
     }
   }
 
+  // API-007: Default 15 s timeout on all outbound calls to prevent a
+  // slow third party from burning the Worker's request handle.
+  if (!init?.signal) {
+    return fetch(input, { ...init, signal: AbortSignal.timeout(15_000) });
+  }
   return fetch(input, init);
 }

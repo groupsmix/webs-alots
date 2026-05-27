@@ -1,5 +1,17 @@
+import fs from "fs";
 import path from "path";
 import { defineConfig } from "vitest/config";
+
+// FE-006: Read coverage thresholds from a ratchet file so they can be
+// mechanically bumped upward per merged PR. Long-term targets:
+// statements: 80, branches: 70, lines: 70, functions: 60.
+const floorPath = path.resolve(__dirname, ".vitest-coverage-floor.json");
+const floor = JSON.parse(fs.readFileSync(floorPath, "utf-8")) as {
+  statements: number;
+  branches: number;
+  lines: number;
+  functions: number;
+};
 
 export default defineConfig({
   test: {
@@ -18,20 +30,7 @@ export default defineConfig({
         "src/app/api/**/*.tsx",
       ],
       exclude: ["src/lib/types/**", "src/app/api/docs/**"],
-      // CI-08: Enforce coverage thresholds; CI step fails if not met.
-      //
-      // A86-F05: Ratcheted from single-digit floors (8/6/8/5) to just below
-      // the current measured coverage so regressions are caught immediately.
-      // These MUST be ratcheted upward as new tests land; the long-term
-      // aspirational targets are statements: 80, branches: 70, lines: 70,
-      // functions: 60. For PHI software, the mid-term milestone is
-      // 60/50/60/50 per A86-F05.
-      thresholds: {
-        statements: 12,
-        branches: 9,
-        lines: 12,
-        functions: 8,
-      },
+      thresholds: floor,
     },
   },
   resolve: {
