@@ -93,6 +93,22 @@ jobs:
         run: node scripts/check-security-coverage.mjs
         continue-on-error: true
 
+      # MEDIUM-4: Coverage ratchet — fail if actual coverage dropped below the floor.
+      # The floor file is committed and acts as a monotonic-increase ratchet.
+      # After every successful coverage run, the floor should be bumped to
+      # match actual coverage (done manually or via a scheduled workflow).
+      - name: Verify coverage floor not regressed
+        run: |
+          if [ -f coverage/coverage-summary.json ]; then
+            ACTUAL_STMTS=$(node -e "const s=require('./coverage/coverage-summary.json').total.statements.pct; console.log(Math.floor(s))")
+            FLOOR_STMTS=$(node -e "const f=require('./.vitest-coverage-floor.json'); console.log(f.statements)")
+            echo "Coverage: statements=${ACTUAL_STMTS}% (floor=${FLOOR_STMTS}%)"
+            if [ "$ACTUAL_STMTS" -lt "$FLOOR_STMTS" ]; then
+              echo "::error::Statement coverage ${ACTUAL_STMTS}% dropped below floor ${FLOOR_STMTS}%"
+              exit 1
+            fi
+          fi
+
       # CI-02: Fail-closed bundle budget check.
       #
       # Next 16 (Turbopack) no longer prints the "First Load JS shared by all"
