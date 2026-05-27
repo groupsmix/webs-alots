@@ -324,6 +324,17 @@ jobs:
           SUPABASE_LOCAL_ANON_KEY: ${{ env.SUPABASE_LOCAL_ANON_KEY }}
           SUPABASE_LOCAL_SERVICE_KEY: ${{ env.SUPABASE_LOCAL_SERVICE_ROLE_KEY }}
 
+      # R-05: Snapshot RLS policies for visibility. Non-blocking — the
+      # snapshot is printed to stdout so reviewers can inspect policy
+      # changes in PRs that modify migrations.
+      - name: Snapshot RLS policies
+        if: always()
+        continue-on-error: true
+        run: node scripts/snapshot-rls-policies.mjs 2>&1 | head -100
+        env:
+          SUPABASE_LOCAL_URL: ${{ env.SUPABASE_LOCAL_URL }}
+          SUPABASE_LOCAL_SERVICE_KEY: ${{ env.SUPABASE_LOCAL_SERVICE_ROLE_KEY }}
+
   e2e:
     runs-on: ubuntu-latest
     needs: ci

@@ -73,8 +73,9 @@ function createAdminClient() {
   });
 }
 
-// PHI tables that must have RLS with clinic_id scoping.
-// Only tables that exist in the initial schema and have clinic_id columns.
+// R-05: PHI tables that must have RLS with clinic_id scoping.
+// Expanded from the original 7 to cover all tables from the initial
+// schema + migrations that store patient-attributable data.
 const CORE_PHI_TABLES = [
   "appointments",
   "payments",
@@ -83,6 +84,13 @@ const CORE_PHI_TABLES = [
   "reviews",
   "documents",
   "waiting_list",
+  "prescriptions",
+  "consultation_notes",
+  "notifications",
+  "lab_orders",
+  "family_members",
+  "installments",
+  "users",
 ] as const;
 
 describe.skipIf(SKIP)("RLS Real Postgres Tests", () => {
