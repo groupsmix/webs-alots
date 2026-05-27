@@ -40,8 +40,13 @@ jobs:
       - name: Check cron mapping
         run: npx tsx scripts/check-cron-mapping.ts
 
+      # CI-001: Enforce a warning ceiling that ratchets downward over time.
+      # The baseline is stored in .eslint-warning-baseline and must be
+      # reduced whenever warnings are fixed — never increased.
       - name: Run ESLint
-        run: npm run lint
+        run: |
+          BASELINE=$(cat .eslint-warning-baseline | tr -d '[:space:]')
+          npx eslint --max-warnings "$BASELINE"
 
       - name: Check for DB dumps in tree (Audit P1 #14)
         run: |
