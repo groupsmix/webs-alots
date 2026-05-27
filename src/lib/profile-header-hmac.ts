@@ -63,6 +63,18 @@ function getProfileHeaderSecret(): string | null {
   return null;
 }
 
+/**
+ * SEC-003: Returns the previous HMAC key during key rotation, or `null`.
+ * Set `PROFILE_HEADER_HMAC_KEY_OLD` to the old key when rotating, and
+ * remove it after the overlap window (typically 10 minutes, or 2x
+ * MAX_HEADER_AGE_SECONDS) has passed.
+ */
+function getOldProfileHeaderSecret(): string | null {
+  const old = process.env.PROFILE_HEADER_HMAC_KEY_OLD;
+  if (old && old.length > 0) return old;
+  return null;
+}
+
 function buildPayload(profile: SignedProfile, iat: number): string {
   return `${profile.id}:${profile.role}:${profile.clinic_id ?? ""}:${iat}`;
 }
@@ -147,18 +159,21 @@ export async function verifyProfileHeader(input: VerifyHeaderInput): Promise<Sig
   const now = Math.floor(Date.now() / 1000);
   if (Math.abs(now - iat) > MAX_HEADER_AGE_SECONDS) return null;
 
-  const secret = getProfileHeaderSecret();
-  if (!secret) return null;
+  const profile: SignedProfile = { id: input.id, role: input.role, clinic_id: input.clinic_id };
+  const payload = new TextEncoder().encode(buildPayload(profile, iat));
 
-  const key = await importHmacKey(secret, "sign");
-  const expected = await crypto.subtle.sign(
-    "HMAC",
-    key,
-    new TextEncoder().encode(buildPayload({ id: input.id, role: input.role, clinic_id: input.clinic_id }, iat)),
+  // SEC-003: Try the current key first, then the old key for rotation overlap.
+  const keysToTry = [getProfileHeaderSecret(), getOldProfileHeaderSecret()].filter(
+    (k): k is string => k !== null,
   );
-  const expectedHex = bytesToHex(new Uint8Array(expected));
+  if (keysToTry.length === 0) return null;
 
-  if (!timingSafeHexEqual(expectedHex, input.signature)) return null;
+  for (const secret of keysToTry) {
+    const key = await importHmacKey(secret, "sign");
+    const expected = await crypto.subtle.sign("HMAC", key, payload);
+    const expectedHex = bytesToHex(new Uint8Array(expected));
+    if (timingSafeHexEqual(expectedHex, input.signature)) return profile;
+  }
 
-  return { id: input.id, role: input.role, clinic_id: input.clinic_id };
+  return null;
 }
