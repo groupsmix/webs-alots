@@ -53,8 +53,7 @@ export interface CmiCallbackData {
 
 // ---- Configuration ----
 
-const CMI_GATEWAY_URL =
-  process.env.CMI_GATEWAY_URL || "https://payment.cmi.co.ma/fim/est3Dgate";
+const CMI_GATEWAY_URL = process.env.CMI_GATEWAY_URL || "https://payment.cmi.co.ma/fim/est3Dgate";
 
 function getCmiConfig() {
   const merchantId = process.env.CMI_MERCHANT_ID;
@@ -79,10 +78,7 @@ export function isCmiConfigured(): boolean {
  * CMI requires fields to be sorted alphabetically and concatenated
  * with pipe (|) separator before hashing.
  */
-async function generateHash(
-  fields: Record<string, string>,
-  secretKey: string,
-): Promise<string> {
+async function generateHash(fields: Record<string, string>, secretKey: string): Promise<string> {
   const sortedKeys = Object.keys(fields).sort();
   const hashInput = sortedKeys.map((k) => fields[k]).join("|");
   return hmacSha256Hex(secretKey, hashInput);
@@ -95,9 +91,7 @@ async function generateHash(
  * Returns the form URL and fields needed to redirect the customer
  * to CMI's hosted payment page.
  */
-export async function createCmiPayment(
-  request: CmiPaymentRequest,
-): Promise<CmiPaymentResponse> {
+export async function createCmiPayment(request: CmiPaymentRequest): Promise<CmiPaymentResponse> {
   const config = getCmiConfig();
   if (!config) {
     return {
@@ -163,17 +157,44 @@ export async function verifyCmiCallback(
   const receivedHash = params.HASH || params.hash;
   if (!receivedHash) return null;
 
-  // S-06: Rebuild hash from received parameters using only known CMI fields.
-  // Unknown params are NOT included in the HMAC reconstruction to prevent
-  // an attacker from injecting fields that alter the hash computation.
-  const CMI_KNOWN_HASH_FIELDS = new Set([
-    'clientid', 'amount', 'currency', 'oid', 'okUrl', 'failUrl',
-    'callbackUrl', 'shopurl', 'TranType', 'lang', 'BillToName', 'email',
-    'description', 'storeType', 'ProcReturnCode', 'procreturncode',
-    'TransId', 'transid', 'AuthCode', 'authcode', 'Response',
-    'mdStatus', 'txstatus', 'iReqCode', 'iReqDetail', 'vendorCode',
-    'PAResSyntaxOK', 'PAResVerified', 'cavv', 'cavvAlgorithm', 'eci',
-    'xid', 'md', 'rnd', 'OID', 'AMOUNT',
+  // S-06 + S0-11-04: Rebuild hash from received parameters using only known
+  // CMI fields. Unknown params are NOT included in the HMAC reconstruction.
+  // S0-11-04: Normalize field names to lowercase for comparison so sandbox
+  // vs production casing differences (e.g. BillToName → billtoname) don't
+  // cause HMAC mismatches. The original key is kept in fieldsToHash so the
+  // hash value itself matches what CMI computed.
+  const CMI_KNOWN_HASH_FIELDS_LOWER = new Set([
+    "clientid",
+    "amount",
+    "currency",
+    "oid",
+    "okurl",
+    "failurl",
+    "callbackurl",
+    "shopurl",
+    "trantype",
+    "lang",
+    "billtoname",
+    "email",
+    "description",
+    "storetype",
+    "procreturncode",
+    "transid",
+    "authcode",
+    "response",
+    "mdstatus",
+    "txstatus",
+    "ireqcode",
+    "ireqdetail",
+    "vendorcode",
+    "paressyntaxok",
+    "paresverified",
+    "cavv",
+    "cavvalgorithm",
+    "eci",
+    "xid",
+    "md",
+    "rnd",
   ]);
 
   const fieldsToHash: Record<string, string> = {};
@@ -181,7 +202,11 @@ export async function verifyCmiCallback(
     const lowerKey = key.toLowerCase();
     if (lowerKey !== "hash" && lowerKey !== "encoding" && lowerKey !== "hashalgorithm") {
       // S-06: Only include known CMI fields or rnd_* / EXTRA.* custom fields
-      if (CMI_KNOWN_HASH_FIELDS.has(key) || key.startsWith('rnd_') || key.startsWith('EXTRA.')) {
+      if (
+        CMI_KNOWN_HASH_FIELDS_LOWER.has(lowerKey) ||
+        lowerKey.startsWith("rnd_") ||
+        key.startsWith("EXTRA.")
+      ) {
         fieldsToHash[key] = value;
       }
     }

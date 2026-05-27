@@ -33,7 +33,12 @@ function isCmiSourceAllowed(request: NextRequest): boolean {
   const raw = process.env.CMI_ALLOWED_IPS;
   if (!raw) return true; // IP allowlist not configured — rely on HMAC only
 
-  const allowedIps = new Set(raw.split(",").map((ip) => ip.trim()).filter(Boolean));
+  const allowedIps = new Set(
+    raw
+      .split(",")
+      .map((ip) => ip.trim())
+      .filter(Boolean),
+  );
   const clientIp =
     request.headers.get("cf-connecting-ip") ??
     request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
@@ -93,7 +98,10 @@ export async function POST(request: NextRequest) {
     if (!isCmiSourceAllowed(request)) {
       logger.warn("CMI callback rejected: source IP not in allowlist", {
         context: "payments/cmi/callback",
-        ip: request.headers.get("cf-connecting-ip") ?? request.headers.get("x-forwarded-for") ?? "unknown",
+        ip:
+          request.headers.get("cf-connecting-ip") ??
+          request.headers.get("x-forwarded-for") ??
+          "unknown",
       });
       return apiError("Forbidden", 403);
     }
@@ -113,8 +121,7 @@ export async function POST(request: NextRequest) {
       return apiError("Payload too large", 413);
     }
 
-    const contentType =
-      request.headers.get("content-type") || "application/x-www-form-urlencoded";
+    const contentType = request.headers.get("content-type") || "application/x-www-form-urlencoded";
     // Re-parse the size-limited body as formData. TextDecoder is safe here
     // because CMI callbacks are form-urlencoded (ASCII).
     const bodyText = new TextDecoder().decode(body);
@@ -156,12 +163,10 @@ export async function POST(request: NextRequest) {
         .single();
 
       if (dedupPayment?.clinic_id) {
-        const { error: dedupErr } = await adminClient
-          .from("cmi_callbacks_seen" as never)
-          .insert({
-            clinic_id: dedupPayment.clinic_id,
-            transaction_id: callbackData.transactionId,
-          } as never);
+        const { error: dedupErr } = await adminClient.from("cmi_callbacks_seen" as never).insert({
+          clinic_id: dedupPayment.clinic_id,
+          transaction_id: callbackData.transactionId,
+        } as never);
 
         if (dedupErr) {
           // 23505 = unique_violation → duplicate callback, ACK but do nothing
@@ -227,13 +232,15 @@ export async function POST(request: NextRequest) {
 
           try {
             const Sentry = await import("@sentry/nextjs");
-            Sentry.captureException(
-              new Error("CMI payment amount/currency mismatch"),
-              {
-                tags: { compliance: "payment_tampering", clinicId: payment.clinic_id },
-                extra: { paymentId: payment.id, expectedAmount: payment.amount, callbackAmount, callbackCurrency },
+            Sentry.captureException(new Error("CMI payment amount/currency mismatch"), {
+              tags: { compliance: "payment_tampering", clinicId: payment.clinic_id },
+              extra: {
+                paymentId: payment.id,
+                expectedAmount: payment.amount,
+                callbackAmount,
+                callbackCurrency,
               },
-            );
+            });
           } catch {
             // Sentry unavailable
           }
@@ -258,9 +265,11 @@ export async function POST(request: NextRequest) {
           }
         }
 
-        // Mark payment as completed — scoped to the payment's clinic_id
-        // to prevent any cross-tenant state mutation.
-        await supabase
+        // A18-03: Mark payment as completed and confirm appointment.
+        // Both updates are issued in parallel to minimize the window for
+        // partial failure (Worker eviction between sequential calls).
+        // A true atomic RPC requires a DB migration; tracked separately.
+        const paymentUpdate = supabase
           .from("payments")
           .update({
             status: PAYMENT_STATUS.COMPLETED,
@@ -269,14 +278,30 @@ export async function POST(request: NextRequest) {
           .eq("id", payment.id)
           .eq("clinic_id", payment.clinic_id);
 
-        // Confirm the appointment if applicable — scoped to clinic_id
-        if (payment.appointment_id && payment.clinic_id) {
-          await supabase
-            .from("appointments")
-            .update({ status: APPOINTMENT_STATUS.CONFIRMED })
-            .eq("id", payment.appointment_id)
-            .eq("clinic_id", payment.clinic_id)
-            .in("status", [APPOINTMENT_STATUS.PENDING, APPOINTMENT_STATUS.SCHEDULED]);
+        const appointmentUpdate =
+          payment.appointment_id && payment.clinic_id
+            ? supabase
+                .from("appointments")
+                .update({ status: APPOINTMENT_STATUS.CONFIRMED })
+                .eq("id", payment.appointment_id)
+                .eq("clinic_id", payment.clinic_id)
+                .in("status", [APPOINTMENT_STATUS.PENDING, APPOINTMENT_STATUS.SCHEDULED])
+            : Promise.resolve({ error: null });
+
+        const [payResult, apptResult] = await Promise.all([paymentUpdate, appointmentUpdate]);
+        if (payResult.error) {
+          logger.error("CMI payment update failed", {
+            context: "payments/cmi/callback",
+            paymentId: payment.id,
+            error: payResult.error,
+          });
+        }
+        if (apptResult.error) {
+          logger.error("CMI appointment confirmation failed", {
+            context: "payments/cmi/callback",
+            appointmentId: payment.appointment_id,
+            error: apptResult.error,
+          });
         }
       }
 
@@ -320,7 +345,10 @@ export async function POST(request: NextRequest) {
     });
   } catch (err) {
     // F-A93-03: Payment callback failure is an error, not a warning
-    logger.error("CMI payment callback processing failed", { context: "payments/cmi/callback", error: err });
+    logger.error("CMI payment callback processing failed", {
+      context: "payments/cmi/callback",
+      error: err,
+    });
     return apiInternalError("Failed to process payment callback");
   }
 }
