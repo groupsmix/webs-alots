@@ -334,7 +334,7 @@ jobs:
           echo "SUPABASE_LOCAL_SERVICE_ROLE_KEY=$(supabase status --output json | jq -r '.SERVICE_ROLE_KEY')" >> "$GITHUB_ENV"
 
       - name: Run RLS integration tests
-        run: npx vitest run src/lib/__tests__/integration/rls-real-postgres.test.ts
+        run: npx vitest run src/lib/__tests__/integration/rls-real-postgres.test.ts --reporter=json --outputFile=rls-results.json 2>&1 || true
         env:
           SUPABASE_LOCAL_URL: ${{ env.SUPABASE_LOCAL_URL }}
           SUPABASE_LOCAL_ANON_KEY: ${{ env.SUPABASE_LOCAL_ANON_KEY }}
@@ -350,6 +350,30 @@ jobs:
         env:
           SUPABASE_LOCAL_URL: ${{ env.SUPABASE_LOCAL_URL }}
           SUPABASE_LOCAL_SERVICE_KEY: ${{ env.SUPABASE_LOCAL_SERVICE_ROLE_KEY }}
+
+      # HIGH-4: Positive assertion — fail CI if the RLS suite was silently skipped.
+      # The JSON reporter counts skipped vs passed tests. If ALL tests were skipped,
+      # the env vars are likely missing and we should fail loudly rather than
+      # green-lighting a PR with zero RLS coverage.
+      - name: Assert RLS tests actually ran
+        run: |
+          if [ ! -f rls-results.json ]; then
+            echo "::error::RLS test results file not found — vitest may have crashed"
+            exit 1
+          fi
+          PASSED=$(node -e "const r=require('./rls-results.json'); console.log(r.numPassedTests || 0)")
+          FAILED=$(node -e "const r=require('./rls-results.json'); console.log(r.numFailedTests || 0)")
+          TOTAL=$((PASSED + FAILED))
+          echo "RLS tests: $PASSED passed, $FAILED failed, $TOTAL total"
+          if [ "$TOTAL" -eq 0 ]; then
+            echo "::error::RLS integration suite ran 0 tests — env vars may be missing"
+            exit 1
+          fi
+          if [ "$FAILED" -gt 0 ]; then
+            echo "::error::$FAILED RLS test(s) failed"
+            exit 1
+          fi
+          echo "✓ $PASSED RLS tests passed"
 
   e2e:
     runs-on: ubuntu-latest
