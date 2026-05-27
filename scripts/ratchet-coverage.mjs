@@ -14,7 +14,6 @@
  */
 
 import fs from "node:fs";
-import path from "node:path";
 
 const FLOOR_PATH = ".vitest-coverage-floor.json";
 const LCOV_PATH = "coverage/lcov.info";
