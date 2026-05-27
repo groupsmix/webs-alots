@@ -12,11 +12,11 @@
  */
 
 import { NextRequest } from "next/server";
-import { apiSuccess, apiRateLimited } from "@/lib/api-response";
+import { apiError, apiSuccess, apiRateLimited } from "@/lib/api-response";
 import { withValidation } from "@/lib/api-validate";
 import { logger } from "@/lib/logger";
 import { createRateLimiter, extractClientIp } from "@/lib/rate-limit";
-import { createClient, createTenantClient } from "@/lib/supabase-server";
+import { createTenantClient } from "@/lib/supabase-server";
 import { getTenant } from "@/lib/tenant";
 import { consentSchema } from "@/lib/validations";
 
@@ -35,14 +35,14 @@ export const POST = withValidation(consentSchema, async (data, request: NextRequ
 
   const { consentType, granted } = data;
 
-  // AUDIT F-02: Use the standard Supabase client factories so the tenant
-  // context header (x-clinic-id) is set, keeping consent records properly
-  // scoped by RLS policies. If a tenant subdomain is resolved, use the
-  // tenant-scoped client; otherwise fall back to the plain server client
-  // (e.g. consent recorded on the root domain before any clinic context).
-  const supabase = tenant?.clinicId
-    ? await createTenantClient(tenant.clinicId)
-    : await createClient();
+  // MEDIUM-1: Require tenant context — never fall back to a non-tenant
+  // client for a write that creates a tenant-scoped row. Consent without
+  // a resolved clinic context (e.g. root-domain hit, broken subdomain
+  // cache) is rejected with 400 to maintain defense-in-depth.
+  if (!tenant?.clinicId) {
+    return apiError("Tenant context required for consent logging", 400, "TENANT_REQUIRED");
+  }
+  const supabase = await createTenantClient(tenant.clinicId);
 
   // User may or may not be authenticated (cookie consent can happen pre-login)
   const {
