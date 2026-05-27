@@ -1,0 +1,9 @@
+.next/
+node_modules/
+.open-next/
+coverage/
+dist/
+supabase/migrations/
+src/lib/types/database.ts
+pnpm-lock.yaml
+package-lock.json
