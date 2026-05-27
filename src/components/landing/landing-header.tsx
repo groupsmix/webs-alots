@@ -57,7 +57,6 @@ export function LandingHeader() {
             textDecoration: "none",
           }}
         >
-          {/* eslint-disable-next-line i18next/no-literal-string -- brand wordmark is not translatable */}
           Oltigo
         </Link>
 
