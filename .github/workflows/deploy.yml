@@ -5,6 +5,7 @@ on:
     branches:
       - main
       - staging
+  workflow_dispatch:
 
 # Least-privilege permissions — deploy only needs to read repo contents
 permissions:
