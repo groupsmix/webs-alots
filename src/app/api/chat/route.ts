@@ -68,6 +68,36 @@ function sanitizeUserInput(text: string): string {
 }
 
 /**
+ * AI-002: Increment monthly AI token usage for the clinic.
+ * Uses upsert so the first call in a month creates the row.
+ * Note: ai_usage table is created by migration 00083; the generated
+ * Database types won't include it until types are regenerated, so we
+ * use `as never` casts on the table name.
+ */
+async function trackAIUsage(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  clinicId: string,
+  tokensIn: number,
+  tokensOut: number,
+): Promise<void> {
+  const month = new Date().toISOString().slice(0, 7) + "-01";
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  await (supabase as any)
+    .from("ai_usage")
+    .upsert(
+      {
+        clinic_id: clinicId,
+        month,
+        tokens_in: tokensIn,
+        tokens_out: tokensOut,
+        request_count: 1,
+      },
+      { onConflict: "clinic_id,month" },
+    )
+    .then(() => {}, () => {});
+}
+
+/**
  * API-010: Output validator for AI responses. Hard-rejects content that
  * contains role-elevation language or unredacted Moroccan PII patterns.
  * Returns the sanitised string, or null if the response is unsafe.
@@ -139,6 +169,27 @@ export const POST = withValidation(chatRequestSchema, async (body, request: Next
       });
     }
 
+    // AI-002: Check monthly AI token budget before making any AI call.
+    // The ai_usage table tracks per-clinic monthly consumption.
+    const currentMonth = new Date().toISOString().slice(0, 7) + "-01"; // e.g., "2026-05-01"
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: usage } = await (supabaseForAuth as any)
+      .from("ai_usage")
+      .select("tokens_in, tokens_out")
+      .eq("clinic_id", clinicId)
+      .eq("month", currentMonth)
+      .maybeSingle() as { data: { tokens_in: number; tokens_out: number } | null };
+
+    const AI_MONTHLY_TOKEN_LIMIT = 500_000;
+    const totalTokens = (usage?.tokens_in ?? 0) + (usage?.tokens_out ?? 0);
+    if (totalTokens >= AI_MONTHLY_TOKEN_LIMIT) {
+      return apiError(
+        "Monthly AI token budget exceeded. Please upgrade your plan or wait until next month.",
+        429,
+        "AI_BUDGET_EXCEEDED",
+      );
+    }
+
     // --- SMART: Cloudflare Workers AI (free) ---
     if (intelligence === "smart") {
       const cfAccountId = process.env.CLOUDFLARE_ACCOUNT_ID;
@@ -199,6 +250,13 @@ export const POST = withValidation(chatRequestSchema, async (body, request: Next
             description: "Chatbot AI response (smart tier)",
             metadata: { tier: "smart", model: "llama-3.1-8b-instruct" },
           }).catch(() => {});
+          // AI-002: Track estimated token usage (rough: 4 chars ≈ 1 token)
+          void trackAIUsage(
+            supabaseForAuth,
+            clinicId,
+            Math.ceil(lastMessage.content.length / 4),
+            Math.ceil(content.length / 4),
+          );
           return apiSuccess({
             message: { role: "assistant" as const, content },
           });
@@ -271,6 +329,14 @@ export const POST = withValidation(chatRequestSchema, async (body, request: Next
       description: "Chatbot AI response (advanced tier)",
       metadata: { tier: "advanced", model },
     }).catch(() => {});
+    // AI-002: Track estimated token usage for advanced tier.
+    // Streaming prevents exact counts; estimate from input length + max_tokens.
+    void trackAIUsage(
+      supabaseForAuth,
+      clinicId,
+      Math.ceil(sanitizedMessages.reduce((a, m) => a + m.content.length, 0) / 4),
+      125, // max_tokens=500 → ~125 estimated output tokens
+    );
 
     // Stream the response back to the client
     const stream = new ReadableStream({
