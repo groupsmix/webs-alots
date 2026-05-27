@@ -421,3 +421,49 @@
     transition: box-shadow 0.15s ease, border-color 0.15s ease, background-color 0.15s ease;
   }
 }
+
+/* ── Editorial landing: hover + focus + responsive type ── */
+
+/* Arrow translates +2px on hover (180ms). prefers-reduced-motion disables. */
+.landing-btn:hover .cta-arrow {
+  transform: translateX(2px);
+}
+
+[dir="rtl"] .landing-btn:hover .cta-arrow {
+  transform: translateX(-2px) scaleX(-1);
+}
+
+[dir="rtl"] .cta-arrow {
+  transform: scaleX(-1);
+}
+
+/* Focus ring — the single permitted shadow */
+.landing-btn:focus-visible {
+  outline: none;
+  box-shadow: var(--ring-focus);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .landing-btn:hover .cta-arrow {
+    transform: none;
+  }
+  [dir="rtl"] .landing-btn:hover .cta-arrow {
+    transform: scaleX(-1);
+  }
+}
+
+/* Responsive display type step-down: 1440→72px, 1024→56px, 390→40px */
+@media (max-width: 1024px) {
+  :root {
+    --text-display: 3.5rem;
+    --lh-display: 1.04;
+  }
+}
+
+@media (max-width: 480px) {
+  :root {
+    --text-display: 2.5rem;
+    --lh-display: 1.08;
+  }
+}

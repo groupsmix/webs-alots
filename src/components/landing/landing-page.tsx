@@ -1,7 +1,6 @@
 "use client";
 
-import { CookieConsent } from "@/components/cookie-consent";
-import { EmergentLandingPage } from "./emergent/emergent-landing-page";
+import { EditorialLandingPage } from "./editorial/editorial-landing-page";
 
 /**
  * SaaS landing page shown on the root domain (oltigo.com).
@@ -9,14 +8,9 @@ import { EmergentLandingPage } from "./emergent/emergent-landing-page";
  * This page does NOT load any tenant/clinic data.
  * Clinic websites live on subdomains (e.g. dr-ahmed.oltigo.com).
  *
- * Uses the Emergent cinematic design: 16 sections, bilingual FR/AR,
- * ECG pulse, floating carnet de santé, paper grain overlay.
+ * Uses the editorial-institutional design: Stripe Docs header treatment,
+ * Bloomberg Terminal mono metadata, Linear typographic scale.
  */
 export function LandingPage() {
-  return (
-    <>
-      <EmergentLandingPage />
-      <CookieConsent />
-    </>
-  );
+  return <EditorialLandingPage />;
 }
