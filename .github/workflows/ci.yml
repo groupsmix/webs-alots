@@ -165,6 +165,22 @@ jobs:
             exit 1
           fi
 
+      # R-04: Prevent the dual RLS signal from spreading. All RLS policies
+      # must use `request.header.x-clinic-id` (the PostgREST header set by
+      # createTenantClient). Any new policy using `app.clinic_id` must be
+      # caught here and migrated to the canonical signal.
+      - name: Guard RLS signal consistency
+        run: |
+          # Only the known legacy policy in 00083 is allowed to use app.clinic_id.
+          HITS=$(grep -rn "current_setting('app\.clinic_id'" supabase/migrations/ \
+            | grep -v '00083_ai_usage_cost_cap' \
+            | grep -v '00084_cmi_callback_dedup' || true)
+          if [ -n "$HITS" ]; then
+            echo "::error::RLS policy uses non-canonical app.clinic_id GUC (use request.header.x-clinic-id instead):"
+            echo "$HITS"
+            exit 1
+          fi
+
       # F-060: Verify typedoc generation succeeds. Catches broken JSDoc,
       # missing re-exports, and TypeScript errors in doc comments before
       # they reach main.

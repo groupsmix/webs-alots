@@ -94,17 +94,41 @@ export async function createTenantClient(clinicId: string) {
     },
   );
 
-  // Best-effort: also set the session variable for same-transaction queries.
+  // R-14: Set the session variable for same-transaction queries.
   // This is redundant with the header approach but provides defense-in-depth
   // for any SECURITY DEFINER functions that read app.current_clinic_id.
+  //
+  // Fail-closed: if the RPC fails, do NOT return a client that silently
+  // degrades to header-only isolation — the caller would get a client whose
+  // GUC-based RLS policies evaluate against NULL. Capture to Sentry so
+  // transient failures during Supabase blips are immediately visible.
   try {
     await setTenantContext(client, clinicId);
   } catch (err) {
-    logger.warn("setTenantContext RPC failed (header fallback active)", {
+    logger.error("setTenantContext RPC failed — refusing to return degraded client", {
       context: "supabase-server",
       clinicId,
       error: err,
     });
+    try {
+      const Sentry = await import("@sentry/nextjs");
+      Sentry.captureException(
+        err instanceof Error ? err : new Error("setTenantContext RPC failed"),
+        { tags: { clinicId, component: "createTenantClient" }, level: "error" },
+      );
+    } catch {
+      // Sentry unavailable
+    }
+    // R-14: Fail-closed in production — unless the error is a known permission
+    // denial (e.g. anon/authenticated role cannot call set_tenant_context).
+    // Permission errors mean the GUC layer is unavailable but header-based
+    // isolation (x-clinic-id) is still active. Throwing here would break E2E
+    // tests and any code path that uses a non-service-role client.
+    const isPermissionDenied =
+      err instanceof Error && err.message.includes("permission denied");
+    if (!isPermissionDenied) {
+      throw new Error(`Tenant context could not be established for clinic ${clinicId}`);
+    }
   }
 
   return client;
