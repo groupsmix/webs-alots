@@ -67,7 +67,23 @@ export async function GET() {
     const tenant = await getTenant();
 
     if (!tenant?.clinicId) {
-      return apiError("No clinic context. This endpoint requires a clinic subdomain.");
+      return apiSuccess({
+        name: "Clinic",
+        logo_url: null,
+        favicon_url: null,
+        primary_color: "#1E4DA1",
+        secondary_color: "#0F6E56",
+        heading_font: "Geist",
+        body_font: "Geist",
+        hero_image_url: null,
+        tagline: null,
+        cover_photo_url: null,
+        template_id: "modern",
+        section_visibility: {},
+        website_config: null,
+        phone: null,
+        address: null,
+      });
     }
 
     const clinicId = tenant.clinicId;

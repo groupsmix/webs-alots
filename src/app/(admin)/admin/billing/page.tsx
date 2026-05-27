@@ -99,6 +99,7 @@ export default function ClientBillingPage() {
 
   return (
     <div>
+      <Breadcrumb items={[{ label: "Admin", href: "/admin/dashboard" }, { label: "Billing" }]} />
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
           <h1 className="text-2xl font-bold">Facturation & Abonnement</h1>
@@ -314,7 +315,6 @@ export default function ClientBillingPage() {
                 </DialogDescription>
               </DialogHeader>
               <div className="space-y-4 py-4">
-                <Breadcrumb items={[{ label: "Admin", href: "/admin/dashboard" }, { label: "Billing" }]} />
                 <div className="flex items-center justify-between rounded-lg border p-4">
                   <div>
                     <p className="text-sm text-muted-foreground">Plan actuel</p>

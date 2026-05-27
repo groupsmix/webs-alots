@@ -29,7 +29,10 @@ export default function SectionsPage() {
           if (!r.ok) throw new Error(`Failed to load sections (${r.status})`);
           return r.json();
         })
-        .then((data) => mergeSectionVisibility(data.section_visibility)),
+        .then((json) => {
+          const data = json.data ?? json;
+          return mergeSectionVisibility(data.section_visibility);
+        }),
     defaultSectionVisibility,
   );
   const [visibility, setVisibility] =
@@ -100,6 +103,7 @@ export default function SectionsPage() {
 
   return (
     <div>
+      <Breadcrumb items={[{ label: "Admin", href: "/admin/dashboard" }, { label: "Sections" }]} />
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold">Section Control</h1>
@@ -138,7 +142,6 @@ export default function SectionsPage() {
                     !isOn && !isAlwaysOn ? "opacity-50" : ""
                   }`}
                 >
-                  <Breadcrumb items={[{ label: "Admin", href: "/admin/dashboard" }, { label: "Sections" }]} />
                   <div className="space-y-0.5">
                     <div className="flex items-center gap-2">
                       <span className="text-sm font-medium">

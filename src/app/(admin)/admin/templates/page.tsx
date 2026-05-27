@@ -53,7 +53,10 @@ export default function TemplatesPage() {
           if (!r.ok) throw new Error(`Failed to load templates (${r.status})`);
           return r.json();
         })
-        .then((data) => (data.template_id ?? "modern") as TemplateId),
+        .then((json) => {
+          const data = json.data ?? json;
+          return (data.template_id ?? "modern") as TemplateId;
+        }),
     "modern" as TemplateId,
   );
   const [selected, setSelected] = useState<TemplateId>("modern");

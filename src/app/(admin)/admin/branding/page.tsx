@@ -91,20 +91,23 @@ export default function BrandingPage() {
           if (!r.ok) throw new Error(`Failed to load branding (${r.status})`);
           return r.json();
         })
-        .then((data) => ({
-          name: data.name ?? "",
-          tagline: data.tagline ?? "",
-          phone: data.phone ?? "",
-          address: data.address ?? "",
-          logo_url: data.logo_url ?? null,
-          favicon_url: data.favicon_url ?? null,
-          cover_photo_url: data.cover_photo_url ?? null,
-          primary_color: data.primary_color ?? "#1E4DA1",
-          secondary_color: data.secondary_color ?? "#0F6E56",
-          heading_font: data.heading_font ?? "Geist",
-          body_font: data.body_font ?? "Geist",
-          hero_image_url: data.hero_image_url ?? null,
-        })),
+        .then((json) => {
+          const data = json.data ?? json;
+          return {
+            name: data.name ?? "",
+            tagline: data.tagline ?? "",
+            phone: data.phone ?? "",
+            address: data.address ?? "",
+            logo_url: data.logo_url ?? null,
+            favicon_url: data.favicon_url ?? null,
+            cover_photo_url: data.cover_photo_url ?? null,
+            primary_color: data.primary_color ?? "#1E4DA1",
+            secondary_color: data.secondary_color ?? "#0F6E56",
+            heading_font: data.heading_font ?? "Geist",
+            body_font: data.body_font ?? "Geist",
+            hero_image_url: data.hero_image_url ?? null,
+          };
+        }),
     DEFAULT_BRANDING,
   );
   const [branding, setBranding] = useState<BrandingState>(DEFAULT_BRANDING);
@@ -180,7 +183,8 @@ export default function BrandingPage() {
         return;
       }
 
-      const { url } = await res.json();
+      const json = await res.json();
+      const { url } = json.data ?? json;
       const urlField =
         field === "logo"
           ? "logo_url"
