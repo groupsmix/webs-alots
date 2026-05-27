@@ -650,11 +650,11 @@ export async function getPublicPharmacyProducts(): Promise<PublicPharmacyProduct
   });
 }
 
-function getPublicStockStatus(product: PublicPharmacyProduct): "ok" | "low" | "out" {
+export function getPublicStockStatus(product: PublicPharmacyProduct): "ok" | "low" | "out" {
   return product.stockStatus;
 }
 
-function searchPublicProducts(
+export function searchPublicProducts(
   products: PublicPharmacyProduct[],
   query: string,
 ): PublicPharmacyProduct[] {
@@ -800,7 +800,7 @@ export interface PublicPharmacyPrescription {
  * status) so the public pharmacy page can show queue status without
  * exposing any patient data.
  */
-async function getPublicPharmacyPrescriptions(): Promise<PublicPharmacyPrescription[]> {
+export async function getPublicPharmacyPrescriptions(): Promise<PublicPharmacyPrescription[]> {
   // Return empty — prescription data must NEVER be served publicly.
   // Authenticated pharmacy staff should use a separate, auth-gated endpoint.
   return [];

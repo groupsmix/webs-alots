@@ -157,11 +157,11 @@ export function getTypesByCategory(category: ClinicTypeCategory): ClinicTypeEntr
 }
 
 /** Find a single clinic type by its key */
-function getClinicType(typeKey: string): ClinicTypeEntry | undefined {
+export function getClinicType(typeKey: string): ClinicTypeEntry | undefined {
   return CLINIC_TYPES.find((t) => t.type_key === typeKey);
 }
 
 /** Find the category metadata for a given category key */
-function getCategoryMeta(category: ClinicTypeCategory): ClinicCategory | undefined {
+export function getCategoryMeta(category: ClinicTypeCategory): ClinicCategory | undefined {
   return CLINIC_CATEGORIES.find((c) => c.key === category);
 }

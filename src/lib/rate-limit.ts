@@ -592,7 +592,7 @@ export const loginLimiter = createRateLimiter({
 });
 
 /** Auth endpoints catch-all: 10 req / 60s per IP (RL-01 defense-in-depth) */
-const authLimiter = createRateLimiter({
+export const authLimiter = createRateLimiter({
   windowMs: 60_000,
   max: 10,
   failClosed: true,

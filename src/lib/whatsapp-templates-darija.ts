@@ -252,7 +252,7 @@ export function toDarijaNotificationTemplates(): NotificationTemplate[] {
  * Look up a single Darija template by its notification trigger.
  * Returns `undefined` if no enabled template exists for that trigger.
  */
-function getDarijaTemplate(
+export function getDarijaTemplate(
   trigger: NotificationTrigger,
 ): DarijaTemplate | undefined {
   return darijaWhatsAppTemplates.find(

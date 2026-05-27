@@ -315,7 +315,7 @@ export async function sendInteractiveMessage(
 /**
  * Send a WhatsApp template message using the configured provider.
  */
-async function sendWhatsAppMessage(
+export async function sendWhatsAppMessage(
   payload: WhatsAppMessagePayload,
 ): Promise<WhatsAppSendResult> {
   const config = getWhatsAppConfig();
@@ -382,7 +382,7 @@ function getTemplatesForLocale(
  * (e.g. Darija) automatically. The explicit `templates` parameter still takes
  * precedence if supplied so existing call-sites are unaffected.
  */
-async function sendNotificationWhatsApp(
+export async function sendNotificationWhatsApp(
   trigger: NotificationTrigger,
   to: string,
   variables: TemplateVariables,

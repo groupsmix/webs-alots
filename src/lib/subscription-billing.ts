@@ -198,7 +198,7 @@ export function calculateNextPeriod(
 /**
  * Check if a clinic has exceeded its plan limits.
  */
-async function checkPlanLimits(
+export async function checkPlanLimits(
   clinicId: string,
   plan: SubscriptionPlan,
 ): Promise<{ withinLimits: boolean; exceeded: string[] }> {

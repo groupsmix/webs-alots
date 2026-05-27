@@ -151,7 +151,7 @@ function getKV(): KVNamespace | null {
  * F-07: Try to read a subdomain entry from KV cache.
  * Returns null on miss or if KV is not available.
  */
-async function getSubdomainFromKV(subdomain: string): Promise<CachedClinic | null> {
+export async function getSubdomainFromKV(subdomain: string): Promise<CachedClinic | null> {
   const kv = getKV();
   if (!kv) return null;
   try {
@@ -164,7 +164,7 @@ async function getSubdomainFromKV(subdomain: string): Promise<CachedClinic | nul
 /**
  * F-07: Write a subdomain entry to KV cache.
  */
-async function setSubdomainInKV(subdomain: string, clinic: CachedClinic): Promise<void> {
+export async function setSubdomainInKV(subdomain: string, clinic: CachedClinic): Promise<void> {
   const kv = getKV();
   if (!kv) return;
   try {
@@ -179,7 +179,7 @@ async function setSubdomainInKV(subdomain: string, clinic: CachedClinic): Promis
 /**
  * F-07: Delete a subdomain entry from KV cache.
  */
-async function deleteSubdomainFromKV(subdomain: string): Promise<void> {
+export async function deleteSubdomainFromKV(subdomain: string): Promise<void> {
   const kv = getKV();
   if (!kv) return;
   try {

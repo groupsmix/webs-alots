@@ -45,7 +45,7 @@ function isDemoClinic(clinicId: string | null | undefined): boolean {
 /**
  * Check if a subdomain belongs to the demo tenant.
  */
-function isDemoSubdomain(subdomain: string | null | undefined): boolean {
+export function isDemoSubdomain(subdomain: string | null | undefined): boolean {
   return subdomain === DEMO_SUBDOMAIN;
 }
 
@@ -113,7 +113,7 @@ export function shouldBlockDemoRequest(
  * This replaces the path/method allow-list approach with an explicit
  * opt-in per route handler.
  */
-function demoSafe<T extends (...args: never[]) => unknown>(
+export function demoSafe<T extends (...args: never[]) => unknown>(
   handler: T,
 ): T {
   // Tag the handler so middleware or withAuth can check it
@@ -124,7 +124,7 @@ function demoSafe<T extends (...args: never[]) => unknown>(
 /**
  * Check if a handler has been marked as demo-safe via the demoSafe wrapper.
  */
-function isDemoSafeHandler(handler: unknown): boolean {
+export function isDemoSafeHandler(handler: unknown): boolean {
   return (
     typeof handler === "function" &&
     (handler as unknown as Record<string, unknown>).__demoSafe === true

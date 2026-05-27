@@ -85,7 +85,7 @@ export function staffWelcomeEmail(params: {
 
 // ---------- Clinic created notification ----------
 
-function clinicCreatedEmail(params: {
+export function clinicCreatedEmail(params: {
   clinicName: string;
   adminName: string;
   adminEmail: string;
@@ -198,7 +198,7 @@ export function onboardingWelcomeEmail(params: {
 
 // ---------- Payment failure notification ----------
 
-function paymentFailedEmail(params: {
+export function paymentFailedEmail(params: {
   clinicName: string;
   recipientName: string;
   amount: number;

@@ -41,7 +41,7 @@ function SupportIcon({ value }: { value: FeatureSupport }) {
  * Compact comparison section for the landing page.
  * Shows a subset of features with a link to the full comparison.
  */
-function ComparisonSection() {
+export function ComparisonSection() {
   const grouped = getFeaturesByCategory();
   const highlightCategories: ComparisonCategory[] = [
     "pricing",

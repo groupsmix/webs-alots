@@ -115,7 +115,7 @@ const DEFAULT_FEATURES: FeaturesConfig = {
 };
 
 /** Default features for veterinary clinics */
-const VETERINARY_DEFAULT_FEATURES: FeaturesConfig = {
+export const VETERINARY_DEFAULT_FEATURES: FeaturesConfig = {
   appointments: true,
   prescriptions: true,
   vaccination: true,
@@ -125,7 +125,7 @@ const VETERINARY_DEFAULT_FEATURES: FeaturesConfig = {
 };
 
 /** Default features for restaurant businesses */
-const RESTAURANT_DEFAULT_FEATURES: FeaturesConfig = {
+export const RESTAURANT_DEFAULT_FEATURES: FeaturesConfig = {
   appointments: true,
   menu_management: true,
   table_management: true,
@@ -235,7 +235,7 @@ async function getClinicFeatureOverride(
  *
  * F-A90-05: Routes flag changes through logAuditEvent for compliance.
  */
-async function setClinicFeatureOverride(
+export async function setClinicFeatureOverride(
   clinicId: string,
   config: FeaturesConfig,
   actor?: string | null,
@@ -319,7 +319,7 @@ async function setClinicFeatureOverride(
  * Sets a global override in KV that takes precedence over clinic-type defaults.
  * Setting a key to `false` disables the feature for ALL clinics immediately.
  */
-async function setGlobalFeatureFlag(
+export async function setGlobalFeatureFlag(
   key: ClinicFeatureKey,
   enabled: boolean,
   actor?: string | null,
@@ -399,7 +399,7 @@ export function isFeatureEnabled(
  *
  * This function supports runtime feature flag overrides via KV.
  */
-async function isFeatureEnabledForClinic(
+export async function isFeatureEnabledForClinic(
   clinicId: string,
   clinicTypeId: string | null,
   key: ClinicFeatureKey,
@@ -425,7 +425,7 @@ async function isFeatureEnabledForClinic(
  * Fetch features config from database for a clinic type
  * Used as fallback when KV override doesn't exist
  */
-async function getClinicTypeFeaturesFromDB(
+export async function getClinicTypeFeaturesFromDB(
   clinicTypeId: string,
 ): Promise<FeaturesConfig | null> {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -459,7 +459,7 @@ async function getClinicTypeFeaturesFromDB(
  * Return only the subset of items whose `requiredFeature` is either
  * undefined (always shown) or enabled in the config.
  */
-function filterByFeatures<T extends { requiredFeature?: ClinicFeatureKey }>(
+export function filterByFeatures<T extends { requiredFeature?: ClinicFeatureKey }>(
   items: T[],
   config: FeaturesConfig | undefined | null,
 ): T[] {

@@ -126,7 +126,7 @@ export async function verifyMFAEnrollment(
  * Verify a TOTP code during login (MFA challenge step).
  * On success, redirects to the appropriate dashboard.
  */
-async function verifyMFALogin(
+export async function verifyMFALogin(
   factorId: string,
   code: string,
 ): Promise<MFAVerifyResult> {
@@ -159,7 +159,7 @@ async function verifyMFALogin(
 /**
  * Unenroll (disable) a TOTP factor from the user's account.
  */
-async function unenrollMFA(
+export async function unenrollMFA(
   factorId: string,
 ): Promise<{ error: string | null }> {
   const supabase = await createClient();
@@ -234,7 +234,7 @@ async function getMFAFactors(): Promise<{
 /**
  * Check if the current user has MFA enabled (at least one verified TOTP factor).
  */
-async function isMFAEnabled(): Promise<boolean> {
+export async function isMFAEnabled(): Promise<boolean> {
   const { factors } = await getMFAFactors();
   return factors.some((f) => f.status === "verified");
 }
@@ -243,7 +243,7 @@ async function isMFAEnabled(): Promise<boolean> {
  * Get the current MFA assurance level for the authenticated user.
  * Returns 'aal1' if only password was used, 'aal2' if MFA was verified.
  */
-async function getMFAAssuranceLevel(): Promise<{
+export async function getMFAAssuranceLevel(): Promise<{
   currentLevel: string | null;
   nextLevel: string | null;
   error: string | null;

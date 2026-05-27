@@ -235,7 +235,7 @@ const ClinicFeaturesContext = createContext<ClinicFeaturesContextValue>({
  *
  * When neither is supplied, all features are enabled by default.
  */
-function ClinicFeaturesProvider({
+export function ClinicFeaturesProvider({
   children,
   initialConfig,
   clinicTypeKey,
