@@ -23,6 +23,19 @@
 import { NextResponse } from "next/server";
 import { logger } from "@/lib/logger";
 
+// OBS-003: Generate a per-response request ID for correlation.
+// The ID is attached as X-Request-Id on every API response so support
+// can match client-reported errors to server-side logs.
+function requestId(): string {
+  return crypto.randomUUID();
+}
+
+function withRequestId(init?: HeadersInit): Headers {
+  const h = new Headers(init);
+  if (!h.has("X-Request-Id")) h.set("X-Request-Id", requestId());
+  return h;
+}
+
 interface ApiSuccessBody<T> {
   ok: true;
   data: T;
@@ -38,7 +51,7 @@ interface ApiErrorBody {
  * Return a success JSON response with standard shape.
  */
 export function apiSuccess<T>(data: T, status = 200, headers?: HeadersInit): NextResponse<ApiSuccessBody<T>> {
-  return NextResponse.json({ ok: true as const, data }, { status, headers });
+  return NextResponse.json({ ok: true as const, data }, { status, headers: withRequestId(headers) });
 }
 
 /**
@@ -52,7 +65,7 @@ export function apiError(
 ): NextResponse<ApiErrorBody> {
   const body: ApiErrorBody = { ok: false, error };
   if (code) body.code = code;
-  return NextResponse.json(body, { status, headers });
+  return NextResponse.json(body, { status, headers: withRequestId(headers) });
 }
 
 /**
