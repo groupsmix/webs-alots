@@ -93,7 +93,7 @@ export interface InAppNotification {
 
 // ---- WhatsApp Message ----
 
-interface WhatsAppMessage {
+export interface WhatsAppMessage {
   id: string;
   to: string;
   trigger: NotificationTrigger;
@@ -126,7 +126,7 @@ export interface NotificationLogEntry {
 
 // ---- User Notification Preferences ----
 
-interface NotificationPreferences {
+export interface NotificationPreferences {
   userId: string;
   channels: {
     whatsapp: boolean;

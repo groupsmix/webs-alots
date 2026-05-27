@@ -48,7 +48,7 @@ export interface DirectoryDoctor {
   clinicId: string;
 }
 
-interface DirectoryClinic {
+export interface DirectoryClinic {
   id: string;
   name: string;
   subdomain: string | null;

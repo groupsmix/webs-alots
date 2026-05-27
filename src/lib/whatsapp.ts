@@ -68,7 +68,7 @@ interface WhatsAppSendResult {
 
 type WhatsAppMessageStatus = "sent" | "delivered" | "read" | "failed";
 
-interface WhatsAppStatusUpdate {
+export interface WhatsAppStatusUpdate {
   messageId: string;
   status: WhatsAppMessageStatus;
   timestamp: string;

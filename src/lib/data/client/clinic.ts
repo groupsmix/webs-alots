@@ -84,7 +84,7 @@ export async function fetchWaitingRoom(clinicId: string): Promise<WaitingRoomEnt
 // Emergency Slots
 // ─────────────────────────────────────────────
 
-interface EmergencySlotView {
+export interface EmergencySlotView {
   id: string;
   doctorId: string;
   doctorName: string;

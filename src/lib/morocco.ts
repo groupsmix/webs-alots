@@ -575,7 +575,7 @@ export const MOROCCAN_CITIES = [
 
 type GardeType = "garde" | "astreinte";
 
-interface GardeScheduleEntry {
+export interface GardeScheduleEntry {
   id: string;
   doctorId: string;
   doctorName: string;
@@ -589,7 +589,7 @@ interface GardeScheduleEntry {
 
 // ---- Multi-Cabinet ----
 
-interface CabinetLocation {
+export interface CabinetLocation {
   id: string;
   clinicId: string;
   name: string;
