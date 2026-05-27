@@ -159,7 +159,7 @@ async function fetchDirectoryDoctors(): Promise<DirectoryDoctor[]> {
     // inside a "use cache" directive in Next.js 15+. We must use the admin client or a 
     // standalone client that doesn't read cookies, since the directory is public anyway.
     const { createAdminClient } = await import("@/lib/supabase-server");
-    const supabase = createAdminClient();
+    const supabase = createAdminClient("directory");
 
     // Fetch all doctors from active clinics
     const { data: doctors, error: doctorsError } = await supabase

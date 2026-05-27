@@ -118,7 +118,7 @@ async function fetchClinicContext(
   clinicId: string,
 ): Promise<ClinicContext | null> {
   try {
-    const supabase = createAdminClient();
+    const supabase = createAdminClient("whatsapp_receptionist");
 
     const [clinicRes, servicesRes, doctorsRes] = await Promise.all([
       supabase
@@ -170,7 +170,7 @@ async function findClinicByPhoneNumberId(
   phoneNumberId: string,
 ): Promise<string | null> {
   try {
-    const supabase = createAdminClient();
+    const supabase = createAdminClient("whatsapp_receptionist");
     // The WhatsApp phone number ID is stored in the clinic's metadata
     // as metadata->whatsapp_phone_number_id. We query all clinics and
     // filter in-app since Supabase JSONB containment is more reliable.
@@ -314,7 +314,7 @@ async function handleIncomingMessage(
   await sendTextMessage(from, aiReply);
 
   // F-AI-08: Audit log AI invocation
-  const adminClient = createAdminClient();
+  const adminClient = createAdminClient("whatsapp_receptionist");
   void logAuditEvent({
     supabase: adminClient,
     action: "ai_whatsapp_receptionist_invocation",
@@ -326,7 +326,7 @@ async function handleIncomingMessage(
 
   // Log the interaction for analytics
   try {
-    const supabase = createAdminClient();
+    const supabase = createAdminClient("whatsapp_receptionist");
     await supabase.from("activity_logs").insert({
       action: "whatsapp_receptionist.message",
       type: "admin",

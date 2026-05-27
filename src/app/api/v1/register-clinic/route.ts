@@ -344,7 +344,7 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const supabase = createAdminClient();
+    const supabase = createAdminClient("register_clinic");
 
     // 1. Check if email is already registered.
     // Querying our own "users" table is O(1) and safe for admin.

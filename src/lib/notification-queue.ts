@@ -93,7 +93,7 @@ export async function enqueueNotification(
 ): Promise<string | null> {
   try {
     const { createAdminClient } = await import("@/lib/supabase-server");
-    const supabase = createAdminClient() as ExtendedClient;
+    const supabase = createAdminClient("notification") as ExtendedClient;
 
     const { data, error } = await supabase
       .from("notification_queue")
@@ -148,7 +148,7 @@ export async function processNotificationQueue(): Promise<ProcessResult> {
 
   try {
     const { createAdminClient } = await import("@/lib/supabase-server");
-    const supabase = createAdminClient() as ExtendedClient;
+    const supabase = createAdminClient("notification") as ExtendedClient;
 
     // Fetch pending items ready for processing
     const { data: items, error: fetchError } = await supabase

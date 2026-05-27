@@ -96,7 +96,7 @@ export const POST = withAuthValidation(impersonateSchema, async (body, request, 
     // server-side invalidation, audit queries, and concurrent session limits.
     let sessionId: string | null = null;
     try {
-      const adminClient = createAdminClient();
+      const adminClient = createAdminClient("impersonate");
       const expiresAt = new Date(Date.now() + sessionMaxAge * 1000).toISOString();
 
       // Look up the user's profile ID for the actor_id FK
@@ -107,7 +107,7 @@ export const POST = withAuthValidation(impersonateSchema, async (body, request, 
         .single();
 
       if (profile) {
-        const untypedClient = createUntypedAdminClient();
+        const untypedClient = createUntypedAdminClient("impersonate");
         const { data: session, error: sessionError } = await untypedClient
           .from("impersonation_sessions")
           .insert({
@@ -187,7 +187,7 @@ export const GET = withAuth(async () => {
   let reason: string | null = null;
   if (sessionId) {
     try {
-      const untypedClient = createUntypedAdminClient();
+      const untypedClient = createUntypedAdminClient("impersonate");
       const { data: session } = await untypedClient
         .from("impersonation_sessions")
         .select("reason, ended_at, expires_at")
@@ -217,7 +217,7 @@ export const DELETE = withAuth(async (_request, { supabase, user }) => {
     // AUDIT FINDING #6: Mark the server-side session as ended
     if (sessionId) {
       try {
-        const untypedClient = createUntypedAdminClient();
+        const untypedClient = createUntypedAdminClient("impersonate");
         await untypedClient
           .from("impersonation_sessions")
           .update({ ended_at: new Date().toISOString(), ended_reason: "manual" })

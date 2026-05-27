@@ -228,7 +228,7 @@ export function register() {
 
     import("@/lib/supabase-server").then(({ createAdminClient }) => {
       try {
-        const supabase = createAdminClient();
+        const supabase = createAdminClient("instrumentation");
         supabase
           .from("users")
           .select("id")

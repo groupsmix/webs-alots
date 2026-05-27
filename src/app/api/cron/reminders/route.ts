@@ -8,7 +8,7 @@ import { substituteVariables, defaultNotificationTemplates } from "@/lib/notific
 import { withSentryCron } from "@/lib/sentry-cron";
 // B-02: Cron jobs run without user session cookies, so the cookie-based
 // `createClient()` would execute queries as anon under RLS, returning 0
-// rows and silently skipping all reminders. Use `createAdminClient()`
+// rows and silently skipping all reminders. Use `createAdminClient("cron")`
 // (service-role) which bypasses RLS, then iterate per-clinic.
 import { createAdminClient } from "@/lib/supabase-server";
 import { APPOINTMENT_STATUS } from "@/lib/types/database";
@@ -33,7 +33,7 @@ async function handler(request: NextRequest) {
   if (authError) return authError;
 
   try {
-    const supabase = createAdminClient();
+    const supabase = createAdminClient("cron");
     // Quick check to see if there are any active clinics to avoid unnecessary DB queries
     const { count: activeClinicsCount } = await supabase
       .from("clinics")

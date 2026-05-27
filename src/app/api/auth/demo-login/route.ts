@@ -135,7 +135,7 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const supabase = createAdminClient();
+    const supabase = createAdminClient("auth_admin");
 
     // Ensure the demo auth user exists (idempotent)
     // We query the public "users" table by email to find the auth_id.
