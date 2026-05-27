@@ -154,7 +154,7 @@ interface CurrentUser {
   email: string | null;
 }
 
-export async function getCurrentUser(): Promise<CurrentUser | null> {
+async function getCurrentUser(): Promise<CurrentUser | null> {
   const supabase = await createClient();
   const {
     data: { user },
@@ -194,13 +194,13 @@ interface ClinicRow {
   updated_at: string;
 }
 
-export async function getClinics(): Promise<ClinicRow[]> {
+async function getClinics(): Promise<ClinicRow[]> {
   return query<ClinicRow>("clinics", {
     order: ["created_at", { ascending: false }],
   });
 }
 
-export async function getClinicById(id: string): Promise<ClinicRow | null> {
+async function getClinicById(id: string): Promise<ClinicRow | null> {
   return queryOne<ClinicRow>("clinics", { eq: [["id", id]] });
 }
 
@@ -218,7 +218,7 @@ interface ClinicBrandingRow {
   hero_image_url: string | null;
 }
 
-export async function getClinicBranding(clinicId: string): Promise<ClinicBrandingRow | null> {
+async function getClinicBranding(clinicId: string): Promise<ClinicBrandingRow | null> {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("clinics")
@@ -238,7 +238,7 @@ export async function getClinicBranding(clinicId: string): Promise<ClinicBrandin
   };
 }
 
-export async function updateClinicBranding(
+async function updateClinicBranding(
   clinicId: string,
   branding: Partial<ClinicBrandingRow>,
 ): Promise<boolean> {
@@ -278,7 +278,7 @@ interface UserRow {
   updated_at: string;
 }
 
-export async function getClinicUsers(clinicId: string, role?: string): Promise<UserRow[]> {
+async function getClinicUsers(clinicId: string, role?: string): Promise<UserRow[]> {
   const eq: [string, unknown][] = [["clinic_id", clinicId]];
   if (role) eq.push(["role", role]);
   return query<UserRow>("users", {
@@ -287,19 +287,19 @@ export async function getClinicUsers(clinicId: string, role?: string): Promise<U
   });
 }
 
-export async function getDoctors(clinicId: string): Promise<UserRow[]> {
+async function getDoctors(clinicId: string): Promise<UserRow[]> {
   return getClinicUsers(clinicId, "doctor");
 }
 
-export async function getPatients(clinicId: string): Promise<UserRow[]> {
+async function getPatients(clinicId: string): Promise<UserRow[]> {
   return getClinicUsers(clinicId, "patient");
 }
 
-export async function getReceptionists(clinicId: string): Promise<UserRow[]> {
+async function getReceptionists(clinicId: string): Promise<UserRow[]> {
   return getClinicUsers(clinicId, "receptionist");
 }
 
-export async function getUserById(userId: string): Promise<UserRow | null> {
+async function getUserById(userId: string): Promise<UserRow | null> {
   return queryOne<UserRow>("users", { eq: [["id", userId]] });
 }
 
@@ -321,7 +321,7 @@ interface ServiceRow {
   created_at: string;
 }
 
-export async function getServices(clinicId: string): Promise<ServiceRow[]> {
+async function getServices(clinicId: string): Promise<ServiceRow[]> {
   return query<ServiceRow>("services", {
     eq: [["clinic_id", clinicId]],
   });
@@ -359,28 +359,28 @@ interface AppointmentRow {
   updated_at: string;
 }
 
-export async function getAppointments(clinicId: string): Promise<AppointmentRow[]> {
+async function getAppointments(clinicId: string): Promise<AppointmentRow[]> {
   return query<AppointmentRow>("appointments", {
     eq: [["clinic_id", clinicId]],
     order: ["slot_start", { ascending: true }],
   });
 }
 
-export async function getAppointmentsByDoctor(clinicId: string, doctorId: string): Promise<AppointmentRow[]> {
+async function getAppointmentsByDoctor(clinicId: string, doctorId: string): Promise<AppointmentRow[]> {
   return query<AppointmentRow>("appointments", {
     eq: [["clinic_id", clinicId], ["doctor_id", doctorId]],
     order: ["slot_start", { ascending: true }],
   });
 }
 
-export async function getAppointmentsByPatient(clinicId: string, patientId: string): Promise<AppointmentRow[]> {
+async function getAppointmentsByPatient(clinicId: string, patientId: string): Promise<AppointmentRow[]> {
   return query<AppointmentRow>("appointments", {
     eq: [["clinic_id", clinicId], ["patient_id", patientId]],
     order: ["slot_start", { ascending: true }],
   });
 }
 
-export async function getTodayAppointments(clinicId: string, doctorId?: string): Promise<AppointmentRow[]> {
+async function getTodayAppointments(clinicId: string, doctorId?: string): Promise<AppointmentRow[]> {
   const supabase = await createClient();
   const today = getLocalDateStr();
   const todayStart = `${today}T00:00:00`;
@@ -424,7 +424,7 @@ interface TimeSlotRow {
   is_active: boolean;
 }
 
-export async function getTimeSlots(clinicId: string, doctorId?: string): Promise<TimeSlotRow[]> {
+async function getTimeSlots(clinicId: string, doctorId?: string): Promise<TimeSlotRow[]> {
   const eq: [string, unknown][] = [["clinic_id", clinicId]];
   if (doctorId) eq.push(["doctor_id", doctorId]);
   return query<TimeSlotRow>("time_slots", {
@@ -452,14 +452,14 @@ interface PaymentRow {
   created_at: string;
 }
 
-export async function getPayments(clinicId: string): Promise<PaymentRow[]> {
+async function getPayments(clinicId: string): Promise<PaymentRow[]> {
   return query<PaymentRow>("payments", {
     eq: [["clinic_id", clinicId]],
     order: ["created_at", { ascending: false }],
   });
 }
 
-export async function getPaymentsByPatient(clinicId: string, patientId: string): Promise<PaymentRow[]> {
+async function getPaymentsByPatient(clinicId: string, patientId: string): Promise<PaymentRow[]> {
   return query<PaymentRow>("payments", {
     eq: [["clinic_id", clinicId], ["patient_id", patientId]],
     order: ["created_at", { ascending: false }],
@@ -482,7 +482,7 @@ interface ReviewRow {
   created_at: string;
 }
 
-export async function getReviews(clinicId: string): Promise<ReviewRow[]> {
+async function getReviews(clinicId: string): Promise<ReviewRow[]> {
   return query<ReviewRow>("reviews", {
     eq: [["clinic_id", clinicId]],
     order: ["created_at", { ascending: false }],
@@ -505,7 +505,7 @@ interface NotificationRow {
   sent_at: string;
 }
 
-export async function getNotifications(clinicId: string, userId: string): Promise<NotificationRow[]> {
+async function getNotifications(clinicId: string, userId: string): Promise<NotificationRow[]> {
   return query<NotificationRow>("notifications", {
     eq: [["clinic_id", clinicId], ["user_id", userId]],
     order: ["sent_at", { ascending: false }],
@@ -527,7 +527,7 @@ interface DocumentRow {
   created_at: string;
 }
 
-export async function getDocuments(clinicId: string, userId?: string): Promise<DocumentRow[]> {
+async function getDocuments(clinicId: string, userId?: string): Promise<DocumentRow[]> {
   const eq: [string, unknown][] = [["clinic_id", clinicId]];
   if (userId) eq.push(["user_id", userId]);
   return query<DocumentRow>("documents", {
@@ -552,7 +552,7 @@ interface PrescriptionRow {
   created_at: string;
 }
 
-export async function getPrescriptions(clinicId: string, doctorId?: string): Promise<PrescriptionRow[]> {
+async function getPrescriptions(clinicId: string, doctorId?: string): Promise<PrescriptionRow[]> {
   const supabase = await createClient();
   let q = supabase
     .from("prescriptions")
@@ -583,7 +583,7 @@ export async function getPrescriptions(clinicId: string, doctorId?: string): Pro
   }));
 }
 
-export async function getPatientPrescriptions(clinicId: string, patientId: string): Promise<PrescriptionRow[]> {
+async function getPatientPrescriptions(clinicId: string, patientId: string): Promise<PrescriptionRow[]> {
   return query<PrescriptionRow>("prescriptions", {
     eq: [["clinic_id", clinicId], ["patient_id", patientId]],
     order: ["created_at", { ascending: false }],
@@ -606,7 +606,7 @@ interface ConsultationNoteRow {
   updated_at: string;
 }
 
-export async function getConsultationNotes(clinicId: string, doctorId: string): Promise<ConsultationNoteRow[]> {
+async function getConsultationNotes(clinicId: string, doctorId: string): Promise<ConsultationNoteRow[]> {
   return query<ConsultationNoteRow>("consultation_notes", {
     eq: [["clinic_id", clinicId], ["doctor_id", doctorId]],
     order: ["created_at", { ascending: false }],
@@ -630,7 +630,7 @@ interface WaitingListRow {
   created_at: string;
 }
 
-export async function getWaitingList(clinicId: string): Promise<WaitingListRow[]> {
+async function getWaitingList(clinicId: string): Promise<WaitingListRow[]> {
   return query<WaitingListRow>("waiting_list", {
     eq: [["clinic_id", clinicId]],
     order: ["created_at", { ascending: true }],
@@ -649,7 +649,7 @@ interface FamilyMemberRow {
   created_at: string;
 }
 
-export async function getFamilyMembers(clinicId: string, userId: string): Promise<FamilyMemberRow[]> {
+async function getFamilyMembers(clinicId: string, userId: string): Promise<FamilyMemberRow[]> {
   return query<FamilyMemberRow>("family_members", {
     eq: [["clinic_id", clinicId], ["primary_user_id", userId]],
   });
@@ -669,7 +669,7 @@ interface OdontogramRow {
   updated_at: string;
 }
 
-export async function getOdontogram(clinicId: string, patientId: string): Promise<OdontogramRow[]> {
+async function getOdontogram(clinicId: string, patientId: string): Promise<OdontogramRow[]> {
   return query<OdontogramRow>("odontogram", {
     eq: [["clinic_id", clinicId], ["patient_id", patientId]],
     order: ["tooth_number", { ascending: true }],
@@ -693,7 +693,7 @@ interface TreatmentPlanRow {
   updated_at: string;
 }
 
-export async function getTreatmentPlans(clinicId: string, doctorId?: string): Promise<TreatmentPlanRow[]> {
+async function getTreatmentPlans(clinicId: string, doctorId?: string): Promise<TreatmentPlanRow[]> {
   const eq: [string, unknown][] = [["clinic_id", clinicId]];
   if (doctorId) eq.push(["doctor_id", doctorId]);
   return query<TreatmentPlanRow>("treatment_plans", {
@@ -702,7 +702,7 @@ export async function getTreatmentPlans(clinicId: string, doctorId?: string): Pr
   });
 }
 
-export async function getPatientTreatmentPlans(clinicId: string, patientId: string): Promise<TreatmentPlanRow[]> {
+async function getPatientTreatmentPlans(clinicId: string, patientId: string): Promise<TreatmentPlanRow[]> {
   return query<TreatmentPlanRow>("treatment_plans", {
     eq: [["clinic_id", clinicId], ["patient_id", patientId]],
     order: ["created_at", { ascending: false }],
@@ -726,7 +726,7 @@ interface LabOrderRow {
   updated_at: string;
 }
 
-export async function getLabOrders(clinicId: string): Promise<LabOrderRow[]> {
+async function getLabOrders(clinicId: string): Promise<LabOrderRow[]> {
   return query<LabOrderRow>("lab_orders", {
     eq: [["clinic_id", clinicId]],
     order: ["created_at", { ascending: false }],
@@ -750,14 +750,14 @@ interface InstallmentRow {
   created_at: string;
 }
 
-export async function getInstallments(clinicId: string, treatmentPlanId: string): Promise<InstallmentRow[]> {
+async function getInstallments(clinicId: string, treatmentPlanId: string): Promise<InstallmentRow[]> {
   return query<InstallmentRow>("installments", {
     eq: [["clinic_id", clinicId], ["treatment_plan_id", treatmentPlanId]],
     order: ["due_date", { ascending: true }],
   });
 }
 
-export async function getPatientInstallments(clinicId: string, patientId: string): Promise<InstallmentRow[]> {
+async function getPatientInstallments(clinicId: string, patientId: string): Promise<InstallmentRow[]> {
   return query<InstallmentRow>("installments", {
     eq: [["clinic_id", clinicId], ["patient_id", patientId]],
     order: ["due_date", { ascending: true }],
@@ -780,7 +780,7 @@ interface SterilizationLogRow {
   created_at: string;
 }
 
-export async function getSterilizationLog(clinicId: string): Promise<SterilizationLogRow[]> {
+async function getSterilizationLog(clinicId: string): Promise<SterilizationLogRow[]> {
   return query<SterilizationLogRow>("sterilization_log", {
     eq: [["clinic_id", clinicId]],
     order: ["sterilized_at", { ascending: false }],
@@ -810,7 +810,7 @@ interface ProductRow {
   created_at: string;
 }
 
-export async function getProducts(clinicId: string): Promise<ProductRow[]> {
+async function getProducts(clinicId: string): Promise<ProductRow[]> {
   return query<ProductRow>("products", {
     eq: [["clinic_id", clinicId]],
   });
@@ -831,7 +831,7 @@ interface StockRow {
   updated_at: string;
 }
 
-export async function getStock(clinicId: string): Promise<StockRow[]> {
+async function getStock(clinicId: string): Promise<StockRow[]> {
   return query<StockRow>("stock", {
     eq: [["clinic_id", clinicId]],
   });
@@ -858,7 +858,7 @@ interface SupplierRow {
   created_at: string;
 }
 
-export async function getSuppliers(clinicId: string): Promise<SupplierRow[]> {
+async function getSuppliers(clinicId: string): Promise<SupplierRow[]> {
   return query<SupplierRow>("suppliers", {
     eq: [["clinic_id", clinicId]],
   });
@@ -880,7 +880,7 @@ interface PrescriptionRequestRow {
   updated_at: string;
 }
 
-export async function getPrescriptionRequests(clinicId: string): Promise<PrescriptionRequestRow[]> {
+async function getPrescriptionRequests(clinicId: string): Promise<PrescriptionRequestRow[]> {
   return query<PrescriptionRequestRow>("prescription_requests", {
     eq: [["clinic_id", clinicId]],
     order: ["created_at" as string, { ascending: false }],
@@ -910,7 +910,7 @@ interface LoyaltyPointsRow {
   updated_at: string;
 }
 
-export async function getLoyaltyPoints(clinicId: string): Promise<LoyaltyPointsRow[]> {
+async function getLoyaltyPoints(clinicId: string): Promise<LoyaltyPointsRow[]> {
   return query<LoyaltyPointsRow>("loyalty_points", {
     eq: [["clinic_id", clinicId]],
   });
@@ -988,7 +988,7 @@ interface SuperAdminStats {
   totalRevenue: number;
 }
 
-export async function getSuperAdminStats(): Promise<SuperAdminStats> {
+async function getSuperAdminStats(): Promise<SuperAdminStats> {
   const supabase = await createClient();
 
   // DAL-01 (HIGH): Verify the caller is a super_admin before returning
@@ -1036,7 +1036,7 @@ export async function getSuperAdminStats(): Promise<SuperAdminStats> {
 // Mutations
 // ────────────────────────────────────────────
 
-export async function updateAppointmentStatus(
+async function updateAppointmentStatus(
   appointmentId: string,
   status: string,
   extra?: { cancellation_reason?: string },
@@ -1058,7 +1058,7 @@ export async function updateAppointmentStatus(
   return true;
 }
 
-export async function createAppointment(data: {
+async function createAppointment(data: {
   clinic_id: string;
   patient_id: string;
   doctor_id: string;
@@ -1092,7 +1092,7 @@ export async function createAppointment(data: {
   return row as AppointmentRow;
 }
 
-export async function createReview(data: {
+async function createReview(data: {
   clinic_id: string;
   patient_id: string;
   stars: number;
@@ -1107,7 +1107,7 @@ export async function createReview(data: {
   return true;
 }
 
-export async function updateReviewResponse(reviewId: string, response: string): Promise<boolean> {
+async function updateReviewResponse(reviewId: string, response: string): Promise<boolean> {
   const supabase = await createClient();
   const { error } = await supabase.from("reviews").update({ response }).eq("id", reviewId);
   if (error) {
@@ -1117,7 +1117,7 @@ export async function updateReviewResponse(reviewId: string, response: string): 
   return true;
 }
 
-export async function addToWaitingList(data: {
+async function addToWaitingList(data: {
   clinic_id: string;
   patient_id: string;
   doctor_id: string;
@@ -1133,7 +1133,7 @@ export async function addToWaitingList(data: {
   return true;
 }
 
-export async function markNotificationRead(notificationId: string): Promise<boolean> {
+async function markNotificationRead(notificationId: string): Promise<boolean> {
   const supabase = await createClient();
   const { error } = await supabase
     .from("notifications")

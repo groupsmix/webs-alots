@@ -52,7 +52,7 @@ interface FormSkeletonProps {
   className?: string;
 }
 
-export function FormSkeleton({ fields = 4, className }: FormSkeletonProps) {
+function FormSkeleton({ fields = 4, className }: FormSkeletonProps) {
   return (
     <div className={cn("space-y-6", className)}>
       {Array.from({ length: fields }).map((_, i) => (
@@ -70,7 +70,7 @@ interface ProfileSkeletonProps {
   className?: string;
 }
 
-export function ProfileSkeleton({ className }: ProfileSkeletonProps) {
+function ProfileSkeleton({ className }: ProfileSkeletonProps) {
   return (
     <div className={cn("flex items-start gap-4", className)}>
       <Skeleton className="h-16 w-16 rounded-full shrink-0" />

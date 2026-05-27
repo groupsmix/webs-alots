@@ -81,7 +81,7 @@ function getR2SigningSecret(): string {
  * @param expiresIn  URL validity in seconds (default: 3600 = 1 hour)
  * @returns Signed URL that validates against the secret
  */
-export function generateSignedR2Url(key: string, expiresIn = 3600): string {
+function generateSignedR2Url(key: string, expiresIn = 3600): string {
   const accountId = process.env.R2_ACCOUNT_ID;
   const bucketName = process.env.R2_BUCKET_NAME;
 
@@ -127,7 +127,7 @@ export function generateSignedR2Url(key: string, expiresIn = 3600): string {
  * @param signature  HMAC signature from URL
  * @returns true if the signature is valid and not expired
  */
-export function validateSignedR2Url(
+function validateSignedR2Url(
   bucket: string,
   key: string,
   expires: number,
@@ -414,7 +414,7 @@ export async function getPresignedUploadPost(
  * @param expiresIn  URL validity in seconds (default: 3600 = 1 hour)
  * @returns Pre-signed download URL, or null if R2 is not configured
  */
-export async function getPresignedDownloadUrl(
+async function getPresignedDownloadUrl(
   key: string,
   expiresIn = 3600,
 ): Promise<string | null> {

@@ -81,7 +81,7 @@ export function getLabTestCategories(tests: LabTest[]): string[] {
   return [...new Set(tests.filter((t) => t.active).map((t) => t.category))].sort();
 }
 
-export function searchLabTests(tests: LabTest[], query: string): LabTest[] {
+function searchLabTests(tests: LabTest[], query: string): LabTest[] {
   const q = query.toLowerCase();
   return tests.filter(
     (t) =>

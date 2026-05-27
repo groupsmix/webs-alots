@@ -400,7 +400,7 @@ export async function saveLabTestResult(data: {
   return result?.id ?? null;
 }
 
-export async function updateLabTestResult(
+async function updateLabTestResult(
   resultId: string,
   data: Partial<{
     value: string;
@@ -423,7 +423,7 @@ export async function updateLabTestResult(
   return true;
 }
 
-export async function updateLabOrderPdfUrl(
+async function updateLabOrderPdfUrl(
   orderId: string,
   pdfUrl: string,
 ): Promise<boolean> {

@@ -570,7 +570,7 @@ export async function createRehabPlan(data: {
   return result?.id ?? null;
 }
 
-export async function updateRehabPlan(
+async function updateRehabPlan(
   id: string,
   data: { status?: string; milestones?: unknown[]; notes?: string; target_end_date?: string },
 ): Promise<boolean> {
@@ -1104,7 +1104,7 @@ export async function createDiabetesManagement(data: {
   return result?.id ?? null;
 }
 
-export async function updateDiabetesManagement(
+async function updateDiabetesManagement(
   id: string,
   data: { current_hba1c?: number; medications?: unknown[]; diet_plan?: string;
     exercise_plan?: string; notes?: string; last_review_date?: string },

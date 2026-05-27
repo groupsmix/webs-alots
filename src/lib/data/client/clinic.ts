@@ -14,7 +14,7 @@ interface HolidayView {
   endDate: string;
 }
 
-export async function fetchHolidays(clinicId: string): Promise<HolidayView[]> {
+async function fetchHolidays(clinicId: string): Promise<HolidayView[]> {
   const rows = await fetchRows<{
     id: string;
     title: string;
@@ -47,7 +47,7 @@ interface BlogPostView {
 
 // Blog posts aren't in the DB schema — they may be stored in clinic config
 // For now we return empty; pages will fall back to demo data if empty
-export async function fetchBlogPosts(_clinicId: string): Promise<BlogPostView[]> {
+async function fetchBlogPosts(_clinicId: string): Promise<BlogPostView[]> {
   return [];
 }
 

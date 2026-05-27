@@ -26,8 +26,6 @@ interface NavItem {
   href: string;
 }
 
-export { HeaderTopSticky, HeaderTransparent, HeaderBottomBar, HeaderFloating };
-
 /** Header component map for dynamic selection. */
 export const HEADER_COMPONENTS: Record<HeaderVariant, ComponentType<HeaderProps>> = {
   "top-sticky": HeaderTopSticky,

@@ -66,7 +66,7 @@ export async function getCurrentUser(): Promise<ClinicUser | null> {
   return _cachedUser;
 }
 
-export function clearUserCache() {
+function clearUserCache() {
   _cachedUser = undefined;
   _cachedUserAt = 0;
 }

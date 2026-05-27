@@ -102,7 +102,7 @@ export async function fetchAvailableSlots(
 // Waiting List Mutations
 // ─────────────────────────────────────────────
 
-export async function addToWaitingList(data: {
+async function addToWaitingList(data: {
   clinic_id: string;
   patient_id: string;
   doctor_id: string;
@@ -132,7 +132,7 @@ export async function addToWaitingList(data: {
 // Appointment Creation
 // ─────────────────────────────────────────────
 
-export async function createAppointment(data: {
+async function createAppointment(data: {
   clinic_id: string;
   patient_id: string;
   doctor_id: string;
@@ -177,7 +177,7 @@ interface DentalTreatmentTypeView {
   description: string;
 }
 
-export async function fetchDentalTreatmentTypes(clinicId: string): Promise<DentalTreatmentTypeView[]> {
+async function fetchDentalTreatmentTypes(clinicId: string): Promise<DentalTreatmentTypeView[]> {
   const services = await fetchServices(clinicId);
   return services
     .filter((s) => s.active && s.category)

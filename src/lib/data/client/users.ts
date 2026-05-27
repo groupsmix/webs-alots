@@ -100,7 +100,7 @@ export async function fetchPatients(clinicId: string): Promise<PatientView[]> {
   return rows.map(mapPatient);
 }
 
-export async function fetchReceptionists(clinicId: string): Promise<UserRaw[]> {
+async function fetchReceptionists(clinicId: string): Promise<UserRaw[]> {
   return fetchRows<UserRaw>("users", {
     eq: [["clinic_id", clinicId], ["role", "receptionist"]],
     order: ["name", { ascending: true }],

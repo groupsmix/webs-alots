@@ -146,8 +146,6 @@ function DialogDescription({ className, ...props }: React.ComponentProps<"p">) {
 export {
   Dialog,
   DialogTrigger,
-  DialogPortal,
-  DialogOverlay,
   DialogContent,
   DialogHeader,
   DialogFooter,

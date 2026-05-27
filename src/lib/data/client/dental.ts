@@ -82,7 +82,7 @@ export async function createMedicalCertificate(data: {
   return result?.id ?? null;
 }
 
-export async function updateMedicalCertificate(
+async function updateMedicalCertificate(
   id: string,
   data: {
     type?: string;
@@ -322,7 +322,7 @@ interface InstallmentRaw {
   status: string;
 }
 
-export async function fetchInstallments(clinicId: string): Promise<InstallmentView[]> {
+async function fetchInstallments(clinicId: string): Promise<InstallmentView[]> {
   await ensureLookups(clinicId);
   const rows = await fetchRows<InstallmentRaw>("installments", {
     eq: [["clinic_id", clinicId]],
