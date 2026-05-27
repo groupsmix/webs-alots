@@ -15,12 +15,11 @@
  * or when any of the URL/anon/service-key env vars are missing.
  *
  * AUDIT F-03 / F-A89-04: Implemented real RLS assertions (previously only
- * TODO stubs). However, the suite is gated behind `describe.skipIf(SKIP)`,
- * meaning in standard CI runs the RLS coverage is effectively skipped.
- * Open audit finding: ensure CI runs this suite with SUPABASE_LOCAL=true.
- * When SUPABASE_LOCAL is not set, tests still run but verify the test
- * infrastructure itself (schema assertions, client creation). When set,
- * they execute real SQL against the local Supabase Postgres instance.
+ * TODO stubs). The SKIP gate has been inverted (audit finding #3) so that
+ * the suite runs by default when the Supabase local env vars are present
+ * (which CI provides via the `supabase start` step). Tests are only
+ * skipped when SKIP_RLS=true is explicitly set or the env vars are absent.
+ * The schema infrastructure tests always run regardless of SKIP.
  *
  * NOTE: We deliberately do NOT hardcode the well-known Supabase local
  * demo JWTs as fallbacks. Even though they are public dev keys, gitleaks
@@ -34,8 +33,12 @@ const SUPABASE_URL = process.env.SUPABASE_LOCAL_URL ?? "";
 const SUPABASE_ANON_KEY = process.env.SUPABASE_LOCAL_ANON_KEY ?? "";
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_LOCAL_SERVICE_KEY ?? "";
 
+// AUDIT FINDING #3: Inverted the gate so tests run by default in CI.
+// Previously: skipped unless SUPABASE_LOCAL was explicitly set.
+// Now: only skipped when SKIP_RLS is explicitly set to "true".
+// CI provides the Supabase local env vars via the `supabase start` step.
 const SKIP =
-  !process.env.SUPABASE_LOCAL ||
+  process.env.SKIP_RLS === "true" ||
   !SUPABASE_URL ||
   !SUPABASE_ANON_KEY ||
   !SUPABASE_SERVICE_KEY;

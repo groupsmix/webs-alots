@@ -109,11 +109,10 @@ export interface RateLimiterOptions {
   /** Maximum number of distinct keys to track (prevents memory exhaustion, in-memory only) */
   maxKeys?: number;
   /**
-   * F-06: When true, deny requests on backend errors instead of allowing them.
-   * Defaults to false (fail-open) to preserve availability of non-security-critical
-   * endpoints (webhooks, bookings, etc.) during rate-limit backend outages.
-   * Security-critical limiters (login, registration, password reset, AI, chat)
-   * MUST explicitly set `failClosed: true`.
+   * F-06 / Audit Finding #9: When true, deny requests on backend errors
+   * instead of allowing them. Defaults to true (fail-closed) so new
+   * endpoints are secure by default. Non-security-critical endpoints
+   * (public reads, webhooks) can explicitly set `failClosed: false`.
    */
   failClosed?: boolean;
 }
@@ -169,7 +168,7 @@ interface CircuitBreakerState {
   failClosed?: boolean;
 }
 
-function createCircuitBreaker(failClosed = false): CircuitBreakerState {
+function createCircuitBreaker(failClosed = true): CircuitBreakerState {
   return {
     consecutiveFailures: 0,
     trippedAt: null,
@@ -230,10 +229,9 @@ function reportRateLimitBackendError(operation: string, error: unknown): void {
 // ── Supabase-backed distributed rate limiter ──
 
 function createSupabaseRateLimiter(options: RateLimiterOptions): RateLimiter {
-  // F-06: Default fail-open. Security-critical limiters opt in to fail-closed
-  // explicitly via `failClosed: true` in their createRateLimiter() call.
-  // This preserves availability for webhooks/bookings during backend outages.
-  const { windowMs, max, failClosed = false } = options;
+  // Audit Finding #9: Default fail-closed for security. Non-security-critical
+  // endpoints (public reads) should explicitly set failClosed: false.
+  const { windowMs, max, failClosed = true } = options;
   const circuitBreaker = createCircuitBreaker(failClosed);
 
   // SECURITY NOTE: Service role key intentionally used here.
@@ -400,9 +398,9 @@ interface CloudflareKV {
  * Provides better rate limiting smoothness than fixed window.
  */
 function createKVRateLimiter(options: RateLimiterOptions): RateLimiter {
-  // F-06: Default fail-open. Security-critical limiters opt in to fail-closed
-  // explicitly via `failClosed: true` in their createRateLimiter() call.
-  const { windowMs, max, failClosed = false } = options;
+  // Audit Finding #9: Default fail-closed for security. Non-security-critical
+  // endpoints (public reads) should explicitly set failClosed: false.
+  const { windowMs, max, failClosed = true } = options;
   const circuitBreaker = createCircuitBreaker(failClosed);
   
   // KV-backed limiters have a configured grace period before they fail-closed

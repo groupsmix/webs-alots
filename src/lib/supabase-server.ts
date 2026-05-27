@@ -131,6 +131,21 @@ export function createAdminClient() {
 }
 
 /**
+ * Create a service-role admin client WITHOUT the Database generic type.
+ *
+ * Use this for tables not yet reflected in the generated Supabase types
+ * (e.g. impersonation_sessions, pending_audit_logs). Once the types are
+ * regenerated, callers should migrate to createAdminClient() for type safety.
+ */
+export function createUntypedAdminClient() {
+  return createSupabaseClient(
+    requireEnv("NEXT_PUBLIC_SUPABASE_URL"),
+    requireEnv("SUPABASE_SERVICE_ROLE_KEY"),
+    { auth: { autoRefreshToken: false, persistSession: false } },
+  );
+}
+
+/**
  * Create a cookie-free anon Supabase client with x-clinic-id header set.
  *
  * F-03: Replacement for createAdminClient() in `use cache` blocks

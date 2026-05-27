@@ -5,6 +5,7 @@ on:
     branches:
       - main
       - staging
+  workflow_dispatch:
 
 # Least-privilege permissions — deploy only needs to read repo contents
 permissions:
@@ -268,7 +269,7 @@ jobs:
       - name: Deploy to Cloudflare Workers (Production)
         id: deploy_production
         if: github.ref_name == 'main'
-        uses: cloudflare/wrangler-action@392082e81ffbcb9ebdde27400634aa004b35ea37 # v3.14.0
+        uses: cloudflare/wrangler-action@ebbaa1584979971c8614a24965b4405ff95890e0 # v4.0.0
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
@@ -276,7 +277,7 @@ jobs:
       - name: Deploy to Cloudflare Workers (Staging)
         id: deploy_staging
         if: github.ref_name == 'staging'
-        uses: cloudflare/wrangler-action@392082e81ffbcb9ebdde27400634aa004b35ea37 # v3.14.0
+        uses: cloudflare/wrangler-action@ebbaa1584979971c8614a24965b4405ff95890e0 # v4.0.0
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}

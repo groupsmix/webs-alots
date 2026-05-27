@@ -43,7 +43,7 @@ export function useLocale(): [Locale, (l: Locale) => void] {
     setLocaleState(l);
     if (typeof window !== "undefined") {
       localStorage.setItem(LOCALE_STORAGE_KEY, l);
-      Cookies.set(LOCALE_STORAGE_KEY, l, { expires: 365, path: "/" });
+      Cookies.set(LOCALE_STORAGE_KEY, l, { expires: 365, path: "/", secure: window.location.protocol === "https:", sameSite: "lax" });
     }
     applyDirection(l);
   }, []);
