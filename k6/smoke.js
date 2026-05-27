@@ -12,8 +12,9 @@
  *   - Availability > 99.9%
  */
 
-import http from "k6/http";
+/* eslint-disable import/no-anonymous-default-export */
 import { check, sleep } from "k6";
+import http from "k6/http";
 
 const BASE_URL = __ENV.BASE_URL || "https://staging.oltigo.com";
 
