@@ -1,7 +1,7 @@
 /**
  * Audit logging utility for healthcare compliance.
  *
- * F-09: Uses createAdminClient() with explicit clinic_id so RLS cannot
+ * F-09: Uses createAdminClient("audit_log") with explicit clinic_id so RLS cannot
  * drop writes. On insert failure, raises a Sentry alert with compliance
  * tags and writes a structured log line for DLQ-style recovery.
  */
@@ -56,7 +56,7 @@ export async function logAuditEvent({
     let client: SupabaseClient<Database> = supabase;
     try {
       const { createAdminClient } = await import("@/lib/supabase-server");
-      client = createAdminClient();
+      client = createAdminClient("audit_log");
     } catch {
       // Service role key unavailable (dev/build) — fall back to caller's client
       if (!supabase) {
@@ -120,7 +120,7 @@ export async function logAuditEvent({
     // queue into activity_logs periodically.
     try {
       const { createUntypedAdminClient } = await import("@/lib/supabase-server");
-      const retryClient = createUntypedAdminClient();
+      const retryClient = createUntypedAdminClient("audit_log");
       await retryClient
         .from("pending_audit_logs")
         .insert({

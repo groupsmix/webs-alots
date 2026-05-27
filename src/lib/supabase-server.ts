@@ -111,6 +111,24 @@ export async function createTenantClient(clinicId: string) {
 }
 
 /**
+ * R-01: Every call site must declare its purpose so auditors can
+ * verify each admin-client usage is intentional and appropriately scoped.
+ */
+export type AdminPurpose =
+  | "auth_admin"
+  | "cron"
+  | "audit_log"
+  | "notification"
+  | "webhook"
+  | "super_admin"
+  | "register_clinic"
+  | "impersonate"
+  | "features"
+  | "directory"
+  | "instrumentation"
+  | "whatsapp_receptionist";
+
+/**
  * Create a Supabase admin client using the service role key.
  *
  * This client bypasses RLS and can perform admin operations such as
@@ -120,9 +138,14 @@ export async function createTenantClient(clinicId: string) {
  * onboarding staff accounts, audit log writes). Never expose this client
  * to the browser.
  *
+ * R-01: Requires `purpose` so each usage is auditable. Optionally accepts
+ * `clinicId` for structured logging (does NOT set tenant context — use
+ * createTenantClient for that).
+ *
  * @throws Error if SUPABASE_SERVICE_ROLE_KEY is not configured
  */
-export function createAdminClient() {
+export function createAdminClient(purpose: AdminPurpose, clinicId?: string) {
+  logger.debug("Admin client created", { context: "supabase-server", purpose, clinicId });
   return createSupabaseClient<Database>(
     requireEnv("NEXT_PUBLIC_SUPABASE_URL"),
     requireEnv("SUPABASE_SERVICE_ROLE_KEY"),
@@ -137,7 +160,8 @@ export function createAdminClient() {
  * (e.g. impersonation_sessions, pending_audit_logs). Once the types are
  * regenerated, callers should migrate to createAdminClient() for type safety.
  */
-export function createUntypedAdminClient() {
+export function createUntypedAdminClient(purpose: AdminPurpose, clinicId?: string) {
+  logger.debug("Untyped admin client created", { context: "supabase-server", purpose, clinicId });
   return createSupabaseClient(
     requireEnv("NEXT_PUBLIC_SUPABASE_URL"),
     requireEnv("SUPABASE_SERVICE_ROLE_KEY"),

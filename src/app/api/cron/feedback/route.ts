@@ -21,7 +21,7 @@ async function handler(request: NextRequest) {
   if (authError) return authError;
 
   try {
-    const supabase = createAdminClient();
+    const supabase = createAdminClient("cron");
 
     // Audit 7.1: Short-circuit if there are no active clinics to save DB compute
     const { count } = await supabase.from("clinics").select("*", { count: "exact", head: true }).eq("status", "active");

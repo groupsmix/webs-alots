@@ -32,7 +32,7 @@ async function handler(request: NextRequest) {
   if (authError) return authError;
 
   try {
-    const supabase = createAdminClient() as UntypedClient;
+    const supabase = createAdminClient("cron") as UntypedClient;
     const thirtyDaysAgo = new Date(
       Date.now() - 30 * 24 * 60 * 60 * 1000,
     ).toISOString();

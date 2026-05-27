@@ -285,7 +285,7 @@ export async function setClinicFeatureOverride(
     try {
       const { createAdminClient } = await import("@/lib/supabase-server");
       const { logAuditEvent } = await import("@/lib/audit-log");
-      const supabase = createAdminClient();
+      const supabase = createAdminClient("features");
       await logAuditEvent({
         supabase,
         action: "feature_flag.updated",
@@ -348,7 +348,7 @@ export async function setGlobalFeatureFlag(
     try {
       const { createAdminClient } = await import("@/lib/supabase-server");
       const { logAuditEvent } = await import("@/lib/audit-log");
-      const supabase = createAdminClient();
+      const supabase = createAdminClient("features");
       await logAuditEvent({
         supabase,
         action: "feature_flag.global_updated",
