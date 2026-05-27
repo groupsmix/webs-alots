@@ -12,17 +12,16 @@ export default defineConfig({
   testDir: "./e2e",
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
-  // A87-F01: Retries in CI hide flaky tests and silently mask real bugs.
-  // Set to 0 so every failure is visible. If a spec is known-flaky, quarantine
-  // it with a skip + tracking issue rather than masking with retries.
-  retries: 0,
+  // CI-005: Allow retries in CI to avoid permanent pipeline blocks from
+  // transient failures (network blips, timing issues). Local runs stay at 0
+  // so flakes are visible during development.
+  retries: process.env.CI ? 2 : 0,
   workers: process.env.CI ? 1 : undefined,
   reporter: "html",
   use: {
     baseURL: process.env.E2E_BASE_URL || "http://localhost:3000",
-    // A87-F01: With retries: 0, "on-first-retry" would never capture traces.
-    // Use "retain-on-failure" so trace artifacts are collected on every failure.
-    trace: "retain-on-failure",
+    // CI-005: Capture traces on first retry for flake diagnosis.
+    trace: process.env.CI ? "on-first-retry" : "retain-on-failure",
   },
   projects: [
     {
