@@ -55,8 +55,8 @@ binding = "ASSETS"
 # are set to valid KV namespace IDs.
 [[kv_namespaces]]
 binding = "RATE_LIMIT_KV"
-id = "REPLACE_WITH_PRODUCTION_KV_NAMESPACE_ID"
-preview_id = "REPLACE_WITH_PREVIEW_KV_NAMESPACE_ID"
+id = "7ac37dff0a794542b0c766f38e73f105"
+preview_id = "854c78ea8c9442ed8706d3ec31fe292e"
 
 # ── R2 Buckets ────────────────────────────────────────────────────────
 # AUDIT-LB3: IaC — PHI file storage (encrypted uploads).
