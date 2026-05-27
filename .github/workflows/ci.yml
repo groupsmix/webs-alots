@@ -34,14 +34,21 @@ jobs:
       - name: Install dependencies
         run: npm ci --ignore-scripts
 
+      # SEC-007: Fail on high/critical CVEs in production dependencies.
+      # Low/moderate findings are tracked via Dependabot PRs (CI-004).
       - name: Check for vulnerable dependencies
-        run: npm audit --omit=dev
+        run: npm audit --omit=dev --audit-level=high
 
       - name: Check cron mapping
         run: npx tsx scripts/check-cron-mapping.ts
 
+      # CI-001: Enforce a warning ceiling that ratchets downward over time.
+      # The baseline is stored in .eslint-warning-baseline and must be
+      # reduced whenever warnings are fixed — never increased.
       - name: Run ESLint
-        run: npm run lint
+        run: |
+          BASELINE=$(cat .eslint-warning-baseline | tr -d '[:space:]')
+          npx eslint --max-warnings "$BASELINE"
 
       - name: Check for DB dumps in tree (Audit P1 #14)
         run: |

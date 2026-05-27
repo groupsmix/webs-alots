@@ -140,3 +140,74 @@ describe("encryption - requiresEncryption", () => {
     expect(isEncryptionConfigured()).toBe(false);
   });
 });
+
+// SEC-013: Exercise the two-key rotation path end-to-end.
+// Encrypt with OLD_KEY, rotate to NEW_KEY, verify decryptBuffer
+// falls back to OLD_KEY for pre-rotation ciphertext.
+describe("encryption - PHI key rotation (SEC-013)", () => {
+  const OLD_KEY_HEX = "a".repeat(64);
+  const NEW_KEY_HEX = "b".repeat(64);
+
+  afterEach(() => {
+    delete process.env.PHI_ENCRYPTION_KEY;
+    delete process.env.PHI_ENCRYPTION_KEY_OLD;
+    vi.restoreAllMocks();
+  });
+
+  it("decrypts old-key ciphertext after rotating to new key", async () => {
+    // Step 1: Encrypt with the old key
+    process.env.PHI_ENCRYPTION_KEY = OLD_KEY_HEX;
+    vi.resetModules();
+    const mod1 = await import("../encryption");
+    const original = Buffer.from("Patient PHI: lab result CBC normal");
+    const encrypted = await mod1.encryptBuffer(original);
+    expect(encrypted).not.toBeNull();
+
+    // Step 2: Rotate — new key is primary, old key is fallback
+    process.env.PHI_ENCRYPTION_KEY = NEW_KEY_HEX;
+    process.env.PHI_ENCRYPTION_KEY_OLD = OLD_KEY_HEX;
+    vi.resetModules();
+    const mod2 = await import("../encryption");
+
+    // Decryption should succeed via the old key fallback
+    const decrypted = await mod2.decryptBuffer(encrypted!);
+    expect(decrypted).not.toBeNull();
+    expect(decrypted!.toString()).toBe(original.toString());
+  });
+
+  it("encrypts with new key and decrypts without old key after rotation window", async () => {
+    // Encrypt with the new key
+    process.env.PHI_ENCRYPTION_KEY = NEW_KEY_HEX;
+    vi.resetModules();
+    const mod = await import("../encryption");
+    const original = Buffer.from("New PHI data after rotation");
+    const encrypted = await mod.encryptBuffer(original);
+    expect(encrypted).not.toBeNull();
+
+    // Old key removed (rotation window over) — still decrypts with current key
+    delete process.env.PHI_ENCRYPTION_KEY_OLD;
+    vi.resetModules();
+    const mod2 = await import("../encryption");
+    const decrypted = await mod2.decryptBuffer(encrypted!);
+    expect(decrypted).not.toBeNull();
+    expect(decrypted!.toString()).toBe(original.toString());
+  });
+
+  it("fails to decrypt when neither key matches", async () => {
+    // Encrypt with a third key
+    const THIRD_KEY = "c".repeat(64);
+    process.env.PHI_ENCRYPTION_KEY = THIRD_KEY;
+    vi.resetModules();
+    const mod1 = await import("../encryption");
+    const encrypted = await mod1.encryptBuffer(Buffer.from("data"));
+    expect(encrypted).not.toBeNull();
+
+    // Swap to unrelated keys
+    process.env.PHI_ENCRYPTION_KEY = NEW_KEY_HEX;
+    process.env.PHI_ENCRYPTION_KEY_OLD = OLD_KEY_HEX;
+    vi.resetModules();
+    const mod2 = await import("../encryption");
+    const decrypted = await mod2.decryptBuffer(encrypted!);
+    expect(decrypted).toBeNull();
+  });
+});

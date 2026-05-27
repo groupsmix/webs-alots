@@ -61,6 +61,19 @@ bucket_name = "webs-alots-uploads"
 NODE_ENV = "production"
 RATE_LIMIT_BACKEND = "supabase"
 
+# ── Production Environment ────────────────────────────────────────────
+# INF-004: Explicit production block prevents top-level debug toggles
+# from silently leaking into production. Deploy with: wrangler deploy --env production
+[env.production]
+name = "webs-alots"
+[env.production.vars]
+NODE_ENV = "production"
+RATE_LIMIT_BACKEND = "supabase"
+
+[[env.production.r2_buckets]]
+binding = "UPLOADS_BUCKET"
+bucket_name = "webs-alots-uploads"
+
 # ── Staging Environment ───────────────────────────────────────────────
 [env.staging]
 name = "webs-alots-staging"
