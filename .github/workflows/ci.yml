@@ -269,7 +269,7 @@ jobs:
       - name: Run Semgrep
         run: |
           python3 -m pip install --upgrade semgrep
-          semgrep --config p/javascript --sarif --output semgrep.sarif .
+          semgrep --config p/javascript --config .semgrep/ --sarif --output semgrep.sarif .
 
       - name: Upload Semgrep SARIF
         uses: github/codeql-action/upload-sarif@7211b7c8077ea37d8641b6271f6a365a22a5fbfa # v4
