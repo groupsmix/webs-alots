@@ -239,7 +239,7 @@ export async function decryptBuffer(
  * `x_rays` had a 25 MB limit but bypassed encryption because the PHI set
  * only listed `x-rays` / `xrays`.
  */
-function normalizePhiCategory(category: string): string {
+export function normalizePhiCategory(category: string): string {
   return category.trim().toLowerCase().replace(/-/g, "_");
 }
 
