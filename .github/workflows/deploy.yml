@@ -7,6 +7,13 @@ on:
       - staging
   workflow_dispatch:
 
+# Serialize deploys per branch — rapid-fire merges to main must not
+# stampede 18 parallel `supabase link` + `wrangler deploy` runs. Only
+# the latest push matters; cancel stale runs to save CI minutes.
+concurrency:
+  group: deploy-${{ github.ref_name }}
+  cancel-in-progress: true
+
 # Least-privilege permissions — deploy only needs to read repo contents
 permissions:
   contents: read
