@@ -130,6 +130,25 @@ jobs:
             echo "Ensure these migrations have been reviewed and tested."
           fi
 
+      # F-028: Prevent recharts (~200 kB gzipped) from leaking into
+      # non-admin bundles. Recharts should only be imported from admin
+      # and super-admin components.
+      - name: Guard recharts imports
+        run: |
+          HITS=$(grep -rn 'from "recharts"' src/app/ src/components/ --include='*.ts' --include='*.tsx' \
+            | grep -v '/admin/' | grep -v '/super-admin/' | grep -v '/analytics/' || true)
+          if [ -n "$HITS" ]; then
+            echo "::error::recharts imported outside admin routes (inflates shared bundle):"
+            echo "$HITS"
+            exit 1
+          fi
+
+      # F-060: Verify typedoc generation succeeds. Catches broken JSDoc,
+      # missing re-exports, and TypeScript errors in doc comments before
+      # they reach main.
+      - name: Verify docs generate
+        run: npm run docs:generate
+
   security:
     name: Security Scans (Audit P2 #26)
     runs-on: ubuntu-latest
