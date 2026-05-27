@@ -75,6 +75,35 @@ interface BookingTokenResult {
  *
  * Returns the verified phone so callers can enforce phone binding.
  */
+/**
+ * R-15: Verify an HMAC signature against one or more secrets.
+ * Returns true for the first matching secret (constant-time per attempt).
+ */
+async function verifyHmac(
+  secret: string,
+  payload: string,
+  signature: string,
+): Promise<boolean> {
+  const encoder = new TextEncoder();
+  const key = await crypto.subtle.importKey(
+    "raw",
+    encoder.encode(secret),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"],
+  );
+  const sig = await crypto.subtle.sign("HMAC", key, encoder.encode(payload));
+  const expectedSig = Array.from(new Uint8Array(sig))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+  if (expectedSig.length !== signature.length) return false;
+  let mismatch = 0;
+  for (let i = 0; i < expectedSig.length; i++) {
+    mismatch |= expectedSig.charCodeAt(i) ^ signature.charCodeAt(i);
+  }
+  return mismatch === 0;
+}
+
 async function verifyBookingToken(token: string): Promise<BookingTokenResult> {
   const secret = process.env.BOOKING_TOKEN_SECRET;
   if (!secret) {
@@ -86,9 +115,6 @@ async function verifyBookingToken(token: string): Promise<BookingTokenResult> {
   }
 
   // A6-13: token is now `clinicId:phone:expiry:signature` (4 parts).
-  // Tokens issued under the previous 3-part format become invalid the
-  // moment this code ships; given the 15-minute TTL the impact is a
-  // single retry of the verify step for users mid-flow at deploy time.
   const parts = token.split(":");
   if (parts.length !== 4) return { valid: false };
 
@@ -97,28 +123,23 @@ async function verifyBookingToken(token: string): Promise<BookingTokenResult> {
   const expiry = parseInt(expiryStr, 10);
   if (isNaN(expiry) || Date.now() > expiry) return { valid: false };
 
-  // Verify HMAC signature over the full payload (clinicId included).
-  const encoder = new TextEncoder();
-  const key = await crypto.subtle.importKey(
-    "raw",
-    encoder.encode(secret),
-    { name: "HMAC", hash: "SHA-256" },
-    false,
-    ["sign"],
-  );
-  const data = encoder.encode(`${clinicId}:${phone}:${expiryStr}`);
-  const sig = await crypto.subtle.sign("HMAC", key, data);
-  const expectedSig = Array.from(new Uint8Array(sig))
-    .map((b) => b.toString(16).padStart(2, "0"))
-    .join("");
+  const payload = `${clinicId}:${phone}:${expiryStr}`;
 
-  // Constant-time comparison
-  if (expectedSig.length !== signature.length) return { valid: false };
-  let mismatch = 0;
-  for (let i = 0; i < expectedSig.length; i++) {
-    mismatch |= expectedSig.charCodeAt(i) ^ signature.charCodeAt(i);
+  // Try the current secret first.
+  if (await verifyHmac(secret, payload, signature)) {
+    return { valid: true, phone, clinicId };
   }
-  return mismatch === 0 ? { valid: true, phone, clinicId } : { valid: false };
+
+  // R-15: During key rotation, try the old secret. Set
+  // BOOKING_TOKEN_SECRET_OLD to the previous key, then remove it after
+  // the overlap window (>= token TTL, typically 15 min) has passed.
+  const oldSecret = process.env.BOOKING_TOKEN_SECRET_OLD;
+  if (oldSecret && await verifyHmac(oldSecret, payload, signature)) {
+    logger.info("Booking token verified with OLD secret — rotation in progress", { context: "booking" });
+    return { valid: true, phone, clinicId };
+  }
+
+  return { valid: false };
 }
 
 /** Inferred from the Zod schema — single source of truth. */

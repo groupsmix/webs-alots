@@ -32,6 +32,9 @@ const ENV_RULES: EnvRule[] = [
 
   // ── Auth / Security ────────────────────────────────────────────────
   { name: "BOOKING_TOKEN_SECRET", required: process.env.NODE_ENV === "production", description: "HMAC secret for booking verification tokens (required in production)", group: "auth" },
+  // R-15: Set to the previous BOOKING_TOKEN_SECRET during key rotation.
+  // Remove after the overlap window (>= booking token TTL, 15 min).
+  { name: "BOOKING_TOKEN_SECRET_OLD", required: false, description: "Previous HMAC secret — set during rotation, remove after overlap window", group: "auth" },
 
   // ── Phone Auth (Twilio SMS OTP) ──────────────────────────────────────
   // These are NOT required at startup. They are only needed when
