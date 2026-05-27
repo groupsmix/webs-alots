@@ -106,6 +106,19 @@ jobs:
           # closed on runaway shared bundle growth (~ 250 kB gzipped).
           BUNDLE_BUDGET_KB: "1024"
 
+      # AUDIT FINDING #20: Guard against unsafe dangerouslySetInnerHTML usage
+      # outside of known-safe helper files (safeJsonLdStringify, sanitizeHtml).
+      - name: Guard dangerouslySetInnerHTML allowlist
+        run: |
+          ALLOWED='src/lib/json-ld\.ts|src/lib/sanitize-html\.ts|src/app/\(public\)/.*page\.tsx|src/components/analytics-script\.tsx|src/app/\(auth\)/setup-2fa/page\.tsx'
+          HITS=$(git ls-files '*.ts' '*.tsx' | xargs grep -l "dangerouslySetInnerHTML" | grep -vE "$ALLOWED" || true)
+          if [ -n "$HITS" ]; then
+            echo "::error::dangerouslySetInnerHTML found outside allowlist:"
+            echo "$HITS"
+            echo "Use safeJsonLdStringify() or sanitizeHtml() instead."
+            exit 1
+          fi
+
       # CI-01: Check for pending DB migrations. Fails if migration files
       # have been added but the migration-check workflow hasn't verified them.
       - name: Migration file check
@@ -267,6 +280,17 @@ jobs:
           echo "SUPABASE_LOCAL_URL=$(supabase status --output json | jq -r '.API_URL')" >> "$GITHUB_ENV"
           echo "SUPABASE_LOCAL_ANON_KEY=$(supabase status --output json | jq -r '.ANON_KEY')" >> "$GITHUB_ENV"
           echo "SUPABASE_LOCAL_SERVICE_ROLE_KEY=$(supabase status --output json | jq -r '.SERVICE_ROLE_KEY')" >> "$GITHUB_ENV"
+
+      # AUDIT FINDING #3: Run RLS integration tests against the local
+      # Supabase instance. The SKIP gate was inverted so these tests run
+      # by default when the env vars are present. This is the single most
+      # important security control regression test for a healthcare app.
+      - name: RLS integration tests
+        run: npx vitest run src/lib/__tests__/integration/rls-real-postgres.test.ts
+        env:
+          SUPABASE_LOCAL_URL: ${{ env.SUPABASE_LOCAL_URL }}
+          SUPABASE_LOCAL_ANON_KEY: ${{ env.SUPABASE_LOCAL_ANON_KEY }}
+          SUPABASE_LOCAL_SERVICE_KEY: ${{ env.SUPABASE_LOCAL_SERVICE_ROLE_KEY }}
 
       - name: Build application
         # Build runs after `supabase start` so the local Supabase URL/anon

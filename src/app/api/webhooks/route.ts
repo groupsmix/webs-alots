@@ -169,8 +169,19 @@ function extractStatusUpdates(entry: WaEntry): Array<{
  * - CANCEL: triggers cancellation notification
  * - Other: logs incoming message for receptionist review
  */
+/** AUDIT FINDING #24: Max webhook payload size (1 MB). */
+const MAX_WEBHOOK_BYTES = 1 * 1024 * 1024;
+
 export async function POST(request: NextRequest) {
   try {
+    // AUDIT FINDING #24: Reject oversized webhook payloads before parsing.
+    // Body parsing happens before signature verification, so an attacker
+    // could force memory allocation with a massive forged payload.
+    const contentLength = parseInt(request.headers.get("content-length") || "0", 10);
+    if (contentLength > MAX_WEBHOOK_BYTES) {
+      return new NextResponse("Payload too large", { status: 413 });
+    }
+
     const rawBody = await request.text();
 
     // Verify Meta webhook signature

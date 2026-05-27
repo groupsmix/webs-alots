@@ -115,15 +115,35 @@ export async function logAuditEvent({
       extra: { action, type, clinicId, actor },
     });
     
-    // F-A98-K-02 / F-A99-06: The previous globalThis-based KV lookup was dead
-    // code on Cloudflare Workers (KV bindings are exposed via env, not
-    // globalThis, when using OpenNext). Removed to avoid giving false
-    // assurance that a durable retry queue exists.
-    //
-    // TODO(Audit P2 #19): Implement a proper durable retry queue by accepting
-    // the KV binding from the Workers env object (passed through OpenNext
-    // middleware context) or by writing failed entries to a Supabase
-    // `audit_retry_queue` table via the admin client.
+    // AUDIT FINDING #10: Write the failed audit event to pending_audit_logs
+    // for durable retry. The /api/cron/audit-log-flush cron job drains this
+    // queue into activity_logs periodically.
+    try {
+      const { createUntypedAdminClient } = await import("@/lib/supabase-server");
+      const retryClient = createUntypedAdminClient();
+      await retryClient
+        .from("pending_audit_logs")
+        .insert({
+          payload: {
+            action,
+            type,
+            actor: actor ?? null,
+            clinic_id: clinicId,
+            clinic_name: clinicName ?? null,
+            description: description ?? null,
+            ip_address: ipAddress ?? null,
+            user_agent: userAgent ?? null,
+            metadata: metadata ?? null,
+            timestamp: new Date().toISOString(),
+          },
+          last_error: err instanceof Error ? err.message : String(err),
+        });
+    } catch (retryErr) {
+      logger.error("Failed to write to pending_audit_logs (audit data loss risk)", {
+        context: "audit-log",
+        error: retryErr,
+      });
+    }
   }
 }
 

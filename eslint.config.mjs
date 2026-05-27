@@ -50,9 +50,15 @@ const eslintConfig = defineConfig([
         "alphabetize": { "order": "asc", "caseInsensitive": true },
       }],
       // i18n rules to catch hardcoded literal strings in UI
+      // AUDIT FINDING #22: Tightened config to reduce false positives from
+      // Tailwind class names (gap-2, text-muted-foreground, etc.) by adding
+      // ignoreCallee for utility functions and ignoreProperty for non-user-facing props.
       "i18next/no-literal-string": ["warn", {
         "markupOnly": true,
-        "ignoreAttribute": ["data-testid", "className", "type", "id", "name", "value", "htmlFor", "role", "href", "target", "rel", "src", "alt", "variant", "size", "key", "placeholder"],
+        "onlyAttribute": [],
+        "ignoreAttribute": ["data-testid", "className", "style", "type", "id", "name", "value", "htmlFor", "role", "href", "target", "rel", "src", "alt", "variant", "size", "key", "placeholder", "aria-label"],
+        "ignoreCallee": ["clsx", "cn", "twMerge", "cva", "t", "z.object", "z.string", "z.enum", "logger", "console"],
+        "ignoreProperty": ["displayName", "key", "as", "variant", "size", "data-testid"],
       }],
     },
   },

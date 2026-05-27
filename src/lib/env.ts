@@ -94,6 +94,12 @@ const ENV_RULES: EnvRule[] = [
   // O-06: Sentry DSN is required in production so errors are not silently lost.
   { name: "NEXT_PUBLIC_SENTRY_DSN", required: process.env.NODE_ENV === "production", description: "Sentry DSN for error monitoring (required in production)", group: "observability" },
 
+  // ── Security: AV scanning (Audit Finding #5) ────────────────────────
+  // AV_SCAN_URL is required in production so malicious files (PDFs,
+  // polyglots) cannot be uploaded into clinical categories and served
+  // back to staff browsers via signed R2 URLs.
+  { name: "AV_SCAN_URL", required: process.env.NODE_ENV === "production", description: "AV scanner endpoint (e.g. ClamAV REST) for upload virus scanning (required in production)", group: "security" },
+
   // ── Cron ───────────────────────────────────────────────────────────
   { name: "CRON_SECRET", required: process.env.NODE_ENV === "production", description: "Bearer token for cron endpoints (required in production)", group: "cron" },
 
