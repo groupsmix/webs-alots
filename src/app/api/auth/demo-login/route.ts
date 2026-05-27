@@ -34,6 +34,13 @@ const ALLOWED_DEMO_EMAILS: Set<string> = new Set(
 );
 
 export async function POST(request: NextRequest) {
+  // SEC-006: Refuse demo login when NEXT_PUBLIC_FEATURE_DEMO_MODE is
+  // explicitly set to "false". Production builds should disable this route
+  // entirely rather than relying solely on the clinic-row existence check.
+  if (process.env.NEXT_PUBLIC_FEATURE_DEMO_MODE === "false") {
+    return apiForbidden("Demo mode is disabled");
+  }
+
   // AUTH-01: Verify the demo clinic actually exists in the database before
   // allowing demo login. This prevents authentication bypass in production
   // environments where the demo tenant has been removed or was never seeded.

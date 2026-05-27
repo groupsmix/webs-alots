@@ -94,18 +94,24 @@ async function handler(request: NextRequest) {
     }
 
     // --- Batch idempotency check (avoids N+1 queries) ---
-    // Fetch ALL already-sent reminder logs for the candidate appointments
-    // in a single query, then use a Set for O(1) lookups in the loop.
+    // Fetch already-sent reminder logs in chunks of 500 to avoid exceeding
+    // PostgREST URL-length limits at scale (PERF-002).
     const appointmentIds = appointments.map((a) => a.id);
-    const { data: sentLogs } = await supabase
-      .from("notification_log")
-      .select("appointment_id, trigger")
-      .in("appointment_id", appointmentIds)
-      .eq("channel", "reminder")
-      .eq("status", "sent");
+    const CHUNK_SIZE = 500;
+    const allSentLogs: { appointment_id: string | null; trigger: string }[] = [];
+    for (let i = 0; i < appointmentIds.length; i += CHUNK_SIZE) {
+      const chunk = appointmentIds.slice(i, i + CHUNK_SIZE);
+      const { data: sentLogs } = await supabase
+        .from("notification_log")
+        .select("appointment_id, trigger")
+        .in("appointment_id", chunk)
+        .eq("channel", "reminder")
+        .eq("status", "sent");
+      if (sentLogs) allSentLogs.push(...sentLogs);
+    }
 
     const alreadySent = new Set(
-      (sentLogs ?? []).map((l) => `${l.appointment_id}:${l.trigger}`),
+      allSentLogs.map((l) => `${l.appointment_id}:${l.trigger}`),
     );
 
     // Clinic names are now joined in the main appointment query above
