@@ -143,6 +143,12 @@ jobs:
             exit 1
           fi
 
+      # F-060: Verify typedoc generation succeeds. Catches broken JSDoc,
+      # missing re-exports, and TypeScript errors in doc comments before
+      # they reach main.
+      - name: Verify docs generate
+        run: npm run docs:generate
+
   security:
     name: Security Scans (Audit P2 #26)
     runs-on: ubuntu-latest
