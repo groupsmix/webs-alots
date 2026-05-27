@@ -28,7 +28,6 @@
 
 import fs from "node:fs";
 import path from "node:path";
-import { globSync } from "node:fs";
 
 // ── Locale files ────────────────────────────────────────────────────────
 
