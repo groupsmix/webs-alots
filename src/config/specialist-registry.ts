@@ -27,21 +27,14 @@ import {
 } from "lucide-react";
 import type { ClinicDashboardConfig } from "@/components/layouts/clinic-dashboard-layout";
 
-/**
- * All specialist type slugs that use the ClinicDashboardLayout.
- * Equipment is excluded because it uses a custom layout with i18n.
- */
-const SPECIALIST_SLUGS = [
-  "nutritionist",
-  "optician",
-  "parapharmacy",
-  "physiotherapist",
-  "psychologist",
-  "speech-therapist",
-  "radiology",
-] as const;
-
-type SpecialistSlug = (typeof SPECIALIST_SLUGS)[number];
+type SpecialistSlug =
+  | "nutritionist"
+  | "optician"
+  | "parapharmacy"
+  | "physiotherapist"
+  | "psychologist"
+  | "speech-therapist"
+  | "radiology";
 
 /** Registry of specialist dashboard configs keyed by URL slug. */
 const specialistRegistry: Record<SpecialistSlug, ClinicDashboardConfig> = {

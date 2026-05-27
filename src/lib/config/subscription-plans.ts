@@ -155,10 +155,5 @@ export function getPlanByPriceId(priceId: string): SubscriptionPlan | undefined 
   );
 }
 
-/** Get a plan by its slug. */
-function getPlanBySlug(slug: string): SubscriptionPlan | undefined {
-  return SUBSCRIPTION_PLANS[slug as PlanSlug];
-}
-
 /** All plan slugs in upgrade order. */
 export const PLAN_ORDER: PlanSlug[] = ["free", "starter", "professional", "enterprise"];

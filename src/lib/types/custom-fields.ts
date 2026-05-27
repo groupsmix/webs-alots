@@ -7,7 +7,7 @@
 
 // ---- Field Types ----
 
-type CustomFieldType =
+export type CustomFieldType =
   | "text"
   | "number"
   | "date"
@@ -16,7 +16,7 @@ type CustomFieldType =
   | "file"
   | "tooth_number";
 
-type CustomFieldEntityType =
+export type CustomFieldEntityType =
   | "appointment"
   | "patient"
   | "consultation"
@@ -25,7 +25,7 @@ type CustomFieldEntityType =
 
 // ---- Select Option ----
 
-interface CustomFieldOption {
+export interface CustomFieldOption {
   value: string;
   label_fr: string;
   label_ar: string;
@@ -33,7 +33,7 @@ interface CustomFieldOption {
 
 // ---- Validation Rules ----
 
-interface CustomFieldValidation {
+export interface CustomFieldValidation {
   min?: number;
   max?: number;
   step?: number;
@@ -63,75 +63,4 @@ export interface CustomFieldDefinition {
   is_system: boolean;
   created_at: string;
   updated_at: string;
-}
-
-// ---- Field Values (stored per entity instance) ----
-
-interface CustomFieldValues {
-  id: string;
-  clinic_id: string;
-  entity_type: CustomFieldEntityType;
-  entity_id: string;
-  field_values: Record<string, unknown>;
-  created_at: string;
-  updated_at: string;
-}
-
-// ---- Field Override (clinic-level customization) ----
-
-interface CustomFieldOverride {
-  id: string;
-  clinic_id: string;
-  field_definition_id: string;
-  is_enabled: boolean;
-  is_required: boolean | null;
-  sort_order: number | null;
-  created_at: string;
-}
-
-// ---- API Request/Response Types ----
-
-interface CreateFieldDefinitionRequest {
-  clinic_type_key: string;
-  entity_type: CustomFieldEntityType;
-  field_key: string;
-  field_type: CustomFieldType;
-  label_fr: string;
-  label_ar?: string;
-  description?: string;
-  placeholder?: string;
-  is_required?: boolean;
-  sort_order?: number;
-  options?: CustomFieldOption[];
-  validation?: CustomFieldValidation;
-  default_value?: unknown;
-}
-
-interface UpdateFieldDefinitionRequest {
-  label_fr?: string;
-  label_ar?: string;
-  description?: string;
-  placeholder?: string;
-  is_required?: boolean;
-  sort_order?: number;
-  options?: CustomFieldOption[];
-  validation?: CustomFieldValidation;
-  default_value?: unknown;
-  is_active?: boolean;
-}
-
-interface SaveFieldValuesRequest {
-  clinic_id: string;
-  entity_type: CustomFieldEntityType;
-  entity_id: string;
-  field_values: Record<string, unknown>;
-}
-
-// ---- Resolved field (definition + override merged) ----
-
-interface ResolvedCustomField {
-  definition: CustomFieldDefinition;
-  is_enabled: boolean;
-  is_required: boolean;
-  sort_order: number;
 }
