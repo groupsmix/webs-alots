@@ -22,20 +22,18 @@ import { createHmac } from "crypto";
 const TOKEN_PREFIX = "oltigo";
 
 /**
- * Returns the secret used to sign DNS verification tokens, or `null` if no
- * secret is configured. Callers MUST treat `null` as "verification is not
- * available" and refuse to issue tokens or pass DNS verification — never
- * substitute a literal fallback (which would let attackers compute tokens).
+ * Returns the dedicated DNS verification secret, or `null` if not configured.
  *
- * Prefers a dedicated `DNS_VERIFICATION_SECRET` so a leak does not compromise
- * other HMAC keys, and falls back to `BOOKING_TOKEN_SECRET` for deployments
- * that have not provisioned the dedicated key yet.
+ * SEC-001: The BOOKING_TOKEN_SECRET fallback has been removed. NIST SP 800-57
+ * §5.2 requires distinct keys per HMAC purpose. A leaked DNS verification
+ * token must not be replayable as a booking token (or vice versa).
+ *
+ * If `DNS_VERIFICATION_SECRET` is unset, callers MUST treat the return as
+ * "verification is not available" and refuse to issue tokens.
  */
 function getDnsVerificationSecret(): string | null {
   const dedicated = process.env.DNS_VERIFICATION_SECRET;
   if (dedicated && dedicated.length > 0) return dedicated;
-  const fallback = process.env.BOOKING_TOKEN_SECRET;
-  if (fallback && fallback.length > 0) return fallback;
   return null;
 }
 

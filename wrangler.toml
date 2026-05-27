@@ -34,19 +34,22 @@ routes = [
 
 # ── KV Namespaces ─────────────────────────────────────────────────────
 # Rate-limiting counters (shared across all edge locations).
-# Currently production uses RATE_LIMIT_BACKEND=supabase, so the KV binding
-# is not required for deploy. Uncomment and set the real namespace ID when
-# migrating to KV-backed rate limiting:
+# INF-002: Rate limiter MUST use KV in production to prevent per-isolate
+# counter fragmentation. Provision with:
 #
-#   wrangler kv namespace create RATE_LIMIT_KV
-#   # Copy the returned ID below
+#   wrangler kv:namespace create RATE_LIMIT_KV
+#   wrangler kv:namespace create RATE_LIMIT_KV --preview
+#   # Paste the returned IDs below, then set RATE_LIMIT_BACKEND=kv in [vars]
 #
 # [[kv_namespaces]]
 # binding = "RATE_LIMIT_KV"
-# id = "<paste-real-kv-namespace-id-here>"
+# id = "<paste-production-kv-namespace-id>"
+# preview_id = "<paste-preview-kv-namespace-id>"
 
 # ── R2 Buckets ────────────────────────────────────────────────────────
 # AUDIT-LB3: IaC — PHI file storage (encrypted uploads).
+# INF-003: Production bucket is declared at the top level. Staging overrides
+# below to prevent cross-environment PHI contamination.
 [[r2_buckets]]
 binding = "UPLOADS_BUCKET"
 bucket_name = "webs-alots-uploads"
@@ -64,6 +67,12 @@ name = "webs-alots-staging"
 [env.staging.vars]
 NODE_ENV = "production"
 RATE_LIMIT_BACKEND = "supabase"
+
+# INF-003: Staging uses a separate R2 bucket to prevent cross-environment
+# PHI contamination. Create with: wrangler r2 bucket create webs-alots-uploads-staging
+[[env.staging.r2_buckets]]
+binding = "UPLOADS_BUCKET"
+bucket_name = "webs-alots-uploads-staging"
 
 # ── Limits ────────────────────────────────────────────────────────────
 [limits]
