@@ -66,15 +66,18 @@ function getOrCreatePseudonym(
       field === "last_name" || field === "lastName") {
     pseudonym = PSEUDONYM_NAMES[map.forward.size % PSEUDONYM_NAMES.length] ?? `Patient-${map.forward.size}`;
   } else if (field === "phone") {
-    pseudonym = `+212-XXX-XXXX-${(map.forward.size + 1).toString().padStart(2, "0")}`;
+    // AI-004: Use random suffix instead of sequential counter to prevent
+    // frequency-analysis reversal if pseudonymised transcripts are breached.
+    const rnd = crypto.randomUUID().slice(0, 6);
+    pseudonym = `+212-XXX-XXXX-${rnd}`;
   } else if (field === "email") {
-    pseudonym = `patient${map.forward.size + 1}@redacted.local`;
+    pseudonym = `patient-${crypto.randomUUID().slice(0, 6)}@redacted.local`;
   } else if (field === "cin") {
-    pseudonym = `CIN-XXXXX-${(map.forward.size + 1).toString().padStart(2, "0")}`;
+    pseudonym = `CIN-XXXXX-${crypto.randomUUID().slice(0, 6)}`;
   } else if (field === "address") {
     pseudonym = "[Address redacted]";
   } else if (field === "insurance_number" || field === "insuranceNumber") {
-    pseudonym = `INS-XXXXX-${(map.forward.size + 1).toString().padStart(2, "0")}`;
+    pseudonym = `INS-XXXXX-${crypto.randomUUID().slice(0, 6)}`;
   } else {
     pseudonym = `[${field}-redacted]`;
   }
