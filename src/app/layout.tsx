@@ -66,6 +66,7 @@ export async function generateMetadata(): Promise<Metadata> {
   const cookieStore = await import("next/headers").then(m => m.cookies());
   const preferredLocale = cookieStore.get("preferred-locale")?.value as Locale;
   const locale = preferredLocale || ("fr" as Locale);
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://oltigo.com";
 
   return {
     manifest: "/manifest.webmanifest",
@@ -99,8 +100,8 @@ export async function generateMetadata(): Promise<Metadata> {
     authors: [{ name: "Oltigo" }],
     alternates: {
       languages: {
-        "fr": "https://oltigo.com",
-        "ar": "https://oltigo.com?lang=ar",
+        "fr": siteUrl,
+        "ar": `${siteUrl}?lang=ar`,
       },
     },
     openGraph: {

@@ -33,18 +33,6 @@ const nextConfig: NextConfig = {
         ],
       },
       {
-        // Next.js uses content-hashed filenames for static chunks, so they
-        // are effectively immutable. Use a long max-age + immutable to avoid
-        // unnecessary revalidation on repeat visits (PERF-08).
-        source: "/_next/static/:path*",
-        headers: [
-          {
-            key: "Cache-Control",
-            value: "public, max-age=31536000, immutable",
-          },
-        ],
-      },
-      {
         // Default: prevent caching of API responses (authentication, patient
         // data, mutations, etc.).  Individual routes that serve truly public
         // data can override this with their own Cache-Control header.
