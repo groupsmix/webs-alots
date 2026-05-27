@@ -97,6 +97,7 @@ export default function WorkingHoursPage() {
 
   return (
     <div>
+      <Breadcrumb items={[{ label: "Admin", href: "/admin/dashboard" }, { label: "Working Hours" }]} />
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold">Working Hours</h1>
         <Button onClick={handleSave}>
@@ -132,7 +133,6 @@ export default function WorkingHoursPage() {
                 const daySchedule = currentSchedule.days[i];
                 return (
                   <div key={i} className="flex items-center gap-4 p-3 border rounded-lg">
-                    <Breadcrumb items={[{ label: "Admin", href: "/admin/dashboard" }, { label: "Working Hours" }]} />
                     <div className="w-28">
                       <span className="text-sm font-medium">{day}</span>
                     </div>

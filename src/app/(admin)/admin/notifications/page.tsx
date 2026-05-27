@@ -13,7 +13,7 @@ import {
   Save,
   AlertTriangle,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocale } from "@/components/locale-switcher";
 import { Badge } from "@/components/ui/badge";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
@@ -27,11 +27,12 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { PageLoader } from "@/components/ui/page-loader";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
+import { getCurrentUser } from "@/lib/data/client";
 import {
-  demoNotificationLog,
   defaultNotificationTemplates,
   triggerMetadata,
   substituteVariables,
@@ -39,8 +40,8 @@ import {
   type NotificationTemplate,
   type NotificationTrigger,
 } from "@/lib/notifications";
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-import { formatCurrency, formatNumber, formatDisplayDate } from "@/lib/utils";
+import { createClient } from "@/lib/supabase-client";
+import { formatDisplayDate } from "@/lib/utils";
 
 // ---- Status & Channel Badges ----
 
@@ -59,10 +60,41 @@ const channelConfig: Record<string, { color: string; label: string }> = {
   sms: { color: "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200", label: "SMS" },
 };
 
+interface NotificationLogRaw {
+  id: string;
+  trigger: string;
+  channel: string;
+  recipient_name: string | null;
+  body: string | null;
+  status: string;
+  error_message: string | null;
+  created_at: string;
+}
+
+function mapNotificationLog(raw: NotificationLogRaw): NotificationLogEntry {
+  const body = raw.body ?? "";
+  return {
+    id: raw.id,
+    trigger: raw.trigger as NotificationLogEntry["trigger"],
+    channel: raw.channel as NotificationLogEntry["channel"],
+    recipientId: "",
+    recipientName: raw.recipient_name ?? "Unknown",
+    recipientRole: "patient",
+    title: triggerMetadata[raw.trigger as NotificationTrigger]?.label ?? raw.trigger,
+    body,
+    status: raw.status as NotificationLogEntry["status"],
+    priority: "normal",
+    createdAt: raw.created_at,
+    error: raw.error_message ?? undefined,
+  };
+}
+
 export default function AdminNotificationsPage() {
   const [locale] = useLocale();
 
-  const [logs] = useState<NotificationLogEntry[]>(demoNotificationLog);
+  const [logs, setLogs] = useState<NotificationLogEntry[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
   const [templates, setTemplates] = useState<NotificationTemplate[]>(defaultNotificationTemplates);
   const [search, setSearch] = useState("");
   const [filterChannel, setFilterChannel] = useState<string>("all");
@@ -71,12 +103,45 @@ export default function AdminNotificationsPage() {
   const [previewTemplate, setPreviewTemplate] = useState<NotificationTemplate | null>(null);
   const [savedFeedback, setSavedFeedback] = useState<string | null>(null);
 
+  useEffect(() => {
+    const controller = new AbortController();
+    async function loadLogs() {
+      const user = await getCurrentUser();
+      if (controller.signal.aborted) return;
+      if (!user?.clinic_id) { setLoading(false); return; }
+
+      const supabase = createClient();
+      const { data, error: dbError } = await supabase
+        .from("notification_log")
+        .select("id, trigger, channel, recipient_name, body, status, error_message, created_at")
+        .eq("clinic_id", user.clinic_id)
+        .order("created_at", { ascending: false })
+        .limit(200);
+
+      if (controller.signal.aborted) return;
+      if (dbError) {
+        setError(new Error(dbError.message));
+        setLoading(false);
+        return;
+      }
+      setLogs((data ?? []).map((row) => mapNotificationLog(row as NotificationLogRaw)));
+      setLoading(false);
+    }
+    loadLogs().catch((err) => {
+      if (!controller.signal.aborted) {
+        setError(err instanceof Error ? err : new Error(String(err)));
+        setLoading(false);
+      }
+    });
+    return () => { controller.abort(); };
+  }, []);
+
   // ---- Notification Log Filtering ----
   const filteredLogs = logs.filter((log) => {
     const matchSearch =
       log.recipientName.toLowerCase().includes(search.toLowerCase()) ||
       log.title.toLowerCase().includes(search.toLowerCase()) ||
-      log.body.toLowerCase().includes(search.toLowerCase());
+      (log.body ?? "").toLowerCase().includes(search.toLowerCase());
     const matchChannel = filterChannel === "all" || log.channel === filterChannel;
     const matchStatus = filterStatus === "all" || log.status === filterStatus;
     return matchSearch && matchChannel && matchStatus;
@@ -120,6 +185,19 @@ export default function AdminNotificationsPage() {
     review_stars: "5",
     review_comment: "Excellent service!",
   };
+
+  if (loading) {
+    return <PageLoader message="Loading notifications..." />;
+  }
+
+  if (error) {
+    return (
+      <div className="p-8 text-center">
+        <p className="text-red-600 font-medium">Failed to load notifications.</p>
+        <p className="text-sm text-muted-foreground mt-2">{error.message}</p>
+      </div>
+    );
+  }
 
   return (
     <div>

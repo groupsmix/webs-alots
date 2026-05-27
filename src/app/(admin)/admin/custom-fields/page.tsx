@@ -97,7 +97,8 @@ export default function CustomFieldsAdminPage() {
         url += `&entity_type=${encodeURIComponent(selectedEntity)}`;
       }
       const res = await fetch(url);
-      const data = await res.json();
+      const json = await res.json();
+      const data = json.data ?? json;
       setDefinitions(data.definitions ?? []);
     } catch (err) {
       logger.warn("Failed to load custom field definitions", { context: "custom-fields", error: err });
