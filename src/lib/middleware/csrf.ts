@@ -54,7 +54,11 @@ const CSRF_EXEMPT_EXACT = new Set([
 const CSRF_EXEMPT_CRON_PREFIX = "/api/cron/";
 
 function isCsrfExempt(pathname: string): boolean {
-  return CSRF_EXEMPT_EXACT.has(pathname) || pathname.startsWith(CSRF_EXEMPT_CRON_PREFIX);
+  // Normalize trailing slash (trailingSlash: true in next.config.ts)
+  const normalized = pathname.endsWith("/") && pathname.length > 1
+    ? pathname.slice(0, -1)
+    : pathname;
+  return CSRF_EXEMPT_EXACT.has(normalized) || pathname.startsWith(CSRF_EXEMPT_CRON_PREFIX);
 }
 
 /**
