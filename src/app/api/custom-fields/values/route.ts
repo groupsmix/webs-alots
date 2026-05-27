@@ -29,7 +29,7 @@ export const GET = withAuth(async (request, { supabase, profile }) => {
     .single();
 
   if (error && error.code !== "PGRST116") {
-    logger.warn("Operation failed", { context: "custom-fields/values", error });
+    logger.warn("Failed to fetch custom field values", { context: "custom-fields/values", error });
     return apiInternalError("Failed to fetch custom field values");
   }
 
@@ -44,7 +44,9 @@ export const GET = withAuth(async (request, { supabase, profile }) => {
  *
  * Save (upsert) custom field values for a specific entity instance.
  */
-export const POST = withAuthValidation(customFieldValuesSchema, async (body, request, { supabase, profile }) => {
+export const POST = withAuthValidation(
+  customFieldValuesSchema,
+  async (body, request, { supabase, profile }) => {
     const { entity_type, entity_id, field_values } = body;
     // Always derive clinic_id from the authenticated user's profile
     const clinic_id = profile.clinic_id;
@@ -69,7 +71,10 @@ export const POST = withAuthValidation(customFieldValuesSchema, async (body, req
 
       if (definitions && definitions.length > 0) {
         const defMap = new Map(
-          (definitions as { field_key: string; field_type: string }[]).map((d) => [d.field_key, d.field_type]),
+          (definitions as { field_key: string; field_type: string }[]).map((d) => [
+            d.field_key,
+            d.field_type,
+          ]),
         );
         const unknownKeys = Object.keys(field_values).filter((k) => !defMap.has(k));
         if (unknownKeys.length > 0) {
@@ -84,7 +89,9 @@ export const POST = withAuthValidation(customFieldValuesSchema, async (body, req
             (expectedType === "text" && typeof value === "string") ||
             (expectedType === "number" && typeof value === "number" && Number.isFinite(value)) ||
             (expectedType === "boolean" && typeof value === "boolean") ||
-            (expectedType === "date" && typeof value === "string" && /^\d{4}-\d{2}-\d{2}/.test(value)) ||
+            (expectedType === "date" &&
+              typeof value === "string" &&
+              /^\d{4}-\d{2}-\d{2}/.test(value)) ||
             (expectedType === "select" && typeof value === "string") ||
             (expectedType === "multiselect" && Array.isArray(value));
           if (!valid) {
@@ -113,19 +120,26 @@ export const POST = withAuthValidation(customFieldValuesSchema, async (body, req
       .single();
 
     if (error) {
-      logger.warn("Operation failed", { context: "custom-fields/values", error });
+      logger.warn("Failed to create custom field value", {
+        context: "custom-fields/values",
+        error,
+      });
       return apiInternalError("Failed to save custom field values");
     }
 
     return apiSuccess({ values: data });
-}, STAFF_ROLES);
+  },
+  STAFF_ROLES,
+);
 
 /**
  * PATCH /api/custom-fields/values
  *
  * Partially update custom field values (merge with existing).
  */
-export const PATCH = withAuthValidation(customFieldValuesSchema, async (body, request, { supabase, profile }) => {
+export const PATCH = withAuthValidation(
+  customFieldValuesSchema,
+  async (body, request, { supabase, profile }) => {
     const { entity_type, entity_id, field_values } = body;
     // Always derive clinic_id from the authenticated user's profile
     const clinic_id = profile.clinic_id;
@@ -150,7 +164,10 @@ export const PATCH = withAuthValidation(customFieldValuesSchema, async (body, re
 
       if (definitions && definitions.length > 0) {
         const defMap = new Map(
-          (definitions as { field_key: string; field_type: string }[]).map((d) => [d.field_key, d.field_type]),
+          (definitions as { field_key: string; field_type: string }[]).map((d) => [
+            d.field_key,
+            d.field_type,
+          ]),
         );
         const unknownKeys = Object.keys(field_values).filter((k) => !defMap.has(k));
         if (unknownKeys.length > 0) {
@@ -164,7 +181,9 @@ export const PATCH = withAuthValidation(customFieldValuesSchema, async (body, re
             (expectedType === "text" && typeof value === "string") ||
             (expectedType === "number" && typeof value === "number" && Number.isFinite(value)) ||
             (expectedType === "boolean" && typeof value === "boolean") ||
-            (expectedType === "date" && typeof value === "string" && /^\d{4}-\d{2}-\d{2}/.test(value)) ||
+            (expectedType === "date" &&
+              typeof value === "string" &&
+              /^\d{4}-\d{2}-\d{2}/.test(value)) ||
             (expectedType === "select" && typeof value === "string") ||
             (expectedType === "multiselect" && Array.isArray(value));
           if (!valid) {
@@ -207,9 +226,14 @@ export const PATCH = withAuthValidation(customFieldValuesSchema, async (body, re
       .single();
 
     if (error) {
-      logger.warn("Operation failed", { context: "custom-fields/values", error });
+      logger.warn("Failed to update custom field value", {
+        context: "custom-fields/values",
+        error,
+      });
       return apiInternalError("Failed to update custom field values");
     }
 
     return apiSuccess({ values: data });
-}, STAFF_ROLES);
+  },
+  STAFF_ROLES,
+);

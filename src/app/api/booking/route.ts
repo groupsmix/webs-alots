@@ -1,6 +1,13 @@
 import { NextRequest } from "next/server";
 import { z } from "zod";
-import { apiError, apiForbidden, apiInternalError, apiRateLimited, apiSuccess, apiUnauthorized } from "@/lib/api-response";
+import {
+  apiError,
+  apiForbidden,
+  apiInternalError,
+  apiRateLimited,
+  apiSuccess,
+  apiUnauthorized,
+} from "@/lib/api-response";
 import { withValidation } from "@/lib/api-validate";
 import { logAuditEvent } from "@/lib/audit-log";
 import {
@@ -79,11 +86,7 @@ interface BookingTokenResult {
  * R-15: Verify an HMAC signature against one or more secrets.
  * Returns true for the first matching secret (constant-time per attempt).
  */
-async function verifyHmac(
-  secret: string,
-  payload: string,
-  signature: string,
-): Promise<boolean> {
+async function verifyHmac(secret: string, payload: string, signature: string): Promise<boolean> {
   const encoder = new TextEncoder();
   const key = await crypto.subtle.importKey(
     "raw",
@@ -110,7 +113,9 @@ async function verifyBookingToken(token: string): Promise<BookingTokenResult> {
     // HIGH-05: BOOKING_TOKEN_SECRET is required in ALL environments.
     // Dev bypass removed — configure the secret even in development
     // to prevent accidental leakage of unauthenticated booking access.
-    logger.error("BOOKING_TOKEN_SECRET is not configured — rejecting all booking tokens", { context: "booking" });
+    logger.error("BOOKING_TOKEN_SECRET is not configured — rejecting all booking tokens", {
+      context: "booking",
+    });
     return { valid: false };
   }
 
@@ -134,8 +139,10 @@ async function verifyBookingToken(token: string): Promise<BookingTokenResult> {
   // BOOKING_TOKEN_SECRET_OLD to the previous key, then remove it after
   // the overlap window (>= token TTL, typically 15 min) has passed.
   const oldSecret = process.env.BOOKING_TOKEN_SECRET_OLD;
-  if (oldSecret && await verifyHmac(oldSecret, payload, signature)) {
-    logger.info("Booking token verified with OLD secret — rotation in progress", { context: "booking" });
+  if (oldSecret && (await verifyHmac(oldSecret, payload, signature))) {
+    logger.info("Booking token verified with OLD secret — rotation in progress", {
+      context: "booking",
+    });
     return { valid: true, phone, clinicId };
   }
 
@@ -156,10 +163,7 @@ async function validateBookingRequest(
   timezone: string,
   workingHours: Record<number, { open: string; close: string; enabled: boolean }>,
 ): Promise<ValidationResult> {
-  const [doctors, services] = await Promise.all([
-    getPublicDoctors(),
-    getPublicServices(),
-  ]);
+  const [doctors, services] = await Promise.all([getPublicDoctors(), getPublicServices()]);
   // Pass pre-fetched doctors to avoid a redundant database query
   const specialties = await getPublicSpecialties(doctors);
 
@@ -201,7 +205,13 @@ async function validateBookingRequest(
     timeZone: timezone,
   });
   const dayMap: Record<string, number> = {
-    Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6,
+    Sun: 0,
+    Mon: 1,
+    Tue: 2,
+    Wed: 3,
+    Thu: 4,
+    Fri: 5,
+    Sat: 6,
   };
   const parsedDate = new Date(body.date + "T12:00:00");
   const dayOfWeek = dayMap[dayFormatter.format(parsedDate)] ?? parsedDate.getDay();
@@ -231,223 +241,239 @@ async function validateBookingRequest(
  * and sends confirmation via WhatsApp.
  */
 export const POST = withValidation(bookingRequestSchema, async (body, request: NextRequest) => {
-    // Defence-in-depth: per-IP rate limit for the booking endpoint.
-    // The middleware also applies bookingLimiter, but checking here guards
-    // against deployment configs that skip the middleware layer.
-    const clientIp = extractClientIp(request);
-    const allowed = await bookingLimiter.check(`booking:${clientIp}`);
-    if (!allowed) {
-      return apiRateLimited("Too many booking requests. Please try again later.");
+  // Defence-in-depth: per-IP rate limit for the booking endpoint.
+  // The middleware also applies bookingLimiter, but checking here guards
+  // against deployment configs that skip the middleware layer.
+  const clientIp = extractClientIp(request);
+  const allowed = await bookingLimiter.check(`booking:${clientIp}`);
+  if (!allowed) {
+    return apiRateLimited("Too many booking requests. Please try again later.");
+  }
+
+  // CRITICAL-02: Require a booking verification token.
+  // The token is issued after phone/email OTP verification via
+  // POST /api/booking/verify. Without it, bots can flood the
+  // system with fake patient records and appointments.
+  const bookingToken = request.headers.get("x-booking-token");
+  if (!bookingToken) {
+    return apiUnauthorized("Booking verification required. Call POST /api/booking/verify first.");
+  }
+
+  // Verify the booking token (HMAC-based, issued after OTP check)
+  const tokenResult = await verifyBookingToken(bookingToken);
+  if (!tokenResult.valid) {
+    return apiForbidden("Invalid or expired booking token");
+  }
+
+  // AUDIT-04: Bind the verified phone from the token to the submitted
+  // patient phone. Prevents a user from verifying one phone number and
+  // then booking under a different one.
+  const normalizePhone = (p: string) => p.replace(/[\s\-()]/g, "");
+  if (normalizePhone(tokenResult.phone!) !== normalizePhone(body.patient.phone)) {
+    return apiForbidden("Booking token does not match the submitted patient phone number");
+  }
+
+  const { tenant, config: tenantConfig } = await requireTenantWithConfig();
+  const clinicId = tenant.clinicId;
+
+  // A6-13: Reject tokens whose embedded clinicId does not match the
+  // current tenant subdomain. The clinicId is part of the signed HMAC
+  // payload, so this check together with the signature verification
+  // makes cross-tenant replay infeasible.
+  if (tokenResult.clinicId !== clinicId) {
+    return apiForbidden("Booking token was issued for a different clinic");
+  }
+  const supabase = await createTenantClient(clinicId);
+
+  const validation = await validateBookingRequest(
+    body,
+    tenantConfig.timezone,
+    tenantConfig.workingHours,
+  );
+  if (validation.error) {
+    // F-A91-01: Always include error code for client localization
+    return apiError(validation.error, 400, "VALIDATION_ERROR");
+  }
+
+  // Reuse data already fetched during validation (avoids duplicate queries)
+  const doctor = validation.doctors.find((d) => d.id === body.doctorId);
+  const service = validation.services.find((s) => s.id === body.serviceId);
+
+  // Verify doctorId and serviceId belong to this clinic in a single
+  // parallel query instead of two sequential ones.  This also avoids
+  // re-fetching data that validateBookingRequest already retrieved
+  // from the public data layer.
+  const [doctorCheck, serviceCheck] = await Promise.all([
+    supabase
+      .from("users")
+      .select("id")
+      .eq("id", body.doctorId)
+      .eq("clinic_id", clinicId)
+      .eq("role", "doctor")
+      .single(),
+    supabase
+      .from("services")
+      .select("id")
+      .eq("id", body.serviceId)
+      .eq("clinic_id", clinicId)
+      .single(),
+  ]);
+
+  if (!doctorCheck.data) {
+    return apiError("Doctor not found in this clinic", 404, "NOT_FOUND");
+  }
+
+  if (!serviceCheck.data) {
+    return apiError("Service not found in this clinic", 404, "NOT_FOUND");
+  }
+
+  // Find or create a patient record using the SECURITY DEFINER RPC
+  // (bypasses users-table RLS for the anon role while keeping tenant isolation)
+  const { data: patientId, error: patientError } = await supabase.rpc(
+    "booking_find_or_create_patient",
+    {
+      p_clinic_id: clinicId,
+      p_name: body.patient.name,
+      p_phone: body.patient.phone,
+      p_email: body.patient.email ?? undefined,
+    },
+  );
+  if (patientError || !patientId) {
+    logger.warn("Failed to find/create patient", {
+      context: "booking/route",
+      error: patientError,
+    });
+    return apiInternalError("Failed to create patient record");
+  }
+
+  // Calculate end time with midnight overflow guard
+  const duration = service?.duration ?? tenantConfig.booking.slotDuration;
+  const { endTime, overflows } = computeEndTime(body.time, duration);
+  if (overflows) {
+    return apiError(
+      "Appointment would extend past midnight. Please choose an earlier time.",
+      400,
+      "SLOT_OVERFLOW",
+    );
+  }
+
+  // Determine initial status based on clinic payment requirements
+  const requiresDeposit =
+    (tenantConfig.booking.depositAmount ?? 0) > 0 ||
+    (tenantConfig.booking.depositPercentage ?? 0) > 0;
+  const initialStatus = requiresDeposit ? APPOINTMENT_STATUS.PENDING : APPOINTMENT_STATUS.CONFIRMED;
+
+  // Construct ISO slot boundaries for the required slot_start/slot_end columns
+  const slotStart = `${body.date}T${body.time}:00`;
+  const slotEnd = `${body.date}T${endTime}:00`;
+
+  // ── F-A96-01 / DI-HIGH-02: Atomic booking via advisory-lock RPC ──
+  // A89-01: Resolved by booking_atomic_insert RPC — the slot-count
+  // check + insert runs inside a single transaction with
+  // pg_advisory_xact_lock, guaranteeing maxPerSlot is never exceeded.
+  const maxPerSlot = tenantConfig.booking.maxPerSlot;
+  const { data: appointmentId, error: apptError } = await supabase.rpc("booking_atomic_insert", {
+    p_clinic_id: clinicId,
+    p_patient_id: patientId,
+    p_doctor_id: body.doctorId,
+    p_service_id: body.serviceId,
+    p_date: body.date,
+    p_start_time: body.time,
+    p_end_time: endTime,
+    p_slot_start: slotStart,
+    p_slot_end: slotEnd,
+    p_status: initialStatus,
+    p_is_first_visit: body.isFirstVisit,
+    p_has_insurance: body.hasInsurance,
+    p_booking_source: BOOKING_SOURCE.ONLINE,
+    p_notes: body.patient.reason ?? null,
+    p_is_emergency: false,
+    p_max_per_slot: maxPerSlot,
+  });
+
+  if (apptError || !appointmentId) {
+    // Handle slot-full or unique constraint violation
+    if (apptError?.code === "23505") {
+      return apiError(
+        "This slot has already been booked. Please choose another time.",
+        409,
+        "SLOT_FULL",
+      );
     }
-
-    // CRITICAL-02: Require a booking verification token.
-    // The token is issued after phone/email OTP verification via
-    // POST /api/booking/verify. Without it, bots can flood the
-    // system with fake patient records and appointments.
-    const bookingToken = request.headers.get("x-booking-token");
-    if (!bookingToken) {
-      return apiUnauthorized("Booking verification required. Call POST /api/booking/verify first.");
-    }
-
-    // Verify the booking token (HMAC-based, issued after OTP check)
-    const tokenResult = await verifyBookingToken(bookingToken);
-    if (!tokenResult.valid) {
-      return apiForbidden("Invalid or expired booking token");
-    }
-
-    // AUDIT-04: Bind the verified phone from the token to the submitted
-    // patient phone. Prevents a user from verifying one phone number and
-    // then booking under a different one.
-    const normalizePhone = (p: string) => p.replace(/[\s\-()]/g, "");
-    if (normalizePhone(tokenResult.phone!) !== normalizePhone(body.patient.phone)) {
-      return apiForbidden("Booking token does not match the submitted patient phone number");
-    }
-
-    const { tenant, config: tenantConfig } = await requireTenantWithConfig();
-    const clinicId = tenant.clinicId;
-
-    // A6-13: Reject tokens whose embedded clinicId does not match the
-    // current tenant subdomain. The clinicId is part of the signed HMAC
-    // payload, so this check together with the signature verification
-    // makes cross-tenant replay infeasible.
-    if (tokenResult.clinicId !== clinicId) {
-      return apiForbidden("Booking token was issued for a different clinic");
-    }
-    const supabase = await createTenantClient(clinicId);
-
-    const validation = await validateBookingRequest(body, tenantConfig.timezone, tenantConfig.workingHours);
-    if (validation.error) {
-      // F-A91-01: Always include error code for client localization
-      return apiError(validation.error, 400, "VALIDATION_ERROR");
-    }
-
-    // Reuse data already fetched during validation (avoids duplicate queries)
-    const doctor = validation.doctors.find((d) => d.id === body.doctorId);
-    const service = validation.services.find((s) => s.id === body.serviceId);
-
-    // Verify doctorId and serviceId belong to this clinic in a single
-    // parallel query instead of two sequential ones.  This also avoids
-    // re-fetching data that validateBookingRequest already retrieved
-    // from the public data layer.
-    const [doctorCheck, serviceCheck] = await Promise.all([
-      supabase
-        .from("users")
-        .select("id")
-        .eq("id", body.doctorId)
-        .eq("clinic_id", clinicId)
-        .eq("role", "doctor")
-        .single(),
-      supabase
-        .from("services")
-        .select("id")
-        .eq("id", body.serviceId)
-        .eq("clinic_id", clinicId)
-        .single(),
-    ]);
-
-    if (!doctorCheck.data) {
-      return apiError("Doctor not found in this clinic", 404, "NOT_FOUND");
-    }
-
-    if (!serviceCheck.data) {
-      return apiError("Service not found in this clinic", 404, "NOT_FOUND");
-    }
-
-    // Find or create a patient record using the SECURITY DEFINER RPC
-    // (bypasses users-table RLS for the anon role while keeping tenant isolation)
-    const { data: patientId, error: patientError } = await supabase
-      .rpc("booking_find_or_create_patient", {
-        p_clinic_id: clinicId,
-        p_name: body.patient.name,
-        p_phone: body.patient.phone,
-        p_email: body.patient.email ?? undefined,
-      });
-    if (patientError || !patientId) {
-      logger.warn("Failed to find/create patient", {
-        context: "booking/route",
-        error: patientError,
-      });
-      return apiInternalError("Failed to create patient record");
-    }
-
-    // Calculate end time with midnight overflow guard
-    const duration = service?.duration ?? tenantConfig.booking.slotDuration;
-    const { endTime, overflows } = computeEndTime(body.time, duration);
-    if (overflows) {
-      return apiError("Appointment would extend past midnight. Please choose an earlier time.", 400, "SLOT_OVERFLOW");
-    }
-
-    // Determine initial status based on clinic payment requirements
-    const requiresDeposit = (tenantConfig.booking.depositAmount ?? 0) > 0
-      || (tenantConfig.booking.depositPercentage ?? 0) > 0;
-    const initialStatus = requiresDeposit
-      ? APPOINTMENT_STATUS.PENDING
-      : APPOINTMENT_STATUS.CONFIRMED;
-
-    // Construct ISO slot boundaries for the required slot_start/slot_end columns
-    const slotStart = `${body.date}T${body.time}:00`;
-    const slotEnd = `${body.date}T${endTime}:00`;
-
-    // ── F-A96-01 / DI-HIGH-02: Atomic booking via advisory-lock RPC ──
-    // A89-01: Resolved by booking_atomic_insert RPC — the slot-count
-    // check + insert runs inside a single transaction with
-    // pg_advisory_xact_lock, guaranteeing maxPerSlot is never exceeded.
-    const maxPerSlot = tenantConfig.booking.maxPerSlot;
-    const { data: appointmentId, error: apptError } = await supabase
-      .rpc("booking_atomic_insert", {
-        p_clinic_id: clinicId,
-        p_patient_id: patientId,
-        p_doctor_id: body.doctorId,
-        p_service_id: body.serviceId,
-        p_date: body.date,
-        p_start_time: body.time,
-        p_end_time: endTime,
-        p_slot_start: slotStart,
-        p_slot_end: slotEnd,
-        p_status: initialStatus,
-        p_is_first_visit: body.isFirstVisit,
-        p_has_insurance: body.hasInsurance,
-        p_booking_source: BOOKING_SOURCE.ONLINE,
-        p_notes: body.patient.reason ?? null,
-        p_is_emergency: false,
-        p_max_per_slot: maxPerSlot,
-      });
-
-    if (apptError || !appointmentId) {
-      // Handle slot-full or unique constraint violation
-      if (apptError?.code === "23505") {
-        return apiError("This slot has already been booked. Please choose another time.", 409, "SLOT_FULL");
-      }
-      // Handle tenant-isolation violations from the RPC
-      if (apptError?.code === "42501") {
-        logger.error("Booking RPC tenant validation failed", {
-          context: "booking/route",
-          clinicId,
-          error: apptError,
-        });
-        return apiError("Invalid booking parameters", 400, "INVALID_TENANT");
-      }
-      logger.error("Booking atomic insert failed", {
+    // Handle tenant-isolation violations from the RPC
+    if (apptError?.code === "42501") {
+      logger.error("Booking RPC tenant validation failed", {
         context: "booking/route",
         clinicId,
         error: apptError,
       });
-      return apiInternalError("Failed to create booking");
+      return apiError("Invalid booking parameters", 400, "INVALID_TENANT");
     }
-
-    const appointment = { id: appointmentId };
-
-    // Audit log for healthcare compliance
-    await logAuditEvent({
-      supabase,
-      action: "appointment.created",
-      type: "booking",
+    logger.error("Booking atomic insert failed", {
+      context: "booking/route",
       clinicId,
-      description: `Appointment ${appointment.id} created for patient ${patientId} with doctor ${body.doctorId}`,
+      error: apptError,
     });
+    return apiInternalError("Failed to create booking");
+  }
 
-    // ── Dispatch notifications (fire-and-forget) ──────────────────
-    // Notification failure must NOT affect the booking outcome.
-    // Build the manage/cancel URL so the patient can self-service
-    const siteOrigin = request.headers.get("origin") ?? request.nextUrl.origin;
-    const manageUrl = `${siteOrigin}/book?manage=${appointment.id}`;
+  const appointment = { id: appointmentId };
 
-    const notifVars: TemplateVariables = {
-      patient_name: body.patient.name,
-      doctor_name: doctor?.name ?? "Doctor",
-      clinic_name: tenant.clinicName,
-      clinic_address: "",
-      clinic_phone: "",
-      service_name: service?.name ?? "Consultation",
+  // Audit log for healthcare compliance
+  await logAuditEvent({
+    supabase,
+    action: "appointment.created",
+    type: "booking",
+    clinicId,
+    description: `Appointment ${appointment.id} created for patient ${patientId} with doctor ${body.doctorId}`,
+  });
+
+  // ── Dispatch notifications (fire-and-forget) ──────────────────
+  // Notification failure must NOT affect the booking outcome.
+  // Build the manage/cancel URL so the patient can self-service
+  const siteOrigin = request.headers.get("origin") ?? request.nextUrl.origin;
+  const manageUrl = `${siteOrigin}/book?manage=${appointment.id}`;
+
+  const notifVars: TemplateVariables = {
+    patient_name: body.patient.name,
+    doctor_name: doctor?.name ?? "Doctor",
+    clinic_name: tenant.clinicName,
+    clinic_address: "",
+    clinic_phone: "",
+    service_name: service?.name ?? "Consultation",
+    date: body.date,
+    time: body.time,
+    manage_url: manageUrl,
+  };
+
+  // booking_confirmation → patient, new_booking → staff
+  Promise.allSettled([
+    dispatchNotification("booking_confirmation", notifVars, patientId, [
+      "in_app",
+      "email",
+      "whatsapp",
+    ]),
+    dispatchNotification("new_booking", notifVars, body.doctorId, ["in_app"]),
+  ]).catch((err) => {
+    logger.warn("Booking notification dispatch failed", { context: "booking/route", error: err });
+  });
+
+  return apiSuccess({
+    status: "created",
+    message: "Appointment booked successfully",
+    appointment: {
+      id: appointment.id,
+      doctor: doctor?.name,
+      service: service?.name,
       date: body.date,
       time: body.time,
-      manage_url: manageUrl,
-    };
-
-    // booking_confirmation → patient, new_booking → staff
-    Promise.allSettled([
-      dispatchNotification("booking_confirmation", notifVars, patientId, ["in_app", "email", "whatsapp"]),
-      dispatchNotification("new_booking", notifVars, body.doctorId, ["in_app"]),
-    ]).catch((err) => {
-      logger.warn("Booking notification dispatch failed", { context: "booking/route", error: err });
-    });
-
-    return apiSuccess({
-      status: "created",
-      message: "Appointment booked successfully",
-      appointment: {
-        id: appointment.id,
-        doctor: doctor?.name,
-        service: service?.name,
-        date: body.date,
-        time: body.time,
-        duration: service?.duration,
-        price: service?.price,
-        currency: service?.currency,
-        isFirstVisit: body.isFirstVisit,
-        hasInsurance: body.hasInsurance,
-      },
-    });
+      duration: service?.duration,
+      price: service?.price,
+      currency: service?.currency,
+      isFirstVisit: body.isFirstVisit,
+      hasInsurance: body.hasInsurance,
+    },
+  });
 });
 
 /**
@@ -486,7 +512,7 @@ export async function GET(request: NextRequest) {
       { "Cache-Control": "public, max-age=60" },
     );
   } catch (err) {
-    logger.warn("Operation failed", { context: "booking/route", error: err });
+    logger.warn("Failed to process booking request", { context: "booking/route", error: err });
     return apiInternalError("Failed to fetch available slots");
   }
 }

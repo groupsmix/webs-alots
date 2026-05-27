@@ -27,7 +27,12 @@ export async function GET(request: NextRequest) {
   const cors = getCorsHeaders(request);
   const auth = await authenticateApiKey(request);
   if (!auth) {
-    return apiError("Unauthorized. Provide a valid API key as Bearer token.", 401, "UNAUTHORIZED", cors);
+    return apiError(
+      "Unauthorized. Provide a valid API key as Bearer token.",
+      401,
+      "UNAUTHORIZED",
+      cors,
+    );
   }
 
   logTenantContext(auth.clinicId, "v1/patients:GET");
@@ -58,14 +63,16 @@ export async function GET(request: NextRequest) {
     if (sanitized.length > 0) {
       // B-01: Use `name` (and `name_ar` for Arabic search) instead of the
       // non-existent `full_name` column which caused a 500 on every request.
-      query = query.or(`name.ilike.%${sanitized}%,name_ar.ilike.%${sanitized}%,email.ilike.%${sanitized}%,phone.ilike.%${sanitized}%`);
+      query = query.or(
+        `name.ilike.%${sanitized}%,name_ar.ilike.%${sanitized}%,email.ilike.%${sanitized}%,phone.ilike.%${sanitized}%`,
+      );
     }
   }
 
   const { data, count, error } = await query;
 
   if (error) {
-    logger.warn("Operation failed", { context: "v1/patients", error });
+    logger.warn("Failed to list patients", { context: "v1/patients", error });
     return apiInternalError("Failed to fetch patients");
   }
 
@@ -76,36 +83,42 @@ export const POST = withValidation(v1PatientCreateSchema, async (body, request: 
   const cors = getCorsHeaders(request);
   const auth = await authenticateApiKey(request);
   if (!auth) {
-    return apiError("Unauthorized. Provide a valid API key as Bearer token.", 401, "UNAUTHORIZED", cors);
+    return apiError(
+      "Unauthorized. Provide a valid API key as Bearer token.",
+      401,
+      "UNAUTHORIZED",
+      cors,
+    );
   }
 
-    logTenantContext(auth.clinicId, "v1/patients:POST");
-    const supabase = await createTenantClient(auth.clinicId);
-    // The users table has columns (full_name, date_of_birth, gender,
-    // insurance_type, address) that are not yet in the generated
-    // Supabase types.  Use a Record<string, unknown> insert so the
-    // payload is still checked at the JS level without a blanket `any`.
-    const insertPayload: Record<string, unknown> = {
-      clinic_id: auth.clinicId,
-      role: "patient",
-      // B-01: Map the API field `full_name` to the DB column `name`.
-      name: body.full_name,
-      email: body.email || null,
-      phone: body.phone || null,
-      date_of_birth: body.date_of_birth || null,
-      gender: body.gender || null,
-      insurance_type: body.insurance_type || null,
-      address: body.address || null,
-    };
-    const { data, error } = await supabase.from("users")
-      .insert(insertPayload as TablesInsert<"users">)
-      .select()
-      .single();
+  logTenantContext(auth.clinicId, "v1/patients:POST");
+  const supabase = await createTenantClient(auth.clinicId);
+  // The users table has columns (full_name, date_of_birth, gender,
+  // insurance_type, address) that are not yet in the generated
+  // Supabase types.  Use a Record<string, unknown> insert so the
+  // payload is still checked at the JS level without a blanket `any`.
+  const insertPayload: Record<string, unknown> = {
+    clinic_id: auth.clinicId,
+    role: "patient",
+    // B-01: Map the API field `full_name` to the DB column `name`.
+    name: body.full_name,
+    email: body.email || null,
+    phone: body.phone || null,
+    date_of_birth: body.date_of_birth || null,
+    gender: body.gender || null,
+    insurance_type: body.insurance_type || null,
+    address: body.address || null,
+  };
+  const { data, error } = await supabase
+    .from("users")
+    .insert(insertPayload as TablesInsert<"users">)
+    .select()
+    .single();
 
-    if (error) {
-      logger.warn("Operation failed", { context: "v1/patients", error });
-      return apiInternalError("Failed to create patient");
-    }
+  if (error) {
+    logger.warn("Failed to create patient", { context: "v1/patients", error });
+    return apiInternalError("Failed to create patient");
+  }
 
-    return apiSuccess({ data }, 201, cors);
+  return apiSuccess({ data }, 201, cors);
 });

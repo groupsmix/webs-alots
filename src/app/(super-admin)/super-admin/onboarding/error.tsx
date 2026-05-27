@@ -15,7 +15,7 @@ export default function PageError({
   reset: () => void;
 }) {
   useEffect(() => {
-    logger.warn("Operation failed", { context: "super-admin-page-error", error });
+    logger.warn("Onboarding page render error", { context: "super-admin-page-error", error });
   }, [error]);
 
   return (
@@ -27,13 +27,11 @@ export default function PageError({
           </div>
           <h2 className="mb-2 text-lg font-semibold">Failed to load page</h2>
           <p className="mb-6 text-sm text-muted-foreground">
-            Something went wrong while loading this page. This could be a
-            temporary connection issue.
+            Something went wrong while loading this page. This could be a temporary connection
+            issue.
           </p>
           {error.digest && (
-            <p className="mb-4 text-xs text-muted-foreground">
-              Error ID: {error.digest}
-            </p>
+            <p className="mb-4 text-xs text-muted-foreground">Error ID: {error.digest}</p>
           )}
           <div className="flex items-center justify-center gap-3">
             <Button onClick={reset} size="lg">

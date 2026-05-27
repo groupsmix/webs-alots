@@ -22,7 +22,7 @@ export default function GlobalError({
 
   useEffect(() => {
     Sentry.captureException(error);
-    logger.warn("Operation failed", { context: "global-error", error });
+    logger.warn("Unhandled application error", { context: "global-error", error });
   }, [error]);
 
   return (
@@ -45,12 +45,8 @@ export default function GlobalError({
               />
             </svg>
           </div>
-          <h1 className="text-xl font-semibold mb-2">
-            {t(locale, "error.title")}
-          </h1>
-          <p className="text-sm text-gray-500 mb-6">
-            {t(locale, "error.criticalDescription")}
-          </p>
+          <h1 className="text-xl font-semibold mb-2">{t(locale, "error.title")}</h1>
+          <p className="text-sm text-gray-500 mb-6">{t(locale, "error.criticalDescription")}</p>
           {error.digest && (
             <p className="text-xs text-gray-400 mb-4">
               {t(locale, "error.id")}: {error.digest}

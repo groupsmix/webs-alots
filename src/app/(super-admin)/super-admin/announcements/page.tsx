@@ -1,8 +1,17 @@
 "use client";
 
 import {
-  Plus, Edit, Trash2, Megaphone, AlertTriangle, Info, AlertCircle,
-  Calendar, Users, Search, Eye,
+  Plus,
+  Edit,
+  Trash2,
+  Megaphone,
+  AlertTriangle,
+  Info,
+  AlertCircle,
+  Calendar,
+  Users,
+  Search,
+  Eye,
 } from "lucide-react";
 import { Loader2 } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
@@ -11,16 +20,18 @@ import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/toast";
 import { logger } from "@/lib/logger";
-import {
-  fetchAnnouncements,
-  type Announcement,
-} from "@/lib/super-admin-actions";
+import { fetchAnnouncements, type Announcement } from "@/lib/super-admin-actions";
 
 type TypeFilter = "all" | "info" | "warning" | "critical";
 
@@ -34,7 +45,7 @@ export default function AnnouncementsPage() {
       const data = await fetchAnnouncements();
       setList(data);
     } catch (err) {
-      logger.warn("Operation failed", { context: "page", error: err });
+      logger.warn("Failed to load announcements page", { context: "page", error: err });
     } finally {
       setLoading(false);
     }
@@ -43,7 +54,9 @@ export default function AnnouncementsPage() {
   useEffect(() => {
     const controller = new AbortController();
     loadAnnouncements();
-    return () => { controller.abort(); };
+    return () => {
+      controller.abort();
+    };
   }, [loadAnnouncements]);
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState<TypeFilter>("all");
@@ -61,16 +74,21 @@ export default function AnnouncementsPage() {
 
   const filtered = list.filter((a) => {
     const q = search.toLowerCase();
-    const matchSearch = !q || a.title.toLowerCase().includes(q) || a.message.toLowerCase().includes(q);
+    const matchSearch =
+      !q || a.title.toLowerCase().includes(q) || a.message.toLowerCase().includes(q);
     return matchSearch && (typeFilter === "all" || a.type === typeFilter);
   });
 
   const typeIcon = (type: string) => {
     switch (type) {
-      case "info": return <Info className="h-4 w-4 text-blue-600" />;
-      case "warning": return <AlertTriangle className="h-4 w-4 text-yellow-600" />;
-      case "critical": return <AlertCircle className="h-4 w-4 text-red-600" />;
-      default: return <Info className="h-4 w-4" />;
+      case "info":
+        return <Info className="h-4 w-4 text-blue-600" />;
+      case "warning":
+        return <AlertTriangle className="h-4 w-4 text-yellow-600" />;
+      case "critical":
+        return <AlertCircle className="h-4 w-4 text-red-600" />;
+      default:
+        return <Info className="h-4 w-4" />;
     }
   };
 
@@ -105,9 +123,17 @@ export default function AnnouncementsPage() {
       setList((prev) =>
         prev.map((a) =>
           a.id === editItem.id
-            ? { ...a, title: formTitle, message: formMessage, type: formType, target: formTarget, targetLabel: targetLabels[formTarget] || formTarget, expiresAt: formExpires || undefined }
-            : a
-        )
+            ? {
+                ...a,
+                title: formTitle,
+                message: formMessage,
+                type: formType,
+                target: formTarget,
+                targetLabel: targetLabels[formTarget] || formTarget,
+                expiresAt: formExpires || undefined,
+              }
+            : a,
+        ),
       );
     } else {
       const newItem: Announcement = {
@@ -138,7 +164,7 @@ export default function AnnouncementsPage() {
   }
 
   function toggleActive(item: Announcement) {
-    setList((prev) => prev.map((a) => a.id === item.id ? { ...a, active: !a.active } : a));
+    setList((prev) => prev.map((a) => (a.id === item.id ? { ...a, active: !a.active } : a)));
     addToast(item.active ? "Announcement deactivated" : "Announcement activated", "success");
   }
 
@@ -152,14 +178,18 @@ export default function AnnouncementsPage() {
 
   return (
     <div>
-      <Breadcrumb items={[
-        { label: "Super Admin", href: "/super-admin/dashboard" },
-        { label: "Announcements" },
-      ]} />
+      <Breadcrumb
+        items={[
+          { label: "Super Admin", href: "/super-admin/dashboard" },
+          { label: "Announcements" },
+        ]}
+      />
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold">System Announcements</h1>
-          <p className="text-sm text-muted-foreground mt-1">Manage announcements visible to clinic owners</p>
+          <p className="text-sm text-muted-foreground mt-1">
+            Manage announcements visible to clinic owners
+          </p>
         </div>
         <Button onClick={openCreate}>
           <Plus className="h-4 w-4 mr-1" />
@@ -169,21 +199,58 @@ export default function AnnouncementsPage() {
 
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-        <Card><CardContent className="p-4"><p className="text-xs text-muted-foreground mb-1">Total</p><p className="text-2xl font-bold">{list.length}</p></CardContent></Card>
-        <Card><CardContent className="p-4"><p className="text-xs text-muted-foreground mb-1">Active</p><p className="text-2xl font-bold text-green-600">{list.filter((a) => a.active).length}</p></CardContent></Card>
-        <Card><CardContent className="p-4"><p className="text-xs text-muted-foreground mb-1">Critical</p><p className="text-2xl font-bold text-red-600">{list.filter((a) => a.type === "critical").length}</p></CardContent></Card>
-        <Card><CardContent className="p-4"><p className="text-xs text-muted-foreground mb-1">Expired</p><p className="text-2xl font-bold text-gray-400">{list.filter((a) => a.expiresAt && new Date(a.expiresAt) < new Date()).length}</p></CardContent></Card>
+        <Card>
+          <CardContent className="p-4">
+            <p className="text-xs text-muted-foreground mb-1">Total</p>
+            <p className="text-2xl font-bold">{list.length}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <p className="text-xs text-muted-foreground mb-1">Active</p>
+            <p className="text-2xl font-bold text-green-600">
+              {list.filter((a) => a.active).length}
+            </p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <p className="text-xs text-muted-foreground mb-1">Critical</p>
+            <p className="text-2xl font-bold text-red-600">
+              {list.filter((a) => a.type === "critical").length}
+            </p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <p className="text-xs text-muted-foreground mb-1">Expired</p>
+            <p className="text-2xl font-bold text-gray-400">
+              {list.filter((a) => a.expiresAt && new Date(a.expiresAt) < new Date()).length}
+            </p>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Filters */}
       <div className="flex flex-col sm:flex-row gap-3 mb-4">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input placeholder="Search announcements..." className="pl-10" value={search} onChange={(e) => setSearch(e.target.value)} />
+          <Input
+            placeholder="Search announcements..."
+            className="pl-10"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
         </div>
         <div className="flex items-center gap-1">
           {(["all", "info", "warning", "critical"] as TypeFilter[]).map((t) => (
-            <Button key={t} variant={typeFilter === t ? "default" : "outline"} size="sm" onClick={() => setTypeFilter(t)} className="capitalize text-xs">
+            <Button
+              key={t}
+              variant={typeFilter === t ? "default" : "outline"}
+              size="sm"
+              onClick={() => setTypeFilter(t)}
+              className="capitalize text-xs"
+            >
               {t === "all" ? "All Types" : t}
             </Button>
           ))}
@@ -201,24 +268,75 @@ export default function AnnouncementsPage() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
                       <h3 className="font-semibold text-sm truncate">{item.title}</h3>
-                      <Badge variant={item.type === "critical" ? "destructive" : item.type === "warning" ? "warning" : "secondary"} className="text-[10px]">{item.type}</Badge>
-                      {!item.active && <Badge variant="outline" className="text-[10px]">Inactive</Badge>}
+                      <Badge
+                        variant={
+                          item.type === "critical"
+                            ? "destructive"
+                            : item.type === "warning"
+                              ? "warning"
+                              : "secondary"
+                        }
+                        className="text-[10px]"
+                      >
+                        {item.type}
+                      </Badge>
+                      {!item.active && (
+                        <Badge variant="outline" className="text-[10px]">
+                          Inactive
+                        </Badge>
+                      )}
                     </div>
                     <p className="text-sm text-muted-foreground line-clamp-2">{item.message}</p>
                     <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
-                      <span className="flex items-center gap-1"><Users className="h-3 w-3" />{item.targetLabel}</span>
-                      <span className="flex items-center gap-1"><Calendar className="h-3 w-3" />{item.publishedAt}</span>
+                      <span className="flex items-center gap-1">
+                        <Users className="h-3 w-3" />
+                        {item.targetLabel}
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <Calendar className="h-3 w-3" />
+                        {item.publishedAt}
+                      </span>
                       {item.expiresAt && <span>Expires: {item.expiresAt}</span>}
                     </div>
                   </div>
                 </div>
                 <div className="flex items-center gap-1 shrink-0">
-                  <Button variant="ghost" size="sm" title="Preview" onClick={() => { setPreviewItem(item); setPreviewOpen(true); }}><Eye className="h-3.5 w-3.5" /></Button>
-                  <Button variant="ghost" size="sm" title="Edit" onClick={() => openEdit(item)}><Edit className="h-3.5 w-3.5" /></Button>
-                  <Button variant="ghost" size="sm" title={item.active ? "Deactivate" : "Activate"} onClick={() => toggleActive(item)}>
-                    <Megaphone className={`h-3.5 w-3.5 ${item.active ? "text-green-600" : "text-gray-400"}`} />
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    title="Preview"
+                    onClick={() => {
+                      setPreviewItem(item);
+                      setPreviewOpen(true);
+                    }}
+                  >
+                    <Eye className="h-3.5 w-3.5" />
                   </Button>
-                  <Button variant="ghost" size="sm" title="Delete" className="text-red-500" onClick={() => { setDeleteItem(item); setDeleteOpen(true); }}><Trash2 className="h-3.5 w-3.5" /></Button>
+                  <Button variant="ghost" size="sm" title="Edit" onClick={() => openEdit(item)}>
+                    <Edit className="h-3.5 w-3.5" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    title={item.active ? "Deactivate" : "Activate"}
+                    onClick={() => toggleActive(item)}
+                  >
+                    <Megaphone
+                      className={`h-3.5 w-3.5 ${item.active ? "text-green-600" : "text-gray-400"}`}
+                    />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    title="Delete"
+                    className="text-red-500"
+                    onClick={() => {
+                      setDeleteItem(item);
+                      setDeleteOpen(true);
+                    }}
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </Button>
                 </div>
               </div>
             </CardContent>
@@ -237,21 +355,38 @@ export default function AnnouncementsPage() {
         <DialogContent onClose={() => setEditOpen(false)} className="max-w-lg">
           <DialogHeader>
             <DialogTitle>{editItem ? "Edit Announcement" : "New Announcement"}</DialogTitle>
-            <DialogDescription>{editItem ? "Update the announcement details." : "Create a new system announcement for clinic owners."}</DialogDescription>
+            <DialogDescription>
+              {editItem
+                ? "Update the announcement details."
+                : "Create a new system announcement for clinic owners."}
+            </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="space-y-2">
               <Label>Title</Label>
-              <Input placeholder="Announcement title" value={formTitle} onChange={(e) => setFormTitle(e.target.value)} />
+              <Input
+                placeholder="Announcement title"
+                value={formTitle}
+                onChange={(e) => setFormTitle(e.target.value)}
+              />
             </div>
             <div className="space-y-2">
               <Label>Message</Label>
-              <textarea className="flex min-h-[100px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring" placeholder="Write the announcement message..." value={formMessage} onChange={(e) => setFormMessage(e.target.value)} />
+              <textarea
+                className="flex min-h-[100px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                placeholder="Write the announcement message..."
+                value={formMessage}
+                onChange={(e) => setFormMessage(e.target.value)}
+              />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Type</Label>
-                <select className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm" value={formType} onChange={(e) => setFormType(e.target.value as "info" | "warning" | "critical")}>
+                <select
+                  className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
+                  value={formType}
+                  onChange={(e) => setFormType(e.target.value as "info" | "warning" | "critical")}
+                >
                   <option value="info">Info</option>
                   <option value="warning">Warning</option>
                   <option value="critical">Critical</option>
@@ -259,7 +394,11 @@ export default function AnnouncementsPage() {
               </div>
               <div className="space-y-2">
                 <Label>Target Audience</Label>
-                <select className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm" value={formTarget} onChange={(e) => setFormTarget(e.target.value)}>
+                <select
+                  className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
+                  value={formTarget}
+                  onChange={(e) => setFormTarget(e.target.value)}
+                >
                   <option value="all">All Clinics</option>
                   <option value="basic">Basic Plan</option>
                   <option value="standard">Standard Plan</option>
@@ -269,11 +408,17 @@ export default function AnnouncementsPage() {
             </div>
             <div className="space-y-2">
               <Label>Expiry Date (optional)</Label>
-              <Input type="date" value={formExpires} onChange={(e) => setFormExpires(e.target.value)} />
+              <Input
+                type="date"
+                value={formExpires}
+                onChange={(e) => setFormExpires(e.target.value)}
+              />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setEditOpen(false)}>Cancel</Button>
+            <Button variant="outline" onClick={() => setEditOpen(false)}>
+              Cancel
+            </Button>
             <Button onClick={handleSave} disabled={!formTitle || !formMessage}>
               {editItem ? "Update" : "Publish"}
             </Button>
@@ -286,10 +431,14 @@ export default function AnnouncementsPage() {
         {previewItem && (
           <DialogContent onClose={() => setPreviewOpen(false)} className="max-w-lg">
             <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">{typeIcon(previewItem.type)} {previewItem.title}</DialogTitle>
+              <DialogTitle className="flex items-center gap-2">
+                {typeIcon(previewItem.type)} {previewItem.title}
+              </DialogTitle>
             </DialogHeader>
             <div className="space-y-3 py-4">
-              <div className={`rounded-lg p-4 ${previewItem.type === "critical" ? "bg-red-50 border border-red-200" : previewItem.type === "warning" ? "bg-yellow-50 border border-yellow-200" : "bg-blue-50 border border-blue-200"}`}>
+              <div
+                className={`rounded-lg p-4 ${previewItem.type === "critical" ? "bg-red-50 border border-red-200" : previewItem.type === "warning" ? "bg-yellow-50 border border-yellow-200" : "bg-blue-50 border border-blue-200"}`}
+              >
                 <p className="text-sm">{previewItem.message}</p>
               </div>
               <div className="flex items-center gap-4 text-xs text-muted-foreground">
@@ -299,7 +448,9 @@ export default function AnnouncementsPage() {
               </div>
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setPreviewOpen(false)}>Close</Button>
+              <Button variant="outline" onClick={() => setPreviewOpen(false)}>
+                Close
+              </Button>
             </DialogFooter>
           </DialogContent>
         )}
@@ -311,15 +462,24 @@ export default function AnnouncementsPage() {
           <DialogContent onClose={() => setDeleteOpen(false)}>
             <DialogHeader>
               <DialogTitle>Delete Announcement</DialogTitle>
-              <DialogDescription>Are you sure you want to delete this announcement? This action cannot be undone.</DialogDescription>
+              <DialogDescription>
+                Are you sure you want to delete this announcement? This action cannot be undone.
+              </DialogDescription>
             </DialogHeader>
             <div className="rounded-lg border p-4 bg-muted/50">
               <p className="text-sm font-medium">{deleteItem.title}</p>
-              <p className="text-xs text-muted-foreground mt-1">{deleteItem.type} &middot; {deleteItem.targetLabel}</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                {deleteItem.type} &middot; {deleteItem.targetLabel}
+              </p>
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setDeleteOpen(false)}>Cancel</Button>
-              <Button variant="destructive" onClick={handleDelete}><Trash2 className="h-4 w-4 mr-1" />Delete</Button>
+              <Button variant="outline" onClick={() => setDeleteOpen(false)}>
+                Cancel
+              </Button>
+              <Button variant="destructive" onClick={handleDelete}>
+                <Trash2 className="h-4 w-4 mr-1" />
+                Delete
+              </Button>
             </DialogFooter>
           </DialogContent>
         )}
