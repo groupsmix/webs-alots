@@ -6,7 +6,7 @@ import { ensureLookups, fetchRows, _activeUserMap, type TableName } from "./_cor
 // Pharmacy: Daily Sales
 // ─────────────────────────────────────────────
 
-export interface DailySaleItemView {
+interface DailySaleItemView {
   productName: string;
   quantity: number;
   price: number;

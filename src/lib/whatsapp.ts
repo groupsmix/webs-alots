@@ -20,7 +20,7 @@ import { toDarijaNotificationTemplates } from "./whatsapp-templates-darija";
  * - `ar`     – Arabic (same as default for now, can be extended)
  * - `darija` – Moroccan Arabic (uses Darija-specific templates)
  */
-export type PatientMessageLocale = "fr" | "ar" | "darija";
+type PatientMessageLocale = "fr" | "ar" | "darija";
 
 // ---- Types ----
 
@@ -66,7 +66,7 @@ interface WhatsAppSendResult {
   provider: WhatsAppProvider;
 }
 
-export type WhatsAppMessageStatus = "sent" | "delivered" | "read" | "failed";
+type WhatsAppMessageStatus = "sent" | "delivered" | "read" | "failed";
 
 export interface WhatsAppStatusUpdate {
   messageId: string;

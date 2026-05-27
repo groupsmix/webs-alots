@@ -25,7 +25,7 @@ import { logger } from "@/lib/logger";
 
 // ── Types ────────────────────────────────────────────────────────────
 
-export interface CloudflareConfig {
+interface CloudflareConfig {
   zoneId: string;
   zoneName: string;
   auth:

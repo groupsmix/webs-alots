@@ -11,7 +11,7 @@ import type { MobileTabItem } from "@/components/layouts/mobile-tab-bar";
 import { SignOutButton } from "@/components/sign-out-button";
 import type { ClinicFeatureKey } from "@/lib/features";
 
-export interface DashboardNavItem {
+interface DashboardNavItem {
   href: string;
   label: string;
   icon: LucideIcon;

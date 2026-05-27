@@ -83,7 +83,7 @@ function getPlausibleHost(): string | null {
   }
 }
 
-export interface BuildCspOptions {
+interface BuildCspOptions {
   /**
    * When true, indicates the policy is intended for the Report-Only header.
    * The directives are identical either way; this flag is used by callers

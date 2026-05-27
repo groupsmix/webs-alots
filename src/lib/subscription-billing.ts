@@ -14,7 +14,7 @@ import { logTenantContext } from "@/lib/tenant-context";
 // ---- Types ----
 
 export type SubscriptionPlan = "free" | "starter" | "professional" | "enterprise";
-export type SubscriptionStatus = "active" | "past_due" | "canceled" | "trialing" | "paused";
+type SubscriptionStatus = "active" | "past_due" | "canceled" | "trialing" | "paused";
 export type BillingInterval = "monthly" | "yearly";
 
 export interface PlanConfig {
@@ -52,7 +52,7 @@ export interface ClinicSubscription {
   nextPaymentAmount?: number;
 }
 
-export interface BillingEvent {
+interface BillingEvent {
   id: string;
   clinicId: string;
   type: "payment_succeeded" | "payment_failed" | "subscription_created" | "subscription_canceled" | "subscription_renewed" | "trial_ended" | "plan_changed";

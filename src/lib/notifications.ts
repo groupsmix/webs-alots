@@ -33,7 +33,7 @@ export type NotificationChannel = "whatsapp" | "in_app" | "email" | "sms";
 
 export type NotificationPriority = "low" | "normal" | "high" | "urgent";
 
-export type NotificationStatus = "pending" | "sent" | "delivered" | "failed" | "read";
+type NotificationStatus = "pending" | "sent" | "delivered" | "failed" | "read";
 
 // ---- Template Variable Types ----
 

@@ -167,7 +167,7 @@ export async function createAppointment(data: {
 // Dental: Treatment Types (from services with category)
 // ─────────────────────────────────────────────
 
-export interface DentalTreatmentTypeView {
+interface DentalTreatmentTypeView {
   id: string;
   name: string;
   category: string;

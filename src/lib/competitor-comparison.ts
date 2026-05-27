@@ -5,7 +5,7 @@
  * in the Moroccan healthcare SaaS market.
  */
 
-export type CompetitorId = "oltigo" | "iyada" | "smartdoc" | "cabidoc" | "pratisoft";
+type CompetitorId = "oltigo" | "iyada" | "smartdoc" | "cabidoc" | "pratisoft";
 
 export interface CompetitorInfo {
   id: CompetitorId;
