@@ -22,23 +22,43 @@ const MUTATION_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
  * Adding a new exempt route without a corresponding signature/token check
  * creates an unauthenticated, CSRF-unprotected mutation endpoint.
  */
-const CSRF_EXEMPT_PREFIXES = [
-  "/api/webhooks",          // WhatsApp: X-Hub-Signature-256 HMAC
-  "/api/payments/webhook",  // Stripe: stripe-signature HMAC
+/**
+ * R-12: CSRF-exempt routes listed as exact paths, not prefixes.
+ *
+ * Prefix-based exemption is structurally risky — if someone adds
+ * `/api/webhooks/foo/route.ts` without HMAC verification, it inherits
+ * CSRF-exemption automatically. Exact matching forces each new route
+ * to be explicitly exempted and reviewed.
+ *
+ * Cron routes use a prefix because they share the CRON_SECRET Bearer
+ * token auth mechanism uniformly (CSRF-01), and new cron routes are
+ * forced through the `verifyCronSecret` helper by convention.
+ */
+const CSRF_EXEMPT_EXACT = new Set([
+  "/api/webhooks",              // WhatsApp: X-Hub-Signature-256 HMAC
+  "/api/payments/webhook",      // Stripe: stripe-signature HMAC
   "/api/payments/cmi/callback", // CMI: HMAC hash field verification
-  // CSRF-01: All cron endpoints are authenticated via CRON_SECRET bearer token
-  // and may be triggered by external schedulers (Cloudflare Cron Triggers).
-  "/api/cron/",             // Cron: CRON_SECRET Bearer token
   // CSP-RPT: Browsers send Content-Security-Policy violation reports as POST
   // requests with a `report-uri` or `report-to` directive. The Origin header
   // may not match the site URL (some browsers use `null` or omit it entirely),
   // so the endpoint must be CSRF-exempt. The payload is a fixed JSON schema
   // that the handler validates — no state mutation occurs.
   "/api/csp-report",
-];
+]);
+
+/**
+ * CSRF-01: All cron endpoints are authenticated via CRON_SECRET bearer token
+ * and may be triggered by external schedulers (Cloudflare Cron Triggers).
+ * Kept as a prefix because the auth mechanism is uniform.
+ */
+const CSRF_EXEMPT_CRON_PREFIX = "/api/cron/";
 
 function isCsrfExempt(pathname: string): boolean {
-  return CSRF_EXEMPT_PREFIXES.some((prefix) => pathname.startsWith(prefix));
+  // Normalize trailing slash (trailingSlash: true in next.config.ts)
+  const normalized = pathname.endsWith("/") && pathname.length > 1
+    ? pathname.slice(0, -1)
+    : pathname;
+  return CSRF_EXEMPT_EXACT.has(normalized) || pathname.startsWith(CSRF_EXEMPT_CRON_PREFIX);
 }
 
 /**

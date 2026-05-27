@@ -1,0 +1,36 @@
+rules:
+  # R-10: Flag supabase .from() queries that do not chain .eq("clinic_id", ...)
+  #
+  # Every tenant-scoped database query MUST include .eq("clinic_id", clinicId)
+  # to enforce application-level tenant isolation (AGENTS.md rule #1). RLS is
+  # defense-in-depth — application-level scoping is required even with RLS.
+  #
+  # False positives:
+  #   - Queries in cron jobs that intentionally iterate over all clinics
+  #   - Admin client queries (createAdminClient) used for cross-tenant ops
+  #   - Auth/registration flows before a clinic_id exists
+  #
+  # These should use a `// semgrep-ignore: tenant-scoping` comment.
+  - id: tenant-scoping
+    patterns:
+      - pattern: |
+          $CLIENT.from($TABLE).$METHOD(...)
+      - pattern-not: |
+          $CLIENT.from($TABLE).$METHOD(...).eq("clinic_id", ...)
+      - pattern-not: |
+          $CLIENT.from($TABLE).$METHOD(...).eq('clinic_id', ...)
+      - metavariable-regex:
+          metavariable: $METHOD
+          regex: ^(select|insert|update|delete|upsert)$
+    message: >
+      Supabase query on `$TABLE` missing `.eq("clinic_id", ...)` — every
+      tenant-scoped query must filter by clinic_id for application-level
+      isolation (see AGENTS.md).
+    severity: WARNING
+    languages: [typescript, javascript]
+    metadata:
+      category: security
+      technology:
+        - supabase
+      references:
+        - https://github.com/groupsmix/webs-alots/blob/main/AGENTS.md
