@@ -48,8 +48,11 @@ function sanitizeUserInput(text: string): string {
       // Normalize Unicode to NFKC to defeat homoglyph / compatibility-char
       // bypasses (e.g. fullwidth "ｓｙｓｔｅｍ" → "system")
       .normalize("NFKC")
+      // A101-02: Strip bidi overrides (RLO/LRO/RLE/LRE/PDF/RLI/LRI/FSI/PDI)
+      // that can reorder visible text to smuggle injections past visual review
+      .replace(/[\u202A-\u202E\u2066-\u2069\u200E\u200F]/g, "")
       // Strip zero-width / invisible characters often used to evade filters
-      .replace(/[\u200B-\u200F\u2028-\u202F\uFEFF\u00AD]/g, "")
+      .replace(/[\u200B-\u200D\u2028-\u202F\uFEFF\u00AD]/g, "")
       // Strip attempts to impersonate system/assistant roles
       // (covers whitespace/zero-width tricks between characters)
       .replace(/^\s*(s\s*y\s*s\s*t\s*e\s*m|a\s*s\s*s\s*i\s*s\s*t\s*a\s*n\s*t)\s*:/gi, "")
@@ -108,11 +111,18 @@ function validateAIOutput(text: string): string | null {
   // Redact any Moroccan phone numbers that slipped past pseudonymisation
   const cleaned = text.replace(/(?:\+212|0)([ .\-]?\d){9}/g, "[REDACTED_PHONE]");
   // Redact anything that looks like a CIN (Moroccan national ID)
-  return cleaned.replace(/\b[A-Z]{1,2}\d{5,7}\b/g, "[REDACTED_ID]");
+  const redacted = cleaned.replace(/\b[A-Z]{1,2}\d{5,7}\b/g, "[REDACTED_ID]");
+  // A72-03/A108-03: Prefix AI output for EU AI Act transparency
+  return `[AI‑Generated] ${redacted}`;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 export const POST = withValidation(chatRequestSchema, async (body, request: NextRequest) => {
+    // A107-03: Global AI kill switch
+    if (process.env.AI_DISABLED === "true") {
+      return apiError("AI features are temporarily disabled", 503, "AI_DISABLED");
+    }
+
     // Resolve clinic ID strictly from tenant context (middleware headers)
     const tenant = await requireTenant();
     const clinicId = tenant.clinicId;

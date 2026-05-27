@@ -328,11 +328,9 @@ export const POST = withValidation(bookingRequestSchema, async (body, request: N
     const slotEnd = `${body.date}T${endTime}:00`;
 
     // ── F-A96-01 / DI-HIGH-02: Atomic booking via advisory-lock RPC ──
-    // The previous insert-then-count-then-delete pattern was subject to a
-    // TOCTOU race under concurrent requests (CVE-2026-XXXXX). The
-    // booking_atomic_insert RPC wraps slot-count check + insert inside a
-    // single transaction with a pg_advisory_xact_lock, guaranteeing that
-    // maxPerSlot can never be exceeded.
+    // A89-01: Resolved by booking_atomic_insert RPC — the slot-count
+    // check + insert runs inside a single transaction with
+    // pg_advisory_xact_lock, guaranteeing maxPerSlot is never exceeded.
     const maxPerSlot = tenantConfig.booking.maxPerSlot;
     const { data: appointmentId, error: apptError } = await supabase
       .rpc("booking_atomic_insert", {

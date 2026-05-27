@@ -57,39 +57,77 @@ async function handler(request: NextRequest) {
     const nowISO = now.toISOString();
     const twentyFourHoursISO = twentyFourHoursFromNow.toISOString();
 
-    // Fetch upcoming appointments that need reminders.
-    // Select both appointment_date/start_time and slot_start/slot_end
-    // since older records may only have slot_start/slot_end populated.
-    const { data: appointments, error } = await supabase
-      .from("appointments")
-      .select(`
-        id,
-        clinic_id,
-        patient_id,
-        doctor_id,
-        appointment_date,
-        start_time,
-        slot_start,
-        slot_end,
-        status,
-        notes,
-        patients:patient_id (id, name, phone),
-        doctors:doctor_id (id, name),
-        services:service_id (name),
-        clinics:clinic_id (name)
-      `)
-      .in("status", [APPOINTMENT_STATUS.CONFIRMED, APPOINTMENT_STATUS.PENDING])
-      .or(
-        `slot_start.gte.${nowISO},slot_start.lte.${twentyFourHoursISO}`,
-      )
-      .limit(500);
+    // WC-001/A73-01: Cursor-based pagination to stay within 50 ms CPU budget.
+    // Fetch in batches of PAGE_SIZE ordered by id; stop when a page returns
+    // fewer rows than requested.
+    const PAGE_SIZE = 200;
+    type AppointmentRow = {
+      id: string;
+      clinic_id: string;
+      patient_id: string;
+      doctor_id: string | null;
+      appointment_date: string | null;
+      start_time: string | null;
+      slot_start: string | null;
+      slot_end: string | null;
+      status: string;
+      notes: string | null;
+      patients: { id: string; name: string; phone: string | null } | null;
+      doctors: { id: string; name: string } | null;
+      services: { name: string } | null;
+      clinics: { name: string } | null;
+    };
+    const appointments: AppointmentRow[] = [];
+    let cursor: string | null = null;
+    let hasMore = true;
+    while (hasMore) {
+      let query = supabase
+        .from("appointments")
+        .select(`
+          id,
+          clinic_id,
+          patient_id,
+          doctor_id,
+          appointment_date,
+          start_time,
+          slot_start,
+          slot_end,
+          status,
+          notes,
+          patients:patient_id (id, name, phone),
+          doctors:doctor_id (id, name),
+          services:service_id (name),
+          clinics:clinic_id (name)
+        `)
+        .in("status", [APPOINTMENT_STATUS.CONFIRMED, APPOINTMENT_STATUS.PENDING])
+        .or(
+          `slot_start.gte.${nowISO},slot_start.lte.${twentyFourHoursISO}`,
+        )
+        .order("id", { ascending: true })
+        .limit(PAGE_SIZE);
 
-    if (error) {
+      if (cursor) {
+        query = query.gt("id", cursor);
+      }
+
+      const { data: page, error } = await query;
+
+      if (error) {
         logger.warn("Operation failed", { context: "cron/reminders", error });
         return apiInternalError("Failed to query appointments");
+      }
+
+      if (!page || page.length === 0) {
+        hasMore = false;
+        break;
+      }
+
+      appointments.push(...(page as unknown as AppointmentRow[]));
+      cursor = page[page.length - 1].id;
+      hasMore = page.length === PAGE_SIZE;
     }
 
-    if (!appointments || appointments.length === 0) {
+    if (appointments.length === 0) {
       return apiSuccess({ message: "No upcoming appointments", sent: 0 });
     }
 

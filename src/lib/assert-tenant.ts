@@ -69,3 +69,44 @@ export function assertTenantMatch(
     );
   }
 }
+
+/**
+ * A27-01: Apply the soft-delete filter to a Supabase query builder.
+ *
+ * Tables with a `deleted_at` column (currently only `clinics`) must
+ * always filter out soft-deleted rows unless explicitly querying
+ * deleted records (e.g. for admin recovery). Call this on every
+ * query builder that reads from a soft-delete table.
+ *
+ * @example
+ *   const q = supabase.from("clinics").select("*").eq("status", "active");
+ *   const { data } = await excludeSoftDeleted(q);
+ */
+export function excludeSoftDeleted<
+  Q extends { is: (column: string, value: null) => Q },
+>(query: Q): Q {
+  return query.is("deleted_at", null);
+}
+
+/**
+ * AZ-001 / IDOR-001: Enforce tenant scope on a database row after fetch.
+ *
+ * Use this as a post-query guard when you need to verify that a fetched
+ * row actually belongs to the current tenant. Throws if the row's
+ * `clinic_id` does not match the expected value.
+ *
+ * @returns The row unchanged (for chaining)
+ * @throws Error if row.clinic_id !== expectedClinicId
+ */
+export function enforceTenantScope<T extends { clinic_id: string }>(
+  row: T,
+  expectedClinicId: string,
+  entityType: string,
+): T {
+  if (row.clinic_id !== expectedClinicId) {
+    throw new Error(
+      `[TENANT SAFETY] ${entityType} row belongs to clinic "${row.clinic_id}" but current tenant is "${expectedClinicId}". IDOR blocked.`,
+    );
+  }
+  return row;
+}

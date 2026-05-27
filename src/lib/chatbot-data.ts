@@ -185,24 +185,30 @@ export function buildSystemPrompt(ctx: ChatbotClinicContext): string {
   if (clinic.city) contactParts.push(`Ville: ${clinic.city}`);
   if (clinic.domain) contactParts.push(`Site web: ${clinic.domain}`);
 
+  // A101-03: Wrap retrieved data in <context> tags to clearly separate
+  // untrusted clinic-supplied content from system instructions. This
+  // prevents indirect prompt injection via FAQ answers or service names
+  // from being interpreted as system-level directives by the LLM.
   return `Tu es l'assistant virtuel de "${clinic.name}", un(e) ${typeLabels[clinic.type] ?? clinic.type}.
 Tu aides les patients avec leurs questions sur les rendez-vous, services, horaires et informations du cabinet.
 
-=== INFORMATIONS DU CABINET ===
+<context source="clinic-data" trust="low">
+INFORMATIONS DU CABINET:
 Nom: ${clinic.name}
 Type: ${typeLabels[clinic.type] ?? clinic.type}
 ${contactParts.length > 0 ? contactParts.join("\n") : "Contact: non renseigné"}
 
-=== HORAIRES ===
+HORAIRES:
 ${hoursText}
 
-=== SERVICES & TARIFS ===
+SERVICES & TARIFS:
 ${servicesText}
 
-=== MÉDECINS / PRATICIENS ===
+MÉDECINS / PRATICIENS:
 ${doctorsText}
 
-${faqsText ? `=== FAQ PERSONNALISÉES ===\n${faqsText}` : ""}
+${faqsText ? `FAQ PERSONNALISÉES:\n${faqsText}` : ""}
+</context>
 
 === RÈGLES ===
 - Réponds dans la même langue que le patient (français, arabe, anglais, darija).

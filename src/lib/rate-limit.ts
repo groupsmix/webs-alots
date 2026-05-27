@@ -534,11 +534,12 @@ function createMemoryRateLimiter(options: RateLimiterOptions): RateLimiter {
 
       prune(now);
 
-      // Cap the number of tracked keys to prevent memory exhaustion
-      // from a distributed attack using many distinct IPs.
+      // A78-01: LRU eviction — when the store is full and the key is new,
+      // evict the oldest entry (first key in Map iteration order) instead
+      // of rejecting the request, so legitimate new IPs aren't penalized.
       if (store.size >= maxKeys && !store.has(key)) {
-        // Store full — rejecting new key to prevent memory exhaustion
-        return false;
+        const oldest = store.keys().next().value;
+        if (oldest !== undefined) store.delete(oldest);
       }
 
       const entry = store.get(key);

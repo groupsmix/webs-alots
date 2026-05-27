@@ -129,7 +129,7 @@ export async function POST(request: NextRequest) {
               clinic_id: clinicId,
               patient_id: patientId,
               appointment_id: appointmentId || null,
-                  amount: (session.amount_total || 0) / 100, // Convert from centimes
+                  amount: Math.round(session.amount_total || 0) / 100, // A29-01: integer-safe centimes→MAD
                   method: "online",
                   status: PAYMENT_STATUS.COMPLETED,
                   reference: session.id,

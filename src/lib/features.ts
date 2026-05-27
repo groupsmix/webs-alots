@@ -151,6 +151,9 @@ interface CloudflareKV {
  *   if (!(await isAIEnabled())) return apiError("AI features are disabled", 503);
  */
 export async function isAIEnabled(): Promise<boolean> {
+  // A107-03: Env-based AI kill switch — immediate, no KV dependency
+  if (process.env.AI_DISABLED === "true") return false;
+
   try {
     const kv = (globalThis as unknown as { FEATURE_FLAGS_KV?: CloudflareKV }).FEATURE_FLAGS_KV;
     if (!kv) {

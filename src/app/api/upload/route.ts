@@ -231,17 +231,17 @@ export const POST = withAuth(async (request, { profile }) => {
     return apiError("File content does not match declared type");
   }
 
-  // A37.7: AV scan integration point. When AV_SCAN_URL is configured,
-  // uploaded files are sent to an external ClamAV REST API (or similar)
-  // before persisting to R2. Without this, malicious files pass through.
-  // TODO: Integrate with a ClamAV REST service (e.g. clamav-rest or
-  // ClamScan Lambda). Until then, this logs a warning for auditors.
+  // A52-02: AV scan integration. When AV_SCAN_URL is configured,
+  // uploaded files are sent to an external ClamAV REST API before
+  // persisting to R2. Deploy a ClamAV REST service and set AV_SCAN_URL
+  // to enable (e.g. clamav-rest, ClamScan Lambda).
   if (process.env.AV_SCAN_URL) {
     try {
       const avResponse = await fetch(process.env.AV_SCAN_URL, {
         method: "POST",
         body: buffer,
         headers: { "Content-Type": file.type },
+        signal: AbortSignal.timeout(15_000),
       });
       if (avResponse.ok) {
         const avResult = await avResponse.json() as { clean?: boolean; malware?: string };
