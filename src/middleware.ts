@@ -33,10 +33,10 @@ import {
   secureRedirect,
   applyAllSecurityHeaders,
 } from "@/lib/middleware/security-headers";
+import { resolveSubdomainClinic, type CachedClinic } from "@/lib/middleware/subdomain-resolution";
 import { signProfileHeader, PROFILE_HEADER_NAMES } from "@/lib/profile-header-hmac";
 import { isSeedUserBlocked } from "@/lib/seed-guard";
 import { extractSubdomain } from "@/lib/subdomain";
-import { resolveSubdomainClinic, type CachedClinic } from "@/lib/middleware/subdomain-resolution";
 import { TENANT_HEADERS } from "@/lib/tenant";
 
 /**
