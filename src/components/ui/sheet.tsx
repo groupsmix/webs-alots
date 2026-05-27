@@ -72,4 +72,4 @@ function SheetDescription({ className, ...props }: React.ComponentProps<"p">) {
   return <p className={cn("text-sm text-muted-foreground", className)} {...props} />
 }
 
-export { Sheet, SheetTrigger, SheetContent, SheetHeader, SheetTitle, SheetDescription }
+export { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription }

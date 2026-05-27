@@ -83,7 +83,7 @@ function getPlausibleHost(): string | null {
   }
 }
 
-export interface BuildCspOptions {
+interface BuildCspOptions {
   /**
    * When true, indicates the policy is intended for the Report-Only header.
    * The directives are identical either way; this flag is used by callers
@@ -110,7 +110,7 @@ export interface BuildCspOptions {
  * (no inline/eval), so production is fail-closed against XSS via injected
  * inline or third-party scripts. `'unsafe-eval'` remains dev-only.
  */
-export function buildCsp(nonce: string, _options?: BuildCspOptions): string {
+function buildCsp(nonce: string, _options?: BuildCspOptions): string {
   const isDev = process.env.NODE_ENV !== "production";
   const sbHost = getSupabaseHost();
   const plausibleHost = getPlausibleHost();
@@ -179,7 +179,7 @@ function isCspReportOnly(): boolean {
  * This stub remains temporarily for backward compatibility with any
  * call-sites that haven't been updated yet. It delegates to buildCsp.
  */
-export function buildLegacyCsp(nonce: string): string {
+function buildLegacyCsp(nonce: string): string {
   return buildCsp(nonce, { reportOnly: false });
 }
 

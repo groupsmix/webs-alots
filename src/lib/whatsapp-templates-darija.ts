@@ -21,7 +21,7 @@ import type {
 
 // ---- Darija Template Definitions ----
 
-export interface DarijaTemplate {
+interface DarijaTemplate {
   id: string;
   trigger: NotificationTrigger;
   name: string;
@@ -45,7 +45,7 @@ export interface DarijaTemplate {
  * Moroccans actually communicate on WhatsApp — rather than using
  * formal Modern Standard Arabic.
  */
-export const darijaWhatsAppTemplates: DarijaTemplate[] = [
+const darijaWhatsAppTemplates: DarijaTemplate[] = [
   // 1. Appointment Confirmation
   {
     id: "darija_booking_confirmation",
@@ -252,7 +252,7 @@ export function toDarijaNotificationTemplates(): NotificationTemplate[] {
  * Look up a single Darija template by its notification trigger.
  * Returns `undefined` if no enabled template exists for that trigger.
  */
-export function getDarijaTemplate(
+function getDarijaTemplate(
   trigger: NotificationTrigger,
 ): DarijaTemplate | undefined {
   return darijaWhatsAppTemplates.find(

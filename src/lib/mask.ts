@@ -31,7 +31,7 @@ export function maskPhone(value: string, level: MaskLevel = getMaskLevel()): str
 }
 
 /** Mask an email address. */
-export function maskEmail(value: string, level: MaskLevel = getMaskLevel()): string {
+function maskEmail(value: string, level: MaskLevel = getMaskLevel()): string {
   if (level === "none" || !value) return value;
   const [local, domain] = value.split("@");
   if (!domain) return value;

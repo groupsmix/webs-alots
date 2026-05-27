@@ -89,7 +89,7 @@ export interface ClinicTypeEntry {
   vertical_id?: string;
 }
 
-export const CLINIC_TYPES: ClinicTypeEntry[] = [
+const CLINIC_TYPES: ClinicTypeEntry[] = [
   // ---- MEDICAL ----
   { type_key: "general_medicine",  name_fr: "Médecine Générale",           name_ar: "الطب العام",                    category: "medical", icon: "Stethoscope" },
   { type_key: "cardiology",        name_fr: "Cardiologie",                  name_ar: "أمراض القلب",                   category: "medical", icon: "Heart" },
@@ -157,11 +157,11 @@ export function getTypesByCategory(category: ClinicTypeCategory): ClinicTypeEntr
 }
 
 /** Find a single clinic type by its key */
-export function getClinicType(typeKey: string): ClinicTypeEntry | undefined {
+function getClinicType(typeKey: string): ClinicTypeEntry | undefined {
   return CLINIC_TYPES.find((t) => t.type_key === typeKey);
 }
 
 /** Find the category metadata for a given category key */
-export function getCategoryMeta(category: ClinicTypeCategory): ClinicCategory | undefined {
+function getCategoryMeta(category: ClinicTypeCategory): ClinicCategory | undefined {
   return CLINIC_CATEGORIES.find((c) => c.key === category);
 }

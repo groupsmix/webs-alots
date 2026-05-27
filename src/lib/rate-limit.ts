@@ -593,7 +593,7 @@ export const loginLimiter = createRateLimiter({
 });
 
 /** Auth endpoints catch-all: 10 req / 60s per IP (RL-01 defense-in-depth) */
-export const authLimiter = createRateLimiter({
+const authLimiter = createRateLimiter({
   windowMs: 60_000,
   max: 10,
   failClosed: true,
@@ -645,33 +645,33 @@ export const passwordResetLimiter = createRateLimiter({
 
 /** Branding GET: 20 req / 60s per IP (public endpoint, prevents clinic enumeration)
  * R-22: Set failClosed: true for public clinic-enumeration surface */
-export const brandingLimiter = createRateLimiter({
+const brandingLimiter = createRateLimiter({
   windowMs: 60_000,
   max: 20,
   failClosed: true,
 });
 
 /** General API mutations: 30 req / 60s per IP */
-export const apiMutationLimiter = createRateLimiter({
+const apiMutationLimiter = createRateLimiter({
   windowMs: 60_000,
   max: 30,
 });
 
 /** File uploads: 10 req / 60s per IP */
-export const uploadLimiter = createRateLimiter({
+const uploadLimiter = createRateLimiter({
   windowMs: 60_000,
   max: 10,
 });
 
 /** Onboarding (clinic creation): 5 req / 60s per IP — security-critical (registration). */
-export const onboardingLimiter = createRateLimiter({
+const onboardingLimiter = createRateLimiter({
   windowMs: 60_000,
   max: 5,
   failClosed: true,
 });
 
 /** Chat endpoint: 15 req / 60s per IP (prevent AI API abuse) */
-export const chatLimiter = createRateLimiter({
+const chatLimiter = createRateLimiter({
   windowMs: 60_000,
   max: 15,
   failClosed: true,
@@ -707,7 +707,7 @@ export const waitingListLimiter = createRateLimiter({
 });
 
 /** Email verification: 5 req / 60s per IP (prevent OTP/link abuse) */
-export const emailVerificationLimiter = createRateLimiter({
+const emailVerificationLimiter = createRateLimiter({
   windowMs: 60_000,
   max: 5,
 });

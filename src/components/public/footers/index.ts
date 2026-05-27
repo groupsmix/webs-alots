@@ -17,8 +17,6 @@ export interface FooterProps {
   template?: TemplateDefinition;
 }
 
-export { FooterClassic, FooterMinimal, FooterCentered };
-
 /** Footer component map for dynamic selection. */
 export const FOOTER_COMPONENTS: Record<FooterVariant, ComponentType<FooterProps> | null> = {
   "classic-3col": FooterClassic,

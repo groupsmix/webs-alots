@@ -25,7 +25,7 @@ import { logger } from "@/lib/logger";
 
 // ── Types ────────────────────────────────────────────────────────────
 
-export interface CloudflareConfig {
+interface CloudflareConfig {
   zoneId: string;
   zoneName: string;
   auth:
@@ -241,7 +241,7 @@ export async function getDnsRecord(
 /**
  * Update an existing DNS record (e.g. change target or proxy settings).
  */
-export async function updateDnsRecord(
+async function updateDnsRecord(
   slug: string,
   updates: { content?: string; proxied?: boolean },
 ): Promise<CloudflareResult<DnsRecord>> {
@@ -355,7 +355,7 @@ export async function removeSubdomain(
 /**
  * List all auto-provisioned subdomain records for the zone.
  */
-export async function listSubdomains(): Promise<CloudflareResult<DnsRecord[]>> {
+async function listSubdomains(): Promise<CloudflareResult<DnsRecord[]>> {
   const config = getConfig();
   if (!config) {
     return { success: false, error: "Cloudflare DNS not configured" };

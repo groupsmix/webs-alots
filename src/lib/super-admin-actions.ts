@@ -118,7 +118,7 @@ export interface CreateServiceInput {
   category?: string;
 }
 
-export interface CreateTimeSlotInput {
+interface CreateTimeSlotInput {
   doctor_id: string;
   clinic_id: string;
   day_of_week: number;
@@ -399,7 +399,7 @@ export async function createUser(input: CreateUserInput): Promise<UserRow> {
   return data as UserRow;
 }
 
-export async function fetchClinicUsers(clinicId: string): Promise<UserRow[]> {
+async function fetchClinicUsers(clinicId: string): Promise<UserRow[]> {
   const supabase = await rawClient();
   const { data, error } = await supabase
     .from("users")
@@ -431,7 +431,7 @@ export async function createService(input: CreateServiceInput): Promise<ServiceR
   return data as ServiceRow;
 }
 
-export async function fetchClinicServices(clinicId: string): Promise<ServiceRow[]> {
+async function fetchClinicServices(clinicId: string): Promise<ServiceRow[]> {
   const supabase = await rawClient();
   const { data, error } = await supabase
     .from("services")
@@ -444,7 +444,7 @@ export async function fetchClinicServices(clinicId: string): Promise<ServiceRow[
 
 // ---------- Time Slot CRUD ----------
 
-export async function createTimeSlot(input: CreateTimeSlotInput): Promise<TimeSlotRow> {
+async function createTimeSlot(input: CreateTimeSlotInput): Promise<TimeSlotRow> {
   const supabase = await rawClient();
   const { data, error } = await supabase
     .from("time_slots")
@@ -805,7 +805,7 @@ export async function fetchFeatureToggles(): Promise<FeatureToggleRow[]> {
 
 // ---------- Client Subscriptions ----------
 
-export interface ClientInvoice {
+interface ClientInvoice {
   id: string;
   date: string;
   amount: number;
@@ -814,7 +814,7 @@ export interface ClientInvoice {
 }
 
 export type SystemType = "doctor" | "dentist" | "pharmacy";
-export type TierSlug = "vitrine" | "cabinet" | "pro" | "premium" | "saas-monthly";
+type TierSlug = "vitrine" | "cabinet" | "pro" | "premium" | "saas-monthly";
 
 export interface ClientSubscription {
   id: string;

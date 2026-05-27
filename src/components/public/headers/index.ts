@@ -21,12 +21,10 @@ export interface HeaderProps {
 }
 
 /** Navigation item for header/footer navigation. */
-export interface NavItem {
+interface NavItem {
   label: string;
   href: string;
 }
-
-export { HeaderTopSticky, HeaderTransparent, HeaderBottomBar, HeaderFloating };
 
 /** Header component map for dynamic selection. */
 export const HEADER_COMPONENTS: Record<HeaderVariant, ComponentType<HeaderProps>> = {

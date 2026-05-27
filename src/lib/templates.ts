@@ -23,10 +23,10 @@ export type HeaderVariant = "top-sticky" | "top-transparent" | "side-left" | "bo
 export type FooterVariant = "classic-3col" | "minimal" | "centered" | "hidden";
 
 /** Navigation style variant */
-export type NavStyle = "horizontal" | "vertical-side" | "hamburger-only" | "bottom-tabs" | "floating-dots";
+type NavStyle = "horizontal" | "vertical-side" | "hamburger-only" | "bottom-tabs" | "floating-dots";
 
 /** Hero section layout variant */
-export type HeroVariant = "split" | "centered" | "fullscreen-video" | "slider" | "parallax" | "none";
+type HeroVariant = "split" | "centered" | "fullscreen-video" | "slider" | "parallax" | "none";
 
 /** Product click behavior */
 export type ProductClickBehavior = "modal" | "landing-page" | "side-panel" | "new-tab";
@@ -66,7 +66,7 @@ export interface TemplateDefinition {
   productClickBehavior: ProductClickBehavior;
 }
 
-export const templates: Record<TemplateId, TemplateDefinition> = {
+const templates: Record<TemplateId, TemplateDefinition> = {
   modern: {
     id: "modern",
     name: "Modern",

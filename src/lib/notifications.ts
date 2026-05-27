@@ -33,7 +33,7 @@ export type NotificationChannel = "whatsapp" | "in_app" | "email" | "sms";
 
 export type NotificationPriority = "low" | "normal" | "high" | "urgent";
 
-export type NotificationStatus = "pending" | "sent" | "delivered" | "failed" | "read";
+type NotificationStatus = "pending" | "sent" | "delivered" | "failed" | "read";
 
 // ---- Template Variable Types ----
 
@@ -93,7 +93,7 @@ export interface InAppNotification {
 
 // ---- WhatsApp Message ----
 
-export interface WhatsAppMessage {
+interface WhatsAppMessage {
   id: string;
   to: string;
   trigger: NotificationTrigger;
@@ -126,7 +126,7 @@ export interface NotificationLogEntry {
 
 // ---- User Notification Preferences ----
 
-export interface NotificationPreferences {
+interface NotificationPreferences {
   userId: string;
   channels: {
     whatsapp: boolean;
@@ -655,4 +655,4 @@ export async function dispatchNotification(
 
 // ---- Demo data has been moved to @/lib/__fixtures__/notifications.fixtures.ts ----
 // Re-export for backward compatibility.
-export { demoNotificationLog, demoInAppNotifications } from "@/lib/__fixtures__/notifications.fixtures";
+export { demoNotificationLog } from "@/lib/__fixtures__/notifications.fixtures";

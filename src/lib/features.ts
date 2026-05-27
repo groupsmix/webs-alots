@@ -104,7 +104,7 @@ export type FeaturesConfig = Partial<Record<ClinicFeatureKey, boolean>>;
 /**
  * Default feature flags - used when no config is provided
  */
-export const DEFAULT_FEATURES: FeaturesConfig = {
+const DEFAULT_FEATURES: FeaturesConfig = {
   appointments: true,
   prescriptions: true,
   consultations: true,
@@ -115,7 +115,7 @@ export const DEFAULT_FEATURES: FeaturesConfig = {
 };
 
 /** Default features for veterinary clinics */
-export const VETERINARY_DEFAULT_FEATURES: FeaturesConfig = {
+const VETERINARY_DEFAULT_FEATURES: FeaturesConfig = {
   appointments: true,
   prescriptions: true,
   vaccination: true,
@@ -125,7 +125,7 @@ export const VETERINARY_DEFAULT_FEATURES: FeaturesConfig = {
 };
 
 /** Default features for restaurant businesses */
-export const RESTAURANT_DEFAULT_FEATURES: FeaturesConfig = {
+const RESTAURANT_DEFAULT_FEATURES: FeaturesConfig = {
   appointments: true,
   menu_management: true,
   table_management: true,
@@ -176,7 +176,7 @@ export async function isAIEnabled(): Promise<boolean> {
  * swallowed). The function still falls back to defaults for resilience, but
  * operators can monitor for "KV_FETCH_ERROR" in their dashboards.
  */
-export async function getKVFeatureFlags(): Promise<FeaturesConfig> {
+async function getKVFeatureFlags(): Promise<FeaturesConfig> {
   try {
     const kv = (globalThis as unknown as { FEATURE_FLAGS_KV?: CloudflareKV }).FEATURE_FLAGS_KV;
     if (!kv) {
@@ -201,7 +201,7 @@ export async function getKVFeatureFlags(): Promise<FeaturesConfig> {
  * Get feature flag override for a specific clinic
  * Returns clinic-specific override if exists, otherwise null
  */
-export async function getClinicFeatureOverride(
+async function getClinicFeatureOverride(
   clinicId: string,
 ): Promise<FeaturesConfig | null> {
   try {
@@ -232,7 +232,7 @@ export async function getClinicFeatureOverride(
  *
  * F-A90-05: Routes flag changes through logAuditEvent for compliance.
  */
-export async function setClinicFeatureOverride(
+async function setClinicFeatureOverride(
   clinicId: string,
   config: FeaturesConfig,
   actor?: string | null,
@@ -316,7 +316,7 @@ export async function setClinicFeatureOverride(
  * Sets a global override in KV that takes precedence over clinic-type defaults.
  * Setting a key to `false` disables the feature for ALL clinics immediately.
  */
-export async function setGlobalFeatureFlag(
+async function setGlobalFeatureFlag(
   key: ClinicFeatureKey,
   enabled: boolean,
   actor?: string | null,
@@ -396,7 +396,7 @@ export function isFeatureEnabled(
  *
  * This function supports runtime feature flag overrides via KV.
  */
-export async function isFeatureEnabledForClinic(
+async function isFeatureEnabledForClinic(
   clinicId: string,
   clinicTypeId: string | null,
   key: ClinicFeatureKey,
@@ -422,7 +422,7 @@ export async function isFeatureEnabledForClinic(
  * Fetch features config from database for a clinic type
  * Used as fallback when KV override doesn't exist
  */
-export async function getClinicTypeFeaturesFromDB(
+async function getClinicTypeFeaturesFromDB(
   clinicTypeId: string,
 ): Promise<FeaturesConfig | null> {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -456,7 +456,7 @@ export async function getClinicTypeFeaturesFromDB(
  * Return only the subset of items whose `requiredFeature` is either
  * undefined (always shown) or enabled in the config.
  */
-export function filterByFeatures<T extends { requiredFeature?: ClinicFeatureKey }>(
+function filterByFeatures<T extends { requiredFeature?: ClinicFeatureKey }>(
   items: T[],
   config: FeaturesConfig | undefined | null,
 ): T[] {

@@ -182,7 +182,7 @@ export const demoNotificationLog: NotificationLogEntry[] = [
   },
 ];
 
-export const demoInAppNotifications: InAppNotification[] = [
+const demoInAppNotifications: InAppNotification[] = [
   {
     id: "ian1",
     userId: "p1",

@@ -60,7 +60,7 @@ export const bookingCancelSchema = z.object({
   reason: z.string().max(1000).optional(),
 });
 
-export const emergencySlotCreateSchema = z.object({
+const emergencySlotCreateSchema = z.object({
   action: z.literal("create"),
   doctorId: z.string().min(1),
   date: isoDate,
@@ -69,7 +69,7 @@ export const emergencySlotCreateSchema = z.object({
   reason: z.string().max(1000).optional(),
 });
 
-export const emergencySlotBookSchema = z.object({
+const emergencySlotBookSchema = z.object({
   action: z.literal("book"),
   slotId: z.string().min(1),
   patientId: z.string().min(1),
@@ -83,7 +83,7 @@ export const emergencySlotSchema = z.discriminatedUnion("action", [
   emergencySlotBookSchema,
 ]);
 
-export const recurringCreateSchema = z.object({
+const recurringCreateSchema = z.object({
   action: z.literal("create"),
   patientId: z.string().min(1),
   patientName: z.string().min(1).max(200),
@@ -98,7 +98,7 @@ export const recurringCreateSchema = z.object({
   hasInsurance: z.boolean().optional(),
 });
 
-export const recurringCancelSchema = z.object({
+const recurringCancelSchema = z.object({
   action: z.literal("cancel"),
   groupId: z.string().optional(),
   cancelAll: z.boolean().optional(),
@@ -222,7 +222,7 @@ export const cmiCallbackFieldsSchema = z.object({
   { message: "Unknown parameter in CMI callback — potential tampering" },
 );
 
-export type CmiCallbackFields = z.infer<typeof cmiCallbackFieldsSchema>;
+type CmiCallbackFields = z.infer<typeof cmiCallbackFieldsSchema>;
 
 export const cmiPaymentSchema = z.object({
   amount: z.number().positive().finite(),
@@ -434,7 +434,7 @@ export const aiPrescriptionRequestSchema = z.object({
   }).optional(),
 });
 
-export type AiPrescriptionRequest = z.infer<typeof aiPrescriptionRequestSchema>;
+type AiPrescriptionRequest = z.infer<typeof aiPrescriptionRequestSchema>;
 
 // ── Chat ────────────────────────────────────────────────────────────────
 
@@ -482,7 +482,7 @@ export const applyPresetSchema = z.object({
 
 // ── Upload ──────────────────────────────────────────────────────────────
 
-export const uploadPresignedSchema = z.object({
+const uploadPresignedSchema = z.object({
   filename: z.string().min(1).max(500),
   contentType: z.string().min(1).max(200),
   category: z.string().min(1).max(100),
@@ -509,7 +509,7 @@ export const consentSchema = z.object({
 
 // ── Clinic Features ─────────────────────────────────────────────────────
 
-export const clinicFeaturesQuerySchema = z.object({
+const clinicFeaturesQuerySchema = z.object({
   type_key: z.string().min(1).max(100),
 });
 
@@ -531,7 +531,7 @@ export const aiPatientSummaryRequestSchema = z.object({
   forceRefresh: z.boolean().optional().default(false),
 });
 
-export type AiPatientSummaryRequest = z.infer<typeof aiPatientSummaryRequestSchema>;
+type AiPatientSummaryRequest = z.infer<typeof aiPatientSummaryRequestSchema>;
 
 // ── AI Drug Interaction Checker ─────────────────────────────────────────
 
@@ -542,7 +542,7 @@ export const aiDrugCheckRequestSchema = z.object({
   useAiFallback: z.boolean().optional().default(true),
 });
 
-export type AiDrugCheckRequest = z.infer<typeof aiDrugCheckRequestSchema>;
+type AiDrugCheckRequest = z.infer<typeof aiDrugCheckRequestSchema>;
 
 export const aiDrugCheckOverrideSchema = z.object({
   patientId: z.string().min(1).optional(),
@@ -553,7 +553,7 @@ export const aiDrugCheckOverrideSchema = z.object({
   medications: z.array(z.string()).min(1),
 });
 
-export type AiDrugCheckOverride = z.infer<typeof aiDrugCheckOverrideSchema>;
+type AiDrugCheckOverride = z.infer<typeof aiDrugCheckOverrideSchema>;
 
 // ── Doctor Unavailability ────────────────────────────────────────────────
 
@@ -658,7 +658,7 @@ export const aiManagerRequestSchema = z.object({
   ).max(20).optional().default([]),
 });
 
-export type AiManagerRequest = z.infer<typeof aiManagerRequestSchema>;
+type AiManagerRequest = z.infer<typeof aiManagerRequestSchema>;
 
 // ── AI Auto-Suggest (Smart Prescription Suggestions) ────────────────────
 
@@ -675,7 +675,7 @@ export const aiAutoSuggestRequestSchema = z.object({
   }).optional(),
 });
 
-export type AiAutoSuggestRequest = z.infer<typeof aiAutoSuggestRequestSchema>;
+type AiAutoSuggestRequest = z.infer<typeof aiAutoSuggestRequestSchema>;
 
 // ── Pet Profiles (Veterinary) ────────────────────────────────────────────
 
@@ -709,14 +709,14 @@ export const petProfileUpdateSchema = z.object({
 
 // ── Menu Management (Restaurant) ────────────────────────────────────────
 
-export const menuCreateSchema = z.object({
+const menuCreateSchema = z.object({
   name: z.string().min(1).max(200),
   description: z.string().max(2000).optional(),
   is_active: z.boolean().optional().default(true),
   sort_order: z.number().int().optional().default(0),
 });
 
-export const menuUpdateSchema = z.object({
+const menuUpdateSchema = z.object({
   id: z.string().min(1),
   name: z.string().min(1).max(200).optional(),
   description: z.string().max(2000).nullable().optional(),
@@ -724,7 +724,7 @@ export const menuUpdateSchema = z.object({
   sort_order: z.number().int().optional(),
 });
 
-export const menuItemCreateSchema = z.object({
+const menuItemCreateSchema = z.object({
   menu_id: z.string().min(1),
   category: z.string().min(1).max(200),
   name: z.string().min(1).max(200),
@@ -737,7 +737,7 @@ export const menuItemCreateSchema = z.object({
   sort_order: z.number().int().optional().default(0),
 });
 
-export const menuItemUpdateSchema = z.object({
+const menuItemUpdateSchema = z.object({
   id: z.string().min(1),
   category: z.string().min(1).max(200).optional(),
   name: z.string().min(1).max(200).optional(),
@@ -752,14 +752,14 @@ export const menuItemUpdateSchema = z.object({
 
 // ── Table Management (Restaurant) ───────────────────────────────────────
 
-export const restaurantTableCreateSchema = z.object({
+const restaurantTableCreateSchema = z.object({
   name: z.string().min(1).max(200),
   capacity: z.number().int().min(1).max(100),
   zone: z.string().max(200).optional(),
   is_active: z.boolean().optional().default(true),
 });
 
-export const restaurantTableUpdateSchema = z.object({
+const restaurantTableUpdateSchema = z.object({
   id: z.string().min(1),
   name: z.string().min(1).max(200).optional(),
   capacity: z.number().int().min(1).max(100).optional(),
