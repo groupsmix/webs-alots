@@ -439,11 +439,12 @@ export type AiPrescriptionRequest = z.infer<typeof aiPrescriptionRequestSchema>;
 // ── Chat ────────────────────────────────────────────────────────────────
 
 /**
- * A14-01: bound `content` to 4 000 chars to prevent unbounded payloads
- * being forwarded to the upstream LLM. Keeps cost and latency predictable
- * and protects against memory-exhaustion vectors in the chat handler.
+ * A14-01: bound `content` to 2 000 chars at the schema layer to match
+ * MAX_MESSAGE_LENGTH in the chat route handler. Prevents unbounded
+ * payloads being forwarded to the upstream LLM. Keeps cost and latency
+ * predictable and protects against memory-exhaustion vectors.
  */
-export const CHAT_MESSAGE_CONTENT_MAX = 4000;
+export const CHAT_MESSAGE_CONTENT_MAX = 2000;
 
 export const chatRequestSchema = z.object({
   // V-01: Cap the messages array at a reasonable maximum to prevent token-cost
@@ -458,7 +459,7 @@ export const chatRequestSchema = z.object({
       }),
     )
     .min(1)
-    .max(50),
+    .max(20),
 });
 
 // ── Branding ────────────────────────────────────────────────────────────

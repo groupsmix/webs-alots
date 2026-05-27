@@ -142,7 +142,7 @@ export function buildCsp(nonce: string, _options?: BuildCspOptions): string {
     // protection for <style> is not needed.
     // Long-term fix: migrate all style={{}} to Tailwind/CSS modules.
     `style-src 'self' 'unsafe-inline'`,
-    `img-src 'self' data: blob: ${sbHost} uploads.oltigo.com`,
+    `img-src 'self' blob: ${sbHost} uploads.oltigo.com`,
     "font-src 'self'",
     `connect-src ${connectSources}`,
     "frame-src 'self' https://challenges.cloudflare.com",
