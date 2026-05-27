@@ -18,7 +18,6 @@
  */
 import { writeFileSync } from "fs";
 import { resolve } from "path";
-
 import { createClient } from "@supabase/supabase-js";
 
 const SUPABASE_URL = process.env.SUPABASE_LOCAL_URL;
