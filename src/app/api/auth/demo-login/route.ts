@@ -13,7 +13,7 @@
 import { NextRequest } from "next/server";
 import { z } from "zod";
 import { apiError, apiSuccess, apiValidationError, apiInternalError, apiForbidden, apiRateLimited } from "@/lib/api-response";
-import { DEMO_USERS, DEMO_CLINIC_ID } from "@/lib/demo";
+import { DEMO_USERS, DEMO_SUBDOMAIN } from "@/lib/demo";
 import { logger } from "@/lib/logger";
 import { loginLimiter, extractClientIp } from "@/lib/rate-limit";
 import { createAdminClient } from "@/lib/supabase-server";
@@ -41,14 +41,14 @@ export async function POST(request: NextRequest) {
     return apiForbidden("Demo mode is disabled");
   }
 
-  // AUTH-01: Verify the demo clinic actually exists in the database before
-  // allowing demo login. This prevents authentication bypass in production
-  // environments where the demo tenant has been removed or was never seeded.
+  // AUTH-01 + R-22: Resolve the demo clinic by subdomain instead of
+  // hardcoded UUID. If the subdomain changes or the clinic is deleted,
+  // demo login is automatically disabled without a code change.
   const supabaseCheck = await createClient();
   const { data: demoClinic } = await supabaseCheck
     .from("clinics")
     .select("id")
-    .eq("id", DEMO_CLINIC_ID)
+    .eq("subdomain", DEMO_SUBDOMAIN)
     .maybeSingle();
 
   if (!demoClinic) {

@@ -89,6 +89,7 @@ export async function middleware(request: NextRequest) {
       status: 503,
       headers: {
         "Retry-After": "300",
+        "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
         "Content-Type": "text/plain",
         "Strict-Transport-Security": "max-age=63072000; includeSubDomains; preload",
         "X-Content-Type-Options": "nosniff",

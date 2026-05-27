@@ -31,7 +31,7 @@
 // S-26: Upload route requires tenant context — never write to a shared/ prefix
 import { apiError, apiForbidden, apiInternalError, apiNotFound, apiSuccess } from "@/lib/api-response";
 import { withAuthValidation } from "@/lib/api-validate";
-import { requiresEncryption } from "@/lib/encryption";
+import { requiresEncryption, normalizePhiCategory } from "@/lib/encryption";
 import { logger } from "@/lib/logger";
 import {
   uploadToR2,
@@ -90,14 +90,11 @@ export const LIMITS_BY_CATEGORY: Readonly<Record<string, number>> = {
 };
 
 /**
- * Normalize a category key for limit lookup. Lower-cases and folds
- * hyphens to underscores so `lab-report` and `lab_report` resolve to
- * the same limit, matching the existing `PHI_CATEGORIES` set in
- * `@/lib/encryption`.
+ * Re-export from the canonical location so tests that import from
+ * this module continue to work. The single source of truth is
+ * `normalizePhiCategory` in `@/lib/encryption` — see R-11.
  */
-export function normalizeCategory(category: string): string {
-  return category.trim().toLowerCase().replace(/-/g, "_");
-}
+export { normalizePhiCategory as normalizeCategory } from "@/lib/encryption";
 
 /**
  * Resolve the maximum byte count for a given upload category. Unknown
@@ -106,7 +103,7 @@ export function normalizeCategory(category: string): string {
  * passes the limit into the R2 presigned-POST policy.
  */
 export function limitForCategory(category: string): number {
-  return LIMITS_BY_CATEGORY[normalizeCategory(category)] ?? DEFAULT_UPLOAD_LIMIT;
+  return LIMITS_BY_CATEGORY[normalizePhiCategory(category)] ?? DEFAULT_UPLOAD_LIMIT;
 }
 
 function formatLimit(bytes: number): string {
@@ -217,7 +214,7 @@ export const POST = withAuth(async (request, { profile }) => {
   // A37.9: Block GIF uploads in clinical categories. GIF supports animated
   // polyglots and has been used as SSRF/CSRF beacon vectors. Only branding
   // categories (avatars, logos, photos) are allowed to use GIF.
-  const normCat = normalizeCategory(category);
+  const normCat = normalizePhiCategory(category);
   if (file.type === "image/gif" && CLINICAL_CATEGORIES.has(normCat)) {
     return apiError("GIF files are not allowed for clinical document uploads. Use JPEG, PNG, WebP, or PDF.");
   }

@@ -105,8 +105,8 @@ const ENV_RULES: EnvRule[] = [
 
   // ── Profile-header HMAC (R-02) ────────────────────────────────────
   // Distinct key from CRON_SECRET so leaking one does not compromise
-  // both cron invocation and session-header forgery. Falls back to
-  // CRON_SECRET only as a transitional measure (see profile-header-hmac.ts).
+  // both cron invocation and session-header forgery. No fallback —
+  // missing key disables the optimization and forces the DB lookup.
   { name: "PROFILE_HEADER_HMAC_KEY", required: process.env.NODE_ENV === "production", description: "HMAC key used to sign x-auth-profile-* headers between middleware and withAuth (required in production)", group: "auth" },
 
   // AUDIT-15: Removed duplicate PHI_ENCRYPTION_KEY entry (was listed at

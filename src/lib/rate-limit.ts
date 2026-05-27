@@ -210,17 +210,16 @@ function recordSuccess(state: CircuitBreakerState): void {
 /**
  * F-06: Report rate-limit backend errors to Sentry at error severity.
  */
-function reportRateLimitBackendError(operation: string, error: unknown): void {
+async function reportRateLimitBackendError(operation: string, error: unknown): Promise<void> {
   try {
-    import("@sentry/nextjs").then((Sentry) => {
-      Sentry.captureException(
-        error instanceof Error ? error : new Error(`Rate limiter ${operation} failed`),
-        {
-          tags: { rateLimit: "backend_error", operation },
-          level: "error",
-        },
-      );
-    });
+    const Sentry = await import("@sentry/nextjs");
+    Sentry.captureException(
+      error instanceof Error ? error : new Error(`Rate limiter ${operation} failed`),
+      {
+        tags: { rateLimit: "backend_error", operation },
+        level: "error",
+      },
+    );
   } catch {
     // Sentry unavailable — structured log above is sufficient
   }
@@ -654,6 +653,7 @@ const brandingLimiter = createRateLimiter({
 const apiMutationLimiter = createRateLimiter({
   windowMs: 60_000,
   max: 30,
+  failClosed: true,
 });
 
 /** File uploads: 10 req / 60s per IP */
