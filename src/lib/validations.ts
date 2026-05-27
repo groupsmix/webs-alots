@@ -807,8 +807,14 @@ export function safeParse<T>(
   if (result.success) {
     return { success: true, data: result.data };
   }
-  const message = result.error.issues
+  const details = result.error.issues
     .map((i) => `${i.path.join(".")}: ${i.message}`)
     .join("; ");
-  return { success: false, error: `Validation error: ${message}` };
+  // API-009: In production, redact Zod field-level details to prevent
+  // information disclosure (field names, types, constraints). The full
+  // details are logged server-side for debugging.
+  if (process.env.NODE_ENV === "production") {
+    return { success: false, error: "Validation error" };
+  }
+  return { success: false, error: `Validation error: ${details}` };
 }

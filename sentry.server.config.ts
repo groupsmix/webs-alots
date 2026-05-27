@@ -54,14 +54,25 @@ Sentry.init({
       return routeSamplingConfig.webhooks;
     }
 
+    // COST-001 / SEC-006: PHI-adjacent routes at 1% to reduce
+    // cross-border data transfer risk and Sentry cost.
+    if (
+      combinedContext.includes("patient") ||
+      combinedContext.includes("appointment") ||
+      combinedContext.includes("booking") ||
+      combinedContext.includes("prescription") ||
+      combinedContext.includes("medical") ||
+      combinedContext.includes("diagnosis")
+    ) {
+      return 0.01;
+    }
+
     // Mutations: POST, PUT, PATCH, DELETE
     if (
       combinedContext.includes("post") ||
       combinedContext.includes("put") ||
       combinedContext.includes("patch") ||
       combinedContext.includes("delete") ||
-      combinedContext.includes("booking") ||
-      combinedContext.includes("appointment") ||
       combinedContext.includes("register")
     ) {
       return routeSamplingConfig.mutations;
@@ -91,6 +102,17 @@ Sentry.init({
   },
 
   beforeSend(event) {
+    // API-006: Scrub security-sensitive headers to prevent secret leakage
+    // (e.g., cron secret, booking tokens) via Sentry breadcrumbs.
+    if (event.request?.headers) {
+      const sensitiveHeaders = ["x-cron-secret", "x-booking-token", "authorization", "cookie"];
+      for (const h of sensitiveHeaders) {
+        if (event.request.headers[h]) {
+          event.request.headers[h] = "[REDACTED]";
+        }
+      }
+    }
+
     // Scrub request data
     if (event.request?.data) {
       event.request.data = redactPII(event.request.data);
@@ -99,6 +121,14 @@ Sentry.init({
     // Scrub request URL query params
     if (event.request?.url) {
       event.request.url = scrubUrl(event.request.url);
+      // SEC-006: Strip UUID path segments from PHI routes to prevent
+      // patient/appointment ID leakage to Sentry.
+      if (/\/(patient|appointment|booking)\//.test(event.request.url)) {
+        event.request.url = event.request.url.replace(
+          /\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi,
+          "/[REDACTED_ID]",
+        );
+      }
     }
     if (event.request?.query_string) {
       event.request.query_string = scrubUrl("?" + event.request.query_string).slice(1);
