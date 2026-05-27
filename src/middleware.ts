@@ -45,6 +45,7 @@ interface CachedClinic {
   subdomain: string;
   type: string;
   tier: string;
+  patient_message_locale?: string;
   cachedAt: number;
 }
 
@@ -323,7 +324,7 @@ export async function middleware(request: NextRequest) {
       // columns needed for tenant header population.
       const { data } = await anonSupabase
         .from("public_clinic_directory")
-        .select("id, name, type, tier, subdomain")
+        .select("id, name, type, tier, subdomain, patient_message_locale")
         .eq("subdomain", subdomain)
         .single();
 
@@ -373,6 +374,15 @@ export async function middleware(request: NextRequest) {
       type: clinic.type,
       tier: clinic.tier,
     });
+
+    // AUDIT FINDING #2: Propagate the clinic's configured locale so that
+    // layout.tsx, manifest.ts, and not-found.tsx render the correct
+    // language and text direction (LTR/RTL) on first load. Maps the DB
+    // column `patient_message_locale` ('fr'|'ar'|'darija') to the
+    // x-tenant-locale header consumed by RSC. 'darija' is treated as 'ar'
+    // for UI direction purposes (same script).
+    const tenantLocale = clinic.patient_message_locale ?? "fr";
+    requestHeaders.set("x-tenant-locale", tenantLocale);
   }
 
   // IMPORTANT: Do NOT use getSession() here — it reads from cookies and

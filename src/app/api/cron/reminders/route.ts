@@ -57,36 +57,78 @@ async function handler(request: NextRequest) {
     const nowISO = now.toISOString();
     const twentyFourHoursISO = twentyFourHoursFromNow.toISOString();
 
-    // Fetch upcoming appointments that need reminders.
-    // Select both appointment_date/start_time and slot_start/slot_end
-    // since older records may only have slot_start/slot_end populated.
-    const { data: appointments, error } = await supabase
-      .from("appointments")
-      .select(`
-        id,
-        clinic_id,
-        patient_id,
-        doctor_id,
-        appointment_date,
-        start_time,
-        slot_start,
-        slot_end,
-        status,
-        notes,
-        patients:patient_id (id, name, phone),
-        doctors:doctor_id (id, name),
-        services:service_id (name),
-        clinics:clinic_id (name)
-      `)
-      .in("status", [APPOINTMENT_STATUS.CONFIRMED, APPOINTMENT_STATUS.PENDING])
-      .or(
-        `slot_start.gte.${nowISO},slot_start.lte.${twentyFourHoursISO}`,
-      )
-      .limit(500);
+    // AUDIT FINDING #12: Cursor-based pagination instead of .limit(500).
+    // At 10x scale (5,000+ appointments/day), the hard limit silently drops
+    // reminders. Iterate with cursor-based pagination using slot_start order
+    // to drain the full backlog.
+    const PAGE_SIZE = 500;
+    const SELECT_COLS = `
+      id,
+      clinic_id,
+      patient_id,
+      doctor_id,
+      appointment_date,
+      start_time,
+      slot_start,
+      slot_end,
+      status,
+      notes,
+      patients:patient_id (id, name, phone),
+      doctors:doctor_id (id, name),
+      services:service_id (name),
+      clinics:clinic_id (name)
+    ` as const;
 
-    if (error) {
-        logger.warn("Operation failed", { context: "cron/reminders", error });
-        return apiInternalError("Failed to query appointments");
+    // First page to infer the row type
+    const firstQuery = supabase
+      .from("appointments")
+      .select(SELECT_COLS)
+      .in("status", [APPOINTMENT_STATUS.CONFIRMED, APPOINTMENT_STATUS.PENDING])
+      .or(`slot_start.gte.${nowISO},slot_start.lte.${twentyFourHoursISO}`)
+      .order("slot_start", { ascending: true })
+      .limit(PAGE_SIZE);
+
+    const { data: firstPage, error: firstError } = await firstQuery;
+
+    if (firstError) {
+      logger.warn("Operation failed", { context: "cron/reminders", error: firstError });
+      return apiInternalError("Failed to query appointments");
+    }
+
+    type AppointmentRow = NonNullable<typeof firstPage>[number];
+    const appointments: AppointmentRow[] = firstPage ? [...firstPage] : [];
+
+    // Continue paginating if the first page was full
+    if (firstPage && firstPage.length === PAGE_SIZE) {
+      let cursor: string | null = (firstPage[firstPage.length - 1] as AppointmentRow).slot_start ?? null;
+      let hasMore = true;
+
+      while (hasMore && cursor) {
+        const { data: page, error } = await supabase
+          .from("appointments")
+          .select(SELECT_COLS)
+          .in("status", [APPOINTMENT_STATUS.CONFIRMED, APPOINTMENT_STATUS.PENDING])
+          .or(`slot_start.gte.${nowISO},slot_start.lte.${twentyFourHoursISO}`)
+          .order("slot_start", { ascending: true })
+          .gt("slot_start", cursor)
+          .limit(PAGE_SIZE);
+
+        if (error) {
+          logger.warn("Operation failed", { context: "cron/reminders", error });
+          return apiInternalError("Failed to query appointments");
+        }
+
+        if (!page || page.length === 0) {
+          hasMore = false;
+        } else {
+          appointments.push(...page);
+          if (page.length < PAGE_SIZE) {
+            hasMore = false;
+          } else {
+            cursor = (page[page.length - 1] as AppointmentRow).slot_start ?? null;
+          }
+        }
+      }
     }
 
     if (!appointments || appointments.length === 0) {

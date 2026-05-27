@@ -1,11 +1,13 @@
+import { headers } from "next/headers";
 import Link from "next/link";
 import { t, type Locale } from "@/lib/i18n";
 
-export default function NotFound() {
-  // Default locale for server-rendered 404 page. Removed static clinicConfig
-  // import which leaked a single-tenant assumption (audit MT-02).
-  // Client-side locale is handled by useLocale() via localStorage.
-  const locale: Locale = "fr";
+export default async function NotFound() {
+  // AUDIT FINDING #2 / #11: Read locale from the x-tenant-locale header
+  // set by middleware instead of hardcoding "fr". Falls back to "fr" when
+  // the header is absent (e.g. root-domain 404, no clinic resolved).
+  const h = await headers();
+  const locale: Locale = (h.get("x-tenant-locale") as Locale) || "fr";
 
   return (
     <div className="flex min-h-[60vh] items-center justify-center px-4">

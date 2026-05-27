@@ -23,12 +23,21 @@ import type { StripeWebhookEvent } from "@/lib/validations";
  *   - STRIPE_SECRET_KEY
  *   - STRIPE_WEBHOOK_SECRET (for signature verification)
  */
+/** AUDIT FINDING #24: Max webhook payload size (1 MB). */
+const MAX_WEBHOOK_BYTES = 1 * 1024 * 1024;
+
 export async function POST(request: NextRequest) {
   const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
   const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
   if (!stripeSecretKey) {
     return apiError("Stripe not configured", 503);
+  }
+
+  // AUDIT FINDING #24: Reject oversized webhook payloads before parsing.
+  const contentLength = parseInt(request.headers.get("content-length") || "0", 10);
+  if (contentLength > MAX_WEBHOOK_BYTES) {
+    return apiError("Payload too large", 413);
   }
 
   try {

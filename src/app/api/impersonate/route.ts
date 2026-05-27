@@ -3,7 +3,7 @@ import { apiSuccess, apiInternalError, apiNotFound, apiUnauthorized } from "@/li
 import { withAuthValidation } from "@/lib/api-validate";
 import { logSecurityEvent } from "@/lib/audit-log";
 import { logger } from "@/lib/logger";
-import { createClient } from "@/lib/supabase-server";
+import { createClient, createAdminClient, createUntypedAdminClient } from "@/lib/supabase-server";
 import { impersonateSchema } from "@/lib/validations";
 import { withAuth } from "@/lib/with-auth";
 
@@ -19,19 +19,21 @@ const IS_PROD = process.env.NODE_ENV === "production";
 const COOKIE_PREFIX = IS_PROD ? "__Host-" : "";
 const COOKIE_CLINIC_ID = `${COOKIE_PREFIX}sa_impersonate_clinic_id`;
 const COOKIE_CLINIC_NAME = `${COOKIE_PREFIX}sa_impersonate_clinic_name`;
-const COOKIE_REASON = `${COOKIE_PREFIX}sa_impersonate_reason`;
+const COOKIE_SESSION_ID = `${COOKIE_PREFIX}sa_impersonate_session_id`;
 
 /**
  * POST /api/impersonate
  *
- * Allows a super_admin to impersonate a clinic by storing the target clinic_id
- * in a secure cookie. The admin dashboard will read this cookie to switch context.
+ * Allows a super_admin to impersonate a clinic. Creates a server-side
+ * impersonation session (audit finding #6) and stores only the session
+ * UUID + clinic identifiers in secure cookies.
  *
  * Body: { clinicId: string, clinicName: string, reason: string }
  *
  * DELETE /api/impersonate
  *
- * Ends the impersonation session by clearing the cookie.
+ * Ends the impersonation session by marking the DB row as ended and
+ * clearing the cookies.
  */
 export const POST = withAuthValidation(impersonateSchema, async (body, request, { supabase, user }) => {
     const { clinicId, clinicName, password, reason } = body;
@@ -87,14 +89,57 @@ export const POST = withAuthValidation(impersonateSchema, async (body, request, 
       metadata: { reason, targetClinicId: clinicId, ipAddress: clientIp, userAgent },
     });
 
-    // Set impersonation cookie
+    const sessionMaxAge = 60 * 30; // 30 minutes — time-limited for safety
+
+    // AUDIT FINDING #6: Create a server-side impersonation session.
+    // The reason is stored in the DB, not in the cookie. This enables
+    // server-side invalidation, audit queries, and concurrent session limits.
+    let sessionId: string | null = null;
+    try {
+      const adminClient = createAdminClient();
+      const expiresAt = new Date(Date.now() + sessionMaxAge * 1000).toISOString();
+
+      // Look up the user's profile ID for the actor_id FK
+      const { data: profile } = await adminClient
+        .from("users")
+        .select("id")
+        .eq("auth_id", user.id)
+        .single();
+
+      if (profile) {
+        const untypedClient = createUntypedAdminClient();
+        const { data: session, error: sessionError } = await untypedClient
+          .from("impersonation_sessions")
+          .insert({
+            actor_id: profile.id,
+            clinic_id: clinicId,
+            reason,
+            expires_at: expiresAt,
+          })
+          .select("id")
+          .single();
+
+        if (sessionError) {
+          logger.warn("Failed to create impersonation session row", {
+            context: "impersonate",
+            error: sessionError,
+          });
+        } else if (session) {
+          sessionId = (session as { id: string }).id;
+        }
+      }
+    } catch (err) {
+      logger.warn("Impersonation session creation failed (non-blocking)", {
+        context: "impersonate",
+        error: err,
+      });
+    }
+
     const response = apiSuccess({
       success: true,
       clinicId,
       clinicName: clinicName || clinic.name,
     });
-
-    const sessionMaxAge = 60 * 30; // 30 minutes — time-limited for safety
 
     // A54.2: __Host- prefixed cookies (production) prevent Domain= attribute,
     // blocking subdomain leakage between clinic tenants.
@@ -109,21 +154,11 @@ export const POST = withAuthValidation(impersonateSchema, async (body, request, 
     response.cookies.set(COOKIE_CLINIC_ID, clinicId, cookieOpts);
     response.cookies.set(COOKIE_CLINIC_NAME, encodeURIComponent(clinicName || clinic.name), cookieOpts);
 
-    // S-11 / AUDIT-14 / F-A89-02: The impersonation reason is stored in an
-    // httpOnly cookie for now. This prevents JS-based exfiltration but the
-    // reason text still travels in request headers on every request and
-    // cannot be invalidated server-side. Open audit finding.
-    //
-    // TODO: Replace with a server-side impersonation_sessions table:
-    //   1. Generate an opaque session UUID
-    //   2. INSERT { id, actor_id, target_clinic_id, reason, expires_at } into DB
-    //   3. Store only the session UUID in the cookie
-    //   4. GET /api/impersonate reads reason from DB by session UUID
-    //   5. DELETE /api/impersonate marks the DB row as ended
-    //
-    // This eliminates reason text from HTTP headers and enables server-side
-    // session invalidation, audit queries, and concurrent session limits.
-    response.cookies.set(COOKIE_REASON, encodeURIComponent(reason), cookieOpts);
+    // Store the session UUID in the cookie instead of the reason text.
+    // GET /api/impersonate reads the reason from the DB by session UUID.
+    if (sessionId) {
+      response.cookies.set(COOKIE_SESSION_ID, sessionId, cookieOpts);
+    }
 
     return response;
 }, ["super_admin"]);
@@ -133,29 +168,69 @@ export const POST = withAuthValidation(impersonateSchema, async (body, request, 
  *
  * S-11: Returns the current impersonation state for the signed-in user.
  * The impersonation cookies (`sa_impersonate_clinic_name`,
- * `sa_impersonate_reason`) are `httpOnly: true` — the banner cannot read
+ * `sa_impersonate_session_id`) are `httpOnly: true` — the banner cannot read
  * them via `document.cookie`, so it calls this endpoint instead. Response
  * is `{ clinicName: string, reason: string } | { clinicName: null }`.
  *
- * Only super_admins can be impersonating; `withAuth` enforces that.
+ * AUDIT FINDING #6: Reads the reason from the server-side
+ * impersonation_sessions table by session UUID, not from a cookie.
  */
 export const GET = withAuth(async () => {
   const cookieStore = await cookies();
   const clinicName = cookieStore.get(COOKIE_CLINIC_NAME)?.value ?? null;
-  const reason = cookieStore.get(COOKIE_REASON)?.value ?? null;
+  const sessionId = cookieStore.get(COOKIE_SESSION_ID)?.value ?? null;
 
   if (!clinicName) {
     return apiSuccess({ clinicName: null, reason: null });
   }
 
+  let reason: string | null = null;
+  if (sessionId) {
+    try {
+      const untypedClient = createUntypedAdminClient();
+      const { data: session } = await untypedClient
+        .from("impersonation_sessions")
+        .select("reason, ended_at, expires_at")
+        .eq("id", sessionId)
+        .single();
+
+      const s = session as { reason: string; ended_at: string | null; expires_at: string } | null;
+      if (s && !s.ended_at && new Date(s.expires_at) > new Date()) {
+        reason = s.reason;
+      }
+    } catch {
+      // Fall back to no reason if DB lookup fails
+    }
+  }
+
   return apiSuccess({
     clinicName: decodeURIComponent(clinicName),
-    reason: reason ? decodeURIComponent(reason) : null,
+    reason,
   });
 }, ["super_admin"]);
 
 export const DELETE = withAuth(async (_request, { supabase, user }) => {
   try {
+    const cookieStore = await cookies();
+    const sessionId = cookieStore.get(COOKIE_SESSION_ID)?.value ?? null;
+
+    // AUDIT FINDING #6: Mark the server-side session as ended
+    if (sessionId) {
+      try {
+        const untypedClient = createUntypedAdminClient();
+        await untypedClient
+          .from("impersonation_sessions")
+          .update({ ended_at: new Date().toISOString(), ended_reason: "manual" })
+          .eq("id", sessionId)
+          .is("ended_at", null);
+      } catch (err) {
+        logger.warn("Failed to end impersonation session row", {
+          context: "impersonate",
+          error: err,
+        });
+      }
+    }
+
     // Log the end of impersonation
     if (user) {
       await logSecurityEvent({
@@ -179,7 +254,7 @@ export const DELETE = withAuth(async (_request, { supabase, user }) => {
 
     response.cookies.set(COOKIE_CLINIC_ID, "", clearOpts);
     response.cookies.set(COOKIE_CLINIC_NAME, "", clearOpts);
-    response.cookies.set(COOKIE_REASON, "", clearOpts);
+    response.cookies.set(COOKIE_SESSION_ID, "", clearOpts);
 
     return response;
   } catch (err) {
