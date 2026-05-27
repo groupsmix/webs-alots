@@ -13,6 +13,7 @@
  *                        /api/cron/rebooking-reminders (rebooking prompts)
  *   - daily 02:00    →  /api/cron/billing       (subscription renewals)
  *   - daily 03:00    →  /api/cron/gdpr-purge    (GDPR patient data purge)
+ *   - daily 05:00    →  /api/cron/stripe-reconcile (BL-002 payment drift)
  *
  * @see https://opennext.js.org/cloudflare/howtos/custom-worker
  */
@@ -34,6 +35,7 @@ const CRON_ROUTES: Record<string, string[]> = {
   "0 * * * *":    ["/api/cron/r2-cleanup", "/api/cron/feedback", "/api/cron/rebooking-reminders"],
   "0 2 * * *":    ["/api/cron/billing"],
   "0 3 * * *":    ["/api/cron/gdpr-purge"],
+  "0 5 * * *":    ["/api/cron/stripe-reconcile"],
 };
 
 export default {
