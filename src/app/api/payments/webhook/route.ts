@@ -103,6 +103,27 @@ export async function POST(request: NextRequest) {
             break; // Skip processing since it's already handled
           }
 
+          // API-002 / SEC-014: Verify that the appointment actually belongs
+          // to the clinic specified in metadata. A forged or replayed webhook
+          // with a mismatched clinic_id must not attribute payments incorrectly.
+          if (appointmentId) {
+            const { data: appt } = await supabase
+              .from("appointments")
+              .select("clinic_id")
+              .eq("id", appointmentId)
+              .maybeSingle();
+            if (appt && appt.clinic_id !== clinicId) {
+              logger.error("Stripe webhook: appointment.clinic_id does not match metadata.clinic_id", {
+                context: "payments/webhook",
+                appointmentClinicId: appt.clinic_id,
+                metadataClinicId: clinicId,
+                appointmentId,
+                sessionId: session.id,
+              });
+              return apiError("Appointment does not belong to the specified clinic", 422);
+            }
+          }
+
           await supabase.from("payments").upsert(
             {
               clinic_id: clinicId,

@@ -1,11 +1,10 @@
 name: Automated Database Backups
 
 on:
-  # Schedule disabled — no backups exist in R2 yet and the required
-  # secrets (SUPABASE_DB_URL, BACKUP_GPG_KEY, R2_*) are not fully
-  # configured. Re-enable the cron once backup infrastructure is live.
-  # schedule:
-  #   - cron: "0 2 * * *"
+  # INF-001: Re-enabled daily backup schedule. The job self-checks for
+  # required secrets and fails-closed if any are missing.
+  schedule:
+    - cron: "0 2 * * *"
   workflow_dispatch:
     inputs:
       backup_type:
