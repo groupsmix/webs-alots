@@ -14,12 +14,12 @@
  * three env vars above. Tests are skipped when SUPABASE_LOCAL is not set,
  * or when any of the URL/anon/service-key env vars are missing.
  *
- * AUDIT F-03 / F-A89-04: Implemented real RLS assertions (previously only
- * TODO stubs). The SKIP gate has been inverted (audit finding #3) so that
- * the suite runs by default when the Supabase local env vars are present
- * (which CI provides via the `supabase start` step). Tests are only
- * skipped when SKIP_RLS=true is explicitly set or the env vars are absent.
+ * AUDIT F-03 / F-A89-04: Real RLS assertions implemented. The SKIP gate
+ * is inverted so the suite runs by default when Supabase local env vars
+ * are present (CI provides via `supabase start`). Tests are only skipped
+ * when SKIP_RLS=true is explicitly set or the env vars are absent.
  * The schema infrastructure tests always run regardless of SKIP.
+ * See #629 for remaining RLS coverage work.
  *
  * NOTE: We deliberately do NOT hardcode the well-known Supabase local
  * demo JWTs as fallbacks. Even though they are public dev keys, gitleaks
