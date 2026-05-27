@@ -16,7 +16,7 @@
 
 name = "webs-alots"
 main = ".open-next/worker.js"
-compatibility_date = "2025-04-01"
+compatibility_date = "2026-05-01"
 compatibility_flags = ["nodejs_compat"]
 
 # ── Account (set via CLOUDFLARE_ACCOUNT_ID env in CI) ─────────────────
@@ -43,16 +43,20 @@ binding = "ASSETS"
 # ── KV Namespaces ─────────────────────────────────────────────────────
 # Rate-limiting counters (shared across all edge locations).
 # INF-002: Rate limiter MUST use KV in production to prevent per-isolate
-# counter fragmentation. Provision with:
+# counter fragmentation.
 #
+# HIGH-3: Provision KV namespaces BEFORE deploying this config:
 #   wrangler kv:namespace create RATE_LIMIT_KV
 #   wrangler kv:namespace create RATE_LIMIT_KV --preview
-#   # Paste the returned IDs below, then set RATE_LIMIT_BACKEND=kv in [vars]
+#   Then paste the returned IDs below.
 #
-# [[kv_namespaces]]
-# binding = "RATE_LIMIT_KV"
-# id = "<paste-production-kv-namespace-id>"
-# preview_id = "<paste-preview-kv-namespace-id>"
+# IMPORTANT: Replace the placeholder IDs below with real values from
+# `wrangler kv:namespace create` output. Deploy will fail until these
+# are set to valid KV namespace IDs.
+[[kv_namespaces]]
+binding = "RATE_LIMIT_KV"
+id = "REPLACE_WITH_PRODUCTION_KV_NAMESPACE_ID"
+preview_id = "REPLACE_WITH_PREVIEW_KV_NAMESPACE_ID"
 
 # ── R2 Buckets ────────────────────────────────────────────────────────
 # AUDIT-LB3: IaC — PHI file storage (encrypted uploads).
@@ -67,7 +71,7 @@ bucket_name = "webs-alots-uploads"
 # or Cloudflare dashboard. Only non-sensitive defaults go here.
 [vars]
 NODE_ENV = "production"
-RATE_LIMIT_BACKEND = "supabase"
+RATE_LIMIT_BACKEND = "kv"
 
 # ── Production Environment ────────────────────────────────────────────
 # INF-004: Explicit production block prevents top-level debug toggles
@@ -79,7 +83,7 @@ directory = ".open-next/assets"
 binding = "ASSETS"
 [env.production.vars]
 NODE_ENV = "production"
-RATE_LIMIT_BACKEND = "supabase"
+RATE_LIMIT_BACKEND = "kv"
 
 [[env.production.r2_buckets]]
 binding = "UPLOADS_BUCKET"
@@ -93,7 +97,7 @@ directory = ".open-next/assets"
 binding = "ASSETS"
 [env.staging.vars]
 NODE_ENV = "production"
-RATE_LIMIT_BACKEND = "supabase"
+RATE_LIMIT_BACKEND = "kv"
 
 # INF-003: Staging uses a separate R2 bucket to prevent cross-environment
 # PHI contamination. Create with: wrangler r2 bucket create webs-alots-uploads-staging
