@@ -81,7 +81,7 @@ export async function setTenantContext(
  * @param operation - Description of the operation (for error messages)
  * @throws Error if clinicId is missing or invalid
  */
-function assertTenantContext(
+function _assertTenantContext(
   clinicId: string | null | undefined,
   operation: string,
 ): asserts clinicId is string {

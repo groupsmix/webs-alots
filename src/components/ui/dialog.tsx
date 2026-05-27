@@ -18,7 +18,7 @@ function DialogTrigger({ children, onClick, ...props }: React.ComponentProps<"bu
   return <button type="button" onClick={onClick} {...props}>{children}</button>
 }
 
-function DialogPortal({ children }: { children: React.ReactNode }) {
+function _DialogPortal({ children }: { children: React.ReactNode }) {
   return <>{children}</>
 }
 

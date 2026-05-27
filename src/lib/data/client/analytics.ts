@@ -394,7 +394,7 @@ const PAYMENT_METHOD_LABELS: Record<string, string> = {
   other: "Other",
 };
 
-async function fetchRevenueAnalytics(
+async function _fetchRevenueAnalytics(
   clinicId: string,
   period: AnalyticsPeriod = "month",
 ): Promise<RevenueAnalyticsData> {
@@ -547,7 +547,7 @@ interface FeedbackStatsData {
 
 type FeedbackRow = { id: string; rating: number; google_review_sent: boolean; created_at: string };
 
-async function fetchFeedbackStats(clinicId: string): Promise<FeedbackStatsData> {
+async function _fetchFeedbackStats(clinicId: string): Promise<FeedbackStatsData> {
   const supabase = createClient();
 
   // patient_feedback table added by migration 00055 — cast through unknown

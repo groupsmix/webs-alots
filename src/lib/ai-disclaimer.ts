@@ -32,6 +32,6 @@ const AI_DISCLAIMER_I18N: Record<string, string> = {
  * Get the appropriate AI disclaimer for a given locale.
  * Falls back to French (default UI language).
  */
-function getAIDisclaimer(locale: string): string {
+function _getAIDisclaimer(locale: string): string {
   return AI_DISCLAIMER_I18N[locale] ?? AI_DISCLAIMER_FR;
 }

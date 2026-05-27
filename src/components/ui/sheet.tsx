@@ -15,7 +15,7 @@ function Sheet({ open, children }: SheetProps) {
   return <>{children}</>
 }
 
-function SheetTrigger({ children, onClick, ...props }: React.ComponentProps<"button"> & { asChild?: boolean }) {
+function _SheetTrigger({ children, onClick, ...props }: React.ComponentProps<"button"> & { asChild?: boolean }) {
   return <button type="button" onClick={onClick} {...props}>{children}</button>
 }
 

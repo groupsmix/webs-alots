@@ -142,7 +142,7 @@ export async function createParapharmacySale(data: {
   return result?.id ?? null;
 }
 
-async function adjustParapharmacyStock(
+async function _adjustParapharmacyStock(
   productId: string,
   newQuantity: number,
 ): Promise<boolean> {

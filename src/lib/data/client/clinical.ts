@@ -34,7 +34,7 @@ interface WaitingListRaw {
   created_at: string;
 }
 
-async function fetchWaitingList(clinicId: string): Promise<WaitingListView[]> {
+async function _fetchWaitingList(clinicId: string): Promise<WaitingListView[]> {
   await ensureLookups(clinicId);
   const rows = await fetchRows<WaitingListRaw>("waiting_list", {
     eq: [["clinic_id", clinicId]],
@@ -237,7 +237,7 @@ interface DocumentRaw {
   created_at: string;
 }
 
-async function fetchDocuments(clinicId: string, userId?: string): Promise<DocumentView[]> {
+async function _fetchDocuments(clinicId: string, userId?: string): Promise<DocumentView[]> {
   const eq: [string, unknown][] = [["clinic_id", clinicId]];
   if (userId) eq.push(["user_id", userId]);
   const rows = await fetchRows<DocumentRaw>("documents", {
@@ -272,7 +272,7 @@ interface FamilyMemberRaw {
   created_at: string;
 }
 
-async function fetchFamilyMembers(userId: string): Promise<FamilyMemberView[]> {
+async function _fetchFamilyMembers(userId: string): Promise<FamilyMemberView[]> {
   const rows = await fetchRows<FamilyMemberRaw>("family_members", {
     eq: [["primary_user_id", userId]],
   });

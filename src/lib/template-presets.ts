@@ -589,6 +589,6 @@ export function getPresetsByVertical(vertical: VerticalId): TemplatePreset[] {
 }
 
 /** Get preset IDs for a given vertical (matches vertical.templatePresets arrays) */
-function getPresetIdsForVertical(vertical: VerticalId): string[] {
+function _getPresetIdsForVertical(vertical: VerticalId): string[] {
   return getPresetsByVertical(vertical).map((p) => p.id);
 }
