@@ -1,5 +1,5 @@
-import { test, expect } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
+import { test, expect } from "@playwright/test";
 
 /**
  * F-053: Automated WCAG 2.1 AA accessibility audit via axe-core.
