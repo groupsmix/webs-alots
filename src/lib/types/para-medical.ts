@@ -77,7 +77,7 @@ export interface MealItem {
   fat_g: number;
 }
 
-export interface DailyMealPlan {
+interface DailyMealPlan {
   day: string;
   breakfast: MealItem[];
   morning_snack: MealItem[];
@@ -160,7 +160,7 @@ export interface TherapyGoal {
   milestones: TherapyMilestone[];
 }
 
-export interface TherapyMilestone {
+interface TherapyMilestone {
   description: string;
   target_date: string | null;
   completed: boolean;
