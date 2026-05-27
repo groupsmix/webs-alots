@@ -17,7 +17,9 @@
     "deploy": "npm run build:cf && wrangler deploy",
     "docs:generate": "typedoc",
     "analyze": "ANALYZE=true next build",
-    "prepare": "husky"
+    "prepare": "husky",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1037.0",
@@ -70,6 +72,7 @@
     "jsdom": "^29.1.0",
     "knip": "^6.14.2",
     "lint-staged": "^16.4.0",
+    "prettier": "^3.8.3",
     "swagger-ui-react": "5.32.6",
     "tailwindcss": "^4",
     "tsx": "^4.22.3",
@@ -80,7 +83,11 @@
   },
   "lint-staged": {
     "*.{ts,tsx,js,mjs,cjs}": [
-      "eslint --fix --max-warnings=0"
+      "eslint --fix --max-warnings=0",
+      "prettier --write"
+    ],
+    "*.{json,md,yml,yaml,css}": [
+      "prettier --write"
     ]
   },
   "overrides": {
