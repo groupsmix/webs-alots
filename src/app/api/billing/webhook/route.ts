@@ -107,8 +107,11 @@ export async function POST(request: NextRequest) {
     }
 
     let event: SubscriptionWebhookEvent;
+    let stripeEventId: string | null = null;
     try {
       const parsed = JSON.parse(rawBody);
+      // Extract Stripe event ID before schema validation (not in our typed schema)
+      stripeEventId = typeof parsed.id === "string" ? parsed.id : null;
       const result = subscriptionWebhookEventSchema.safeParse(parsed);
       if (!result.success) {
         logger.warn("Subscription webhook event failed validation", {
@@ -124,6 +127,36 @@ export async function POST(request: NextRequest) {
 
     // Use admin client — webhook requests bypass user auth
     const supabase = createAdminClient("webhook");
+
+    // MEDIUM-2: Stripe event deduplication — reject replayed webhook deliveries.
+    if (stripeEventId) {
+      const clinicIdFromMeta = event.data?.object?.metadata?.clinic_id ?? null;
+      const { error: dedupErr } = await (supabase as never as {
+        from(t: string): {
+          insert(r: Record<string, unknown>): Promise<{ error: { code?: string; message: string } | null }>;
+        };
+      }).from("processed_stripe_events").insert({
+        event_id: stripeEventId,
+        event_type: event.type,
+        clinic_id: clinicIdFromMeta,
+      });
+
+      if (dedupErr) {
+        if (dedupErr.code === "23505") {
+          logger.info("Stripe webhook replay detected — ignoring duplicate", {
+            context: "billing/webhook",
+            eventId: stripeEventId,
+            eventType: event.type,
+          });
+          return apiSuccess({ received: true, duplicate: true });
+        }
+        logger.warn("Stripe event dedup insert failed", {
+          context: "billing/webhook",
+          eventId: stripeEventId,
+          error: dedupErr.message,
+        });
+      }
+    }
 
     switch (event.type) {
       case "checkout.session.completed": {

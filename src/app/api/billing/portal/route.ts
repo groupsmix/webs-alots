@@ -76,11 +76,15 @@ export const POST = withAuthValidation(subscriptionPortalSchema, async (body, re
   params.append("customer", stripeCustomerId);
   params.append("return_url", validatedReturnUrl);
 
+  // MEDIUM-2: Idempotency-Key prevents duplicate portal sessions.
+  const portalIdempotencyKey = `portal_${stripeCustomerId}_${Date.now()}`;
+
   const stripeResponse = await fetch("https://api.stripe.com/v1/billing_portal/sessions", {
     method: "POST",
     headers: {
       Authorization: `Bearer ${stripeSecretKey}`,
       "Content-Type": "application/x-www-form-urlencoded",
+      "Idempotency-Key": portalIdempotencyKey,
     },
     body: params.toString(),
     signal: AbortSignal.timeout(10_000),
