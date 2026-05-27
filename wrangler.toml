@@ -32,6 +32,14 @@ routes = [
   { pattern = "*.oltigo.com/*", zone_name = "oltigo.com" },
 ]
 
+# ── Static Assets ─────────────────────────────────────────────────────
+# Serves _next/static/*, favicon, images, etc. from the Cloudflare edge.
+# Without this, CSS/JS assets return 404 because the Worker doesn't have
+# access to the build output's static files.
+[assets]
+directory = ".open-next/assets"
+binding = "ASSETS"
+
 # ── KV Namespaces ─────────────────────────────────────────────────────
 # Rate-limiting counters (shared across all edge locations).
 # INF-002: Rate limiter MUST use KV in production to prevent per-isolate
@@ -66,6 +74,9 @@ RATE_LIMIT_BACKEND = "supabase"
 # from silently leaking into production. Deploy with: wrangler deploy --env production
 [env.production]
 name = "webs-alots"
+[env.production.assets]
+directory = ".open-next/assets"
+binding = "ASSETS"
 [env.production.vars]
 NODE_ENV = "production"
 RATE_LIMIT_BACKEND = "supabase"
@@ -77,6 +88,9 @@ bucket_name = "webs-alots-uploads"
 # ── Staging Environment ───────────────────────────────────────────────
 [env.staging]
 name = "webs-alots-staging"
+[env.staging.assets]
+directory = ".open-next/assets"
+binding = "ASSETS"
 [env.staging.vars]
 NODE_ENV = "production"
 RATE_LIMIT_BACKEND = "supabase"
