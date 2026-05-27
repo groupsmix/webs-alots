@@ -130,11 +130,16 @@ export const POST = withAuthValidation(stripeCheckoutSchema, async (body, reques
       params.append(`metadata[${key}]`, value);
     }
 
+    // MEDIUM-2: Idempotency-Key prevents duplicate Checkout Sessions from
+    // network retries, double-clicks, or redirect loops.
+    const idempotencyKey = `checkout_${profile.clinic_id}_${user.id}_${appointmentId ?? "none"}_${Date.now()}`;
+
     const stripeResponse = await fetch("https://api.stripe.com/v1/checkout/sessions", {
       method: "POST",
       headers: {
         Authorization: `Bearer ${stripeSecretKey}`,
         "Content-Type": "application/x-www-form-urlencoded",
+        "Idempotency-Key": idempotencyKey,
       },
       body: params.toString(),
       signal: AbortSignal.timeout(10_000),
