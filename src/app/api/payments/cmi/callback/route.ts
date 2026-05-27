@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { apiError, apiInternalError } from "@/lib/api-response";
 import { verifyCmiCallback } from "@/lib/cmi";
 import { logger } from "@/lib/logger";
-import { createClient } from "@/lib/supabase-server";
+import { createAdminClient, createClient } from "@/lib/supabase-server";
 import { setTenantContext, logTenantContext } from "@/lib/tenant-context";
 import { APPOINTMENT_STATUS, PAYMENT_STATUS } from "@/lib/types/database";
 import { cmiCallbackFieldsSchema } from "@/lib/validations";
@@ -140,6 +140,50 @@ export async function POST(request: NextRequest) {
 
     if (!callbackData) {
       return apiError("Invalid callback");
+    }
+
+    // HIGH-2: Replay protection — insert into cmi_callbacks_seen before
+    // any state mutation.  Uses admin client because tenant context is not
+    // yet established at this point and the table's RLS requires clinic_id.
+    // ON CONFLICT (clinic_id, transaction_id) rejects duplicates.
+    if (callbackData.transactionId) {
+      const adminClient = createAdminClient("webhook");
+      // Look up the payment first to get clinic_id for the dedup row.
+      const { data: dedupPayment } = await adminClient
+        .from("payments")
+        .select("clinic_id")
+        .eq("gateway_session_id", callbackData.orderId)
+        .single();
+
+      if (dedupPayment?.clinic_id) {
+        const { error: dedupErr } = await adminClient
+          .from("cmi_callbacks_seen" as never)
+          .insert({
+            clinic_id: dedupPayment.clinic_id,
+            transaction_id: callbackData.transactionId,
+          } as never);
+
+        if (dedupErr) {
+          // 23505 = unique_violation → duplicate callback, ACK but do nothing
+          if (dedupErr.code === "23505") {
+            logger.info("CMI callback replay detected — ignoring duplicate", {
+              context: "payments/cmi/callback",
+              transactionId: callbackData.transactionId,
+              clinicId: dedupPayment.clinic_id,
+            });
+            return new NextResponse("ACTION=POSTAUTH", {
+              status: 200,
+              headers: { "Content-Type": "text/plain" },
+            });
+          }
+          // Other DB errors — log but continue (fail-open for payment processing)
+          logger.error("CMI dedup insert failed", {
+            context: "payments/cmi/callback",
+            error: dedupErr,
+            transactionId: callbackData.transactionId,
+          });
+        }
+      }
     }
 
     const supabase = await createClient();
