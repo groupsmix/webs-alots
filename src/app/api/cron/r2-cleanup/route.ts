@@ -45,7 +45,7 @@ async function handler(request: NextRequest) {
     // Cron has no tenant subdomain context — use the admin client to
     // enumerate clinics, then re-scope every per-clinic operation via
     // the library primitives that take an explicit `clinicId`.
-    const supabase = createAdminClient();
+    const supabase = createAdminClient("cron");
 
     const { data: clinics, error: clinicsError } = await supabase
       .from("clinics")

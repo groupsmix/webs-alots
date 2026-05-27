@@ -29,10 +29,10 @@ import type {
  * This function returns a cookie-based Supabase client whose queries
  * run under the authenticated user's session. It does NOT bypass RLS
  * by itself. However, some callers (e.g. `createUser`) also use
- * `createAdminClient()` which creates a service-role client that
+ * `createAdminClient("super_admin")` which creates a service-role client that
  * **does bypass all Row Level Security policies**.
  *
- * Any function in this file that uses `createAdminClient()` must:
+ * Any function in this file that uses `createAdminClient("super_admin")` must:
  *   1. Validate all inputs before passing them to the admin client.
  *   2. Be restricted to super_admin callers (enforced by `requireRole`).
  *   3. Log the operation for audit purposes (see `activity_logs` table).
@@ -252,7 +252,7 @@ export async function createUser(input: CreateUserInput): Promise<UserRow> {
   // Attempt to create a Supabase Auth account if email is provided
   if (input.email && process.env.SUPABASE_SERVICE_ROLE_KEY) {
     try {
-      const admin = createAdminClient();
+      const admin = createAdminClient("super_admin");
       // Audit P1 #12: Generate a secure random one-time password for new staff
       // so we don't rely on a shared static STAFF_DEFAULT_PASSWORD constant.
       const secureOneTimePassword = crypto.randomUUID() + crypto.randomUUID().slice(0, 8);
@@ -368,7 +368,7 @@ export async function createUser(input: CreateUserInput): Promise<UserRow> {
   if (input.email) {
     try {
       const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://oltigo.com";
-      const admin = createAdminClient();
+      const admin = createAdminClient("super_admin");
       const { data: resetLink } = await admin.auth.admin.generateLink({
         type: "recovery",
         email: input.email,

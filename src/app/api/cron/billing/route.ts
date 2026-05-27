@@ -22,7 +22,7 @@ async function handler(request: NextRequest) {
   const authError = verifyCronSecret(request);
   if (authError) return authError;
 
-  const supabase = createAdminClient();
+  const supabase = createAdminClient("cron");
 
   // Fetch all active subscriptions that may need renewal
   const today = new Date().toISOString().split("T")[0];

@@ -43,7 +43,7 @@ async function handler(request: NextRequest) {
   }
 
   try {
-    const supabase = createAdminClient();
+    const supabase = createAdminClient("cron");
     const sevenDaysAgo = Math.floor(Date.now() / 1000) - 7 * 24 * 60 * 60;
 
     // Fetch completed Stripe Checkout Sessions from the last 7 days.

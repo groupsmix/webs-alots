@@ -123,7 +123,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Use admin client — webhook requests bypass user auth
-    const supabase = createAdminClient();
+    const supabase = createAdminClient("webhook");
 
     switch (event.type) {
       case "checkout.session.completed": {
