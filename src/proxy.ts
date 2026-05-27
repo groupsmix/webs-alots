@@ -1,7 +1,11 @@
 /**
- * Next.js Middleware
+ * Next.js Proxy (formerly Middleware)
  *
- * Refactored from a monolithic 557-line file into composable modules:
+ * Migrated from middleware.ts to proxy.ts per the Next.js 16 convention
+ * rename (F-001). Semantics are identical; only the file name and the
+ * exported function name changed.
+ *
+ * Composable modules:
  *   - @/lib/middleware/security-headers — CSP, HSTS, nonce generation
  *   - @/lib/middleware/csrf             — Origin-based CSRF validation
  *   - @/lib/middleware/rate-limiting    — Per-IP rate limiting for API routes
@@ -69,7 +73,7 @@ function setTenantHeaders(
 const MAX_BODY_BYTES = 25 * 1024 * 1024;
 
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   // AUDIT-25: Record middleware start time for CPU telemetry.
   // Cloudflare Workers CPU budget is set to 50ms in wrangler.toml (Paid plan).
   // This timing helps identify when middleware complexity approaches that

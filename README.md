@@ -151,7 +151,7 @@ For local development, subdomains work automatically via `*.localhost` (e.g., `d
 
 **How it works:**
 
-- `middleware.ts` extracts the subdomain and queries the `clinics` table
+- `proxy.ts` extracts the subdomain and queries the `clinics` table
 - Resolved clinic info is passed via `x-tenant-*` headers
 - Server Components use `getTenant()` from `src/lib/tenant.ts`
 - Client Components use `useTenant()` from `src/components/tenant-provider.tsx`

@@ -10,7 +10,7 @@
     "src/app/**/default.tsx",
     "src/app/**/template.tsx",
     "src/app/global-error.tsx",
-    "src/middleware.ts",
+    "src/proxy.ts",
     "src/instrumentation.ts",
     "sentry.*.config.ts",
     "scripts/**/*.{ts,mjs}",
