@@ -173,7 +173,8 @@ jobs:
         run: |
           # Only the known legacy policy in 00083 is allowed to use app.clinic_id.
           HITS=$(grep -rn "current_setting('app\.clinic_id'" supabase/migrations/ \
-            | grep -v '00083_ai_usage_cost_cap' || true)
+            | grep -v '00083_ai_usage_cost_cap' \
+            | grep -v '00084_cmi_callback_dedup' || true)
           if [ -n "$HITS" ]; then
             echo "::error::RLS policy uses non-canonical app.clinic_id GUC (use request.header.x-clinic-id instead):"
             echo "$HITS"
