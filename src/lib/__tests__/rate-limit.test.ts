@@ -93,11 +93,13 @@ describe("createRateLimiter (in-memory)", () => {
     expect(limiter.check("ip-b")).toBe(false);
   });
 
-  it("rejects new keys when maxKeys is reached", () => {
+  it("evicts oldest key when maxKeys is reached (LRU)", () => {
+    // A78-01: Changed from reject-when-full to LRU eviction.
+    // New keys now evict the oldest entry instead of being rejected.
     const limiter = createRateLimiter({ windowMs: 60_000, max: 10, maxKeys: 2 });
     expect(limiter.check("ip-1")).toBe(true);
     expect(limiter.check("ip-2")).toBe(true);
-    expect(limiter.check("ip-3")).toBe(false); // maxKeys exceeded
+    expect(limiter.check("ip-3")).toBe(true); // evicts ip-1, admits ip-3
   });
 
   it("allows existing keys even when maxKeys is reached", () => {

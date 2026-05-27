@@ -39,11 +39,20 @@ import { withAuth, withAuthAnyRole, type AuthContext } from "@/lib/with-auth";
  * - Catches unhandled errors and returns a 500
  * - Logs errors with structured context
  */
+/** IV-002: Maximum request body size (64 KB) to prevent oversized JSON payloads. */
+const MAX_BODY_BYTES = 65_536;
+
 export function withValidation<T>(
   schema: ZodType<T>,
   handler: (data: T, request: NextRequest) => Promise<NextResponse | Response>,
 ): (request: NextRequest) => Promise<NextResponse | Response> {
   return async (request: NextRequest): Promise<NextResponse | Response> => {
+    // IV-002: Fail-fast if Content-Length exceeds cap
+    const contentLength = request.headers.get("content-length");
+    if (contentLength && parseInt(contentLength, 10) > MAX_BODY_BYTES) {
+      return apiValidationError(`Request body too large (max ${MAX_BODY_BYTES} bytes)`);
+    }
+
     let body: unknown;
     try {
       body = await request.json();
@@ -86,6 +95,12 @@ export function withAuthValidation<T>(
   allowedRoles: UserRole[] | null,
 ): (request: NextRequest) => Promise<NextResponse> {
   const inner = async (request: NextRequest, auth: AuthContext) => {
+    // IV-002: Fail-fast if Content-Length exceeds cap
+    const contentLength = request.headers.get("content-length");
+    if (contentLength && parseInt(contentLength, 10) > MAX_BODY_BYTES) {
+      return apiValidationError(`Request body too large (max ${MAX_BODY_BYTES} bytes)`);
+    }
+
     let body: unknown;
     try {
       body = await request.json();

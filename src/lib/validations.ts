@@ -807,14 +807,12 @@ export function safeParse<T>(
   if (result.success) {
     return { success: true, data: result.data };
   }
-  const details = result.error.issues
-    .map((i) => `${i.path.join(".")}: ${i.message}`)
-    .join("; ");
-  // API-009: In production, redact Zod field-level details to prevent
-  // information disclosure (field names, types, constraints). The full
-  // details are logged server-side for debugging.
-  if (process.env.NODE_ENV === "production") {
-    return { success: false, error: "Validation error" };
-  }
-  return { success: false, error: `Validation error: ${details}` };
+  // A8-01: Redact field paths from client-facing errors to prevent
+  // information disclosure (schema shape, field names, constraints).
+  // Only expose the count of errors and generic messages.
+  const count = result.error.issues.length;
+  return {
+    success: false,
+    error: `Validation error: ${count} field${count !== 1 ? "s" : ""} invalid`,
+  };
 }

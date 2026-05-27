@@ -83,6 +83,7 @@ export const POST = withAuthValidation(subscriptionPortalSchema, async (body, re
       "Content-Type": "application/x-www-form-urlencoded",
     },
     body: params.toString(),
+    signal: AbortSignal.timeout(10_000),
   });
 
   const session = await stripeResponse.json();

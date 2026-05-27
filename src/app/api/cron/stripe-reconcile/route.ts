@@ -67,6 +67,7 @@ async function handler(request: NextRequest) {
             Authorization: `Bearer ${stripeKey}`,
             "Content-Type": "application/x-www-form-urlencoded",
           },
+          signal: AbortSignal.timeout(10_000),
         },
       );
 

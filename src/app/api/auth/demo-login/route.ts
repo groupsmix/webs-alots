@@ -101,6 +101,7 @@ export async function POST(request: NextRequest) {
             response: turnstile_token,
             remoteip: clientIp,
           }),
+          signal: AbortSignal.timeout(5_000),
         },
       );
       const verifyData = (await verifyRes.json()) as { success: boolean };

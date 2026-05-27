@@ -98,6 +98,7 @@ async function sendSlackRegistrationAlert(data: {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(message),
+      signal: AbortSignal.timeout(5_000),
     });
   } catch (err) {
     logger.error("Failed to send Slack registration alert", {
@@ -130,6 +131,7 @@ async function verifyDnsTxtRecord(hostname: string, token: string): Promise<bool
       const url = `https://cloudflare-dns.com/dns-query?name=${encodeURIComponent(name)}&type=TXT`;
       const res = await fetch(url, {
         headers: { Accept: "application/dns-json" },
+        signal: AbortSignal.timeout(5_000),
       });
       if (!res.ok) continue;
 
@@ -318,6 +320,7 @@ export async function POST(request: NextRequest) {
             response: data.turnstile_token,
             remoteip: clientIp,
           }),
+          signal: AbortSignal.timeout(5_000),
         },
       );
       const verifyData = (await verifyRes.json()) as { success: boolean };
