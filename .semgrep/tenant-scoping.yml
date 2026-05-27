@@ -28,6 +28,10 @@ rules:
       isolation (see AGENTS.md).
     severity: WARNING
     languages: [typescript, javascript]
+    paths:
+      exclude:
+        - "src/lib/__tests__/integration/rls-*.test.ts"
+        - "src/lib/__tests__/integration/rls-*.test.tsx"
     metadata:
       category: security
       technology:
