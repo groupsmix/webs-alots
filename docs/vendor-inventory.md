@@ -55,7 +55,7 @@ The acceptance links below should be visited by the Oltigo Health account holder
 to formally execute each DPA. Most include Standard Contractual Clauses (SCCs)
 by default for EU/international data transfers.
 
-| Vendor | DPA Required | DPA Status | SCCs Included | Acceptance Method | Review Date |
+| Vendor | DPA Required | DPA Status | SCCs Included | Acceptance Method | Next Review |
 |--------|-------------|------------|---------------|-------------------|-------------|
 | Supabase | Yes | **Accept online** | Yes (US sub-processors) | [Supabase DPA](https://supabase.com/legal/dpa) — click-through on dashboard or email legal@supabase.io | — |
 | Cloudflare | Yes | **Accept online** | Yes (global edge) | [Cloudflare DPA](https://www.cloudflare.com/cloudflare-customer-dpa/) — auto-accepted with TOS | — |
