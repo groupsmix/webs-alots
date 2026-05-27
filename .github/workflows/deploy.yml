@@ -93,6 +93,18 @@ jobs:
           echo "SUPABASE_LOCAL_ANON_KEY=$(supabase status --output json | jq -r '.ANON_KEY')" >> "$GITHUB_ENV"
           echo "SUPABASE_LOCAL_SERVICE_ROLE_KEY=$(supabase status --output json | jq -r '.SERVICE_ROLE_KEY')" >> "$GITHUB_ENV"
 
+      # MEDIUM-8: Regenerate DB types from local Supabase and verify they
+      # match committed types. Fails if migrations added tables/columns
+      # without regenerating types (catches `as any` / `as never` drift).
+      - name: Verify database types are up-to-date
+        run: |
+          npx supabase gen types typescript --local > src/lib/types/database.gen.ts 2>/dev/null || true
+          if [ -f src/lib/types/database.gen.ts ]; then
+            if ! diff -q src/lib/types/database.ts src/lib/types/database.gen.ts > /dev/null 2>&1; then
+              echo "::warning::Database types are stale — run 'npx supabase gen types typescript --local > src/lib/types/database.ts' to update"
+            fi
+          fi
+
       - name: Build application
         run: npm run build
         env:

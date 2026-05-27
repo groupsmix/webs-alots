@@ -440,6 +440,17 @@ export async function POST(request: NextRequest) {
       }
     });
 
+    // MEDIUM-10: Self-service clinics require manual review before activation.
+    // DNS-TXT proves domain control, not clinic legitimacy. Set status to
+    // 'pending_review' so the clinic is not auto-activated. A super_admin
+    // must approve the clinic before it becomes fully operational.
+    if (process.env.SELF_SERVICE_MANUAL_REVIEW !== "false") {
+      await supabase
+        .from("clinics")
+        .update({ status: "pending_review" } as never)
+        .eq("id", clinicId);
+    }
+
     // 6. Send WhatsApp welcome message (non-blocking, best-effort)
     const clinicUrl = `https://${subdomain}.oltigo.com`;
     const whatsappPhone = phoneToWhatsApp(data.phone);
@@ -488,10 +499,13 @@ export async function POST(request: NextRequest) {
       ip: clientIp,
     });
 
+    const isPendingReview = process.env.SELF_SERVICE_MANUAL_REVIEW !== "false";
     return apiSuccess(
       {
-        status: "created",
-        message: "Clinique créée avec succès",
+        status: isPendingReview ? "pending_review" : "created",
+        message: isPendingReview
+          ? "Clinique créée — en attente de vérification par l'équipe Oltigo."
+          : "Clinique créée avec succès",
         clinic_id: clinicId,
         subdomain,
         clinic_url: clinicUrl,
