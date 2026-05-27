@@ -1,0 +1,29 @@
+name: Security vulnerability
+description: Report a security vulnerability. For responsible disclosure, email security@oltigo.com instead.
+labels: ["security"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **⚠️ If this is a critical or exploitable vulnerability, please do NOT open a public issue.**
+
+        Email **security@oltigo.com** per our [Security Policy](../../SECURITY.md) for responsible disclosure.
+
+        Use this template only for low-severity hardening suggestions or security-adjacent improvements that are safe to discuss publicly.
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: Describe the security concern and its potential impact.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce (if applicable)
+      description: How can we verify the issue?
+  - type: textarea
+    id: remediation
+    attributes:
+      label: Suggested remediation
+      description: If you have a fix in mind, describe it here.

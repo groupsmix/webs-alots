@@ -10,6 +10,10 @@ useDefault = true
 # real secrets and never resolvable off the CI runner).
 [allowlist]
 description = "Allow placeholder tokens in documentation and CI env vars"
+paths = [
+    '''^\.next/''',
+    '''^node_modules/''',
+]
 regexTarget = "match"
 regexes = [
     '''YOUR_[A-Z][A-Z0-9_]*_TOKEN''',
