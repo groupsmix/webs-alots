@@ -7,6 +7,7 @@
  *
  * Cron schedule (must match wrangler.toml [triggers].crons exactly):
  *   - every 15 min   →  /api/cron/notifications (queued notifications)
+ *                        /api/cron/audit-log-flush (MEDIUM-6 durable retry)
  *   - every 30 min   →  /api/cron/reminders     (appointment reminders)
  *   - hourly         →  /api/cron/r2-cleanup    (abandoned R2 uploads)
  *                        /api/cron/feedback      (post-appointment feedback)
@@ -30,7 +31,7 @@ import { default as handler } from "./.open-next/worker.js";
  * r2-cleanup, feedback, and rebooking-reminders in parallel).
  */
 const CRON_ROUTES: Record<string, string[]> = {
-  "*/15 * * * *": ["/api/cron/notifications"],
+  "*/15 * * * *": ["/api/cron/notifications", "/api/cron/audit-log-flush"],
   "*/30 * * * *": ["/api/cron/reminders"],
   "0 * * * *":    ["/api/cron/r2-cleanup", "/api/cron/feedback", "/api/cron/rebooking-reminders"],
   "0 2 * * *":    ["/api/cron/billing"],

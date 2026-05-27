@@ -523,13 +523,30 @@ export async function middleware(request: NextRequest) {
       return secureRedirect(new URL("/login?error=unauthorized_role", request.url));
     }
 
-    // Super admin and doctor can access their routes, but MUST complete MFA if configured
-    if (profile.role === "super_admin" || profile.role === "doctor") {
+    // Super admin: MUST have MFA enrolled AND verified (AAL2).
+    // MEDIUM-5: A super_admin compromise = total platform compromise.
+    // If no factors are enrolled, redirect to setup; if enrolled but not
+    // verified this session, redirect to verify.
+    if (profile.role === "super_admin") {
+      const { data: aalData } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+      if (aalData?.currentLevel !== "aal2") {
+        if (aalData?.nextLevel === "aal2") {
+          return secureRedirect(new URL("/login?mfa=required", request.url));
+        }
+        // No factors enrolled — redirect to setup (allow the setup page itself)
+        if (!pathname.startsWith("/setup-2fa")) {
+          return secureRedirect(new URL("/setup-2fa?required=super_admin", request.url));
+        }
+      }
+      return supabaseResponse;
+    }
+
+    // Doctor: complete MFA if configured (existing behavior, not mandatory)
+    if (profile.role === "doctor") {
       const { data: aalData } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
       if (aalData?.currentLevel === "aal1" && aalData?.nextLevel === "aal2") {
         return secureRedirect(new URL("/login?mfa=required", request.url));
       }
-      if (profile.role === "super_admin") return supabaseResponse;
     }
 
     // Enforce 2FA for clinic_admin role: if admin has MFA factors but
