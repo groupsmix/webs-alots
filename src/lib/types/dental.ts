@@ -7,7 +7,7 @@
 
 // ---------- Dental Treatment Types ----------
 
-export interface DentalTreatmentType {
+interface DentalTreatmentType {
   id: string;
   name: string;
   category: string;
@@ -37,7 +37,7 @@ export interface OdontogramEntry {
   dentition?: "adult" | "child";
 }
 
-export interface PatientOdontogram {
+interface PatientOdontogram {
   patientId: string;
   patientName: string;
   entries: OdontogramEntry[];
@@ -114,7 +114,7 @@ export interface MaterialStock {
 
 // ---------- Before/After Photos ----------
 
-export interface BeforeAfterPhoto {
+interface BeforeAfterPhoto {
   id: string;
   patientId: string;
   patientName: string;
@@ -127,7 +127,7 @@ export interface BeforeAfterPhoto {
 
 // ---------- Pain Questionnaire ----------
 
-export interface PainQuestionnaire {
+interface PainQuestionnaire {
   patientId: string;
   appointmentId: string;
   painLevel: number;
@@ -142,7 +142,7 @@ export interface PainQuestionnaire {
 
 // ---------- Installment Plans ----------
 
-export interface InstallmentPayment {
+interface InstallmentPayment {
   id: string;
   installmentPlanId: string;
   amount: number;
@@ -152,7 +152,7 @@ export interface InstallmentPayment {
   receiptId: string | null;
 }
 
-export interface InstallmentPlan {
+interface InstallmentPlan {
   id: string;
   patientId: string;
   patientName: string;
@@ -170,7 +170,7 @@ export interface InstallmentPlan {
 
 // ---------- Analytics ----------
 
-export interface DailyAnalytics {
+interface DailyAnalytics {
   date: string;
   patientCount: number;
   revenue: number;
@@ -180,38 +180,38 @@ export interface DailyAnalytics {
   onlineBookings: number;
 }
 
-export interface WeeklyRevenue {
+interface WeeklyRevenue {
   week: string;
   revenue: number;
   patients: number;
 }
 
-export interface MonthlyRevenue {
+interface MonthlyRevenue {
   month: string;
   revenue: number;
   patients: number;
   appointments: number;
 }
 
-export interface ServicePopularity {
+interface ServicePopularity {
   serviceName: string;
   count: number;
   revenue: number;
   percentage: number;
 }
 
-export interface HourlyHeatmap {
+interface HourlyHeatmap {
   day: string;
   hours: { hour: number; count: number }[];
 }
 
-export interface ReviewTrend {
+interface ReviewTrend {
   month: string;
   averageScore: number;
   count: number;
 }
 
-export interface PatientRetention {
+interface PatientRetention {
   month: string;
   newPatients: number;
   returningPatients: number;

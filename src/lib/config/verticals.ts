@@ -24,7 +24,7 @@ export type VerticalId =
   | "veterinary";
 
 /** Terminology mapping — adapts UI labels per vertical. */
-export interface VerticalTerminology {
+interface VerticalTerminology {
   /** What to call the end-user: "patient" | "client" | "member" | "guest" */
   client: string;
   /** What to call the service provider: "doctor" | "stylist" | "trainer" | "chef" */
@@ -39,7 +39,7 @@ export interface VerticalTerminology {
  * Full vertical definition — everything needed to configure
  * a business vertical in one place.
  */
-export interface VerticalDefinition {
+interface VerticalDefinition {
   /** Unique identifier for this vertical */
   id: VerticalId;
   /** Display name in English */

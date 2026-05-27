@@ -30,14 +30,14 @@ export const statusColors: Record<SubscriptionStatus, string> = {
   suspended: "bg-red-100 text-red-700",
 };
 
-export interface PricingFeature {
+interface PricingFeature {
   key: string;
   label: string;
   included: boolean;
   limit?: string;
 }
 
-export interface TierLimits {
+interface TierLimits {
   maxDoctors: number;
   maxPatients: number;
   maxAppointmentsPerMonth: number;
@@ -47,7 +47,7 @@ export interface TierLimits {
   whiteLabel: boolean;
 }
 
-export interface PricingTier {
+interface PricingTier {
   id: string;
   slug: TierSlug;
   name: string;
@@ -58,7 +58,7 @@ export interface PricingTier {
   limits: TierLimits;
 }
 
-export interface FeatureToggle {
+interface FeatureToggle {
   id: string;
   key: string;
   label: string;
@@ -69,7 +69,7 @@ export interface FeatureToggle {
   enabled: boolean;
 }
 
-export interface ClientInvoice {
+interface ClientInvoice {
   id: string;
   date: string;
   amount: number;

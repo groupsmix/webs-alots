@@ -1,7 +1,7 @@
 import { Database as GenDatabase } from "./database";
 
 // Define the missing tables that are not in the generated types
-export type ExtendedDatabase = GenDatabase & {
+type ExtendedDatabase = GenDatabase & {
   public: GenDatabase["public"] & {
     Tables: GenDatabase["public"]["Tables"] & {
       doctor_unavailability: {

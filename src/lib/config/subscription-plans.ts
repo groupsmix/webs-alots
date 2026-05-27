@@ -7,9 +7,9 @@
 
 export type PlanSlug = "free" | "starter" | "professional" | "enterprise";
 
-export type AiChatbotLevel = false | "basic" | "smart" | "advanced";
+type AiChatbotLevel = false | "basic" | "smart" | "advanced";
 
-export interface PlanLimits {
+interface PlanLimits {
   appointmentsPerMonth: number;
   staffMembers: number;
   aiChatbot: AiChatbotLevel;
@@ -156,7 +156,7 @@ export function getPlanByPriceId(priceId: string): SubscriptionPlan | undefined 
 }
 
 /** Get a plan by its slug. */
-export function getPlanBySlug(slug: string): SubscriptionPlan | undefined {
+function getPlanBySlug(slug: string): SubscriptionPlan | undefined {
   return SUBSCRIPTION_PLANS[slug as PlanSlug];
 }
 

@@ -31,7 +31,7 @@ import type { ClinicDashboardConfig } from "@/components/layouts/clinic-dashboar
  * All specialist type slugs that use the ClinicDashboardLayout.
  * Equipment is excluded because it uses a custom layout with i18n.
  */
-export const SPECIALIST_SLUGS = [
+const SPECIALIST_SLUGS = [
   "nutritionist",
   "optician",
   "parapharmacy",
@@ -41,10 +41,10 @@ export const SPECIALIST_SLUGS = [
   "radiology",
 ] as const;
 
-export type SpecialistSlug = (typeof SPECIALIST_SLUGS)[number];
+type SpecialistSlug = (typeof SPECIALIST_SLUGS)[number];
 
 /** Registry of specialist dashboard configs keyed by URL slug. */
-export const specialistRegistry: Record<SpecialistSlug, ClinicDashboardConfig> = {
+const specialistRegistry: Record<SpecialistSlug, ClinicDashboardConfig> = {
   nutritionist: {
     title: "Nutritionniste",
     icon: Apple,

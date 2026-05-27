@@ -7,7 +7,7 @@
 
 // ---- Field Types ----
 
-export type CustomFieldType =
+type CustomFieldType =
   | "text"
   | "number"
   | "date"
@@ -16,7 +16,7 @@ export type CustomFieldType =
   | "file"
   | "tooth_number";
 
-export type CustomFieldEntityType =
+type CustomFieldEntityType =
   | "appointment"
   | "patient"
   | "consultation"
@@ -25,7 +25,7 @@ export type CustomFieldEntityType =
 
 // ---- Select Option ----
 
-export interface CustomFieldOption {
+interface CustomFieldOption {
   value: string;
   label_fr: string;
   label_ar: string;
@@ -33,7 +33,7 @@ export interface CustomFieldOption {
 
 // ---- Validation Rules ----
 
-export interface CustomFieldValidation {
+interface CustomFieldValidation {
   min?: number;
   max?: number;
   step?: number;
@@ -67,7 +67,7 @@ export interface CustomFieldDefinition {
 
 // ---- Field Values (stored per entity instance) ----
 
-export interface CustomFieldValues {
+interface CustomFieldValues {
   id: string;
   clinic_id: string;
   entity_type: CustomFieldEntityType;
@@ -79,7 +79,7 @@ export interface CustomFieldValues {
 
 // ---- Field Override (clinic-level customization) ----
 
-export interface CustomFieldOverride {
+interface CustomFieldOverride {
   id: string;
   clinic_id: string;
   field_definition_id: string;
@@ -91,7 +91,7 @@ export interface CustomFieldOverride {
 
 // ---- API Request/Response Types ----
 
-export interface CreateFieldDefinitionRequest {
+interface CreateFieldDefinitionRequest {
   clinic_type_key: string;
   entity_type: CustomFieldEntityType;
   field_key: string;
@@ -107,7 +107,7 @@ export interface CreateFieldDefinitionRequest {
   default_value?: unknown;
 }
 
-export interface UpdateFieldDefinitionRequest {
+interface UpdateFieldDefinitionRequest {
   label_fr?: string;
   label_ar?: string;
   description?: string;
@@ -120,7 +120,7 @@ export interface UpdateFieldDefinitionRequest {
   is_active?: boolean;
 }
 
-export interface SaveFieldValuesRequest {
+interface SaveFieldValuesRequest {
   clinic_id: string;
   entity_type: CustomFieldEntityType;
   entity_id: string;
@@ -129,7 +129,7 @@ export interface SaveFieldValuesRequest {
 
 // ---- Resolved field (definition + override merged) ----
 
-export interface ResolvedCustomField {
+interface ResolvedCustomField {
   definition: CustomFieldDefinition;
   is_enabled: boolean;
   is_required: boolean;

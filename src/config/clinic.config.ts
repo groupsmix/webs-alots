@@ -21,7 +21,7 @@
  *   pharmacy, lab, optician, parapharmacy, psychologist, speech-therapist,
  *   equipment
  */
-export type ClinicType =
+type ClinicType =
   | "doctor"
   | "dentist"
   | "pharmacy"
@@ -52,7 +52,7 @@ export type ClinicType =
   | "restaurant_patisserie"
   | "restaurant_traiteur";
 
-export type ClinicTier = "vitrine" | "cabinet" | "pro" | "premium" | "saas";
+type ClinicTier = "vitrine" | "cabinet" | "pro" | "premium" | "saas";
 
 export interface ClinicConfig {
   /**
