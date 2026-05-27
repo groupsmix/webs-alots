@@ -15,6 +15,9 @@ const nextConfig: NextConfig = {
   // Enable static generation for better performance
   trailingSlash: true,
 
+  // MEDIUM-9: Suppress X-Powered-By header (information disclosure).
+  poweredByHeader: false,
+
   // PERF-01: Enable the stable `use cache` directive (Next.js 16).
   experimental: {
     useCache: true,
