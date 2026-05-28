@@ -207,11 +207,16 @@ function recordFailure(state: CircuitBreakerState, options: RateLimiterOptions):
   state.lastFailure = Date.now();
   if (state.consecutiveFailures >= CIRCUIT_BREAKER_THRESHOLD) {
     state.trippedAt = Date.now();
-    if (!state.fallback && !state.failClosed) {
+    // Always create an in-memory fallback so that a tripped circuit
+    // degrades to local rate limiting instead of hard-blocking every
+    // request. Previously, failClosed endpoints skipped fallback
+    // creation and returned 429 for ALL traffic when the backend was
+    // unreachable — taking the entire site offline.
+    if (!state.fallback) {
       state.fallback = createMemoryRateLimiter(options);
     }
     logger.warn(
-      `Rate limiter circuit breaker tripped after ${state.consecutiveFailures} failures — ${state.failClosed ? "failing closed" : "falling back to in-memory limiter"}`,
+      `Rate limiter circuit breaker tripped after ${state.consecutiveFailures} failures — falling back to in-memory limiter`,
       { context: "rate-limit" },
     );
   }
@@ -264,11 +269,11 @@ function createSupabaseRateLimiter(options: RateLimiterOptions): RateLimiter {
 
   return {
     async check(key: string): Promise<boolean> {
-      // If circuit breaker is tripped, use the in-memory fallback
-      // instead of failing open.
+      // If circuit breaker is tripped, degrade to in-memory rate limiting.
+      // This preserves rate-limit enforcement while keeping the site alive.
       if (isCircuitOpen(circuitBreaker)) {
-        if (circuitBreaker.failClosed) return false;
-        return circuitBreaker.fallback!.check(key);
+        if (circuitBreaker.fallback) return circuitBreaker.fallback.check(key);
+        return !failClosed;
       }
 
       const now = Date.now();
@@ -432,20 +437,22 @@ function createKVRateLimiter(options: RateLimiterOptions): RateLimiter {
 
   return {
     async check(key: string): Promise<boolean> {
-      // If circuit breaker is tripped, use the in-memory fallback
+      // If circuit breaker is tripped, degrade to in-memory rate limiting.
       if (isCircuitOpen(circuitBreaker)) {
-        if (circuitBreaker.failClosed) return false;
-        // Enforce the grace period fail-closed boundary
-        const elapsed = Date.now() - (circuitBreaker.lastFailure || 0);
-        if (elapsed > getKvGraceMs()) {
-          logger.error("Rate limiter KV grace period expired, failing closed", {
-            context: "rate-limit",
-            key,
-            elapsedMs: elapsed,
-          });
-          return false; // Fail closed after grace period
+        if (circuitBreaker.fallback) {
+          // Enforce the grace period fail-closed boundary
+          const elapsed = Date.now() - (circuitBreaker.lastFailure || 0);
+          if (elapsed > getKvGraceMs()) {
+            logger.error("Rate limiter KV grace period expired, failing closed", {
+              context: "rate-limit",
+              key,
+              elapsedMs: elapsed,
+            });
+            return false;
+          }
+          return circuitBreaker.fallback.check(key);
         }
-        return circuitBreaker.fallback!.check(key);
+        return !failClosed;
       }
 
       const now = Date.now();
