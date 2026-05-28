@@ -57,7 +57,7 @@ async function handler(request: NextRequest) {
           eq(c: string, v: string): RbCronChain;
         };
         update(row: Record<string, unknown>): {
-          eq(c: string, v: string): Promise<void>;
+          eq(c: string, v: string): { eq(c: string, v: string): Promise<void> };
         };
       };
     };
@@ -164,7 +164,11 @@ async function handler(request: NextRequest) {
 
     for (const req of expiredRequests ?? []) {
       // Mark the rebooking request as expired
-      await rbCron.from("rebooking_requests").update({ status: "expired" }).eq("id", req.id);
+      await rbCron
+        .from("rebooking_requests")
+        .update({ status: "expired" })
+        .eq("id", req.id)
+        .eq("clinic_id", req.clinic_id);
       expiredCount++;
 
       // Cancel the original appointment

@@ -106,7 +106,11 @@ export const POST = withAuthValidation(
       );
       if (!patientId) {
         // Rollback: release the slot claim if patient resolution fails
-        await supabase.from("emergency_slots").update({ is_booked: false }).eq("id", body.slotId);
+        await supabase
+          .from("emergency_slots")
+          .update({ is_booked: false })
+          .eq("id", body.slotId)
+          .eq("clinic_id", clinicId);
         return apiInternalError("Failed to resolve patient");
       }
 
@@ -137,7 +141,11 @@ export const POST = withAuthValidation(
 
       if (apptError || !appointment) {
         // Rollback: release the slot claim if appointment creation fails
-        await supabase.from("emergency_slots").update({ is_booked: false }).eq("id", body.slotId);
+        await supabase
+          .from("emergency_slots")
+          .update({ is_booked: false })
+          .eq("id", body.slotId)
+          .eq("clinic_id", clinicId);
 
         return apiInternalError("Failed to create appointment");
       }
