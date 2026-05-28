@@ -129,7 +129,10 @@ export async function GET() {
       publicData.secondary_color = WCAG_SAFE_DEFAULTS.secondary;
     }
 
-    return apiSuccess(publicData, 200, { "Cache-Control": "public, max-age=300" });
+    // P-05: Cache branding for 5 min, serve stale for 10 min while revalidating
+    return apiSuccess(publicData, 200, {
+      "Cache-Control": "public, max-age=300, stale-while-revalidate=600",
+    });
   } catch (err) {
     logger.warn("Failed to fetch branding", { context: "branding", error: err });
     return apiInternalError("Failed to fetch branding");

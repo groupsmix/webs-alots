@@ -277,7 +277,23 @@ export async function POST(request: NextRequest) {
       // query patients across all tenants. Acknowledge the webhook but
       // skip processing to maintain tenant isolation.
       if (!clinicId) {
-        // Cannot resolve clinic — skip to maintain tenant isolation
+        // B-06: Emit Sentry breadcrumb so unresolved clinics are visible
+        // in the Sentry timeline without waiting for a downstream error.
+        logger.warn("WhatsApp webhook: could not resolve clinic for phone number ID", {
+          context: "webhooks/whatsapp",
+          wabaPhoneNumberId,
+        });
+        try {
+          const Sentry = await import("@sentry/nextjs");
+          Sentry.addBreadcrumb({
+            category: "webhook.clinic_resolution",
+            message: `Unresolved clinic for WABA phone number ID: ${wabaPhoneNumberId}`,
+            level: "warning",
+            data: { wabaPhoneNumberId },
+          });
+        } catch {
+          // Sentry unavailable
+        }
         continue;
       }
 

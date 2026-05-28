@@ -200,6 +200,38 @@ export function createUntypedAdminClient(purpose: AdminPurpose, clinicId?: strin
 }
 
 /**
+ * B-02: Create a service-role admin client that is pre-scoped to a specific
+ * clinic via the `x-clinic-id` header. This provides defense-in-depth: even
+ * though the admin client bypasses RLS, the PostgREST header ensures that any
+ * RLS policy reading `request.header.x-clinic-id` still evaluates correctly.
+ *
+ * Prefer this over raw `createAdminClient()` in any code path that operates
+ * on a single clinic's data (webhooks, cron per-clinic iteration, billing).
+ * The raw `createAdminClient()` should only be used for truly cross-tenant
+ * operations (e.g. iterating all clinics, super-admin actions).
+ *
+ * @param purpose - Audit label for the admin client usage
+ * @param clinicId - The clinic UUID to scope operations to
+ * @throws Error if clinicId is missing or invalid
+ */
+export function createScopedAdminClient(purpose: AdminPurpose, clinicId: string) {
+  if (!clinicId || !isValidClinicId(clinicId)) {
+    throw new Error(`createScopedAdminClient: invalid clinicId: ${clinicId}`);
+  }
+  logger.debug("Scoped admin client created", { context: "supabase-server", purpose, clinicId });
+  return createSupabaseClient<Database>(
+    requireEnv("NEXT_PUBLIC_SUPABASE_URL"),
+    requireEnv("SUPABASE_SERVICE_ROLE_KEY"),
+    {
+      auth: { autoRefreshToken: false, persistSession: false },
+      global: {
+        headers: { "x-clinic-id": clinicId },
+      },
+    },
+  );
+}
+
+/**
  * Create a cookie-free anon Supabase client with x-clinic-id header set.
  *
  * F-03: Replacement for createAdminClient() in `use cache` blocks
