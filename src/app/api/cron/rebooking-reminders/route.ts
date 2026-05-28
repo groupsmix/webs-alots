@@ -25,7 +25,10 @@ async function handler(request: NextRequest) {
     const supabase = createAdminClient("cron");
 
     // Audit 7.1: Short-circuit if there are no active clinics to save DB compute
-    const { count } = await supabase.from("clinics").select("*", { count: "exact", head: true }).eq("status", "active");
+    const { count } = await supabase
+      .from("clinics")
+      .select("*", { count: "exact", head: true })
+      .eq("status", "active");
     if (!count || count === 0) {
       return apiSuccess({ message: "No active clinics, skipping cron", sent: 0 });
     }
@@ -70,7 +73,8 @@ async function handler(request: NextRequest) {
     // 1. Find pending requests that were sent 24h ago but not yet reminded
     const { data: needsReminder } = await rbCron
       .from("rebooking_requests")
-      .select(`
+      .select(
+        `
         id,
         appointment_id,
         patient_id,
@@ -81,7 +85,8 @@ async function handler(request: NextRequest) {
         sent_at,
         patients:patient_id (id, name, phone),
         doctors:doctor_id (id, name)
-      `)
+      `,
+      )
       .eq("status", "pending")
       .is("reminded_at", null)
       .lte("sent_at", twentyFourHoursAgo.toISOString())
@@ -140,14 +145,16 @@ async function handler(request: NextRequest) {
     // 2. Expire requests older than 48 hours
     const { data: expiredRequests } = await rbCron
       .from("rebooking_requests")
-      .select(`
+      .select(
+        `
         id,
         appointment_id,
         patient_id,
         clinic_id,
         patients:patient_id (id, name, phone),
         doctors:doctor_id (id, name)
-      `)
+      `,
+      )
       .eq("status", "pending")
       .lte("sent_at", fortyEightHoursAgo.toISOString())
       .limit(100);
@@ -157,10 +164,7 @@ async function handler(request: NextRequest) {
 
     for (const req of expiredRequests ?? []) {
       // Mark the rebooking request as expired
-      await rbCron
-        .from("rebooking_requests")
-        .update({ status: "expired" })
-        .eq("id", req.id);
+      await rbCron.from("rebooking_requests").update({ status: "expired" }).eq("id", req.id);
       expiredCount++;
 
       // Cancel the original appointment
@@ -206,7 +210,7 @@ async function handler(request: NextRequest) {
       cancelledCount,
     });
   } catch (err) {
-    logger.warn("Operation failed", {
+    logger.warn("Failed to send rebooking reminders", {
       context: "cron/rebooking-reminders",
       error: err,
     });

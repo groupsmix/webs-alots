@@ -46,7 +46,7 @@ export async function GET(request: NextRequest) {
       }
     }
   } catch (err) {
-    _logger.warn("Operation failed", { context: "health-internal", error: err });
+    _logger.warn("Internal health check failed", { context: "health-internal", error: err });
     checks.database = {
       status: "down",
       error: "Database unreachable",
@@ -57,21 +57,22 @@ export async function GET(request: NextRequest) {
     ? { status: "ok" }
     : { status: "degraded", error: "R2 storage not configured" };
 
-  const whatsappConfigured = !!(
-    process.env.WHATSAPP_PHONE_NUMBER_ID && process.env.WHATSAPP_ACCESS_TOKEN
-  ) || !!(
-    process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN
-  );
+  const whatsappConfigured =
+    !!(process.env.WHATSAPP_PHONE_NUMBER_ID && process.env.WHATSAPP_ACCESS_TOKEN) ||
+    !!(process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN);
   checks.whatsapp = whatsappConfigured
     ? { status: "ok" }
     : { status: "degraded", error: "WhatsApp API not configured" };
 
   const rateLimitBackend = process.env.RATE_LIMIT_BACKEND || "auto";
   const hasKV = rateLimitBackend === "kv";
-  const hasSupabase = !!(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY);
+  const hasSupabase = !!(
+    process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY
+  );
   checks.rateLimiter = {
     status: hasKV || hasSupabase ? "ok" : "degraded",
-    error: !hasKV && !hasSupabase ? "Using in-memory fallback (not shared across isolates)" : undefined,
+    error:
+      !hasKV && !hasSupabase ? "Using in-memory fallback (not shared across isolates)" : undefined,
   };
 
   const overallStatus = Object.values(checks).every((c) => c.status === "ok")

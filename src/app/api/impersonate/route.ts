@@ -35,7 +35,9 @@ const COOKIE_SESSION_ID = `${COOKIE_PREFIX}sa_impersonate_session_id`;
  * Ends the impersonation session by marking the DB row as ended and
  * clearing the cookies.
  */
-export const POST = withAuthValidation(impersonateSchema, async (body, request, { supabase, user }) => {
+export const POST = withAuthValidation(
+  impersonateSchema,
+  async (body, request, { supabase, user }) => {
     const { clinicId, clinicName, password, reason } = body;
 
     // AUTH-02: Prevent impersonation of other super_admin accounts.
@@ -73,9 +75,10 @@ export const POST = withAuthValidation(impersonateSchema, async (body, request, 
     }
 
     // AUTH-02: Log IP and user agent for every impersonation event
-    const clientIp = request.headers.get("cf-connecting-ip")
-      ?? request.headers.get("x-forwarded-for")?.split(",")[0]?.trim()
-      ?? "unknown";
+    const clientIp =
+      request.headers.get("cf-connecting-ip") ??
+      request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
+      "unknown";
     const userAgent = request.headers.get("user-agent") ?? "unknown";
 
     // Log the impersonation for security audit
@@ -152,7 +155,11 @@ export const POST = withAuthValidation(impersonateSchema, async (body, request, 
     };
 
     response.cookies.set(COOKIE_CLINIC_ID, clinicId, cookieOpts);
-    response.cookies.set(COOKIE_CLINIC_NAME, encodeURIComponent(clinicName || clinic.name), cookieOpts);
+    response.cookies.set(
+      COOKIE_CLINIC_NAME,
+      encodeURIComponent(clinicName || clinic.name),
+      cookieOpts,
+    );
 
     // Store the session UUID in the cookie instead of the reason text.
     // GET /api/impersonate reads the reason from the DB by session UUID.
@@ -161,7 +168,9 @@ export const POST = withAuthValidation(impersonateSchema, async (body, request, 
     }
 
     return response;
-}, ["super_admin"]);
+  },
+  ["super_admin"],
+);
 
 /**
  * GET /api/impersonate
@@ -209,56 +218,62 @@ export const GET = withAuth(async () => {
   });
 }, ["super_admin"]);
 
-export const DELETE = withAuth(async (_request, { supabase, user }) => {
-  try {
-    const cookieStore = await cookies();
-    const sessionId = cookieStore.get(COOKIE_SESSION_ID)?.value ?? null;
+export const DELETE = withAuth(
+  async (_request, { supabase, user }) => {
+    try {
+      const cookieStore = await cookies();
+      const sessionId = cookieStore.get(COOKIE_SESSION_ID)?.value ?? null;
 
-    // AUDIT FINDING #6: Mark the server-side session as ended
-    if (sessionId) {
-      try {
-        const untypedClient = createUntypedAdminClient("impersonate");
-        await untypedClient
-          .from("impersonation_sessions")
-          .update({ ended_at: new Date().toISOString(), ended_reason: "manual" })
-          .eq("id", sessionId)
-          .is("ended_at", null);
-      } catch (err) {
-        logger.warn("Failed to end impersonation session row", {
-          context: "impersonate",
-          error: err,
+      // AUDIT FINDING #6: Mark the server-side session as ended
+      if (sessionId) {
+        try {
+          const untypedClient = createUntypedAdminClient("impersonate");
+          await untypedClient
+            .from("impersonation_sessions")
+            .update({ ended_at: new Date().toISOString(), ended_reason: "manual" })
+            .eq("id", sessionId)
+            .is("ended_at", null);
+        } catch (err) {
+          logger.warn("Failed to end impersonation session row", {
+            context: "impersonate",
+            error: err,
+          });
+        }
+      }
+
+      // Log the end of impersonation
+      if (user) {
+        await logSecurityEvent({
+          supabase,
+          action: "impersonate.end",
+          actor: user.email || user.id,
+          clinicId: "system",
+          description: "Super admin ended impersonation session",
         });
       }
-    }
 
-    // Log the end of impersonation
-    if (user) {
-      await logSecurityEvent({
-        supabase,
-        action: "impersonate.end",
-        actor: user.email || user.id,
-        clinicId: "system",
-        description: "Super admin ended impersonation session",
+      const response = apiSuccess({ success: true });
+
+      const clearOpts = {
+        httpOnly: true,
+        secure: IS_PROD,
+        sameSite: "strict" as const,
+        path: "/",
+        maxAge: 0,
+      };
+
+      response.cookies.set(COOKIE_CLINIC_ID, "", clearOpts);
+      response.cookies.set(COOKIE_CLINIC_NAME, "", clearOpts);
+      response.cookies.set(COOKIE_SESSION_ID, "", clearOpts);
+
+      return response;
+    } catch (err) {
+      logger.warn("Failed to process impersonation request", {
+        context: "impersonate/route",
+        error: err,
       });
+      return apiInternalError("Failed to end impersonation");
     }
-
-    const response = apiSuccess({ success: true });
-
-    const clearOpts = {
-      httpOnly: true,
-      secure: IS_PROD,
-      sameSite: "strict" as const,
-      path: "/",
-      maxAge: 0,
-    };
-
-    response.cookies.set(COOKIE_CLINIC_ID, "", clearOpts);
-    response.cookies.set(COOKIE_CLINIC_NAME, "", clearOpts);
-    response.cookies.set(COOKIE_SESSION_ID, "", clearOpts);
-
-    return response;
-  } catch (err) {
-    logger.warn("Operation failed", { context: "impersonate/route", error: err });
-    return apiInternalError("Failed to end impersonation");
-  }
-}, ["super_admin"]);
+  },
+  ["super_admin"],
+);

@@ -91,7 +91,10 @@ async function handler(request: NextRequest) {
     const { data: firstPage, error: firstError } = await firstQuery;
 
     if (firstError) {
-      logger.warn("Operation failed", { context: "cron/reminders", error: firstError });
+      logger.warn("Failed to send reminder batch", {
+        context: "cron/reminders",
+        error: firstError,
+      });
       return apiInternalError("Failed to query appointments");
     }
 
@@ -100,7 +103,8 @@ async function handler(request: NextRequest) {
 
     // Continue paginating if the first page was full
     if (firstPage && firstPage.length === PAGE_SIZE) {
-      let cursor: string | null = (firstPage[firstPage.length - 1] as AppointmentRow).slot_start ?? null;
+      let cursor: string | null =
+        (firstPage[firstPage.length - 1] as AppointmentRow).slot_start ?? null;
       let hasMore = true;
 
       while (hasMore && cursor) {
@@ -114,7 +118,7 @@ async function handler(request: NextRequest) {
           .limit(PAGE_SIZE);
 
         if (error) {
-          logger.warn("Operation failed", { context: "cron/reminders", error });
+          logger.warn("Failed to send individual reminder", { context: "cron/reminders", error });
           return apiInternalError("Failed to query appointments");
         }
 
@@ -152,9 +156,7 @@ async function handler(request: NextRequest) {
       if (sentLogs) allSentLogs.push(...sentLogs);
     }
 
-    const alreadySent = new Set(
-      allSentLogs.map((l) => `${l.appointment_id}:${l.trigger}`),
-    );
+    const alreadySent = new Set(allSentLogs.map((l) => `${l.appointment_id}:${l.trigger}`));
 
     // Clinic names are now joined in the main appointment query above
     // (clinics:clinic_id (name)), so no separate lookup is needed.
@@ -211,9 +213,8 @@ async function handler(request: NextRequest) {
       if (appt.appointment_date && appt.start_time) {
         // Normalize time to include seconds — "HH:MM" → "HH:MM:00" — so that
         // the ISO-8601-like string is unambiguous across runtimes (V8 vs others).
-        const normalizedTime = String(appt.start_time).length === 5
-          ? `${appt.start_time}:00`
-          : appt.start_time;
+        const normalizedTime =
+          String(appt.start_time).length === 5 ? `${appt.start_time}:00` : appt.start_time;
         apptDatetime = new Date(`${appt.appointment_date}T${normalizedTime}`);
       } else if (slotStart) {
         apptDatetime = new Date(slotStart);
@@ -254,7 +255,8 @@ async function handler(request: NextRequest) {
 
       // Derive display date/time from the resolved datetime
       const displayDate = appt.appointment_date ?? apptDatetime.toISOString().split("T")[0];
-      const displayTime = appt.start_time ?? apptDatetime.toISOString().split("T")[1]?.slice(0, 5) ?? "";
+      const displayTime =
+        appt.start_time ?? apptDatetime.toISOString().split("T")[1]?.slice(0, 5) ?? "";
 
       // Idempotency: skip if this reminder was already sent (checked
       // via the batch query above instead of one query per appointment).
@@ -301,12 +303,7 @@ async function handler(request: NextRequest) {
           }
 
           // Also dispatch in-app + SMS notifications
-          return dispatchNotification(
-            trigger,
-            templateVars,
-            patient.id,
-            ["sms", "in_app"],
-          );
+          return dispatchNotification(trigger, templateVars, patient.id, ["sms", "in_app"]);
         },
         patient,
         clinicId: (appt.clinic_id as string) ?? "",
@@ -321,9 +318,7 @@ async function handler(request: NextRequest) {
       for (let j = 0; j < batch.length; j++) {
         const item = batch[j];
         const outcome = settled[j];
-        const success =
-          outcome.status === "fulfilled" &&
-          outcome.value.some((r) => r.success);
+        const success = outcome.status === "fulfilled" && outcome.value.some((r) => r.success);
 
         results.push({ appointmentId: item.apptId, type: item.trigger, success });
 
@@ -345,12 +340,10 @@ async function handler(request: NextRequest) {
     // API-008: Use upsert with ignoreDuplicates so the partial unique
     // index (uq_notification_log_dedup) silently skips already-sent rows.
     if (pendingLogInserts.length > 0) {
-      await supabase
-        .from("notification_log")
-        .upsert(pendingLogInserts, {
-          onConflict: "appointment_id,trigger,channel",
-          ignoreDuplicates: true,
-        });
+      await supabase.from("notification_log").upsert(pendingLogInserts, {
+        onConflict: "appointment_id,trigger,channel",
+        ignoreDuplicates: true,
+      });
     }
 
     return apiSuccess({
@@ -359,7 +352,7 @@ async function handler(request: NextRequest) {
       results,
     });
   } catch (err) {
-    logger.warn("Operation failed", { context: "cron/reminders", error: err });
+    logger.warn("Failed to run reminders cron", { context: "cron/reminders", error: err });
     return apiInternalError("Failed to process reminders");
   }
 }

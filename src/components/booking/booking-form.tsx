@@ -184,7 +184,7 @@ export function BookingForm() {
         setLoading(false);
       })
       .catch((err) => {
-        logger.warn("Operation failed", { context: "booking-form", error: err });
+        logger.warn("Failed to submit booking form", { context: "booking-form", error: err });
         if (!cancelled) setLoading(false);
       });
     return () => {

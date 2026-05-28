@@ -296,7 +296,7 @@ async function verifyStripeSignature(
 
     return timingSafeEqual(expectedSignature, signature);
   } catch (err) {
-    logger.warn("Operation failed", { context: "payments/webhook", error: err });
+    logger.warn("Failed to process Stripe webhook", { context: "payments/webhook", error: err });
     return false;
   }
 }

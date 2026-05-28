@@ -35,16 +35,29 @@ export function LabDashboardKPIsComponent() {
     const clinicId = tenant?.clinicId;
     let cancelled = false;
     if (!clinicId) {
-      Promise.resolve().then(() => { if (!cancelled) setLoading(false); });
-      return () => { cancelled = true; };
+      Promise.resolve().then(() => {
+        if (!cancelled) setLoading(false);
+      });
+      return () => {
+        cancelled = true;
+      };
     }
     fetchLabDashboardKPIs(clinicId)
       .then((result) => {
         if (!cancelled) setData(result);
       })
-      .catch((err: unknown) => { logger.warn("Operation failed", { context: "lab-dashboard-kpis", error: err }); })
-      .finally(() => { if (!cancelled) setLoading(false); });
-    return () => { cancelled = true; };
+      .catch((err: unknown) => {
+        logger.warn("Failed to load lab dashboard KPIs", {
+          context: "lab-dashboard-kpis",
+          error: err,
+        });
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [tenant?.clinicId]);
 
   if (loading) {
@@ -152,7 +165,9 @@ export function LabDashboardKPIsComponent() {
               <div className="h-2 bg-muted rounded-full overflow-hidden">
                 <div
                   className="h-full bg-green-500 rounded-full transition-all"
-                  style={{ width: `${Math.min((completedToday / Math.max(completedWeek, 1)) * 100, 100)}%` }}
+                  style={{
+                    width: `${Math.min((completedToday / Math.max(completedWeek, 1)) * 100, 100)}%`,
+                  }}
                 />
               </div>
               <div className="flex items-center justify-between text-sm">
@@ -160,7 +175,10 @@ export function LabDashboardKPIsComponent() {
                 <span className="font-medium">{completedWeek}</span>
               </div>
               <div className="h-2 bg-muted rounded-full overflow-hidden">
-                <div className="h-full bg-primary rounded-full transition-all" style={{ width: "100%" }} />
+                <div
+                  className="h-full bg-primary rounded-full transition-all"
+                  style={{ width: "100%" }}
+                />
               </div>
               <div className="flex items-center justify-between text-sm mt-2 pt-2 border-t">
                 <span className="text-muted-foreground">Average Turnaround Time</span>
@@ -192,7 +210,9 @@ export function LabDashboardKPIsComponent() {
                   <div className="h-2 bg-muted rounded-full overflow-hidden">
                     <div
                       className={`h-full ${item.color} rounded-full transition-all`}
-                      style={{ width: `${Math.min((item.count / Math.max(pending + awaiting + completedToday, 1)) * 100, 100)}%` }}
+                      style={{
+                        width: `${Math.min((item.count / Math.max(pending + awaiting + completedToday, 1)) * 100, 100)}%`,
+                      }}
                     />
                   </div>
                 </div>
@@ -220,7 +240,9 @@ export function LabDashboardKPIsComponent() {
                     <th className="text-left py-2 font-medium text-muted-foreground">Doctor</th>
                     <th className="text-left py-2 font-medium text-muted-foreground">Priority</th>
                     <th className="text-left py-2 font-medium text-muted-foreground">Status</th>
-                    <th className="text-right py-2 font-medium text-muted-foreground">Turnaround</th>
+                    <th className="text-right py-2 font-medium text-muted-foreground">
+                      Turnaround
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
@@ -229,18 +251,24 @@ export function LabDashboardKPIsComponent() {
                       <td className="py-2">
                         <div>
                           <span className="font-medium">{test.testName}</span>
-                          <span className="text-xs text-muted-foreground ml-1">({test.testCategory})</span>
+                          <span className="text-xs text-muted-foreground ml-1">
+                            ({test.testCategory})
+                          </span>
                         </div>
                       </td>
                       <td className="py-2">{test.patientName}</td>
                       <td className="py-2">{test.doctorName}</td>
                       <td className="py-2">
-                        <span className={`text-xs px-2 py-0.5 rounded-full ${priorityColors[test.priority] ?? priorityColors.normal}`}>
+                        <span
+                          className={`text-xs px-2 py-0.5 rounded-full ${priorityColors[test.priority] ?? priorityColors.normal}`}
+                        >
                           {test.priority}
                         </span>
                       </td>
                       <td className="py-2">
-                        <span className={`text-xs px-2 py-0.5 rounded-full ${statusColors[test.status] ?? ""}`}>
+                        <span
+                          className={`text-xs px-2 py-0.5 rounded-full ${statusColors[test.status] ?? ""}`}
+                        >
                           {test.status.replace(/_/g, " ")}
                         </span>
                       </td>

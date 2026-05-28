@@ -1,9 +1,20 @@
 "use client";
 
 import {
-  Check, X, Search, Filter, Crown, Building2,
-  Stethoscope, Pill, ChevronDown, ChevronUp,
-  DollarSign, Users, Zap, Settings,
+  Check,
+  X,
+  Search,
+  Filter,
+  Crown,
+  Building2,
+  Stethoscope,
+  Pill,
+  ChevronDown,
+  ChevronUp,
+  DollarSign,
+  Users,
+  Zap,
+  Settings,
 } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
 import { Badge } from "@/components/ui/badge";
@@ -15,12 +26,7 @@ import { CardSkeleton } from "@/components/ui/loading-skeleton";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
-import {
-  systemTypeLabels,
-  tierColors,
-  type SystemType,
-  type TierSlug,
-} from "@/lib/config/pricing";
+import { systemTypeLabels, tierColors, type SystemType, type TierSlug } from "@/lib/config/pricing";
 import { logger } from "@/lib/logger";
 import {
   fetchClientSubscriptions,
@@ -65,7 +71,7 @@ export default function PricingPage() {
       setTiers(tiersData);
       setToggles(togglesData);
     } catch (err) {
-      logger.warn("Operation failed", { context: "page", error: err });
+      logger.warn("Failed to load pricing page", { context: "page", error: err });
     } finally {
       setLoading(false);
     }
@@ -74,14 +80,17 @@ export default function PricingPage() {
   useEffect(() => {
     const controller = new AbortController();
     loadData();
-    return () => { controller.abort(); };
+    return () => {
+      controller.abort();
+    };
   }, [loadData]);
 
   const stats = {
     active: subscriptions.filter((s) => s.status === "active").length,
     trial: subscriptions.filter((s) => s.status === "trial").length,
     pastDue: subscriptions.filter((s) => s.status === "past_due").length,
-    cancelled: subscriptions.filter((s) => s.status === "cancelled" || s.status === "suspended").length,
+    cancelled: subscriptions.filter((s) => s.status === "cancelled" || s.status === "suspended")
+      .length,
     total: subscriptions.length,
   };
   const mrr = subscriptions
@@ -93,16 +102,16 @@ export default function PricingPage() {
 
   const filteredToggles = toggles.filter((ft) => {
     const q = featureSearch.toLowerCase();
-    const matchSearch = !q || ft.label.toLowerCase().includes(q) || ft.description.toLowerCase().includes(q);
-    const matchSystem = systemFilter === "all" || ft.systemTypes.includes(systemFilter as SystemType);
+    const matchSearch =
+      !q || ft.label.toLowerCase().includes(q) || ft.description.toLowerCase().includes(q);
+    const matchSystem =
+      systemFilter === "all" || ft.systemTypes.includes(systemFilter as SystemType);
     const matchCategory = categoryFilter === "all" || ft.category === categoryFilter;
     return matchSearch && matchSystem && matchCategory;
   });
 
   function handleToggleFeature(id: string) {
-    setToggles((prev) =>
-      prev.map((ft) => (ft.id === id ? { ...ft, enabled: !ft.enabled } : ft))
-    );
+    setToggles((prev) => prev.map((ft) => (ft.id === id ? { ...ft, enabled: !ft.enabled } : ft)));
   }
 
   function handleToggleTier(featureId: string, tier: TierSlug) {
@@ -114,31 +123,41 @@ export default function PricingPage() {
           ...ft,
           tiers: hasTier ? ft.tiers.filter((t) => t !== tier) : [...ft.tiers, tier],
         };
-      })
+      }),
     );
   }
 
   const categoryIcon = (cat: string) => {
     switch (cat) {
-      case "core": return <Building2 className="h-3.5 w-3.5" />;
-      case "communication": return <Zap className="h-3.5 w-3.5" />;
-      case "integration": return <Settings className="h-3.5 w-3.5" />;
-      case "advanced": return <Crown className="h-3.5 w-3.5" />;
-      case "pharmacy": return <Pill className="h-3.5 w-3.5" />;
-      default: return null;
+      case "core":
+        return <Building2 className="h-3.5 w-3.5" />;
+      case "communication":
+        return <Zap className="h-3.5 w-3.5" />;
+      case "integration":
+        return <Settings className="h-3.5 w-3.5" />;
+      case "advanced":
+        return <Crown className="h-3.5 w-3.5" />;
+      case "pharmacy":
+        return <Pill className="h-3.5 w-3.5" />;
+      default:
+        return null;
     }
   };
 
   if (loading) {
     return (
       <div>
-        <Breadcrumb items={[
-          { label: "Super Admin", href: "/super-admin/dashboard" },
-          { label: "Pricing & Tiers" },
-        ]} />
+        <Breadcrumb
+          items={[
+            { label: "Super Admin", href: "/super-admin/dashboard" },
+            { label: "Pricing & Tiers" },
+          ]}
+        />
         <div className="mb-6">
           <h1 className="text-2xl font-bold">Pricing & Tiers</h1>
-          <p className="text-sm text-muted-foreground mt-1">Manage subscription tiers, pricing, and feature toggles for all system types</p>
+          <p className="text-sm text-muted-foreground mt-1">
+            Manage subscription tiers, pricing, and feature toggles for all system types
+          </p>
         </div>
         <CardSkeleton count={4} className="mb-6" />
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
@@ -158,10 +177,12 @@ export default function PricingPage() {
 
   return (
     <div>
-      <Breadcrumb items={[
-        { label: "Super Admin", href: "/super-admin/dashboard" },
-        { label: "Pricing & Tiers" },
-      ]} />
+      <Breadcrumb
+        items={[
+          { label: "Super Admin", href: "/super-admin/dashboard" },
+          { label: "Pricing & Tiers" },
+        ]}
+      />
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
           <h1 className="text-2xl font-bold">Pricing & Tiers</h1>
@@ -217,11 +238,19 @@ export default function PricingPage() {
 
       {/* Tabs */}
       <div className="flex gap-2 mb-6">
-        <Button variant={tab === "tiers" ? "default" : "outline"} size="sm" onClick={() => setTab("tiers")}>
+        <Button
+          variant={tab === "tiers" ? "default" : "outline"}
+          size="sm"
+          onClick={() => setTab("tiers")}
+        >
           <DollarSign className="h-4 w-4 mr-1" />
           Grille tarifaire
         </Button>
-        <Button variant={tab === "features" ? "default" : "outline"} size="sm" onClick={() => setTab("features")}>
+        <Button
+          variant={tab === "features" ? "default" : "outline"}
+          size="sm"
+          onClick={() => setTab("features")}
+        >
           <Settings className="h-4 w-4 mr-1" />
           Feature Toggles
         </Button>
@@ -263,7 +292,9 @@ export default function PricingPage() {
                 onClick={() => setBillingCycle("yearly")}
               >
                 Annuel
-                <Badge variant="secondary" className="ml-1 text-[10px]">-17%</Badge>
+                <Badge variant="secondary" className="ml-1 text-[10px]">
+                  -17%
+                </Badge>
               </Button>
             </div>
           </div>
@@ -276,21 +307,31 @@ export default function PricingPage() {
               const subCount = subscriptions.filter((s) => s.tierSlug === tier.slug).length;
 
               return (
-                <Card key={tier.id} className={`relative ${tier.popular ? "border-primary shadow-md" : ""}`}>
+                <Card
+                  key={tier.id}
+                  className={`relative ${tier.popular ? "border-primary shadow-md" : ""}`}
+                >
                   {tier.popular && (
                     <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                      <Badge className="bg-primary text-primary-foreground text-[10px]">Populaire</Badge>
+                      <Badge className="bg-primary text-primary-foreground text-[10px]">
+                        Populaire
+                      </Badge>
                     </div>
                   )}
                   <CardHeader className="pb-3">
                     <div className="flex items-center justify-between">
-                      <Badge className={`text-[10px] ${tierColors[tier.slug as TierSlug] ?? ""}`}>{tier.name}</Badge>
+                      <Badge className={`text-[10px] ${tierColors[tier.slug as TierSlug] ?? ""}`}>
+                        {tier.name}
+                      </Badge>
                       <span className="text-xs text-muted-foreground">{subCount} clients</span>
                     </div>
                     <CardTitle className="text-lg mt-2">
                       {price > 0 ? (
                         <>
-                          {price.toLocaleString()} <span className="text-sm font-normal text-muted-foreground">MAD/{billingCycle === "monthly" ? "mois" : "an"}</span>
+                          {price.toLocaleString()}{" "}
+                          <span className="text-sm font-normal text-muted-foreground">
+                            MAD/{billingCycle === "monthly" ? "mois" : "an"}
+                          </span>
                         </>
                       ) : (
                         <span className="text-sm text-muted-foreground">Mensuel uniquement</span>
@@ -311,12 +352,17 @@ export default function PricingPage() {
                       </p>
                       <p>
                         <span className="font-medium text-foreground">
-                          {tier.limits.maxPatients === -1 ? "Illimité" : tier.limits.maxPatients === 0 ? "—" : tier.limits.maxPatients.toLocaleString()}
+                          {tier.limits.maxPatients === -1
+                            ? "Illimité"
+                            : tier.limits.maxPatients === 0
+                              ? "—"
+                              : tier.limits.maxPatients.toLocaleString()}
                         </span>{" "}
                         patients
                       </p>
                       <p>
-                        <span className="font-medium text-foreground">{tier.limits.storageGB}</span> GB stockage
+                        <span className="font-medium text-foreground">{tier.limits.storageGB}</span>{" "}
+                        GB stockage
                       </p>
                     </div>
 
@@ -326,7 +372,11 @@ export default function PricingPage() {
                       className="flex items-center gap-1 text-xs text-primary hover:underline mb-2"
                     >
                       {isExpanded ? "Masquer" : "Voir"} les fonctionnalités
-                      {isExpanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+                      {isExpanded ? (
+                        <ChevronUp className="h-3 w-3" />
+                      ) : (
+                        <ChevronDown className="h-3 w-3" />
+                      )}
                     </button>
 
                     {isExpanded && (
@@ -340,7 +390,9 @@ export default function PricingPage() {
                             )}
                             <span className={f.included ? "" : "text-muted-foreground"}>
                               {f.label}
-                              {f.limit && <span className="text-muted-foreground"> ({f.limit})</span>}
+                              {f.limit && (
+                                <span className="text-muted-foreground"> ({f.limit})</span>
+                              )}
                             </span>
                           </div>
                         ))}
@@ -368,7 +420,9 @@ export default function PricingPage() {
                       <th className="text-left font-medium py-3 px-4">Client</th>
                       <th className="text-left font-medium py-3 px-4">Type</th>
                       <th className="text-left font-medium py-3 px-4">Tier</th>
-                      <th className="text-left font-medium py-3 px-4 hidden md:table-cell">Cycle</th>
+                      <th className="text-left font-medium py-3 px-4 hidden md:table-cell">
+                        Cycle
+                      </th>
                       <th className="text-left font-medium py-3 px-4">Montant</th>
                       <th className="text-left font-medium py-3 px-4">Statut</th>
                     </tr>
@@ -382,27 +436,44 @@ export default function PricingPage() {
                           <td className="py-3 px-4">
                             <div className="flex items-center gap-1.5">
                               <Icon className="h-3.5 w-3.5 text-muted-foreground" />
-                              <span className="capitalize text-muted-foreground">{systemTypeLabels[sub.systemType]}</span>
+                              <span className="capitalize text-muted-foreground">
+                                {systemTypeLabels[sub.systemType]}
+                              </span>
                             </div>
                           </td>
                           <td className="py-3 px-4">
-                            <Badge className={`text-[10px] ${tierColors[sub.tierSlug]}`}>{sub.tierName}</Badge>
+                            <Badge className={`text-[10px] ${tierColors[sub.tierSlug]}`}>
+                              {sub.tierName}
+                            </Badge>
                           </td>
                           <td className="py-3 px-4 hidden md:table-cell text-muted-foreground capitalize">
                             {sub.billingCycle === "monthly" ? "Mensuel" : "Annuel"}
                           </td>
-                          <td className="py-3 px-4 font-medium">{sub.amount.toLocaleString()} MAD</td>
+                          <td className="py-3 px-4 font-medium">
+                            {sub.amount.toLocaleString()} MAD
+                          </td>
                           <td className="py-3 px-4">
                             <Badge
                               variant={
-                                sub.status === "active" ? "success"
-                                : sub.status === "trial" ? "secondary"
-                                : sub.status === "past_due" ? "warning"
-                                : "destructive"
+                                sub.status === "active"
+                                  ? "success"
+                                  : sub.status === "trial"
+                                    ? "secondary"
+                                    : sub.status === "past_due"
+                                      ? "warning"
+                                      : "destructive"
                               }
                               className="capitalize"
                             >
-                              {sub.status === "past_due" ? "Impayé" : sub.status === "active" ? "Actif" : sub.status === "trial" ? "Essai" : sub.status === "suspended" ? "Suspendu" : "Annulé"}
+                              {sub.status === "past_due"
+                                ? "Impayé"
+                                : sub.status === "active"
+                                  ? "Actif"
+                                  : sub.status === "trial"
+                                    ? "Essai"
+                                    : sub.status === "suspended"
+                                      ? "Suspendu"
+                                      : "Annulé"}
                             </Badge>
                           </td>
                         </tr>
@@ -432,7 +503,13 @@ export default function PricingPage() {
             <div className="flex items-center gap-1">
               <Filter className="h-4 w-4 text-muted-foreground mr-1" />
               {(["all", "doctor", "dentist", "pharmacy"] as SystemFilter[]).map((s) => (
-                <Button key={s} variant={systemFilter === s ? "default" : "outline"} size="sm" onClick={() => setSystemFilter(s)} className="text-xs">
+                <Button
+                  key={s}
+                  variant={systemFilter === s ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setSystemFilter(s)}
+                  className="text-xs"
+                >
                   {s === "all" ? "Tous" : systemTypeLabels[s as SystemType]}
                 </Button>
               ))}
@@ -440,8 +517,23 @@ export default function PricingPage() {
           </div>
 
           <div className="flex flex-wrap gap-2 mb-4">
-            {(["all", "core", "communication", "integration", "advanced", "pharmacy"] as CategoryFilter[]).map((c) => (
-              <Button key={c} variant={categoryFilter === c ? "default" : "outline"} size="sm" onClick={() => setCategoryFilter(c)} className="capitalize text-xs">
+            {(
+              [
+                "all",
+                "core",
+                "communication",
+                "integration",
+                "advanced",
+                "pharmacy",
+              ] as CategoryFilter[]
+            ).map((c) => (
+              <Button
+                key={c}
+                variant={categoryFilter === c ? "default" : "outline"}
+                size="sm"
+                onClick={() => setCategoryFilter(c)}
+                className="capitalize text-xs"
+              >
                 {c === "all" ? "Toutes" : c}
               </Button>
             ))}
@@ -450,14 +542,18 @@ export default function PricingPage() {
           {/* Feature Toggle Matrix */}
           <Card>
             <CardHeader className="py-3 px-4">
-              <CardTitle className="text-base">Matrice des fonctionnalités ({filteredToggles.length})</CardTitle>
+              <CardTitle className="text-base">
+                Matrice des fonctionnalités ({filteredToggles.length})
+              </CardTitle>
             </CardHeader>
             <CardContent className="p-0">
               <div className="table-mobile-scroll">
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b text-muted-foreground">
-                      <th className="text-left font-medium py-3 px-4 min-w-[200px]">Fonctionnalité</th>
+                      <th className="text-left font-medium py-3 px-4 min-w-[200px]">
+                        Fonctionnalité
+                      </th>
                       <th className="text-center font-medium py-3 px-4">Global</th>
                       <th className="text-center font-medium py-3 px-4">Vitrine</th>
                       <th className="text-center font-medium py-3 px-4">Cabinet</th>
@@ -469,7 +565,10 @@ export default function PricingPage() {
                   </thead>
                   <tbody>
                     {filteredToggles.map((ft) => (
-                      <tr key={ft.id} className={`border-b last:border-0 hover:bg-muted/50 ${!ft.enabled ? "opacity-50" : ""}`}>
+                      <tr
+                        key={ft.id}
+                        className={`border-b last:border-0 hover:bg-muted/50 ${!ft.enabled ? "opacity-50" : ""}`}
+                      >
                         <td className="py-3 px-4">
                           <div className="flex items-center gap-2">
                             {categoryIcon(ft.category)}
@@ -480,9 +579,14 @@ export default function PricingPage() {
                           </div>
                         </td>
                         <td className="py-3 px-4 text-center">
-                          <Switch checked={ft.enabled} onCheckedChange={() => handleToggleFeature(ft.id)} />
+                          <Switch
+                            checked={ft.enabled}
+                            onCheckedChange={() => handleToggleFeature(ft.id)}
+                          />
                         </td>
-                        {(["vitrine", "cabinet", "pro", "premium", "saas-monthly"] as TierSlug[]).map((tier) => (
+                        {(
+                          ["vitrine", "cabinet", "pro", "premium", "saas-monthly"] as TierSlug[]
+                        ).map((tier) => (
                           <td key={tier} className="py-3 px-4 text-center">
                             <button
                               onClick={() => handleToggleTier(ft.id, tier)}
@@ -501,7 +605,11 @@ export default function PricingPage() {
                           <div className="flex items-center justify-center gap-1">
                             {ft.systemTypes.map((st) => {
                               const Icon = systemIcons[st as SystemType];
-                              return <span key={st} title={systemTypeLabels[st as SystemType]}><Icon className="h-3.5 w-3.5 text-muted-foreground" /></span>;
+                              return (
+                                <span key={st} title={systemTypeLabels[st as SystemType]}>
+                                  <Icon className="h-3.5 w-3.5 text-muted-foreground" />
+                                </span>
+                              );
                             })}
                           </div>
                         </td>

@@ -1,8 +1,14 @@
 "use client";
 
 import {
-  ToggleLeft, Search, Shield, Zap, Globe, Settings,
-  CheckCircle, XCircle,
+  ToggleLeft,
+  Search,
+  Shield,
+  Zap,
+  Globe,
+  Settings,
+  CheckCircle,
+  XCircle,
 } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
 import { Badge } from "@/components/ui/badge";
@@ -10,7 +16,12 @@ import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { CardSkeleton, TableSkeleton } from "@/components/ui/loading-skeleton";
@@ -35,14 +46,11 @@ export default function FeatureTogglesPage() {
 
   const loadFeatures = useCallback(async () => {
     try {
-      const [feats, clinics] = await Promise.all([
-        fetchFeatureDefinitions(),
-        fetchClinics(),
-      ]);
+      const [feats, clinics] = await Promise.all([fetchFeatureDefinitions(), fetchClinics()]);
       setFeatures(feats);
       setTotalClinicsCount(clinics.length);
     } catch (err) {
-      logger.warn("Operation failed", { context: "page", error: err });
+      logger.warn("Failed to load features page", { context: "page", error: err });
     } finally {
       setLoading(false);
     }
@@ -51,7 +59,9 @@ export default function FeatureTogglesPage() {
   useEffect(() => {
     const controller = new AbortController();
     loadFeatures();
-    return () => { controller.abort(); };
+    return () => {
+      controller.abort();
+    };
   }, [loadFeatures]);
   const [search, setSearch] = useState("");
   const [catFilter, setCatFilter] = useState<CategoryFilter>("all");
@@ -61,26 +71,38 @@ export default function FeatureTogglesPage() {
 
   const filtered = features.filter((f) => {
     const q = search.toLowerCase();
-    const matchSearch = !q || f.name.toLowerCase().includes(q) || f.description.toLowerCase().includes(q) || f.key.toLowerCase().includes(q);
+    const matchSearch =
+      !q ||
+      f.name.toLowerCase().includes(q) ||
+      f.description.toLowerCase().includes(q) ||
+      f.key.toLowerCase().includes(q);
     return matchSearch && (catFilter === "all" || f.category === catFilter);
   });
 
   const catIcon = (cat: string) => {
     switch (cat) {
-      case "core": return <Shield className="h-4 w-4 text-blue-600" />;
-      case "communication": return <Globe className="h-4 w-4 text-green-600" />;
-      case "integration": return <Zap className="h-4 w-4 text-purple-600" />;
-      case "advanced": return <Settings className="h-4 w-4 text-orange-600" />;
-      default: return <ToggleLeft className="h-4 w-4" />;
+      case "core":
+        return <Shield className="h-4 w-4 text-blue-600" />;
+      case "communication":
+        return <Globe className="h-4 w-4 text-green-600" />;
+      case "integration":
+        return <Zap className="h-4 w-4 text-purple-600" />;
+      case "advanced":
+        return <Settings className="h-4 w-4 text-orange-600" />;
+      default:
+        return <ToggleLeft className="h-4 w-4" />;
     }
   };
 
   function toggleGlobal(featureId: string) {
     const feature = features.find((f) => f.id === featureId);
     setFeatures((prev) =>
-      prev.map((f) => f.id === featureId ? { ...f, globalEnabled: !f.globalEnabled } : f)
+      prev.map((f) => (f.id === featureId ? { ...f, globalEnabled: !f.globalEnabled } : f)),
     );
-    addToast(`${feature?.name ?? "Feature"} ${feature?.globalEnabled ? "disabled" : "enabled"} globally`, "success");
+    addToast(
+      `${feature?.name ?? "Feature"} ${feature?.globalEnabled ? "disabled" : "enabled"} globally`,
+      "success",
+    );
   }
 
   function toggleTier(featureId: string, tier: string) {
@@ -94,7 +116,7 @@ export default function FeatureTogglesPage() {
             ? f.availableTiers.filter((t) => t !== tier)
             : [...f.availableTiers, tier],
         };
-      })
+      }),
     );
   }
 
@@ -102,14 +124,22 @@ export default function FeatureTogglesPage() {
     setFeatures((prev) =>
       prev.map((f) => {
         if (bulkAction === "enable") {
-          return { ...f, availableTiers: f.availableTiers.includes(bulkTier) ? f.availableTiers : [...f.availableTiers, bulkTier] };
+          return {
+            ...f,
+            availableTiers: f.availableTiers.includes(bulkTier)
+              ? f.availableTiers
+              : [...f.availableTiers, bulkTier],
+          };
         } else {
           return { ...f, availableTiers: f.availableTiers.filter((t) => t !== bulkTier) };
         }
-      })
+      }),
     );
     setBulkOpen(false);
-    addToast(`All features ${bulkAction === "enable" ? "enabled" : "disabled"} for ${bulkTier} tier`, "success");
+    addToast(
+      `All features ${bulkAction === "enable" ? "enabled" : "disabled"} for ${bulkTier} tier`,
+      "success",
+    );
   }
 
   const enabledCount = features.filter((f) => f.globalEnabled).length;
@@ -118,13 +148,17 @@ export default function FeatureTogglesPage() {
   if (loading) {
     return (
       <div>
-        <Breadcrumb items={[
-          { label: "Super Admin", href: "/super-admin/dashboard" },
-          { label: "Feature Toggles" },
-        ]} />
+        <Breadcrumb
+          items={[
+            { label: "Super Admin", href: "/super-admin/dashboard" },
+            { label: "Feature Toggles" },
+          ]}
+        />
         <div className="mb-6">
           <h1 className="text-2xl font-bold">Feature Toggles</h1>
-          <p className="text-sm text-muted-foreground mt-1">Control feature availability per tier and globally</p>
+          <p className="text-sm text-muted-foreground mt-1">
+            Control feature availability per tier and globally
+          </p>
         </div>
         <CardSkeleton count={4} className="mb-6" />
         <TableSkeleton rows={8} columns={6} className="mt-4" />
@@ -134,14 +168,18 @@ export default function FeatureTogglesPage() {
 
   return (
     <div>
-      <Breadcrumb items={[
-        { label: "Super Admin", href: "/super-admin/dashboard" },
-        { label: "Feature Toggles" },
-      ]} />
+      <Breadcrumb
+        items={[
+          { label: "Super Admin", href: "/super-admin/dashboard" },
+          { label: "Feature Toggles" },
+        ]}
+      />
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold">Feature Toggles</h1>
-          <p className="text-sm text-muted-foreground mt-1">Control feature availability per tier and globally</p>
+          <p className="text-sm text-muted-foreground mt-1">
+            Control feature availability per tier and globally
+          </p>
         </div>
         <Button variant="outline" onClick={() => setBulkOpen(true)}>
           <ToggleLeft className="h-4 w-4 mr-1" />
@@ -151,24 +189,57 @@ export default function FeatureTogglesPage() {
 
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-        <Card><CardContent className="p-4"><p className="text-xs text-muted-foreground mb-1">Total Features</p><p className="text-2xl font-bold">{features.length}</p></CardContent></Card>
-        <Card><CardContent className="p-4"><p className="text-xs text-muted-foreground mb-1">Globally Enabled</p><p className="text-2xl font-bold text-green-600">{enabledCount}</p></CardContent></Card>
-        <Card><CardContent className="p-4"><p className="text-xs text-muted-foreground mb-1">Categories</p><p className="text-2xl font-bold">4</p></CardContent></Card>
-        <Card><CardContent className="p-4"><p className="text-xs text-muted-foreground mb-1">Clinics Affected</p><p className="text-2xl font-bold">{totalClinics}</p></CardContent></Card>
+        <Card>
+          <CardContent className="p-4">
+            <p className="text-xs text-muted-foreground mb-1">Total Features</p>
+            <p className="text-2xl font-bold">{features.length}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <p className="text-xs text-muted-foreground mb-1">Globally Enabled</p>
+            <p className="text-2xl font-bold text-green-600">{enabledCount}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <p className="text-xs text-muted-foreground mb-1">Categories</p>
+            <p className="text-2xl font-bold">4</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <p className="text-xs text-muted-foreground mb-1">Clinics Affected</p>
+            <p className="text-2xl font-bold">{totalClinics}</p>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Filters */}
       <div className="flex flex-col sm:flex-row gap-3 mb-6">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input placeholder="Search features..." className="pl-10" value={search} onChange={(e) => setSearch(e.target.value)} />
+          <Input
+            placeholder="Search features..."
+            className="pl-10"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
         </div>
         <div className="flex items-center gap-1">
-          {(["all", "core", "communication", "integration", "advanced"] as CategoryFilter[]).map((c) => (
-            <Button key={c} variant={catFilter === c ? "default" : "outline"} size="sm" onClick={() => setCatFilter(c)} className="capitalize text-xs">
-              {c === "all" ? "All" : c}
-            </Button>
-          ))}
+          {(["all", "core", "communication", "integration", "advanced"] as CategoryFilter[]).map(
+            (c) => (
+              <Button
+                key={c}
+                variant={catFilter === c ? "default" : "outline"}
+                size="sm"
+                onClick={() => setCatFilter(c)}
+                className="capitalize text-xs"
+              >
+                {c === "all" ? "All" : c}
+              </Button>
+            ),
+          )}
         </div>
       </div>
 
@@ -185,26 +256,36 @@ export default function FeatureTogglesPage() {
                   <th className="text-left font-medium py-3 px-4 min-w-[250px]">Feature</th>
                   <th className="text-center font-medium py-3 px-4">Global</th>
                   {tiers.map((tier) => (
-                    <th key={tier} className="text-center font-medium py-3 px-4 capitalize">{tier}</th>
+                    <th key={tier} className="text-center font-medium py-3 px-4 capitalize">
+                      {tier}
+                    </th>
                   ))}
                   <th className="text-center font-medium py-3 px-4">Category</th>
                 </tr>
               </thead>
               <tbody>
                 {filtered.map((feature) => (
-                  <tr key={feature.id} className={`border-b last:border-0 hover:bg-muted/50 ${!feature.globalEnabled ? "opacity-50" : ""}`}>
+                  <tr
+                    key={feature.id}
+                    className={`border-b last:border-0 hover:bg-muted/50 ${!feature.globalEnabled ? "opacity-50" : ""}`}
+                  >
                     <td className="py-3 px-4">
                       <div className="flex items-center gap-2">
                         {catIcon(feature.category)}
                         <div>
                           <p className="font-medium">{feature.name}</p>
                           <p className="text-xs text-muted-foreground">{feature.description}</p>
-                          <p className="text-[10px] font-mono text-muted-foreground">{feature.key}</p>
+                          <p className="text-[10px] font-mono text-muted-foreground">
+                            {feature.key}
+                          </p>
                         </div>
                       </div>
                     </td>
                     <td className="py-3 px-4 text-center">
-                      <Switch checked={feature.globalEnabled} onCheckedChange={() => toggleGlobal(feature.id)} />
+                      <Switch
+                        checked={feature.globalEnabled}
+                        onCheckedChange={() => toggleGlobal(feature.id)}
+                      />
                     </td>
                     {tiers.map((tier) => (
                       <td key={tier} className="py-3 px-4 text-center">
@@ -222,11 +303,19 @@ export default function FeatureTogglesPage() {
                       </td>
                     ))}
                     <td className="py-3 px-4 text-center">
-                      <Badge variant="outline" className="capitalize text-[10px]">{feature.category}</Badge>
+                      <Badge variant="outline" className="capitalize text-[10px]">
+                        {feature.category}
+                      </Badge>
                     </td>
                   </tr>
                 ))}
-                {filtered.length === 0 && <tr><td colSpan={6} className="py-8 text-center text-muted-foreground">No features found.</td></tr>}
+                {filtered.length === 0 && (
+                  <tr>
+                    <td colSpan={6} className="py-8 text-center text-muted-foreground">
+                      No features found.
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>
@@ -238,13 +327,19 @@ export default function FeatureTogglesPage() {
         <DialogContent onClose={() => setBulkOpen(false)}>
           <DialogHeader>
             <DialogTitle>Bulk Feature Toggle</DialogTitle>
-            <DialogDescription>Enable or disable all features for a specific tier at once.</DialogDescription>
+            <DialogDescription>
+              Enable or disable all features for a specific tier at once.
+            </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="space-y-2">
               {/* eslint-disable-next-line jsx-a11y/label-has-associated-control -- control is associated via adjacent Input/sibling element */}
               <label className="text-sm font-medium">Action</label>
-              <select className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm" value={bulkAction} onChange={(e) => setBulkAction(e.target.value as "enable" | "disable")}>
+              <select
+                className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
+                value={bulkAction}
+                onChange={(e) => setBulkAction(e.target.value as "enable" | "disable")}
+              >
                 <option value="enable">Enable all features</option>
                 <option value="disable">Disable all features</option>
               </select>
@@ -252,7 +347,11 @@ export default function FeatureTogglesPage() {
             <div className="space-y-2">
               {/* eslint-disable-next-line jsx-a11y/label-has-associated-control -- control is associated via adjacent Input/sibling element */}
               <label className="text-sm font-medium">Tier</label>
-              <select className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm" value={bulkTier} onChange={(e) => setBulkTier(e.target.value)}>
+              <select
+                className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
+                value={bulkTier}
+                onChange={(e) => setBulkTier(e.target.value)}
+              >
                 <option value="basic">Basic</option>
                 <option value="standard">Standard</option>
                 <option value="premium">Premium</option>
@@ -260,7 +359,9 @@ export default function FeatureTogglesPage() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setBulkOpen(false)}>Cancel</Button>
+            <Button variant="outline" onClick={() => setBulkOpen(false)}>
+              Cancel
+            </Button>
             <Button onClick={handleBulkAction}>
               <ToggleLeft className="h-4 w-4 mr-1" />
               Apply to All Features
