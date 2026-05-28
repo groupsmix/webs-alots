@@ -1,0 +1,43 @@
+rules:
+  # FR-22 / FR-36: Restrict direct process.env access to centralized modules.
+  #
+  # All runtime environment variable reads should go through src/lib/env.ts
+  # to ensure validation, type safety, and a single source of truth.
+  #
+  # Allowed files:
+  #   - src/lib/env.ts (canonical env reader)
+  #   - instrumentation.ts (Sentry init, runs before app)
+  #   - sentry.*.config.ts (Sentry configuration)
+  #   - next.config.ts (build-time config)
+  #   - vitest.config.ts (test config)
+  #   - scripts/ (CLI utilities)
+  #   - *.test.ts / *.test.tsx (test files)
+  #   - worker-cron-handler.ts (Workers entry)
+  #
+  # If you need a new env var, add it to src/lib/env.ts first.
+  - id: env-access
+    pattern: process.env.$VAR
+    message: >
+      Direct `process.env` access outside centralized env module.
+      Read environment variables through `src/lib/env.ts` instead.
+      If this is a build-time or test-only access, add a
+      `// nosemgrep: semgrep.env-access` comment with justification.
+    severity: WARNING
+    languages: [typescript, javascript]
+    paths:
+      exclude:
+        - src/lib/env.ts
+        - instrumentation.ts
+        - "sentry.*.config.ts"
+        - next.config.ts
+        - vitest.config.ts
+        - "scripts/*"
+        - "**/*.test.ts"
+        - "**/*.test.tsx"
+        - worker-cron-handler.ts
+        - "e2e/*"
+        - playwright.config.ts
+    metadata:
+      category: best-practice
+      references:
+        - https://github.com/groupsmix/webs-alots/blob/main/src/lib/env.ts

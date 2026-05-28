@@ -1,0 +1,4 @@
+# Ignore build artifacts; only the .d.ts type shim is tracked
+*
+!.gitignore
+!worker.d.ts
