@@ -17,6 +17,7 @@
  * are unconditionally blocked regardless of the hostname allowlist.
  */
 
+import { getCircuitBreaker, CircuitOpenError } from "@/lib/circuit-breaker";
 import { logger } from "@/lib/logger";
 
 /**
@@ -143,10 +144,31 @@ export function isEgressAllowed(url: string | URL): boolean {
 }
 
 /**
+ * Map a URL hostname to a circuit breaker service name.
+ * Groups related hosts under a single breaker (e.g. all Stripe hosts).
+ */
+function resolveServiceName(url: string): string {
+  try {
+    const hostname = new URL(url).hostname;
+    if (hostname.includes("openai.com")) return "openai";
+    if (hostname.includes("stripe.com")) return "stripe";
+    if (hostname.includes("facebook.com")) return "whatsapp";
+    if (hostname.includes("resend.com")) return "resend";
+    if (hostname.includes("sentry.io")) return "sentry";
+    if (hostname.includes("cmi.co.ma")) return "cmi";
+    if (hostname.includes("slack.com")) return "slack";
+    return "default";
+  } catch {
+    return "default";
+  }
+}
+
+/**
  * Guarded fetch wrapper. In enforce mode, rejects requests to
  * non-allowlisted hosts. In monitor mode, logs a warning and proceeds.
  *
  * A39-2: Defaults to enforce mode (`EGRESS_ALLOWLIST_ENFORCE !== "false"`).
+ * A74-2: Wraps outbound calls in a per-service circuit breaker.
  */
 export async function fetchAllowlisted(
   input: string | URL | Request,
@@ -181,10 +203,20 @@ export async function fetchAllowlisted(
     }
   }
 
-  // API-007: Default 15 s timeout on all outbound calls to prevent a
-  // slow third party from burning the Worker's request handle.
-  if (!init?.signal) {
-    return fetch(input, { ...init, signal: AbortSignal.timeout(15_000) });
-  }
-  return fetch(input, init);
+  // A74-2: Route through the per-service circuit breaker so a hard-down
+  // dependency fast-fails instead of burning 15 s × retries per request.
+  const service = resolveServiceName(url);
+  const breaker = getCircuitBreaker(service);
+
+  return breaker.fire(async () => {
+    // API-007: Default 15 s timeout on all outbound calls to prevent a
+    // slow third party from burning the Worker's request handle.
+    if (!init?.signal) {
+      return fetch(input, { ...init, signal: AbortSignal.timeout(15_000) });
+    }
+    return fetch(input, init);
+  });
 }
+
+// Re-export for consumers that need to handle fast-fail gracefully.
+export { CircuitOpenError };

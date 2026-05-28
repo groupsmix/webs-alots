@@ -1,9 +1,112 @@
+import type { Json } from "./database";
 import { Database as GenDatabase } from "./database";
+
+// ── X-1: Extend the generated `users` Row/Insert/Update with `deletion_requested_at` ──
+// The column was added via migration but the auto-generated types were never
+// regenerated. This overlay adds it so API routes can stop casting through
+// `as unknown as {...}`.
+
+type UsersRowExtended = GenDatabase["public"]["Tables"]["users"]["Row"] & {
+  deletion_requested_at: string | null;
+};
+type UsersInsertExtended = GenDatabase["public"]["Tables"]["users"]["Insert"] & {
+  deletion_requested_at?: string | null;
+};
+type UsersUpdateExtended = GenDatabase["public"]["Tables"]["users"]["Update"] & {
+  deletion_requested_at?: string | null;
+};
 
 // Define the missing tables that are not in the generated types
 type ExtendedDatabase = GenDatabase & {
   public: GenDatabase["public"] & {
     Tables: GenDatabase["public"]["Tables"] & {
+      // X-1: Override `users` table with the extended column
+      users: {
+        Row: UsersRowExtended;
+        Insert: UsersInsertExtended;
+        Update: UsersUpdateExtended;
+        Relationships: GenDatabase["public"]["Tables"]["users"]["Relationships"];
+      };
+      // X-1: consent_logs table (not in generated types)
+      consent_logs: {
+        Row: {
+          id: string;
+          clinic_id: string | null;
+          user_id: string | null;
+          consent_type: string;
+          granted: boolean;
+          ip_address: string | null;
+          user_agent: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          clinic_id?: string | null;
+          user_id?: string | null;
+          consent_type: string;
+          granted: boolean;
+          ip_address?: string | null;
+          user_agent?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          clinic_id?: string | null;
+          user_id?: string | null;
+          consent_type?: string;
+          granted?: boolean;
+          ip_address?: string | null;
+          user_agent?: string | null;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      // X-1: patient_files table (not in generated types)
+      patient_files: {
+        Row: {
+          id: string;
+          clinic_id: string;
+          patient_id: string;
+          file_name: string;
+          file_type: string;
+          file_size: number;
+          r2_key: string;
+          encryption_iv: string | null;
+          uploaded_by: string | null;
+          metadata: Json | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          clinic_id: string;
+          patient_id: string;
+          file_name: string;
+          file_type: string;
+          file_size: number;
+          r2_key: string;
+          encryption_iv?: string | null;
+          uploaded_by?: string | null;
+          metadata?: Json | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          clinic_id?: string;
+          patient_id?: string;
+          file_name?: string;
+          file_type?: string;
+          file_size?: number;
+          r2_key?: string;
+          encryption_iv?: string | null;
+          uploaded_by?: string | null;
+          metadata?: Json | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
       doctor_unavailability: {
         Row: {
           id: string;

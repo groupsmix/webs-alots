@@ -1,9 +1,9 @@
 # EU AI Act Compliance Assessment
 
 **Document ID:** ISMS-AI-001
-**Version:** 1.0
-**Status:** DRAFT
-**Last Updated:** 2026-04-30
+**Version:** 2.0
+**Status:** FINAL
+**Last Updated:** 2026-05-28
 **Regulation:** EU AI Act (Regulation 2024/1689)
 **Audit Reference:** A72
 
@@ -36,6 +36,12 @@ Under EU AI Act Article 6 and Annex III, AI systems intended for use as **medica
 - Qualify as medical devices under MDR 2017/745
 
 The auto-suggest feature provides prescription suggestions that a doctor must explicitly review and approve before any prescription is issued. This places the system in the **limited-risk** category (transparency obligations apply).
+
+> **A62-4 / GDPR Art.22 note:** None of the AI features constitute solely-automated
+> decision-making about data subjects. All outputs are advisory and require explicit
+> clinician action before affecting patient care. Article 22 is therefore not triggered.
+> This assessment should be revisited if any AI feature is given autonomous authority
+> (e.g. auto-scheduling, auto-prescribing without clinician approval).
 
 ### 3.2 Rationale
 
@@ -101,12 +107,14 @@ The auto-suggest feature provides prescription suggestions that a doctor must ex
 
 ## 8. Open Items
 
-| Item                                             | Priority | Status                                           |
-| ------------------------------------------------ | -------- | ------------------------------------------------ |
-| Add AI disclaimer to all AI response payloads    | P2       | In progress (`src/lib/ai-disclaimer.ts` created) |
-| Implement human feedback loop for AI suggestions | P3       | Planned                                          |
-| Document AI model version and capabilities       | P3       | Planned                                          |
-| Add AI usage metrics per tenant                  | P2       | See A80-F1                                       |
+| Item                                              | Priority | Status                                                    |
+| ------------------------------------------------- | -------- | --------------------------------------------------------- |
+| Add AI disclaimer to all AI response payloads     | P2       | In progress (`src/lib/ai-disclaimer.ts` created)          |
+| Implement human feedback loop for AI suggestions  | P3       | Planned                                                   |
+| Document AI model version and capabilities        | P3       | Planned                                                   |
+| Add AI usage metrics per tenant                   | P2       | See A80-F1                                                |
+| A72-2: Confirm risk class + clinician-in-the-loop | P1       | **Done** — limited-risk; all outputs require human review |
+| A72-2: Enforce AI-output disclaimers in UI        | P1       | **Done** — `ai-disclaimer.ts` + validation module         |
 
 ---
 

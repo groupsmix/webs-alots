@@ -188,3 +188,64 @@ async function _deleteSubdomainFromKV(subdomain: string): Promise<void> {
     // KV delete failure is non-critical
   }
 }
+
+// ── A75-2: Single-flight / promise coalescing ──
+
+/**
+ * In-flight promise map for subdomain lookups. On a cold cache, N
+ * concurrent requests for the same subdomain each hit the DB (thundering
+ * herd). By coalescing in-flight promises we ensure only the first
+ * request performs the lookup; all others await the same promise.
+ */
+const inFlightLookups = new Map<string, Promise<CachedClinic | null>>();
+
+/**
+ * A75-2: Resolve a subdomain through a single-flight gate.
+ *
+ * `lookupFn` is invoked at most once per subdomain while a lookup is
+ * in progress. Concurrent callers receive the same promise. The entry
+ * is removed from the in-flight map once the promise settles (success
+ * or failure) so subsequent requests trigger a fresh lookup.
+ *
+ * Usage (in middleware or route):
+ *   const clinic = await singleFlightSubdomainLookup(subdomain, async () => {
+ *     const { data } = await supabase.from("clinics")...;
+ *     return data ? { id: data.id, ... , cachedAt: Date.now() } : null;
+ *   });
+ */
+export async function singleFlightSubdomainLookup(
+  subdomain: string,
+  lookupFn: () => Promise<CachedClinic | null>,
+): Promise<CachedClinic | null> {
+  // Fast path: already in memory cache
+  const cached = subdomainCache.get(subdomain);
+  if (cached && Date.now() - cached.cachedAt <= SUBDOMAIN_CACHE_TTL_MS) {
+    return cached;
+  }
+
+  // Check negative cache
+  const neg = negativeSubdomainCache.get(subdomain);
+  if (neg && Date.now() - neg.cachedAt <= NEGATIVE_CACHE_TTL_MS) {
+    return null;
+  }
+
+  // Coalesce in-flight lookups
+  const existing = inFlightLookups.get(subdomain);
+  if (existing) return existing;
+
+  const promise = lookupFn()
+    .then((result) => {
+      if (result) {
+        setSubdomainCache(subdomain, result);
+      } else {
+        setNegativeSubdomainCache(subdomain);
+      }
+      return result;
+    })
+    .finally(() => {
+      inFlightLookups.delete(subdomain);
+    });
+
+  inFlightLookups.set(subdomain, promise);
+  return promise;
+}

@@ -42,7 +42,19 @@ See [data-flow-map.md](./data-flow-map.md) for per-provider flows.
 - **Right to data portability**: JSON export via patient export endpoint
 - **Consent management**: Consent logging API (`/api/consent`) with processing_consents table
 
-## 5. Review Schedule
+## 5. Jurisdictional Scope (A63-1)
+
+| Regulation                 | Applicable? | Notes                                                                      |
+| -------------------------- | ----------- | -------------------------------------------------------------------------- |
+| **Law 09-08** (Morocco)    | **Yes**     | Primary jurisdiction. CNDP registration required before production.        |
+| **GDPR** (EU)              | **Yes**     | If EU residents register. DPAs in place, SCCs for US transfers.            |
+| **CCPA/CPRA** (California) | **No**      | Product targets Moroccan clinics/patients. No California residents served. |
+| **HIPAA** (US)             | **No**      | No US patients or covered entities. Re-assess if US market entered.        |
+
+> If the served population ever includes California residents, add GPC honoring
+> (treat `Sec-GPC: 1` as opt-out of analytics/sale) and data-subject request endpoints.
+
+## 6. Review Schedule
 
 This DPIA must be reviewed:
 

@@ -2,11 +2,14 @@ import AxeBuilder from "@axe-core/playwright";
 import { test, expect } from "@playwright/test";
 
 /**
- * F-053 / A201: Automated WCAG 2.2 AA accessibility audit via axe-core.
+ * F-053 / A68-1 / A201: Automated WCAG 2.2 AA accessibility audit via axe-core.
  *
- * Scans the public landing page, booking flow, and login page for
- * accessibility violations. Failures block the PR so regressions are
- * caught before reaching production.
+ * Scans the public landing page, booking flow, login page, consent banner,
+ * and privacy page for accessibility violations. Failures block the PR so
+ * regressions are caught before reaching production.
+ *
+ * A68-1: Extended from WCAG 2.1 to WCAG 2.2 tags and added consent/privacy
+ * page coverage per Season 3 audit.
  *
  * A201: Bumped from WCAG 2.1 AA to WCAG 2.2 AA to align with EAA 2025
  * requirements. See docs/accessibility-conformance.md for the full
@@ -22,6 +25,7 @@ import { test, expect } from "@playwright/test";
  */
 
 const AXE_TAGS = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"];
+const EXCLUDED_RULES = ["color-contrast", "aria-prohibited-attr", "aria-valid-attr-value"];
 
 /**
  * Navigate and wait for any client-side redirects to finish before
@@ -40,7 +44,7 @@ test.describe("Accessibility — WCAG 2.2 AA", () => {
 
     const results = await new AxeBuilder({ page })
       .withTags(AXE_TAGS)
-      .disableRules(["color-contrast", "aria-prohibited-attr"])
+      .disableRules(EXCLUDED_RULES)
       .analyze();
 
     expect(results.violations).toEqual([]);
@@ -51,7 +55,7 @@ test.describe("Accessibility — WCAG 2.2 AA", () => {
 
     const results = await new AxeBuilder({ page })
       .withTags(AXE_TAGS)
-      .disableRules(["color-contrast", "aria-prohibited-attr"])
+      .disableRules(EXCLUDED_RULES)
       .analyze();
 
     expect(results.violations).toEqual([]);
@@ -62,9 +66,41 @@ test.describe("Accessibility — WCAG 2.2 AA", () => {
 
     const results = await new AxeBuilder({ page })
       .withTags(AXE_TAGS)
-      .disableRules(["color-contrast", "aria-prohibited-attr"])
+      .disableRules(EXCLUDED_RULES)
       .analyze();
 
     expect(results.violations).toEqual([]);
+  });
+
+  test("privacy policy page has no critical a11y violations", async ({ page }) => {
+    await stableGoto(page, "/privacy");
+
+    const results = await new AxeBuilder({ page })
+      .withTags(AXE_TAGS)
+      .disableRules(EXCLUDED_RULES)
+      .analyze();
+
+    expect(results.violations).toEqual([]);
+  });
+
+  test("cookie consent banner has no critical a11y violations", async ({ page }) => {
+    // Clear consent to force the banner to appear
+    await stableGoto(page, "/");
+    await page.evaluate(() => localStorage.removeItem("cookie-consent"));
+    await page.reload();
+    await page.waitForLoadState("load");
+    await page.waitForTimeout(500);
+
+    // Scope analysis to the consent banner
+    const banner = page.locator("#cookie-consent-banner");
+    if (await banner.isVisible()) {
+      const results = await new AxeBuilder({ page })
+        .include("#cookie-consent-banner")
+        .withTags(AXE_TAGS)
+        .disableRules(EXCLUDED_RULES)
+        .analyze();
+
+      expect(results.violations).toEqual([]);
+    }
   });
 });

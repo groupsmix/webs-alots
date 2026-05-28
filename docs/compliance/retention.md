@@ -28,6 +28,17 @@ Each retention period is enforced by one or more of:
 3. **R2 lifecycle rules**: `r2-lifecycle.json` configures object expiry
 4. **Manual archive**: For data requiring human review before deletion
 
+## Jurisdiction Note (A61-2)
+
+The 2-year `activity_logs` retention is adequate for **Law 09-08** (Morocco) and
+**GDPR** (EU). If Oltigo Health ever processes data subject to **HIPAA**
+(United States), §164.316 requires audit documentation to be retained for
+**6 years**. Before serving US-PHI, extend `activity_logs` retention accordingly
+and update this schedule.
+
+**Current jurisdiction:** Morocco (Law 09-08) + GDPR (EU data subjects only if
+EU residents register). HIPAA and CCPA/CPRA are out of scope — see `cndp-registration.md`.
+
 ## Review Schedule
 
 This schedule must be reviewed annually alongside the DPIA.
