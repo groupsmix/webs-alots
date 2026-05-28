@@ -8,6 +8,7 @@ import { setTenantContext, logTenantContext } from "@/lib/tenant-context";
 import { APPOINTMENT_STATUS, PAYMENT_STATUS } from "@/lib/types/database";
 import { stripeWebhookEventSchema } from "@/lib/validations";
 import type { StripeWebhookEvent } from "@/lib/validations";
+import { readWebhookBody } from "@/lib/webhook-body";
 
 /**
  * POST /api/payments/webhook
@@ -26,40 +27,6 @@ import type { StripeWebhookEvent } from "@/lib/validations";
 /** AUDIT FINDING #24: Max webhook payload size (1 MB). */
 const MAX_WEBHOOK_BYTES = 1 * 1024 * 1024;
 
-/**
- * S0-11-05: Streaming body reader that enforces a hard byte cap regardless
- * of whether Content-Length is present (chunked TE bypass).
- * Pattern identical to readBodyWithLimit in CMI callback route.
- */
-async function readBodyWithLimit(request: NextRequest, maxBytes: number): Promise<string | null> {
-  const reader = request.body?.getReader();
-  if (!reader) return "";
-  const chunks: Uint8Array[] = [];
-  let total = 0;
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    if (!value) continue;
-    total += value.byteLength;
-    if (total > maxBytes) {
-      try {
-        await reader.cancel();
-      } catch {
-        /* best effort */
-      }
-      return null;
-    }
-    chunks.push(value);
-  }
-  const out = new Uint8Array(total);
-  let offset = 0;
-  for (const chunk of chunks) {
-    out.set(chunk, offset);
-    offset += chunk.byteLength;
-  }
-  return new TextDecoder().decode(out);
-}
-
 export async function POST(request: NextRequest) {
   const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
   const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
@@ -70,7 +37,7 @@ export async function POST(request: NextRequest) {
 
   try {
     // S0-11-05: Stream-based body cap replaces Content-Length-only check.
-    const rawBody = await readBodyWithLimit(request, MAX_WEBHOOK_BYTES);
+    const rawBody = await readWebhookBody(request, MAX_WEBHOOK_BYTES);
     if (rawBody === null) {
       return apiError("Payload too large", 413);
     }
