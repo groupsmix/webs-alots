@@ -31,58 +31,19 @@ const STEPS = [
  */
 export function HowItWorksSection() {
   return (
-    <section
-      style={{
-        backgroundColor: "var(--bone)",
-        paddingBlock: "var(--space-9)",
-      }}
-    >
-      <div
-        className="mx-auto w-full"
-        style={{
-          maxWidth: "var(--container-max)",
-          paddingInline: "var(--gutter-desktop)",
-        }}
-      >
+    <section className="bg-[var(--bone)] py-[var(--space-9)]">
+      <div className="mx-auto w-full max-w-[var(--container-max)] px-[var(--gutter-desktop)]">
         {/* eslint-disable i18next/no-literal-string */}
         <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
           {STEPS.map((s) => (
             <div key={s.step}>
-              <span
-                style={{
-                  fontFamily: "var(--font-mono-landing)",
-                  fontSize: "var(--text-mono)",
-                  lineHeight: "var(--lh-mono)",
-                  letterSpacing: "var(--ls-mono)",
-                  textTransform: "uppercase",
-                  fontWeight: 500,
-                  color: "var(--ink-60)",
-                }}
-              >
+              <span className="font-[var(--font-mono-landing)] text-[length:var(--text-mono)] leading-[var(--lh-mono)] tracking-[var(--ls-mono)] uppercase font-medium text-[var(--ink-60)]">
                 Étape {s.step}
               </span>
-              <h3
-                style={{
-                  marginTop: "var(--space-3)",
-                  fontFamily: "var(--font-sans-landing)",
-                  fontSize: "var(--text-h3)",
-                  lineHeight: "var(--lh-h3)",
-                  letterSpacing: "var(--ls-h3)",
-                  fontWeight: 500,
-                  color: "var(--ink)",
-                }}
-              >
+              <h3 className="mt-[var(--space-3)] font-[var(--font-sans-landing)] text-[length:var(--text-h3)] leading-[var(--lh-h3)] tracking-[var(--ls-h3)] font-medium text-[var(--ink)]">
                 {s.title}
               </h3>
-              <p
-                style={{
-                  marginTop: "var(--space-2)",
-                  fontFamily: "var(--font-sans-landing)",
-                  fontSize: "var(--text-body)",
-                  lineHeight: "var(--lh-body)",
-                  color: "var(--ink-70)",
-                }}
-              >
+              <p className="mt-[var(--space-2)] font-[var(--font-sans-landing)] text-[length:var(--text-body)] leading-[var(--lh-body)] text-[var(--ink-70)]">
                 {s.description}
               </p>
             </div>

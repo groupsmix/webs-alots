@@ -9,12 +9,12 @@ export function StatusDot({
 }: {
   status?: "operational" | "degraded" | "down";
 }) {
-  const color =
+  const colorClass =
     status === "operational"
-      ? "var(--signal-green)"
+      ? "bg-[var(--signal-green)]"
       : status === "degraded"
-        ? "var(--signal-amber)"
-        : "var(--signal-red)";
+        ? "bg-[var(--signal-amber)]"
+        : "bg-[var(--signal-red)]";
 
   const label =
     status === "operational"
@@ -27,14 +27,7 @@ export function StatusDot({
     <span
       role="status"
       aria-label={label}
-      style={{
-        display: "inline-block",
-        width: 6,
-        height: 6,
-        borderRadius: "50%",
-        backgroundColor: color,
-        flexShrink: 0,
-      }}
+      className={`inline-block size-1.5 rounded-full shrink-0 ${colorClass}`}
     />
   );
 }

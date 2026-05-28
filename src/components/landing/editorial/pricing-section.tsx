@@ -17,53 +17,20 @@ const PLANS = [
  */
 export function PricingSection() {
   return (
-    <section
-      id="pricing"
-      style={{
-        backgroundColor: "var(--bone)",
-        paddingBlock: "var(--space-9)",
-      }}
-    >
-      <div
-        className="mx-auto w-full"
-        style={{
-          maxWidth: "var(--container-max)",
-          paddingInline: "var(--gutter-desktop)",
-        }}
-      >
+    <section id="pricing" className="bg-[var(--bone)] py-[var(--space-9)]">
+      <div className="mx-auto w-full max-w-[var(--container-max)] px-[var(--gutter-desktop)]">
         {/* eslint-disable i18next/no-literal-string */}
         <HairlineRule />
-        <div className="grid grid-cols-2 md:grid-cols-4" style={{ paddingBlock: "var(--space-6)" }}>
+        <div className="grid grid-cols-2 md:grid-cols-4 py-[var(--space-6)]">
           {PLANS.map((plan) => (
             <div
               key={plan.name}
-              style={{
-                paddingInline: "var(--space-4)",
-                paddingBlock: "var(--space-4)",
-                borderInlineStart: plan.highlighted ? "2px solid var(--oltigo-green)" : "none",
-              }}
+              className={`px-[var(--space-4)] py-[var(--space-4)] ${plan.highlighted ? "border-s-2 border-s-[var(--oltigo-green)]" : ""}`}
             >
-              <span
-                style={{
-                  fontFamily: "var(--font-sans-landing)",
-                  fontSize: "var(--text-small)",
-                  fontWeight: 500,
-                  color: "var(--ink)",
-                }}
-              >
+              <span className="font-[var(--font-sans-landing)] text-[length:var(--text-small)] font-medium text-[var(--ink)]">
                 {plan.name}
               </span>
-              <span
-                className="block"
-                style={{
-                  marginTop: "var(--space-1)",
-                  fontFamily: "var(--font-mono-landing)",
-                  fontSize: "var(--text-mono)",
-                  lineHeight: "var(--lh-mono)",
-                  letterSpacing: "var(--ls-mono)",
-                  color: "var(--ink-60)",
-                }}
-              >
+              <span className="block mt-[var(--space-1)] font-[var(--font-mono-landing)] text-[length:var(--text-mono)] leading-[var(--lh-mono)] tracking-[var(--ls-mono)] text-[var(--ink-60)]">
                 {plan.price}
               </span>
             </div>
@@ -72,27 +39,13 @@ export function PricingSection() {
         <HairlineRule />
 
         {/* CTA */}
-        <div style={{ marginTop: "var(--space-5)" }}>
+        <div className="mt-[var(--space-5)]">
           <Link
             href="/pricing"
-            className="group inline-flex items-center gap-1"
-            style={{
-              fontFamily: "var(--font-sans-landing)",
-              fontSize: "var(--text-small)",
-              fontWeight: 500,
-              color: "var(--oltigo-green)",
-              textDecoration: "none",
-            }}
+            className="group inline-flex items-center gap-1 font-[var(--font-sans-landing)] text-[length:var(--text-small)] font-medium text-[var(--oltigo-green)] no-underline"
           >
             Voir tous les tarifs
-            <ArrowRight
-              style={{
-                width: 14,
-                height: 14,
-                transition: `transform var(--duration) var(--easing)`,
-              }}
-              className="group-hover:translate-x-0.5"
-            />
+            <ArrowRight className="size-3.5 transition-transform duration-[var(--duration)] ease-[var(--easing)] group-hover:translate-x-0.5" />
           </Link>
         </div>
         {/* eslint-enable i18next/no-literal-string */}
