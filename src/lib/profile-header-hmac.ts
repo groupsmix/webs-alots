@@ -100,14 +100,22 @@ function timingSafeHexEqual(a: string, b: string): boolean {
   return diff === 0;
 }
 
+// PERF-02: Cache imported CryptoKeys per secret to avoid repeated importKey calls.
+const _keyCache = new Map<string, Promise<CryptoKey>>();
+
 async function importHmacKey(secret: string, usage: "sign" | "verify"): Promise<CryptoKey> {
-  return crypto.subtle.importKey(
+  const cacheKey = `${secret}:${usage}`;
+  const cached = _keyCache.get(cacheKey);
+  if (cached) return cached;
+  const promise = crypto.subtle.importKey(
     "raw",
     new TextEncoder().encode(secret),
     { name: "HMAC", hash: "SHA-256" },
     false,
     [usage],
   );
+  _keyCache.set(cacheKey, promise);
+  return promise;
 }
 
 /**
