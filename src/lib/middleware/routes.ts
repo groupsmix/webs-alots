@@ -53,7 +53,7 @@ export const LIGHTWEIGHT_API_PATHS = new Set(["/api/health"]);
  * AUDIT-LB2: Every role that has a PROTECTED_PREFIXES entry MUST appear
  * here. If a role is missing, the middleware check fails open and the
  * user bypasses route scoping. Unknown roles are denied in middleware
- * (see fail-closed block in middleware.ts).
+ * (see fail-closed block in proxy.ts).
  */
 export const ROLE_ROUTE_MAP: Record<string, string> = {
   super_admin: "/super-admin",
