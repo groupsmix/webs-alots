@@ -146,6 +146,24 @@ jobs:
           fi
           echo "No seed credentials found outside fixtures."
 
+      # [003]: Translation completeness ratchet — fail if new FR keys are
+      # added without paired non-empty EN/AR translations. The baseline
+      # in .translation-empty-baseline must only go DOWN.
+      - name: Guard translation completeness
+        run: node scripts/check-translations.mjs
+
+      # [003]: Prevent increasing the translation empty baseline in PRs.
+      - name: Guard translation baseline ratchet
+        if: github.event_name == 'pull_request'
+        run: |
+          PR_BASELINE=$(cat .translation-empty-baseline | tr -d '[:space:]')
+          git fetch origin "${{ github.event.pull_request.base.ref }}" --depth=1 2>/dev/null || true
+          MAIN_BASELINE=$(git show "origin/${{ github.event.pull_request.base.ref }}:.translation-empty-baseline" 2>/dev/null | tr -d '[:space:]' || echo "$PR_BASELINE")
+          if [ "$PR_BASELINE" -gt "$MAIN_BASELINE" ]; then
+            echo "::error::Translation empty baseline increased from $MAIN_BASELINE to $PR_BASELINE — ratchet must only go down"
+            exit 1
+          fi
+
       # FR-103: Ensure Prettier formatting is enforced in CI.
       # lint-staged runs prettier on staged files locally; this catches
       # any files that slipped through without the pre-commit hook.
@@ -184,6 +202,18 @@ jobs:
               echo "::error::Statement coverage ${ACTUAL_STMTS}% dropped below floor ${FLOOR_STMTS}%"
               exit 1
             fi
+          fi
+
+      # [004]: Advisory coverage ratchet bump — reports whether the floor
+      # should be raised after a successful test run. Non-blocking; devs
+      # should run `node scripts/ratchet-coverage.mjs` locally and commit
+      # the updated .vitest-coverage-floor.json.
+      - name: Coverage ratchet advisory
+        if: always()
+        continue-on-error: true
+        run: |
+          if [ -f coverage/lcov.info ]; then
+            node scripts/ratchet-coverage.mjs 2>&1 || true
           fi
 
       # CI-02: Fail-closed bundle budget check.

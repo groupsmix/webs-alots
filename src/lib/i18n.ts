@@ -58,9 +58,9 @@ export function t(
     const category = rule.select(count); // "zero" | "one" | "two" | "few" | "many" | "other"
     const pluralKey = `${key}_${category}`;
     // Try the plural-specific key; fall back to base key
-    if ((dict as Record<string, string>)[pluralKey]) {
+    if ((dict as Record<string, string>)[pluralKey] != null) {
       resolvedKey = pluralKey;
-    } else if ((translations.fr as Record<string, string>)[pluralKey]) {
+    } else if ((translations.fr as Record<string, string>)[pluralKey] != null) {
       resolvedKey = pluralKey;
     }
   }
@@ -71,16 +71,25 @@ export function t(
   // resolved to French. Used below to surface the gap in development.
   let usedFrenchFallback = false;
 
-  if (!text) {
-    // Fallback to French
+  if (text == null) {
+    // Key absent from the locale dictionary — fall back to French.
     usedFrenchFallback = true;
     text = (translations.fr as Record<string, string>)[resolvedKey as string];
-    if (!text) {
-      // Fall back to base key if plural key not found
+    if (text == null) {
       text =
         (dict as Record<string, string>)[key as string] ??
         (translations.fr as Record<string, string>)[key as string] ??
         key;
+    }
+  } else if (text === "" && locale !== "fr") {
+    // [003]: Key exists but is an empty string (342 EN/AR keys as of
+    // 2026-05-28). Fall back to French explicitly rather than rendering
+    // blank UI. The CI guard (scripts/check-translations.mjs) prevents
+    // this count from growing.
+    usedFrenchFallback = true;
+    const frFallback = (translations.fr as Record<string, string>)[resolvedKey as string];
+    if (frFallback) {
+      text = frFallback;
     }
   }
 
