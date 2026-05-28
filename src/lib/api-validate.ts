@@ -42,6 +42,40 @@ import { withAuth, withAuthAnyRole, type AuthContext } from "@/lib/with-auth";
 /** IV-002: Maximum request body size (64 KB) to prevent oversized JSON payloads. */
 const MAX_BODY_BYTES = 65_536;
 
+/**
+ * W8-I-01: Stream-read the request body with a byte cap. Works even when the
+ * client omits Content-Length (chunked transfer encoding). Returns the decoded
+ * text or null if the body exceeds the cap.
+ */
+async function readBodyCapped(request: NextRequest, maxBytes: number): Promise<string | null> {
+  const reader = request.body?.getReader();
+  if (!reader) return "";
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    if (!value) continue;
+    total += value.byteLength;
+    if (total > maxBytes) {
+      try {
+        await reader.cancel();
+      } catch {
+        /* best effort */
+      }
+      return null;
+    }
+    chunks.push(value);
+  }
+  const merged = new Uint8Array(total);
+  let offset = 0;
+  for (const chunk of chunks) {
+    merged.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  return new TextDecoder().decode(merged);
+}
+
 export function withValidation<T>(
   schema: ZodType<T>,
   handler: (data: T, request: NextRequest) => Promise<NextResponse | Response>,
@@ -53,9 +87,14 @@ export function withValidation<T>(
       return apiValidationError(`Request body too large (max ${MAX_BODY_BYTES} bytes)`);
     }
 
+    // W8-I-01: Stream-read body with byte cap for chunked requests
     let body: unknown;
     try {
-      body = await request.json();
+      const text = await readBodyCapped(request, MAX_BODY_BYTES);
+      if (text === null) {
+        return apiValidationError(`Request body too large (max ${MAX_BODY_BYTES} bytes)`);
+      }
+      body = JSON.parse(text);
     } catch {
       return apiValidationError("Invalid JSON body");
     }
@@ -101,9 +140,14 @@ export function withAuthValidation<T>(
       return apiValidationError(`Request body too large (max ${MAX_BODY_BYTES} bytes)`);
     }
 
+    // W8-I-01: Stream-read body with byte cap for chunked requests
     let body: unknown;
     try {
-      body = await request.json();
+      const text = await readBodyCapped(request, MAX_BODY_BYTES);
+      if (text === null) {
+        return apiValidationError(`Request body too large (max ${MAX_BODY_BYTES} bytes)`);
+      }
+      body = JSON.parse(text);
     } catch {
       return apiValidationError("Invalid JSON body");
     }

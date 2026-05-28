@@ -67,8 +67,13 @@ export function t(
 
   let text = (dict as Record<string, string>)[resolvedKey as string];
 
+  // Track whether the requested locale lacked a value and we silently
+  // resolved to French. Used below to surface the gap in development.
+  let usedFrenchFallback = false;
+
   if (text == null) {
     // Key absent from the locale dictionary — fall back to French.
+    usedFrenchFallback = true;
     text = (translations.fr as Record<string, string>)[resolvedKey as string];
     if (text == null) {
       text =
@@ -81,6 +86,7 @@ export function t(
     // 2026-05-28). Fall back to French explicitly rather than rendering
     // blank UI. The CI guard (scripts/check-translations.mjs) prevents
     // this count from growing.
+    usedFrenchFallback = true;
     const frFallback = (translations.fr as Record<string, string>)[resolvedKey as string];
     if (frFallback) {
       text = frFallback;
@@ -91,6 +97,14 @@ export function t(
     Object.entries(params).forEach(([k, v]) => {
       text = text.replace(new RegExp(`\\{${k}\\}`, "g"), String(v));
     });
+  }
+
+  // [003]: A missing en/ar value silently renders the French string. That is
+  // invisible in production, so in development we prefix an explicit marker
+  // to force the gap into review. Production behaviour is unchanged.
+  // nosemgrep: semgrep.env-access — dev-only guard, not a runtime config variable
+  if (usedFrenchFallback && locale !== "fr" && process.env.NODE_ENV === "development") {
+    return `[MISSING:${locale}:${resolvedKey as string}] ${text}`;
   }
 
   return text;

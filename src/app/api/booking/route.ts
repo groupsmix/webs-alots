@@ -26,6 +26,7 @@ import { createTenantClient } from "@/lib/supabase-server";
 import { requireTenantWithConfig } from "@/lib/tenant";
 import { computeEndTime } from "@/lib/timezone";
 import { APPOINTMENT_STATUS, BOOKING_SOURCE } from "@/lib/types/database";
+import { safeName, safeText } from "@/lib/validations/primitives";
 // findOrCreatePatient is used by authenticated routes (recurring, emergency-slot, etc.)
 // For the anonymous booking flow we use the booking_find_or_create_patient RPC instead
 // (SECURITY DEFINER function that bypasses users-table RLS).
@@ -40,14 +41,15 @@ const bookingRequestSchema = z.object({
   isFirstVisit: z.boolean(),
   hasInsurance: z.boolean(),
   patient: z.object({
-    name: z.string().min(2).max(200),
+    // IV-05: Use safeName/safeText to strip bidi overrides + NFC normalize.
+    name: safeName.pipe(z.string().min(2).max(200)),
     phone: z
       .string()
       .min(8)
       .max(30)
       .regex(/^\+?[0-9 ()\-]{8,30}$/, "Invalid phone number format"),
-    email: z.string().email().optional(),
-    reason: z.string().max(1000).optional(),
+    email: z.string().email().max(254).optional(),
+    reason: safeText.pipe(z.string().max(1000)).optional(),
   }),
   slotDuration: z.number().int().positive(),
   bufferTime: z.number().int().min(0),
@@ -92,6 +94,11 @@ interface BookingTokenResult {
  */
 async function verifyHmac(secret: string, payload: string, signature: string): Promise<boolean> {
   const encoder = new TextEncoder();
+  // W8-A1-02: Cap signature to 64 hex chars (SHA-256 output width). A longer
+  // input is definitively invalid and the constant-time loop over 64 K chars
+  // is unnecessary CPU work.
+  if (signature.length > 64) return false;
+
   const key = await crypto.subtle.importKey(
     "raw",
     encoder.encode(secret),
@@ -103,9 +110,6 @@ async function verifyHmac(secret: string, payload: string, signature: string): P
   const expectedSig = Array.from(new Uint8Array(sig))
     .map((b) => b.toString(16).padStart(2, "0"))
     .join("");
-  // A6-05: Compare via constant-time loop without length precheck.
-  // Both are 64-char hex strings, but skipping the length guard avoids
-  // leaking length info if the format ever changes.
   const maxLen = Math.max(expectedSig.length, signature.length);
   let mismatch = expectedSig.length ^ signature.length;
   for (let i = 0; i < maxLen; i++) {
@@ -275,7 +279,14 @@ export const POST = withValidation(bookingRequestSchema, async (body, request: N
   // AUDIT-04: Bind the verified phone from the token to the submitted
   // patient phone. Prevents a user from verifying one phone number and
   // then booking under a different one.
-  const normalizePhone = (p: string) => p.replace(/[\s\-()]/g, "");
+  // W8-I-02: Canonicalise to +212 form before comparison so "0661…" and
+  // "+212661…" are treated as the same number.
+  const normalizePhone = (p: string) => {
+    let n = p.replace(/[\s\-()]/g, "");
+    if (n.startsWith("00212")) n = "+" + n.slice(2);
+    else if (n.startsWith("0")) n = "+212" + n.slice(1);
+    return n;
+  };
   if (normalizePhone(tokenResult.phone!) !== normalizePhone(body.patient.phone)) {
     return apiForbidden("Booking token does not match the submitted patient phone number");
   }

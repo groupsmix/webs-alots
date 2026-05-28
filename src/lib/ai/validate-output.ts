@@ -8,14 +8,19 @@
  * Apply to every AI route (`/api/chat`, `/api/ai/*`, `/api/v1/ai/*`).
  */
 
+// W8-A26-01: Expanded role-elevation pattern with i18n tokens (French, Arabic,
+// Darija) to catch multilingual prompt-injection responses.
 const ROLE_ELEVATION =
-  /\b(i am now|role changed to|switched to admin|access granted|patient list|dump all|SELECT \*)\b/i;
+  /\b(i am now|role changed to|switched to admin|access granted|patient list|dump all|SELECT \*|je suis maintenant|rôle changé|accès accordé|أنا الآن مدير|وصول ممنوح|تم تغيير الدور|lista de pacientes|supprimer tous)\b/i;
 
 const MOROCCAN_PHONE = /(?:\+212|0)([ .\-]?\d){9}/g;
 const MOROCCAN_CIN = /\b[A-Z]{1,2}\d{5,7}\b/g;
 
 export function validateAIOutput(text: string): string | null {
-  if (ROLE_ELEVATION.test(text)) return null;
-  const cleaned = text.replace(MOROCCAN_PHONE, "[REDACTED_PHONE]");
+  // W8-A26-01: NFKC-normalize to collapse Unicode tricks (e.g. fullwidth
+  // Latin letters, combining characters) that could bypass the regex.
+  const normalized = text.normalize("NFKC");
+  if (ROLE_ELEVATION.test(normalized)) return null;
+  const cleaned = normalized.replace(MOROCCAN_PHONE, "[REDACTED_PHONE]");
   return cleaned.replace(MOROCCAN_CIN, "[REDACTED_ID]");
 }

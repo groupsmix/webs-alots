@@ -1,5 +1,6 @@
 /* eslint-disable i18next/no-literal-string -- Static legal/compliance page with French content */
 import type { Metadata } from "next";
+import { LegalDoc, type LegalDocSection } from "@/components/editorial/legal-doc";
 
 export const metadata: Metadata = {
   title: "Déclaration d'accessibilité",
@@ -20,40 +21,43 @@ export const metadata: Metadata = {
  * contact information for reporting barriers.
  */
 export default function AccessibilityPage() {
-  return (
-    <div className="container mx-auto px-4 py-12">
-      <div className="mx-auto max-w-3xl prose prose-gray">
-        <h1 className="text-3xl font-bold mb-8">Déclaration d&apos;accessibilité</h1>
-
-        <p className="text-muted-foreground mb-6">Dernière mise à jour : mai 2026</p>
-
-        <section className="mb-8">
-          <h2 className="text-xl font-semibold mb-4">Engagement</h2>
-          <p className="text-muted-foreground mb-4">
-            Oltigo Health s&apos;engage à rendre sa plateforme accessible à toutes les personnes, y
-            compris celles en situation de handicap. Nous travaillons continuellement à améliorer
-            l&apos;expérience utilisateur et à appliquer les normes d&apos;accessibilité
-            pertinentes.
-          </p>
-        </section>
-
-        <section className="mb-8">
-          <h2 className="text-xl font-semibold mb-4">Norme de référence</h2>
-          <p className="text-muted-foreground mb-4">
-            Cette déclaration s&apos;appuie sur les{" "}
-            <strong>Web Content Accessibility Guidelines (WCAG) 2.2, niveau AA</strong>, publiées
-            par le W3C. Ces directives sont la référence internationale pour l&apos;accessibilité
-            des contenus web.
-          </p>
-        </section>
-
-        <section className="mb-8">
-          <h2 className="text-xl font-semibold mb-4">État de conformité</h2>
-          <p className="text-muted-foreground mb-4">
+  const sections: LegalDocSection[] = [
+    {
+      id: "engagement",
+      number: "01",
+      title: "Engagement",
+      children: (
+        <p>
+          Oltigo Health s&apos;engage à rendre sa plateforme accessible à toutes les personnes, y
+          compris celles en situation de handicap. Nous travaillons continuellement à améliorer
+          l&apos;expérience utilisateur et à appliquer les normes d&apos;accessibilité pertinentes.
+        </p>
+      ),
+    },
+    {
+      id: "norme",
+      number: "02",
+      title: "Norme de référence",
+      children: (
+        <p>
+          Cette déclaration s&apos;appuie sur les{" "}
+          <strong>Web Content Accessibility Guidelines (WCAG) 2.2, niveau AA</strong>, publiées par
+          le W3C. Ces directives sont la référence internationale pour l&apos;accessibilité des
+          contenus web.
+        </p>
+      ),
+    },
+    {
+      id: "conformite",
+      number: "03",
+      title: "État de conformité",
+      children: (
+        <>
+          <p>
             La plateforme Oltigo Health est en <strong>conformité partielle</strong> avec les WCAG
             2.2 niveau AA. Les points suivants sont assurés :
           </p>
-          <ul className="list-disc pl-6 text-muted-foreground mb-4 space-y-2">
+          <ul>
             <li>
               <strong>Navigation au clavier</strong> : toutes les fonctionnalités principales sont
               accessibles sans souris.
@@ -79,14 +83,17 @@ export default function AccessibilityPage() {
               tailles d&apos;écran et niveaux de zoom jusqu&apos;à 200%.
             </li>
           </ul>
-        </section>
-
-        <section className="mb-8">
-          <h2 className="text-xl font-semibold mb-4">Limitations connues</h2>
-          <p className="text-muted-foreground mb-4">
-            Malgré nos efforts, certains contenus peuvent ne pas être pleinement accessibles :
-          </p>
-          <ul className="list-disc pl-6 text-muted-foreground mb-4 space-y-2">
+        </>
+      ),
+    },
+    {
+      id: "limitations",
+      number: "04",
+      title: "Limitations connues",
+      children: (
+        <>
+          <p>Malgré nos efforts, certains contenus peuvent ne pas être pleinement accessibles :</p>
+          <ul>
             <li>
               Certains composants de calendrier/planification peuvent ne pas être entièrement
               navigables au clavier.
@@ -100,24 +107,30 @@ export default function AccessibilityPage() {
               testés avec des lecteurs d&apos;écran.
             </li>
           </ul>
-        </section>
-
-        <section className="mb-8">
-          <h2 className="text-xl font-semibold mb-4">Technologies utilisées</h2>
-          <ul className="list-disc pl-6 text-muted-foreground mb-4 space-y-1">
-            <li>HTML5</li>
-            <li>CSS3 / Tailwind CSS</li>
-            <li>JavaScript / TypeScript (React 19, Next.js 16)</li>
-            <li>WAI-ARIA pour les composants interactifs</li>
-          </ul>
-        </section>
-
-        <section className="mb-8">
-          <h2 className="text-xl font-semibold mb-4">Méthode d&apos;évaluation</h2>
-          <p className="text-muted-foreground mb-4">
-            L&apos;accessibilité d&apos;Oltigo Health est évaluée par :
-          </p>
-          <ul className="list-disc pl-6 text-muted-foreground mb-4 space-y-2">
+        </>
+      ),
+    },
+    {
+      id: "technologies",
+      number: "05",
+      title: "Technologies utilisées",
+      children: (
+        <ul>
+          <li>HTML5</li>
+          <li>CSS3 / Tailwind CSS</li>
+          <li>JavaScript / TypeScript (React 19, Next.js 16)</li>
+          <li>WAI-ARIA pour les composants interactifs</li>
+        </ul>
+      ),
+    },
+    {
+      id: "methode",
+      number: "06",
+      title: "Méthode d'évaluation",
+      children: (
+        <>
+          <p>L&apos;accessibilité d&apos;Oltigo Health est évaluée par :</p>
+          <ul>
             <li>
               Tests automatisés avec <code>jest-axe</code> intégrés à la suite de tests CI/CD.
             </li>
@@ -126,45 +139,52 @@ export default function AccessibilityPage() {
             </li>
             <li>Test avec le lecteur d&apos;écran NVDA (Windows) et VoiceOver (macOS/iOS).</li>
           </ul>
-        </section>
-
-        <section className="mb-8">
-          <h2 className="text-xl font-semibold mb-4">Retour d&apos;information et contact</h2>
-          <p className="text-muted-foreground mb-4">
+        </>
+      ),
+    },
+    {
+      id: "contact",
+      number: "07",
+      title: "Retour d'information et contact",
+      children: (
+        <>
+          <p>
             Si vous rencontrez un obstacle d&apos;accessibilité sur notre plateforme, nous vous
             invitons à nous contacter :
           </p>
-          <ul className="list-disc pl-6 text-muted-foreground mb-4 space-y-2">
+          <ul>
             <li>
               <strong>Email</strong> :{" "}
-              <a href="mailto:accessibilite@oltigo.com" className="text-primary underline">
-                accessibilite@oltigo.com
-              </a>
+              <a href="mailto:accessibilite@oltigo.com">accessibilite@oltigo.com</a>
             </li>
             <li>
-              <strong>Formulaire de contact</strong> :{" "}
-              <a href="/contact" className="text-primary underline">
-                oltigo.com/contact
-              </a>
+              <strong>Formulaire de contact</strong> : <a href="/contact">oltigo.com/contact</a>
             </li>
           </ul>
-          <p className="text-muted-foreground mb-4">
+          <p>
             Nous nous engageons à répondre à tout signalement dans un délai de 15 jours ouvrables et
             à proposer une solution alternative si le contenu ne peut pas être rendu accessible
             immédiatement.
           </p>
-        </section>
+        </>
+      ),
+    },
+    {
+      id: "recours",
+      number: "08",
+      title: "Voies de recours",
+      children: (
+        <p>
+          Si, après nous avoir contactés, vous estimez que votre signalement n&apos;a pas été traité
+          de manière satisfaisante, vous pouvez saisir le Médiateur du Royaume du Maroc ou
+          l&apos;autorité compétente en matière d&apos;accessibilité numérique dans votre pays de
+          résidence.
+        </p>
+      ),
+    },
+  ];
 
-        <section className="mb-8">
-          <h2 className="text-xl font-semibold mb-4">Voies de recours</h2>
-          <p className="text-muted-foreground mb-4">
-            Si, après nous avoir contactés, vous estimez que votre signalement n&apos;a pas été
-            traité de manière satisfaisante, vous pouvez saisir le Médiateur du Royaume du Maroc ou
-            l&apos;autorité compétente en matière d&apos;accessibilité numérique dans votre pays de
-            résidence.
-          </p>
-        </section>
-      </div>
-    </div>
+  return (
+    <LegalDoc title="Déclaration d'accessibilité" lastUpdated="MAI 2026" sections={sections} />
   );
 }

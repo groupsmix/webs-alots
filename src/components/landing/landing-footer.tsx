@@ -69,7 +69,9 @@ export function LandingFooter() {
                 textDecoration: "none",
               }}
             >
-              {"Oltigo"}
+              {/* eslint-disable i18next/no-literal-string -- brand name, never translated */}
+              Oltig<span style={{ color: "var(--oltigo-green)" }}>o</span>
+              {/* eslint-enable i18next/no-literal-string */}
             </Link>
             <address
               className="mt-[var(--space-4)] not-italic"
