@@ -147,6 +147,24 @@ const eslintConfig = defineConfig([
           message:
             "A87-F10: test.skip is forbidden in CI. Use test.skipIf(condition) with a documented env guard, or remove the skip.",
         },
+        {
+          selector:
+            "CallExpression[callee.property.name='skipIf'][callee.object.name='describe'] > Literal[value=true]:first-child",
+          message:
+            "FR-35: describe.skipIf(true) permanently disables tests. Use an env-guard variable instead.",
+        },
+        {
+          selector:
+            "CallExpression[callee.property.name='skipIf'][callee.object.name='it'] > Literal[value=true]:first-child",
+          message:
+            "FR-35: it.skipIf(true) permanently disables tests. Use an env-guard variable instead.",
+        },
+        {
+          selector:
+            "CallExpression[callee.property.name='skipIf'][callee.object.name='test'] > Literal[value=true]:first-child",
+          message:
+            "FR-35: test.skipIf(true) permanently disables tests. Use an env-guard variable instead.",
+        },
       ],
     },
   },

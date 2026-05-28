@@ -6,6 +6,7 @@ Index of all scripts in this directory.
 | ----------------------------- | ---------- | ------------------------------------------------------------ |
 | `backup-database.sh`          | Bash       | Full Supabase database backup via pg_dump                    |
 | `backup.sh`                   | Bash       | Combined backup (DB + R2 files)                              |
+| `check-bindings.ts`           | TypeScript | CI guard — verifies wrangler.toml bindings match source code |
 | `check-bundle-budget.mjs`     | Node       | CI guard — fails if shared JS bundle exceeds budget          |
 | `check-cron-mapping.ts`       | TypeScript | CI guard — verifies wrangler.toml crons match route handlers |
 | `check-db-types-drift.sh`     | Bash       | CI guard — detects stale `database.ts` vs migrations         |
@@ -23,3 +24,4 @@ Index of all scripts in this directory.
 | `seed-data.sql`               | SQL        | Development seed data for local Supabase                     |
 | `snapshot-rls-policies.mjs`   | Node       | Prints all RLS policies for PR review visibility             |
 | `staging-swap.sh`             | Bash       | Swap staging ↔ production Cloudflare Workers                 |
+| `update-licenses.mjs`         | Node       | Regenerates THIRD_PARTY_LICENSES.md from dependency tree     |
