@@ -61,7 +61,7 @@ export const radiologyReportPdfSchema = z.object({
   radiologistName: z.string().max(200).optional(),
 });
 
-export const uploadPresignedSchema = z.object({
+const _uploadPresignedSchema = z.object({
   filename: z.string().min(1).max(500),
   contentType: z.string().min(1).max(200),
   category: z.string().min(1).max(100),
