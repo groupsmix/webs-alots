@@ -7,18 +7,30 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
-  Dialog, DialogContent, DialogDescription, DialogFooter,
-  DialogHeader, DialogTitle,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PageLoader } from "@/components/ui/page-loader";
 import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from "@/components/ui/select";
 import {
-  fetchParapharmacyProducts, fetchParapharmacyCategories, getStockStatus,
-  createParapharmacyProduct, updateParapharmacyProduct, deleteParapharmacyProduct,
+  fetchParapharmacyProducts,
+  fetchParapharmacyCategories,
+  getStockStatus,
+  createParapharmacyProduct,
+  updateParapharmacyProduct,
+  deleteParapharmacyProduct,
 } from "@/lib/data/client";
 import type { ProductView, ParapharmacyCategoryView } from "@/lib/data/client";
 
@@ -58,22 +70,23 @@ export default function ParapharmacyCatalogPage() {
   useEffect(() => {
     const controller = new AbortController();
     const cId = tenant?.clinicId ?? "";
-    Promise.all([
-      fetchParapharmacyProducts(cId),
-      fetchParapharmacyCategories(cId),
-    ])
+    Promise.all([fetchParapharmacyProducts(cId), fetchParapharmacyCategories(cId)])
       .then(([p, c]) => {
-      if (controller.signal.aborted) return;
+        if (controller.signal.aborted) return;
         setProducts(p);
         setCategories(c);
       })
       .catch((err) => {
-      if (!controller.signal.aborted) {
-        setError(err instanceof Error ? err : new Error(String(err)));
-      }
-    })
-    .finally(() => { if (!controller.signal.aborted) setLoading(false); });
-    return () => { controller.abort(); };
+        if (!controller.signal.aborted) {
+          setError(err instanceof Error ? err : new Error(String(err)));
+        }
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setLoading(false);
+      });
+    return () => {
+      controller.abort();
+    };
   }, [tenant?.clinicId]);
 
   const openCreate = () => {
@@ -151,7 +164,9 @@ export default function ParapharmacyCatalogPage() {
   if (error) {
     return (
       <div className="p-8 text-center">
-        <p className="text-red-600 font-medium">Failed to load data. Please try refreshing the page.</p>
+        <p className="text-red-600 font-medium">
+          Failed to load data. Please try refreshing the page.
+        </p>
         {error.message && <p className="text-sm text-muted-foreground mt-2">{error.message}</p>}
       </div>
     );
@@ -162,7 +177,11 @@ export default function ParapharmacyCatalogPage() {
     if (categoryFilter !== "all" && p.category !== categoryFilter) return false;
     if (search) {
       const q = search.toLowerCase();
-      return p.name.toLowerCase().includes(q) || p.category.toLowerCase().includes(q) || (p.manufacturer?.toLowerCase().includes(q) ?? false);
+      return (
+        p.name.toLowerCase().includes(q) ||
+        p.category.toLowerCase().includes(q) ||
+        (p.manufacturer?.toLowerCase().includes(q) ?? false)
+      );
     }
     return true;
   });
@@ -174,7 +193,9 @@ export default function ParapharmacyCatalogPage() {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold">Product Catalog</h1>
-          <p className="text-muted-foreground text-sm">{products.filter((p) => p.active).length} active products</p>
+          <p className="text-muted-foreground text-sm">
+            {products.filter((p) => p.active).length} active products
+          </p>
         </div>
         <Button onClick={openCreate}>
           <Plus className="h-4 w-4 mr-2" /> Add Product
@@ -184,14 +205,28 @@ export default function ParapharmacyCatalogPage() {
       <div className="flex flex-col sm:flex-row gap-3 mb-6">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input placeholder="Search products..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
+          <Input
+            placeholder="Search products..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="pl-9"
+          />
         </div>
         <div className="flex gap-2 flex-wrap">
-          <Button variant={categoryFilter === "all" ? "default" : "outline"} size="sm" onClick={() => setCategoryFilter("all")}>
+          <Button
+            variant={categoryFilter === "all" ? "default" : "outline"}
+            size="sm"
+            onClick={() => setCategoryFilter("all")}
+          >
             All
           </Button>
           {uniqueCategories.map((cat) => (
-            <Button key={cat} variant={categoryFilter === cat ? "default" : "outline"} size="sm" onClick={() => setCategoryFilter(cat)}>
+            <Button
+              key={cat}
+              variant={categoryFilter === cat ? "default" : "outline"}
+              size="sm"
+              onClick={() => setCategoryFilter(cat)}
+            >
               {cat}
             </Button>
           ))}
@@ -211,20 +246,35 @@ export default function ParapharmacyCatalogPage() {
                       <p className="text-xs text-muted-foreground">{product.genericName}</p>
                     )}
                   </div>
-                  <Badge variant="outline" className="text-xs">{product.category}</Badge>
+                  <Badge variant="outline" className="text-xs">
+                    {product.category}
+                  </Badge>
                 </div>
                 {product.description && (
-                  <p className="text-xs text-muted-foreground mb-3 line-clamp-2">{product.description}</p>
+                  <p className="text-xs text-muted-foreground mb-3 line-clamp-2">
+                    {product.description}
+                  </p>
                 )}
                 <div className="flex items-center justify-between">
-                  <p className="font-semibold">{product.price} <span className="text-xs font-normal text-muted-foreground">MAD</span></p>
+                  <p className="font-semibold">
+                    {product.price}{" "}
+                    <span className="text-xs font-normal text-muted-foreground">MAD</span>
+                  </p>
                   <div className="flex items-center gap-2">
-                    <Badge className={
-                      stockStatus === "out" ? "bg-red-100 text-red-700 border-0" :
-                      stockStatus === "low" ? "bg-orange-100 text-orange-700 border-0" :
-                      "bg-emerald-100 text-emerald-700 border-0"
-                    }>
-                      {stockStatus === "out" ? "Out of Stock" : stockStatus === "low" ? `Low: ${product.stockQuantity}` : `In Stock: ${product.stockQuantity}`}
+                    <Badge
+                      className={
+                        stockStatus === "out"
+                          ? "bg-red-100 text-red-700 border-0"
+                          : stockStatus === "low"
+                            ? "bg-orange-100 text-orange-700 border-0"
+                            : "bg-emerald-100 text-emerald-700 border-0"
+                      }
+                    >
+                      {stockStatus === "out"
+                        ? "Out of Stock"
+                        : stockStatus === "low"
+                          ? `Low: ${product.stockQuantity}`
+                          : `In Stock: ${product.stockQuantity}`}
                     </Badge>
                   </div>
                 </div>
@@ -235,7 +285,12 @@ export default function ParapharmacyCatalogPage() {
                   <Button size="sm" variant="ghost" onClick={() => openEdit(product)}>
                     <Pencil className="h-3 w-3 mr-1" /> Edit
                   </Button>
-                  <Button size="sm" variant="ghost" className="text-red-600 hover:text-red-700" onClick={() => setDeleteId(product.id)}>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="text-red-600 hover:text-red-700"
+                    onClick={() => setDeleteId(product.id)}
+                  >
                     <Trash2 className="h-3 w-3 mr-1" /> Delete
                   </Button>
                 </div>
@@ -265,21 +320,36 @@ export default function ParapharmacyCatalogPage() {
             <div className="grid grid-cols-2 gap-4">
               <div className="grid gap-2">
                 <Label>Name *</Label>
-                <Input value={form.name} onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))} placeholder="Product name" />
+                <Input
+                  value={form.name}
+                  onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
+                  placeholder="Product name"
+                />
               </div>
               <div className="grid gap-2">
                 <Label>Generic Name</Label>
-                <Input value={form.genericName} onChange={(e) => setForm((p) => ({ ...p, genericName: e.target.value }))} placeholder="Generic name" />
+                <Input
+                  value={form.genericName}
+                  onChange={(e) => setForm((p) => ({ ...p, genericName: e.target.value }))}
+                  placeholder="Generic name"
+                />
               </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="grid gap-2">
                 <Label>Category</Label>
-                <Select value={form.category} onValueChange={(v) => setForm((p) => ({ ...p, category: v }))}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+                <Select
+                  value={form.category}
+                  onValueChange={(v) => setForm((p) => ({ ...p, category: v }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
                   <SelectContent>
                     {categories.map((c) => (
-                      <SelectItem key={c.id} value={c.name}>{c.name}</SelectItem>
+                      <SelectItem key={c.id} value={c.name}>
+                        {c.name}
+                      </SelectItem>
                     ))}
                     <SelectItem value="General">General</SelectItem>
                     <SelectItem value="Cosmetics">Cosmetics</SelectItem>
@@ -291,30 +361,53 @@ export default function ParapharmacyCatalogPage() {
               </div>
               <div className="grid gap-2">
                 <Label>Price (MAD)</Label>
-                <Input type="number" value={form.price} onChange={(e) => setForm((p) => ({ ...p, price: e.target.value }))} placeholder="0" />
+                <Input
+                  type="number"
+                  value={form.price}
+                  onChange={(e) => setForm((p) => ({ ...p, price: e.target.value }))}
+                  placeholder="0"
+                />
               </div>
             </div>
             <div className="grid gap-2">
               <Label>Description</Label>
-              <Input value={form.description} onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))} placeholder="Product description" />
+              <Input
+                value={form.description}
+                onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))}
+                placeholder="Product description"
+              />
             </div>
             <div className="grid grid-cols-3 gap-4">
               <div className="grid gap-2">
                 <Label>Manufacturer</Label>
-                <Input value={form.manufacturer} onChange={(e) => setForm((p) => ({ ...p, manufacturer: e.target.value }))} placeholder="Brand" />
+                <Input
+                  value={form.manufacturer}
+                  onChange={(e) => setForm((p) => ({ ...p, manufacturer: e.target.value }))}
+                  placeholder="Brand"
+                />
               </div>
               <div className="grid gap-2">
                 <Label>Dosage Form</Label>
-                <Input value={form.dosageForm} onChange={(e) => setForm((p) => ({ ...p, dosageForm: e.target.value }))} placeholder="e.g., Cream" />
+                <Input
+                  value={form.dosageForm}
+                  onChange={(e) => setForm((p) => ({ ...p, dosageForm: e.target.value }))}
+                  placeholder="e.g., Cream"
+                />
               </div>
               <div className="grid gap-2">
                 <Label>Strength</Label>
-                <Input value={form.strength} onChange={(e) => setForm((p) => ({ ...p, strength: e.target.value }))} placeholder="e.g., 50mg" />
+                <Input
+                  value={form.strength}
+                  onChange={(e) => setForm((p) => ({ ...p, strength: e.target.value }))}
+                  placeholder="e.g., 50mg"
+                />
               </div>
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancel</Button>
+            <Button variant="outline" onClick={() => setDialogOpen(false)}>
+              Cancel
+            </Button>
             <Button onClick={handleSave} disabled={saving || !form.name}>
               {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
               {editingId ? "Update" : "Create"}
@@ -324,7 +417,12 @@ export default function ParapharmacyCatalogPage() {
       </Dialog>
 
       {/* Delete Confirmation */}
-      <Dialog open={!!deleteId} onOpenChange={(open: boolean) => { if (!open) setDeleteId(null); }}>
+      <Dialog
+        open={!!deleteId}
+        onOpenChange={(open: boolean) => {
+          if (!open) setDeleteId(null);
+        }}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Delete Product</DialogTitle>
@@ -333,7 +431,9 @@ export default function ParapharmacyCatalogPage() {
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDeleteId(null)}>Cancel</Button>
+            <Button variant="outline" onClick={() => setDeleteId(null)}>
+              Cancel
+            </Button>
             <Button variant="destructive" onClick={handleDelete} disabled={deleting}>
               {deleting ? "Deleting..." : "Delete"}
             </Button>

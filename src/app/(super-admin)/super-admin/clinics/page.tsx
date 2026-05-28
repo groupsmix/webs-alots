@@ -1,9 +1,24 @@
 "use client";
 
 import {
-  LogIn, Search, Ban, CheckCircle, Eye, Filter,
-  Building2, Mail, Phone, MapPin, Calendar, Users, TrendingUp,
-  Loader2, UserPlus, ChevronLeft, ChevronRight, Download,
+  LogIn,
+  Search,
+  Ban,
+  CheckCircle,
+  Eye,
+  Filter,
+  Building2,
+  Mail,
+  Phone,
+  MapPin,
+  Calendar,
+  Users,
+  TrendingUp,
+  Loader2,
+  UserPlus,
+  ChevronLeft,
+  ChevronRight,
+  Download,
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -14,7 +29,12 @@ import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
@@ -89,15 +109,33 @@ function ClinicsTableSkeleton() {
             <tbody>
               {[...Array(5)].map((_, i) => (
                 <tr key={i} className="border-b last:border-0">
-                  <td className="py-3 px-4"><div className="h-4 w-32 bg-muted animate-pulse rounded" /></td>
-                  <td className="py-3 px-4 hidden md:table-cell"><div className="h-4 w-28 bg-muted animate-pulse rounded" /></td>
-                  <td className="py-3 px-4"><div className="h-4 w-16 bg-muted animate-pulse rounded" /></td>
-                  <td className="py-3 px-4 hidden lg:table-cell"><div className="h-4 w-20 bg-muted animate-pulse rounded" /></td>
-                  <td className="py-3 px-4"><div className="h-4 w-12 bg-muted animate-pulse rounded" /></td>
-                  <td className="py-3 px-4 hidden lg:table-cell"><div className="h-4 w-20 bg-muted animate-pulse rounded" /></td>
-                  <td className="py-3 px-4"><div className="h-5 w-14 bg-muted animate-pulse rounded-full" /></td>
-                  <td className="py-3 px-4"><div className="h-5 w-14 bg-muted animate-pulse rounded-full" /></td>
-                  <td className="py-3 px-4 text-right"><div className="h-6 w-20 bg-muted animate-pulse rounded ml-auto" /></td>
+                  <td className="py-3 px-4">
+                    <div className="h-4 w-32 bg-muted animate-pulse rounded" />
+                  </td>
+                  <td className="py-3 px-4 hidden md:table-cell">
+                    <div className="h-4 w-28 bg-muted animate-pulse rounded" />
+                  </td>
+                  <td className="py-3 px-4">
+                    <div className="h-4 w-16 bg-muted animate-pulse rounded" />
+                  </td>
+                  <td className="py-3 px-4 hidden lg:table-cell">
+                    <div className="h-4 w-20 bg-muted animate-pulse rounded" />
+                  </td>
+                  <td className="py-3 px-4">
+                    <div className="h-4 w-12 bg-muted animate-pulse rounded" />
+                  </td>
+                  <td className="py-3 px-4 hidden lg:table-cell">
+                    <div className="h-4 w-20 bg-muted animate-pulse rounded" />
+                  </td>
+                  <td className="py-3 px-4">
+                    <div className="h-5 w-14 bg-muted animate-pulse rounded-full" />
+                  </td>
+                  <td className="py-3 px-4">
+                    <div className="h-5 w-14 bg-muted animate-pulse rounded-full" />
+                  </td>
+                  <td className="py-3 px-4 text-right">
+                    <div className="h-6 w-20 bg-muted animate-pulse rounded ml-auto" />
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -143,7 +181,10 @@ export default function AllClinicsPage() {
           city: config.city ?? "",
           userCountRange: "0" as UserCountRange,
           monthlyRevenue: 0,
-          status: (c.status === "inactive" ? "suspended" : c.status ?? "active") as "active" | "suspended" | "trial",
+          status: (c.status === "inactive" ? "suspended" : (c.status ?? "active")) as
+            | "active"
+            | "suspended"
+            | "trial",
           ownerName: config.ownerName ?? "",
           ownerEmail: config.email ?? "",
           ownerPhone: config.phone ?? "",
@@ -166,13 +207,23 @@ export default function AllClinicsPage() {
   useEffect(() => {
     const controller = new AbortController();
     loadClinics();
-    return () => { controller.abort(); };
+    return () => {
+      controller.abort();
+    };
   }, [loadClinics]);
 
   const filtered = list.filter((c) => {
     const q = search.toLowerCase();
-    const matchSearch = !q || c.name.toLowerCase().includes(q) || c.city.toLowerCase().includes(q) || c.ownerName.toLowerCase().includes(q);
-    return matchSearch && (typeFilter === "all" || c.type === typeFilter) && (statusFilter === "all" || c.status === statusFilter);
+    const matchSearch =
+      !q ||
+      c.name.toLowerCase().includes(q) ||
+      c.city.toLowerCase().includes(q) ||
+      c.ownerName.toLowerCase().includes(q);
+    return (
+      matchSearch &&
+      (typeFilter === "all" || c.type === typeFilter) &&
+      (statusFilter === "all" || c.status === statusFilter)
+    );
   });
 
   // Pagination
@@ -180,7 +231,9 @@ export default function AllClinicsPage() {
   const paginatedList = filtered.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   // Reset to page 1 when filters change
-  useEffect(() => { setCurrentPage(1); }, [search, typeFilter, statusFilter]);
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search, typeFilter, statusFilter]);
 
   // Export clinics to CSV
   function handleExportCSV() {
@@ -229,10 +282,9 @@ export default function AllClinicsPage() {
 
   return (
     <div>
-      <Breadcrumb items={[
-        { label: "Super Admin", href: "/super-admin/dashboard" },
-        { label: "Clinics" },
-      ]} />
+      <Breadcrumb
+        items={[{ label: "Super Admin", href: "/super-admin/dashboard" }, { label: "Clinics" }]}
+      />
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold">All Clinics</h1>
@@ -257,12 +309,23 @@ export default function AllClinicsPage() {
       <div className="flex flex-col sm:flex-row gap-3 mb-6">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input placeholder="Search by name, city, or owner..." className="pl-10" value={search} onChange={(e) => setSearch(e.target.value)} />
+          <Input
+            placeholder="Search by name, city, or owner..."
+            className="pl-10"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
         </div>
         <div className="flex items-center gap-1">
           <Filter className="h-4 w-4 text-muted-foreground" />
           {(["all", "doctor", "dentist", "pharmacy"] as FilterType[]).map((t) => (
-            <Button key={t} variant={typeFilter === t ? "default" : "outline"} size="sm" onClick={() => setTypeFilter(t)} className="capitalize text-xs">
+            <Button
+              key={t}
+              variant={typeFilter === t ? "default" : "outline"}
+              size="sm"
+              onClick={() => setTypeFilter(t)}
+              className="capitalize text-xs"
+            >
               {t === "all" ? "All Types" : t}
             </Button>
           ))}
@@ -271,9 +334,17 @@ export default function AllClinicsPage() {
 
       <div className="flex gap-2 mb-4">
         {(["all", "active", "suspended", "trial"] as FilterStatus[]).map((s) => (
-          <Button key={s} variant={statusFilter === s ? "default" : "outline"} size="sm" onClick={() => setStatusFilter(s)} className="capitalize text-xs">
+          <Button
+            key={s}
+            variant={statusFilter === s ? "default" : "outline"}
+            size="sm"
+            onClick={() => setStatusFilter(s)}
+            className="capitalize text-xs"
+          >
             {s === "all" ? "All" : s}
-            <Badge variant="secondary" className="ml-1 text-[10px] px-1">{s === "all" ? list.length : list.filter((c) => c.status === s).length}</Badge>
+            <Badge variant="secondary" className="ml-1 text-[10px] px-1">
+              {s === "all" ? list.length : list.filter((c) => c.status === s).length}
+            </Badge>
           </Button>
         ))}
       </div>
@@ -281,61 +352,131 @@ export default function AllClinicsPage() {
       {loadingData ? (
         <ClinicsTableSkeleton />
       ) : (
-      <Card>
-        <CardContent className="p-0">
-          <div className="table-mobile-scroll">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b text-muted-foreground">
-                  <th className="text-left font-medium py-3 px-4">Clinic</th>
-                  <th className="text-left font-medium py-3 px-4 hidden md:table-cell">Owner</th>
-                  <th className="text-left font-medium py-3 px-4">Type</th>
-                  <th className="text-left font-medium py-3 px-4 hidden lg:table-cell">City</th>
-                  <th className="text-left font-medium py-3 px-4">Users</th>
-                  <th className="text-left font-medium py-3 px-4 hidden lg:table-cell">Revenue</th>
-                  <th className="text-left font-medium py-3 px-4">Plan</th>
-                  <th className="text-left font-medium py-3 px-4">Status</th>
-                  <th className="text-right font-medium py-3 px-4">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {paginatedList.map((clinic) => (
-                  <tr key={clinic.id} className="border-b last:border-0 hover:bg-muted/50">
-                    <td className="py-3 px-4">
-                      <p className="font-medium">{clinic.name}</p>
-                      <p className="text-xs text-muted-foreground md:hidden">{clinic.ownerName}</p>
-                    </td>
-                    <td className="py-3 px-4 hidden md:table-cell">
-                      <p className="text-muted-foreground">{clinic.ownerName}</p>
-                      <p className="text-xs text-muted-foreground">{clinic.ownerEmail}</p>
-                    </td>
-                    <td className="py-3 px-4 capitalize text-muted-foreground">{clinic.type}</td>
-                    <td className="py-3 px-4 text-muted-foreground hidden lg:table-cell">{clinic.city}</td>
-                    <td className="py-3 px-4 text-muted-foreground">{clinic.userCountRange}</td>
-                    <td className="py-3 px-4 hidden lg:table-cell">{formatCurrency(clinic.monthlyRevenue, typeof locale !== "undefined" ? locale : "fr", "MAD")}</td>
-                    <td className="py-3 px-4">
-                      <Badge variant={clinic.plan === "premium" ? "default" : clinic.plan === "standard" ? "secondary" : "outline"}>{clinic.plan}</Badge>
-                    </td>
-                    <td className="py-3 px-4">
-                      <Badge variant={clinic.status === "active" ? "success" : clinic.status === "suspended" ? "destructive" : "warning"}>{clinic.status}</Badge>
-                    </td>
-                    <td className="py-3 px-4 text-right">
-                      <div className="flex justify-end gap-1">
-                        <Button variant="ghost" size="sm" title="View details" onClick={() => setDetail(clinic)}><Eye className="h-3.5 w-3.5" /></Button>
-                        <Button variant="ghost" size="sm" title="Login as client" onClick={() => { setLoginClinic(clinic); setLoginOpen(true); }}><LogIn className="h-3.5 w-3.5" /></Button>
-                        <Button variant="ghost" size="sm" title={clinic.status === "suspended" ? "Activate" : "Suspend"} className={clinic.status === "suspended" ? "text-green-600" : "text-red-500"} onClick={() => { setSuspendClinic(clinic); setSuspendOpen(true); }}>
-                          {clinic.status === "suspended" ? <CheckCircle className="h-3.5 w-3.5" /> : <Ban className="h-3.5 w-3.5" />}
-                        </Button>
-                      </div>
-                    </td>
+        <Card>
+          <CardContent className="p-0">
+            <div className="table-mobile-scroll">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b text-muted-foreground">
+                    <th className="text-left font-medium py-3 px-4">Clinic</th>
+                    <th className="text-left font-medium py-3 px-4 hidden md:table-cell">Owner</th>
+                    <th className="text-left font-medium py-3 px-4">Type</th>
+                    <th className="text-left font-medium py-3 px-4 hidden lg:table-cell">City</th>
+                    <th className="text-left font-medium py-3 px-4">Users</th>
+                    <th className="text-left font-medium py-3 px-4 hidden lg:table-cell">
+                      Revenue
+                    </th>
+                    <th className="text-left font-medium py-3 px-4">Plan</th>
+                    <th className="text-left font-medium py-3 px-4">Status</th>
+                    <th className="text-right font-medium py-3 px-4">Actions</th>
                   </tr>
-                ))}
-                {filtered.length === 0 && <tr><td colSpan={9} className="py-8 text-center text-muted-foreground">No clinics found matching your filters.</td></tr>}
-              </tbody>
-            </table>
-          </div>
-        </CardContent>
-      </Card>
+                </thead>
+                <tbody>
+                  {paginatedList.map((clinic) => (
+                    <tr key={clinic.id} className="border-b last:border-0 hover:bg-muted/50">
+                      <td className="py-3 px-4">
+                        <p className="font-medium">{clinic.name}</p>
+                        <p className="text-xs text-muted-foreground md:hidden">
+                          {clinic.ownerName}
+                        </p>
+                      </td>
+                      <td className="py-3 px-4 hidden md:table-cell">
+                        <p className="text-muted-foreground">{clinic.ownerName}</p>
+                        <p className="text-xs text-muted-foreground">{clinic.ownerEmail}</p>
+                      </td>
+                      <td className="py-3 px-4 capitalize text-muted-foreground">{clinic.type}</td>
+                      <td className="py-3 px-4 text-muted-foreground hidden lg:table-cell">
+                        {clinic.city}
+                      </td>
+                      <td className="py-3 px-4 text-muted-foreground">{clinic.userCountRange}</td>
+                      <td className="py-3 px-4 hidden lg:table-cell">
+                        {formatCurrency(
+                          clinic.monthlyRevenue,
+                          typeof locale !== "undefined" ? locale : "fr",
+                          "MAD",
+                        )}
+                      </td>
+                      <td className="py-3 px-4">
+                        <Badge
+                          variant={
+                            clinic.plan === "premium"
+                              ? "default"
+                              : clinic.plan === "standard"
+                                ? "secondary"
+                                : "outline"
+                          }
+                        >
+                          {clinic.plan}
+                        </Badge>
+                      </td>
+                      <td className="py-3 px-4">
+                        <Badge
+                          variant={
+                            clinic.status === "active"
+                              ? "success"
+                              : clinic.status === "suspended"
+                                ? "destructive"
+                                : "warning"
+                          }
+                        >
+                          {clinic.status}
+                        </Badge>
+                      </td>
+                      <td className="py-3 px-4 text-right">
+                        <div className="flex justify-end gap-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            title="View details"
+                            onClick={() => setDetail(clinic)}
+                          >
+                            <Eye className="h-3.5 w-3.5" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            title="Login as client"
+                            onClick={() => {
+                              setLoginClinic(clinic);
+                              setLoginOpen(true);
+                            }}
+                          >
+                            <LogIn className="h-3.5 w-3.5" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            title={clinic.status === "suspended" ? "Activate" : "Suspend"}
+                            className={
+                              clinic.status === "suspended" ? "text-green-600" : "text-red-500"
+                            }
+                            onClick={() => {
+                              setSuspendClinic(clinic);
+                              setSuspendOpen(true);
+                            }}
+                          >
+                            {clinic.status === "suspended" ? (
+                              <CheckCircle className="h-3.5 w-3.5" />
+                            ) : (
+                              <Ban className="h-3.5 w-3.5" />
+                            )}
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                  {filtered.length === 0 && (
+                    <tr>
+                      <td colSpan={9} className="py-8 text-center text-muted-foreground">
+                        No clinics found matching your filters.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
       )}
 
       {/* Pagination Controls */}
@@ -345,21 +486,38 @@ export default function AllClinicsPage() {
             <span>Show</span>
             <select
               value={pageSize}
-              onChange={(e) => { setPageSize(Number(e.target.value)); setCurrentPage(1); }}
+              onChange={(e) => {
+                setPageSize(Number(e.target.value));
+                setCurrentPage(1);
+              }}
               className="border rounded px-2 py-1 text-sm bg-background"
             >
               {[10, 25, 50, 100].map((s) => (
-                <option key={s} value={s}>{s}</option>
+                <option key={s} value={s}>
+                  {s}
+                </option>
               ))}
             </select>
             <span>per page &middot; {filtered.length} total</span>
           </div>
           <div className="flex items-center gap-1">
-            <Button variant="outline" size="sm" disabled={currentPage <= 1} onClick={() => setCurrentPage((p) => p - 1)}>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={currentPage <= 1}
+              onClick={() => setCurrentPage((p) => p - 1)}
+            >
               <ChevronLeft className="h-4 w-4" />
             </Button>
-            <span className="px-3 text-sm">Page {currentPage} of {totalPages}</span>
-            <Button variant="outline" size="sm" disabled={currentPage >= totalPages} onClick={() => setCurrentPage((p) => p + 1)}>
+            <span className="px-3 text-sm">
+              Page {currentPage} of {totalPages}
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={currentPage >= totalPages}
+              onClick={() => setCurrentPage((p) => p + 1)}
+            >
               <ChevronRight className="h-4 w-4" />
             </Button>
           </div>
@@ -369,36 +527,115 @@ export default function AllClinicsPage() {
       {/* Detail Dialog */}
       <Dialog open={detail !== null} onOpenChange={() => setDetail(null)}>
         {detail && (
-          <DialogContent onClose={() => setDetail(null)} className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogContent
+            onClose={() => setDetail(null)}
+            className="max-w-2xl max-h-[90vh] overflow-y-auto"
+          >
             <DialogHeader>
               <DialogTitle>{detail.name}</DialogTitle>
               <DialogDescription>Detailed clinic information and statistics</DialogDescription>
             </DialogHeader>
             <div className="space-y-4 py-4">
               <div className="grid grid-cols-3 gap-3">
-                <Card><CardContent className="p-3 text-center"><Users className="h-4 w-4 mx-auto mb-1 text-purple-600" /><p className="text-lg font-bold">{detail.userCountRange}</p><p className="text-[10px] text-muted-foreground">Users</p></CardContent></Card>
-                <Card><CardContent className="p-3 text-center"><TrendingUp className="h-4 w-4 mx-auto mb-1 text-green-600" /><p className="text-lg font-bold">{formatNumber(detail.monthlyRevenue, typeof locale !== "undefined" ? locale : "fr")}</p><p className="text-[10px] text-muted-foreground">Revenue (MAD)</p></CardContent></Card>
-                <Card><CardContent className="p-3 text-center"><Calendar className="h-4 w-4 mx-auto mb-1 text-blue-600" /><p className="text-lg font-bold">{detail.appointmentsThisMonth}</p><p className="text-[10px] text-muted-foreground">Appts/Month</p></CardContent></Card>
+                <Card>
+                  <CardContent className="p-3 text-center">
+                    <Users className="h-4 w-4 mx-auto mb-1 text-purple-600" />
+                    <p className="text-lg font-bold">{detail.userCountRange}</p>
+                    <p className="text-[10px] text-muted-foreground">Users</p>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="p-3 text-center">
+                    <TrendingUp className="h-4 w-4 mx-auto mb-1 text-green-600" />
+                    <p className="text-lg font-bold">
+                      {formatNumber(
+                        detail.monthlyRevenue,
+                        typeof locale !== "undefined" ? locale : "fr",
+                      )}
+                    </p>
+                    <p className="text-[10px] text-muted-foreground">Revenue (MAD)</p>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="p-3 text-center">
+                    <Calendar className="h-4 w-4 mx-auto mb-1 text-blue-600" />
+                    <p className="text-lg font-bold">{detail.appointmentsThisMonth}</p>
+                    <p className="text-[10px] text-muted-foreground">Appts/Month</p>
+                  </CardContent>
+                </Card>
               </div>
               <Separator />
               <div>
                 <h3 className="text-sm font-semibold mb-2">Owner Information</h3>
                 <div className="grid grid-cols-2 gap-3 text-sm">
-                  <div className="flex items-center gap-2"><Building2 className="h-4 w-4 text-muted-foreground" /><span className="text-muted-foreground">Type:</span><span className="capitalize">{detail.type}</span></div>
-                  <div className="flex items-center gap-2"><MapPin className="h-4 w-4 text-muted-foreground" /><span className="text-muted-foreground">City:</span><span>{detail.city}</span></div>
-                  <div className="flex items-center gap-2"><Mail className="h-4 w-4 text-muted-foreground" /><span className="text-muted-foreground">Email:</span><span className="truncate">{detail.ownerEmail}</span></div>
-                  <div className="flex items-center gap-2"><Phone className="h-4 w-4 text-muted-foreground" /><span className="text-muted-foreground">Phone:</span><span>{detail.ownerPhone}</span></div>
+                  <div className="flex items-center gap-2">
+                    <Building2 className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-muted-foreground">Type:</span>
+                    <span className="capitalize">{detail.type}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <MapPin className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-muted-foreground">City:</span>
+                    <span>{detail.city}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Mail className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-muted-foreground">Email:</span>
+                    <span className="truncate">{detail.ownerEmail}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Phone className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-muted-foreground">Phone:</span>
+                    <span>{detail.ownerPhone}</span>
+                  </div>
                 </div>
               </div>
               <Separator />
               <div>
                 <h3 className="text-sm font-semibold mb-2">Account Details</h3>
                 <div className="grid grid-cols-2 gap-3 text-sm">
-                  <div><span className="text-muted-foreground">Plan: </span><Badge variant={detail.plan === "premium" ? "default" : detail.plan === "standard" ? "secondary" : "outline"}>{detail.plan}</Badge></div>
-                  <div><span className="text-muted-foreground">Status: </span><Badge variant={detail.status === "active" ? "success" : detail.status === "suspended" ? "destructive" : "warning"}>{detail.status}</Badge></div>
-                  <div><span className="text-muted-foreground">Doctors: </span><span>{detail.doctorsCount}</span></div>
-                  <div><span className="text-muted-foreground">Joined: </span><span>{detail.createdAt}</span></div>
-                  {detail.domain && <div className="col-span-2"><span className="text-muted-foreground">Domain: </span><span>{detail.domain}</span></div>}
+                  <div>
+                    <span className="text-muted-foreground">Plan: </span>
+                    <Badge
+                      variant={
+                        detail.plan === "premium"
+                          ? "default"
+                          : detail.plan === "standard"
+                            ? "secondary"
+                            : "outline"
+                      }
+                    >
+                      {detail.plan}
+                    </Badge>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Status: </span>
+                    <Badge
+                      variant={
+                        detail.status === "active"
+                          ? "success"
+                          : detail.status === "suspended"
+                            ? "destructive"
+                            : "warning"
+                      }
+                    >
+                      {detail.status}
+                    </Badge>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Doctors: </span>
+                    <span>{detail.doctorsCount}</span>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Joined: </span>
+                    <span>{detail.createdAt}</span>
+                  </div>
+                  {detail.domain && (
+                    <div className="col-span-2">
+                      <span className="text-muted-foreground">Domain: </span>
+                      <span>{detail.domain}</span>
+                    </div>
+                  )}
                 </div>
               </div>
               <Separator />
@@ -406,34 +643,74 @@ export default function AllClinicsPage() {
                 <h3 className="text-sm font-semibold mb-2">Enabled Features</h3>
                 <div className="flex flex-wrap gap-1.5">
                   {Object.entries(detail.features).map(([key, enabled]) => (
-                    <Badge key={key} variant={enabled ? "success" : "secondary"} className="text-[10px] capitalize">{key.replace(/([A-Z])/g, " $1").trim()}</Badge>
+                    <Badge
+                      key={key}
+                      variant={enabled ? "success" : "secondary"}
+                      className="text-[10px] capitalize"
+                    >
+                      {key.replace(/([A-Z])/g, " $1").trim()}
+                    </Badge>
                   ))}
                 </div>
               </div>
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setDetail(null)}>Close</Button>
-              <Button variant="outline" onClick={() => { setLoginClinic(detail); setLoginOpen(true); setDetail(null); }}><LogIn className="h-4 w-4 mr-1" />Login as Client</Button>
+              <Button variant="outline" onClick={() => setDetail(null)}>
+                Close
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setLoginClinic(detail);
+                  setLoginOpen(true);
+                  setDetail(null);
+                }}
+              >
+                <LogIn className="h-4 w-4 mr-1" />
+                Login as Client
+              </Button>
             </DialogFooter>
           </DialogContent>
         )}
       </Dialog>
 
       {/* Login As Dialog */}
-      <Dialog open={loginOpen} onOpenChange={(open) => { setLoginOpen(open); if (!open) { setImpersonateReason(""); setImpersonatePassword(""); } }}>
+      <Dialog
+        open={loginOpen}
+        onOpenChange={(open) => {
+          setLoginOpen(open);
+          if (!open) {
+            setImpersonateReason("");
+            setImpersonatePassword("");
+          }
+        }}
+      >
         {loginClinic && (
-          <DialogContent onClose={() => { setLoginOpen(false); setImpersonateReason(""); setImpersonatePassword(""); }}>
+          <DialogContent
+            onClose={() => {
+              setLoginOpen(false);
+              setImpersonateReason("");
+              setImpersonatePassword("");
+            }}
+          >
             <DialogHeader>
               <DialogTitle>Login as Client</DialogTitle>
-              <DialogDescription>You are about to impersonate <strong>{loginClinic.name}</strong>. This will be logged for security purposes. Session expires after 30 minutes.</DialogDescription>
+              <DialogDescription>
+                You are about to impersonate <strong>{loginClinic.name}</strong>. This will be
+                logged for security purposes. Session expires after 30 minutes.
+              </DialogDescription>
             </DialogHeader>
             <div className="rounded-lg border p-4 bg-muted/50">
               <p className="text-sm font-medium">{loginClinic.name}</p>
-              <p className="text-xs text-muted-foreground">Owner: {loginClinic.ownerName} &middot; {loginClinic.city}</p>
+              <p className="text-xs text-muted-foreground">
+                Owner: {loginClinic.ownerName} &middot; {loginClinic.city}
+              </p>
             </div>
             <div className="space-y-2">
               {/* eslint-disable-next-line jsx-a11y/label-has-associated-control -- control is associated via adjacent Input/sibling element */}
-              <label className="text-sm font-medium">Reason for impersonation <span className="text-red-500">*</span></label>
+              <label className="text-sm font-medium">
+                Reason for impersonation <span className="text-red-500">*</span>
+              </label>
               <Input
                 placeholder="e.g. Investigating billing issue reported by clinic"
                 value={impersonateReason}
@@ -442,7 +719,9 @@ export default function AllClinicsPage() {
             </div>
             <div className="space-y-2">
               {/* eslint-disable-next-line jsx-a11y/label-has-associated-control -- control is associated via adjacent Input/sibling element */}
-              <label className="text-sm font-medium">Re-enter your password <span className="text-red-500">*</span></label>
+              <label className="text-sm font-medium">
+                Re-enter your password <span className="text-red-500">*</span>
+              </label>
               <Input
                 type="password"
                 placeholder="Your admin password"
@@ -451,33 +730,51 @@ export default function AllClinicsPage() {
               />
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => { setLoginOpen(false); setImpersonateReason(""); setImpersonatePassword(""); }}>Cancel</Button>
-              <Button disabled={actionLoading || impersonateReason.length < 3 || !impersonatePassword} onClick={async () => {
-                setActionLoading(true);
-                try {
-                  const res = await fetch("/api/impersonate", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ clinicId: loginClinic.id, clinicName: loginClinic.name, reason: impersonateReason, password: impersonatePassword }),
-                  });
-                  if (res.ok) {
-                    setLoginOpen(false);
-                    setImpersonateReason("");
-                    setImpersonatePassword("");
-                    router.push("/admin/dashboard");
-                  } else {
-                    const data = await res.json();
-                    addToast(data.error || "Impersonation failed", "error");
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setLoginOpen(false);
+                  setImpersonateReason("");
+                  setImpersonatePassword("");
+                }}
+              >
+                Cancel
+              </Button>
+              <Button
+                disabled={actionLoading || impersonateReason.length < 3 || !impersonatePassword}
+                onClick={async () => {
+                  setActionLoading(true);
+                  try {
+                    const res = await fetch("/api/impersonate", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({
+                        clinicId: loginClinic.id,
+                        clinicName: loginClinic.name,
+                        reason: impersonateReason,
+                        password: impersonatePassword,
+                      }),
+                    });
+                    if (res.ok) {
+                      setLoginOpen(false);
+                      setImpersonateReason("");
+                      setImpersonatePassword("");
+                      router.push("/admin/dashboard");
+                    } else {
+                      const data = await res.json();
+                      addToast(data.error || "Impersonation failed", "error");
+                    }
+                  } catch (err) {
+                    logger.warn("Operation failed", { context: "page", error: err });
+                    addToast("Failed to start impersonation", "error");
+                  } finally {
+                    setActionLoading(false);
                   }
-                } catch (err) {
-                  logger.warn("Operation failed", { context: "page", error: err });
-                  addToast("Failed to start impersonation", "error");
-                } finally {
-                  setActionLoading(false);
-                }
-              }}>
+                }}
+              >
                 {actionLoading && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}
-                <LogIn className="h-4 w-4 mr-1" />Continue as {loginClinic.ownerName.split(" ")[0] || "Admin"}
+                <LogIn className="h-4 w-4 mr-1" />
+                Continue as {loginClinic.ownerName.split(" ")[0] || "Admin"}
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -489,7 +786,9 @@ export default function AllClinicsPage() {
         {suspendClinic && (
           <DialogContent onClose={() => setSuspendOpen(false)}>
             <DialogHeader>
-              <DialogTitle>{suspendClinic.status === "suspended" ? "Activate" : "Suspend"} Clinic</DialogTitle>
+              <DialogTitle>
+                {suspendClinic.status === "suspended" ? "Activate" : "Suspend"} Clinic
+              </DialogTitle>
               <DialogDescription>
                 {suspendClinic.status === "suspended"
                   ? "Reactivate this clinic? They will regain access to all features."
@@ -498,7 +797,15 @@ export default function AllClinicsPage() {
             </DialogHeader>
             <div className="rounded-lg border p-4 bg-muted/50">
               <p className="text-sm font-medium">{suspendClinic.name}</p>
-              <p className="text-xs text-muted-foreground">{suspendClinic.userCountRange} users &middot; {formatCurrency(suspendClinic.monthlyRevenue, typeof locale !== "undefined" ? locale : "fr", "MAD")}/mo</p>
+              <p className="text-xs text-muted-foreground">
+                {suspendClinic.userCountRange} users &middot;{" "}
+                {formatCurrency(
+                  suspendClinic.monthlyRevenue,
+                  typeof locale !== "undefined" ? locale : "fr",
+                  "MAD",
+                )}
+                /mo
+              </p>
             </div>
             {suspendClinic.status !== "suspended" && (
               <div className="space-y-2">
@@ -512,14 +819,38 @@ export default function AllClinicsPage() {
               </div>
             )}
             <DialogFooter>
-              <Button variant="outline" onClick={() => { setSuspendOpen(false); setConfirmName(""); }}>Cancel</Button>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setSuspendOpen(false);
+                  setConfirmName("");
+                }}
+              >
+                Cancel
+              </Button>
               <Button
                 variant={suspendClinic.status === "suspended" ? "default" : "destructive"}
-                onClick={() => { toggleStatus(suspendClinic); setConfirmName(""); }}
-                disabled={actionLoading || (suspendClinic.status !== "suspended" && confirmName !== suspendClinic.name)}
+                onClick={() => {
+                  toggleStatus(suspendClinic);
+                  setConfirmName("");
+                }}
+                disabled={
+                  actionLoading ||
+                  (suspendClinic.status !== "suspended" && confirmName !== suspendClinic.name)
+                }
               >
                 {actionLoading && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}
-                {suspendClinic.status === "suspended" ? <><CheckCircle className="h-4 w-4 mr-1" />Activate</> : <><Ban className="h-4 w-4 mr-1" />Suspend</>}
+                {suspendClinic.status === "suspended" ? (
+                  <>
+                    <CheckCircle className="h-4 w-4 mr-1" />
+                    Activate
+                  </>
+                ) : (
+                  <>
+                    <Ban className="h-4 w-4 mr-1" />
+                    Suspend
+                  </>
+                )}
               </Button>
             </DialogFooter>
           </DialogContent>

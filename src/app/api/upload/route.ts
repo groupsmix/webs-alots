@@ -29,7 +29,13 @@
  */
 
 // S-26: Upload route requires tenant context — never write to a shared/ prefix
-import { apiError, apiForbidden, apiInternalError, apiNotFound, apiSuccess } from "@/lib/api-response";
+import {
+  apiError,
+  apiForbidden,
+  apiInternalError,
+  apiNotFound,
+  apiSuccess,
+} from "@/lib/api-response";
 import { withAuthValidation } from "@/lib/api-validate";
 import { requiresEncryption, normalizePhiCategory } from "@/lib/encryption";
 import { logger } from "@/lib/logger";
@@ -138,15 +144,23 @@ const ALLOWED_TYPES = new Set([
  * beacons. Branding categories (avatars, logos) still allow GIF.
  */
 const CLINICAL_CATEGORIES = new Set([
-  "document", "documents", "prescriptions", "lab_report", "lab_results",
-  "medical_records", "patient_files", "radiology", "x_rays", "xrays",
+  "document",
+  "documents",
+  "prescriptions",
+  "lab_report",
+  "lab_results",
+  "medical_records",
+  "patient_files",
+  "radiology",
+  "x_rays",
+  "xrays",
 ]);
 
 // HIGH-05: Magic byte signatures for server-side file content validation.
 // Client-supplied MIME types are attacker-controlled and cannot be trusted.
 const MAGIC_BYTES: Record<string, Uint8Array[]> = {
-  "image/jpeg": [new Uint8Array([0xFF, 0xD8, 0xFF])],
-  "image/png": [new Uint8Array([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A])],
+  "image/jpeg": [new Uint8Array([0xff, 0xd8, 0xff])],
+  "image/png": [new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])],
   "image/webp": [new Uint8Array([0x52, 0x49, 0x46, 0x46])],
   // A52.3: GIF magic bytes removed along with image/gif from ALLOWED_TYPES
   "application/pdf": [new Uint8Array([0x25, 0x50, 0x44, 0x46])],
@@ -155,9 +169,7 @@ const MAGIC_BYTES: Record<string, Uint8Array[]> = {
 function validateFileContent(buffer: Buffer, declaredType: string): boolean {
   const signatures = MAGIC_BYTES[declaredType];
   if (!signatures) return false;
-  return signatures.some((sig) =>
-    sig.every((byte, i) => i < buffer.length && buffer[i] === byte),
-  );
+  return signatures.some((sig) => sig.every((byte, i) => i < buffer.length && buffer[i] === byte));
 }
 
 /**
@@ -181,135 +193,145 @@ export function expectedKeyPrefixForProfile(
   return null;
 }
 
-export const POST = withAuth(async (request, { profile }) => {
-  if (!isR2Configured()) {
-    logger.warn("Upload attempted but R2 storage is not configured", { context: "upload" });
-    return apiError("File storage is not configured. Contact the administrator.", 503);
-  }
+export const POST = withAuth(
+  async (request, { profile }) => {
+    if (!isR2Configured()) {
+      logger.warn("Upload attempted but R2 storage is not configured", { context: "upload" });
+      return apiError("File storage is not configured. Contact the administrator.", 503);
+    }
 
-  const formData = await request.formData();
-  const file = formData.get("file");
-  const category = (formData.get("category") as string) || "uploads";
-  // S-26: Derive clinicId from the authenticated user's profile. Never
-  // write to a "shared" prefix — if the user has no clinic context the
-  // upload is rejected. Super-admins may specify a target clinicId.
-  const clinicId = profile.clinic_id ?? (profile.role === "super_admin" ? (formData.get("clinicId") as string) : null);
-  if (!clinicId) {
-    return apiError("Clinic context required for uploads", 403);
-  }
+    const formData = await request.formData();
+    const file = formData.get("file");
+    const category = (formData.get("category") as string) || "uploads";
+    // S-26: Derive clinicId from the authenticated user's profile. Never
+    // write to a "shared" prefix — if the user has no clinic context the
+    // upload is rejected. Super-admins may specify a target clinicId.
+    const clinicId =
+      profile.clinic_id ??
+      (profile.role === "super_admin" ? (formData.get("clinicId") as string) : null);
+    if (!clinicId) {
+      return apiError("Clinic context required for uploads", 403);
+    }
 
-  if (!file || !(file instanceof File)) {
-    return apiError("No file provided");
-  }
+    if (!file || !(file instanceof File)) {
+      return apiError("No file provided");
+    }
 
-  const maxSize = limitForCategory(category);
-  if (file.size > maxSize) {
-    return apiError(`File too large (max ${formatLimit(maxSize)} for category "${category}")`, 413);
-  }
+    const maxSize = limitForCategory(category);
+    if (file.size > maxSize) {
+      return apiError(
+        `File too large (max ${formatLimit(maxSize)} for category "${category}")`,
+        413,
+      );
+    }
 
-  if (!ALLOWED_TYPES.has(file.type)) {
-    return apiError(`File type not allowed: ${file.type}`);
-  }
+    if (!ALLOWED_TYPES.has(file.type)) {
+      return apiError(`File type not allowed: ${file.type}`);
+    }
 
-  // A37.9: Block GIF uploads in clinical categories. GIF supports animated
-  // polyglots and has been used as SSRF/CSRF beacon vectors. Only branding
-  // categories (avatars, logos, photos) are allowed to use GIF.
-  const normCat = normalizePhiCategory(category);
-  if (file.type === "image/gif" && CLINICAL_CATEGORIES.has(normCat)) {
-    return apiError("GIF files are not allowed for clinical document uploads. Use JPEG, PNG, WebP, or PDF.");
-  }
+    // A37.9: Block GIF uploads in clinical categories. GIF supports animated
+    // polyglots and has been used as SSRF/CSRF beacon vectors. Only branding
+    // categories (avatars, logos, photos) are allowed to use GIF.
+    const normCat = normalizePhiCategory(category);
+    if (file.type === "image/gif" && CLINICAL_CATEGORIES.has(normCat)) {
+      return apiError(
+        "GIF files are not allowed for clinical document uploads. Use JPEG, PNG, WebP, or PDF.",
+      );
+    }
 
-  const key = buildUploadKey(clinicId, category, file.name);
-  let buffer = Buffer.from(await file.arrayBuffer());
+    const key = buildUploadKey(clinicId, category, file.name);
+    let buffer = Buffer.from(await file.arrayBuffer());
 
-  // HIGH-05: Validate file content matches declared MIME type via magic bytes.
-  // Prevents attackers from uploading malicious HTML/JS with a spoofed Content-Type.
-  if (!validateFileContent(buffer, file.type)) {
-    return apiError("File content does not match declared type");
-  }
+    // HIGH-05: Validate file content matches declared MIME type via magic bytes.
+    // Prevents attackers from uploading malicious HTML/JS with a spoofed Content-Type.
+    if (!validateFileContent(buffer, file.type)) {
+      return apiError("File content does not match declared type");
+    }
 
-  // A52-02: AV scan integration. When AV_SCAN_URL is configured,
-  // uploaded files are sent to an external ClamAV REST API before
-  // persisting to R2. Deploy a ClamAV REST service and set AV_SCAN_URL
-  // to enable (e.g. clamav-rest, ClamScan Lambda).
-  if (process.env.AV_SCAN_URL) {
-    try {
-      const avResponse = await fetch(process.env.AV_SCAN_URL, {
-        method: "POST",
-        body: buffer,
-        headers: { "Content-Type": file.type },
-        signal: AbortSignal.timeout(15_000),
-      });
-      if (avResponse.ok) {
-        const avResult = await avResponse.json() as { clean?: boolean; malware?: string };
-        if (avResult.clean === false) {
-          logger.warn("AV scan detected malware in upload", {
-            context: "upload",
-            malware: avResult.malware,
-            filename: file.name,
-          });
-          return apiError("File failed virus scan", 400);
-        }
-      } else {
-        logger.warn("AV scan service returned non-OK status", {
-          context: "upload",
-          status: avResponse.status,
+    // A52-02: AV scan integration. When AV_SCAN_URL is configured,
+    // uploaded files are sent to an external ClamAV REST API before
+    // persisting to R2. Deploy a ClamAV REST service and set AV_SCAN_URL
+    // to enable (e.g. clamav-rest, ClamScan Lambda).
+    if (process.env.AV_SCAN_URL) {
+      try {
+        const avResponse = await fetch(process.env.AV_SCAN_URL, {
+          method: "POST",
+          body: buffer,
+          headers: { "Content-Type": file.type },
+          signal: AbortSignal.timeout(15_000),
         });
-        // Fail open if AV service is down (availability > blocking uploads).
-        // In strict mode (AV_SCAN_REQUIRED=true), fail closed instead.
+        if (avResponse.ok) {
+          const avResult = (await avResponse.json()) as { clean?: boolean; malware?: string };
+          if (avResult.clean === false) {
+            logger.warn("AV scan detected malware in upload", {
+              context: "upload",
+              malware: avResult.malware,
+              filename: file.name,
+            });
+            return apiError("File failed virus scan", 400);
+          }
+        } else {
+          logger.warn("AV scan service returned non-OK status", {
+            context: "upload",
+            status: avResponse.status,
+          });
+          // Fail open if AV service is down (availability > blocking uploads).
+          // In strict mode (AV_SCAN_REQUIRED=true), fail closed instead.
+          if (process.env.AV_SCAN_REQUIRED === "true") {
+            return apiError("Virus scan unavailable — upload rejected", 503);
+          }
+        }
+      } catch (err) {
+        logger.warn("AV scan service unreachable", {
+          context: "upload",
+          error: err instanceof Error ? err.message : String(err),
+        });
         if (process.env.AV_SCAN_REQUIRED === "true") {
           return apiError("Virus scan unavailable — upload rejected", 503);
         }
       }
-    } catch (err) {
-      logger.warn("AV scan service unreachable", {
-        context: "upload",
-        error: err instanceof Error ? err.message : String(err),
-      });
-      if (process.env.AV_SCAN_REQUIRED === "true") {
-        return apiError("Virus scan unavailable — upload rejected", 503);
-      }
     }
-  }
-  // A52.8: Strip EXIF/IPTC metadata from JPEG images before storage.
-  // Patient X-rays and clinical photos may contain DICOM-like metadata
-  // revealing PII (patient name, DOB, hospital ID, GPS coordinates).
-  if (canStripMetadata(file.type)) {
-    buffer = stripJpegMetadata(buffer);
-  }
+    // A52.8: Strip EXIF/IPTC metadata from JPEG images before storage.
+    // Patient X-rays and clinical photos may contain DICOM-like metadata
+    // revealing PII (patient name, DOB, hospital ID, GPS coordinates).
+    if (canStripMetadata(file.type)) {
+      buffer = stripJpegMetadata(buffer);
+    }
 
-  // PHI compliance (Law 09-08): encrypt patient documents at rest
-  let url: string | null;
-  if (requiresEncryption(category)) {
-    url = await encryptAndUpload(key, buffer, file.type);
-  } else {
-    url = await uploadToR2(key, buffer, file.type);
-  }
+    // PHI compliance (Law 09-08): encrypt patient documents at rest
+    let url: string | null;
+    if (requiresEncryption(category)) {
+      url = await encryptAndUpload(key, buffer, file.type);
+    } else {
+      url = await uploadToR2(key, buffer, file.type);
+    }
 
-  if (!url) {
-    // A84-F3: Log a structured error so operators can correlate R2 outages.
-    // The underlying error is already logged by uploadToR2 / encryptAndUpload.
-    logger.error("File upload failed — R2 storage unavailable or write error", {
-      context: "upload",
-      category,
-      clinicId,
-      contentType: file.type,
-      fileSize: file.size,
-    });
-    return apiError(
-      "File upload failed. Please try again later or contact support if the problem persists.",
-      502,
-      "STORAGE_UNAVAILABLE",
-    );
-  }
+    if (!url) {
+      // A84-F3: Log a structured error so operators can correlate R2 outages.
+      // The underlying error is already logged by uploadToR2 / encryptAndUpload.
+      logger.error("File upload failed — R2 storage unavailable or write error", {
+        context: "upload",
+        category,
+        clinicId,
+        contentType: file.type,
+        fileSize: file.size,
+      });
+      return apiError(
+        "File upload failed. Please try again later or contact support if the problem persists.",
+        502,
+        "STORAGE_UNAVAILABLE",
+      );
+    }
 
-  // L3-H2: Return Cloudflare Image Resizing URLs for image uploads so clients
-  // can use optimized thumbnails without additional round-trips.
-  const isImage = file.type.startsWith("image/");
-  const thumbnails = isImage && url ? getResponsiveImageUrls(url) : undefined;
+    // L3-H2: Return Cloudflare Image Resizing URLs for image uploads so clients
+    // can use optimized thumbnails without additional round-trips.
+    const isImage = file.type.startsWith("image/");
+    const thumbnails = isImage && url ? getResponsiveImageUrls(url) : undefined;
 
-  return apiSuccess({ url, key, encrypted: requiresEncryption(category), thumbnails });
-}, ["super_admin", "clinic_admin", "receptionist", "doctor"]);
+    return apiSuccess({ url, key, encrypted: requiresEncryption(category), thumbnails });
+  },
+  ["super_admin", "clinic_admin", "receptionist", "doctor"],
+);
 
 /**
  * PUT /api/upload — Confirm a pre-signed upload by validating magic bytes.
@@ -322,166 +344,177 @@ export const POST = withAuth(async (request, { profile }) => {
  * Body: { key: string, contentType: string }
  * Returns: { valid: true } or { error: string } (with 400 status + deletion)
  */
-export const PUT = withAuthValidation(uploadConfirmSchema, async (body, request, { profile }) => {
-  if (!isR2Configured()) {
-    return apiError("File storage is not configured", 503);
-  }
+export const PUT = withAuthValidation(
+  uploadConfirmSchema,
+  async (body, request, { profile }) => {
+    if (!isR2Configured()) {
+      return apiError("File storage is not configured", 503);
+    }
 
-  const { key, contentType } = body;
+    const { key, contentType } = body;
 
-  // Tenant isolation: verify the R2 key belongs to this user's clinic.
-  // Keys are produced by `buildUploadKey()` and follow the pattern:
-  //   clinics/{clinicId}/{category}/{filename}
-  // Super-admins are allowed to confirm any key under `clinics/`.
-  const expectedPrefix = expectedKeyPrefixForProfile(profile.role, profile.clinic_id);
+    // Tenant isolation: verify the R2 key belongs to this user's clinic.
+    // Keys are produced by `buildUploadKey()` and follow the pattern:
+    //   clinics/{clinicId}/{category}/{filename}
+    // Super-admins are allowed to confirm any key under `clinics/`.
+    const expectedPrefix = expectedKeyPrefixForProfile(profile.role, profile.clinic_id);
 
-  if (!expectedPrefix || !key.startsWith(expectedPrefix)) {
-    return apiForbidden("Upload key does not belong to your clinic");
-  }
+    if (!expectedPrefix || !key.startsWith(expectedPrefix)) {
+      return apiForbidden("Upload key does not belong to your clinic");
+    }
 
-  // AUDIT-14: Block confirmation of presigned uploads for PHI categories.
-  // PHI files MUST go through the POST handler which encrypts server-side.
-  // If a presigned upload somehow landed in a PHI category, delete it and
-  // reject — it would be unencrypted plaintext on R2.
-  const confirmCategory = categoryFromKey(key);
-  if (confirmCategory && requiresEncryption(confirmCategory)) {
-    logger.warn("Presigned upload confirmation blocked for PHI category — deleting unencrypted object", {
-      context: "upload",
-      key,
-      category: confirmCategory,
-    });
-    await deleteFromR2(key);
-    return apiError(
-      "PHI file categories cannot use presigned uploads. Use the POST endpoint instead.",
-      400,
-      "PHI_DIRECT_UPLOAD_BLOCKED",
-    );
-  }
+    // AUDIT-14: Block confirmation of presigned uploads for PHI categories.
+    // PHI files MUST go through the POST handler which encrypts server-side.
+    // If a presigned upload somehow landed in a PHI category, delete it and
+    // reject — it would be unencrypted plaintext on R2.
+    const confirmCategory = categoryFromKey(key);
+    if (confirmCategory && requiresEncryption(confirmCategory)) {
+      logger.warn(
+        "Presigned upload confirmation blocked for PHI category — deleting unencrypted object",
+        {
+          context: "upload",
+          key,
+          category: confirmCategory,
+        },
+      );
+      await deleteFromR2(key);
+      return apiError(
+        "PHI file categories cannot use presigned uploads. Use the POST endpoint instead.",
+        400,
+        "PHI_DIRECT_UPLOAD_BLOCKED",
+      );
+    }
 
-  if (!ALLOWED_TYPES.has(contentType)) {
-    // Delete the object — the content type was not in the allowlist
-    await deleteFromR2(key);
-    return apiError(`File type not allowed: ${contentType}`);
-  }
+    if (!ALLOWED_TYPES.has(contentType)) {
+      // Delete the object — the content type was not in the allowlist
+      await deleteFromR2(key);
+      return apiError(`File type not allowed: ${contentType}`);
+    }
 
-  // Defense-in-depth: although the presigned POST policy enforces
-  // `content-length-range` and `eq $Content-Type` at upload time, an attacker
-  // who reuses a stale policy or a misconfigured bucket could still produce
-  // an object that violates the limits. Confirm via HeadObject before any
-  // downstream code trusts the upload, and delete on mismatch.
-  const metadata = await getR2ObjectMetadata(key);
-  if (!metadata) {
-    return apiNotFound("Uploaded file not found or unreadable");
-  }
+    // Defense-in-depth: although the presigned POST policy enforces
+    // `content-length-range` and `eq $Content-Type` at upload time, an attacker
+    // who reuses a stale policy or a misconfigured bucket could still produce
+    // an object that violates the limits. Confirm via HeadObject before any
+    // downstream code trusts the upload, and delete on mismatch.
+    const metadata = await getR2ObjectMetadata(key);
+    if (!metadata) {
+      return apiNotFound("Uploaded file not found or unreadable");
+    }
 
-  // Derive the per-category cap from the key the client confirmed.
-  // Unknown categories fall back to DEFAULT_UPLOAD_LIMIT, so the policy is
-  // never silently widened by an unrecognised category segment.
-  const keyCategory = categoryFromKey(key);
-  const maxSize = keyCategory ? limitForCategory(keyCategory) : DEFAULT_UPLOAD_LIMIT;
+    // Derive the per-category cap from the key the client confirmed.
+    // Unknown categories fall back to DEFAULT_UPLOAD_LIMIT, so the policy is
+    // never silently widened by an unrecognised category segment.
+    const keyCategory = categoryFromKey(key);
+    const maxSize = keyCategory ? limitForCategory(keyCategory) : DEFAULT_UPLOAD_LIMIT;
 
-  if (metadata.contentLength > maxSize) {
-    logger.warn("Pre-signed upload exceeded max size, deleting", {
-      context: "upload",
-      key,
-      category: keyCategory,
-      contentLength: metadata.contentLength,
+    if (metadata.contentLength > maxSize) {
+      logger.warn("Pre-signed upload exceeded max size, deleting", {
+        context: "upload",
+        key,
+        category: keyCategory,
+        contentLength: metadata.contentLength,
+        maxSize,
+      });
+      await deleteFromR2(key);
+      return apiError(`File too large (max ${formatLimit(maxSize)})`, 413);
+    }
+
+    if (metadata.contentType && metadata.contentType !== contentType) {
+      logger.warn("Pre-signed upload content-type mismatch, deleting", {
+        context: "upload",
+        key,
+        declaredType: contentType,
+        actualType: metadata.contentType,
+      });
+      await deleteFromR2(key);
+      return apiError("File content type does not match declared type");
+    }
+
+    // Read the first bytes of the uploaded object to validate magic bytes
+    const headBuffer = await readR2ObjectHead(key);
+    if (!headBuffer) {
+      return apiNotFound("Uploaded file not found or unreadable");
+    }
+
+    if (!validateFileContent(headBuffer, contentType)) {
+      // Magic bytes do not match — delete the malicious upload
+      logger.warn("Pre-signed upload failed magic-byte validation, deleting", {
+        context: "upload",
+        key,
+        declaredType: contentType,
+      });
+      await deleteFromR2(key);
+      return apiError("File content does not match declared type");
+    }
+
+    return apiSuccess({ valid: true });
+  },
+  ["super_admin", "clinic_admin", "receptionist", "doctor"],
+);
+
+export const GET = withAuth(
+  async (request, { profile }) => {
+    if (!isR2Configured()) {
+      return apiError("File storage is not configured", 503);
+    }
+
+    const { searchParams } = new URL(request.url);
+    const filename = searchParams.get("filename");
+    const contentType = searchParams.get("contentType");
+    const category = searchParams.get("category") || "uploads";
+    // S-26: Derive clinicId from session. Super-admins may specify a target.
+    // Never fall back to "shared" — reject if no clinic context.
+    const clinicId =
+      profile.clinic_id ?? (profile.role === "super_admin" ? searchParams.get("clinicId") : null);
+    if (!clinicId) {
+      return apiError("Clinic context required for uploads", 403);
+    }
+
+    if (!filename || !contentType) {
+      return apiError("filename and contentType are required");
+    }
+
+    if (!ALLOWED_TYPES.has(contentType)) {
+      return apiError(`File type not allowed: ${contentType}`);
+    }
+
+    // AUDIT-01: PHI categories MUST go through the POST handler which encrypts
+    // the file server-side before storing to R2. Presigned direct uploads bypass
+    // server-side encryption and would store plaintext PHI — a compliance
+    // violation under Moroccan Law 09-08.
+    if (requiresEncryption(category)) {
+      return apiError(
+        "Direct upload is not allowed for PHI file categories. Use the POST endpoint instead.",
+        400,
+        "PHI_DIRECT_UPLOAD_BLOCKED",
+      );
+    }
+
+    const key = buildUploadKey(clinicId, category, filename);
+    const maxSize = limitForCategory(category);
+    const presigned = await getPresignedUploadPost(key, contentType, maxSize);
+
+    if (!presigned) {
+      return apiInternalError("Failed to generate upload URL");
+    }
+
+    const publicUrl = process.env.R2_PUBLIC_URL
+      ? `${process.env.R2_PUBLIC_URL.replace(/\/$/, "")}/${key}`
+      : null;
+
+    // L3-H2: Include responsive thumbnail URLs for image content types so the
+    // client can render optimized previews after direct-upload completes.
+    const isImage = contentType.startsWith("image/");
+    const thumbnails = isImage && publicUrl ? getResponsiveImageUrls(publicUrl) : undefined;
+
+    return apiSuccess({
+      uploadUrl: presigned.url,
+      fields: presigned.fields,
+      key: presigned.key,
+      publicUrl,
+      thumbnails,
       maxSize,
     });
-    await deleteFromR2(key);
-    return apiError(`File too large (max ${formatLimit(maxSize)})`, 413);
-  }
-
-  if (metadata.contentType && metadata.contentType !== contentType) {
-    logger.warn("Pre-signed upload content-type mismatch, deleting", {
-      context: "upload",
-      key,
-      declaredType: contentType,
-      actualType: metadata.contentType,
-    });
-    await deleteFromR2(key);
-    return apiError("File content type does not match declared type");
-  }
-
-  // Read the first bytes of the uploaded object to validate magic bytes
-  const headBuffer = await readR2ObjectHead(key);
-  if (!headBuffer) {
-    return apiNotFound("Uploaded file not found or unreadable");
-  }
-
-  if (!validateFileContent(headBuffer, contentType)) {
-    // Magic bytes do not match — delete the malicious upload
-    logger.warn("Pre-signed upload failed magic-byte validation, deleting", {
-      context: "upload",
-      key,
-      declaredType: contentType,
-    });
-    await deleteFromR2(key);
-    return apiError("File content does not match declared type");
-  }
-
-  return apiSuccess({ valid: true });
-}, ["super_admin", "clinic_admin", "receptionist", "doctor"]);
-
-export const GET = withAuth(async (request, { profile }) => {
-  if (!isR2Configured()) {
-    return apiError("File storage is not configured", 503);
-  }
-
-  const { searchParams } = new URL(request.url);
-  const filename = searchParams.get("filename");
-  const contentType = searchParams.get("contentType");
-  const category = searchParams.get("category") || "uploads";
-  // S-26: Derive clinicId from session. Super-admins may specify a target.
-  // Never fall back to "shared" — reject if no clinic context.
-  const clinicId = profile.clinic_id ?? (profile.role === "super_admin" ? searchParams.get("clinicId") : null);
-  if (!clinicId) {
-    return apiError("Clinic context required for uploads", 403);
-  }
-
-  if (!filename || !contentType) {
-    return apiError("filename and contentType are required");
-  }
-
-  if (!ALLOWED_TYPES.has(contentType)) {
-    return apiError(`File type not allowed: ${contentType}`);
-  }
-
-  // AUDIT-01: PHI categories MUST go through the POST handler which encrypts
-  // the file server-side before storing to R2. Presigned direct uploads bypass
-  // server-side encryption and would store plaintext PHI — a compliance
-  // violation under Moroccan Law 09-08.
-  if (requiresEncryption(category)) {
-    return apiError(
-      "Direct upload is not allowed for PHI file categories. Use the POST endpoint instead.",
-      400,
-      "PHI_DIRECT_UPLOAD_BLOCKED",
-    );
-  }
-
-  const key = buildUploadKey(clinicId, category, filename);
-  const maxSize = limitForCategory(category);
-  const presigned = await getPresignedUploadPost(key, contentType, maxSize);
-
-  if (!presigned) {
-    return apiInternalError("Failed to generate upload URL");
-  }
-
-  const publicUrl = process.env.R2_PUBLIC_URL
-    ? `${process.env.R2_PUBLIC_URL.replace(/\/$/, "")}/${key}`
-    : null;
-
-  // L3-H2: Include responsive thumbnail URLs for image content types so the
-  // client can render optimized previews after direct-upload completes.
-  const isImage = contentType.startsWith("image/");
-  const thumbnails = isImage && publicUrl ? getResponsiveImageUrls(publicUrl) : undefined;
-
-  return apiSuccess({
-    uploadUrl: presigned.url,
-    fields: presigned.fields,
-    key: presigned.key,
-    publicUrl,
-    thumbnails,
-    maxSize,
-  });
-}, ["super_admin", "clinic_admin", "receptionist", "doctor"]);
+  },
+  ["super_admin", "clinic_admin", "receptionist", "doctor"],
+);

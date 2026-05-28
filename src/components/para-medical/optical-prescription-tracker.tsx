@@ -1,15 +1,24 @@
 "use client";
 
 import {
-  Eye, Clock, CheckCircle, Package, Truck,
-  ChevronDown, ChevronUp, AlertCircle,
+  Eye,
+  Clock,
+  CheckCircle,
+  Package,
+  Truck,
+  ChevronDown,
+  ChevronUp,
+  AlertCircle,
 } from "lucide-react";
 import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { OpticalPrescription } from "@/lib/types/para-medical";
 
-const STATUS_VARIANT: Record<string, "default" | "secondary" | "success" | "outline" | "destructive"> = {
+const STATUS_VARIANT: Record<
+  string,
+  "default" | "secondary" | "success" | "outline" | "destructive"
+> = {
   pending: "outline",
   in_progress: "default",
   ready: "success",
@@ -43,7 +52,7 @@ export function OpticalPrescriptionTracker({
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const sorted = [...prescriptions].sort(
-    (a, b) => new Date(b.prescription_date).getTime() - new Date(a.prescription_date).getTime()
+    (a, b) => new Date(b.prescription_date).getTime() - new Date(a.prescription_date).getTime(),
   );
 
   const pending = prescriptions.filter((p) => p.status === "pending").length;
@@ -115,10 +124,17 @@ export function OpticalPrescriptionTracker({
                       <AlertCircle className="h-3 w-3" /> Expired
                     </Badge>
                   )}
-                  <Badge variant={STATUS_VARIANT[rx.status]} className="text-xs flex items-center gap-1">
+                  <Badge
+                    variant={STATUS_VARIANT[rx.status]}
+                    className="text-xs flex items-center gap-1"
+                  >
                     <StatusIcon className="h-3 w-3" /> {rx.status.replace("_", " ")}
                   </Badge>
-                  {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                  {isExpanded ? (
+                    <ChevronUp className="h-4 w-4" />
+                  ) : (
+                    <ChevronDown className="h-4 w-4" />
+                  )}
                 </div>
               </div>
             </CardHeader>
@@ -141,17 +157,31 @@ export function OpticalPrescriptionTracker({
                     <tbody>
                       <tr className="border-b">
                         <td className="py-2 px-2 font-medium">OD (Right)</td>
-                        <td className="text-center py-2 px-2">{formatDiopter(rx.right_eye.sphere)}</td>
-                        <td className="text-center py-2 px-2">{formatDiopter(rx.right_eye.cylinder)}</td>
-                        <td className="text-center py-2 px-2">{rx.right_eye.axis ?? "—"}{rx.right_eye.axis !== null ? "°" : ""}</td>
+                        <td className="text-center py-2 px-2">
+                          {formatDiopter(rx.right_eye.sphere)}
+                        </td>
+                        <td className="text-center py-2 px-2">
+                          {formatDiopter(rx.right_eye.cylinder)}
+                        </td>
+                        <td className="text-center py-2 px-2">
+                          {rx.right_eye.axis ?? "—"}
+                          {rx.right_eye.axis !== null ? "°" : ""}
+                        </td>
                         <td className="text-center py-2 px-2">{formatDiopter(rx.right_eye.add)}</td>
                         <td className="text-center py-2 px-2">{rx.right_eye.pd ?? "—"}</td>
                       </tr>
                       <tr>
                         <td className="py-2 px-2 font-medium">OS (Left)</td>
-                        <td className="text-center py-2 px-2">{formatDiopter(rx.left_eye.sphere)}</td>
-                        <td className="text-center py-2 px-2">{formatDiopter(rx.left_eye.cylinder)}</td>
-                        <td className="text-center py-2 px-2">{rx.left_eye.axis ?? "—"}{rx.left_eye.axis !== null ? "°" : ""}</td>
+                        <td className="text-center py-2 px-2">
+                          {formatDiopter(rx.left_eye.sphere)}
+                        </td>
+                        <td className="text-center py-2 px-2">
+                          {formatDiopter(rx.left_eye.cylinder)}
+                        </td>
+                        <td className="text-center py-2 px-2">
+                          {rx.left_eye.axis ?? "—"}
+                          {rx.left_eye.axis !== null ? "°" : ""}
+                        </td>
                         <td className="text-center py-2 px-2">{formatDiopter(rx.left_eye.add)}</td>
                         <td className="text-center py-2 px-2">{rx.left_eye.pd ?? "—"}</td>
                       </tr>
@@ -170,14 +200,18 @@ export function OpticalPrescriptionTracker({
                   {rx.expiry_date && (
                     <div className="p-2 rounded border">
                       <p className="text-[10px] text-muted-foreground">Expiry Date</p>
-                      <p className={`text-xs font-medium ${isExpired ? "text-red-600" : ""}`}>{rx.expiry_date}</p>
+                      <p className={`text-xs font-medium ${isExpired ? "text-red-600" : ""}`}>
+                        {rx.expiry_date}
+                      </p>
                     </div>
                   )}
                 </div>
 
                 {rx.notes && (
                   <div className="p-3 rounded-lg border bg-muted/50">
-                    <p className="text-xs"><strong>Notes:</strong> {rx.notes}</p>
+                    <p className="text-xs">
+                      <strong>Notes:</strong> {rx.notes}
+                    </p>
                   </div>
                 )}
 
@@ -185,17 +219,26 @@ export function OpticalPrescriptionTracker({
                 {editable && rx.status !== "delivered" && (
                   <div className="flex gap-2 pt-2 border-t">
                     {rx.status === "pending" && (
-                      <button className="px-3 py-1.5 rounded-md text-xs font-medium bg-blue-600 text-white hover:bg-blue-700" onClick={() => onUpdateStatus?.(rx.id, "in_progress")}>
+                      <button
+                        className="px-3 py-1.5 rounded-md text-xs font-medium bg-blue-600 text-white hover:bg-blue-700"
+                        onClick={() => onUpdateStatus?.(rx.id, "in_progress")}
+                      >
                         Start Processing
                       </button>
                     )}
                     {rx.status === "in_progress" && (
-                      <button className="px-3 py-1.5 rounded-md text-xs font-medium bg-green-600 text-white hover:bg-green-700" onClick={() => onUpdateStatus?.(rx.id, "ready")}>
+                      <button
+                        className="px-3 py-1.5 rounded-md text-xs font-medium bg-green-600 text-white hover:bg-green-700"
+                        onClick={() => onUpdateStatus?.(rx.id, "ready")}
+                      >
                         Mark Ready
                       </button>
                     )}
                     {rx.status === "ready" && (
-                      <button className="px-3 py-1.5 rounded-md text-xs font-medium bg-purple-600 text-white hover:bg-purple-700" onClick={() => onUpdateStatus?.(rx.id, "delivered")}>
+                      <button
+                        className="px-3 py-1.5 rounded-md text-xs font-medium bg-purple-600 text-white hover:bg-purple-700"
+                        onClick={() => onUpdateStatus?.(rx.id, "delivered")}
+                      >
                         Mark Delivered
                       </button>
                     )}

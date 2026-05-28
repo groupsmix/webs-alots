@@ -12,18 +12,14 @@ test.describe("Booking flow", () => {
     await page.goto("/book");
   });
 
-  test("booking page shows service selection or appointment form", async ({
-    page,
-  }) => {
+  test("booking page shows service selection or appointment form", async ({ page }) => {
     // The booking page should render either a service picker or a
     // date/time selector — the exact UI depends on clinic config.
     const body = page.locator("body");
     await expect(body).not.toBeEmpty();
 
     // Should have at least one interactive element (button, input, or select)
-    const interactiveCount = await page
-      .locator("button, input, select, [role='button']")
-      .count();
+    const interactiveCount = await page.locator("button, input, select, [role='button']").count();
     expect(interactiveCount).toBeGreaterThan(0);
   });
 

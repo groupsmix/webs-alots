@@ -23,54 +23,63 @@ const createTableSchema = z.object({
 /**
  * GET /api/restaurant-tables
  */
-export const GET = withAuth(async (_request: NextRequest, auth: AuthContext) => {
-  const clinicId = auth.profile.clinic_id;
-  if (!clinicId) return apiSuccess([]);
+export const GET = withAuth(
+  async (_request: NextRequest, auth: AuthContext) => {
+    const clinicId = auth.profile.clinic_id;
+    if (!clinicId) return apiSuccess([]);
 
-  const { data, error } = await auth.supabase
-    .from("restaurant_tables")
-    .select("id, clinic_id, name, capacity, zone, is_active, qr_code_url, sort_order, created_at, updated_at")
-    .eq("clinic_id", clinicId)
-    .order("sort_order", { ascending: true })
-    .limit(200);
+    const { data, error } = await auth.supabase
+      .from("restaurant_tables")
+      .select(
+        "id, clinic_id, name, capacity, zone, is_active, qr_code_url, sort_order, created_at, updated_at",
+      )
+      .eq("clinic_id", clinicId)
+      .order("sort_order", { ascending: true })
+      .limit(200);
 
-  if (error) return apiSupabaseError(error, "restaurant-tables/list");
+    if (error) return apiSupabaseError(error, "restaurant-tables/list");
 
-  return apiSuccess(data);
-}, ["super_admin", "clinic_admin", "receptionist"]);
+    return apiSuccess(data);
+  },
+  ["super_admin", "clinic_admin", "receptionist"],
+);
 
 /**
  * POST /api/restaurant-tables
  */
-export const POST = withAuthValidation(createTableSchema, async (body, _request, auth) => {
-  const clinicId = auth.profile.clinic_id;
-  if (!clinicId) {
-    return apiSupabaseError({ message: "No clinic context" }, "restaurant-tables/create");
-  }
+export const POST = withAuthValidation(
+  createTableSchema,
+  async (body, _request, auth) => {
+    const clinicId = auth.profile.clinic_id;
+    if (!clinicId) {
+      return apiSupabaseError({ message: "No clinic context" }, "restaurant-tables/create");
+    }
 
-  const { data, error } = await auth.supabase
-    .from("restaurant_tables")
-    // @ts-expect-error -- Supabase generated types lag behind actual DB schema
-    .insert({
-      clinic_id: clinicId,
-      name: body.name,
-      capacity: body.capacity,
-      zone: body.zone ?? null,
-      is_active: body.is_active,
-      sort_order: body.sort_order,
-    })
-    .select()
-    .single();
+    const { data, error } = await auth.supabase
+      .from("restaurant_tables")
+      // @ts-expect-error -- Supabase generated types lag behind actual DB schema
+      .insert({
+        clinic_id: clinicId,
+        name: body.name,
+        capacity: body.capacity,
+        zone: body.zone ?? null,
+        is_active: body.is_active,
+        sort_order: body.sort_order,
+      })
+      .select()
+      .single();
 
-  if (error) return apiSupabaseError(error, "restaurant-tables/create");
+    if (error) return apiSupabaseError(error, "restaurant-tables/create");
 
-  await logAuditEvent({
-    supabase: auth.supabase,
-    action: "restaurant_table.created",
-    type: "admin",
-    clinicId,
-    description: `Table "${body.name}" (capacity: ${body.capacity}) created`,
-  });
+    await logAuditEvent({
+      supabase: auth.supabase,
+      action: "restaurant_table.created",
+      type: "admin",
+      clinicId,
+      description: `Table "${body.name}" (capacity: ${body.capacity}) created`,
+    });
 
-  return apiSuccess(data, 201);
-}, ["super_admin", "clinic_admin"]);
+    return apiSuccess(data, 201);
+  },
+  ["super_admin", "clinic_admin"],
+);

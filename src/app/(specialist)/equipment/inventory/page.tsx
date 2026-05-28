@@ -8,7 +8,11 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -52,10 +56,21 @@ interface EquipmentFormState {
 }
 
 const emptyForm: EquipmentFormState = {
-  name: "", category: "", serialNumber: "", model: "", manufacturer: "",
-  purchaseDate: "", purchasePrice: "", condition: "new", isAvailable: true,
-  isRentable: false, rentalPriceDaily: "", rentalPriceWeekly: "",
-  rentalPriceMonthly: "", description: "", notes: "",
+  name: "",
+  category: "",
+  serialNumber: "",
+  model: "",
+  manufacturer: "",
+  purchaseDate: "",
+  purchasePrice: "",
+  condition: "new",
+  isAvailable: true,
+  isRentable: false,
+  rentalPriceDaily: "",
+  rentalPriceWeekly: "",
+  rentalPriceMonthly: "",
+  description: "",
+  notes: "",
 };
 
 export default function EquipmentInventoryPage() {
@@ -77,13 +92,19 @@ export default function EquipmentInventoryPage() {
 
   const dateFmt = locale === "ar" ? "ar-MA" : "fr-FR";
 
-  const conditionLabel = useCallback((c: string) => {
-    const map: Record<string, string> = {
-      new: t("conditionNew"), good: t("conditionGood"), fair: t("conditionFair"),
-      needs_repair: t("conditionNeedsRepair"), decommissioned: t("conditionDecommissioned"),
-    };
-    return map[c] ?? c;
-  }, [t]);
+  const conditionLabel = useCallback(
+    (c: string) => {
+      const map: Record<string, string> = {
+        new: t("conditionNew"),
+        good: t("conditionGood"),
+        fair: t("conditionFair"),
+        needs_repair: t("conditionNeedsRepair"),
+        decommissioned: t("conditionDecommissioned"),
+      };
+      return map[c] ?? c;
+    },
+    [t],
+  );
 
   function reload() {
     setLoading(true);
@@ -99,12 +120,16 @@ export default function EquipmentInventoryPage() {
       fetchEquipmentInventory(tenant?.clinicId ?? "")
         .then(setItems)
         .catch((err) => {
-      if (!controller.signal.aborted) {
-        setError(err instanceof Error ? err : new Error(String(err)));
-      }
-    })
-    .finally(() => { if (!controller.signal.aborted) setLoading(false); });
-    return () => { controller.abort(); };
+          if (!controller.signal.aborted) {
+            setError(err instanceof Error ? err : new Error(String(err)));
+          }
+        })
+        .finally(() => {
+          if (!controller.signal.aborted) setLoading(false);
+        });
+      return () => {
+        controller.abort();
+      };
     }
     init();
   }, [tenant?.clinicId]);
@@ -200,7 +225,9 @@ export default function EquipmentInventoryPage() {
   if (error) {
     return (
       <div className="p-8 text-center">
-        <p className="text-red-600 font-medium">Failed to load data. Please try refreshing the page.</p>
+        <p className="text-red-600 font-medium">
+          Failed to load data. Please try refreshing the page.
+        </p>
         {error.message && <p className="text-sm text-muted-foreground mt-2">{error.message}</p>}
       </div>
     );
@@ -225,7 +252,9 @@ export default function EquipmentInventoryPage() {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold">{t("inventoryTitle")}</h1>
-          <p className="text-muted-foreground text-sm">{items.length} {t("itemsTracked")}</p>
+          <p className="text-muted-foreground text-sm">
+            {items.length} {t("itemsTracked")}
+          </p>
         </div>
         <Button onClick={openAddDialog} size="sm" className="bg-amber-600 hover:bg-amber-700">
           <Plus className="h-4 w-4 me-1" /> {t("addEquipment")}
@@ -244,7 +273,12 @@ export default function EquipmentInventoryPage() {
         </div>
         <div className="flex gap-2 flex-wrap">
           {["all", ...CONDITIONS].map((c) => (
-            <Button key={c} variant={conditionFilter === c ? "default" : "outline"} size="sm" onClick={() => setConditionFilter(c)}>
+            <Button
+              key={c}
+              variant={conditionFilter === c ? "default" : "outline"}
+              size="sm"
+              onClick={() => setConditionFilter(c)}
+            >
               {c === "all" ? t("all") : conditionLabel(c)}
             </Button>
           ))}
@@ -256,7 +290,10 @@ export default function EquipmentInventoryPage() {
           <Card key={item.id}>
             <CardContent className="pt-4 pb-4">
               {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- keyboard interaction handled by parent or child interactive element */}
-              <div className="flex items-center justify-between cursor-pointer" onClick={() => setExpandedId(expandedId === item.id ? null : item.id)}>
+              <div
+                className="flex items-center justify-between cursor-pointer"
+                onClick={() => setExpandedId(expandedId === item.id ? null : item.id)}
+              >
                 <div className="flex items-center gap-4">
                   <div className="h-10 w-10 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
                     <Package className="h-5 w-5 text-amber-600" />
@@ -269,13 +306,19 @@ export default function EquipmentInventoryPage() {
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
-                  <Badge className={conditionColors[item.condition] ?? "bg-gray-100 text-gray-700 border-0"}>
+                  <Badge
+                    className={
+                      conditionColors[item.condition] ?? "bg-gray-100 text-gray-700 border-0"
+                    }
+                  >
                     {conditionLabel(item.condition)}
                   </Badge>
                   <Badge variant={item.isAvailable ? "outline" : "secondary"} className="text-xs">
                     {item.isAvailable ? t("isAvailable") : t("inUse")}
                   </Badge>
-                  <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${expandedId === item.id ? "rotate-180" : ""}`} />
+                  <ChevronDown
+                    className={`h-4 w-4 text-muted-foreground transition-transform ${expandedId === item.id ? "rotate-180" : ""}`}
+                  />
                 </div>
               </div>
 
@@ -292,20 +335,40 @@ export default function EquipmentInventoryPage() {
                     </div>
                     <div>
                       <p className="text-muted-foreground text-xs">{t("purchaseDate")}</p>
-                      <p className="font-medium">{item.purchaseDate ? new Date(item.purchaseDate).toLocaleDateString(dateFmt) : "—"}</p>
+                      <p className="font-medium">
+                        {item.purchaseDate
+                          ? new Date(item.purchaseDate).toLocaleDateString(dateFmt)
+                          : "—"}
+                      </p>
                     </div>
                     <div>
                       <p className="text-muted-foreground text-xs">{t("purchasePrice")}</p>
-                      <p className="font-medium">{item.purchasePrice != null ? `${item.purchasePrice.toLocaleString()} ${item.currency}` : "—"}</p>
+                      <p className="font-medium">
+                        {item.purchasePrice != null
+                          ? `${item.purchasePrice.toLocaleString()} ${item.currency}`
+                          : "—"}
+                      </p>
                     </div>
                   </div>
                   {item.isRentable && (
                     <div className="mt-3 pt-3 border-t">
                       <p className="text-muted-foreground text-xs mb-2">{t("rentalPricing")}</p>
                       <div className="flex gap-4 text-sm">
-                        {item.rentalPriceDaily != null && <span>{t("daily")}: {item.rentalPriceDaily} {item.currency}</span>}
-                        {item.rentalPriceWeekly != null && <span>{t("weekly")}: {item.rentalPriceWeekly} {item.currency}</span>}
-                        {item.rentalPriceMonthly != null && <span>{t("monthly")}: {item.rentalPriceMonthly} {item.currency}</span>}
+                        {item.rentalPriceDaily != null && (
+                          <span>
+                            {t("daily")}: {item.rentalPriceDaily} {item.currency}
+                          </span>
+                        )}
+                        {item.rentalPriceWeekly != null && (
+                          <span>
+                            {t("weekly")}: {item.rentalPriceWeekly} {item.currency}
+                          </span>
+                        )}
+                        {item.rentalPriceMonthly != null && (
+                          <span>
+                            {t("monthly")}: {item.rentalPriceMonthly} {item.currency}
+                          </span>
+                        )}
                       </div>
                     </div>
                   )}
@@ -316,10 +379,25 @@ export default function EquipmentInventoryPage() {
                     </div>
                   )}
                   <div className="mt-4 pt-3 border-t flex items-center gap-2">
-                    <Button variant="outline" size="sm" onClick={(e) => { e.stopPropagation(); openEditDialog(item); }}>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        openEditDialog(item);
+                      }}
+                    >
                       <Pencil className="h-3 w-3 me-1" /> {t("edit")}
                     </Button>
-                    <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700" onClick={(e) => { e.stopPropagation(); setDeleteConfirm(item.id); }}>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="text-red-600 hover:text-red-700"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setDeleteConfirm(item.id);
+                      }}
+                    >
                       <Trash2 className="h-3 w-3 me-1" /> {t("delete")}
                     </Button>
                     <Link href="/equipment/maintenance" className="ms-auto">
@@ -344,7 +422,10 @@ export default function EquipmentInventoryPage() {
 
       {/* Add / Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent onClose={() => setDialogOpen(false)} className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent
+          onClose={() => setDialogOpen(false)}
+          className="max-w-2xl max-h-[90vh] overflow-y-auto"
+        >
           <DialogHeader>
             <DialogTitle>{editingItem ? t("editEquipment") : t("addEquipment")}</DialogTitle>
           </DialogHeader>
@@ -356,13 +437,19 @@ export default function EquipmentInventoryPage() {
               </div>
               <div>
                 <Label>{t("category")} *</Label>
-                <Input value={form.category} onChange={(e) => updateField("category", e.target.value)} />
+                <Input
+                  value={form.category}
+                  onChange={(e) => updateField("category", e.target.value)}
+                />
               </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label>{t("serialNumber")}</Label>
-                <Input value={form.serialNumber} onChange={(e) => updateField("serialNumber", e.target.value)} />
+                <Input
+                  value={form.serialNumber}
+                  onChange={(e) => updateField("serialNumber", e.target.value)}
+                />
               </div>
               <div>
                 <Label>{t("model")}</Label>
@@ -372,7 +459,10 @@ export default function EquipmentInventoryPage() {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label>{t("manufacturer")}</Label>
-                <Input value={form.manufacturer} onChange={(e) => updateField("manufacturer", e.target.value)} />
+                <Input
+                  value={form.manufacturer}
+                  onChange={(e) => updateField("manufacturer", e.target.value)}
+                />
               </div>
               <div>
                 <Label>{t("condition")}</Label>
@@ -382,7 +472,9 @@ export default function EquipmentInventoryPage() {
                   onChange={(e) => updateField("condition", e.target.value)}
                 >
                   {CONDITIONS.map((c) => (
-                    <option key={c} value={c}>{conditionLabel(c)}</option>
+                    <option key={c} value={c}>
+                      {conditionLabel(c)}
+                    </option>
                   ))}
                 </select>
               </div>
@@ -390,20 +482,38 @@ export default function EquipmentInventoryPage() {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label>{t("purchaseDate")}</Label>
-                <Input type="date" value={form.purchaseDate} onChange={(e) => updateField("purchaseDate", e.target.value)} />
+                <Input
+                  type="date"
+                  value={form.purchaseDate}
+                  onChange={(e) => updateField("purchaseDate", e.target.value)}
+                />
               </div>
               <div>
                 <Label>{t("purchasePrice")} (MAD)</Label>
-                <Input type="number" value={form.purchasePrice} onChange={(e) => updateField("purchasePrice", e.target.value)} />
+                <Input
+                  type="number"
+                  value={form.purchasePrice}
+                  onChange={(e) => updateField("purchasePrice", e.target.value)}
+                />
               </div>
             </div>
             <div className="flex gap-6">
               <label className="flex items-center gap-2 text-sm">
-                <input type="checkbox" checked={form.isAvailable} onChange={(e) => updateField("isAvailable", e.target.checked)} className="rounded" />
+                <input
+                  type="checkbox"
+                  checked={form.isAvailable}
+                  onChange={(e) => updateField("isAvailable", e.target.checked)}
+                  className="rounded"
+                />
                 {t("isAvailable")}
               </label>
               <label className="flex items-center gap-2 text-sm">
-                <input type="checkbox" checked={form.isRentable} onChange={(e) => updateField("isRentable", e.target.checked)} className="rounded" />
+                <input
+                  type="checkbox"
+                  checked={form.isRentable}
+                  onChange={(e) => updateField("isRentable", e.target.checked)}
+                  className="rounded"
+                />
                 {t("isRentable")}
               </label>
             </div>
@@ -411,21 +521,36 @@ export default function EquipmentInventoryPage() {
               <div className="grid grid-cols-3 gap-4">
                 <div>
                   <Label>{t("daily")} (MAD)</Label>
-                  <Input type="number" value={form.rentalPriceDaily} onChange={(e) => updateField("rentalPriceDaily", e.target.value)} />
+                  <Input
+                    type="number"
+                    value={form.rentalPriceDaily}
+                    onChange={(e) => updateField("rentalPriceDaily", e.target.value)}
+                  />
                 </div>
                 <div>
                   <Label>{t("weekly")} (MAD)</Label>
-                  <Input type="number" value={form.rentalPriceWeekly} onChange={(e) => updateField("rentalPriceWeekly", e.target.value)} />
+                  <Input
+                    type="number"
+                    value={form.rentalPriceWeekly}
+                    onChange={(e) => updateField("rentalPriceWeekly", e.target.value)}
+                  />
                 </div>
                 <div>
                   <Label>{t("monthly")} (MAD)</Label>
-                  <Input type="number" value={form.rentalPriceMonthly} onChange={(e) => updateField("rentalPriceMonthly", e.target.value)} />
+                  <Input
+                    type="number"
+                    value={form.rentalPriceMonthly}
+                    onChange={(e) => updateField("rentalPriceMonthly", e.target.value)}
+                  />
                 </div>
               </div>
             )}
             <div>
               <Label>{t("description")}</Label>
-              <Input value={form.description} onChange={(e) => updateField("description", e.target.value)} />
+              <Input
+                value={form.description}
+                onChange={(e) => updateField("description", e.target.value)}
+              />
             </div>
             <div>
               <Label>{t("notes")}</Label>
@@ -433,8 +558,14 @@ export default function EquipmentInventoryPage() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDialogOpen(false)}>{t("cancel")}</Button>
-            <Button onClick={handleSave} disabled={saving || !form.name || !form.category} className="bg-amber-600 hover:bg-amber-700">
+            <Button variant="outline" onClick={() => setDialogOpen(false)}>
+              {t("cancel")}
+            </Button>
+            <Button
+              onClick={handleSave}
+              disabled={saving || !form.name || !form.category}
+              className="bg-amber-600 hover:bg-amber-700"
+            >
               {saving ? t("loading") : t("save")}
             </Button>
           </DialogFooter>
@@ -449,8 +580,13 @@ export default function EquipmentInventoryPage() {
           </DialogHeader>
           <p className="py-4 text-sm">{t("confirmDeleteEquipment")}</p>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDeleteConfirm(null)}>{t("cancel")}</Button>
-            <Button variant="destructive" onClick={() => deleteConfirm && handleDelete(deleteConfirm)}>
+            <Button variant="outline" onClick={() => setDeleteConfirm(null)}>
+              {t("cancel")}
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => deleteConfirm && handleDelete(deleteConfirm)}
+            >
               {t("delete")}
             </Button>
           </DialogFooter>

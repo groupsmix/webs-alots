@@ -1,8 +1,6 @@
 "use client";
 
-import {
-  Search, AlertTriangle, Package,
-} from "lucide-react";
+import { Search, AlertTriangle, Package } from "lucide-react";
 import { useState } from "react";
 import { useLocale } from "@/components/locale-switcher";
 import { Badge } from "@/components/ui/badge";
@@ -33,7 +31,12 @@ export function LensInventoryManager({ items }: LensInventoryManagerProps) {
   const types = Array.from(new Set(items.map((i) => i.type)));
 
   const filtered = items.filter((item) => {
-    if (search && !item.material.toLowerCase().includes(search.toLowerCase()) && !item.supplier.toLowerCase().includes(search.toLowerCase())) return false;
+    if (
+      search &&
+      !item.material.toLowerCase().includes(search.toLowerCase()) &&
+      !item.supplier.toLowerCase().includes(search.toLowerCase())
+    )
+      return false;
     if (typeFilter && item.type !== typeFilter) return false;
     return true;
   });
@@ -61,7 +64,9 @@ export function LensInventoryManager({ items }: LensInventoryManagerProps) {
         </Card>
         <Card>
           <CardContent className="p-4 text-center">
-            <p className="text-2xl font-bold">{formatNumber(totalValue, typeof locale !== "undefined" ? locale : "fr")}</p>
+            <p className="text-2xl font-bold">
+              {formatNumber(totalValue, typeof locale !== "undefined" ? locale : "fr")}
+            </p>
             <p className="text-xs text-muted-foreground">Inventory Value (MAD)</p>
           </CardContent>
         </Card>
@@ -76,7 +81,8 @@ export function LensInventoryManager({ items }: LensInventoryManagerProps) {
           <div className="space-y-1">
             {lowStock.map((item) => (
               <p key={item.id} className="text-xs text-orange-700 dark:text-orange-300">
-                {TYPE_LABELS[item.type]} — {item.material}: {item.stock_quantity}/{item.min_threshold} remaining
+                {TYPE_LABELS[item.type]} — {item.material}: {item.stock_quantity}/
+                {item.min_threshold} remaining
               </p>
             ))}
           </div>
@@ -87,14 +93,26 @@ export function LensInventoryManager({ items }: LensInventoryManagerProps) {
       <div className="flex flex-col gap-3">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input placeholder="Search by material or supplier..." className="pl-10" value={search} onChange={(e) => setSearch(e.target.value)} />
+          <Input
+            placeholder="Search by material or supplier..."
+            className="pl-10"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
         </div>
         <div className="flex gap-2 flex-wrap">
-          <button className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${!typeFilter ? "bg-primary text-primary-foreground" : "border hover:bg-muted"}`} onClick={() => setTypeFilter(null)}>
+          <button
+            className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${!typeFilter ? "bg-primary text-primary-foreground" : "border hover:bg-muted"}`}
+            onClick={() => setTypeFilter(null)}
+          >
             All Types
           </button>
           {types.map((type) => (
-            <button key={type} className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${typeFilter === type ? "bg-primary text-primary-foreground" : "border hover:bg-muted"}`} onClick={() => setTypeFilter(type)}>
+            <button
+              key={type}
+              className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${typeFilter === type ? "bg-primary text-primary-foreground" : "border hover:bg-muted"}`}
+              onClick={() => setTypeFilter(type)}
+            >
               {TYPE_LABELS[type] ?? type}
             </button>
           ))}
@@ -125,19 +143,32 @@ export function LensInventoryManager({ items }: LensInventoryManagerProps) {
                   {filtered.map((item) => {
                     const isLow = item.stock_quantity <= item.min_threshold;
                     return (
-                      <tr key={item.id} className={`border-b last:border-0 ${isLow ? "bg-orange-50/50 dark:bg-orange-950/10" : ""}`}>
+                      <tr
+                        key={item.id}
+                        className={`border-b last:border-0 ${isLow ? "bg-orange-50/50 dark:bg-orange-950/10" : ""}`}
+                      >
                         <td className="py-2.5 px-3">
-                          <Badge variant="outline" className="text-[10px]">{TYPE_LABELS[item.type]}</Badge>
+                          <Badge variant="outline" className="text-[10px]">
+                            {TYPE_LABELS[item.type]}
+                          </Badge>
                         </td>
                         <td className="py-2.5 px-3 font-medium">{item.material}</td>
                         <td className="py-2.5 px-3 text-muted-foreground">{item.coating ?? "—"}</td>
                         <td className="py-2.5 px-3 text-muted-foreground">{item.power_range}</td>
                         <td className="py-2.5 px-3 text-right">
-                          <span className={isLow ? "text-orange-600 font-medium" : ""}>{item.stock_quantity}</span>
-                          {isLow && <AlertTriangle className="h-3 w-3 text-orange-600 inline ml-1" />}
+                          <span className={isLow ? "text-orange-600 font-medium" : ""}>
+                            {item.stock_quantity}
+                          </span>
+                          {isLow && (
+                            <AlertTriangle className="h-3 w-3 text-orange-600 inline ml-1" />
+                          )}
                         </td>
-                        <td className="py-2.5 px-3 text-right text-muted-foreground">{item.unit_cost} MAD</td>
-                        <td className="py-2.5 px-3 text-right font-medium">{item.selling_price} MAD</td>
+                        <td className="py-2.5 px-3 text-right text-muted-foreground">
+                          {item.unit_cost} MAD
+                        </td>
+                        <td className="py-2.5 px-3 text-right font-medium">
+                          {item.selling_price} MAD
+                        </td>
                         <td className="py-2.5 px-3 text-muted-foreground">{item.supplier}</td>
                       </tr>
                     );

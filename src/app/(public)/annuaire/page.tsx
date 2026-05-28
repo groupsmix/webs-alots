@@ -4,10 +4,7 @@ import Link from "next/link";
 import { HreflangTags } from "@/components/hreflang-tags";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import {
-  getDirectoryCities,
-  getDirectorySpecialties,
-} from "@/lib/data/directory";
+import { getDirectoryCities, getDirectorySpecialties } from "@/lib/data/directory";
 import { DIRECTORY_CITIES, DIRECTORY_SPECIALTIES } from "@/lib/directory-constants";
 import { safeJsonLdStringify } from "@/lib/json-ld";
 
@@ -89,9 +86,7 @@ export default async function AnnuairePage() {
 
       {/* Hero */}
       <div className="text-center mb-12">
-        <h1 className="text-4xl font-bold mb-4">
-          Annuaire Médical au Maroc
-        </h1>
+        <h1 className="text-4xl font-bold mb-4">Annuaire Médical au Maroc</h1>
         <p className="text-lg text-muted-foreground max-w-2xl mx-auto mb-6">
           Trouvez un médecin, dentiste ou spécialiste près de chez vous.
           {totalDoctors > 0 && (
@@ -164,7 +159,11 @@ export default async function AnnuairePage() {
         <div className="flex flex-wrap gap-2">
           {[
             { city: "casablanca", specialty: "dentiste", label: "Dentiste à Casablanca" },
-            { city: "rabat", specialty: "medecin-generaliste", label: "Médecin généraliste à Rabat" },
+            {
+              city: "rabat",
+              specialty: "medecin-generaliste",
+              label: "Médecin généraliste à Rabat",
+            },
             { city: "marrakech", specialty: "gynecologue", label: "Gynécologue à Marrakech" },
             { city: "casablanca", specialty: "cardiologue", label: "Cardiologue à Casablanca" },
             { city: "fes", specialty: "pediatre", label: "Pédiatre à Fès" },

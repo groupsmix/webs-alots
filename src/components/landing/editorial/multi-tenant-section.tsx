@@ -33,8 +33,7 @@ export function MultiTenantSection() {
               color: "var(--ink)",
             }}
           >
-            Un sous-domaine par cabinet. Aucune donnée n&apos;est partagée
-            entre cabinets.
+            Un sous-domaine par cabinet. Aucune donnée n&apos;est partagée entre cabinets.
           </h2>
 
           <p
@@ -46,9 +45,9 @@ export function MultiTenantSection() {
               color: "var(--ink-70)",
             }}
           >
-            Chaque cabinet dispose de son propre espace isolé. Les données
-            patients, rendez-vous et configurations sont strictement cloisonnées
-            par Row Level Security et chiffrement par fichier.
+            Chaque cabinet dispose de son propre espace isolé. Les données patients, rendez-vous et
+            configurations sont strictement cloisonnées par Row Level Security et chiffrement par
+            fichier.
           </p>
         </div>
 

@@ -91,7 +91,10 @@ export default function SuperAdminDashboardPage() {
           plan: (c.tier as string) ?? "pro",
           city: config.city ?? "",
           monthlyRevenue: 0,
-          status: (c.status === "inactive" ? "suspended" : c.status ?? "active") as "active" | "suspended" | "trial",
+          status: (c.status === "inactive" ? "suspended" : (c.status ?? "active")) as
+            | "active"
+            | "suspended"
+            | "trial",
         };
       });
       setClinicList(mapped);
@@ -107,7 +110,9 @@ export default function SuperAdminDashboardPage() {
   useEffect(() => {
     const controller = new AbortController();
     loadStats();
-    return () => { controller.abort(); };
+    return () => {
+      controller.abort();
+    };
   }, [loadStats]);
 
   const activeAnnouncements = announcementList.filter((a) => a.active);
@@ -149,17 +154,29 @@ export default function SuperAdminDashboardPage() {
   ];
 
   const financialStats = [
-    { label: t(locale, "superAdmin.mrr"), value: `${mrr.toLocaleString()} MAD`, icon: CreditCard, color: "text-emerald-600" },
-    { label: t(locale, "superAdmin.overdue"), value: overdue.toString(), icon: Clock, color: "text-red-500" },
-    { label: t(locale, "superAdmin.paidThisMonth"), value: `${activeClinics}`, icon: TrendingUp, color: "text-blue-600" },
+    {
+      label: t(locale, "superAdmin.mrr"),
+      value: `${mrr.toLocaleString()} MAD`,
+      icon: CreditCard,
+      color: "text-emerald-600",
+    },
+    {
+      label: t(locale, "superAdmin.overdue"),
+      value: overdue.toString(),
+      icon: Clock,
+      color: "text-red-500",
+    },
+    {
+      label: t(locale, "superAdmin.paidThisMonth"),
+      value: `${activeClinics}`,
+      icon: TrendingUp,
+      color: "text-blue-600",
+    },
   ];
 
   return (
     <div>
-      <Breadcrumb items={[
-        { label: "Super Admin" },
-        { label: "Dashboard" },
-      ]} />
+      <Breadcrumb items={[{ label: "Super Admin" }, { label: "Dashboard" }]} />
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold">{t(locale, "dashboard.superAdmin")}</h1>
@@ -230,180 +247,188 @@ export default function SuperAdminDashboardPage() {
           </div>
         </>
       )}
-      {!loading && <>
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-6">
-        {stats.map((stat) => (
-          <Card key={stat.label}>
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between mb-3">
-                <div className={`flex h-10 w-10 items-center justify-center rounded-lg ${stat.bg}`}>
+      {!loading && (
+        <>
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-6">
+            {stats.map((stat) => (
+              <Card key={stat.label}>
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <div
+                      className={`flex h-10 w-10 items-center justify-center rounded-lg ${stat.bg}`}
+                    >
+                      <stat.icon className={`h-5 w-5 ${stat.color}`} />
+                    </div>
+                    <ArrowUpRight className="h-4 w-4 text-muted-foreground" />
+                  </div>
+                  <p className="text-2xl font-bold">{stat.value}</p>
+                  <p className="text-xs text-muted-foreground">{stat.label}</p>
+                  <p className="text-[10px] text-muted-foreground mt-1">{stat.change}</p>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
+          {/* Financial Quick Stats */}
+          <div className="grid gap-4 md:grid-cols-3 mb-6">
+            {financialStats.map((stat) => (
+              <Card key={stat.label}>
+                <CardContent className="flex items-center gap-3 p-4">
                   <stat.icon className={`h-5 w-5 ${stat.color}`} />
+                  <div>
+                    <p className="text-lg font-bold">{stat.value}</p>
+                    <p className="text-xs text-muted-foreground">{stat.label}</p>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
+          <div className="grid gap-6 lg:grid-cols-2">
+            {/* Clinics Overview */}
+            <Card>
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <Building2 className="h-4 w-4" />
+                    {t(locale, "superAdmin.clinicsOverview")}
+                  </CardTitle>
+                  <Link href="/super-admin/clinics">
+                    <Button variant="ghost" size="sm" className="text-xs">
+                      {t(locale, "superAdmin.viewAll")}
+                      <ArrowUpRight className="h-3 w-3 ml-1" />
+                    </Button>
+                  </Link>
                 </div>
-                <ArrowUpRight className="h-4 w-4 text-muted-foreground" />
-              </div>
-              <p className="text-2xl font-bold">{stat.value}</p>
-              <p className="text-xs text-muted-foreground">{stat.label}</p>
-              <p className="text-[10px] text-muted-foreground mt-1">{stat.change}</p>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-      {/* Financial Quick Stats */}
-      <div className="grid gap-4 md:grid-cols-3 mb-6">
-        {financialStats.map((stat) => (
-          <Card key={stat.label}>
-            <CardContent className="flex items-center gap-3 p-4">
-              <stat.icon className={`h-5 w-5 ${stat.color}`} />
-              <div>
-                <p className="text-lg font-bold">{stat.value}</p>
-                <p className="text-xs text-muted-foreground">{stat.label}</p>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-      <div className="grid gap-6 lg:grid-cols-2">
-        {/* Clinics Overview */}
-        <Card>
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-base flex items-center gap-2">
-                <Building2 className="h-4 w-4" />
-                {t(locale, "superAdmin.clinicsOverview")}
-              </CardTitle>
-              <Link href="/super-admin/clinics">
-                <Button variant="ghost" size="sm" className="text-xs">
-                  {t(locale, "superAdmin.viewAll")}
-                  <ArrowUpRight className="h-3 w-3 ml-1" />
-                </Button>
-              </Link>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {clinicList.slice(0, 6).map((clinic) => (
-                <div
-                  key={clinic.id}
-                  className="flex items-center justify-between rounded-lg border p-3"
-                >
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium truncate">{clinic.name}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {clinic.type} &middot; {clinic.city}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-2 ml-2">
-                    <Badge
-                      variant={
-                        clinic.plan === "premium"
-                          ? "default"
-                          : clinic.plan === "standard"
-                          ? "secondary"
-                          : "outline"
-                      }
-                      className="text-[10px]"
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {clinicList.slice(0, 6).map((clinic) => (
+                    <div
+                      key={clinic.id}
+                      className="flex items-center justify-between rounded-lg border p-3"
                     >
-                      {clinic.plan}
-                    </Badge>
-                    <Badge
-                      variant={
-                        clinic.status === "active"
-                          ? "success"
-                          : clinic.status === "suspended"
-                          ? "destructive"
-                          : "warning"
-                      }
-                    >
-                      {clinic.status}
-                    </Badge>
-                  </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-medium truncate">{clinic.name}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {clinic.type} &middot; {clinic.city}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2 ml-2">
+                        <Badge
+                          variant={
+                            clinic.plan === "premium"
+                              ? "default"
+                              : clinic.plan === "standard"
+                                ? "secondary"
+                                : "outline"
+                          }
+                          className="text-[10px]"
+                        >
+                          {clinic.plan}
+                        </Badge>
+                        <Badge
+                          variant={
+                            clinic.status === "active"
+                              ? "success"
+                              : clinic.status === "suspended"
+                                ? "destructive"
+                                : "warning"
+                          }
+                        >
+                          {clinic.status}
+                        </Badge>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-              ))}
+              </CardContent>
+            </Card>
+
+            {/* Right Column */}
+            <div className="space-y-6">
+              {/* Announcements */}
+              <Card>
+                <CardHeader className="pb-3">
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <Megaphone className="h-4 w-4" />
+                      {t(locale, "superAdmin.activeAnnouncements")}
+                    </CardTitle>
+                    <Link href="/super-admin/announcements">
+                      <Button variant="ghost" size="sm" className="text-xs">
+                        {t(locale, "superAdmin.manage")}
+                        <ArrowUpRight className="h-3 w-3 ml-1" />
+                      </Button>
+                    </Link>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {activeAnnouncements.slice(0, 3).map((ann) => (
+                      <div key={ann.id} className="rounded-lg border p-3">
+                        <div className="flex items-center justify-between mb-1">
+                          <p className="text-sm font-medium">{ann.title}</p>
+                          <Badge
+                            variant={
+                              ann.type === "critical"
+                                ? "destructive"
+                                : ann.type === "warning"
+                                  ? "warning"
+                                  : "default"
+                            }
+                            className="text-[10px]"
+                          >
+                            {ann.type}
+                          </Badge>
+                        </div>
+                        <p className="text-xs text-muted-foreground line-clamp-2">{ann.message}</p>
+                        <div className="flex items-center justify-between mt-2">
+                          <p className="text-[10px] text-muted-foreground">{ann.targetLabel}</p>
+                          <p className="text-[10px] text-muted-foreground">{ann.publishedAt}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Recent Activity */}
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <Activity className="h-4 w-4" />
+                    {t(locale, "superAdmin.recentActivity")}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {recentLogs.map((log) => (
+                      <div key={log.id} className="flex items-start gap-3">
+                        <div
+                          className={`mt-0.5 h-2 w-2 rounded-full ${(activityTypeIcons[log.type] ?? "text-gray-600").replace("text-", "bg-")}`}
+                        />
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-medium">{log.action}</p>
+                          <p className="text-xs text-muted-foreground truncate">
+                            {log.description}
+                          </p>
+                          {log.clinicName && (
+                            <p className="text-[10px] text-muted-foreground">{log.clinicName}</p>
+                          )}
+                        </div>
+                        <p className="text-[10px] text-muted-foreground whitespace-nowrap">
+                          {new Date(log.timestamp).toLocaleDateString()}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
             </div>
-          </CardContent>
-        </Card>
-
-        {/* Right Column */}
-        <div className="space-y-6">
-          {/* Announcements */}
-          <Card>
-            <CardHeader className="pb-3">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-base flex items-center gap-2">
-                  <Megaphone className="h-4 w-4" />
-                  {t(locale, "superAdmin.activeAnnouncements")}
-                </CardTitle>
-                <Link href="/super-admin/announcements">
-                  <Button variant="ghost" size="sm" className="text-xs">
-                    {t(locale, "superAdmin.manage")}
-                    <ArrowUpRight className="h-3 w-3 ml-1" />
-                  </Button>
-                </Link>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {activeAnnouncements.slice(0, 3).map((ann) => (
-                  <div key={ann.id} className="rounded-lg border p-3">
-                    <div className="flex items-center justify-between mb-1">
-                      <p className="text-sm font-medium">{ann.title}</p>
-                      <Badge
-                        variant={
-                          ann.type === "critical"
-                            ? "destructive"
-                            : ann.type === "warning"
-                            ? "warning"
-                            : "default"
-                        }
-                        className="text-[10px]"
-                      >
-                        {ann.type}
-                      </Badge>
-                    </div>
-                    <p className="text-xs text-muted-foreground line-clamp-2">{ann.message}</p>
-                    <div className="flex items-center justify-between mt-2">
-                      <p className="text-[10px] text-muted-foreground">{ann.targetLabel}</p>
-                      <p className="text-[10px] text-muted-foreground">{ann.publishedAt}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Recent Activity */}
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base flex items-center gap-2">
-                <Activity className="h-4 w-4" />
-                {t(locale, "superAdmin.recentActivity")}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {recentLogs.map((log) => (
-                  <div key={log.id} className="flex items-start gap-3">
-                    <div className={`mt-0.5 h-2 w-2 rounded-full ${(activityTypeIcons[log.type] ?? "text-gray-600").replace("text-", "bg-")}`} />
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm font-medium">{log.action}</p>
-                      <p className="text-xs text-muted-foreground truncate">{log.description}</p>
-                      {log.clinicName && (
-                        <p className="text-[10px] text-muted-foreground">{log.clinicName}</p>
-                      )}
-                    </div>
-                    <p className="text-[10px] text-muted-foreground whitespace-nowrap">
-                      {new Date(log.timestamp).toLocaleDateString()}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-      </>}
+          </div>
+        </>
+      )}
     </div>
   );
 }

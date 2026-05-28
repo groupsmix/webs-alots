@@ -95,10 +95,16 @@ export async function fetchAppointments(clinicId: string): Promise<AppointmentVi
   return rows.map(mapAppointment);
 }
 
-export async function fetchTodayAppointments(clinicId: string, doctorId?: string): Promise<AppointmentView[]> {
+export async function fetchTodayAppointments(
+  clinicId: string,
+  doctorId?: string,
+): Promise<AppointmentView[]> {
   await ensureLookups(clinicId);
   const today = getLocalDateStr();
-  const eq: [string, unknown][] = [["clinic_id", clinicId], ["appointment_date", today]];
+  const eq: [string, unknown][] = [
+    ["clinic_id", clinicId],
+    ["appointment_date", today],
+  ];
   if (doctorId) eq.push(["doctor_id", doctorId]);
   const rows = await fetchRows<AppointmentRaw>("appointments", {
     eq,
@@ -107,21 +113,32 @@ export async function fetchTodayAppointments(clinicId: string, doctorId?: string
   return rows.map(mapAppointment);
 }
 
-export async function fetchDoctorAppointments(clinicId: string, doctorId: string): Promise<AppointmentView[]> {
+export async function fetchDoctorAppointments(
+  clinicId: string,
+  doctorId: string,
+): Promise<AppointmentView[]> {
   await ensureLookups(clinicId);
   const rows = await fetchRows<AppointmentRaw>("appointments", {
-    eq: [["clinic_id", clinicId], ["doctor_id", doctorId]],
+    eq: [
+      ["clinic_id", clinicId],
+      ["doctor_id", doctorId],
+    ],
     order: ["appointment_date", { ascending: true }],
   });
   return rows.map(mapAppointment);
 }
 
-export async function fetchPatientAppointments(clinicId: string, patientId: string): Promise<AppointmentView[]> {
+export async function fetchPatientAppointments(
+  clinicId: string,
+  patientId: string,
+): Promise<AppointmentView[]> {
   await ensureLookups(clinicId);
   const rows = await fetchRows<AppointmentRaw>("appointments", {
-    eq: [["clinic_id", clinicId], ["patient_id", patientId]],
+    eq: [
+      ["clinic_id", clinicId],
+      ["patient_id", patientId],
+    ],
     order: ["appointment_date", { ascending: true }],
   });
   return rows.map(mapAppointment);
 }
-

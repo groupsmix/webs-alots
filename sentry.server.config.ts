@@ -1,10 +1,12 @@
 import * as Sentry from "@sentry/nextjs";
 
 // Regex to identify common PII/PHI keys in error contexts
-const piiKeysRegex = /(email|phone|address|dob|prescription|diagnosis|patient|cin|password|token|secret|ssn|cnss|amu)/i;
+const piiKeysRegex =
+  /(email|phone|address|dob|prescription|diagnosis|patient|cin|password|token|secret|ssn|cnss|amu)/i;
 
 // F-10: Regex to detect PII in URL query parameters
-const piiUrlRegex = /[?&](phone|email|cin|dob|password|token|secret|ssn|cnss|name|address|patient)=/i;
+const piiUrlRegex =
+  /[?&](phone|email|cin|dob|password|token|secret|ssn|cnss|name|address|patient)=/i;
 
 // R-20 Fix: Per-route sampling configuration
 // Higher sampling for critical paths, lower for read-only operations
@@ -133,14 +135,14 @@ Sentry.init({
     if (event.request?.query_string) {
       event.request.query_string = scrubUrl("?" + event.request.query_string).slice(1);
     }
-    
+
     // Scrub contexts
     if (event.contexts) {
       for (const key in event.contexts) {
         event.contexts[key] = redactPII(event.contexts[key]) as Record<string, unknown>;
       }
     }
-    
+
     // Scrub extra
     if (event.extra) {
       event.extra = redactPII(event.extra) as Record<string, unknown>;
@@ -191,9 +193,9 @@ function scrubUrl(url: string): string {
 function redactPII(obj: unknown): unknown {
   if (obj === null || obj === undefined) return obj;
   if (typeof obj !== "object") return obj;
-  
+
   if (Array.isArray(obj)) {
-    return obj.map(item => redactPII(item));
+    return obj.map((item) => redactPII(item));
   }
 
   const redactedObj: Record<string, unknown> = {};

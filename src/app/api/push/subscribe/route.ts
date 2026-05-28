@@ -42,12 +42,15 @@ export const POST = withAuthAnyRole(async (request, { supabase, user }) => {
 
   try {
     // Use RPC or raw query since push_subscriptions table may not exist in DB types yet
-    const { error } = await supabase.rpc("upsert_push_subscription" as never, {
-      p_user_id: user.id,
-      p_endpoint: subscription.endpoint,
-      p_p256dh: subscription.keys.p256dh,
-      p_auth: subscription.keys.auth,
-    } as never);
+    const { error } = await supabase.rpc(
+      "upsert_push_subscription" as never,
+      {
+        p_user_id: user.id,
+        p_endpoint: subscription.endpoint,
+        p_p256dh: subscription.keys.p256dh,
+        p_auth: subscription.keys.auth,
+      } as never,
+    );
 
     if (error) {
       // RPC or table might not exist yet — return 501 so the client degrades

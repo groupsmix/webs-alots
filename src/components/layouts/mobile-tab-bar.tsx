@@ -72,9 +72,7 @@ export function MobileTabBar({
               onClick={() => triggerHaptic()}
               aria-current={active ? "page" : undefined}
               className={`flex flex-1 flex-col items-center justify-center gap-0.5 py-2 text-[10px] transition-colors ${
-                active
-                  ? `${activeColor} font-medium`
-                  : "text-muted-foreground"
+                active ? `${activeColor} font-medium` : "text-muted-foreground"
               }`}
             >
               <TabIcon className="h-5 w-5" />

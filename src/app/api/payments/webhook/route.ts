@@ -97,7 +97,7 @@ export async function POST(request: NextRequest) {
             break;
           }
           logTenantContext(clinicId, "payments/webhook:checkout.completed");
-          
+
           // Audit 3.8 Fix: Webhook Deduplication / Replay Protection
           // We check if this exact Stripe event ID has already been processed to
           // prevent duplicate processing in case of Stripe retries.
@@ -108,7 +108,9 @@ export async function POST(request: NextRequest) {
             .maybeSingle();
 
           if (existingPayment) {
-            logger.info(`Stripe webhook event already processed: ${session.id}`, { context: "payments/webhook" });
+            logger.info(`Stripe webhook event already processed: ${session.id}`, {
+              context: "payments/webhook",
+            });
             break; // Skip processing since it's already handled
           }
 
@@ -122,13 +124,16 @@ export async function POST(request: NextRequest) {
               .eq("id", appointmentId)
               .maybeSingle();
             if (appt && appt.clinic_id !== clinicId) {
-              logger.error("Stripe webhook: appointment.clinic_id does not match metadata.clinic_id", {
-                context: "payments/webhook",
-                appointmentClinicId: appt.clinic_id,
-                metadataClinicId: clinicId,
-                appointmentId,
-                sessionId: session.id,
-              });
+              logger.error(
+                "Stripe webhook: appointment.clinic_id does not match metadata.clinic_id",
+                {
+                  context: "payments/webhook",
+                  appointmentClinicId: appt.clinic_id,
+                  metadataClinicId: clinicId,
+                  appointmentId,
+                  sessionId: session.id,
+                },
+              );
               return apiError("Appointment does not belong to the specified clinic", 422);
             }
           }
@@ -138,11 +143,11 @@ export async function POST(request: NextRequest) {
               clinic_id: clinicId,
               patient_id: patientId,
               appointment_id: appointmentId || null,
-                  amount: Math.round(session.amount_total || 0) / 100, // A29-01: integer-safe centimes→MAD
-                  method: "online",
-                  status: PAYMENT_STATUS.COMPLETED,
-                  reference: session.id,
-                  payment_type: "full",
+              amount: Math.round(session.amount_total || 0) / 100, // A29-01: integer-safe centimes→MAD
+              method: "online",
+              status: PAYMENT_STATUS.COMPLETED,
+              reference: session.id,
+              payment_type: "full",
             },
             { onConflict: "reference" },
           );
@@ -194,7 +199,9 @@ export async function POST(request: NextRequest) {
             .maybeSingle();
 
           if (existingFailed) {
-            logger.info(`Stripe failed payment event already processed: ${intent.id}`, { context: "payments/webhook" });
+            logger.info(`Stripe failed payment event already processed: ${intent.id}`, {
+              context: "payments/webhook",
+            });
             break;
           }
 
@@ -227,7 +234,7 @@ export async function POST(request: NextRequest) {
       }
 
       default:
-        // Unhandled event type — acknowledged without processing
+      // Unhandled event type — acknowledged without processing
     }
 
     return apiSuccess({ received: true });

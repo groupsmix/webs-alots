@@ -55,10 +55,9 @@ export async function setTenantContext(
   // is added by migration 00030 and not yet in the generated Database types.
   // Once the migration is applied and types are regenerated, the assertion
   // can be removed.
-  const { error } = await (supabase.rpc as CallableFunction)(
-    "set_tenant_context",
-    { p_clinic_id: clinicId },
-  );
+  const { error } = await (supabase.rpc as CallableFunction)("set_tenant_context", {
+    p_clinic_id: clinicId,
+  });
 
   if (error) {
     logger.error("Failed to set tenant context", {
@@ -66,9 +65,10 @@ export async function setTenantContext(
       clinicId,
       error,
     });
-    const message = typeof error === "object" && error !== null && "message" in error
-      ? (error as { message: string }).message
-      : String(error);
+    const message =
+      typeof error === "object" && error !== null && "message" in error
+        ? (error as { message: string }).message
+        : String(error);
     throw new Error(`Tenant context error: failed to set app.current_clinic_id: ${message}`);
   }
 }

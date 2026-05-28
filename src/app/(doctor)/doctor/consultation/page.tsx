@@ -1,6 +1,18 @@
 "use client";
 
-import { FileEdit, CheckCircle, XCircle, Save, Eye, EyeOff, Plus, CloudOff, Cloud, Loader2, Printer } from "lucide-react";
+import {
+  FileEdit,
+  CheckCircle,
+  XCircle,
+  Save,
+  Eye,
+  EyeOff,
+  Plus,
+  CloudOff,
+  Cloud,
+  Loader2,
+  Printer,
+} from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
 import { useTenant } from "@/components/tenant-provider";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -58,8 +70,11 @@ function mapDbNoteToLocal(n: ConsultationNoteView): ConsultationNote {
   };
 }
 
-function printConsultationNote(apt: AppointmentView, note: ConsultationNote, clinicName: string): void {
-
+function printConsultationNote(
+  apt: AppointmentView,
+  note: ConsultationNote,
+  clinicName: string,
+): void {
   const html = `<!DOCTYPE html>
 <html><head><meta charset="utf-8"><title>Consultation – ${apt.patientName}</title>
 <style>
@@ -90,7 +105,9 @@ ${clinicName ? `<div class="letterhead"><h2>${clinicName}</h2></div>` : ""}
   if (!win) return;
   win.document.write(html);
   win.document.close();
-  win.addEventListener("load", () => { win.print(); });
+  win.addEventListener("load", () => {
+    win.print();
+  });
 }
 
 export default function ConsultationNotesPage() {
@@ -112,13 +129,10 @@ export default function ConsultationNotesPage() {
 
   // Auto-save drafts for the currently editing note
   const draftKey = editingApptId ? `consultation-note-${editingApptId}` : "consultation-note-none";
-  const {
-    draft,
-    saveDraft,
-    clearDraft,
-    isSynced,
-    hasDraft,
-  } = useOfflineDrafts<typeof formData>(draftKey, { autoSaveMs: 5000 });
+  const { draft, saveDraft, clearDraft, isSynced, hasDraft } = useOfflineDrafts<typeof formData>(
+    draftKey,
+    { autoSaveMs: 5000 },
+  );
 
   // Track whether we've shown the restore prompt for this editing session
   const [draftRestoreOffered, setDraftRestoreOffered] = useState(false);
@@ -137,29 +151,35 @@ export default function ConsultationNotesPage() {
   useEffect(() => {
     const controller = new AbortController();
     async function load() {
-    const user = await getCurrentUser();
+      const user = await getCurrentUser();
       if (controller.signal.aborted) return;
-    if (!user?.clinic_id) { setLoading(false); return; }
-    const [appts, dbNotes] = await Promise.all([
-      fetchDoctorAppointments(user.clinic_id, user.id),
-      fetchConsultationNotes(user.clinic_id, user.id),
-    ]);
+      if (!user?.clinic_id) {
+        setLoading(false);
+        return;
+      }
+      const [appts, dbNotes] = await Promise.all([
+        fetchDoctorAppointments(user.clinic_id, user.id),
+        fetchConsultationNotes(user.clinic_id, user.id),
+      ]);
       if (controller.signal.aborted) return;
-    setApptList(appts);
-    setNotes(dbNotes.map(mapDbNoteToLocal));
-    setLoading(false);
-  }
+      setApptList(appts);
+      setNotes(dbNotes.map(mapDbNoteToLocal));
+      setLoading(false);
+    }
     load().catch((err) => {
       if (!controller.signal.aborted) {
         setError(err instanceof Error ? err : new Error(String(err)));
         setLoading(false);
       }
     });
-    return () => { controller.abort(); };
+    return () => {
+      controller.abort();
+    };
   }, []);
 
   // Check for unsaved draft when editor opens
-  const shouldOfferRestore = editingApptId && hasDraft && draft && !isSynced && !draftRestoreOffered;
+  const shouldOfferRestore =
+    editingApptId && hasDraft && draft && !isSynced && !draftRestoreOffered;
   if (shouldOfferRestore) {
     setDraftRestoreOffered(true);
   }
@@ -171,14 +191,18 @@ export default function ConsultationNotesPage() {
   if (error) {
     return (
       <div className="p-8 text-center">
-        <p className="text-red-600 font-medium">Failed to load data. Please try refreshing the page.</p>
+        <p className="text-red-600 font-medium">
+          Failed to load data. Please try refreshing the page.
+        </p>
         {error.message && <p className="text-sm text-muted-foreground mt-2">{error.message}</p>}
       </div>
     );
   }
 
   const recentAppts = apptList
-    .filter((a) => a.status === "completed" || a.status === "in-progress" || a.status === "confirmed")
+    .filter(
+      (a) => a.status === "completed" || a.status === "in-progress" || a.status === "confirmed",
+    )
     .slice(0, 10);
 
   const getNoteForAppointment = (appointmentId: string) => {
@@ -196,7 +220,13 @@ export default function ConsultationNotesPage() {
         privateNotes: existing.privateNotes || "",
       });
     } else {
-      setFormData({ chiefComplaint: "", examination: "", diagnosis: "", plan: "", privateNotes: "" });
+      setFormData({
+        chiefComplaint: "",
+        examination: "",
+        diagnosis: "",
+        plan: "",
+        privateNotes: "",
+      });
     }
     setDraftRestoreOffered(false);
     setEditingApptId(appointmentId);
@@ -211,7 +241,10 @@ export default function ConsultationNotesPage() {
     const existing = getNoteForAppointment(editingApptId);
     const now = new Date().toISOString();
     const user = await getCurrentUser();
-    if (!user?.clinic_id) { setSavingNote(false); return; }
+    if (!user?.clinic_id) {
+      setSavingNote(false);
+      return;
+    }
 
     const content = {
       chiefComplaint: formData.chiefComplaint,
@@ -230,10 +263,8 @@ export default function ConsultationNotesPage() {
       if (ok) {
         setNotes((prev) =>
           prev.map((n) =>
-            n.appointmentId === editingApptId
-              ? { ...n, ...formData, updatedAt: now }
-              : n
-          )
+            n.appointmentId === editingApptId ? { ...n, ...formData, updatedAt: now } : n,
+          ),
         );
         clearDraft();
       }
@@ -272,13 +303,13 @@ export default function ConsultationNotesPage() {
     const previousStatus = apt?.status ?? "in-progress";
     // Optimistic update
     setApptList((prev) =>
-      prev.map((a) => (a.id === appointmentId ? { ...a, status: "completed" } : a))
+      prev.map((a) => (a.id === appointmentId ? { ...a, status: "completed" } : a)),
     );
     const result = await updateAppointmentStatus(appointmentId, "completed");
     if (!result.success) {
       // Roll back on failure
       setApptList((prev) =>
-        prev.map((a) => (a.id === appointmentId ? { ...a, status: previousStatus } : a))
+        prev.map((a) => (a.id === appointmentId ? { ...a, status: previousStatus } : a)),
       );
     }
   };
@@ -288,13 +319,13 @@ export default function ConsultationNotesPage() {
     const previousStatus = apt?.status ?? "scheduled";
     // Optimistic update
     setApptList((prev) =>
-      prev.map((a) => (a.id === appointmentId ? { ...a, status: "no-show" } : a))
+      prev.map((a) => (a.id === appointmentId ? { ...a, status: "no-show" } : a)),
     );
     const result = await updateAppointmentStatus(appointmentId, "no-show");
     if (!result.success) {
       // Roll back on failure
       setApptList((prev) =>
-        prev.map((a) => (a.id === appointmentId ? { ...a, status: previousStatus } : a))
+        prev.map((a) => (a.id === appointmentId ? { ...a, status: previousStatus } : a)),
       );
     }
   };
@@ -314,11 +345,19 @@ export default function ConsultationNotesPage() {
             <Card key={apt.id}>
               <CardHeader className="pb-2">
                 <div className="flex items-center justify-between">
-                  <Breadcrumb items={[{ label: "Doctor", href: "/doctor/dashboard" }, { label: "Consultation" }]} />
+                  <Breadcrumb
+                    items={[
+                      { label: "Doctor", href: "/doctor/dashboard" },
+                      { label: "Consultation" },
+                    ]}
+                  />
                   <div className="flex items-center gap-3">
                     <Avatar>
                       <AvatarFallback className="text-xs">
-                        {apt.patientName.split(" ").map((n) => n[0]).join("")}
+                        {apt.patientName
+                          .split(" ")
+                          .map((n) => n[0])
+                          .join("")}
                       </AvatarFallback>
                     </Avatar>
                     <div>
@@ -330,8 +369,11 @@ export default function ConsultationNotesPage() {
                   </div>
                   <Badge
                     variant={
-                      apt.status === "completed" ? "success" :
-                      apt.status === "in-progress" ? "warning" : "default"
+                      apt.status === "completed"
+                        ? "success"
+                        : apt.status === "in-progress"
+                          ? "warning"
+                          : "default"
                     }
                   >
                     {apt.status}
@@ -342,10 +384,18 @@ export default function ConsultationNotesPage() {
                 {note ? (
                   <div className="space-y-2 mb-3">
                     <div className="rounded-lg bg-muted/50 p-3 text-sm space-y-1">
-                      <p><span className="font-medium">Complaint:</span> {note.chiefComplaint}</p>
-                      <p><span className="font-medium">Examination:</span> {note.examination}</p>
-                      <p><span className="font-medium">Diagnosis:</span> {note.diagnosis}</p>
-                      <p><span className="font-medium">Plan:</span> {note.plan}</p>
+                      <p>
+                        <span className="font-medium">Complaint:</span> {note.chiefComplaint}
+                      </p>
+                      <p>
+                        <span className="font-medium">Examination:</span> {note.examination}
+                      </p>
+                      <p>
+                        <span className="font-medium">Diagnosis:</span> {note.diagnosis}
+                      </p>
+                      <p>
+                        <span className="font-medium">Plan:</span> {note.plan}
+                      </p>
                     </div>
                     {note.privateNotes && (
                       <div className="flex items-start gap-2">
@@ -356,9 +406,13 @@ export default function ConsultationNotesPage() {
                           className="text-xs text-yellow-600"
                         >
                           {showPrivate[note.id] ? (
-                            <><EyeOff className="h-3 w-3 mr-1" /> Hide Private Notes</>
+                            <>
+                              <EyeOff className="h-3 w-3 mr-1" /> Hide Private Notes
+                            </>
                           ) : (
-                            <><Eye className="h-3 w-3 mr-1" /> Show Private Notes</>
+                            <>
+                              <Eye className="h-3 w-3 mr-1" /> Show Private Notes
+                            </>
                           )}
                         </Button>
                         {showPrivate[note.id] && (
@@ -370,14 +424,20 @@ export default function ConsultationNotesPage() {
                     )}
                   </div>
                 ) : (
-                  <p className="text-sm text-muted-foreground italic mb-3">No consultation notes yet.</p>
+                  <p className="text-sm text-muted-foreground italic mb-3">
+                    No consultation notes yet.
+                  </p>
                 )}
                 <div className="flex gap-2">
                   <Button variant="outline" size="sm" onClick={() => handleOpenEditor(apt.id)}>
                     {note ? (
-                      <><FileEdit className="h-3.5 w-3.5 mr-1" /> Edit Notes</>
+                      <>
+                        <FileEdit className="h-3.5 w-3.5 mr-1" /> Edit Notes
+                      </>
                     ) : (
-                      <><Plus className="h-3.5 w-3.5 mr-1" /> Add Notes</>
+                      <>
+                        <Plus className="h-3.5 w-3.5 mr-1" /> Add Notes
+                      </>
                     )}
                   </Button>
                   {note && (
@@ -420,11 +480,17 @@ export default function ConsultationNotesPage() {
       </div>
 
       {/* Note Editor Dialog */}
-      <Dialog open={!!editingApptId} onOpenChange={(open) => { if (!open) setEditingApptId(null); }}>
+      <Dialog
+        open={!!editingApptId}
+        onOpenChange={(open) => {
+          if (!open) setEditingApptId(null);
+        }}
+      >
         <DialogContent className="max-w-lg" onClose={() => setEditingApptId(null)}>
           <DialogHeader>
             <DialogTitle>
-              {editingApptId && getNoteForAppointment(editingApptId) ? "Edit" : "Add"} Consultation Notes
+              {editingApptId && getNoteForAppointment(editingApptId) ? "Edit" : "Add"} Consultation
+              Notes
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4 mt-4">
@@ -508,15 +574,23 @@ export default function ConsultationNotesPage() {
             <div className="flex items-center gap-2 justify-between">
               <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                 {savingNote ? (
-                  <><Loader2 className="h-3 w-3 animate-spin" /> Saving...</>
+                  <>
+                    <Loader2 className="h-3 w-3 animate-spin" /> Saving...
+                  </>
                 ) : isSynced ? (
-                  <><Cloud className="h-3 w-3 text-green-500" /> Draft saved</>
+                  <>
+                    <Cloud className="h-3 w-3 text-green-500" /> Draft saved
+                  </>
                 ) : (
-                  <><CloudOff className="h-3 w-3 text-amber-500" /> Unsaved changes</>
+                  <>
+                    <CloudOff className="h-3 w-3 text-amber-500" /> Unsaved changes
+                  </>
                 )}
               </div>
               <div className="flex gap-2">
-                <Button variant="outline" onClick={() => setEditingApptId(null)}>Cancel</Button>
+                <Button variant="outline" onClick={() => setEditingApptId(null)}>
+                  Cancel
+                </Button>
                 <Button onClick={handleSaveNote} disabled={savingNote}>
                   <Save className="h-4 w-4 mr-1" />
                   Save Notes

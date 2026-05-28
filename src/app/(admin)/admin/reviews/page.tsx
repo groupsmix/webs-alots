@@ -31,21 +31,26 @@ export default function ReviewManagementPage() {
   useEffect(() => {
     const controller = new AbortController();
     async function load() {
-    const user = await getCurrentUser();
+      const user = await getCurrentUser();
       if (controller.signal.aborted) return;
-    if (!user?.clinic_id) { setLoading(false); return; }
-    const r = await fetchReviews(user.clinic_id);
+      if (!user?.clinic_id) {
+        setLoading(false);
+        return;
+      }
+      const r = await fetchReviews(user.clinic_id);
       if (controller.signal.aborted) return;
-    setReviews(r);
-    setLoading(false);
-  }
+      setReviews(r);
+      setLoading(false);
+    }
     load().catch((err) => {
       if (!controller.signal.aborted) {
         setError(err instanceof Error ? err : new Error(String(err)));
         setLoading(false);
       }
     });
-    return () => { controller.abort(); };
+    return () => {
+      controller.abort();
+    };
   }, []);
 
   if (loading) {
@@ -55,13 +60,16 @@ export default function ReviewManagementPage() {
   if (error) {
     return (
       <div className="p-8 text-center">
-        <p className="text-red-600 font-medium">Failed to load data. Please try refreshing the page.</p>
+        <p className="text-red-600 font-medium">
+          Failed to load data. Please try refreshing the page.
+        </p>
         {error.message && <p className="text-sm text-muted-foreground mt-2">{error.message}</p>}
       </div>
     );
   }
 
-  const avgRating = reviews.length > 0 ? reviews.reduce((s, r) => s + r.rating, 0) / reviews.length : 0;
+  const avgRating =
+    reviews.length > 0 ? reviews.reduce((s, r) => s + r.rating, 0) / reviews.length : 0;
   const ratingCounts = [5, 4, 3, 2, 1].map((r) => ({
     stars: r,
     count: reviews.filter((rv) => rv.rating === r).length,
@@ -89,7 +97,9 @@ export default function ReviewManagementPage() {
                   <div className="flex-1 bg-muted rounded-full h-2.5 overflow-hidden">
                     <div
                       className="bg-yellow-400 h-full rounded-full"
-                      style={{ width: `${reviews.length > 0 ? (rc.count / reviews.length) * 100 : 0}%` }}
+                      style={{
+                        width: `${reviews.length > 0 ? (rc.count / reviews.length) * 100 : 0}%`,
+                      }}
                     />
                   </div>
                   <span className="text-sm text-muted-foreground w-6">{rc.count}</span>
@@ -107,7 +117,10 @@ export default function ReviewManagementPage() {
               <div className="flex items-start gap-3">
                 <Avatar>
                   <AvatarFallback className="text-xs">
-                    {review.patientName.split(" ").map((n) => n[0]).join("")}
+                    {review.patientName
+                      .split(" ")
+                      .map((n) => n[0])
+                      .join("")}
                   </AvatarFallback>
                 </Avatar>
                 <div className="flex-1">

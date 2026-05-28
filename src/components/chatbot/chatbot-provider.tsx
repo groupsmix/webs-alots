@@ -61,119 +61,123 @@ export function ChatbotProvider({
     };
   }, []);
 
-  const sendMessage = useCallback(async (content: string) => {
-    const trimmed = content.trim();
-    if (!trimmed) return;
+  const sendMessage = useCallback(
+    async (content: string) => {
+      const trimmed = content.trim();
+      if (!trimmed) return;
 
-    const userMsg: ChatMessage = {
-      id: `msg-${Date.now()}-user`,
-      role: "user",
-      content: trimmed,
-      timestamp: new Date(),
-    };
+      const userMsg: ChatMessage = {
+        id: `msg-${Date.now()}-user`,
+        role: "user",
+        content: trimmed,
+        timestamp: new Date(),
+      };
 
-    setMessages((prev) => [...prev, userMsg]);
-    setIsLoading(true);
+      setMessages((prev) => [...prev, userMsg]);
+      setIsLoading(true);
 
-    try {
-      // Abort any previous in-flight request before starting a new one
-      abortControllerRef.current?.abort();
-      const controller = new AbortController();
-      abortControllerRef.current = controller;
+      try {
+        // Abort any previous in-flight request before starting a new one
+        abortControllerRef.current?.abort();
+        const controller = new AbortController();
+        abortControllerRef.current = controller;
 
-      const apiMessages = [
-        ...messagesRef.current.map((m) => ({ role: m.role, content: m.content })),
-        { role: "user" as const, content: trimmed },
-      ];
+        const apiMessages = [
+          ...messagesRef.current.map((m) => ({ role: m.role, content: m.content })),
+          { role: "user" as const, content: trimmed },
+        ];
 
-      const response = await fetch("/api/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: apiMessages, clinicId }),
-        signal: controller.signal,
-      });
+        const response = await fetch("/api/chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ messages: apiMessages, clinicId }),
+          signal: controller.signal,
+        });
 
-      if (!response.ok) {
-        throw new Error(`Chat API error: ${response.status}`);
-      }
+        if (!response.ok) {
+          throw new Error(`Chat API error: ${response.status}`);
+        }
 
-      const contentType = response.headers.get("content-type") || "";
+        const contentType = response.headers.get("content-type") || "";
 
-      if (contentType.includes("text/event-stream")) {
-        // Handle streaming response
-        const reader = response.body?.getReader();
-        if (!reader) throw new Error("No response body");
+        if (contentType.includes("text/event-stream")) {
+          // Handle streaming response
+          const reader = response.body?.getReader();
+          if (!reader) throw new Error("No response body");
 
-        const decoder = new TextDecoder();
-        const assistantMsgId = `msg-${Date.now()}-assistant`;
+          const decoder = new TextDecoder();
+          const assistantMsgId = `msg-${Date.now()}-assistant`;
 
-        // Add empty assistant message to fill in
-        setMessages((prev) => [
-          ...prev,
-          {
-            id: assistantMsgId,
-            role: "assistant",
-            content: "",
-            timestamp: new Date(),
-          },
-        ]);
+          // Add empty assistant message to fill in
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: assistantMsgId,
+              role: "assistant",
+              content: "",
+              timestamp: new Date(),
+            },
+          ]);
 
-        let accumulated = "";
+          let accumulated = "";
 
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
 
-          const chunk = decoder.decode(value, { stream: true });
-          const lines = chunk.split("\n").filter((line) => line.trim() !== "");
+            const chunk = decoder.decode(value, { stream: true });
+            const lines = chunk.split("\n").filter((line) => line.trim() !== "");
 
-          for (const line of lines) {
-            if (line === "data: [DONE]") continue;
-            if (line.startsWith("data: ")) {
-              try {
-                const json = JSON.parse(line.slice(6));
-                if (json.content) {
-                  accumulated += json.content;
-                  const currentContent = accumulated;
-                  setMessages((prev) =>
-                    prev.map((m) =>
-                      m.id === assistantMsgId
-                        ? { ...m, content: currentContent }
-                        : m
-                    )
-                  );
+            for (const line of lines) {
+              if (line === "data: [DONE]") continue;
+              if (line.startsWith("data: ")) {
+                try {
+                  const json = JSON.parse(line.slice(6));
+                  if (json.content) {
+                    accumulated += json.content;
+                    const currentContent = accumulated;
+                    setMessages((prev) =>
+                      prev.map((m) =>
+                        m.id === assistantMsgId ? { ...m, content: currentContent } : m,
+                      ),
+                    );
+                  }
+                } catch (parseErr) {
+                  logger.warn("Malformed SSE chunk skipped", {
+                    context: "chatbot-provider",
+                    error: parseErr,
+                  });
                 }
-              } catch (parseErr) {
-                logger.warn("Malformed SSE chunk skipped", { context: "chatbot-provider", error: parseErr });
               }
             }
           }
+        } else {
+          // Handle JSON response (basic / smart mode)
+          const data = await response.json();
+          const assistantMsg: ChatMessage = {
+            id: `msg-${Date.now()}-assistant`,
+            role: "assistant",
+            content: data.message?.content || "Sorry, I could not process your request.",
+            timestamp: new Date(),
+          };
+          setMessages((prev) => [...prev, assistantMsg]);
         }
-      } else {
-        // Handle JSON response (basic / smart mode)
-        const data = await response.json();
-        const assistantMsg: ChatMessage = {
-          id: `msg-${Date.now()}-assistant`,
+      } catch (error) {
+        logger.warn("Operation failed", { context: "chatbot-provider", error });
+        const errorMsg: ChatMessage = {
+          id: `msg-${Date.now()}-error`,
           role: "assistant",
-          content: data.message?.content || "Sorry, I could not process your request.",
+          content: t("fr", "chatbot.error"),
           timestamp: new Date(),
         };
-        setMessages((prev) => [...prev, assistantMsg]);
+        setMessages((prev) => [...prev, errorMsg]);
+      } finally {
+        abortControllerRef.current = null;
+        setIsLoading(false);
       }
-    } catch (error) {
-      logger.warn("Operation failed", { context: "chatbot-provider", error });
-      const errorMsg: ChatMessage = {
-        id: `msg-${Date.now()}-error`,
-        role: "assistant",
-        content: t("fr", "chatbot.error"),
-        timestamp: new Date(),
-      };
-      setMessages((prev) => [...prev, errorMsg]);
-    } finally {
-      abortControllerRef.current = null;
-      setIsLoading(false);
-    }
-  }, [clinicId]);
+    },
+    [clinicId],
+  );
 
   const clearMessages = useCallback(() => {
     setMessages([]);

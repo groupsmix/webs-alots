@@ -151,7 +151,13 @@ export function buildBookedSlotsSet(
   }>,
 ): Set<string> {
   const set = new Set<string>();
-  const activeStatuses = new Set(["confirmed", "pending", "scheduled", "in_progress", "in-progress"]);
+  const activeStatuses = new Set([
+    "confirmed",
+    "pending",
+    "scheduled",
+    "in_progress",
+    "in-progress",
+  ]);
 
   for (const appt of appointments) {
     if (!appt.appointment_date || !appt.start_time) continue;

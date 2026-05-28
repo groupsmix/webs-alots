@@ -15,13 +15,13 @@ This document assesses Oltigo Health's AI features against the EU AI Act require
 
 ## 2. AI Features Inventory
 
-| Feature | Route | Model | Purpose |
-|---|---|---|---|
-| Auto-suggest prescriptions | `POST /api/ai/auto-suggest` | OpenAI GPT-4 | Suggest medications based on diagnosis |
-| Patient summary | `POST /api/v1/ai/patient-summary` | OpenAI GPT-4 | Generate patient summary cards |
-| Manager insights | `POST /api/ai/manager` | OpenAI GPT-4 | Business analytics Q&A |
-| WhatsApp receptionist | `POST /api/ai/whatsapp-receptionist` | OpenAI GPT-4 | Automated patient replies |
-| Chat assistant | `POST /api/chat` | OpenAI GPT-4 | General clinic assistant |
+| Feature                    | Route                                | Model        | Purpose                                |
+| -------------------------- | ------------------------------------ | ------------ | -------------------------------------- |
+| Auto-suggest prescriptions | `POST /api/ai/auto-suggest`          | OpenAI GPT-4 | Suggest medications based on diagnosis |
+| Patient summary            | `POST /api/v1/ai/patient-summary`    | OpenAI GPT-4 | Generate patient summary cards         |
+| Manager insights           | `POST /api/ai/manager`               | OpenAI GPT-4 | Business analytics Q&A                 |
+| WhatsApp receptionist      | `POST /api/ai/whatsapp-receptionist` | OpenAI GPT-4 | Automated patient replies              |
+| Chat assistant             | `POST /api/chat`                     | OpenAI GPT-4 | General clinic assistant               |
 
 ## 3. Risk Classification
 
@@ -46,16 +46,16 @@ The auto-suggest feature provides prescription suggestions that a doctor must ex
 
 ## 4. Article 5 — Prohibited Practices Check
 
-| Prohibited Practice | Applicable? | Assessment |
-|---|---|---|
-| **Social scoring** | No | Platform does not score or rank patients based on social behaviour |
-| **Subliminal manipulation** | No | AI suggestions are transparent and clearly labelled; no hidden persuasion |
-| **Exploitation of vulnerabilities** | No | No targeting of vulnerable groups for manipulation |
-| **Real-time remote biometric identification** | No | Platform does not use biometric data or identification |
-| **Emotion recognition in workplace/education** | No | No emotion detection features |
-| **Biometric categorisation (sensitive attributes)** | No | No biometric processing |
-| **Predictive policing** | No | Not applicable to healthcare platform |
-| **Facial recognition database scraping** | No | No facial recognition features |
+| Prohibited Practice                                 | Applicable? | Assessment                                                                |
+| --------------------------------------------------- | ----------- | ------------------------------------------------------------------------- |
+| **Social scoring**                                  | No          | Platform does not score or rank patients based on social behaviour        |
+| **Subliminal manipulation**                         | No          | AI suggestions are transparent and clearly labelled; no hidden persuasion |
+| **Exploitation of vulnerabilities**                 | No          | No targeting of vulnerable groups for manipulation                        |
+| **Real-time remote biometric identification**       | No          | Platform does not use biometric data or identification                    |
+| **Emotion recognition in workplace/education**      | No          | No emotion detection features                                             |
+| **Biometric categorisation (sensitive attributes)** | No          | No biometric processing                                                   |
+| **Predictive policing**                             | No          | Not applicable to healthcare platform                                     |
+| **Facial recognition database scraping**            | No          | No facial recognition features                                            |
 
 **Conclusion:** None of the prohibited practices in Article 5 apply to Oltigo Health.
 
@@ -72,6 +72,7 @@ The auto-suggest feature provides prescription suggestions that a doctor must ex
 - Applied to: prescription suggestions, patient summaries, manager insights, chat responses
 
 **Standard disclaimer:**
+
 > "AI-generated draft -- review before use. This content was produced by an AI model and may contain errors."
 
 ### 5.2 Human Oversight
@@ -90,28 +91,28 @@ The auto-suggest feature provides prescription suggestions that a doctor must ex
 
 ## 7. Monitoring and Review
 
-| Control | Frequency |
-|---|---|
-| Review AI feature outputs for accuracy | Quarterly |
-| Update sub-processor list if AI provider changes | On change |
-| Re-assess risk classification | Annually or on feature change |
-| Review prohibited-use checklist | Annually |
-| Audit AI disclaimer visibility | Per release |
+| Control                                          | Frequency                     |
+| ------------------------------------------------ | ----------------------------- |
+| Review AI feature outputs for accuracy           | Quarterly                     |
+| Update sub-processor list if AI provider changes | On change                     |
+| Re-assess risk classification                    | Annually or on feature change |
+| Review prohibited-use checklist                  | Annually                      |
+| Audit AI disclaimer visibility                   | Per release                   |
 
 ## 8. Open Items
 
-| Item | Priority | Status |
-|---|---|---|
-| Add AI disclaimer to all AI response payloads | P2 | In progress (`src/lib/ai-disclaimer.ts` created) |
-| Implement human feedback loop for AI suggestions | P3 | Planned |
-| Document AI model version and capabilities | P3 | Planned |
-| Add AI usage metrics per tenant | P2 | See A80-F1 |
+| Item                                             | Priority | Status                                           |
+| ------------------------------------------------ | -------- | ------------------------------------------------ |
+| Add AI disclaimer to all AI response payloads    | P2       | In progress (`src/lib/ai-disclaimer.ts` created) |
+| Implement human feedback loop for AI suggestions | P3       | Planned                                          |
+| Document AI model version and capabilities       | P3       | Planned                                          |
+| Add AI usage metrics per tenant                  | P2       | See A80-F1                                       |
 
 ---
 
 **Approval:**
 
-| Name | Role | Date | Signature |
-|---|---|---|---|
-| ___________________ | CTO | __________ | __________ |
-| ___________________ | Legal Counsel | __________ | __________ |
+| Name                           | Role          | Date             | Signature        |
+| ------------------------------ | ------------- | ---------------- | ---------------- |
+| **\*\*\*\***\_\_\_**\*\*\*\*** | CTO           | \***\*\_\_\*\*** | \***\*\_\_\*\*** |
+| **\*\*\*\***\_\_\_**\*\*\*\*** | Legal Counsel | \***\*\_\_\*\*** | \***\*\_\_\*\*** |

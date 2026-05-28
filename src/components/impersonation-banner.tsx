@@ -62,7 +62,10 @@ export function ImpersonationBanner() {
       await fetch("/api/impersonate", { method: "DELETE" });
       window.location.href = "/super-admin/clinics";
     } catch (err) {
-      logger.warn("Failed to end impersonation session", { context: "impersonation-banner", error: err });
+      logger.warn("Failed to end impersonation session", {
+        context: "impersonation-banner",
+        error: err,
+      });
       setEnding(false);
     }
   }
@@ -71,7 +74,8 @@ export function ImpersonationBanner() {
     <div className="sticky top-0 z-50 flex items-center justify-center gap-3 bg-amber-500 px-4 py-2 text-sm font-medium text-amber-950">
       <AlertTriangle className="h-4 w-4 shrink-0" />
       <span>
-        {t(locale, "impersonation.viewingAs")} <strong>{state.clinicName}</strong> {t(locale, "impersonation.sessionActive")}
+        {t(locale, "impersonation.viewingAs")} <strong>{state.clinicName}</strong>{" "}
+        {t(locale, "impersonation.sessionActive")}
         {state.reason && (
           <span className="ml-1 text-amber-800">
             ({t(locale, "impersonation.reason").replace("{reason}", state.reason)})

@@ -49,7 +49,9 @@ export async function fetchDailySales(clinicId: string): Promise<DailySaleView[]
       id: r.id,
       date: dt.split("T")[0] ?? "",
       time: dt.split("T")[1]?.slice(0, 5) ?? "",
-      patientName: r.patient_id ? (_activeUserMap?.get(r.patient_id)?.name ?? "Patient") : "Walk-in",
+      patientName: r.patient_id
+        ? (_activeUserMap?.get(r.patient_id)?.name ?? "Patient")
+        : "Walk-in",
       items: r.items ?? [],
       total: r.total ?? 0,
       currency: "MAD",
@@ -85,7 +87,9 @@ interface LoyaltyTransactionRaw {
   created_at: string;
 }
 
-export async function fetchLoyaltyTransactions(clinicId: string): Promise<LoyaltyTransactionView[]> {
+export async function fetchLoyaltyTransactions(
+  clinicId: string,
+): Promise<LoyaltyTransactionView[]> {
   const rows = await fetchRows<LoyaltyTransactionRaw>("loyalty_transactions", {
     eq: [["clinic_id", clinicId]],
     order: ["created_at", { ascending: false }],

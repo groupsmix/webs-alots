@@ -144,7 +144,10 @@ async function getClinicId(): Promise<string | null> {
   if (tenant?.clinicId) return tenant.clinicId;
 
   // Root domain fallback: resolve the first active clinic (with TTL)
-  if (_defaultClinicId !== undefined && Date.now() - _defaultClinicIdFetchedAt < DEFAULT_CLINIC_CACHE_TTL_MS) {
+  if (
+    _defaultClinicId !== undefined &&
+    Date.now() - _defaultClinicIdFetchedAt < DEFAULT_CLINIC_CACHE_TTL_MS
+  ) {
     return _defaultClinicId;
   }
 
@@ -193,7 +196,10 @@ const DEFAULT_BRANDING: ClinicBranding = {
  * Wrapped with `use cache` for a 5-minute TTL to avoid
  * hitting the DB on every page load (branding rarely changes).
  */
-async function fetchBrandingFromDb(clinicId: string, fallbackName: string): Promise<ClinicBranding> {
+async function fetchBrandingFromDb(
+  clinicId: string,
+  fallbackName: string,
+): Promise<ClinicBranding> {
   "use cache";
   cacheLife("minutes");
   cacheTag(`clinic-branding-${clinicId}`);
@@ -209,7 +215,9 @@ async function fetchBrandingFromDb(clinicId: string, fallbackName: string): Prom
 
   const { data, error } = await supabase
     .from("clinics")
-    .select("name, logo_url, favicon_url, primary_color, secondary_color, heading_font, body_font, hero_image_url, tagline, cover_photo_url, template_id, section_visibility, website_config, phone, address, owner_email, config")
+    .select(
+      "name, logo_url, favicon_url, primary_color, secondary_color, heading_font, body_font, hero_image_url, tagline, cover_photo_url, template_id, section_visibility, website_config, phone, address, owner_email, config",
+    )
     .eq("id", clinicId)
     .single();
 
@@ -313,7 +321,10 @@ async function fetchAverageRatingFromDb(clinicId: string): Promise<number> {
   try {
     // avg_clinic_rating is a DB function not yet in the generated
     // Supabase types.  Use a targeted cast instead of blanket `as any`.
-    type UntypedRpc = (fn: string, args: Record<string, unknown>) => ReturnType<typeof supabase.rpc>;
+    type UntypedRpc = (
+      fn: string,
+      args: Record<string, unknown>,
+    ) => ReturnType<typeof supabase.rpc>;
     const rpc = supabase.rpc.bind(supabase) as unknown as UntypedRpc;
     const { data: rpcResult, error: rpcError } = await rpc("avg_clinic_rating", { cid: clinicId });
 
@@ -324,7 +335,11 @@ async function fetchAverageRatingFromDb(clinicId: string): Promise<number> {
       }
     }
   } catch (err) {
-    logger.warn("avg_clinic_rating RPC unavailable, using fallback", { context: "public-data", clinicId, error: err });
+    logger.warn("avg_clinic_rating RPC unavailable, using fallback", {
+      context: "public-data",
+      clinicId,
+      error: err,
+    });
   }
 
   // Fallback: use head: true with count to get total, then fetch only
@@ -336,10 +351,7 @@ async function fetchAverageRatingFromDb(clinicId: string): Promise<number> {
 
   if (!count || count === 0) return 0;
 
-  const { data } = await supabase
-    .from("reviews")
-    .select("stars")
-    .eq("clinic_id", clinicId);
+  const { data } = await supabase.from("reviews").select("stars").eq("clinic_id", clinicId);
 
   if (!data || data.length === 0) return 0;
   const sum = data.reduce((s, r) => s + r.stars, 0);
@@ -418,7 +430,7 @@ export async function getPublicDoctors(): Promise<PublicDoctor[]> {
 export async function getPublicSpecialties(
   preFetchedDoctors?: PublicDoctor[],
 ): Promise<PublicSpecialty[]> {
-  const doctors = preFetchedDoctors ?? await getPublicDoctors();
+  const doctors = preFetchedDoctors ?? (await getPublicDoctors());
   const seen = new Map<string, PublicSpecialty>();
 
   for (const d of doctors) {
@@ -447,16 +459,16 @@ interface TimeSlotConfig {
   isAvailable: boolean;
 }
 
-async function getPublicTimeSlots(
-  doctorId?: string,
-): Promise<TimeSlotConfig[]> {
+async function getPublicTimeSlots(doctorId?: string): Promise<TimeSlotConfig[]> {
   const ctx = await createPublicTenantClient();
   if (!ctx) return [];
   const { supabase, clinicId } = ctx;
 
   let q = supabase
     .from("time_slots")
-    .select("id, doctor_id, day_of_week, start_time, end_time, is_active, max_capacity, buffer_minutes")
+    .select(
+      "id, doctor_id, day_of_week, start_time, end_time, is_active, max_capacity, buffer_minutes",
+    )
     .eq("clinic_id", clinicId)
     .eq("is_active", true);
 
@@ -484,10 +496,7 @@ async function getPublicTimeSlots(
  * Generate individual time-slot strings for a given date and doctor,
  * based on the doctor's configured time_slots for that day of week.
  */
-export async function getPublicGeneratedSlots(
-  date: string,
-  doctorId: string,
-): Promise<string[]> {
+export async function getPublicGeneratedSlots(date: string, doctorId: string): Promise<string[]> {
   // Use noon-based parsing to avoid UTC day-of-week issues near midnight
   const dayOfWeek = new Date(date + "T12:00:00").getDay();
   const slotConfigs = await getPublicTimeSlots(doctorId);
@@ -559,10 +568,7 @@ export async function getPublicSlotBookingCounts(
 /**
  * Get available (non-fully-booked) slots for a date and doctor.
  */
-export async function getPublicAvailableSlots(
-  date: string,
-  doctorId: string,
-): Promise<string[]> {
+export async function getPublicAvailableSlots(date: string, doctorId: string): Promise<string[]> {
   // PERF-03: Resolve clinic config in parallel with slots + booking counts
   // instead of making a 3rd sequential DB call.
   const currentClinicId = await getClinicId();
@@ -605,7 +611,9 @@ export async function getPublicPharmacyProducts(): Promise<PublicPharmacyProduct
   const [{ data: products }, { data: stockRows }] = await Promise.all([
     supabase
       .from("products")
-      .select("id, name, generic_name, category, description, price, requires_prescription, is_active, manufacturer, barcode, dosage_form, strength")
+      .select(
+        "id, name, generic_name, category, description, price, requires_prescription, is_active, manufacturer, barcode, dosage_form, strength",
+      )
       .eq("clinic_id", clinicId),
     supabase
       .from("stock")
@@ -616,8 +624,15 @@ export async function getPublicPharmacyProducts(): Promise<PublicPharmacyProduct
   if (!products) return [];
 
   const stockMap = new Map(
-    ((stockRows ?? []) as { product_id: string; quantity: number; min_threshold: number; expiry_date: string | null; batch_number: string | null }[])
-      .map((s) => [s.product_id, s]),
+    (
+      (stockRows ?? []) as {
+        product_id: string;
+        quantity: number;
+        min_threshold: number;
+        expiry_date: string | null;
+        batch_number: string | null;
+      }[]
+    ).map((s) => [s.product_id, s]),
   );
 
   const tenantCfg = await getClinicConfig(clinicId);
@@ -779,9 +794,24 @@ interface PublicPharmacyPrescription {
   patientPhone: string;
   imageUrl: string;
   uploadedAt: string;
-  status: "pending" | "reviewing" | "partially-ready" | "ready" | "picked-up" | "delivered" | "rejected";
+  status:
+    | "pending"
+    | "reviewing"
+    | "partially-ready"
+    | "ready"
+    | "picked-up"
+    | "delivered"
+    | "rejected";
   pharmacistNotes?: string;
-  items: { id: string; productId: string; productName: string; quantity: number; available: boolean; price: number; notes?: string }[];
+  items: {
+    id: string;
+    productId: string;
+    productName: string;
+    quantity: number;
+    available: boolean;
+    price: number;
+    notes?: string;
+  }[];
   totalPrice: number;
   currency: string;
   deliveryOption: "pickup" | "delivery";

@@ -27,11 +27,20 @@ export function HeaderBottomBar({ logoUrl, clinicName, navItems, template }: Hea
   return (
     <>
       {/* Top bar — logo + CTA (desktop & mobile) */}
-      <header className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur" dir={isRtl ? "rtl" : undefined}>
+      <header
+        className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur"
+        dir={isRtl ? "rtl" : undefined}
+      >
         <div className="container mx-auto flex h-14 items-center justify-between px-4">
           <Link href="/" className="flex items-center gap-2 text-lg font-bold">
             {logoUrl && (
-              <Image src={logoUrl} alt={displayName} width={28} height={28} className="h-7 w-auto" />
+              <Image
+                src={logoUrl}
+                alt={displayName}
+                width={28}
+                height={28}
+                className="h-7 w-auto"
+              />
             )}
             {displayName}
           </Link>

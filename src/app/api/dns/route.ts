@@ -93,11 +93,7 @@ export const POST = withAuthValidation(
 
     const result = await provisionSubdomain(body.slug);
     if (!result.success) {
-      return apiError(
-        result.error ?? "Failed to provision subdomain",
-        502,
-        "DNS_PROVISION_ERROR",
-      );
+      return apiError(result.error ?? "Failed to provision subdomain", 502, "DNS_PROVISION_ERROR");
     }
 
     if (clinicId) {
@@ -127,11 +123,7 @@ export const DELETE = withAuthValidation(
 
     const result = await removeSubdomain(body.slug);
     if (!result.success) {
-      return apiError(
-        result.error ?? "Failed to remove subdomain",
-        502,
-        "DNS_REMOVE_ERROR",
-      );
+      return apiError(result.error ?? "Failed to remove subdomain", 502, "DNS_REMOVE_ERROR");
     }
 
     if (clinicId) {

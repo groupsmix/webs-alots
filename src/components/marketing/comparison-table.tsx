@@ -43,22 +43,12 @@ function SupportIcon({ value }: { value: FeatureSupport }) {
  */
 function _ComparisonSection() {
   const grouped = getFeaturesByCategory();
-  const highlightCategories: ComparisonCategory[] = [
-    "pricing",
-    "ai",
-    "whatsapp",
-    "prescriptions",
-  ];
+  const highlightCategories: ComparisonCategory[] = ["pricing", "ai", "whatsapp", "prescriptions"];
 
-  const previewFeatures = highlightCategories.flatMap(
-    (cat) => grouped[cat]?.slice(0, 2) ?? [],
-  );
+  const previewFeatures = highlightCategories.flatMap((cat) => grouped[cat]?.slice(0, 2) ?? []);
 
   return (
-    <section
-      id="comparatif"
-      className="bg-gray-50 py-20 sm:py-28"
-    >
+    <section id="comparatif" className="bg-gray-50 py-20 sm:py-28">
       <div className="mx-auto max-w-6xl px-4 sm:px-6">
         <div className="mx-auto max-w-2xl text-center">
           <p className="mb-3 text-sm font-semibold uppercase tracking-widest text-blue-600">
@@ -77,16 +67,12 @@ function _ComparisonSection() {
           <table className="w-full border-collapse text-sm">
             <thead>
               <tr className="border-b border-gray-200">
-                <th className="py-4 pr-4 text-left font-medium text-gray-500">
-                  Fonctionnalité
-                </th>
+                <th className="py-4 pr-4 text-left font-medium text-gray-500">Fonctionnalité</th>
                 {COMPETITORS.map((c) => (
                   <th
                     key={c.id}
                     className={`px-4 py-4 text-center font-semibold ${
-                      c.highlight
-                        ? "text-blue-600"
-                        : "text-gray-700"
+                      c.highlight ? "text-blue-600" : "text-gray-700"
                     }`}
                   >
                     {c.name}
@@ -96,13 +82,8 @@ function _ComparisonSection() {
             </thead>
             <tbody>
               {previewFeatures.map((feature, idx) => (
-                <tr
-                  key={feature.label}
-                  className={idx % 2 === 0 ? "bg-white" : "bg-gray-50"}
-                >
-                  <td className="py-3 pr-4 text-gray-700">
-                    {feature.label}
-                  </td>
+                <tr key={feature.label} className={idx % 2 === 0 ? "bg-white" : "bg-gray-50"}>
+                  <td className="py-3 pr-4 text-gray-700">{feature.label}</td>
                   {COMPETITORS.map((c) => (
                     <td key={c.id} className="px-4 py-3 text-center">
                       <SupportIcon value={feature.values[c.id]} />
@@ -117,27 +98,13 @@ function _ComparisonSection() {
         {/* Mobile cards */}
         <div className="mt-12 space-y-4 md:hidden">
           {previewFeatures.map((feature) => (
-            <div
-              key={feature.label}
-              className="rounded-xl border border-gray-200 bg-white p-4"
-            >
-              <p className="mb-3 font-medium text-gray-900">
-                {feature.label}
-              </p>
+            <div key={feature.label} className="rounded-xl border border-gray-200 bg-white p-4">
+              <p className="mb-3 font-medium text-gray-900">{feature.label}</p>
               <div className="grid grid-cols-2 gap-2">
                 {COMPETITORS.map((c) => (
-                  <div
-                    key={c.id}
-                    className="flex items-center gap-2 text-sm"
-                  >
+                  <div key={c.id} className="flex items-center gap-2 text-sm">
                     <SupportIcon value={feature.values[c.id]} />
-                    <span
-                      className={
-                        c.highlight
-                          ? "font-semibold text-blue-600"
-                          : "text-gray-600"
-                      }
-                    >
+                    <span className={c.highlight ? "font-semibold text-blue-600" : "text-gray-600"}>
                       {c.name}
                     </span>
                   </div>
@@ -209,16 +176,12 @@ export function FullComparisonTable() {
         <table className="w-full border-collapse text-sm">
           <thead className="sticky top-0 z-10 bg-white">
             <tr className="border-b-2 border-gray-200">
-              <th className="py-4 pr-4 text-left font-medium text-gray-500">
-                Fonctionnalité
-              </th>
+              <th className="py-4 pr-4 text-left font-medium text-gray-500">Fonctionnalité</th>
               {COMPETITORS.map((c) => (
                 <th
                   key={c.id}
                   className={`px-4 py-4 text-center font-semibold ${
-                    c.highlight
-                      ? "text-blue-600"
-                      : "text-gray-700"
+                    c.highlight ? "text-blue-600" : "text-gray-700"
                   }`}
                 >
                   {c.name}
@@ -238,20 +201,10 @@ export function FullComparisonTable() {
                   </td>
                 </tr>
                 {grouped[category].map((feature, idx) => (
-                  <tr
-                    key={feature.label}
-                    className={
-                      idx % 2 === 0 ? "bg-white" : "bg-gray-50"
-                    }
-                  >
-                    <td className="py-3 pr-4 text-gray-700">
-                      {feature.label}
-                    </td>
+                  <tr key={feature.label} className={idx % 2 === 0 ? "bg-white" : "bg-gray-50"}>
+                    <td className="py-3 pr-4 text-gray-700">{feature.label}</td>
                     {COMPETITORS.map((c) => (
-                      <td
-                        key={c.id}
-                        className="px-4 py-3 text-center"
-                      >
+                      <td key={c.id} className="px-4 py-3 text-center">
                         <SupportIcon value={feature.values[c.id]} />
                       </td>
                     ))}
@@ -272,26 +225,14 @@ export function FullComparisonTable() {
             </h3>
             <div className="space-y-3">
               {grouped[category].map((feature) => (
-                <div
-                  key={feature.label}
-                  className="rounded-xl border border-gray-200 bg-white p-4"
-                >
-                  <p className="mb-3 font-medium text-gray-900">
-                    {feature.label}
-                  </p>
+                <div key={feature.label} className="rounded-xl border border-gray-200 bg-white p-4">
+                  <p className="mb-3 font-medium text-gray-900">{feature.label}</p>
                   <div className="grid grid-cols-2 gap-2">
                     {COMPETITORS.map((c) => (
-                      <div
-                        key={c.id}
-                        className="flex items-center gap-2 text-sm"
-                      >
+                      <div key={c.id} className="flex items-center gap-2 text-sm">
                         <SupportIcon value={feature.values[c.id]} />
                         <span
-                          className={
-                            c.highlight
-                              ? "font-semibold text-blue-600"
-                              : "text-gray-600"
-                          }
+                          className={c.highlight ? "font-semibold text-blue-600" : "text-gray-600"}
                         >
                           {c.name}
                         </span>
@@ -310,15 +251,10 @@ export function FullComparisonTable() {
         <p className="text-lg font-semibold text-gray-900">
           Oltigo couvre{" "}
           <span className="text-blue-600">
-            {COMPARISON_FEATURES.filter(
-              (f) => f.values.oltigo === "full",
-            ).length}
+            {COMPARISON_FEATURES.filter((f) => f.values.oltigo === "full").length}
           </span>{" "}
-          fonctionnalités sur{" "}
-          <span className="text-blue-600">
-            {COMPARISON_FEATURES.length}
-          </span>{" "}
-          — plus que tout autre concurrent.
+          fonctionnalités sur <span className="text-blue-600">{COMPARISON_FEATURES.length}</span> —
+          plus que tout autre concurrent.
         </p>
         <Link
           href="/register-clinic"

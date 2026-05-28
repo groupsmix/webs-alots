@@ -1,4 +1,10 @@
-import { apiError, apiForbidden, apiInternalError, apiRateLimited, apiSuccess } from "@/lib/api-response";
+import {
+  apiError,
+  apiForbidden,
+  apiInternalError,
+  apiRateLimited,
+  apiSuccess,
+} from "@/lib/api-response";
 import { withAuthValidation } from "@/lib/api-validate";
 import { logAuditEvent } from "@/lib/audit-log";
 import { STAFF_ROLES } from "@/lib/auth-roles";
@@ -17,8 +23,9 @@ const WAITING_LIST_ROLES: UserRole[] = [...STAFF_ROLES, "patient"];
  *
  * Add a patient to the waiting list.
  */
-export const POST = withAuthValidation(waitingListSchema, async (body, request, { supabase }) => {
-
+export const POST = withAuthValidation(
+  waitingListSchema,
+  async (body, request, { supabase }) => {
     // Honeypot check: if the hidden field was filled, silently reject (Issue 51)
     if (body.website) {
       return apiSuccess({ status: "added", message: "Added to waiting list", entryId: "ok" });
@@ -35,7 +42,9 @@ export const POST = withAuthValidation(waitingListSchema, async (body, request, 
 
     // Per-phone rate limit: 3 requests per phone number per hour (Issue 51)
     if (body.patientPhone) {
-      const phoneAllowed = await waitingListLimiter.check(`waiting-list-phone:${body.patientPhone}`);
+      const phoneAllowed = await waitingListLimiter.check(
+        `waiting-list-phone:${body.patientPhone}`,
+      );
       if (!phoneAllowed) {
         return apiRateLimited("Trop de demandes pour ce numéro. Veuillez réessayer plus tard.");
       }
@@ -46,7 +55,10 @@ export const POST = withAuthValidation(waitingListSchema, async (body, request, 
     const clinicId = tenant.clinicId;
 
     const patientId = await findOrCreatePatient(
-      supabase, clinicId, body.patientId, body.patientName,
+      supabase,
+      clinicId,
+      body.patientId,
+      body.patientName,
       { phone: body.patientPhone },
     );
     if (!patientId) {
@@ -86,7 +98,9 @@ export const POST = withAuthValidation(waitingListSchema, async (body, request, 
       message: "Added to waiting list",
       entryId: entry.id,
     });
-}, WAITING_LIST_ROLES);
+  },
+  WAITING_LIST_ROLES,
+);
 
 /**
  * GET /api/booking/waiting-list?patientId=...  OR  ?doctorId=...&date=...
@@ -110,7 +124,9 @@ export const GET = withAuth(async (request, { supabase, profile }) => {
   if (patientId) {
     const { data: entries } = await supabase
       .from("waiting_list")
-      .select("id, clinic_id, patient_id, doctor_id, preferred_date, preferred_time, service_id, status, created_at")
+      .select(
+        "id, clinic_id, patient_id, doctor_id, preferred_date, preferred_time, service_id, status, created_at",
+      )
       .eq("clinic_id", clinicId)
       .eq("patient_id", patientId)
       .order("created_at", { ascending: false });
@@ -121,7 +137,9 @@ export const GET = withAuth(async (request, { supabase, profile }) => {
   if (doctorId && date) {
     let q = supabase
       .from("waiting_list")
-      .select("id, clinic_id, patient_id, doctor_id, preferred_date, preferred_time, service_id, status, created_at")
+      .select(
+        "id, clinic_id, patient_id, doctor_id, preferred_date, preferred_time, service_id, status, created_at",
+      )
       .eq("clinic_id", clinicId)
       .eq("doctor_id", doctorId)
       .eq("preferred_date", date);
@@ -142,8 +160,9 @@ export const GET = withAuth(async (request, { supabase, profile }) => {
  *
  * Remove a patient from the waiting list.
  */
-export const DELETE = withAuthValidation(waitingListDeleteSchema, async (body, _request, { supabase, profile }) => {
-
+export const DELETE = withAuthValidation(
+  waitingListDeleteSchema,
+  async (body, _request, { supabase, profile }) => {
     const tenant = await requireTenant();
     const clinicId = tenant.clinicId;
 
@@ -182,4 +201,6 @@ export const DELETE = withAuthValidation(waitingListDeleteSchema, async (body, _
     });
 
     return apiSuccess({ status: "removed", message: "Removed from waiting list" });
-}, WAITING_LIST_ROLES);
+  },
+  WAITING_LIST_ROLES,
+);

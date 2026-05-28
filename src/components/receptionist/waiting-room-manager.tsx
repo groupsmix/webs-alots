@@ -1,19 +1,25 @@
 "use client";
 
 import {
-  User, Clock, ArrowUp, ArrowDown, CheckCircle2, XCircle, Bell,
-  UserPlus, Phone, MessageCircle, Timer, Stethoscope
+  User,
+  Clock,
+  ArrowUp,
+  ArrowDown,
+  CheckCircle2,
+  XCircle,
+  Bell,
+  UserPlus,
+  Phone,
+  MessageCircle,
+  Timer,
+  Stethoscope,
 } from "lucide-react";
 import { useState, useCallback, useEffect } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageLoader } from "@/components/ui/page-loader";
-import {
-  getCurrentUser,
-  fetchTodayAppointments,
-  fetchPatients,
-} from "@/lib/data/client";
+import { getCurrentUser, fetchTodayAppointments, fetchPatients } from "@/lib/data/client";
 import { WalkInDialog } from "./walk-in-dialog";
 
 interface WaitingPatient {
@@ -36,9 +42,21 @@ export function WaitingRoomManager() {
   const [error, setError] = useState<Error | null>(null);
 
   const statusConfig: Record<string, { color: string; label: string; icon: typeof Clock }> = {
-    waiting: { color: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200", label: "Waiting", icon: Clock },
-    "in-consultation": { color: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200", label: "In Consultation", icon: Stethoscope },
-    called: { color: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200", label: "Called", icon: Bell },
+    waiting: {
+      color: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
+      label: "Waiting",
+      icon: Clock,
+    },
+    "in-consultation": {
+      color: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200",
+      label: "In Consultation",
+      icon: Stethoscope,
+    },
+    called: {
+      color: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
+      label: "Called",
+      icon: Bell,
+    },
   };
 
   const recalculateWaitTimes = useCallback((q: WaitingPatient[]): WaitingPatient[] => {
@@ -60,7 +78,10 @@ export function WaitingRoomManager() {
     async function load() {
       const user = await getCurrentUser();
       if (controller.signal.aborted) return;
-      if (!user?.clinic_id) { setLoading(false); return; }
+      if (!user?.clinic_id) {
+        setLoading(false);
+        return;
+      }
       const [appts, pts] = await Promise.all([
         fetchTodayAppointments(user.clinic_id),
         fetchPatients(user.clinic_id),
@@ -74,8 +95,11 @@ export function WaitingRoomManager() {
       const initialQueue: WaitingPatient[] = waitingAppts.map((a, i) => {
         const patient = patientMap.get(a.patientId);
         const status: WaitingPatient["status"] =
-          a.status === "in-progress" ? "in-consultation" :
-          a.status === "confirmed" ? "called" : "waiting";
+          a.status === "in-progress"
+            ? "in-consultation"
+            : a.status === "confirmed"
+              ? "called"
+              : "waiting";
         return {
           id: a.id,
           name: a.patientName,
@@ -104,7 +128,9 @@ export function WaitingRoomManager() {
         setLoading(false);
       }
     });
-    return () => { controller.abort(); };
+    return () => {
+      controller.abort();
+    };
   }, [recalculateWaitTimes]);
 
   const moveUp = (id: string) => {
@@ -124,11 +150,19 @@ export function WaitingRoomManager() {
   };
 
   const callPatient = (id: string) => {
-    setQueue(recalculateWaitTimes(queue.map((p) => (p.id === id ? { ...p, status: "called" as const } : p))));
+    setQueue(
+      recalculateWaitTimes(
+        queue.map((p) => (p.id === id ? { ...p, status: "called" as const } : p)),
+      ),
+    );
   };
 
   const startConsultation = (id: string) => {
-    setQueue(recalculateWaitTimes(queue.map((p) => (p.id === id ? { ...p, status: "in-consultation" as const } : p))));
+    setQueue(
+      recalculateWaitTimes(
+        queue.map((p) => (p.id === id ? { ...p, status: "in-consultation" as const } : p)),
+      ),
+    );
   };
 
   const markDone = (id: string) => {
@@ -158,9 +192,13 @@ export function WaitingRoomManager() {
   const waitingCount = queue.filter((p) => p.status === "waiting").length;
   const inConsultation = queue.filter((p) => p.status === "in-consultation").length;
   const calledCount = queue.filter((p) => p.status === "called").length;
-  const avgWaitTime = waitingCount > 0
-    ? Math.round(queue.filter((p) => p.status === "waiting").reduce((sum, p) => sum + p.estimatedWait, 0) / waitingCount)
-    : 0;
+  const avgWaitTime =
+    waitingCount > 0
+      ? Math.round(
+          queue.filter((p) => p.status === "waiting").reduce((sum, p) => sum + p.estimatedWait, 0) /
+            waitingCount,
+        )
+      : 0;
 
   if (loading) {
     return <PageLoader message="Loading waiting room..." />;
@@ -169,7 +207,9 @@ export function WaitingRoomManager() {
   if (error) {
     return (
       <div className="p-8 text-center">
-        <p className="text-red-600 font-medium">Failed to load data. Please try refreshing the page.</p>
+        <p className="text-red-600 font-medium">
+          Failed to load data. Please try refreshing the page.
+        </p>
         {error.message && <p className="text-sm text-muted-foreground mt-2">{error.message}</p>}
       </div>
     );
@@ -277,7 +317,9 @@ export function WaitingRoomManager() {
                       <div className="flex items-center gap-2">
                         <p className="text-sm font-medium">{patient.name}</p>
                         {patient.isWalkIn && (
-                          <Badge variant="secondary" className="text-[10px]">Walk-in</Badge>
+                          <Badge variant="secondary" className="text-[10px]">
+                            Walk-in
+                          </Badge>
                         )}
                       </div>
                       <div className="flex items-center gap-2 text-xs text-muted-foreground">
@@ -286,7 +328,9 @@ export function WaitingRoomManager() {
                         <span>|</span>
                         <span>Appt: {patient.appointmentTime}</span>
                       </div>
-                      <p className="text-xs text-muted-foreground">{patient.service} - {patient.doctor}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {patient.service} - {patient.doctor}
+                      </p>
                     </div>
                   </div>
 
@@ -298,7 +342,9 @@ export function WaitingRoomManager() {
                       </div>
                     )}
 
-                    <span className={`text-xs px-2 py-0.5 rounded-full flex items-center gap-1 ${statusConfig[patient.status]?.color ?? ""}`}>
+                    <span
+                      className={`text-xs px-2 py-0.5 rounded-full flex items-center gap-1 ${statusConfig[patient.status]?.color ?? ""}`}
+                    >
                       <StatusIcon className="h-3 w-3" />
                       {statusConfig[patient.status]?.label ?? patient.status}
                     </span>
@@ -326,21 +372,41 @@ export function WaitingRoomManager() {
 
                     <div className="flex gap-1">
                       {patient.status === "waiting" && (
-                        <Button variant="outline" size="sm" onClick={() => callPatient(patient.id)} title="Call patient in">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => callPatient(patient.id)}
+                          title="Call patient in"
+                        >
                           <Bell className="h-3 w-3" />
                         </Button>
                       )}
                       {patient.status === "called" && (
-                        <Button variant="outline" size="sm" onClick={() => startConsultation(patient.id)} title="Start consultation">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => startConsultation(patient.id)}
+                          title="Start consultation"
+                        >
                           <Stethoscope className="h-3 w-3 text-yellow-600" />
                         </Button>
                       )}
                       {(patient.status === "called" || patient.status === "in-consultation") && (
-                        <Button variant="outline" size="sm" onClick={() => markDone(patient.id)} title="Mark as done">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => markDone(patient.id)}
+                          title="Mark as done"
+                        >
                           <CheckCircle2 className="h-3 w-3 text-green-600" />
                         </Button>
                       )}
-                      <Button variant="ghost" size="sm" onClick={() => cancelPatient(patient.id)} title="Remove from queue">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => cancelPatient(patient.id)}
+                        title="Remove from queue"
+                      >
                         <XCircle className="h-3 w-3 text-red-600" />
                       </Button>
                     </div>

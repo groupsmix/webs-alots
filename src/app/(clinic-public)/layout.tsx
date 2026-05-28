@@ -7,10 +7,6 @@ import { ClinicPublicLayout } from "@/components/layouts/clinic-public-layout";
  * (pharmacy-public) route-group layouts with a single shared layout
  * that provides branded header/footer via ClinicPublicLayout.
  */
-export default async function ClinicPublicGroupLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default async function ClinicPublicGroupLayout({ children }: { children: React.ReactNode }) {
   return <ClinicPublicLayout>{children}</ClinicPublicLayout>;
 }

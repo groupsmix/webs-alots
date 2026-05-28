@@ -5,13 +5,7 @@ import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { useAsyncData } from "@/lib/hooks/use-async-data";
 import {
   sectionDefinitions,
@@ -22,7 +16,11 @@ import {
 } from "@/lib/section-visibility";
 
 export default function SectionsPage() {
-  const { data: initialData, loading, error } = useAsyncData(
+  const {
+    data: initialData,
+    loading,
+    error,
+  } = useAsyncData(
     (signal) =>
       fetch("/api/branding", { signal })
         .then((r) => {
@@ -35,10 +33,8 @@ export default function SectionsPage() {
         }),
     defaultSectionVisibility,
   );
-  const [visibility, setVisibility] =
-    useState<SectionVisibility>(defaultSectionVisibility);
-  const [savedState, setSavedState] =
-    useState<SectionVisibility>(defaultSectionVisibility);
+  const [visibility, setVisibility] = useState<SectionVisibility>(defaultSectionVisibility);
+  const [savedState, setSavedState] = useState<SectionVisibility>(defaultSectionVisibility);
   const [initialized, setInitialized] = useState(false);
   const [saving, setSaving] = useState(false);
 
@@ -69,8 +65,7 @@ export default function SectionsPage() {
     }
   };
 
-  const hasChanges =
-    JSON.stringify(visibility) !== JSON.stringify(savedState);
+  const hasChanges = JSON.stringify(visibility) !== JSON.stringify(savedState);
 
   const enabledCount = Object.values(visibility).filter(Boolean).length;
 
@@ -108,8 +103,7 @@ export default function SectionsPage() {
         <div>
           <h1 className="text-2xl font-bold">Section Control</h1>
           <p className="text-sm text-muted-foreground">
-            Toggle sections on or off on your public homepage. The order stays
-            fixed per template.
+            Toggle sections on or off on your public homepage. The order stays fixed per template.
           </p>
           <p className="text-xs text-muted-foreground mt-1">
             {enabledCount} of {sectionDefinitions.length} sections enabled
@@ -125,8 +119,8 @@ export default function SectionsPage() {
         <CardHeader>
           <CardTitle className="text-base">Homepage Sections</CardTitle>
           <CardDescription>
-            Sections are displayed in the order listed below. Toggle each
-            section to show or hide it on your public site.
+            Sections are displayed in the order listed below. Toggle each section to show or hide it
+            on your public site.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -144,18 +138,14 @@ export default function SectionsPage() {
                 >
                   <div className="space-y-0.5">
                     <div className="flex items-center gap-2">
-                      <span className="text-sm font-medium">
-                        {section.label}
-                      </span>
+                      <span className="text-sm font-medium">{section.label}</span>
                       {isAlwaysOn && (
                         <Badge variant="secondary" className="text-[10px]">
                           Always on
                         </Badge>
                       )}
                     </div>
-                    <p className="text-xs text-muted-foreground">
-                      {section.description}
-                    </p>
+                    <p className="text-xs text-muted-foreground">{section.description}</p>
                   </div>
 
                   <button
@@ -163,9 +153,7 @@ export default function SectionsPage() {
                     onClick={() => toggle(section.key)}
                     disabled={isAlwaysOn}
                     className={`flex-shrink-0 transition-colors ${
-                      isAlwaysOn
-                        ? "cursor-not-allowed opacity-60"
-                        : "cursor-pointer"
+                      isAlwaysOn ? "cursor-not-allowed opacity-60" : "cursor-pointer"
                     }`}
                     aria-label={`Toggle ${section.label}`}
                   >

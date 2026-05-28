@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       new_key:
-        description: 'New 64-character hex encryption key'
+        description: "New 64-character hex encryption key"
         required: true
         type: string
 

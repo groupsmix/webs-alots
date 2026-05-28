@@ -25,9 +25,7 @@ describe("stripJpegMetadata", () => {
     const dqt = [0xff, 0xdb, 0x00, 0x04, 0x00, 0x01];
     const eoi = [0xff, 0xd9];
 
-    const input = Buffer.from([
-      ...soi, ...app1Marker, ...app1Length, ...app1Data, ...dqt, ...eoi,
-    ]);
+    const input = Buffer.from([...soi, ...app1Marker, ...app1Length, ...app1Data, ...dqt, ...eoi]);
 
     const result = stripJpegMetadata(input);
 
@@ -53,9 +51,7 @@ describe("stripJpegMetadata", () => {
     const imageData = [0xab, 0xcd, 0xef];
     const eoi = [0xff, 0xd9];
 
-    const input = Buffer.from([
-      ...soi, ...app13, ...com, ...sos, ...imageData, ...eoi,
-    ]);
+    const input = Buffer.from([...soi, ...app13, ...com, ...sos, ...imageData, ...eoi]);
 
     const result = stripJpegMetadata(input);
 

@@ -10,12 +10,12 @@
 
 Each patient may receive a maximum of **3 WhatsApp messages per 24-hour window** per clinic. This cap applies across all notification types (appointment reminders, confirmations, cancellations).
 
-| Channel   | Per-patient cap | Window  | Enforcement point                      |
-|-----------|----------------|---------|----------------------------------------|
-| WhatsApp  | 3 messages     | 24 hours| `notification_log` dedup index + cron  |
-| SMS       | 2 messages     | 24 hours| Same dedup index                       |
-| Email     | 5 messages     | 24 hours| Application-level check                |
-| In-app    | No cap         | —       | —                                      |
+| Channel  | Per-patient cap | Window   | Enforcement point                     |
+| -------- | --------------- | -------- | ------------------------------------- |
+| WhatsApp | 3 messages      | 24 hours | `notification_log` dedup index + cron |
+| SMS      | 2 messages      | 24 hours | Same dedup index                      |
+| Email    | 5 messages      | 24 hours | Application-level check               |
+| In-app   | No cap          | —        | —                                     |
 
 ## How it works
 
@@ -26,6 +26,7 @@ Each patient may receive a maximum of **3 WhatsApp messages per 24-hour window**
 ## WhatsApp-specific limits
 
 Meta's WhatsApp Business API enforces its own rate limits:
+
 - **1,000 unique contacts / 24h** for unverified business accounts
 - **10,000 unique contacts / 24h** for verified accounts
 - Template messages are rate-limited by Meta independently
@@ -41,6 +42,7 @@ Our frequency cap is **more conservative** than Meta's to avoid patient fatigue 
 ## Overrides
 
 Clinics may request a cap increase via support. Changes require:
+
 1. Documented business justification
 2. DPO approval (patient consent review)
 3. Configuration update in clinic settings

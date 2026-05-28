@@ -9,11 +9,11 @@ reviewed by legal counsel before first use.
 
 ## Applicable Regulations
 
-| Regulation | Applies When | Notification Deadline |
-|-----------|-------------|---------------------|
-| **Law 09-08 / CNDP** (Morocco) | Always (PHI of Moroccan residents) | "Without delay" (no explicit hour limit; treat as 72h) |
-| **GDPR** (EU) | If any EU data subjects affected (EU-resident patients, French/Spanish expats) | 72 hours from awareness |
-| **HIPAA** | Only if a US-based covered entity is onboarded (currently N/A) | 60 days |
+| Regulation                     | Applies When                                                                   | Notification Deadline                                  |
+| ------------------------------ | ------------------------------------------------------------------------------ | ------------------------------------------------------ |
+| **Law 09-08 / CNDP** (Morocco) | Always (PHI of Moroccan residents)                                             | "Without delay" (no explicit hour limit; treat as 72h) |
+| **GDPR** (EU)                  | If any EU data subjects affected (EU-resident patients, French/Spanish expats) | 72 hours from awareness                                |
+| **HIPAA**                      | Only if a US-based covered entity is onboarded (currently N/A)                 | 60 days                                                |
 
 ---
 

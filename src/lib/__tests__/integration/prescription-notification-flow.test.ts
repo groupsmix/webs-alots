@@ -52,9 +52,7 @@ describe("Prescription → Notification integration", () => {
 
   it("prescription_ready template exists and has correct channels", async () => {
     const { defaultNotificationTemplates } = await import("@/lib/notifications");
-    const template = defaultNotificationTemplates.find(
-      (t) => t.trigger === "prescription_ready",
-    );
+    const template = defaultNotificationTemplates.find((t) => t.trigger === "prescription_ready");
 
     expect(template).toBeDefined();
     expect(template!.enabled).toBe(true);
@@ -65,9 +63,7 @@ describe("Prescription → Notification integration", () => {
 
   it("prescription_ready template contains required variable placeholders", async () => {
     const { defaultNotificationTemplates } = await import("@/lib/notifications");
-    const template = defaultNotificationTemplates.find(
-      (t) => t.trigger === "prescription_ready",
-    );
+    const template = defaultNotificationTemplates.find((t) => t.trigger === "prescription_ready");
 
     expect(template!.body).toContain("{{doctor_name}}");
     expect(template!.body).toContain("{{clinic_name}}");
@@ -77,12 +73,9 @@ describe("Prescription → Notification integration", () => {
   });
 
   it("substituteVariables replaces all prescription notification placeholders", async () => {
-    const { substituteVariables, defaultNotificationTemplates } = await import(
-      "@/lib/notifications"
-    );
-    const template = defaultNotificationTemplates.find(
-      (t) => t.trigger === "prescription_ready",
-    )!;
+    const { substituteVariables, defaultNotificationTemplates } =
+      await import("@/lib/notifications");
+    const template = defaultNotificationTemplates.find((t) => t.trigger === "prescription_ready")!;
 
     const variables = {
       patient_name: "Ahmed",
@@ -106,10 +99,8 @@ describe("Prescription → Notification integration", () => {
   });
 
   it("prescription ID generator produces valid format", async () => {
-    const {
-      generatePrescriptionNumber,
-      isValidPrescriptionNumber,
-    } = await import("@/lib/prescription-id");
+    const { generatePrescriptionNumber, isValidPrescriptionNumber } =
+      await import("@/lib/prescription-id");
 
     const rxId = generatePrescriptionNumber();
 
@@ -118,10 +109,8 @@ describe("Prescription → Notification integration", () => {
   });
 
   it("formatPrescriptionNumber creates correct ID from sequence", async () => {
-    const {
-      formatPrescriptionNumber,
-      isValidPrescriptionNumber,
-    } = await import("@/lib/prescription-id");
+    const { formatPrescriptionNumber, isValidPrescriptionNumber } =
+      await import("@/lib/prescription-id");
 
     const rxId = formatPrescriptionNumber(2026, 42);
 
@@ -135,9 +124,7 @@ describe("Prescription → Notification integration", () => {
     const prescriptionTemplate = defaultNotificationTemplates.find(
       (t) => t.trigger === "prescription_ready",
     )!;
-    const reviewTemplate = defaultNotificationTemplates.find(
-      (t) => t.trigger === "new_review",
-    )!;
+    const reviewTemplate = defaultNotificationTemplates.find((t) => t.trigger === "new_review")!;
 
     const priorityOrder = ["low", "normal", "high", "urgent"];
     const rxPriority = priorityOrder.indexOf(prescriptionTemplate.priority);
@@ -147,9 +134,7 @@ describe("Prescription → Notification integration", () => {
   });
 
   it("all notification triggers have matching metadata entries", async () => {
-    const { defaultNotificationTemplates, triggerMetadata } = await import(
-      "@/lib/notifications"
-    );
+    const { defaultNotificationTemplates, triggerMetadata } = await import("@/lib/notifications");
 
     for (const template of defaultNotificationTemplates) {
       expect(triggerMetadata[template.trigger]).toBeDefined();

@@ -116,15 +116,9 @@ export async function findAbandonedPendingUploads(
 ): Promise<PendingUploadRow[]> {
   assertClinicId(clinicId, "findAbandonedPendingUploads");
 
-  const {
-    olderThanHours = DEFAULT_ABANDONED_HOURS,
-    prefix,
-    limit = 1000,
-  } = options;
+  const { olderThanHours = DEFAULT_ABANDONED_HOURS, prefix, limit = 1000 } = options;
 
-  const cutoffIso = new Date(
-    Date.now() - olderThanHours * 60 * 60 * 1000,
-  ).toISOString();
+  const cutoffIso = new Date(Date.now() - olderThanHours * 60 * 60 * 1000).toISOString();
 
   let query = supabase
     .from("pending_uploads")
@@ -196,9 +190,7 @@ export async function findOrphanKeys(
     throw error;
   }
 
-  const known = new Set<string>(
-    ((data ?? []) as { r2_key: string }[]).map((row) => row.r2_key),
-  );
+  const known = new Set<string>(((data ?? []) as { r2_key: string }[]).map((row) => row.r2_key));
 
   return uniqueKeys.filter((key) => !known.has(key));
 }

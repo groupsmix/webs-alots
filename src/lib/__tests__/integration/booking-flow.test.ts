@@ -174,14 +174,24 @@ describe("Booking flow — cancel integration", () => {
       status: "scheduled",
     };
     const supabase = createMockSupabaseForBooking(mockAppt);
-    const result = await supabase.from("appointments").select("*").eq("id", "appt-1").eq("clinic_id", "c1").single();
+    const result = await supabase
+      .from("appointments")
+      .select("*")
+      .eq("id", "appt-1")
+      .eq("clinic_id", "c1")
+      .single();
     expect(result.data).toEqual(mockAppt);
     expect(result.error).toBeNull();
   });
 
   it("mock Supabase returns null for missing appointments", async () => {
     const supabase = createMockSupabaseForBooking(null);
-    const result = await supabase.from("appointments").select("*").eq("id", "nope").eq("clinic_id", "c1").single();
+    const result = await supabase
+      .from("appointments")
+      .select("*")
+      .eq("id", "nope")
+      .eq("clinic_id", "c1")
+      .single();
     expect(result.data).toBeNull();
     expect(result.error).not.toBeNull();
   });

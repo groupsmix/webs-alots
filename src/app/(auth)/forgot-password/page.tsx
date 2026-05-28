@@ -33,10 +33,7 @@ export default function ForgotPasswordPage() {
     try {
       // MEDIUM 3.1: Use server action instead of client-side Supabase client.
       // This ensures rate limiting and logging are applied server-side.
-      const result = await resetPassword(
-        email,
-        `${window.location.origin}/login`,
-      );
+      const result = await resetPassword(email, `${window.location.origin}/login`);
 
       if (result.error) {
         setError(t(locale, result.error as TranslationKey));
@@ -63,9 +60,7 @@ export default function ForgotPasswordPage() {
           </div>
         </div>
         <h1 className="text-xl font-bold">{t(locale, "auth.portalTitle")}</h1>
-        <p className="text-sm text-muted-foreground">
-          {t(locale, "forgot.resetSubtitle")}
-        </p>
+        <p className="text-sm text-muted-foreground">{t(locale, "forgot.resetSubtitle")}</p>
       </div>
 
       <Card>
@@ -81,9 +76,7 @@ export default function ForgotPasswordPage() {
             {sent ? t(locale, "forgot.emailSent") : t(locale, "forgot.title")}
           </CardTitle>
           <CardDescription>
-            {sent
-              ? `${t(locale, "forgot.emailSentDesc")} ${email}`
-              : t(locale, "forgot.desc")}
+            {sent ? `${t(locale, "forgot.emailSentDesc")} ${email}` : t(locale, "forgot.desc")}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -108,9 +101,7 @@ export default function ForgotPasswordPage() {
                 />
               </div>
               <Button type="submit" className="w-full" disabled={loading}>
-                {loading
-                  ? t(locale, "forgot.sending")
-                  : t(locale, "forgot.sendLink")}
+                {loading ? t(locale, "forgot.sending") : t(locale, "forgot.sendLink")}
               </Button>
             </form>
           )}

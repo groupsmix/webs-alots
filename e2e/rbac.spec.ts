@@ -12,14 +12,11 @@ import { test, expect } from "@playwright/test";
  */
 
 test.describe("RBAC — patient routes require authentication", () => {
-  test("patient dashboard redirects to login when unauthenticated", async ({
-    page,
-  }) => {
+  test("patient dashboard redirects to login when unauthenticated", async ({ page }) => {
     const response = await page.goto("/patient/dashboard");
     const url = page.url();
     const isRedirected = url.includes("/login") || url.includes("/auth");
-    const isBlocked =
-      response?.status() === 401 || response?.status() === 403;
+    const isBlocked = response?.status() === 401 || response?.status() === 403;
     expect(isRedirected || isBlocked).toBeTruthy();
   });
 
@@ -47,9 +44,7 @@ test.describe("RBAC — patient routes require authentication", () => {
 });
 
 test.describe("RBAC — admin routes require authentication", () => {
-  test("admin dashboard redirects to login when unauthenticated", async ({
-    page,
-  }) => {
+  test("admin dashboard redirects to login when unauthenticated", async ({ page }) => {
     const response = await page.goto("/admin/dashboard");
     const url = page.url();
     const isProtected =
@@ -84,9 +79,7 @@ test.describe("RBAC — admin routes require authentication", () => {
 });
 
 test.describe("RBAC — doctor routes require authentication", () => {
-  test("doctor dashboard redirects to login when unauthenticated", async ({
-    page,
-  }) => {
+  test("doctor dashboard redirects to login when unauthenticated", async ({ page }) => {
     const response = await page.goto("/doctor/dashboard");
     const url = page.url();
     const isProtected =
@@ -121,9 +114,7 @@ test.describe("RBAC — doctor routes require authentication", () => {
 });
 
 test.describe("RBAC — receptionist routes require authentication", () => {
-  test("receptionist dashboard redirects to login when unauthenticated", async ({
-    page,
-  }) => {
+  test("receptionist dashboard redirects to login when unauthenticated", async ({ page }) => {
     const response = await page.goto("/receptionist/dashboard");
     const url = page.url();
     const isProtected =
@@ -147,9 +138,7 @@ test.describe("RBAC — receptionist routes require authentication", () => {
 });
 
 test.describe("RBAC — super-admin routes require authentication", () => {
-  test("super-admin dashboard redirects to login when unauthenticated", async ({
-    page,
-  }) => {
+  test("super-admin dashboard redirects to login when unauthenticated", async ({ page }) => {
     const response = await page.goto("/super-admin/dashboard");
     const url = page.url();
     const isProtected =
@@ -160,9 +149,7 @@ test.describe("RBAC — super-admin routes require authentication", () => {
     expect(isProtected).toBeTruthy();
   });
 
-  test("super-admin clinics management redirects to login", async ({
-    page,
-  }) => {
+  test("super-admin clinics management redirects to login", async ({ page }) => {
     const response = await page.goto("/super-admin/clinics");
     const url = page.url();
     const isProtected =
@@ -198,9 +185,7 @@ test.describe("RBAC — specialist role routes require authentication", () => {
   ];
 
   for (const route of specialistRoutes) {
-    test(`${route} redirects to login when unauthenticated`, async ({
-      page,
-    }) => {
+    test(`${route} redirects to login when unauthenticated`, async ({ page }) => {
       const response = await page.goto(route);
       const url = page.url();
       const status = response?.status() ?? 0;
@@ -228,9 +213,7 @@ test.describe("RBAC — staff-only API endpoints reject unauthenticated requests
     expect([401, 403, 404, 405]).toContain(response.status());
   });
 
-  test("POST /api/notifications/trigger requires staff auth", async ({
-    request,
-  }) => {
+  test("POST /api/notifications/trigger requires staff auth", async ({ request }) => {
     const response = await request.post("/api/notifications/trigger", {
       data: {
         trigger: "booking_confirmation",
@@ -241,9 +224,7 @@ test.describe("RBAC — staff-only API endpoints reject unauthenticated requests
     expect([401, 403, 404, 405]).toContain(response.status());
   });
 
-  test("POST /api/payments/create-checkout requires staff auth", async ({
-    request,
-  }) => {
+  test("POST /api/payments/create-checkout requires staff auth", async ({ request }) => {
     const response = await request.post("/api/payments/create-checkout", {
       data: {
         amount: 10000,
@@ -269,9 +250,7 @@ test.describe("RBAC — staff-only API endpoints reject unauthenticated requests
     expect([401, 403, 404, 405]).toContain(response.status());
   });
 
-  test("DELETE /api/patient/delete-account requires auth", async ({
-    request,
-  }) => {
+  test("DELETE /api/patient/delete-account requires auth", async ({ request }) => {
     const response = await request.delete("/api/patient/delete-account");
     expect([401, 403, 404, 405]).toContain(response.status());
   });
@@ -320,9 +299,7 @@ test.describe("RBAC — public routes remain accessible", () => {
 });
 
 test.describe("RBAC — login redirect includes return path", () => {
-  test("protected route redirect includes redirect query param", async ({
-    page,
-  }) => {
+  test("protected route redirect includes redirect query param", async ({ page }) => {
     await page.goto("/admin/dashboard");
     const url = page.url();
     // When redirected to login, the original path should be preserved
@@ -335,9 +312,7 @@ test.describe("RBAC — login redirect includes return path", () => {
     }
   });
 
-  test("patient route redirect includes redirect query param", async ({
-    page,
-  }) => {
+  test("patient route redirect includes redirect query param", async ({ page }) => {
     await page.goto("/patient/dashboard");
     const url = page.url();
     if (url.includes("/login")) {

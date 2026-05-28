@@ -72,11 +72,9 @@ export async function GET() {
     : { status: "degraded", error: "R2 storage not configured" };
 
   // WhatsApp API availability check
-  const whatsappConfigured = !!(
-    process.env.WHATSAPP_PHONE_NUMBER_ID && process.env.WHATSAPP_ACCESS_TOKEN
-  ) || !!(
-    process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN
-  );
+  const whatsappConfigured =
+    !!(process.env.WHATSAPP_PHONE_NUMBER_ID && process.env.WHATSAPP_ACCESS_TOKEN) ||
+    !!(process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN);
   checks.whatsapp = whatsappConfigured
     ? { status: "ok" }
     : { status: "degraded", error: "WhatsApp API not configured" };
@@ -84,10 +82,13 @@ export async function GET() {
   // Rate limiter backend check
   const rateLimitBackend = process.env.RATE_LIMIT_BACKEND || "auto";
   const hasKV = rateLimitBackend === "kv";
-  const hasSupabase = !!(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY);
+  const hasSupabase = !!(
+    process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY
+  );
   checks.rateLimiter = {
     status: hasKV || hasSupabase ? "ok" : "degraded",
-    error: !hasKV && !hasSupabase ? "Using in-memory fallback (not shared across isolates)" : undefined,
+    error:
+      !hasKV && !hasSupabase ? "Using in-memory fallback (not shared across isolates)" : undefined,
   };
 
   const overallStatus = Object.values(checks).every((c) => c.status === "ok")
@@ -101,9 +102,7 @@ export async function GET() {
   // strings, timestamps, and per-dependency detail are reserved for the
   // gated /api/health/internal endpoint so unauthenticated callers cannot
   // fingerprint our infrastructure.
-  return apiSuccess(
-    { ok: overallStatus !== "down" },
-    overallStatus === "down" ? 503 : 200,
-    { "Cache-Control": "public, max-age=30" },
-  );
+  return apiSuccess({ ok: overallStatus !== "down" }, overallStatus === "down" ? 503 : 200, {
+    "Cache-Control": "public, max-age=30",
+  });
 }

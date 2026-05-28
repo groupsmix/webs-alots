@@ -8,7 +8,11 @@ import { useTenant } from "@/components/tenant-provider";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { fetchAvailableSlots, fetchGeneratedSlots, fetchSlotBookingCounts } from "@/lib/data/client";
+import {
+  fetchAvailableSlots,
+  fetchGeneratedSlots,
+  fetchSlotBookingCounts,
+} from "@/lib/data/client";
 import { logger } from "@/lib/logger";
 import { formatDisplayDate } from "@/lib/utils";
 
@@ -57,15 +61,17 @@ export function RescheduleDialog({ appointment, onClose, onReschedule }: Resched
       fetchAvailableSlots(clinicId, selectedDate, appointment.doctorId),
       fetchGeneratedSlots(clinicId, selectedDate, appointment.doctorId),
       fetchSlotBookingCounts(clinicId, selectedDate, appointment.doctorId),
-    ]).then(([available, all, counts]) => {
-      setAvailableSlots(available);
-      setAllSlots(all);
-      setSlotCounts(counts);
-    }).catch(() => {
-      setAvailableSlots([]);
-      setAllSlots([]);
-      setSlotCounts({});
-    });
+    ])
+      .then(([available, all, counts]) => {
+        setAvailableSlots(available);
+        setAllSlots(all);
+        setSlotCounts(counts);
+      })
+      .catch(() => {
+        setAvailableSlots([]);
+        setAllSlots([]);
+        setSlotCounts({});
+      });
   }, [selectedDate, appointment.doctorId, tenant?.clinicId]);
 
   const handleReschedule = async () => {
@@ -109,9 +115,12 @@ export function RescheduleDialog({ appointment, onClose, onReschedule }: Resched
           <RefreshCw className="h-8 w-8 mx-auto text-green-600 mb-3" />
           <h3 className="font-semibold text-lg mb-1">Rescheduled!</h3>
           <p className="text-sm text-muted-foreground mb-2">
-            Your appointment has been moved to {formatDisplayDate(selectedDate, "fr", "long")} at {selectedTime}.
+            Your appointment has been moved to {formatDisplayDate(selectedDate, "fr", "long")} at{" "}
+            {selectedTime}.
           </p>
-          <Button variant="outline" onClick={onClose} className="mt-3">Close</Button>
+          <Button variant="outline" onClick={onClose} className="mt-3">
+            Close
+          </Button>
         </CardContent>
       </Card>
     );
@@ -125,9 +134,9 @@ export function RescheduleDialog({ appointment, onClose, onReschedule }: Resched
           Reschedule Appointment
         </CardTitle>
         <div className="text-sm text-muted-foreground">
-          Current: <Badge variant="outline">{formatDisplayDate(appointment.date, "fr", "long")}</Badge>{" "}
-          at <Badge variant="outline">{appointment.time}</Badge>{" "}
-          with {appointment.doctorName}
+          Current:{" "}
+          <Badge variant="outline">{formatDisplayDate(appointment.date, "fr", "long")}</Badge> at{" "}
+          <Badge variant="outline">{appointment.time}</Badge> with {appointment.doctorName}
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -137,7 +146,10 @@ export function RescheduleDialog({ appointment, onClose, onReschedule }: Resched
           </p>
           <BookingCalendar
             selectedDate={selectedDate}
-            onSelectDate={(date) => { setSelectedDate(date); setSelectedTime(""); }}
+            onSelectDate={(date) => {
+              setSelectedDate(date);
+              setSelectedTime("");
+            }}
           />
         </div>
 
@@ -157,12 +169,12 @@ export function RescheduleDialog({ appointment, onClose, onReschedule }: Resched
           </div>
         )}
 
-        {error && (
-          <p className="text-sm text-destructive">{error}</p>
-        )}
+        {error && <p className="text-sm text-destructive">{error}</p>}
 
         <div className="flex gap-2 justify-end">
-          <Button variant="outline" onClick={onClose}>Cancel</Button>
+          <Button variant="outline" onClick={onClose}>
+            Cancel
+          </Button>
           <Button
             onClick={handleReschedule}
             disabled={!selectedDate || !selectedTime || isSubmitting}

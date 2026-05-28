@@ -140,16 +140,16 @@ its release.
 
 Use this template to document evidence handling during an incident.
 
-| # | Evidence Item | Collected By | Date/Time (UTC) | Source | Hash (SHA-256) | Storage Location | Notes |
-|---|--------------|-------------|-----------------|--------|----------------|-----------------|-------|
-| 1 | [e.g., Supabase audit_logs export] | [Name] | [YYYY-MM-DD HH:MM] | [Supabase Dashboard] | [hash] | [R2 bucket / local encrypted drive] | [any notes] |
-| 2 | | | | | | | |
+| #   | Evidence Item                      | Collected By | Date/Time (UTC)    | Source               | Hash (SHA-256) | Storage Location                    | Notes       |
+| --- | ---------------------------------- | ------------ | ------------------ | -------------------- | -------------- | ----------------------------------- | ----------- |
+| 1   | [e.g., Supabase audit_logs export] | [Name]       | [YYYY-MM-DD HH:MM] | [Supabase Dashboard] | [hash]         | [R2 bucket / local encrypted drive] | [any notes] |
+| 2   |                                    |              |                    |                      |                |                                     |             |
 
 ### Chain of Custody Transfer
 
-| Evidence # | From | To | Date/Time (UTC) | Reason | Signature |
-|-----------|------|-----|-----------------|--------|-----------|
-| 1 | [Name] | [Name] | [YYYY-MM-DD HH:MM] | [Reason] | [Digital signature / initials] |
+| Evidence # | From   | To     | Date/Time (UTC)    | Reason   | Signature                      |
+| ---------- | ------ | ------ | ------------------ | -------- | ------------------------------ |
+| 1          | [Name] | [Name] | [YYYY-MM-DD HH:MM] | [Reason] | [Digital signature / initials] |
 
 ---
 

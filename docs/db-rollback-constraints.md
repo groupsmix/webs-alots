@@ -38,17 +38,17 @@ For these reasons, **every migration in this repo must be designed so that the p
 
 The deploy pipeline (`.github/workflows/deploy.yml`, CI-11) takes the following actions when the post-deploy health check fails:
 
-| Action | Reverted? | Notes |
-|---|---|---|
-| Worker code (JS bundle from `npm run build:cf`) | ✅ Yes | `wrangler rollback` restores the immediately previous Worker version. |
-| Worker bindings declared in `wrangler.toml` (R2, KV, Queues) | ✅ Yes | Rolled back as part of the Worker version. |
-| Worker secrets (`wrangler secret put`) | ❌ **No** | Secrets are stored separately and persist across rollbacks. Re-running `update-secrets.yml` is required if a release changed secret values. |
-| Cron triggers in `wrangler.toml` | ✅ Yes | Bound to the Worker version. |
-| Cloudflare KV / R2 contents written during the bad release | ❌ **No** | Stored externally; not versioned with the Worker. |
-| Supabase schema migrations applied during the release | ❌ **No** | Forward-only — see Section 3 for manual procedures. |
-| Supabase row data written during the bad release | ❌ **No** | Restore from the nightly pg_dump (see [`backup-recovery-runbook.md`](./backup-recovery-runbook.md) §4.1) if corruption is suspected. |
-| WhatsApp / Twilio template approvals | ❌ **No** | External provider state. |
-| R2 lifecycle rules (`scripts/apply-r2-lifecycle.mjs`) | ❌ **No** | Applied imperatively, not versioned with the Worker. |
+| Action                                                       | Reverted? | Notes                                                                                                                                       |
+| ------------------------------------------------------------ | --------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| Worker code (JS bundle from `npm run build:cf`)              | ✅ Yes    | `wrangler rollback` restores the immediately previous Worker version.                                                                       |
+| Worker bindings declared in `wrangler.toml` (R2, KV, Queues) | ✅ Yes    | Rolled back as part of the Worker version.                                                                                                  |
+| Worker secrets (`wrangler secret put`)                       | ❌ **No** | Secrets are stored separately and persist across rollbacks. Re-running `update-secrets.yml` is required if a release changed secret values. |
+| Cron triggers in `wrangler.toml`                             | ✅ Yes    | Bound to the Worker version.                                                                                                                |
+| Cloudflare KV / R2 contents written during the bad release   | ❌ **No** | Stored externally; not versioned with the Worker.                                                                                           |
+| Supabase schema migrations applied during the release        | ❌ **No** | Forward-only — see Section 3 for manual procedures.                                                                                         |
+| Supabase row data written during the bad release             | ❌ **No** | Restore from the nightly pg_dump (see [`backup-recovery-runbook.md`](./backup-recovery-runbook.md) §4.1) if corruption is suspected.        |
+| WhatsApp / Twilio template approvals                         | ❌ **No** | External provider state.                                                                                                                    |
+| R2 lifecycle rules (`scripts/apply-r2-lifecycle.mjs`)        | ❌ **No** | Applied imperatively, not versioned with the Worker.                                                                                        |
 
 **Implication:** the auto-rollback is sufficient when a release contains only Worker code changes. As soon as a release also contains a schema migration, secret rotation, KV write, or R2 lifecycle change, the rollback is **partial** and on-call must finish the rollback by hand using the procedures below.
 
@@ -177,11 +177,11 @@ Before merging a PR that touches `supabase/migrations/`, confirm:
 
 Several alternatives were considered and rejected:
 
-| Approach | Why it was rejected |
-|---|---|
-| Symmetric `down` migrations | Cannot reliably reverse PHI re-encryption, enum additions, RLS policy interactions, or tenant-scoped writes that occurred between the migration and the rollback. |
-| Snapshot-and-restore on every deploy | Supabase Pro does not offer per-deploy snapshots; PITR is minute-granular at best and restoring drops cross-tenant data. |
-| Blue/green schema (parallel databases) | Would require dual-writing all PHI, doubling encryption-key surface area and breaking single-source-of-truth audit logs. |
-| `wrangler rollback` extended to drive Supabase | Cloudflare Workers cannot transactionally coordinate with Postgres; partial failures would leave the system in a worse state than a Worker-only rollback. |
+| Approach                                       | Why it was rejected                                                                                                                                               |
+| ---------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Symmetric `down` migrations                    | Cannot reliably reverse PHI re-encryption, enum additions, RLS policy interactions, or tenant-scoped writes that occurred between the migration and the rollback. |
+| Snapshot-and-restore on every deploy           | Supabase Pro does not offer per-deploy snapshots; PITR is minute-granular at best and restoring drops cross-tenant data.                                          |
+| Blue/green schema (parallel databases)         | Would require dual-writing all PHI, doubling encryption-key surface area and breaking single-source-of-truth audit logs.                                          |
+| `wrangler rollback` extended to drive Supabase | Cloudflare Workers cannot transactionally coordinate with Postgres; partial failures would leave the system in a worse state than a Worker-only rollback.         |
 
 The chosen contract — **forward-only migrations + Worker-only auto-rollback + expand-migrate-contract discipline** — keeps the rollback fast and side-effect-free in the common case, and pushes the rare incompatible-schema case to a documented manual procedure.

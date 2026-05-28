@@ -44,8 +44,8 @@ Application: `src/app/api/booking/route.ts` calls `supabase.rpc("booking_atomic_
 ## Alternatives Considered
 
 1. **Partial unique index** - `CREATE UNIQUE INDEX ON appointments
-   (clinic_id, doctor_id, appointment_date, start_time) WHERE status
-   IN (...)` - Works for maxPerSlot=1 but cannot enforce maxPerSlot>1.
+(clinic_id, doctor_id, appointment_date, start_time) WHERE status
+IN (...)` - Works for maxPerSlot=1 but cannot enforce maxPerSlot>1.
 2. **SELECT FOR UPDATE** - Requires a "slot" row to exist before
    booking; adds schema complexity.
 3. **Application-level distributed lock (Redis/KV)** - Adds external

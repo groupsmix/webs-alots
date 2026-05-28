@@ -31,8 +31,8 @@ export default async function PharmacyServicesPage() {
     <div className="container mx-auto px-4 py-8">
       <h1 className="text-3xl font-bold mb-2">Our Services</h1>
       <p className="text-muted-foreground mb-8 max-w-2xl">
-        Beyond medications, we offer a range of professional healthcare services.
-        No appointment needed for most services.
+        Beyond medications, we offer a range of professional healthcare services. No appointment
+        needed for most services.
       </p>
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
@@ -47,11 +47,16 @@ export default async function PharmacyServicesPage() {
                   <div className="flex items-center gap-2 mb-2">
                     <h3 className="font-semibold text-lg">{service.name}</h3>
                     {service.available ? (
-                      <Badge variant="outline" className="text-emerald-600 border-emerald-600 text-xs">
+                      <Badge
+                        variant="outline"
+                        className="text-emerald-600 border-emerald-600 text-xs"
+                      >
                         Available
                       </Badge>
                     ) : (
-                      <Badge variant="secondary" className="text-xs">Unavailable</Badge>
+                      <Badge variant="secondary" className="text-xs">
+                        Unavailable
+                      </Badge>
                     )}
                   </div>
                   <p className="text-sm text-muted-foreground mb-4">{service.description}</p>
@@ -77,31 +82,29 @@ export default async function PharmacyServicesPage() {
           <div>
             <h3 className="font-semibold mb-2">Injections & Vaccinations</h3>
             <p className="text-sm text-muted-foreground">
-              Please bring your prescription from a licensed doctor. We administer
-              intramuscular (IM) and subcutaneous (SC) injections only. IV injections
-              must be done at a clinic.
+              Please bring your prescription from a licensed doctor. We administer intramuscular
+              (IM) and subcutaneous (SC) injections only. IV injections must be done at a clinic.
             </p>
           </div>
           <div>
             <h3 className="font-semibold mb-2">Blood Pressure Checks</h3>
             <p className="text-sm text-muted-foreground">
-              Our pharmacists can measure your blood pressure using calibrated
-              digital monitors. For accurate readings, please rest for 5 minutes
-              before measurement.
+              Our pharmacists can measure your blood pressure using calibrated digital monitors. For
+              accurate readings, please rest for 5 minutes before measurement.
             </p>
           </div>
           <div>
             <h3 className="font-semibold mb-2">Home Delivery</h3>
             <p className="text-sm text-muted-foreground">
-              We offer medication delivery within Casablanca city limits. Delivery
-              is available Monday to Saturday. A small delivery fee applies.
+              We offer medication delivery within Casablanca city limits. Delivery is available
+              Monday to Saturday. A small delivery fee applies.
             </p>
           </div>
           <div>
             <h3 className="font-semibold mb-2">Medication Counseling</h3>
             <p className="text-sm text-muted-foreground">
-              Our qualified pharmacists are available to discuss your medications,
-              potential interactions, and proper usage. This service is always free.
+              Our qualified pharmacists are available to discuss your medications, potential
+              interactions, and proper usage. This service is always free.
             </p>
           </div>
         </div>

@@ -49,4 +49,3 @@ export async function fetchInvoices(clinicId: string): Promise<InvoiceView[]> {
     date: r.created_at?.split("T")[0] ?? "",
   }));
 }
-

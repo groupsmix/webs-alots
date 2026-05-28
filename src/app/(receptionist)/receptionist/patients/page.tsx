@@ -24,7 +24,10 @@ export default function ReceptionistPatientsPage() {
     async function load() {
       const user = await getCurrentUser();
       if (controller.signal.aborted) return;
-      if (!user?.clinic_id) { setLoading(false); return; }
+      if (!user?.clinic_id) {
+        setLoading(false);
+        return;
+      }
       const data = await fetchPatients(user.clinic_id);
       setPatients(data);
       setLoading(false);
@@ -35,15 +38,14 @@ export default function ReceptionistPatientsPage() {
         setLoading(false);
       }
     });
-    return () => { controller.abort(); };
+    return () => {
+      controller.abort();
+    };
   }, []);
 
   const filteredPatients = patients.filter((p) => {
     const query = searchQuery.toLowerCase();
-    return (
-      p.name.toLowerCase().includes(query) ||
-      p.phone.toLowerCase().includes(query)
-    );
+    return p.name.toLowerCase().includes(query) || p.phone.toLowerCase().includes(query);
   });
 
   const handleCheckIn = (id: string) => {
@@ -66,7 +68,9 @@ export default function ReceptionistPatientsPage() {
   if (error) {
     return (
       <div className="p-8 text-center">
-        <p className="text-red-600 font-medium">Failed to load data. Please try refreshing the page.</p>
+        <p className="text-red-600 font-medium">
+          Failed to load data. Please try refreshing the page.
+        </p>
         {error.message && <p className="text-sm text-muted-foreground mt-2">{error.message}</p>}
       </div>
     );
@@ -97,32 +101,58 @@ export default function ReceptionistPatientsPage() {
               <CardContent className="flex items-center gap-4 p-4">
                 <Avatar>
                   <AvatarFallback className="bg-primary/10 text-primary text-sm">
-                    {patient.name.split(" ").map((n) => n[0]).join("")}
+                    {patient.name
+                      .split(" ")
+                      .map((n) => n[0])
+                      .join("")}
                   </AvatarFallback>
                 </Avatar>
                 <div className="flex-1 min-w-0">
                   <p className="font-medium text-sm">{patient.name}</p>
-                  <DataMask value={patient.phone} type="phone" className="text-xs text-muted-foreground" />
+                  <DataMask
+                    value={patient.phone}
+                    type="phone"
+                    className="text-xs text-muted-foreground"
+                  />
                 </div>
                 <div className="flex items-center gap-2">
                   <Badge variant={patient.insurance ? "success" : "secondary"}>
                     {patient.insurance || "No Insurance"}
                   </Badge>
-                  <span className="text-xs text-muted-foreground">{patient.age}y, {patient.gender}</span>
+                  <span className="text-xs text-muted-foreground">
+                    {patient.age}y, {patient.gender}
+                  </span>
                 </div>
                 <div className="flex gap-1">
                   {isCheckedIn ? (
-                    <Badge variant="success" className="text-xs">Checked In</Badge>
+                    <Badge variant="success" className="text-xs">
+                      Checked In
+                    </Badge>
                   ) : (
-                    <Button variant="outline" size="sm" onClick={() => handleCheckIn(patient.id)} title="Check In">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleCheckIn(patient.id)}
+                      title="Check In"
+                    >
                       <CheckCircle className="h-3.5 w-3.5 text-green-600 mr-1" />
                       Check In
                     </Button>
                   )}
-                  <Button variant="ghost" size="sm" onClick={() => handleCallPatient(patient.phone)} title="Call">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleCallPatient(patient.phone)}
+                    title="Call"
+                  >
                     <Phone className="h-4 w-4 text-blue-600" />
                   </Button>
-                  <Button variant="ghost" size="sm" onClick={() => handleWhatsApp(patient.phone)} title="WhatsApp">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleWhatsApp(patient.phone)}
+                    title="WhatsApp"
+                  >
                     <MessageCircle className="h-4 w-4 text-green-600" />
                   </Button>
                 </div>

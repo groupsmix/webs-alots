@@ -16,12 +16,7 @@ type CustomFieldType =
   | "file"
   | "tooth_number";
 
-type CustomFieldEntityType =
-  | "appointment"
-  | "patient"
-  | "consultation"
-  | "product"
-  | "lab_order";
+type CustomFieldEntityType = "appointment" | "patient" | "consultation" | "product" | "lab_order";
 
 // ---- Select Option ----
 

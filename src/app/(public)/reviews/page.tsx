@@ -24,9 +24,7 @@ function StarRating({ rating }: { rating: number }) {
           key={i}
           aria-hidden="true"
           className={`h-4 w-4 ${
-            i < rating
-              ? "fill-yellow-400 text-yellow-400"
-              : "fill-muted text-muted"
+            i < rating ? "fill-yellow-400 text-yellow-400" : "fill-muted text-muted"
           }`}
         />
       ))}
@@ -72,9 +70,7 @@ export default async function ReviewsPage() {
       />
       <div className="text-center mb-12">
         <h1 className="text-3xl font-bold mb-4">{cfg.title}</h1>
-        <p className="text-muted-foreground max-w-2xl mx-auto mb-6">
-          {cfg.subtitle}
-        </p>
+        <p className="text-muted-foreground max-w-2xl mx-auto mb-6">{cfg.subtitle}</p>
         <div className="flex items-center justify-center gap-2 mb-2">
           <span className="text-4xl font-bold">{avgRating}</span>
           <div>
@@ -93,16 +89,17 @@ export default async function ReviewsPage() {
               <div className="flex items-center gap-3">
                 <Avatar className="h-10 w-10">
                   <AvatarFallback className="text-sm bg-primary/10 text-primary">
-                    {review.patientName.split(" ").map((n) => n[0]).join("")}
+                    {review.patientName
+                      .split(" ")
+                      .map((n) => n[0])
+                      .join("")}
                   </AvatarFallback>
                 </Avatar>
                 <div className="flex-1">
                   <p className="font-medium text-sm">{review.patientName}</p>
                   <div className="flex items-center gap-2">
                     <StarRating rating={review.rating} />
-                    <span className="text-xs text-muted-foreground">
-                      {review.date}
-                    </span>
+                    <span className="text-xs text-muted-foreground">{review.date}</span>
                   </div>
                 </div>
               </div>

@@ -10,12 +10,7 @@ import { apiError, apiInternalError, apiSuccess } from "@/lib/api-response";
 import { withAuthValidation } from "@/lib/api-validate";
 import { meetsWCAG_AA, WCAG_SAFE_DEFAULTS } from "@/lib/contrast";
 import { logger } from "@/lib/logger";
-import {
-  uploadToR2,
-  isR2Configured,
-  buildUploadKey,
-  getResponsiveImageUrls,
-} from "@/lib/r2";
+import { uploadToR2, isR2Configured, buildUploadKey, getResponsiveImageUrls } from "@/lib/r2";
 import { invalidateAllSubdomainCaches } from "@/lib/subdomain-cache";
 import { createTenantClient } from "@/lib/supabase-server";
 import { getTenant, requireTenant } from "@/lib/tenant";
@@ -38,8 +33,8 @@ const ALLOWED_IMAGE_TYPES = new Set([
 
 // Magic byte signatures for server-side file content validation.
 const MAGIC_BYTES: Record<string, Uint8Array[]> = {
-  "image/jpeg": [new Uint8Array([0xFF, 0xD8, 0xFF])],
-  "image/png": [new Uint8Array([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A])],
+  "image/jpeg": [new Uint8Array([0xff, 0xd8, 0xff])],
+  "image/png": [new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])],
   "image/webp": [new Uint8Array([0x52, 0x49, 0x46, 0x46])],
   "image/x-icon": [new Uint8Array([0x00, 0x00, 0x01, 0x00])],
   "image/vnd.microsoft.icon": [new Uint8Array([0x00, 0x00, 0x01, 0x00])],
@@ -48,9 +43,7 @@ const MAGIC_BYTES: Record<string, Uint8Array[]> = {
 function validateFileContent(buffer: Buffer, declaredType: string): boolean {
   const signatures = MAGIC_BYTES[declaredType];
   if (!signatures) return false;
-  return signatures.some((sig) =>
-    sig.every((byte, i) => i < buffer.length && buffer[i] === byte),
-  );
+  return signatures.some((sig) => sig.every((byte, i) => i < buffer.length && buffer[i] === byte));
 }
 
 const FIELD_MAP: Record<string, string> = {
@@ -145,57 +138,61 @@ export async function GET() {
 
 // ── PUT — update text branding fields (colors, fonts) ──
 
-export const PUT = withAuthValidation(brandingUpdateSchema, async (body, request, { supabase }) => {
-  const tenant = await requireTenant();
-  const clinicId = tenant.clinicId;
+export const PUT = withAuthValidation(
+  brandingUpdateSchema,
+  async (body, request, { supabase }) => {
+    const tenant = await requireTenant();
+    const clinicId = tenant.clinicId;
 
-  const updates: Record<string, unknown> = {};
-  const stringKeys = [
-    "primary_color",
-    "secondary_color",
-    "heading_font",
-    "body_font",
-    "name",
-    "tagline",
-    "phone",
-    "address",
-    "template_id",
-  ] as const;
-  for (const key of stringKeys) {
-    const val = body[key as keyof typeof body];
-    if (typeof val === "string") {
-      updates[key] = val.trim();
+    const updates: Record<string, unknown> = {};
+    const stringKeys = [
+      "primary_color",
+      "secondary_color",
+      "heading_font",
+      "body_font",
+      "name",
+      "tagline",
+      "phone",
+      "address",
+      "template_id",
+    ] as const;
+    for (const key of stringKeys) {
+      const val = body[key as keyof typeof body];
+      if (typeof val === "string") {
+        updates[key] = val.trim();
+      }
     }
-  }
 
-  // Handle section_visibility as JSONB
-  if (body.section_visibility && typeof body.section_visibility === "object") {
-    updates.section_visibility = body.section_visibility;
-  }
+    // Handle section_visibility as JSONB
+    if (body.section_visibility && typeof body.section_visibility === "object") {
+      updates.section_visibility = body.section_visibility;
+    }
 
-  if (Object.keys(updates).length === 0) {
-    return apiError("No valid fields to update");
-  }
+    if (Object.keys(updates).length === 0) {
+      return apiError("No valid fields to update");
+    }
 
-  const { error } = await supabase
-    .from("clinics")
-    // @ts-expect-error -- Supabase generated types lag behind actual DB schema
-    .update(updates)
-    .eq("id", clinicId);
+    const { error } = await supabase
+      .from("clinics")
+      // @ts-expect-error -- Supabase generated types lag behind actual DB schema
+      .update(updates)
+      .eq("id", clinicId);
 
-  if (error) {
-    logger.warn("Operation failed", { context: "branding", error });
-    return apiInternalError("Failed to update branding");
-  }
+    if (error) {
+      logger.warn("Operation failed", { context: "branding", error });
+      return apiInternalError("Failed to update branding");
+    }
 
-  // Invalidate branding cache so public pages pick up the change
-  revalidatePath("/", "layout");
+    // Invalidate branding cache so public pages pick up the change
+    revalidatePath("/", "layout");
 
-  // Invalidate subdomain cache so middleware picks up any name/config changes
-  invalidateAllSubdomainCaches();
+    // Invalidate subdomain cache so middleware picks up any name/config changes
+    invalidateAllSubdomainCaches();
 
-  return apiSuccess({ ok: true });
-}, ADMIN_ROLES);
+    return apiSuccess({ ok: true });
+  },
+  ADMIN_ROLES,
+);
 
 // ── POST — upload a branding image and save URL ──
 

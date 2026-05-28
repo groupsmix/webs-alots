@@ -47,7 +47,10 @@ interface VisionTestRaw {
   notes: string | null;
 }
 
-export async function fetchVisionTests(clinicId: string, patientId?: string): Promise<VisionTestView[]> {
+export async function fetchVisionTests(
+  clinicId: string,
+  patientId?: string,
+): Promise<VisionTestView[]> {
   await ensureLookups(clinicId);
   const eq: [string, unknown][] = [["clinic_id", clinicId]];
   if (patientId) eq.push(["patient_id", patientId]);
@@ -100,7 +103,10 @@ export async function createVisionTest(data: {
     .insert(data)
     .select("id")
     .single();
-  if (error) { logger.warn("Query failed", { context: "data/client", error }); return null; }
+  if (error) {
+    logger.warn("Query failed", { context: "data/client", error });
+    return null;
+  }
   return row?.id ?? null;
 }
 
@@ -132,7 +138,10 @@ interface IopMeasurementRaw {
   notes: string | null;
 }
 
-export async function fetchIopMeasurements(clinicId: string, patientId?: string): Promise<IopMeasurementView[]> {
+export async function fetchIopMeasurements(
+  clinicId: string,
+  patientId?: string,
+): Promise<IopMeasurementView[]> {
   await ensureLookups(clinicId);
   const eq: [string, unknown][] = [["clinic_id", clinicId]];
   if (patientId) eq.push(["patient_id", patientId]);
@@ -169,7 +178,10 @@ export async function createIopMeasurement(data: {
     .insert(data)
     .select("id")
     .single();
-  if (error) { logger.warn("Query failed", { context: "data/client", error }); return null; }
+  if (error) {
+    logger.warn("Query failed", { context: "data/client", error });
+    return null;
+  }
   return row?.id ?? null;
 }
 

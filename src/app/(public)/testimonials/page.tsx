@@ -25,9 +25,7 @@ function StarRating({ rating }: { rating: number }) {
           key={i}
           aria-hidden="true"
           className={`h-4 w-4 ${
-            i < rating
-              ? "fill-yellow-400 text-yellow-400"
-              : "fill-muted text-muted"
+            i < rating ? "fill-yellow-400 text-yellow-400" : "fill-muted text-muted"
           }`}
         />
       ))}
@@ -45,9 +43,10 @@ export default async function TestimonialsPage() {
   const ratingDistribution = [5, 4, 3, 2, 1].map((stars) => ({
     stars,
     count: reviews.filter((r) => r.rating === stars).length,
-    percentage: reviews.length > 0
-      ? Math.round((reviews.filter((r) => r.rating === stars).length / reviews.length) * 100)
-      : 0,
+    percentage:
+      reviews.length > 0
+        ? Math.round((reviews.filter((r) => r.rating === stars).length / reviews.length) * 100)
+        : 0,
   }));
 
   return (
@@ -78,7 +77,13 @@ export default async function TestimonialsPage() {
               <div className="flex-1 space-y-2 w-full">
                 {ratingDistribution.map((dist) => (
                   <div key={dist.stars} className="flex items-center gap-2 text-sm">
-                    <span className="w-8 text-right">{dist.stars} <Star aria-hidden="true" className="h-3 w-3 inline fill-yellow-400 text-yellow-400" /></span>
+                    <span className="w-8 text-right">
+                      {dist.stars}{" "}
+                      <Star
+                        aria-hidden="true"
+                        className="h-3 w-3 inline fill-yellow-400 text-yellow-400"
+                      />
+                    </span>
                     <div className="flex-1 bg-muted rounded-full h-2.5 overflow-hidden">
                       <div
                         className="h-full bg-yellow-400 rounded-full transition-all"
@@ -105,7 +110,10 @@ export default async function TestimonialsPage() {
                 <div className="flex items-start gap-3">
                   <Avatar className="h-10 w-10">
                     <AvatarFallback className="text-sm bg-primary/10 text-primary">
-                      {review.patientName.split(" ").map((n) => n[0]).join("")}
+                      {review.patientName
+                        .split(" ")
+                        .map((n) => n[0])
+                        .join("")}
                     </AvatarFallback>
                   </Avatar>
                   <div className="flex-1">
@@ -122,9 +130,7 @@ export default async function TestimonialsPage() {
               <CardContent>
                 <div className="relative">
                   <Quote className="h-6 w-6 text-primary/20 absolute -top-1 -left-1" />
-                  <p className="text-sm text-muted-foreground pl-4 italic">
-                    {review.comment}
-                  </p>
+                  <p className="text-sm text-muted-foreground pl-4 italic">{review.comment}</p>
                 </div>
               </CardContent>
             </Card>
@@ -134,13 +140,8 @@ export default async function TestimonialsPage() {
 
       {/* CTA */}
       <div className="text-center mt-12">
-        <p className="text-muted-foreground mb-4">
-          Trusted by our patients for quality healthcare
-        </p>
-        <Link
-          href="/book"
-          className={buttonVariants({ size: "lg" })}
-        >
+        <p className="text-muted-foreground mb-4">Trusted by our patients for quality healthcare</p>
+        <Link href="/book" className={buttonVariants({ size: "lg" })}>
           <Calendar className="h-4 w-4 mr-2" />
           Book Your Appointment
         </Link>

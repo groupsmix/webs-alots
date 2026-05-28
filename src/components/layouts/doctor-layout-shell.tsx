@@ -1,13 +1,48 @@
 "use client";
 
 import {
-  LayoutDashboard, Users, Calendar, Pill, FileEdit, Clock,
-  MessageCircle, CalendarClock, BarChart3, ClipboardList,
-  FlaskConical, ShieldCheck, Camera, Package, CreditCard, Award,
-  Building2, FileCheck, Sparkles, HeartHandshake, Droplets, Monitor, Boxes, FileText,
-  Heart, Ear, Bone, Brain, Activity, Wind, Target,
-  Ruler, Syringe, Baby, Image, Eye,
-  Menu, X, ChevronDown, Search, Stethoscope, Pin,
+  LayoutDashboard,
+  Users,
+  Calendar,
+  Pill,
+  FileEdit,
+  Clock,
+  MessageCircle,
+  CalendarClock,
+  BarChart3,
+  ClipboardList,
+  FlaskConical,
+  ShieldCheck,
+  Camera,
+  Package,
+  CreditCard,
+  Award,
+  Building2,
+  FileCheck,
+  Sparkles,
+  HeartHandshake,
+  Droplets,
+  Monitor,
+  Boxes,
+  FileText,
+  Heart,
+  Ear,
+  Bone,
+  Brain,
+  Activity,
+  Wind,
+  Target,
+  Ruler,
+  Syringe,
+  Baby,
+  Image,
+  Eye,
+  Menu,
+  X,
+  ChevronDown,
+  Search,
+  Stethoscope,
+  Pin,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -39,63 +74,319 @@ interface NavItem {
 
 const navItems: NavItem[] = [
   // General
-  { href: "/doctor/dashboard", labelKey: "doctorNav.dashboard", icon: LayoutDashboard, section: "General" },
+  {
+    href: "/doctor/dashboard",
+    labelKey: "doctorNav.dashboard",
+    icon: LayoutDashboard,
+    section: "General",
+  },
   { href: "/doctor/patients", labelKey: "doctorNav.myPatients", icon: Users, section: "General" },
   { href: "/doctor/chat", labelKey: "doctorNav.chat", icon: MessageCircle, section: "General" },
-  { href: "/doctor/analytics", labelKey: "doctorNav.analytics", icon: BarChart3, section: "General" },
+  {
+    href: "/doctor/analytics",
+    labelKey: "doctorNav.analytics",
+    icon: BarChart3,
+    section: "General",
+  },
   // Appointments
-  { href: "/doctor/schedule", labelKey: "doctorNav.schedule", icon: Calendar, requiredFeature: "appointments", section: "Appointments" },
-  { href: "/doctor/waiting-room", labelKey: "doctorNav.waitingRoom", icon: Clock, requiredFeature: "appointments", section: "Appointments" },
-  { href: "/doctor/slots", labelKey: "doctorNav.availableSlots", icon: CalendarClock, requiredFeature: "appointments", section: "Appointments" },
+  {
+    href: "/doctor/schedule",
+    labelKey: "doctorNav.schedule",
+    icon: Calendar,
+    requiredFeature: "appointments",
+    section: "Appointments",
+  },
+  {
+    href: "/doctor/waiting-room",
+    labelKey: "doctorNav.waitingRoom",
+    icon: Clock,
+    requiredFeature: "appointments",
+    section: "Appointments",
+  },
+  {
+    href: "/doctor/slots",
+    labelKey: "doctorNav.availableSlots",
+    icon: CalendarClock,
+    requiredFeature: "appointments",
+    section: "Appointments",
+  },
   // Clinical
-  { href: "/doctor/prescriptions", labelKey: "doctorNav.prescriptions", icon: Pill, requiredFeature: "prescriptions", section: "Clinical" },
-  { href: "/doctor/consultation", labelKey: "doctorNav.consultationNotes", icon: FileEdit, requiredFeature: "consultations", section: "Clinical" },
-  { href: "/doctor/lab-orders", labelKey: "doctorNav.labOrders", icon: FlaskConical, requiredFeature: "lab_results", section: "Clinical" },
-  { href: "/doctor/certificates", labelKey: "doctorNav.certificates", icon: Award, requiredFeature: "certificates", section: "Clinical" },
-  { href: "/doctor/consent-forms", labelKey: "doctorNav.consentForms", icon: FileCheck, requiredFeature: "consent_forms", section: "Clinical" },
+  {
+    href: "/doctor/prescriptions",
+    labelKey: "doctorNav.prescriptions",
+    icon: Pill,
+    requiredFeature: "prescriptions",
+    section: "Clinical",
+  },
+  {
+    href: "/doctor/consultation",
+    labelKey: "doctorNav.consultationNotes",
+    icon: FileEdit,
+    requiredFeature: "consultations",
+    section: "Clinical",
+  },
+  {
+    href: "/doctor/lab-orders",
+    labelKey: "doctorNav.labOrders",
+    icon: FlaskConical,
+    requiredFeature: "lab_results",
+    section: "Clinical",
+  },
+  {
+    href: "/doctor/certificates",
+    labelKey: "doctorNav.certificates",
+    icon: Award,
+    requiredFeature: "certificates",
+    section: "Clinical",
+  },
+  {
+    href: "/doctor/consent-forms",
+    labelKey: "doctorNav.consentForms",
+    icon: FileCheck,
+    requiredFeature: "consent_forms",
+    section: "Clinical",
+  },
   // Dental
-  { href: "/doctor/odontogram", labelKey: "doctorNav.odontogram", icon: ClipboardList, requiredFeature: "odontogram", section: "Dental" },
-  { href: "/doctor/treatment-plans", labelKey: "doctorNav.treatmentPlans", icon: ClipboardList, requiredFeature: "odontogram", section: "Dental" },
-  { href: "/doctor/prosthetic-orders", labelKey: "doctorNav.prostheticOrders", icon: Package, requiredFeature: "prosthetic_orders", section: "Dental" },
-  { href: "/doctor/sterilization", labelKey: "doctorNav.sterilizationLog", icon: ShieldCheck, requiredFeature: "sterilization_log", section: "Dental" },
+  {
+    href: "/doctor/odontogram",
+    labelKey: "doctorNav.odontogram",
+    icon: ClipboardList,
+    requiredFeature: "odontogram",
+    section: "Dental",
+  },
+  {
+    href: "/doctor/treatment-plans",
+    labelKey: "doctorNav.treatmentPlans",
+    icon: ClipboardList,
+    requiredFeature: "odontogram",
+    section: "Dental",
+  },
+  {
+    href: "/doctor/prosthetic-orders",
+    labelKey: "doctorNav.prostheticOrders",
+    icon: Package,
+    requiredFeature: "prosthetic_orders",
+    section: "Dental",
+  },
+  {
+    href: "/doctor/sterilization",
+    labelKey: "doctorNav.sterilizationLog",
+    icon: ShieldCheck,
+    requiredFeature: "sterilization_log",
+    section: "Dental",
+  },
   // Media & Photos
-  { href: "/doctor/before-after", labelKey: "doctorNav.beforeAfter", icon: Camera, requiredFeature: "before_after_photos", section: "Media" },
-  { href: "/doctor/consultation-photos", labelKey: "doctorNav.consultationPhotos", icon: Camera, requiredFeature: "consultation_photos", section: "Media" },
+  {
+    href: "/doctor/before-after",
+    labelKey: "doctorNav.beforeAfter",
+    icon: Camera,
+    requiredFeature: "before_after_photos",
+    section: "Media",
+  },
+  {
+    href: "/doctor/consultation-photos",
+    labelKey: "doctorNav.consultationPhotos",
+    icon: Camera,
+    requiredFeature: "consultation_photos",
+    section: "Media",
+  },
   // Finance
-  { href: "/doctor/stock", labelKey: "doctorNav.materialStock", icon: Package, requiredFeature: "stock", section: "Finance" },
-  { href: "/doctor/installments", labelKey: "doctorNav.installments", icon: CreditCard, requiredFeature: "installments", section: "Finance" },
-  { href: "/doctor/lab-materials", labelKey: "doctorNav.labMaterials", icon: Boxes, requiredFeature: "lab_materials", section: "Finance" },
-  { href: "/doctor/lab-invoices", labelKey: "doctorNav.labInvoices", icon: FileText, requiredFeature: "lab_invoices", section: "Finance" },
+  {
+    href: "/doctor/stock",
+    labelKey: "doctorNav.materialStock",
+    icon: Package,
+    requiredFeature: "stock",
+    section: "Finance",
+  },
+  {
+    href: "/doctor/installments",
+    labelKey: "doctorNav.installments",
+    icon: CreditCard,
+    requiredFeature: "installments",
+    section: "Finance",
+  },
+  {
+    href: "/doctor/lab-materials",
+    labelKey: "doctorNav.labMaterials",
+    icon: Boxes,
+    requiredFeature: "lab_materials",
+    section: "Finance",
+  },
+  {
+    href: "/doctor/lab-invoices",
+    labelKey: "doctorNav.labInvoices",
+    icon: FileText,
+    requiredFeature: "lab_invoices",
+    section: "Finance",
+  },
   // Clinics & Centers
-  { href: "/doctor/departments", labelKey: "doctorNav.departments", icon: Building2, requiredFeature: "departments", section: "Clinic" },
-  { href: "/doctor/treatment-packages", labelKey: "doctorNav.treatmentPackages", icon: Sparkles, requiredFeature: "treatment_packages", section: "Clinic" },
+  {
+    href: "/doctor/departments",
+    labelKey: "doctorNav.departments",
+    icon: Building2,
+    requiredFeature: "departments",
+    section: "Clinic",
+  },
+  {
+    href: "/doctor/treatment-packages",
+    labelKey: "doctorNav.treatmentPackages",
+    icon: Sparkles,
+    requiredFeature: "treatment_packages",
+    section: "Clinic",
+  },
   // Specialty: IVF
-  { href: "/doctor/ivf-cycles", labelKey: "doctorNav.ivfCycles", icon: HeartHandshake, requiredFeature: "ivf_cycles", section: "Specialty" },
-  { href: "/doctor/ivf-protocols", labelKey: "doctorNav.ivfProtocols", icon: ClipboardList, requiredFeature: "ivf_protocols", section: "Specialty" },
+  {
+    href: "/doctor/ivf-cycles",
+    labelKey: "doctorNav.ivfCycles",
+    icon: HeartHandshake,
+    requiredFeature: "ivf_cycles",
+    section: "Specialty",
+  },
+  {
+    href: "/doctor/ivf-protocols",
+    labelKey: "doctorNav.ivfProtocols",
+    icon: ClipboardList,
+    requiredFeature: "ivf_protocols",
+    section: "Specialty",
+  },
   // Specialty: Dialysis
-  { href: "/doctor/dialysis-sessions", labelKey: "doctorNav.dialysisSessions", icon: Droplets, requiredFeature: "dialysis_sessions", section: "Specialty" },
-  { href: "/doctor/dialysis-machines", labelKey: "doctorNav.dialysisMachines", icon: Monitor, requiredFeature: "dialysis_machines", section: "Specialty" },
+  {
+    href: "/doctor/dialysis-sessions",
+    labelKey: "doctorNav.dialysisSessions",
+    icon: Droplets,
+    requiredFeature: "dialysis_sessions",
+    section: "Specialty",
+  },
+  {
+    href: "/doctor/dialysis-machines",
+    labelKey: "doctorNav.dialysisMachines",
+    icon: Monitor,
+    requiredFeature: "dialysis_machines",
+    section: "Specialty",
+  },
   // Specialty: Medical Specialties
-  { href: "/doctor/dermatology", labelKey: "doctorNav.dermatology", icon: Camera, requiredFeature: "dermatology", section: "Specialty" },
-  { href: "/doctor/cardiology", labelKey: "doctorNav.cardiology", icon: Heart, requiredFeature: "cardiology", section: "Specialty" },
-  { href: "/doctor/ent", labelKey: "doctorNav.ent", icon: Ear, requiredFeature: "ent", section: "Specialty" },
-  { href: "/doctor/orthopedics", labelKey: "doctorNav.orthopedics", icon: Bone, requiredFeature: "orthopedics", section: "Specialty" },
-  { href: "/doctor/psychiatry", labelKey: "doctorNav.psychiatry", icon: Brain, requiredFeature: "psychiatry", section: "Specialty" },
-  { href: "/doctor/neurology", labelKey: "doctorNav.neurology", icon: Activity, requiredFeature: "neurology", section: "Specialty" },
-  { href: "/doctor/urology", labelKey: "doctorNav.urology", icon: ClipboardList, requiredFeature: "urology", section: "Specialty" },
-  { href: "/doctor/pulmonology", labelKey: "doctorNav.pulmonology", icon: Wind, requiredFeature: "pulmonology", section: "Specialty" },
-  { href: "/doctor/endocrinology", labelKey: "doctorNav.endocrinology", icon: Droplets, requiredFeature: "endocrinology", section: "Specialty" },
-  { href: "/doctor/rheumatology", labelKey: "doctorNav.rheumatology", icon: Target, requiredFeature: "rheumatology", section: "Specialty" },
+  {
+    href: "/doctor/dermatology",
+    labelKey: "doctorNav.dermatology",
+    icon: Camera,
+    requiredFeature: "dermatology",
+    section: "Specialty",
+  },
+  {
+    href: "/doctor/cardiology",
+    labelKey: "doctorNav.cardiology",
+    icon: Heart,
+    requiredFeature: "cardiology",
+    section: "Specialty",
+  },
+  {
+    href: "/doctor/ent",
+    labelKey: "doctorNav.ent",
+    icon: Ear,
+    requiredFeature: "ent",
+    section: "Specialty",
+  },
+  {
+    href: "/doctor/orthopedics",
+    labelKey: "doctorNav.orthopedics",
+    icon: Bone,
+    requiredFeature: "orthopedics",
+    section: "Specialty",
+  },
+  {
+    href: "/doctor/psychiatry",
+    labelKey: "doctorNav.psychiatry",
+    icon: Brain,
+    requiredFeature: "psychiatry",
+    section: "Specialty",
+  },
+  {
+    href: "/doctor/neurology",
+    labelKey: "doctorNav.neurology",
+    icon: Activity,
+    requiredFeature: "neurology",
+    section: "Specialty",
+  },
+  {
+    href: "/doctor/urology",
+    labelKey: "doctorNav.urology",
+    icon: ClipboardList,
+    requiredFeature: "urology",
+    section: "Specialty",
+  },
+  {
+    href: "/doctor/pulmonology",
+    labelKey: "doctorNav.pulmonology",
+    icon: Wind,
+    requiredFeature: "pulmonology",
+    section: "Specialty",
+  },
+  {
+    href: "/doctor/endocrinology",
+    labelKey: "doctorNav.endocrinology",
+    icon: Droplets,
+    requiredFeature: "endocrinology",
+    section: "Specialty",
+  },
+  {
+    href: "/doctor/rheumatology",
+    labelKey: "doctorNav.rheumatology",
+    icon: Target,
+    requiredFeature: "rheumatology",
+    section: "Specialty",
+  },
   // Pediatrician
-  { href: "/doctor/growth-charts", labelKey: "doctorNav.growthCharts", icon: Ruler, requiredFeature: "growth_charts", section: "Specialty" },
-  { href: "/doctor/vaccinations", labelKey: "doctorNav.vaccinations", icon: Syringe, requiredFeature: "vaccination", section: "Specialty" },
-  { href: "/doctor/child-info", labelKey: "doctorNav.childDevelopment", icon: Baby, requiredFeature: "growth_charts", section: "Specialty" },
+  {
+    href: "/doctor/growth-charts",
+    labelKey: "doctorNav.growthCharts",
+    icon: Ruler,
+    requiredFeature: "growth_charts",
+    section: "Specialty",
+  },
+  {
+    href: "/doctor/vaccinations",
+    labelKey: "doctorNav.vaccinations",
+    icon: Syringe,
+    requiredFeature: "vaccination",
+    section: "Specialty",
+  },
+  {
+    href: "/doctor/child-info",
+    labelKey: "doctorNav.childDevelopment",
+    icon: Baby,
+    requiredFeature: "growth_charts",
+    section: "Specialty",
+  },
   // Gynecologist
-  { href: "/doctor/pregnancies", labelKey: "doctorNav.pregnancyTracking", icon: Heart, requiredFeature: "pregnancy_tracking", section: "Specialty" },
-  { href: "/doctor/ultrasounds", labelKey: "doctorNav.ultrasoundRecords", icon: Image, requiredFeature: "ultrasound_records", section: "Specialty" },
+  {
+    href: "/doctor/pregnancies",
+    labelKey: "doctorNav.pregnancyTracking",
+    icon: Heart,
+    requiredFeature: "pregnancy_tracking",
+    section: "Specialty",
+  },
+  {
+    href: "/doctor/ultrasounds",
+    labelKey: "doctorNav.ultrasoundRecords",
+    icon: Image,
+    requiredFeature: "ultrasound_records",
+    section: "Specialty",
+  },
   // Ophthalmologist
-  { href: "/doctor/vision-tests", labelKey: "doctorNav.visionTests", icon: Eye, requiredFeature: "vision_tests", section: "Specialty" },
-  { href: "/doctor/iop-tracking", labelKey: "doctorNav.iopTracking", icon: Activity, requiredFeature: "iop_tracking", section: "Specialty" },
+  {
+    href: "/doctor/vision-tests",
+    labelKey: "doctorNav.visionTests",
+    icon: Eye,
+    requiredFeature: "vision_tests",
+    section: "Specialty",
+  },
+  {
+    href: "/doctor/iop-tracking",
+    labelKey: "doctorNav.iopTracking",
+    icon: Activity,
+    requiredFeature: "iop_tracking",
+    section: "Specialty",
+  },
 ];
 
 /** Section label i18n key mapping */
@@ -166,9 +457,7 @@ function SidebarContent({
 
   const togglePin = useCallback((href: string) => {
     setPinnedHrefs((prev) => {
-      const next = prev.includes(href)
-        ? prev.filter((h) => h !== href)
-        : [...prev, href];
+      const next = prev.includes(href) ? prev.filter((h) => h !== href) : [...prev, href];
       setPinnedItems(next);
       return next;
     });
@@ -198,7 +487,7 @@ function SidebarContent({
   // Filter by search — match translated label
   const filteredItems = searchQuery.trim()
     ? visibleItems.filter((item) =>
-        t(locale, item.labelKey).toLowerCase().includes(searchQuery.toLowerCase())
+        t(locale, item.labelKey).toLowerCase().includes(searchQuery.toLowerCase()),
       )
     : null;
 
@@ -287,7 +576,9 @@ function SidebarContent({
       {filteredItems ? (
         <nav className="space-y-1 overflow-y-auto flex-1">
           {filteredItems.length === 0 ? (
-            <p className="text-xs text-muted-foreground px-3 py-2">{t(locale, "doctorNav.noResults")}</p>
+            <p className="text-xs text-muted-foreground px-3 py-2">
+              {t(locale, "doctorNav.noResults")}
+            </p>
           ) : (
             filteredItems.map((item) => renderNavLink(item))
           )}
@@ -319,7 +610,9 @@ function SidebarContent({
                   }`}
                 >
                   <section.icon className="h-4 w-4" />
-                  <span className="flex-1 text-left">{t(locale, SECTION_LABEL_KEYS[section.key] ?? section.key)}</span>
+                  <span className="flex-1 text-left">
+                    {t(locale, SECTION_LABEL_KEYS[section.key] ?? section.key)}
+                  </span>
                   <ChevronDown
                     className={`h-3.5 w-3.5 transition-transform ${isExpanded ? "" : "-rotate-90"}`}
                   />
@@ -330,14 +623,17 @@ function SidebarContent({
                       ? items
                       : items.slice(0, MAX_VISIBLE_ITEMS)
                     ).map((item) => renderNavLink(item, true))}
-                    {items.length > MAX_VISIBLE_ITEMS && !fullyExpandedSections.has(section.key) && (
-                      <button
-                        onClick={() => setFullyExpandedSections((prev) => new Set([...prev, section.key]))}
-                        className="flex items-center gap-2 w-full px-3 py-1.5 text-xs text-primary hover:text-primary/80 hover:bg-muted rounded-lg transition-colors"
-                      >
-                        {t(locale, "doctorNav.showAll")} ({items.length - MAX_VISIBLE_ITEMS})
-                      </button>
-                    )}
+                    {items.length > MAX_VISIBLE_ITEMS &&
+                      !fullyExpandedSections.has(section.key) && (
+                        <button
+                          onClick={() =>
+                            setFullyExpandedSections((prev) => new Set([...prev, section.key]))
+                          }
+                          className="flex items-center gap-2 w-full px-3 py-1.5 text-xs text-primary hover:text-primary/80 hover:bg-muted rounded-lg transition-colors"
+                        >
+                          {t(locale, "doctorNav.showAll")} ({items.length - MAX_VISIBLE_ITEMS})
+                        </button>
+                      )}
                   </div>
                 )}
               </div>
@@ -349,11 +645,7 @@ function SidebarContent({
   );
 }
 
-export default function DoctorLayoutShell({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function DoctorLayoutShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const [locale] = useLocale();
   const { hasFeature } = useClinicFeatures();
@@ -437,27 +729,32 @@ export default function DoctorLayoutShell({
         {/* Mobile Menu Overlay — A11Y-01: Escape key + focus trapping */}
         {mobileMenuOpen && (
           <MobileMenuOverlay onClose={() => setMobileMenuOpen(false)}>
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-2">
-                  <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
-                    <Stethoscope className="h-4 w-4 text-primary-foreground" />
-                  </div>
-                  <h2 className="text-lg font-semibold">{t(locale, "doctorNav.title")}</h2>
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
+                  <Stethoscope className="h-4 w-4 text-primary-foreground" />
                 </div>
-                <Button variant="ghost" size="sm" onClick={() => setMobileMenuOpen(false)} aria-label="Fermer le menu">
-                  <X className="h-5 w-5" />
-                </Button>
+                <h2 className="text-lg font-semibold">{t(locale, "doctorNav.title")}</h2>
               </div>
-              <SidebarContent
-                pathname={pathname}
-                visibleItems={visibleItems}
-                onNavClick={() => setMobileMenuOpen(false)}
-                selectedSpecialty={selectedSpecialty}
-                onSpecialtyChange={setSelectedSpecialty}
-              />
-              <div className="pt-4 border-t mt-4">
-                <SignOutButton />
-              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setMobileMenuOpen(false)}
+                aria-label="Fermer le menu"
+              >
+                <X className="h-5 w-5" />
+              </Button>
+            </div>
+            <SidebarContent
+              pathname={pathname}
+              visibleItems={visibleItems}
+              onNavClick={() => setMobileMenuOpen(false)}
+              selectedSpecialty={selectedSpecialty}
+              onSpecialtyChange={setSelectedSpecialty}
+            />
+            <div className="pt-4 border-t mt-4">
+              <SignOutButton />
+            </div>
           </MobileMenuOverlay>
         )}
 
@@ -468,10 +765,7 @@ export default function DoctorLayoutShell({
       </div>
 
       {/* Mobile bottom tab bar */}
-      <MobileTabBar
-        tabs={doctorMobileTabs}
-        onMoreClick={() => setMobileMenuOpen(true)}
-      />
+      <MobileTabBar tabs={doctorMobileTabs} onMoreClick={() => setMobileMenuOpen(true)} />
 
       <SessionTimeoutWarning onLogout={() => signOut()} />
       <PatientSearchPalette basePath="/doctor/patients" />

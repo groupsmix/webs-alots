@@ -32,16 +32,16 @@ const ALLOWED_TYPES = new Set([
 // Magic byte signatures for server-side file content validation.
 // Client-supplied MIME types are attacker-controlled and cannot be trusted.
 const MAGIC_BYTES: Record<string, Uint8Array[]> = {
-  "image/jpeg": [new Uint8Array([0xFF, 0xD8, 0xFF])],
-  "image/png": [new Uint8Array([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A])],
+  "image/jpeg": [new Uint8Array([0xff, 0xd8, 0xff])],
+  "image/png": [new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])],
   "image/webp": [new Uint8Array([0x52, 0x49, 0x46, 0x46])],
   "image/tiff": [
-    new Uint8Array([0x49, 0x49, 0x2A, 0x00]), // Little-endian
-    new Uint8Array([0x4D, 0x4D, 0x00, 0x2A]), // Big-endian
+    new Uint8Array([0x49, 0x49, 0x2a, 0x00]), // Little-endian
+    new Uint8Array([0x4d, 0x4d, 0x00, 0x2a]), // Big-endian
   ],
-  "image/bmp": [new Uint8Array([0x42, 0x4D])],
+  "image/bmp": [new Uint8Array([0x42, 0x4d])],
   "application/pdf": [new Uint8Array([0x25, 0x50, 0x44, 0x46])],
-  "application/dicom": [new Uint8Array([0x44, 0x49, 0x43, 0x4D])], // "DICM" at offset 128
+  "application/dicom": [new Uint8Array([0x44, 0x49, 0x43, 0x4d])], // "DICM" at offset 128
 };
 
 function validateFileContent(buffer: Buffer, declaredType: string): boolean {
@@ -51,14 +51,10 @@ function validateFileContent(buffer: Buffer, declaredType: string): boolean {
   // DICOM files have "DICM" at byte offset 128
   if (declaredType === "application/dicom") {
     if (buffer.length < 132) return false;
-    return signatures.some((sig) =>
-      sig.every((byte, i) => buffer[128 + i] === byte),
-    );
+    return signatures.some((sig) => sig.every((byte, i) => buffer[128 + i] === byte));
   }
 
-  return signatures.some((sig) =>
-    sig.every((byte, i) => i < buffer.length && buffer[i] === byte),
-  );
+  return signatures.some((sig) => sig.every((byte, i) => i < buffer.length && buffer[i] === byte));
 }
 
 export const POST = withAuth(async (request, { profile }) => {
@@ -91,9 +87,7 @@ export const POST = withAuth(async (request, { profile }) => {
     return apiError(`File type not allowed: ${file.type}`);
   }
 
-  const isDicom =
-    file.type === "application/dicom" ||
-    file.name.toLowerCase().endsWith(".dcm");
+  const isDicom = file.type === "application/dicom" || file.name.toLowerCase().endsWith(".dcm");
 
   const key = buildUploadKey(clinicId, "radiology", file.name);
   const buffer = Buffer.from(await file.arrayBuffer());

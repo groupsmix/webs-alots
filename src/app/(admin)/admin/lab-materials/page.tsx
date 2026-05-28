@@ -9,7 +9,9 @@ export default function AdminLabMaterialsPage() {
 
   return (
     <div className="space-y-6">
-      <Breadcrumb items={[{ label: "Admin", href: "/admin/dashboard" }, { label: "Lab Materials" }]} />
+      <Breadcrumb
+        items={[{ label: "Admin", href: "/admin/dashboard" }, { label: "Lab Materials" }]}
+      />
       <h1 className="text-2xl font-bold">Lab Materials Inventory</h1>
       <MaterialsInventory materials={materials} editable />
     </div>

@@ -7,10 +7,7 @@ import { useState, useEffect } from "react";
 import { useTenant } from "@/components/tenant-provider";
 import { Badge } from "@/components/ui/badge";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
-import {
-  Card,
-  CardContent,
-} from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { createClient } from "@/lib/supabase-client";
 
 const DEFAULT_CURRENCY = "MAD";
@@ -32,7 +29,10 @@ interface ProductDetail {
   active: boolean;
 }
 
-function getStockLabel(qty: number, min: number): { label: string; variant: "outline" | "secondary" | "destructive"; color: string } {
+function getStockLabel(
+  qty: number,
+  min: number,
+): { label: string; variant: "outline" | "secondary" | "destructive"; color: string } {
   if (qty === 0) return { label: "Out of Stock", variant: "destructive", color: "" };
   if (qty <= min) return { label: "Low Stock", variant: "secondary", color: "text-yellow-600" };
   return { label: "In Stock", variant: "outline", color: "text-emerald-600 border-emerald-600" };
@@ -40,7 +40,7 @@ function getStockLabel(qty: number, min: number): { label: string; variant: "out
 
 function buildWhatsAppUrl(phone: string, product: ProductDetail): string {
   const text = encodeURIComponent(
-    `Bonjour, je souhaite commander : ${product.name} (${product.price} ${product.currency}). Merci !`
+    `Bonjour, je souhaite commander : ${product.name} (${product.price} ${product.currency}). Merci !`,
   );
   const cleanPhone = phone.replace(/\s+/g, "");
   return `https://wa.me/${cleanPhone}?text=${text}`;
@@ -52,7 +52,9 @@ async function fetchProduct(clinicId: string, productId: string): Promise<Produc
   const [{ data: product }, { data: stockRow }] = await Promise.all([
     supabase
       .from("products")
-      .select("id, name, generic_name, category, description, price, requires_prescription, is_active, manufacturer, barcode, dosage_form, strength")
+      .select(
+        "id, name, generic_name, category, description, price, requires_prescription, is_active, manufacturer, barcode, dosage_form, strength",
+      )
       .eq("clinic_id", clinicId)
       .eq("id", productId)
       .maybeSingle(),
@@ -76,8 +78,8 @@ async function fetchProduct(clinicId: string, productId: string): Promise<Produc
     price: (p.price as number) ?? 0,
     currency: DEFAULT_CURRENCY,
     requiresPrescription: (p.requires_prescription as boolean) ?? false,
-    stockQuantity: (stockRow as Record<string, unknown> | null)?.quantity as number ?? 0,
-    minimumStock: (stockRow as Record<string, unknown> | null)?.min_threshold as number ?? 0,
+    stockQuantity: ((stockRow as Record<string, unknown> | null)?.quantity as number) ?? 0,
+    minimumStock: ((stockRow as Record<string, unknown> | null)?.min_threshold as number) ?? 0,
     manufacturer: (p.manufacturer as string) ?? undefined,
     dosageForm: (p.dosage_form as string) ?? undefined,
     strength: (p.strength as string) ?? undefined,
@@ -114,7 +116,9 @@ export default function ProductLandingPage() {
         if (!controller.signal.aborted) setLoading(false);
       });
 
-    return () => { controller.abort(); };
+    return () => {
+      controller.abort();
+    };
   }, [tenant?.clinicId, productId]);
 
   if (loading) {
@@ -151,10 +155,7 @@ export default function ProductLandingPage() {
       {/* Breadcrumb */}
       <Breadcrumb
         className="mb-6"
-        items={[
-          { label: "Catalog", href: "/pharmacy/catalog" },
-          { label: product.name },
-        ]}
+        items={[{ label: "Catalog", href: "/pharmacy/catalog" }, { label: product.name }]}
       />
 
       <div className="grid gap-8 lg:grid-cols-2">
@@ -164,14 +165,10 @@ export default function ProductLandingPage() {
           <div>
             <h1 className="text-3xl font-bold mb-3">{product.name}</h1>
             {product.genericName && (
-              <p className="text-lg text-muted-foreground italic mb-3">
-                {product.genericName}
-              </p>
+              <p className="text-lg text-muted-foreground italic mb-3">{product.genericName}</p>
             )}
             <div className="flex flex-wrap gap-2">
-              <Badge
-                variant={product.requiresPrescription ? "destructive" : "secondary"}
-              >
+              <Badge variant={product.requiresPrescription ? "destructive" : "secondary"}>
                 {product.requiresPrescription ? "Rx Required" : "OTC"}
               </Badge>
               <Badge variant="outline" className="capitalize">
@@ -186,9 +183,7 @@ export default function ProductLandingPage() {
           {/* Description */}
           <div>
             <h2 className="text-lg font-semibold mb-2">Description</h2>
-            <p className="text-muted-foreground leading-relaxed">
-              {product.description}
-            </p>
+            <p className="text-muted-foreground leading-relaxed">{product.description}</p>
           </div>
 
           {/* Product details card */}
@@ -258,8 +253,8 @@ export default function ProductLandingPage() {
               {/* Prescription notice */}
               {product.requiresPrescription && (
                 <div className="rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 p-3 text-sm text-amber-800 dark:text-amber-200">
-                  This product requires a valid prescription. Please have your
-                  prescription ready when ordering.
+                  This product requires a valid prescription. Please have your prescription ready
+                  when ordering.
                 </div>
               )}
 

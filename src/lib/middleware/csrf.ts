@@ -35,8 +35,8 @@ const MUTATION_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
  * forced through the `verifyCronSecret` helper by convention.
  */
 const CSRF_EXEMPT_EXACT = new Set([
-  "/api/webhooks",              // WhatsApp: X-Hub-Signature-256 HMAC
-  "/api/payments/webhook",      // Stripe: stripe-signature HMAC
+  "/api/webhooks", // WhatsApp: X-Hub-Signature-256 HMAC
+  "/api/payments/webhook", // Stripe: stripe-signature HMAC
   "/api/payments/cmi/callback", // CMI: HMAC hash field verification
   // CSP-RPT: Browsers send Content-Security-Policy violation reports as POST
   // requests with a `report-uri` or `report-to` directive. The Origin header
@@ -55,9 +55,8 @@ const CSRF_EXEMPT_CRON_PREFIX = "/api/cron/";
 
 function isCsrfExempt(pathname: string): boolean {
   // Normalize trailing slash (trailingSlash: true in next.config.ts)
-  const normalized = pathname.endsWith("/") && pathname.length > 1
-    ? pathname.slice(0, -1)
-    : pathname;
+  const normalized =
+    pathname.endsWith("/") && pathname.length > 1 ? pathname.slice(0, -1) : pathname;
   return CSRF_EXEMPT_EXACT.has(normalized) || pathname.startsWith(CSRF_EXEMPT_CRON_PREFIX);
 }
 
@@ -83,7 +82,7 @@ export function validateCsrf(
 
   const origin = request.headers.get("origin");
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL;
-  
+
   // Audit P1 #9: Lock the Origin allow-list to the specific request's host
   // rather than blindly trusting every *.oltigo.com peer. This prevents
   // cross-tenant CSRF where tenant A issues a request to tenant B.
@@ -123,10 +122,7 @@ export function validateCsrf(
 
   if (!allowedOrigins.has(origin)) {
     return withSecurityHeaders(
-      NextResponse.json(
-        { error: "CSRF validation failed: origin not allowed" },
-        { status: 403 },
-      ),
+      NextResponse.json({ error: "CSRF validation failed: origin not allowed" }, { status: 403 }),
       csp,
     );
   }

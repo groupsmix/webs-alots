@@ -1,8 +1,15 @@
 "use client";
 
 import {
-  ClipboardList, Plus, CheckCircle, Clock, Circle, Trash2,
-  ChevronDown, ChevronUp, DollarSign,
+  ClipboardList,
+  Plus,
+  CheckCircle,
+  Clock,
+  Circle,
+  Trash2,
+  ChevronDown,
+  ChevronUp,
+  DollarSign,
 } from "lucide-react";
 import { useState } from "react";
 import { useLocale } from "@/components/locale-switcher";
@@ -88,14 +95,20 @@ export function TreatmentPlanBuilder({
                   <Badge variant={STATUS_VARIANT[plan.status] ?? "outline"} className="text-xs">
                     {plan.status.replace("_", " ")}
                   </Badge>
-                  {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                  {isExpanded ? (
+                    <ChevronUp className="h-4 w-4" />
+                  ) : (
+                    <ChevronDown className="h-4 w-4" />
+                  )}
                 </div>
               </div>
 
               {/* Progress Bar */}
               <div className="mt-3">
                 <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
-                  <span>{completedSteps}/{plan.steps.length} steps completed</span>
+                  <span>
+                    {completedSteps}/{plan.steps.length} steps completed
+                  </span>
                   <span>{progress}%</span>
                 </div>
                 <div className="h-2 bg-muted rounded-full overflow-hidden">
@@ -116,25 +129,41 @@ export function TreatmentPlanBuilder({
                       <div
                         key={`step-${step.step}`}
                         className={`flex items-start gap-3 p-3 rounded-lg border ${
-                          step.status === "completed" ? "bg-green-50/50 dark:bg-green-950/20" :
-                          step.status === "in_progress" ? "bg-blue-50/50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800" :
-                          ""
+                          step.status === "completed"
+                            ? "bg-green-50/50 dark:bg-green-950/20"
+                            : step.status === "in_progress"
+                              ? "bg-blue-50/50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800"
+                              : ""
                         }`}
                       >
-                        <Icon className={`h-5 w-5 mt-0.5 shrink-0 ${
-                          step.status === "completed" ? "text-green-600" :
-                          step.status === "in_progress" ? "text-blue-600" :
-                          "text-muted-foreground"
-                        }`} />
+                        <Icon
+                          className={`h-5 w-5 mt-0.5 shrink-0 ${
+                            step.status === "completed"
+                              ? "text-green-600"
+                              : step.status === "in_progress"
+                                ? "text-blue-600"
+                                : "text-muted-foreground"
+                          }`}
+                        />
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center justify-between gap-2">
-                            <p className={`text-sm font-medium ${step.status === "completed" ? "line-through text-muted-foreground" : ""}`}>
+                            <p
+                              className={`text-sm font-medium ${step.status === "completed" ? "line-through text-muted-foreground" : ""}`}
+                            >
                               Step {step.step}: {step.description}
                             </p>
-                            <span className="text-xs font-medium whitespace-nowrap">{formatCurrency(step.cost, typeof locale !== "undefined" ? locale : "fr", "MAD")}</span>
+                            <span className="text-xs font-medium whitespace-nowrap">
+                              {formatCurrency(
+                                step.cost,
+                                typeof locale !== "undefined" ? locale : "fr",
+                                "MAD",
+                              )}
+                            </span>
                           </div>
                           {step.date && (
-                            <p className="text-xs text-muted-foreground mt-0.5">{formatDisplayDate(step.date, "fr", "short")}</p>
+                            <p className="text-xs text-muted-foreground mt-0.5">
+                              {formatDisplayDate(step.date, "fr", "short")}
+                            </p>
                           )}
                         </div>
                         {editable && (
@@ -184,15 +213,27 @@ export function TreatmentPlanBuilder({
                   </div>
                   <div className="grid grid-cols-3 gap-2 text-center">
                     <div>
-                      <p className="text-lg font-bold">{formatNumber(plan.totalCost, typeof locale !== "undefined" ? locale : "fr")}</p>
+                      <p className="text-lg font-bold">
+                        {formatNumber(
+                          plan.totalCost,
+                          typeof locale !== "undefined" ? locale : "fr",
+                        )}
+                      </p>
                       <p className="text-[10px] text-muted-foreground">Total (MAD)</p>
                     </div>
                     <div>
-                      <p className="text-lg font-bold text-green-600">{formatNumber(paidAmount, typeof locale !== "undefined" ? locale : "fr")}</p>
+                      <p className="text-lg font-bold text-green-600">
+                        {formatNumber(paidAmount, typeof locale !== "undefined" ? locale : "fr")}
+                      </p>
                       <p className="text-[10px] text-muted-foreground">Completed</p>
                     </div>
                     <div>
-                      <p className="text-lg font-bold text-orange-600">{formatNumber((plan.totalCost - paidAmount), typeof locale !== "undefined" ? locale : "fr")}</p>
+                      <p className="text-lg font-bold text-orange-600">
+                        {formatNumber(
+                          plan.totalCost - paidAmount,
+                          typeof locale !== "undefined" ? locale : "fr",
+                        )}
+                      </p>
                       <p className="text-[10px] text-muted-foreground">Remaining</p>
                     </div>
                   </div>
@@ -225,8 +266,12 @@ export function TreatmentPlanBuilder({
                           </div>
                         </div>
                         <div className="flex gap-2">
-                          <Button size="sm" onClick={() => handleAddStep(plan.id)}>Add Step</Button>
-                          <Button size="sm" variant="outline" onClick={() => setAddingToPlan(null)}>Cancel</Button>
+                          <Button size="sm" onClick={() => handleAddStep(plan.id)}>
+                            Add Step
+                          </Button>
+                          <Button size="sm" variant="outline" onClick={() => setAddingToPlan(null)}>
+                            Cancel
+                          </Button>
                         </div>
                       </div>
                     ) : (

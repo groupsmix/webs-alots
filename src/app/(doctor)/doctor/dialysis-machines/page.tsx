@@ -9,7 +9,9 @@ export default function DoctorDialysisMachinesPage() {
 
   return (
     <div className="space-y-6">
-      <Breadcrumb items={[{ label: "Doctor", href: "/doctor/dashboard" }, { label: "Dialysis Machines" }]} />
+      <Breadcrumb
+        items={[{ label: "Doctor", href: "/doctor/dashboard" }, { label: "Dialysis Machines" }]}
+      />
       <h1 className="text-2xl font-bold">Dialysis Machines</h1>
       <MachineManagement machines={machines} editable />
     </div>

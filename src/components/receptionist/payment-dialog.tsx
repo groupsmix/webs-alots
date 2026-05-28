@@ -136,7 +136,9 @@ export function PaymentDialog({
             )}
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
+            <Button variant="outline" onClick={() => setOpen(false)}>
+              Cancel
+            </Button>
             <Button
               onClick={handleSubmit}
               disabled={!amount || parseFloat(amount) <= 0 || !method}

@@ -2,10 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { apiForbidden, apiInternalError, apiSuccess, apiUnauthorized } from "@/lib/api-response";
 import { hmacSha256Hex, timingSafeEqual } from "@/lib/crypto-utils";
 import { logger } from "@/lib/logger";
-import {
-  dispatchNotification,
-  type TemplateVariables,
-} from "@/lib/notifications";
+import { dispatchNotification, type TemplateVariables } from "@/lib/notifications";
 import { createClient } from "@/lib/supabase-server";
 import { setTenantContext, logTenantContext } from "@/lib/tenant-context";
 
@@ -150,7 +147,8 @@ function extractStatusUpdates(entry: WaEntry): Array<{
         results.push({
           messageId: status.id,
           status: status.status,
-          timestamp: typeof status.timestamp === "string" ? status.timestamp : new Date().toISOString(),
+          timestamp:
+            typeof status.timestamp === "string" ? status.timestamp : new Date().toISOString(),
           recipientPhone: typeof status.recipient_id === "string" ? status.recipient_id : "",
           errors: status.errors,
         });
@@ -359,7 +357,11 @@ export async function POST(request: NextRequest) {
         } else if (upperText === "RESCHEDULE") {
           await dispatchNotification(
             "cancellation",
-            { patient_name: patientName, clinic_name: clinicName, reschedule: "true" } as TemplateVariables,
+            {
+              patient_name: patientName,
+              clinic_name: clinicName,
+              reschedule: "true",
+            } as TemplateVariables,
             recipientId,
             ["in_app"],
           );
@@ -381,9 +383,18 @@ export async function POST(request: NextRequest) {
             type RebookClient = {
               from(t: string): {
                 select(s: string): {
-                  eq(c: string, v: string): {
-                    eq(c2: string, v2: string): {
-                      eq(c3: string, v3: string): {
+                  eq(
+                    c: string,
+                    v: string,
+                  ): {
+                    eq(
+                      c2: string,
+                      v2: string,
+                    ): {
+                      eq(
+                        c3: string,
+                        v3: string,
+                      ): {
                         limit(n: number): { single(): Promise<{ data: RebookRow | null }> };
                       };
                     };
@@ -473,15 +484,42 @@ export async function POST(request: NextRequest) {
       // ── Handle feedback rating button replies (Feature 14) ──
       if (rawText.startsWith("RATING_") && patientId) {
         try {
-          const { parseRatingFromButtonId, handleFeedbackResponse } = await import("@/lib/post-appointment-feedback");
+          const { parseRatingFromButtonId, handleFeedbackResponse } =
+            await import("@/lib/post-appointment-feedback");
           const rating = parseRatingFromButtonId(rawText);
           if (rating !== null) {
             // Find the pending feedback entry for this patient
             // patient_feedback & google_place_id added by migration 00055 — cast through unknown
             type FbRow = { id: string; appointment_id: string; doctor_id: string | null };
-            type FbClient = { from(t: string): { select(s: string): { eq(c: string, v: string): { eq(c2: string, v2: string): { eq(c3: string, v3: number): { order(c4: string, o: { ascending: boolean }): { limit(n: number): { single(): Promise<{ data: FbRow | null }> } } } } } }; update(row: Record<string, unknown>): { eq(c: string, v: string): Promise<void> } } };
+            type FbClient = {
+              from(t: string): {
+                select(s: string): {
+                  eq(
+                    c: string,
+                    v: string,
+                  ): {
+                    eq(
+                      c2: string,
+                      v2: string,
+                    ): {
+                      eq(
+                        c3: string,
+                        v3: number,
+                      ): {
+                        order(
+                          c4: string,
+                          o: { ascending: boolean },
+                        ): { limit(n: number): { single(): Promise<{ data: FbRow | null }> } };
+                      };
+                    };
+                  };
+                };
+                update(row: Record<string, unknown>): { eq(c: string, v: string): Promise<void> };
+              };
+            };
             const fbClient = supabase as unknown as FbClient;
-            const { data: pendingFeedback } = await fbClient.from("patient_feedback")
+            const { data: pendingFeedback } = await fbClient
+              .from("patient_feedback")
               .select("id, appointment_id, doctor_id")
               .eq("clinic_id", clinicId)
               .eq("patient_id", patientId)
@@ -493,7 +531,8 @@ export async function POST(request: NextRequest) {
             if (pendingFeedback) {
               // Update the feedback entry with the rating
               const googleReviewSent = rating >= 4;
-              await fbClient.from("patient_feedback")
+              await fbClient
+                .from("patient_feedback")
                 .update({
                   rating,
                   responded_at: new Date().toISOString(),

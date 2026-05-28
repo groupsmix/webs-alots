@@ -85,7 +85,9 @@ export default function CustomFieldsAdminPage() {
       ]);
     }
     loadClinicTypes();
-    return () => { controller.abort(); };
+    return () => {
+      controller.abort();
+    };
   }, []);
 
   const loadDefinitions = useCallback(async () => {
@@ -101,7 +103,10 @@ export default function CustomFieldsAdminPage() {
       const data = json.data ?? json;
       setDefinitions(data.definitions ?? []);
     } catch (err) {
-      logger.warn("Failed to load custom field definitions", { context: "custom-fields", error: err });
+      logger.warn("Failed to load custom field definitions", {
+        context: "custom-fields",
+        error: err,
+      });
     } finally {
       setLoading(false);
     }
@@ -125,7 +130,9 @@ export default function CustomFieldsAdminPage() {
 
   return (
     <div className="space-y-6 p-6">
-      <Breadcrumb items={[{ label: "Admin", href: "/admin/dashboard" }, { label: "Custom Fields" }]} />
+      <Breadcrumb
+        items={[{ label: "Admin", href: "/admin/dashboard" }, { label: "Custom Fields" }]}
+      />
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2">
@@ -230,18 +237,20 @@ export default function CustomFieldsAdminPage() {
                       </div>
                       <div className="flex items-center gap-2 mt-1">
                         <Badge variant="secondary" className="text-xs">
-                          {FIELD_TYPES.find((ft) => ft.value === def.field_type)?.label ?? def.field_type}
+                          {FIELD_TYPES.find((ft) => ft.value === def.field_type)?.label ??
+                            def.field_type}
                         </Badge>
                         <Badge variant="outline" className="text-xs">
-                          {ENTITY_TYPES.find((et) => et.value === def.entity_type)?.label ?? def.entity_type}
+                          {ENTITY_TYPES.find((et) => et.value === def.entity_type)?.label ??
+                            def.entity_type}
                         </Badge>
                         <code className="text-xs text-muted-foreground">{def.field_key}</code>
                         {def.is_required && (
-                          <Badge variant="destructive" className="text-xs">Requis</Badge>
+                          <Badge variant="destructive" className="text-xs">
+                            Requis
+                          </Badge>
                         )}
-                        {def.is_system && (
-                          <Badge className="text-xs">Système</Badge>
-                        )}
+                        {def.is_system && <Badge className="text-xs">Système</Badge>}
                       </div>
                       {def.description && (
                         <p className="text-xs text-muted-foreground mt-1">{def.description}</p>
@@ -347,9 +356,7 @@ function CreateFieldForm({ clinicTypeKey, onSuccess }: CreateFieldFormProps) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      {error && (
-        <div className="bg-red-50 text-red-700 p-3 rounded-md text-sm">{error}</div>
-      )}
+      {error && <div className="bg-red-50 text-red-700 p-3 rounded-md text-sm">{error}</div>}
 
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-1">
@@ -395,7 +402,12 @@ function CreateFieldForm({ clinicTypeKey, onSuccess }: CreateFieldFormProps) {
         <Label>Clé du champ *</Label>
         <Input
           value={formData.field_key}
-          onChange={(e) => setFormData((p) => ({ ...p, field_key: e.target.value.toLowerCase().replace(/\s+/g, "_") }))}
+          onChange={(e) =>
+            setFormData((p) => ({
+              ...p,
+              field_key: e.target.value.toLowerCase().replace(/\s+/g, "_"),
+            }))
+          }
           placeholder="ex: tooth_number, blood_type"
         />
       </div>

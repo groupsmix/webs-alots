@@ -1,9 +1,6 @@
 "use client";
 
-import {
-  Plus, Receipt, DollarSign, CreditCard, Banknote,
-  Shield, Gift,
-} from "lucide-react";
+import { Plus, Receipt, DollarSign, CreditCard, Banknote, Shield, Gift } from "lucide-react";
 import { useState, useEffect, useMemo } from "react";
 import { useLocale } from "@/components/locale-switcher";
 import { useTenant } from "@/components/tenant-provider";
@@ -24,20 +21,30 @@ export default function SalesPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
   const today = new Date().toISOString().split("T")[0] ?? "";
-  const yesterday = (() => { const d = new Date(); d.setDate(d.getDate() - 1); return d.toISOString().split("T")[0] ?? ""; })();
+  const yesterday = (() => {
+    const d = new Date();
+    d.setDate(d.getDate() - 1);
+    return d.toISOString().split("T")[0] ?? "";
+  })();
   const [dateFilter, setDateFilter] = useState(today);
 
   useEffect(() => {
     const controller = new AbortController();
     fetchDailySales(tenant?.clinicId ?? "")
-      .then((d) => { if (!controller.signal.aborted) setAllSales(d); })
+      .then((d) => {
+        if (!controller.signal.aborted) setAllSales(d);
+      })
       .catch((err) => {
-      if (!controller.signal.aborted) {
-        setError(err instanceof Error ? err : new Error(String(err)));
-      }
-    })
-    .finally(() => { if (!controller.signal.aborted) setLoading(false); });
-    return () => { controller.abort(); };
+        if (!controller.signal.aborted) {
+          setError(err instanceof Error ? err : new Error(String(err)));
+        }
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setLoading(false);
+      });
+    return () => {
+      controller.abort();
+    };
   }, [tenant?.clinicId]);
 
   const filteredSales = useMemo(() => {
@@ -62,7 +69,9 @@ export default function SalesPage() {
   if (error) {
     return (
       <div className="p-8 text-center">
-        <p className="text-red-600 font-medium">Failed to load data. Please try refreshing the page.</p>
+        <p className="text-red-600 font-medium">
+          Failed to load data. Please try refreshing the page.
+        </p>
         {error.message && <p className="text-sm text-muted-foreground mt-2">{error.message}</p>}
       </div>
     );
@@ -88,7 +97,11 @@ export default function SalesPage() {
             onClick={() => setDateFilter(d)}
             className={`px-4 py-2 rounded-lg text-sm ${dateFilter === d ? "bg-emerald-600 text-white" : "bg-muted text-muted-foreground"}`}
           >
-            {new Date(d + "T00:00:00").toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}
+            {new Date(d + "T00:00:00").toLocaleDateString("en-US", {
+              weekday: "short",
+              month: "short",
+              day: "numeric",
+            })}
           </button>
         ))}
       </div>
@@ -101,7 +114,10 @@ export default function SalesPage() {
               <DollarSign className="h-4 w-4" />
               <p className="text-sm">Total Revenue</p>
             </div>
-            <p className="text-2xl font-bold text-emerald-600">{formatNumber(totalRevenue, typeof locale !== "undefined" ? locale : "fr")} <span className="text-sm font-normal">MAD</span></p>
+            <p className="text-2xl font-bold text-emerald-600">
+              {formatNumber(totalRevenue, typeof locale !== "undefined" ? locale : "fr")}{" "}
+              <span className="text-sm font-normal">MAD</span>
+            </p>
           </CardContent>
         </Card>
         <Card>
@@ -119,7 +135,13 @@ export default function SalesPage() {
               <Banknote className="h-4 w-4" />
               <p className="text-sm">Cash</p>
             </div>
-            <p className="text-2xl font-bold">{formatNumber(cashSales.reduce((s, sale) => s + sale.total, 0), typeof locale !== "undefined" ? locale : "fr")} <span className="text-sm font-normal">MAD</span></p>
+            <p className="text-2xl font-bold">
+              {formatNumber(
+                cashSales.reduce((s, sale) => s + sale.total, 0),
+                typeof locale !== "undefined" ? locale : "fr",
+              )}{" "}
+              <span className="text-sm font-normal">MAD</span>
+            </p>
           </CardContent>
         </Card>
         <Card>
@@ -128,7 +150,13 @@ export default function SalesPage() {
               <CreditCard className="h-4 w-4" />
               <p className="text-sm">Card</p>
             </div>
-            <p className="text-2xl font-bold">{formatNumber(cardSales.reduce((s, sale) => s + sale.total, 0), typeof locale !== "undefined" ? locale : "fr")} <span className="text-sm font-normal">MAD</span></p>
+            <p className="text-2xl font-bold">
+              {formatNumber(
+                cardSales.reduce((s, sale) => s + sale.total, 0),
+                typeof locale !== "undefined" ? locale : "fr",
+              )}{" "}
+              <span className="text-sm font-normal">MAD</span>
+            </p>
           </CardContent>
         </Card>
         <Card>
@@ -137,7 +165,9 @@ export default function SalesPage() {
               <Gift className="h-4 w-4" />
               <p className="text-sm">Points Earned</p>
             </div>
-            <p className="text-2xl font-bold text-purple-600">{formatNumber(totalPoints, typeof locale !== "undefined" ? locale : "fr")}</p>
+            <p className="text-2xl font-bold text-purple-600">
+              {formatNumber(totalPoints, typeof locale !== "undefined" ? locale : "fr")}
+            </p>
           </CardContent>
         </Card>
       </div>
@@ -185,7 +215,9 @@ export default function SalesPage() {
                       )}
                     </td>
                     <td className="py-3 px-2">
-                      <span className="text-purple-600 font-medium">+{sale.loyaltyPointsEarned}</span>
+                      <span className="text-purple-600 font-medium">
+                        +{sale.loyaltyPointsEarned}
+                      </span>
                     </td>
                   </tr>
                 ))}

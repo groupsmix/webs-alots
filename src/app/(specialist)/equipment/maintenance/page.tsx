@@ -1,20 +1,36 @@
 "use client";
 
-import { Search, Wrench, ChevronDown, CalendarClock, Plus, Pencil, Trash2, AlertTriangle } from "lucide-react";
+import {
+  Search,
+  Wrench,
+  ChevronDown,
+  CalendarClock,
+  Plus,
+  Pencil,
+  Trash2,
+  AlertTriangle,
+} from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
 import { useTenant } from "@/components/tenant-provider";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PageLoader } from "@/components/ui/page-loader";
 import {
-  fetchEquipmentMaintenance, fetchEquipmentInventory,
-  createEquipmentMaintenance, updateEquipmentMaintenance, deleteEquipmentMaintenance,
+  fetchEquipmentMaintenance,
+  fetchEquipmentInventory,
+  createEquipmentMaintenance,
+  updateEquipmentMaintenance,
+  deleteEquipmentMaintenance,
 } from "@/lib/data/client";
 import type { EquipmentMaintenanceView, EquipmentItemView } from "@/lib/data/client";
 import { useEquipmentI18n } from "@/lib/hooks/use-equipment-i18n";
@@ -51,9 +67,15 @@ interface MaintenanceFormState {
 }
 
 const emptyForm: MaintenanceFormState = {
-  equipmentId: "", type: "routine", description: "", performedBy: "",
-  performedAt: new Date().toISOString().split("T")[0], nextDue: "",
-  cost: "", status: "scheduled", notes: "",
+  equipmentId: "",
+  type: "routine",
+  description: "",
+  performedBy: "",
+  performedAt: new Date().toISOString().split("T")[0],
+  nextDue: "",
+  cost: "",
+  status: "scheduled",
+  notes: "",
 };
 
 export default function EquipmentMaintenancePage() {
@@ -76,28 +98,41 @@ export default function EquipmentMaintenancePage() {
 
   const dateFmt = locale === "ar" ? "ar-MA" : "fr-FR";
 
-  const typeLabel = useCallback((tp: string) => {
-    const map: Record<string, string> = {
-      routine: t("typeRoutine"), repair: t("typeRepair"),
-      calibration: t("typeCalibration"), inspection: t("typeInspection"),
-      cleaning: t("typeCleaning"),
-    };
-    return map[tp] ?? tp;
-  }, [t]);
+  const typeLabel = useCallback(
+    (tp: string) => {
+      const map: Record<string, string> = {
+        routine: t("typeRoutine"),
+        repair: t("typeRepair"),
+        calibration: t("typeCalibration"),
+        inspection: t("typeInspection"),
+        cleaning: t("typeCleaning"),
+      };
+      return map[tp] ?? tp;
+    },
+    [t],
+  );
 
-  const statusLabel = useCallback((s: string) => {
-    const map: Record<string, string> = {
-      scheduled: t("statusScheduled"), in_progress: t("statusInProgress"),
-      completed: t("statusCompleted"), cancelled: t("statusCancelled"),
-    };
-    return map[s] ?? s;
-  }, [t]);
+  const statusLabel = useCallback(
+    (s: string) => {
+      const map: Record<string, string> = {
+        scheduled: t("statusScheduled"),
+        in_progress: t("statusInProgress"),
+        completed: t("statusCompleted"),
+        cancelled: t("statusCancelled"),
+      };
+      return map[s] ?? s;
+    },
+    [t],
+  );
 
   function reload() {
     setLoading(true);
     const cId = tenant?.clinicId ?? "";
     Promise.all([fetchEquipmentMaintenance(cId), fetchEquipmentInventory(cId)])
-      .then(([r, e]) => { setRecords(r); setEquipment(e); })
+      .then(([r, e]) => {
+        setRecords(r);
+        setEquipment(e);
+      })
       .finally(() => setLoading(false));
   }
 
@@ -107,14 +142,21 @@ export default function EquipmentMaintenancePage() {
       setLoading(true);
       const cId = tenant?.clinicId ?? "";
       Promise.all([fetchEquipmentMaintenance(cId), fetchEquipmentInventory(cId)])
-        .then(([r, e]) => { setRecords(r); setEquipment(e); })
+        .then(([r, e]) => {
+          setRecords(r);
+          setEquipment(e);
+        })
         .catch((err) => {
-      if (!controller.signal.aborted) {
-        setError(err instanceof Error ? err : new Error(String(err)));
-      }
-    })
-    .finally(() => { if (!controller.signal.aborted) setLoading(false); });
-    return () => { controller.abort(); };
+          if (!controller.signal.aborted) {
+            setError(err instanceof Error ? err : new Error(String(err)));
+          }
+        })
+        .finally(() => {
+          if (!controller.signal.aborted) setLoading(false);
+        });
+      return () => {
+        controller.abort();
+      };
     }
     init();
   }, [tenant?.clinicId]);
@@ -192,7 +234,9 @@ export default function EquipmentMaintenancePage() {
   if (error) {
     return (
       <div className="p-8 text-center">
-        <p className="text-red-600 font-medium">Failed to load data. Please try refreshing the page.</p>
+        <p className="text-red-600 font-medium">
+          Failed to load data. Please try refreshing the page.
+        </p>
         {error.message && <p className="text-sm text-muted-foreground mt-2">{error.message}</p>}
       </div>
     );
@@ -202,7 +246,11 @@ export default function EquipmentMaintenancePage() {
     if (statusFilter !== "all" && r.status !== statusFilter) return false;
     if (search) {
       const q = search.toLowerCase();
-      return r.equipmentName.toLowerCase().includes(q) || r.type.toLowerCase().includes(q) || (r.performedBy?.toLowerCase().includes(q) ?? false);
+      return (
+        r.equipmentName.toLowerCase().includes(q) ||
+        r.type.toLowerCase().includes(q) ||
+        (r.performedBy?.toLowerCase().includes(q) ?? false)
+      );
     }
     return true;
   });
@@ -234,7 +282,9 @@ export default function EquipmentMaintenancePage() {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold">{t("maintenanceTitle")}</h1>
-          <p className="text-muted-foreground text-sm">{records.length} {t("maintenanceRecords")}</p>
+          <p className="text-muted-foreground text-sm">
+            {records.length} {t("maintenanceRecords")}
+          </p>
         </div>
         <Button onClick={openAddDialog} size="sm" className="bg-amber-600 hover:bg-amber-700">
           <Plus className="h-4 w-4 me-1" /> {t("addMaintenance")}
@@ -255,14 +305,19 @@ export default function EquipmentMaintenancePage() {
               {overdueMaint.map((m) => {
                 const daysOverdue = Math.abs(getDaysUntilDue(m.nextDue!));
                 return (
-                  <div key={m.id} className="flex items-center justify-between p-2 bg-red-100/50 dark:bg-red-950/20 rounded">
+                  <div
+                    key={m.id}
+                    className="flex items-center justify-between p-2 bg-red-100/50 dark:bg-red-950/20 rounded"
+                  >
                     <div>
                       <p className="font-medium text-sm">{m.equipmentName}</p>
                       <p className="text-xs text-red-600">
                         {typeLabel(m.type)} &middot; {t("overdue")} {daysOverdue} {t("days")}
                       </p>
                     </div>
-                    <Badge className="bg-red-100 text-red-700 border-0 text-xs">{t("overdue")}</Badge>
+                    <Badge className="bg-red-100 text-red-700 border-0 text-xs">
+                      {t("overdue")}
+                    </Badge>
                   </div>
                 );
               })}
@@ -285,14 +340,19 @@ export default function EquipmentMaintenancePage() {
               {upcoming.map((m) => {
                 const daysLeft = getDaysUntilDue(m.nextDue!);
                 return (
-                  <div key={m.id} className="flex items-center justify-between p-2 bg-orange-50 dark:bg-orange-950/10 rounded">
+                  <div
+                    key={m.id}
+                    className="flex items-center justify-between p-2 bg-orange-50 dark:bg-orange-950/10 rounded"
+                  >
                     <div>
                       <p className="font-medium text-sm">{m.equipmentName}</p>
                       <p className="text-xs text-muted-foreground">
                         {typeLabel(m.type)} &middot; {t("dueIn")} {daysLeft} {t("days")}
                       </p>
                     </div>
-                    <Badge className="bg-orange-100 text-orange-700 border-0 text-xs">{typeLabel(m.type)}</Badge>
+                    <Badge className="bg-orange-100 text-orange-700 border-0 text-xs">
+                      {typeLabel(m.type)}
+                    </Badge>
                   </div>
                 );
               })}
@@ -304,11 +364,21 @@ export default function EquipmentMaintenancePage() {
       <div className="flex flex-col sm:flex-row gap-3 mb-6">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input placeholder={`${t("search")}...`} value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
+          <Input
+            placeholder={`${t("search")}...`}
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="pl-9"
+          />
         </div>
         <div className="flex gap-2 flex-wrap">
           {STATUS_OPTIONS.map((s) => (
-            <Button key={s} variant={statusFilter === s ? "default" : "outline"} size="sm" onClick={() => setStatusFilter(s)}>
+            <Button
+              key={s}
+              variant={statusFilter === s ? "default" : "outline"}
+              size="sm"
+              onClick={() => setStatusFilter(s)}
+            >
               {s === "all" ? t("all") : statusLabel(s)}
             </Button>
           ))}
@@ -320,7 +390,10 @@ export default function EquipmentMaintenancePage() {
           <Card key={record.id}>
             <CardContent className="pt-4 pb-4">
               {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- keyboard interaction handled by parent or child interactive element */}
-              <div className="flex items-center justify-between cursor-pointer" onClick={() => setExpandedId(expandedId === record.id ? null : record.id)}>
+              <div
+                className="flex items-center justify-between cursor-pointer"
+                onClick={() => setExpandedId(expandedId === record.id ? null : record.id)}
+              >
                 <div className="flex items-center gap-4">
                   <div className="h-10 w-10 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
                     <Wrench className="h-5 w-5 text-amber-600" />
@@ -328,18 +401,25 @@ export default function EquipmentMaintenancePage() {
                   <div>
                     <p className="font-medium">{record.equipmentName}</p>
                     <p className="text-xs text-muted-foreground">
-                      {new Date(record.performedAt).toLocaleDateString(dateFmt)} &middot; {record.performedBy ?? "—"}
+                      {new Date(record.performedAt).toLocaleDateString(dateFmt)} &middot;{" "}
+                      {record.performedBy ?? "—"}
                     </p>
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
-                  <Badge className={typeColors[record.type] ?? "bg-gray-100 text-gray-700 border-0"}>
+                  <Badge
+                    className={typeColors[record.type] ?? "bg-gray-100 text-gray-700 border-0"}
+                  >
                     {typeLabel(record.type)}
                   </Badge>
-                  <Badge className={statusColors[record.status] ?? "bg-gray-100 text-gray-700 border-0"}>
+                  <Badge
+                    className={statusColors[record.status] ?? "bg-gray-100 text-gray-700 border-0"}
+                  >
                     {statusLabel(record.status)}
                   </Badge>
-                  <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${expandedId === record.id ? "rotate-180" : ""}`} />
+                  <ChevronDown
+                    className={`h-4 w-4 text-muted-foreground transition-transform ${expandedId === record.id ? "rotate-180" : ""}`}
+                  />
                 </div>
               </div>
 
@@ -356,11 +436,17 @@ export default function EquipmentMaintenancePage() {
                     </div>
                     <div>
                       <p className="text-muted-foreground text-xs">{t("cost")}</p>
-                      <p className="font-medium">{record.cost != null ? `${record.cost} ${record.currency}` : "—"}</p>
+                      <p className="font-medium">
+                        {record.cost != null ? `${record.cost} ${record.currency}` : "—"}
+                      </p>
                     </div>
                     <div>
                       <p className="text-muted-foreground text-xs">{t("nextDue")}</p>
-                      <p className="font-medium">{record.nextDue ? new Date(record.nextDue).toLocaleDateString(dateFmt) : "—"}</p>
+                      <p className="font-medium">
+                        {record.nextDue
+                          ? new Date(record.nextDue).toLocaleDateString(dateFmt)
+                          : "—"}
+                      </p>
                     </div>
                   </div>
                   {record.description && (
@@ -376,10 +462,25 @@ export default function EquipmentMaintenancePage() {
                     </div>
                   )}
                   <div className="mt-4 pt-3 border-t flex items-center gap-2">
-                    <Button variant="outline" size="sm" onClick={(e) => { e.stopPropagation(); openEditDialog(record); }}>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        openEditDialog(record);
+                      }}
+                    >
                       <Pencil className="h-3 w-3 me-1" /> {t("edit")}
                     </Button>
-                    <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700 ms-auto" onClick={(e) => { e.stopPropagation(); setDeleteConfirm(record.id); }}>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="text-red-600 hover:text-red-700 ms-auto"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setDeleteConfirm(record.id);
+                      }}
+                    >
                       <Trash2 className="h-3 w-3 me-1" /> {t("delete")}
                     </Button>
                   </div>
@@ -399,7 +500,10 @@ export default function EquipmentMaintenancePage() {
 
       {/* Add / Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent onClose={() => setDialogOpen(false)} className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent
+          onClose={() => setDialogOpen(false)}
+          className="max-w-2xl max-h-[90vh] overflow-y-auto"
+        >
           <DialogHeader>
             <DialogTitle>{editingRecord ? t("editMaintenance") : t("addMaintenance")}</DialogTitle>
           </DialogHeader>
@@ -413,7 +517,9 @@ export default function EquipmentMaintenancePage() {
               >
                 <option value="">{t("selectEquipment")}</option>
                 {equipment.map((e) => (
-                  <option key={e.id} value={e.id}>{e.name} {e.serialNumber ? `(S/N: ${e.serialNumber})` : ""}</option>
+                  <option key={e.id} value={e.id}>
+                    {e.name} {e.serialNumber ? `(S/N: ${e.serialNumber})` : ""}
+                  </option>
                 ))}
               </select>
             </div>
@@ -426,7 +532,9 @@ export default function EquipmentMaintenancePage() {
                   onChange={(e) => updateField("type", e.target.value)}
                 >
                   {TYPE_OPTIONS.map((tp) => (
-                    <option key={tp} value={tp}>{typeLabel(tp)}</option>
+                    <option key={tp} value={tp}>
+                      {typeLabel(tp)}
+                    </option>
                   ))}
                 </select>
               </div>
@@ -438,7 +546,9 @@ export default function EquipmentMaintenancePage() {
                   onChange={(e) => updateField("status", e.target.value)}
                 >
                   {STATUS_OPTIONS.filter((s) => s !== "all").map((s) => (
-                    <option key={s} value={s}>{statusLabel(s)}</option>
+                    <option key={s} value={s}>
+                      {statusLabel(s)}
+                    </option>
                   ))}
                 </select>
               </div>
@@ -446,26 +556,44 @@ export default function EquipmentMaintenancePage() {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label>{t("performedAt")} *</Label>
-                <Input type="date" value={form.performedAt} onChange={(e) => updateField("performedAt", e.target.value)} />
+                <Input
+                  type="date"
+                  value={form.performedAt}
+                  onChange={(e) => updateField("performedAt", e.target.value)}
+                />
               </div>
               <div>
                 <Label>{t("nextDue")}</Label>
-                <Input type="date" value={form.nextDue} onChange={(e) => updateField("nextDue", e.target.value)} />
+                <Input
+                  type="date"
+                  value={form.nextDue}
+                  onChange={(e) => updateField("nextDue", e.target.value)}
+                />
               </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label>{t("performedBy")}</Label>
-                <Input value={form.performedBy} onChange={(e) => updateField("performedBy", e.target.value)} />
+                <Input
+                  value={form.performedBy}
+                  onChange={(e) => updateField("performedBy", e.target.value)}
+                />
               </div>
               <div>
                 <Label>{t("cost")} (MAD)</Label>
-                <Input type="number" value={form.cost} onChange={(e) => updateField("cost", e.target.value)} />
+                <Input
+                  type="number"
+                  value={form.cost}
+                  onChange={(e) => updateField("cost", e.target.value)}
+                />
               </div>
             </div>
             <div>
               <Label>{t("description")}</Label>
-              <Input value={form.description} onChange={(e) => updateField("description", e.target.value)} />
+              <Input
+                value={form.description}
+                onChange={(e) => updateField("description", e.target.value)}
+              />
             </div>
             <div>
               <Label>{t("notes")}</Label>
@@ -473,7 +601,9 @@ export default function EquipmentMaintenancePage() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDialogOpen(false)}>{t("cancel")}</Button>
+            <Button variant="outline" onClick={() => setDialogOpen(false)}>
+              {t("cancel")}
+            </Button>
             <Button
               onClick={handleSave}
               disabled={saving || !form.equipmentId || !form.type || !form.performedAt}
@@ -491,10 +621,21 @@ export default function EquipmentMaintenancePage() {
           <DialogHeader>
             <DialogTitle>{t("delete")}</DialogTitle>
           </DialogHeader>
-          <p className="py-4 text-sm">{locale === "fr" ? "Êtes-vous sûr de vouloir supprimer cet enregistrement de maintenance ?" : "هل أنت متأكد من حذف سجل الصيانة هذا؟"}</p>
+          <p className="py-4 text-sm">
+            {locale === "fr"
+              ? "Êtes-vous sûr de vouloir supprimer cet enregistrement de maintenance ?"
+              : "هل أنت متأكد من حذف سجل الصيانة هذا؟"}
+          </p>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDeleteConfirm(null)}>{t("cancel")}</Button>
-            <Button variant="destructive" onClick={() => deleteConfirm && handleDelete(deleteConfirm)}>{t("delete")}</Button>
+            <Button variant="outline" onClick={() => setDeleteConfirm(null)}>
+              {t("cancel")}
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => deleteConfirm && handleDelete(deleteConfirm)}
+            >
+              {t("delete")}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

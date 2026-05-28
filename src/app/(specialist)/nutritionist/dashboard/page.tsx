@@ -1,7 +1,4 @@
-
-import {
-  Apple, Users, Scale, Calculator, Calendar, TrendingUp,
-} from "lucide-react";
+import { Apple, Users, Scale, Calculator, Calendar, TrendingUp } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 const stats = [
@@ -15,9 +12,7 @@ export default function NutritionistDashboardPage() {
   return (
     <div>
       <h1 className="text-2xl font-bold mb-6">Nutritionist Dashboard</h1>
-      <p className="text-sm text-muted-foreground mb-6">
-        Nutritionniste — أخصائي تغذية
-      </p>
+      <p className="text-sm text-muted-foreground mb-6">Nutritionniste — أخصائي تغذية</p>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-8">
         {stats.map((stat) => (

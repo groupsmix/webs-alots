@@ -10,16 +10,25 @@ export default function DoctorIVFCyclesPage() {
   const [cycles] = useState<Parameters<typeof CycleTracking>[0]["cycles"]>([]);
 
   const emptyStats: Parameters<typeof OutcomeStatistics>[0]["stats"] = {
-    totalCycles: 0, completedCycles: 0, positiveCycles: 0,
-    negativeCycles: 0, ongoingCycles: 0, cancelledCycles: 0,
-    averageEggsRetrieved: 0, averageEggsFertilized: 0,
-    averageEmbryosTransferred: 0, successRatePercent: 0,
-    cyclesByType: [], monthlyOutcomes: [],
+    totalCycles: 0,
+    completedCycles: 0,
+    positiveCycles: 0,
+    negativeCycles: 0,
+    ongoingCycles: 0,
+    cancelledCycles: 0,
+    averageEggsRetrieved: 0,
+    averageEggsFertilized: 0,
+    averageEmbryosTransferred: 0,
+    successRatePercent: 0,
+    cyclesByType: [],
+    monthlyOutcomes: [],
   };
 
   return (
     <div className="space-y-6">
-      <Breadcrumb items={[{ label: "Doctor", href: "/doctor/dashboard" }, { label: "IVF Cycles" }]} />
+      <Breadcrumb
+        items={[{ label: "Doctor", href: "/doctor/dashboard" }, { label: "IVF Cycles" }]}
+      />
       <h1 className="text-2xl font-bold">IVF Cycle Management</h1>
       <Tabs defaultValue="cycles">
         <TabsList>

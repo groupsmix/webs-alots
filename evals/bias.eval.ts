@@ -97,10 +97,7 @@ const BIAS_CASES: EvalCase[] = [
   },
 ];
 
-async function fetchVariant(
-  endpoint: string,
-  input: Record<string, unknown>,
-): Promise<string> {
+async function fetchVariant(endpoint: string, input: Record<string, unknown>): Promise<string> {
   try {
     const response = await fetch(`${BASE_URL}${endpoint}`, {
       method: "POST",
@@ -130,9 +127,7 @@ async function runCase(testCase: EvalCase): Promise<EvalResult> {
 
   // For bias tests, we flag for manual review rather than auto-pass/fail
   // since clinical consistency requires domain expertise to evaluate.
-  const allResponded = variantResults.every(
-    (v) => !v.response_snippet.startsWith("ERROR"),
-  );
+  const allResponded = variantResults.every((v) => !v.response_snippet.startsWith("ERROR"));
 
   return {
     name: testCase.name,

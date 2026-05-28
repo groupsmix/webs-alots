@@ -1,14 +1,6 @@
 "use client";
 
-import {
-  FileText,
-  Calendar,
-  Users,
-  CreditCard,
-  Clock,
-  Printer,
-  AlertCircle,
-} from "lucide-react";
+import { FileText, Calendar, Users, CreditCard, Clock, Printer, AlertCircle } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -19,11 +11,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import {
-  getCurrentUser,
-  fetchTodayAppointments,
-  fetchInvoices,
-} from "@/lib/data/client";
+import { getCurrentUser, fetchTodayAppointments, fetchInvoices } from "@/lib/data/client";
 import { getLocalDateStr } from "@/lib/utils";
 
 interface EndOfDayReportButtonProps {
@@ -205,7 +193,9 @@ export function EndOfDayReportButton({ trigger }: EndOfDayReportButtonProps) {
                 <CardContent>
                   <div className="grid grid-cols-3 gap-2 text-center">
                     <div>
-                      <p className="text-base font-bold text-green-600">{report.totalRevenue} MAD</p>
+                      <p className="text-base font-bold text-green-600">
+                        {report.totalRevenue} MAD
+                      </p>
                       <p className="text-[10px] text-muted-foreground">Collected</p>
                     </div>
                     <div>
@@ -213,7 +203,9 @@ export function EndOfDayReportButton({ trigger }: EndOfDayReportButtonProps) {
                       <p className="text-[10px] text-muted-foreground">Paid</p>
                     </div>
                     <div>
-                      <p className="text-base font-bold text-orange-600">{report.pendingPayments}</p>
+                      <p className="text-base font-bold text-orange-600">
+                        {report.pendingPayments}
+                      </p>
                       <p className="text-[10px] text-muted-foreground">Pending</p>
                     </div>
                   </div>

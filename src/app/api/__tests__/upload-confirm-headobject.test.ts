@@ -125,9 +125,7 @@ describe("PUT /api/upload — HeadObject confirmation cross-check", () => {
     // across the upload routes.
     expect(response.status).toBe(413);
     expect(json.error).toMatch(/too large/i);
-    expect(deleteFromR2Mock).toHaveBeenCalledWith(
-      `clinics/${CLINIC_ID}/photos/file.png`,
-    );
+    expect(deleteFromR2Mock).toHaveBeenCalledWith(`clinics/${CLINIC_ID}/photos/file.png`);
     // The magic-byte fallback must not even be reached when size fails.
     expect(readR2ObjectHeadMock).not.toHaveBeenCalled();
   });
@@ -151,9 +149,7 @@ describe("PUT /api/upload — HeadObject confirmation cross-check", () => {
 
     expect(response.status).toBe(400);
     expect(json.error).toMatch(/content type/i);
-    expect(deleteFromR2Mock).toHaveBeenCalledWith(
-      `clinics/${CLINIC_ID}/photos/file.png`,
-    );
+    expect(deleteFromR2Mock).toHaveBeenCalledWith(`clinics/${CLINIC_ID}/photos/file.png`);
   });
 
   it("returns 404 when the object cannot be read via HeadObject", async () => {

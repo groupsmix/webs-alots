@@ -48,7 +48,7 @@ export default function ApiDocsPage() {
             </span>
           </div>
         </header>
-        
+
         <div className="bg-white rounded-lg shadow">
           <SwaggerUI url={specUrl} />
         </div>

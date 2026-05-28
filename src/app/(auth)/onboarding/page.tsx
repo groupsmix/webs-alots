@@ -18,13 +18,7 @@ import { useState, useRef } from "react";
 import { ClinicTypeIcon } from "@/components/clinic-type-icon";
 import { CelebrationPage } from "@/components/onboarding/celebration-page";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -35,10 +29,7 @@ import {
 } from "@/lib/config/clinic-types";
 import type { VerticalId } from "@/lib/config/verticals";
 import { MOROCCAN_CITIES } from "@/lib/morocco";
-import {
-  getPresetsByVertical,
-  type TemplatePreset,
-} from "@/lib/template-presets";
+import { getPresetsByVertical, type TemplatePreset } from "@/lib/template-presets";
 import type { ClinicTypeCategory } from "@/lib/types/database";
 
 // ---------------------------------------------------------------------------
@@ -88,11 +79,7 @@ const CATEGORY_TO_VERTICAL: Record<string, VerticalId> = {
 // Sub-components
 // ---------------------------------------------------------------------------
 
-function CategoryPicker({
-  onSelect,
-}: {
-  onSelect: (cat: ClinicCategory) => void;
-}) {
+function CategoryPicker({ onSelect }: { onSelect: (cat: ClinicCategory) => void }) {
   return (
     <div className="space-y-3">
       <p className="text-center text-sm text-muted-foreground mb-4">
@@ -115,9 +102,7 @@ function CategoryPicker({
                   <p className="text-xs mt-0.5 font-medium" dir="rtl">
                     {cat.name_ar}
                   </p>
-                  <p className="text-xs mt-1 opacity-70">
-                    {cat.description_fr}
-                  </p>
+                  <p className="text-xs mt-1 opacity-70">{cat.description_fr}</p>
                 </div>
               </div>
             </CardContent>
@@ -151,9 +136,7 @@ function TypePicker({
           <p className="text-sm font-medium">
             {category.name_fr} / {category.name_ar}
           </p>
-          <p className="text-xs text-muted-foreground">
-            Choisissez votre sp&eacute;cialit&eacute;
-          </p>
+          <p className="text-xs text-muted-foreground">Choisissez votre sp&eacute;cialit&eacute;</p>
         </div>
         <div className="w-16" />
       </div>
@@ -280,21 +263,16 @@ export default function OnboardingPage() {
   const [phone, setPhone] = useState("");
 
   // Step 2: Your Business
-  const [businessSubStep, setBusinessSubStep] = useState<
-    "category" | "type" | "details"
-  >("category");
-  const [selectedCategory, setSelectedCategory] =
-    useState<ClinicTypeCategory | null>(null);
-  const [selectedType, setSelectedType] = useState<ClinicTypeEntry | null>(
-    null,
+  const [businessSubStep, setBusinessSubStep] = useState<"category" | "type" | "details">(
+    "category",
   );
+  const [selectedCategory, setSelectedCategory] = useState<ClinicTypeCategory | null>(null);
+  const [selectedType, setSelectedType] = useState<ClinicTypeEntry | null>(null);
   const [clinicName, setClinicName] = useState("");
   const [city, setCity] = useState("");
 
   // Step 3: Pick a Look
-  const [selectedPreset, setSelectedPreset] = useState<TemplatePreset | null>(
-    null,
-  );
+  const [selectedPreset, setSelectedPreset] = useState<TemplatePreset | null>(null);
 
   // Step 4: Upload Logo
   const [logoFile, setLogoFile] = useState<File | null>(null);
@@ -303,16 +281,14 @@ export default function OnboardingPage() {
 
   // --- Derived ---
   const currentCategoryMeta = selectedCategory
-    ? CLINIC_CATEGORIES.find((c) => c.key === selectedCategory) ?? null
+    ? (CLINIC_CATEGORIES.find((c) => c.key === selectedCategory) ?? null)
     : null;
 
   const detectedVertical: VerticalId | null = selectedCategory
     ? (CATEGORY_TO_VERTICAL[selectedCategory] ?? null)
     : null;
 
-  const availablePresets = detectedVertical
-    ? getPresetsByVertical(detectedVertical)
-    : [];
+  const availablePresets = detectedVertical ? getPresetsByVertical(detectedVertical) : [];
 
   // --- Step 2 handlers ---
   function handleSelectCategory(cat: ClinicCategory) {
@@ -376,9 +352,7 @@ export default function OnboardingPage() {
       });
 
       if (!createRes.ok) {
-        const data: { error?: string } | null = await createRes
-          .json()
-          .catch(() => null);
+        const data: { error?: string } | null = await createRes.json().catch(() => null);
         throw new Error(data?.error ?? "Registration failed");
       }
 
@@ -419,9 +393,7 @@ export default function OnboardingPage() {
         });
 
         if (!wizardRes.ok) {
-          const data: { error?: string } | null = await wizardRes
-            .json()
-            .catch(() => null);
+          const data: { error?: string } | null = await wizardRes.json().catch(() => null);
           throw new Error(data?.error ?? "Failed to complete setup");
         }
       }
@@ -449,9 +421,7 @@ export default function OnboardingPage() {
     }
     if (currentStep === 2) {
       if (!selectedType || !clinicName) {
-        setError(
-          "Veuillez choisir votre sp\u00e9cialit\u00e9 et nommer votre \u00e9tablissement",
-        );
+        setError("Veuillez choisir votre sp\u00e9cialit\u00e9 et nommer votre \u00e9tablissement");
         return;
       }
     }
@@ -524,17 +494,11 @@ export default function OnboardingPage() {
                       : "bg-muted text-muted-foreground cursor-default"
                 }`}
               >
-                {isCompleted ? (
-                  <Check className="h-4 w-4" />
-                ) : (
-                  <StepIcon className="h-4 w-4" />
-                )}
+                {isCompleted ? <Check className="h-4 w-4" /> : <StepIcon className="h-4 w-4" />}
               </button>
               <span
                 className={`text-xs hidden sm:block ${
-                  isCurrent
-                    ? "font-semibold text-primary"
-                    : "text-muted-foreground"
+                  isCurrent ? "font-semibold text-primary" : "text-muted-foreground"
                 }`}
               >
                 {s.label}
@@ -557,8 +521,7 @@ export default function OnboardingPage() {
           Vos informations
         </CardTitle>
         <CardDescription>
-          Renseignez vos coordonn&eacute;es pour cr&eacute;er votre compte
-          administrateur.
+          Renseignez vos coordonn&eacute;es pour cr&eacute;er votre compte administrateur.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -623,8 +586,7 @@ export default function OnboardingPage() {
               Votre activit&eacute;
             </CardTitle>
             <CardDescription>
-              Quel type d&apos;&eacute;tablissement souhaitez-vous cr&eacute;er
-              ?
+              Quel type d&apos;&eacute;tablissement souhaitez-vous cr&eacute;er ?
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -669,18 +631,11 @@ export default function OnboardingPage() {
             </div>
             <div className="flex items-center gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
-                <ClinicTypeIcon
-                  name={selectedType.icon}
-                  className="h-5 w-5 text-primary"
-                />
+                <ClinicTypeIcon name={selectedType.icon} className="h-5 w-5 text-primary" />
               </div>
               <div>
-                <CardTitle className="text-lg">
-                  {selectedType.name_fr}
-                </CardTitle>
-                <CardDescription dir="rtl">
-                  {selectedType.name_ar}
-                </CardDescription>
+                <CardTitle className="text-lg">{selectedType.name_fr}</CardTitle>
+                <CardDescription dir="rtl">{selectedType.name_ar}</CardDescription>
               </div>
             </div>
           </CardHeader>
@@ -692,9 +647,7 @@ export default function OnboardingPage() {
             )}
             <div className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="clinicName">
-                  Nom de l&apos;&eacute;tablissement *
-                </Label>
+                <Label htmlFor="clinicName">Nom de l&apos;&eacute;tablissement *</Label>
                 <Input
                   id="clinicName"
                   placeholder="ex: Cabinet Dr. Ahmed"
@@ -726,10 +679,7 @@ export default function OnboardingPage() {
                 Retour
               </Button>
               <div className="flex-1" />
-              <Button
-                onClick={handleNext}
-                disabled={!clinicName || !selectedType}
-              >
+              <Button onClick={handleNext} disabled={!clinicName || !selectedType}>
                 Continuer
                 <ArrowRight className="h-4 w-4 ml-1" />
               </Button>
@@ -751,8 +701,8 @@ export default function OnboardingPage() {
           Choisissez un style
         </CardTitle>
         <CardDescription>
-          S&eacute;lectionnez le design qui correspond le mieux &agrave; votre
-          activit&eacute;. Vous pourrez le personnaliser plus tard.
+          S&eacute;lectionnez le design qui correspond le mieux &agrave; votre activit&eacute;. Vous
+          pourrez le personnaliser plus tard.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -806,8 +756,8 @@ export default function OnboardingPage() {
           Ajoutez votre logo
         </CardTitle>
         <CardDescription>
-          Optionnel &mdash; vous pouvez ajouter ou modifier votre logo plus tard
-          depuis le tableau de bord.
+          Optionnel &mdash; vous pouvez ajouter ou modifier votre logo plus tard depuis le tableau
+          de bord.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -833,9 +783,7 @@ export default function OnboardingPage() {
                   <p className="text-sm font-medium text-muted-foreground">
                     Cliquez pour t&eacute;l&eacute;charger
                   </p>
-                  <p className="text-xs text-muted-foreground/70 mt-1">
-                    PNG, JPG ou SVG
-                  </p>
+                  <p className="text-xs text-muted-foreground/70 mt-1">PNG, JPG ou SVG</p>
                 </div>
               </>
             )}
@@ -901,8 +849,7 @@ export default function OnboardingPage() {
           Pr&ecirc;t &agrave; lancer !
         </CardTitle>
         <CardDescription>
-          V&eacute;rifiez les informations et mettez votre site en ligne en un
-          clic.
+          V&eacute;rifiez les informations et mettez votre site en ligne en un clic.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -927,22 +874,16 @@ export default function OnboardingPage() {
                 <p className="font-medium">{ownerName}</p>
               </div>
               <div>
-                <span className="text-muted-foreground">
-                  T&eacute;l&eacute;phone
-                </span>
+                <span className="text-muted-foreground">T&eacute;l&eacute;phone</span>
                 <p className="font-medium">{phone}</p>
               </div>
               <div>
-                <span className="text-muted-foreground">
-                  &Eacute;tablissement
-                </span>
+                <span className="text-muted-foreground">&Eacute;tablissement</span>
                 <p className="font-medium">{clinicName}</p>
               </div>
               {selectedType && (
                 <div>
-                  <span className="text-muted-foreground">
-                    Sp&eacute;cialit&eacute;
-                  </span>
+                  <span className="text-muted-foreground">Sp&eacute;cialit&eacute;</span>
                   <p className="font-medium">{selectedType.name_fr}</p>
                 </div>
               )}
@@ -962,9 +903,7 @@ export default function OnboardingPage() {
                         backgroundColor: selectedPreset.theme.primaryColor,
                       }}
                     />
-                    <span className="font-medium text-sm">
-                      {selectedPreset.name}
-                    </span>
+                    <span className="font-medium text-sm">{selectedPreset.name}</span>
                   </div>
                 </div>
               )}
@@ -980,9 +919,7 @@ export default function OnboardingPage() {
             </div>
           </div>
           <div className="rounded-lg bg-muted/50 p-4 space-y-2">
-            <p className="text-sm font-medium">
-              Ce qui sera cr&eacute;&eacute; automatiquement :
-            </p>
+            <p className="text-sm font-medium">Ce qui sera cr&eacute;&eacute; automatiquement :</p>
             <ul className="text-xs text-muted-foreground space-y-1">
               <li className="flex items-center gap-2">
                 <Check className="h-3 w-3 text-primary" />
@@ -1008,12 +945,7 @@ export default function OnboardingPage() {
             <ArrowLeft className="h-4 w-4 mr-1" />
             Retour
           </Button>
-          <Button
-            className="flex-1"
-            size="lg"
-            disabled={loading}
-            onClick={handleGoLive}
-          >
+          <Button className="flex-1" size="lg" disabled={loading} onClick={handleGoLive}>
             {loading ? (
               <>
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -1042,9 +974,7 @@ export default function OnboardingPage() {
             <Building2 className="h-5 w-5 text-primary-foreground" />
           </div>
         </div>
-        <h1 className="text-xl font-bold">
-          Cr&eacute;er votre &eacute;tablissement
-        </h1>
+        <h1 className="text-xl font-bold">Cr&eacute;er votre &eacute;tablissement</h1>
         <p className="text-sm text-muted-foreground">
           Votre site sera en ligne en moins de 2 minutes
         </p>

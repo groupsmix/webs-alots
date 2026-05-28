@@ -89,15 +89,17 @@ export function MarkUnavailableDialog({
 
   return (
     <>
-      <Button
-        variant="destructive"
-        size="sm"
-        onClick={() => setOpen(true)}
-      >
+      <Button variant="destructive" size="sm" onClick={() => setOpen(true)}>
         <CalendarOff className="h-4 w-4 mr-1" />
         Mark Unavailable
       </Button>
-      <Dialog open={open} onOpenChange={(v) => { if (!v) handleClose(); else setOpen(true); }}>
+      <Dialog
+        open={open}
+        onOpenChange={(v) => {
+          if (!v) handleClose();
+          else setOpen(true);
+        }}
+      >
         <DialogContent className="sm:max-w-[480px]" onClose={handleClose}>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
@@ -110,8 +112,8 @@ export function MarkUnavailableDialog({
             <>
               <div className="space-y-4 py-2">
                 <p className="text-sm text-muted-foreground">
-                  Select a date range when you will be unavailable. Affected patients will
-                  be notified via WhatsApp with alternative time slots.
+                  Select a date range when you will be unavailable. Affected patients will be
+                  notified via WhatsApp with alternative time slots.
                 </p>
 
                 <div className="grid grid-cols-2 gap-4">

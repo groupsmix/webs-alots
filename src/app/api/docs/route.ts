@@ -20,12 +20,18 @@ export interface ApiEndpoint {
   requestBody?: {
     content: Record<string, { schema: unknown }>;
   };
-  responses?: Record<string, { description: string; content?: Record<string, { schema: unknown }> }>;
+  responses?: Record<
+    string,
+    { description: string; content?: Record<string, { schema: unknown }> }
+  >;
 }
 
 export interface ApiSchema {
   type: string;
-  properties?: Record<string, { type: string; description?: string; format?: string; enum?: string[] }>;
+  properties?: Record<
+    string,
+    { type: string; description?: string; format?: string; enum?: string[] }
+  >;
   required?: string[];
   items?: ApiSchema;
 }
@@ -66,7 +72,10 @@ const APPOINTMENT_SCHEMA: ApiSchema = {
     service: { type: "string" },
     date: { type: "string", format: "date" },
     time: { type: "string" },
-    status: { type: "string", enum: ["scheduled", "confirmed", "completed", "cancelled", "no_show"] },
+    status: {
+      type: "string",
+      enum: ["scheduled", "confirmed", "completed", "cancelled", "no_show"],
+    },
     notes: { type: "string" },
     created_at: { type: "string", format: "date-time" },
   },
@@ -150,7 +159,8 @@ export const apiEndpoints: ApiEndpoint[] = [
     path: "/api/v1/appointments",
     method: "GET",
     summary: "List appointments",
-    description: "Retrieve appointments for the authenticated clinic. Supports filtering by date range, status, and patient.",
+    description:
+      "Retrieve appointments for the authenticated clinic. Supports filtering by date range, status, and patient.",
     tags: ["Appointments"],
     security: true,
     responses: {
@@ -238,7 +248,10 @@ export const apiEndpoints: ApiEndpoint[] = [
           schema: {
             type: "object",
             properties: {
-              status: { type: "string", enum: ["scheduled", "confirmed", "completed", "cancelled", "no_show"] },
+              status: {
+                type: "string",
+                enum: ["scheduled", "confirmed", "completed", "cancelled", "no_show"],
+              },
               date: { type: "string", format: "date" },
               time: { type: "string" },
               notes: { type: "string" },
@@ -277,7 +290,8 @@ export const apiEndpoints: ApiEndpoint[] = [
     path: "/api/v1/patients",
     method: "GET",
     summary: "List patients",
-    description: "Retrieve patients for the authenticated clinic. Supports search by name, phone, or email.",
+    description:
+      "Retrieve patients for the authenticated clinic. Supports search by name, phone, or email.",
     tags: ["Patients"],
     security: true,
     responses: {
@@ -421,7 +435,8 @@ export const apiEndpoints: ApiEndpoint[] = [
     path: "/api/auth/demo-login",
     method: "POST",
     summary: "Demo login",
-    description: "Authenticate with a demo/seed user account. Only available when demo mode is enabled.",
+    description:
+      "Authenticate with a demo/seed user account. Only available when demo mode is enabled.",
     tags: ["Auth"],
     responses: {
       "200": { description: "Login successful, returns session" },
@@ -445,7 +460,8 @@ export const apiEndpoints: ApiEndpoint[] = [
     path: "/api/booking",
     method: "GET",
     summary: "List available slots",
-    description: "Returns available time slots for a given doctor and date. Query params: doctorId, date (YYYY-MM-DD).",
+    description:
+      "Returns available time slots for a given doctor and date. Query params: doctorId, date (YYYY-MM-DD).",
     tags: ["Booking"],
     responses: {
       "200": {
@@ -471,14 +487,26 @@ export const apiEndpoints: ApiEndpoint[] = [
     path: "/api/booking",
     method: "POST",
     summary: "Create booking",
-    description: "Creates a new appointment booking. Requires a valid booking token from POST /api/booking/verify. Rate limited to 10 req/min per IP.",
+    description:
+      "Creates a new appointment booking. Requires a valid booking token from POST /api/booking/verify. Rate limited to 10 req/min per IP.",
     tags: ["Booking"],
     requestBody: {
       content: {
         "application/json": {
           schema: {
             type: "object",
-            required: ["specialtyId", "doctorId", "serviceId", "date", "time", "isFirstVisit", "hasInsurance", "patient", "slotDuration", "bufferTime"],
+            required: [
+              "specialtyId",
+              "doctorId",
+              "serviceId",
+              "date",
+              "time",
+              "isFirstVisit",
+              "hasInsurance",
+              "patient",
+              "slotDuration",
+              "bufferTime",
+            ],
             properties: {
               specialtyId: { type: "string" },
               doctorId: { type: "string", format: "uuid" },
@@ -487,7 +515,10 @@ export const apiEndpoints: ApiEndpoint[] = [
               time: { type: "string", description: "HH:MM format" },
               isFirstVisit: { type: "boolean" },
               hasInsurance: { type: "boolean" },
-              patient: { type: "object", description: "Patient details: name, phone, email, reason" },
+              patient: {
+                type: "object",
+                description: "Patient details: name, phone, email, reason",
+              },
               slotDuration: { type: "integer" },
               bufferTime: { type: "integer" },
             },
@@ -505,7 +536,8 @@ export const apiEndpoints: ApiEndpoint[] = [
     path: "/api/booking/verify",
     method: "POST",
     summary: "Verify booking OTP",
-    description: "Sends an OTP to the patient's phone/email for booking verification. Returns a booking token on success.",
+    description:
+      "Sends an OTP to the patient's phone/email for booking verification. Returns a booking token on success.",
     tags: ["Booking"],
     responses: {
       "200": { description: "OTP sent or token issued" },
@@ -516,7 +548,8 @@ export const apiEndpoints: ApiEndpoint[] = [
     path: "/api/booking/cancel",
     method: "POST",
     summary: "Cancel booking",
-    description: "Cancels an existing appointment. Enforces timezone-aware cancellation window and ownership checks.",
+    description:
+      "Cancels an existing appointment. Enforces timezone-aware cancellation window and ownership checks.",
     tags: ["Booking"],
     security: true,
     requestBody: {
@@ -542,7 +575,8 @@ export const apiEndpoints: ApiEndpoint[] = [
     path: "/api/booking/cancel",
     method: "GET",
     summary: "Get cancellation details",
-    description: "Retrieves appointment details for the cancellation confirmation page. Query param: appointmentId.",
+    description:
+      "Retrieves appointment details for the cancellation confirmation page. Query param: appointmentId.",
     tags: ["Booking"],
     responses: {
       "200": { description: "Appointment details for cancellation" },
@@ -565,7 +599,8 @@ export const apiEndpoints: ApiEndpoint[] = [
     path: "/api/booking/recurring",
     method: "POST",
     summary: "Create recurring booking",
-    description: "Creates a series of recurring appointments based on a pattern (weekly, biweekly, monthly).",
+    description:
+      "Creates a series of recurring appointments based on a pattern (weekly, biweekly, monthly).",
     tags: ["Booking"],
     security: true,
     responses: {
@@ -589,7 +624,8 @@ export const apiEndpoints: ApiEndpoint[] = [
     path: "/api/booking/waiting-list",
     method: "POST",
     summary: "Join waiting list",
-    description: "Adds a patient to the waiting list for a fully booked slot. Notified when a slot opens.",
+    description:
+      "Adds a patient to the waiting list for a fully booked slot. Notified when a slot opens.",
     tags: ["Booking"],
     responses: {
       "200": { description: "Added to waiting list" },
@@ -602,7 +638,8 @@ export const apiEndpoints: ApiEndpoint[] = [
     path: "/api/payments/create-checkout",
     method: "POST",
     summary: "Create Stripe checkout session",
-    description: "Creates a Stripe Checkout Session for clinic payments. Validates redirect URLs are same-origin.",
+    description:
+      "Creates a Stripe Checkout Session for clinic payments. Validates redirect URLs are same-origin.",
     tags: ["Payments"],
     security: true,
     requestBody: {
@@ -612,7 +649,10 @@ export const apiEndpoints: ApiEndpoint[] = [
             type: "object",
             required: ["amount", "description"],
             properties: {
-              amount: { type: "integer", description: "Amount in smallest currency unit (centimes)" },
+              amount: {
+                type: "integer",
+                description: "Amount in smallest currency unit (centimes)",
+              },
               currency: { type: "string", description: "Currency code (default: mad)" },
               description: { type: "string" },
               patientId: { type: "string", format: "uuid" },
@@ -633,7 +673,8 @@ export const apiEndpoints: ApiEndpoint[] = [
     path: "/api/payments/webhook",
     method: "POST",
     summary: "Stripe webhook handler",
-    description: "Processes Stripe webhook events (checkout.session.completed, payment_intent.payment_failed). Verifies stripe-signature header.",
+    description:
+      "Processes Stripe webhook events (checkout.session.completed, payment_intent.payment_failed). Verifies stripe-signature header.",
     tags: ["Payments"],
     responses: {
       "200": { description: "Webhook processed" },
@@ -644,7 +685,8 @@ export const apiEndpoints: ApiEndpoint[] = [
     path: "/api/payments/cmi",
     method: "POST",
     summary: "CMI payment initiation",
-    description: "Initiates a payment via CMI (Centre Monétique Interbancaire) gateway for Moroccan bank cards.",
+    description:
+      "Initiates a payment via CMI (Centre Monétique Interbancaire) gateway for Moroccan bank cards.",
     tags: ["Payments"],
     security: true,
     responses: {
@@ -703,7 +745,8 @@ export const apiEndpoints: ApiEndpoint[] = [
     path: "/api/webhooks",
     method: "POST",
     summary: "WhatsApp webhook handler",
-    description: "Receives WhatsApp Business API webhooks. Verifies X-Hub-Signature-256, processes message replies (CONFIRM/CANCEL/RESCHEDULE), delivery statuses, rebooking responses, and feedback ratings.",
+    description:
+      "Receives WhatsApp Business API webhooks. Verifies X-Hub-Signature-256, processes message replies (CONFIRM/CANCEL/RESCHEDULE), delivery statuses, rebooking responses, and feedback ratings.",
     tags: ["Webhooks"],
     responses: {
       "200": { description: "Webhook processed" },
@@ -714,7 +757,8 @@ export const apiEndpoints: ApiEndpoint[] = [
     path: "/api/webhooks",
     method: "GET",
     summary: "WhatsApp webhook verification",
-    description: "Meta webhook verification endpoint. Returns hub.challenge when hub.verify_token matches.",
+    description:
+      "Meta webhook verification endpoint. Returns hub.challenge when hub.verify_token matches.",
     tags: ["Webhooks"],
     responses: {
       "200": { description: "Verification challenge returned" },
@@ -727,7 +771,8 @@ export const apiEndpoints: ApiEndpoint[] = [
     path: "/api/cron/reminders",
     method: "GET",
     summary: "Send appointment reminders",
-    description: "Sends 24h and 1h appointment reminders via WhatsApp and in-app notifications. Protected by CRON_SECRET Bearer token.",
+    description:
+      "Sends 24h and 1h appointment reminders via WhatsApp and in-app notifications. Protected by CRON_SECRET Bearer token.",
     tags: ["Cron"],
     security: true,
     responses: {
@@ -763,7 +808,8 @@ export const apiEndpoints: ApiEndpoint[] = [
     path: "/api/cron/feedback",
     method: "GET",
     summary: "Send post-appointment feedback requests",
-    description: "Sends feedback rating requests to patients after completed appointments. Protected by CRON_SECRET.",
+    description:
+      "Sends feedback rating requests to patients after completed appointments. Protected by CRON_SECRET.",
     tags: ["Cron"],
     security: true,
     responses: {
@@ -787,7 +833,8 @@ export const apiEndpoints: ApiEndpoint[] = [
     path: "/api/cron/rebooking-reminders",
     method: "GET",
     summary: "Send rebooking reminders",
-    description: "Sends rebooking option reminders when doctor unavailability is detected. Protected by CRON_SECRET.",
+    description:
+      "Sends rebooking option reminders when doctor unavailability is detected. Protected by CRON_SECRET.",
     tags: ["Cron"],
     security: true,
     responses: {
@@ -801,7 +848,8 @@ export const apiEndpoints: ApiEndpoint[] = [
     path: "/api/branding",
     method: "GET",
     summary: "Get clinic branding",
-    description: "Returns public branding data (colors, fonts, logo, template) for the current clinic subdomain. Cached for 5 minutes. Applies WCAG AA contrast fallbacks.",
+    description:
+      "Returns public branding data (colors, fonts, logo, template) for the current clinic subdomain. Cached for 5 minutes. Applies WCAG AA contrast fallbacks.",
     tags: ["Branding"],
     responses: {
       "200": {
@@ -830,7 +878,8 @@ export const apiEndpoints: ApiEndpoint[] = [
     path: "/api/branding",
     method: "PUT",
     summary: "Update clinic branding",
-    description: "Updates clinic branding fields (colors, fonts, name, tagline). Requires clinic_admin or super_admin role.",
+    description:
+      "Updates clinic branding fields (colors, fonts, name, tagline). Requires clinic_admin or super_admin role.",
     tags: ["Branding"],
     security: true,
     responses: {
@@ -842,7 +891,8 @@ export const apiEndpoints: ApiEndpoint[] = [
     path: "/api/branding",
     method: "POST",
     summary: "Upload branding image",
-    description: "Uploads a branding image (logo, favicon, hero) to R2 storage. Validates file type via magic bytes. Max 5 MB.",
+    description:
+      "Uploads a branding image (logo, favicon, hero) to R2 storage. Validates file type via magic bytes. Max 5 MB.",
     tags: ["Branding"],
     security: true,
     requestBody: {
@@ -882,7 +932,8 @@ export const apiEndpoints: ApiEndpoint[] = [
     path: "/api/notifications/trigger",
     method: "POST",
     summary: "Trigger notification",
-    description: "Manually triggers a notification to a specific user via selected channels (whatsapp, email, in_app, sms).",
+    description:
+      "Manually triggers a notification to a specific user via selected channels (whatsapp, email, in_app, sms).",
     tags: ["Notifications"],
     security: true,
     responses: {
@@ -896,7 +947,8 @@ export const apiEndpoints: ApiEndpoint[] = [
     path: "/api/health",
     method: "GET",
     summary: "Health check",
-    description: "Returns service status, uptime, and component-level health for database, R2 storage, WhatsApp API, and rate limiter. Cached for 30 seconds.",
+    description:
+      "Returns service status, uptime, and component-level health for database, R2 storage, WhatsApp API, and rate limiter. Cached for 30 seconds.",
     tags: ["Health"],
     responses: {
       "200": {
@@ -923,7 +975,8 @@ export const apiEndpoints: ApiEndpoint[] = [
     path: "/api/impersonate",
     method: "POST",
     summary: "Start impersonation",
-    description: "Allows super_admin to impersonate another user. Requires re-authentication. Creates audit log entry.",
+    description:
+      "Allows super_admin to impersonate another user. Requires re-authentication. Creates audit log entry.",
     tags: ["Impersonate"],
     security: true,
     requestBody: {
@@ -950,7 +1003,8 @@ export const apiEndpoints: ApiEndpoint[] = [
     path: "/api/impersonate",
     method: "DELETE",
     summary: "Stop impersonation",
-    description: "Ends the current impersonation session and restores the original super_admin identity.",
+    description:
+      "Ends the current impersonation session and restores the original super_admin identity.",
     tags: ["Impersonate"],
     security: true,
     responses: {
@@ -964,7 +1018,8 @@ export const apiEndpoints: ApiEndpoint[] = [
     path: "/api/onboarding",
     method: "POST",
     summary: "Create clinic (onboarding)",
-    description: "Creates a new clinic during the onboarding flow. Requires email verification. Generates subdomain from clinic name. Includes idempotency guard for retries.",
+    description:
+      "Creates a new clinic during the onboarding flow. Requires email verification. Generates subdomain from clinic name. Includes idempotency guard for retries.",
     tags: ["Onboarding"],
     security: true,
     requestBody: {
@@ -975,7 +1030,10 @@ export const apiEndpoints: ApiEndpoint[] = [
             required: ["clinic_name", "clinic_type_key", "owner_name", "phone"],
             properties: {
               clinic_name: { type: "string" },
-              clinic_type_key: { type: "string", description: "e.g. dental_clinic, pharmacy, general_medicine" },
+              clinic_type_key: {
+                type: "string",
+                description: "e.g. dental_clinic, pharmacy, general_medicine",
+              },
               category: { type: "string", description: "e.g. medical, para_medical, diagnostic" },
               owner_name: { type: "string" },
               phone: { type: "string" },
@@ -998,7 +1056,8 @@ export const apiEndpoints: ApiEndpoint[] = [
     path: "/api/upload",
     method: "POST",
     summary: "Upload file",
-    description: "Uploads a file to R2 storage. Validates file type via magic bytes and enforces size limits. Path traversal prevention via buildUploadKey().",
+    description:
+      "Uploads a file to R2 storage. Validates file type via magic bytes and enforces size limits. Path traversal prevention via buildUploadKey().",
     tags: ["Uploads"],
     security: true,
     requestBody: {
@@ -1026,7 +1085,8 @@ export const apiEndpoints: ApiEndpoint[] = [
     path: "/api/csp-report",
     method: "POST",
     summary: "CSP violation report",
-    description: "Receives Content-Security-Policy violation reports from browsers and forwards to Sentry.",
+    description:
+      "Receives Content-Security-Policy violation reports from browsers and forwards to Sentry.",
     tags: ["Security"],
     responses: {
       "204": { description: "Report received" },
@@ -1038,7 +1098,8 @@ export const apiEndpoints: ApiEndpoint[] = [
     path: "/api/checkin/lookup",
     method: "GET",
     summary: "Look up appointment for check-in",
-    description: "Finds a patient's appointment by phone number or appointment ID for the check-in kiosk.",
+    description:
+      "Finds a patient's appointment by phone number or appointment ID for the check-in kiosk.",
     tags: ["Check-in"],
     responses: {
       "200": { description: "Appointment details for check-in" },
@@ -1073,7 +1134,8 @@ export const apiEndpoints: ApiEndpoint[] = [
     path: "/api/chat",
     method: "POST",
     summary: "AI chat",
-    description: "Sends a message to the AI chatbot assistant. Supports Smart (Cloudflare Workers AI) and Advanced (OpenAI-compatible) levels.",
+    description:
+      "Sends a message to the AI chatbot assistant. Supports Smart (Cloudflare Workers AI) and Advanced (OpenAI-compatible) levels.",
     tags: ["Chat"],
     security: true,
     responses: {
@@ -1177,7 +1239,8 @@ export const apiEndpoints: ApiEndpoint[] = [
     path: "/api/consent",
     method: "POST",
     summary: "Record patient consent",
-    description: "Records patient consent for treatment, data processing, or communication preferences.",
+    description:
+      "Records patient consent for treatment, data processing, or communication preferences.",
     tags: ["Consent"],
     security: true,
     responses: {
@@ -1205,7 +1268,8 @@ export const apiEndpoints: ApiEndpoint[] = [
     path: "/api/doctor-unavailability",
     method: "POST",
     summary: "Set doctor unavailability",
-    description: "Marks a doctor as unavailable for a date range. Triggers rebooking notifications for affected appointments.",
+    description:
+      "Marks a doctor as unavailable for a date range. Triggers rebooking notifications for affected appointments.",
     tags: ["Scheduling"],
     security: true,
     responses: {
@@ -1219,7 +1283,8 @@ export const apiEndpoints: ApiEndpoint[] = [
     path: "/api/patient/export",
     method: "GET",
     summary: "Export patient data",
-    description: "Exports the authenticated patient's data in a portable format (GDPR/Law 09-08 data portability).",
+    description:
+      "Exports the authenticated patient's data in a portable format (GDPR/Law 09-08 data portability).",
     tags: ["Patient Self-Service"],
     security: true,
     responses: {
@@ -1231,7 +1296,8 @@ export const apiEndpoints: ApiEndpoint[] = [
     path: "/api/patient/delete-account",
     method: "DELETE",
     summary: "Delete patient account",
-    description: "Permanently deletes the authenticated patient's account and personal data (right to erasure).",
+    description:
+      "Permanently deletes the authenticated patient's account and personal data (right to erasure).",
     tags: ["Patient Self-Service"],
     security: true,
     responses: {
@@ -1383,7 +1449,10 @@ Production: https://oltigo.com/api
       { name: "Appointments", description: "Appointment management endpoints" },
       { name: "Patients", description: "Patient registry and management" },
       { name: "Auth", description: "Authentication and email verification" },
-      { name: "Booking", description: "Public booking flow (slots, OTP, create, cancel, reschedule)" },
+      {
+        name: "Booking",
+        description: "Public booking flow (slots, OTP, create, cancel, reschedule)",
+      },
       { name: "Payments", description: "Stripe and CMI payment processing" },
       { name: "Webhooks", description: "WhatsApp Business API webhook handlers" },
       { name: "Cron", description: "Scheduled jobs (reminders, billing, feedback, GDPR purge)" },

@@ -49,16 +49,10 @@ export default function ClinicErrorBoundary({
           <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-destructive/10">
             <AlertTriangle className="h-7 w-7 text-destructive" />
           </div>
-          <h2 className="mb-2 text-lg font-semibold">
-            {t(locale, titleKey)}
-          </h2>
-          <p className="mb-6 text-sm text-muted-foreground">
-            {t(locale, descKey)}
-          </p>
+          <h2 className="mb-2 text-lg font-semibold">{t(locale, titleKey)}</h2>
+          <p className="mb-6 text-sm text-muted-foreground">{t(locale, descKey)}</p>
           {error.digest && (
-            <p className="mb-4 text-xs text-muted-foreground">
-              Error ID: {error.digest}
-            </p>
+            <p className="mb-4 text-xs text-muted-foreground">Error ID: {error.digest}</p>
           )}
           <Button onClick={reset} size="lg">
             <RefreshCw className="mr-2 h-4 w-4" />

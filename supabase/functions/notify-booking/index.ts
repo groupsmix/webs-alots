@@ -51,17 +51,14 @@ async function sendWhatsApp(to: string, body: string): Promise<boolean> {
     formData.append("To", `whatsapp:${to}`);
     formData.append("Body", body);
 
-    const resp = await fetch(
-      `https://api.twilio.com/2010-04-01/Accounts/${sid}/Messages.json`,
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Basic ${btoa(`${sid}:${token}`)}`,
-          "Content-Type": "application/x-www-form-urlencoded",
-        },
-        body: formData.toString(),
+    const resp = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${sid}/Messages.json`, {
+      method: "POST",
+      headers: {
+        Authorization: `Basic ${btoa(`${sid}:${token}`)}`,
+        "Content-Type": "application/x-www-form-urlencoded",
       },
-    );
+      body: formData.toString(),
+    });
     return resp.ok;
   }
 
@@ -70,22 +67,19 @@ async function sendWhatsApp(to: string, body: string): Promise<boolean> {
   const accessToken = Deno.env.get("WHATSAPP_ACCESS_TOKEN");
   if (!phoneNumberId || !accessToken) return false;
 
-  const resp = await fetch(
-    `https://graph.facebook.com/v21.0/${phoneNumberId}/messages`,
-    {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        messaging_product: "whatsapp",
-        to,
-        type: "text",
-        text: { body },
-      }),
+  const resp = await fetch(`https://graph.facebook.com/v21.0/${phoneNumberId}/messages`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      "Content-Type": "application/json",
     },
-  );
+    body: JSON.stringify({
+      messaging_product: "whatsapp",
+      to,
+      type: "text",
+      text: { body },
+    }),
+  });
   return resp.ok;
 }
 
@@ -98,10 +92,10 @@ serve(async (req: Request) => {
     //   2. A shared EDGE_FUNCTION_SECRET bearer token (for manual calls)
     const authHeader = req.headers.get("authorization");
     if (!authHeader) {
-      return new Response(
-        JSON.stringify({ error: "Missing Authorization header" }),
-        { status: 401, headers: { "Content-Type": "application/json" } },
-      );
+      return new Response(JSON.stringify({ error: "Missing Authorization header" }), {
+        status: 401,
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
     const token = authHeader.replace(/^Bearer\s+/i, "");
@@ -112,20 +106,20 @@ serve(async (req: Request) => {
     const isEdgeSecret = edgeFunctionSecret && token === edgeFunctionSecret;
 
     if (!isServiceRole && !isEdgeSecret) {
-      return new Response(
-        JSON.stringify({ error: "Invalid or expired token" }),
-        { status: 403, headers: { "Content-Type": "application/json" } },
-      );
+      return new Response(JSON.stringify({ error: "Invalid or expired token" }), {
+        status: 403,
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
     // ── Input validation (EDGE-01) ────────────────────────────────────
     const { appointmentId } = await req.json();
 
     if (!appointmentId || typeof appointmentId !== "string" || !UUID_RE.test(appointmentId)) {
-      return new Response(
-        JSON.stringify({ error: "appointmentId must be a valid UUID" }),
-        { status: 400, headers: { "Content-Type": "application/json" } },
-      );
+      return new Response(JSON.stringify({ error: "appointmentId must be a valid UUID" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
     const supabase = createClient(
@@ -143,10 +137,10 @@ serve(async (req: Request) => {
       .single();
 
     if (error || !appointment) {
-      return new Response(
-        JSON.stringify({ error: "Appointment not found" }),
-        { status: 404, headers: { "Content-Type": "application/json" } },
-      );
+      return new Response(JSON.stringify({ error: "Appointment not found" }), {
+        status: 404,
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
     const apt = appointment as unknown as AppointmentRow;
@@ -217,10 +211,9 @@ serve(async (req: Request) => {
       }
     }
 
-    return new Response(
-      JSON.stringify({ status: "notifications_sent", results }),
-      { headers: { "Content-Type": "application/json" } },
-    );
+    return new Response(JSON.stringify({ status: "notifications_sent", results }), {
+      headers: { "Content-Type": "application/json" },
+    });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error";
     return new Response(JSON.stringify({ error: message }), {

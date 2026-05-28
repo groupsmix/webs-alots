@@ -47,12 +47,12 @@ The Processor provides a clinic management platform that processes personal data
 
 ### 4. Types of Personal Data
 
-| Category | Data Elements |
-|---|---|
-| **Identity** | Name, email, phone number, date of birth |
+| Category         | Data Elements                                                                             |
+| ---------------- | ----------------------------------------------------------------------------------------- |
+| **Identity**     | Name, email, phone number, date of birth                                                  |
 | **Health (PHI)** | Medical records, prescriptions, diagnoses, consultation notes, uploaded medical documents |
-| **Financial** | Payment amounts, methods, insurance information |
-| **Technical** | IP addresses (anonymised), session data, audit logs |
+| **Financial**    | Payment amounts, methods, insurance information                                           |
+| **Technical**    | IP addresses (anonymised), session data, audit logs                                       |
 
 ### 5. Processor Obligations
 
@@ -63,35 +63,36 @@ The Processor shall:
 5.2. Ensure persons authorised to process personal data have committed to confidentiality
 
 5.3. Implement appropriate technical and organisational measures:
-   - **Encryption:** AES-256-GCM for PHI at rest; TLS 1.3 in transit
-   - **Tenant isolation:** Row Level Security + application-level `clinic_id` scoping
-   - **Access control:** Role-based access (5 levels), optional 2FA
-   - **Audit logging:** All state-changing operations logged
-   - **Data masking:** PHI scrubbed from error tracking (Sentry)
 
-5.4. Not engage another processor without prior written authorisation of the Controller
+- **Encryption:** AES-256-GCM for PHI at rest; TLS 1.3 in transit
+- **Tenant isolation:** Row Level Security + application-level `clinic_id` scoping
+- **Access control:** Role-based access (5 levels), optional 2FA
+- **Audit logging:** All state-changing operations logged
+- **Data masking:** PHI scrubbed from error tracking (Sentry)
 
-5.5. Assist the Controller in responding to data subject requests (access, portability, erasure)
+  5.4. Not engage another processor without prior written authorisation of the Controller
 
-5.6. Delete or return all personal data upon termination, at the Controller's choice
+  5.5. Assist the Controller in responding to data subject requests (access, portability, erasure)
 
-5.7. Make available all information necessary to demonstrate compliance
+  5.6. Delete or return all personal data upon termination, at the Controller's choice
+
+  5.7. Make available all information necessary to demonstrate compliance
 
 ### 6. Sub-Processors
 
 The Processor currently uses the following sub-processors:
 
-| Sub-Processor | Purpose | Data Location |
-|---|---|---|
-| Supabase (AWS) | Database hosting | EU (Frankfurt) |
-| Cloudflare | CDN, Workers, R2 storage | Global (EU primary) |
-| Meta (WhatsApp Business API) | Patient notifications | EU/US |
-| Twilio | SMS/WhatsApp fallback | US |
-| Resend | Email notifications | US |
-| Sentry | Error monitoring (PHI scrubbed) | US |
-| OpenAI | AI features (optional) | US |
-| Stripe | Payment processing (international) | US/EU |
-| CMI | Payment processing (Morocco) | Morocco |
+| Sub-Processor                | Purpose                            | Data Location       |
+| ---------------------------- | ---------------------------------- | ------------------- |
+| Supabase (AWS)               | Database hosting                   | EU (Frankfurt)      |
+| Cloudflare                   | CDN, Workers, R2 storage           | Global (EU primary) |
+| Meta (WhatsApp Business API) | Patient notifications              | EU/US               |
+| Twilio                       | SMS/WhatsApp fallback              | US                  |
+| Resend                       | Email notifications                | US                  |
+| Sentry                       | Error monitoring (PHI scrubbed)    | US                  |
+| OpenAI                       | AI features (optional)             | US                  |
+| Stripe                       | Payment processing (international) | US/EU               |
+| CMI                          | Payment processing (Morocco)       | Morocco             |
 
 The Controller provides general authorisation for the above sub-processors. The Processor shall inform the Controller of any intended changes and provide an opportunity to object.
 
@@ -139,9 +140,9 @@ Each Party's liability under this DPA is subject to the limitations set out in t
 
 **Signatures:**
 
-| | Controller | Processor |
-|---|---|---|
-| **Name** | ___________________ | ___________________ |
-| **Title** | ___________________ | ___________________ |
-| **Date** | ___________________ | ___________________ |
-| **Signature** | ___________________ | ___________________ |
+|               | Controller                     | Processor                      |
+| ------------- | ------------------------------ | ------------------------------ |
+| **Name**      | **\*\*\*\***\_\_\_**\*\*\*\*** | **\*\*\*\***\_\_\_**\*\*\*\*** |
+| **Title**     | **\*\*\*\***\_\_\_**\*\*\*\*** | **\*\*\*\***\_\_\_**\*\*\*\*** |
+| **Date**      | **\*\*\*\***\_\_\_**\*\*\*\*** | **\*\*\*\***\_\_\_**\*\*\*\*** |
+| **Signature** | **\*\*\*\***\_\_\_**\*\*\*\*** | **\*\*\*\***\_\_\_**\*\*\*\*** |

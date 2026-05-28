@@ -116,10 +116,7 @@ export function ClinicDashboardLayout({
       {mobileOpen && (
         <div className="fixed inset-0 z-50 md:hidden">
           {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- keyboard interaction handled by parent or child interactive element */}
-          <div
-            className="absolute inset-0 bg-black/50"
-            onClick={() => setMobileOpen(false)}
-          />
+          <div className="absolute inset-0 bg-black/50" onClick={() => setMobileOpen(false)} />
           <aside className="absolute left-0 top-0 bottom-0 w-64 bg-card p-4 flex flex-col shadow-xl">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
@@ -146,7 +143,9 @@ export function ClinicDashboardLayout({
       {/* Desktop sidebar */}
       <aside className="hidden w-64 border-r bg-card p-4 md:flex md:flex-col">
         <div className="flex items-center gap-2 mb-6">
-          <div className={`h-8 w-8 rounded-lg bg-${config.accentColor} flex items-center justify-center`}>
+          <div
+            className={`h-8 w-8 rounded-lg bg-${config.accentColor} flex items-center justify-center`}
+          >
             <IconComponent className="h-4 w-4 text-white" />
           </div>
           <h2 className="text-lg font-semibold">{config.title}</h2>
@@ -154,16 +153,16 @@ export function ClinicDashboardLayout({
         <SidebarContent config={config} pathname={pathname} />
       </aside>
 
-      <main id="main-content" className={`flex-1 p-6 pt-16 md:pt-6${config.mobileTabs ? " pb-20 md:pb-6" : ""}`}>
+      <main
+        id="main-content"
+        className={`flex-1 p-6 pt-16 md:pt-6${config.mobileTabs ? " pb-20 md:pb-6" : ""}`}
+      >
         {content}
       </main>
 
       {/* Mobile bottom tab bar */}
       {config.mobileTabs && (
-        <MobileTabBar
-          tabs={config.mobileTabs}
-          onMoreClick={() => setMobileOpen(true)}
-        />
+        <MobileTabBar tabs={config.mobileTabs} onMoreClick={() => setMobileOpen(true)} />
       )}
     </div>
   );

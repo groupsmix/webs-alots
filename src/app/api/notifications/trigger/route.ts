@@ -33,7 +33,9 @@ import { notificationTriggerSchema } from "@/lib/validations";
  * - payment_received: When a payment is confirmed
  * - new_patient_registered: When a new patient registers
  */
-export const POST = withAuthValidation(notificationTriggerSchema, async (body, request, { supabase, profile }) => {
+export const POST = withAuthValidation(
+  notificationTriggerSchema,
+  async (body, request, { supabase, profile }) => {
     const { trigger, variables, recipients } = body as {
       trigger: NotificationTrigger;
       variables: TemplateVariables;
@@ -62,9 +64,7 @@ export const POST = withAuthValidation(notificationTriggerSchema, async (body, r
     }
 
     // Find the template for this trigger
-    const template = defaultNotificationTemplates.find(
-      (t) => t.trigger === trigger && t.enabled,
-    );
+    const template = defaultNotificationTemplates.find((t) => t.trigger === trigger && t.enabled);
 
     if (!template) {
       return apiNotFound(`No enabled template found for trigger: ${trigger}`);
@@ -91,4 +91,6 @@ export const POST = withAuthValidation(notificationTriggerSchema, async (body, r
       template: template.name,
       dispatched: allResults,
     });
-}, STAFF_ROLES);
+  },
+  STAFF_ROLES,
+);

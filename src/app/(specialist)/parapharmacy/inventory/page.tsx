@@ -21,14 +21,20 @@ export default function ParapharmacyInventoryPage() {
   useEffect(() => {
     const controller = new AbortController();
     fetchParapharmacyProducts(tenant?.clinicId ?? "")
-      .then((d) => { if (!controller.signal.aborted) setProducts(d); })
+      .then((d) => {
+        if (!controller.signal.aborted) setProducts(d);
+      })
       .catch((err) => {
-      if (!controller.signal.aborted) {
-        setError(err instanceof Error ? err : new Error(String(err)));
-      }
-    })
-    .finally(() => { if (!controller.signal.aborted) setLoading(false); });
-    return () => { controller.abort(); };
+        if (!controller.signal.aborted) {
+          setError(err instanceof Error ? err : new Error(String(err)));
+        }
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setLoading(false);
+      });
+    return () => {
+      controller.abort();
+    };
   }, [tenant?.clinicId]);
 
   if (loading) {
@@ -38,7 +44,9 @@ export default function ParapharmacyInventoryPage() {
   if (error) {
     return (
       <div className="p-8 text-center">
-        <p className="text-red-600 font-medium">Failed to load data. Please try refreshing the page.</p>
+        <p className="text-red-600 font-medium">
+          Failed to load data. Please try refreshing the page.
+        </p>
         {error.message && <p className="text-sm text-muted-foreground mt-2">{error.message}</p>}
       </div>
     );
@@ -67,12 +75,29 @@ export default function ParapharmacyInventoryPage() {
       <div className="flex flex-col sm:flex-row gap-3 mb-6">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input placeholder="Search products..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
+          <Input
+            placeholder="Search products..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="pl-9"
+          />
         </div>
         <div className="flex gap-2">
           {["all", "ok", "low", "out"].map((f) => (
-            <Button key={f} variant={stockFilter === f ? "default" : "outline"} size="sm" onClick={() => setStockFilter(f)} className="capitalize">
-              {f === "all" ? "All" : f === "ok" ? "In Stock" : f === "low" ? "Low Stock" : "Out of Stock"}
+            <Button
+              key={f}
+              variant={stockFilter === f ? "default" : "outline"}
+              size="sm"
+              onClick={() => setStockFilter(f)}
+              className="capitalize"
+            >
+              {f === "all"
+                ? "All"
+                : f === "ok"
+                  ? "In Stock"
+                  : f === "low"
+                    ? "Low Stock"
+                    : "Out of Stock"}
             </Button>
           ))}
         </div>
@@ -99,7 +124,9 @@ export default function ParapharmacyInventoryPage() {
                 <tr key={p.id} className="border-b last:border-0 hover:bg-muted/50">
                   <td className="py-3">
                     <p className="font-medium">{p.name}</p>
-                    {p.manufacturer && <p className="text-xs text-muted-foreground">{p.manufacturer}</p>}
+                    {p.manufacturer && (
+                      <p className="text-xs text-muted-foreground">{p.manufacturer}</p>
+                    )}
                   </td>
                   <td className="py-3 text-muted-foreground">{p.category}</td>
                   <td className="py-3 text-right">{p.price} MAD</td>
@@ -107,11 +134,15 @@ export default function ParapharmacyInventoryPage() {
                   <td className="py-3 text-right text-muted-foreground">{p.minimumStock}</td>
                   <td className="py-3">
                     {p.expiryDate ? (
-                      <Badge className={
-                        expiryStatus === "red" ? "bg-red-100 text-red-700 border-0" :
-                        expiryStatus === "yellow" ? "bg-yellow-100 text-yellow-700 border-0" :
-                        "bg-emerald-100 text-emerald-700 border-0"
-                      }>
+                      <Badge
+                        className={
+                          expiryStatus === "red"
+                            ? "bg-red-100 text-red-700 border-0"
+                            : expiryStatus === "yellow"
+                              ? "bg-yellow-100 text-yellow-700 border-0"
+                              : "bg-emerald-100 text-emerald-700 border-0"
+                        }
+                      >
                         {p.expiryDate}
                       </Badge>
                     ) : (
@@ -119,11 +150,15 @@ export default function ParapharmacyInventoryPage() {
                     )}
                   </td>
                   <td className="py-3">
-                    <Badge className={
-                      stockStatus === "out" ? "bg-red-100 text-red-700 border-0" :
-                      stockStatus === "low" ? "bg-orange-100 text-orange-700 border-0" :
-                      "bg-emerald-100 text-emerald-700 border-0"
-                    }>
+                    <Badge
+                      className={
+                        stockStatus === "out"
+                          ? "bg-red-100 text-red-700 border-0"
+                          : stockStatus === "low"
+                            ? "bg-orange-100 text-orange-700 border-0"
+                            : "bg-emerald-100 text-emerald-700 border-0"
+                      }
+                    >
                       {stockStatus === "out" && <AlertTriangle className="h-3 w-3 mr-1" />}
                       {stockStatus === "out" ? "Out" : stockStatus === "low" ? "Low" : "OK"}
                     </Badge>

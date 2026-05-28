@@ -105,7 +105,11 @@ export function PublicHeader({ logoUrl, clinicName, sectionVisibility }: PublicH
 
       {/* Mobile navigation */}
       {mobileMenuOpen && (
-        <nav id="clinic-mobile-nav" aria-label="Navigation mobile" className="border-t px-4 py-4 md:hidden">
+        <nav
+          id="clinic-mobile-nav"
+          aria-label="Navigation mobile"
+          className="border-t px-4 py-4 md:hidden"
+        >
           <div className="flex flex-col gap-3">
             {navLinks.map((link) => (
               <Link

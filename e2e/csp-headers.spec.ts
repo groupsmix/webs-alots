@@ -54,12 +54,8 @@ test.describe("CSP header enforcement", () => {
       const response = await page.goto(path);
       expect(response).not.toBeNull();
 
-      const reportOnly =
-        response!.headers()["content-security-policy-report-only"];
-      expect(
-        reportOnly,
-        "Content-Security-Policy-Report-Only must not be present",
-      ).toBeFalsy();
+      const reportOnly = response!.headers()["content-security-policy-report-only"];
+      expect(reportOnly, "Content-Security-Policy-Report-Only must not be present").toBeFalsy();
     });
   }
 

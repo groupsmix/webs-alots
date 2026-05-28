@@ -47,9 +47,7 @@ describe("verifyCmiCallback", () => {
    * Helper: compute the expected HMAC hash the same way generateHash does
    * internally (sort keys alphabetically, join values with |, HMAC-SHA256).
    */
-  async function computeExpectedHash(
-    fields: Record<string, string>,
-  ): Promise<string> {
+  async function computeExpectedHash(fields: Record<string, string>): Promise<string> {
     const { hmacSha256Hex } = await import("@/lib/crypto-utils");
     const sortedKeys = Object.keys(fields).sort();
     const hashInput = sortedKeys.map((k) => fields[k]).join("|");

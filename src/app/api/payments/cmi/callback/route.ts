@@ -33,7 +33,12 @@ function isCmiSourceAllowed(request: NextRequest): boolean {
   const raw = process.env.CMI_ALLOWED_IPS;
   if (!raw) return true; // IP allowlist not configured — rely on HMAC only
 
-  const allowedIps = new Set(raw.split(",").map((ip) => ip.trim()).filter(Boolean));
+  const allowedIps = new Set(
+    raw
+      .split(",")
+      .map((ip) => ip.trim())
+      .filter(Boolean),
+  );
   const clientIp =
     request.headers.get("cf-connecting-ip") ??
     request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
@@ -93,7 +98,10 @@ export async function POST(request: NextRequest) {
     if (!isCmiSourceAllowed(request)) {
       logger.warn("CMI callback rejected: source IP not in allowlist", {
         context: "payments/cmi/callback",
-        ip: request.headers.get("cf-connecting-ip") ?? request.headers.get("x-forwarded-for") ?? "unknown",
+        ip:
+          request.headers.get("cf-connecting-ip") ??
+          request.headers.get("x-forwarded-for") ??
+          "unknown",
       });
       return apiError("Forbidden", 403);
     }
@@ -113,8 +121,7 @@ export async function POST(request: NextRequest) {
       return apiError("Payload too large", 413);
     }
 
-    const contentType =
-      request.headers.get("content-type") || "application/x-www-form-urlencoded";
+    const contentType = request.headers.get("content-type") || "application/x-www-form-urlencoded";
     // Re-parse the size-limited body as formData. TextDecoder is safe here
     // because CMI callbacks are form-urlencoded (ASCII).
     const bodyText = new TextDecoder().decode(body);
@@ -156,12 +163,10 @@ export async function POST(request: NextRequest) {
         .single();
 
       if (dedupPayment?.clinic_id) {
-        const { error: dedupErr } = await adminClient
-          .from("cmi_callbacks_seen" as never)
-          .insert({
-            clinic_id: dedupPayment.clinic_id,
-            transaction_id: callbackData.transactionId,
-          } as never);
+        const { error: dedupErr } = await adminClient.from("cmi_callbacks_seen" as never).insert({
+          clinic_id: dedupPayment.clinic_id,
+          transaction_id: callbackData.transactionId,
+        } as never);
 
         if (dedupErr) {
           // 23505 = unique_violation → duplicate callback, ACK but do nothing
@@ -227,13 +232,15 @@ export async function POST(request: NextRequest) {
 
           try {
             const Sentry = await import("@sentry/nextjs");
-            Sentry.captureException(
-              new Error("CMI payment amount/currency mismatch"),
-              {
-                tags: { compliance: "payment_tampering", clinicId: payment.clinic_id },
-                extra: { paymentId: payment.id, expectedAmount: payment.amount, callbackAmount, callbackCurrency },
+            Sentry.captureException(new Error("CMI payment amount/currency mismatch"), {
+              tags: { compliance: "payment_tampering", clinicId: payment.clinic_id },
+              extra: {
+                paymentId: payment.id,
+                expectedAmount: payment.amount,
+                callbackAmount,
+                callbackCurrency,
               },
-            );
+            });
           } catch {
             // Sentry unavailable
           }
@@ -320,7 +327,10 @@ export async function POST(request: NextRequest) {
     });
   } catch (err) {
     // F-A93-03: Payment callback failure is an error, not a warning
-    logger.error("CMI payment callback processing failed", { context: "payments/cmi/callback", error: err });
+    logger.error("CMI payment callback processing failed", {
+      context: "payments/cmi/callback",
+      error: err,
+    });
     return apiInternalError("Failed to process payment callback");
   }
 }

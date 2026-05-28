@@ -15,7 +15,11 @@ interface BeforeAfterGalleryProps {
   onAddPhoto?: (photo: Omit<BeforeAfterPhotoView, "id">) => void;
 }
 
-export function BeforeAfterGallery({ photos, editable = false, onAddPhoto }: BeforeAfterGalleryProps) {
+export function BeforeAfterGallery({
+  photos,
+  editable = false,
+  onAddPhoto,
+}: BeforeAfterGalleryProps) {
   const [showAddForm, setShowAddForm] = useState(false);
   const [newPhoto, setNewPhoto] = useState({
     description: "",
@@ -89,17 +93,25 @@ export function BeforeAfterGallery({ photos, editable = false, onAddPhoto }: Bef
               <div className="border-2 border-dashed rounded-lg p-6 text-center">
                 <Camera className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
                 <p className="text-xs text-muted-foreground">Upload Before Photo</p>
-                <Button variant="outline" size="sm" className="mt-2 text-xs">Browse</Button>
+                <Button variant="outline" size="sm" className="mt-2 text-xs">
+                  Browse
+                </Button>
               </div>
               <div className="border-2 border-dashed rounded-lg p-6 text-center">
                 <Camera className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
                 <p className="text-xs text-muted-foreground">Upload After Photo</p>
-                <Button variant="outline" size="sm" className="mt-2 text-xs">Browse</Button>
+                <Button variant="outline" size="sm" className="mt-2 text-xs">
+                  Browse
+                </Button>
               </div>
             </div>
             <div className="flex gap-2">
-              <Button size="sm" onClick={handleAdd}>Save Record</Button>
-              <Button size="sm" variant="outline" onClick={() => setShowAddForm(false)}>Cancel</Button>
+              <Button size="sm" onClick={handleAdd}>
+                Save Record
+              </Button>
+              <Button size="sm" variant="outline" onClick={() => setShowAddForm(false)}>
+                Cancel
+              </Button>
             </div>
           </CardContent>
         </Card>
@@ -118,7 +130,9 @@ export function BeforeAfterGallery({ photos, editable = false, onAddPhoto }: Bef
             <Card key={photo.id}>
               <CardContent className="p-4">
                 <div className="flex items-center justify-between mb-3">
-                  <Badge variant="outline" className="text-xs">{photo.category}</Badge>
+                  <Badge variant="outline" className="text-xs">
+                    {photo.category}
+                  </Badge>
                   <span className="text-xs text-muted-foreground">{photo.patientName}</span>
                 </div>
                 <div className="grid grid-cols-2 gap-2 mb-3">

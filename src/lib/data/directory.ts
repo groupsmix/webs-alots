@@ -84,65 +84,74 @@ function cityToSlug(city: string): string {
 function specialtyToSlug(specialty: string): string {
   // Map common specialty names to their French slugs
   const specialtyMap: Record<string, string> = {
-    "dentist": "dentiste",
-    "dentiste": "dentiste",
+    dentist: "dentiste",
+    dentiste: "dentiste",
     "general practitioner": "medecin-generaliste",
     "médecin généraliste": "medecin-generaliste",
     "medecin generaliste": "medecin-generaliste",
-    "pediatrician": "pediatre",
-    "pédiatre": "pediatre",
-    "pediatre": "pediatre",
-    "gynecologist": "gynecologue",
-    "gynécologue": "gynecologue",
-    "gynecologue": "gynecologue",
-    "ophthalmologist": "ophtalmologue",
-    "ophtalmologue": "ophtalmologue",
-    "cardiologist": "cardiologue",
-    "cardiologue": "cardiologue",
-    "dermatologist": "dermatologue",
-    "dermatologue": "dermatologue",
-    "orthopedist": "orthopediste",
-    "orthopédiste": "orthopediste",
-    "orthopediste": "orthopediste",
-    "neurologist": "neurologue",
-    "neurologue": "neurologue",
-    "psychiatrist": "psychiatre",
-    "psychiatre": "psychiatre",
-    "physiotherapist": "kinesitherapeute",
-    "kinésithérapeute": "kinesitherapeute",
-    "kinesitherapeute": "kinesitherapeute",
-    "radiologist": "radiologue",
-    "radiologue": "radiologue",
-    "nutritionist": "nutritionniste",
-    "nutritionniste": "nutritionniste",
+    pediatrician: "pediatre",
+    pédiatre: "pediatre",
+    pediatre: "pediatre",
+    gynecologist: "gynecologue",
+    gynécologue: "gynecologue",
+    gynecologue: "gynecologue",
+    ophthalmologist: "ophtalmologue",
+    ophtalmologue: "ophtalmologue",
+    cardiologist: "cardiologue",
+    cardiologue: "cardiologue",
+    dermatologist: "dermatologue",
+    dermatologue: "dermatologue",
+    orthopedist: "orthopediste",
+    orthopédiste: "orthopediste",
+    orthopediste: "orthopediste",
+    neurologist: "neurologue",
+    neurologue: "neurologue",
+    psychiatrist: "psychiatre",
+    psychiatre: "psychiatre",
+    physiotherapist: "kinesitherapeute",
+    kinésithérapeute: "kinesitherapeute",
+    kinesitherapeute: "kinesitherapeute",
+    radiologist: "radiologue",
+    radiologue: "radiologue",
+    nutritionist: "nutritionniste",
+    nutritionniste: "nutritionniste",
     "ent specialist": "orl",
-    "orl": "orl",
-    "urologist": "urologue",
-    "urologue": "urologue",
-    "pulmonologist": "pneumologue",
-    "pneumologue": "pneumologue",
-    "endocrinologist": "endocrinologue",
-    "endocrinologue": "endocrinologue",
-    "rheumatologist": "rhumatologue",
-    "rhumatologue": "rhumatologue",
-    "gastroenterologist": "gastro-enterologue",
+    orl: "orl",
+    urologist: "urologue",
+    urologue: "urologue",
+    pulmonologist: "pneumologue",
+    pneumologue: "pneumologue",
+    endocrinologist: "endocrinologue",
+    endocrinologue: "endocrinologue",
+    rheumatologist: "rhumatologue",
+    rhumatologue: "rhumatologue",
+    gastroenterologist: "gastro-enterologue",
     "gastro-entérologue": "gastro-enterologue",
     "gastro-enterologue": "gastro-enterologue",
-    "nephrologist": "nephrologue",
-    "néphrologue": "nephrologue",
-    "nephrologue": "nephrologue",
-    "pharmacist": "pharmacien",
-    "pharmacien": "pharmacien",
-    "optician": "opticien",
-    "opticien": "opticien",
+    nephrologist: "nephrologue",
+    néphrologue: "nephrologue",
+    nephrologue: "nephrologue",
+    pharmacist: "pharmacien",
+    pharmacien: "pharmacien",
+    optician: "opticien",
+    opticien: "opticien",
     "speech therapist": "orthophoniste",
-    "orthophoniste": "orthophoniste",
-    "psychologist": "psychologue",
-    "psychologue": "psychologue",
+    orthophoniste: "orthophoniste",
+    psychologist: "psychologue",
+    psychologue: "psychologue",
   };
 
-  const lower = specialty.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-  return specialtyMap[lower] ?? lower.replace(/[^a-z0-9\s-]/g, "").trim().replace(/\s+/g, "-");
+  const lower = specialty
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+  return (
+    specialtyMap[lower] ??
+    lower
+      .replace(/[^a-z0-9\s-]/g, "")
+      .trim()
+      .replace(/\s+/g, "-")
+  );
 }
 
 // ── Data fetching ──
@@ -150,13 +159,15 @@ function specialtyToSlug(specialty: string): string {
 async function fetchDirectoryDoctors(): Promise<DirectoryDoctor[]> {
   // Audit 8: Short-circuit if env is missing to avoid noisy stack traces during build/dev
   if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
-    logger.info("Skipping directory fetch: Supabase credentials missing (expected in dev/build)", { context: "directory" });
+    logger.info("Skipping directory fetch: Supabase credentials missing (expected in dev/build)", {
+      context: "directory",
+    });
     return [];
   }
 
   try {
-    // We cannot use the standard `createClient` here because `cookies()` is not allowed 
-    // inside a "use cache" directive in Next.js 15+. We must use the admin client or a 
+    // We cannot use the standard `createClient` here because `cookies()` is not allowed
+    // inside a "use cache" directive in Next.js 15+. We must use the admin client or a
     // standalone client that doesn't read cookies, since the directory is public anyway.
     const { createAdminClient } = await import("@/lib/supabase-server");
     const supabase = createAdminClient("directory");
@@ -169,7 +180,10 @@ async function fetchDirectoryDoctors(): Promise<DirectoryDoctor[]> {
       .order("name", { ascending: true });
 
     if (doctorsError || !doctors) {
-      logger.warn("Failed to fetch directory doctors", { context: "directory", error: doctorsError });
+      logger.warn("Failed to fetch directory doctors", {
+        context: "directory",
+        error: doctorsError,
+      });
       return [];
     }
 
@@ -180,7 +194,10 @@ async function fetchDirectoryDoctors(): Promise<DirectoryDoctor[]> {
       .eq("status", "active");
 
     if (clinicsError || !clinics) {
-      logger.warn("Failed to fetch directory clinics", { context: "directory", error: clinicsError });
+      logger.warn("Failed to fetch directory clinics", {
+        context: "directory",
+        error: clinicsError,
+      });
       return [];
     }
 
@@ -195,7 +212,7 @@ async function fetchDirectoryDoctors(): Promise<DirectoryDoctor[]> {
         const meta = (d.metadata ?? {}) as UserMetadata;
         const specialty = meta.specialty ?? "";
         const cfg = (clinic.config ?? {}) as ClinicConfigJson;
-        const city = cfg.city ?? (clinic.address?.split(",").pop()?.trim() ?? "");
+        const city = cfg.city ?? clinic.address?.split(",").pop()?.trim() ?? "";
 
         if (!specialty || !city) return null;
 
@@ -258,7 +275,9 @@ export async function getDirectoryDoctorBySlug(slug: string): Promise<DirectoryD
 }
 
 /** Get all unique cities that have at least one doctor */
-export async function getDirectoryCities(): Promise<{ slug: string; name: string; count: number }[]> {
+export async function getDirectoryCities(): Promise<
+  { slug: string; name: string; count: number }[]
+> {
   const all = await getDirectoryDoctors();
   const cityMap = new Map<string, { name: string; count: number }>();
 
@@ -277,7 +296,9 @@ export async function getDirectoryCities(): Promise<{ slug: string; name: string
 }
 
 /** Get all unique specialties that have at least one doctor */
-export async function getDirectorySpecialties(): Promise<{ slug: string; name: string; count: number }[]> {
+export async function getDirectorySpecialties(): Promise<
+  { slug: string; name: string; count: number }[]
+> {
   const all = await getDirectoryDoctors();
   const specMap = new Map<string, { name: string; count: number }>();
 

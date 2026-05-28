@@ -66,7 +66,9 @@ function generateReportHtml(data: {
 </html>`;
 }
 
-export const POST = withAuthValidation(radiologyReportPdfSchema, async (body, request, { profile }) => {
+export const POST = withAuthValidation(
+  radiologyReportPdfSchema,
+  async (body, request, { profile }) => {
     const {
       orderId,
       patientName,
@@ -121,4 +123,6 @@ export const POST = withAuthValidation(radiologyReportPdfSchema, async (body, re
     await updateRadiologyOrderPdfUrl(orderId, url);
 
     return apiSuccess({ pdfUrl: url });
-}, STAFF_ROLES);
+  },
+  STAFF_ROLES,
+);

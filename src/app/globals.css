@@ -209,7 +209,9 @@
 /* Arabic typography — use Noto Sans Arabic when in RTL mode (Issue 62) */
 [dir="rtl"] {
   font-family: var(--font-noto-arabic), var(--font-geist-sans), sans-serif;
-  font-feature-settings: "liga" 1, "calt" 1;
+  font-feature-settings:
+    "liga" 1,
+    "calt" 1;
   line-height: 1.8;
 }
 
@@ -409,7 +411,9 @@
 @layer base {
   /* Interactive cards with subtle lift on hover */
   [data-slot="card"]:has(button, a) {
-    transition: box-shadow 0.2s ease, transform 0.2s ease;
+    transition:
+      box-shadow 0.2s ease,
+      transform 0.2s ease;
   }
 
   [data-slot="card"]:has(button, a):hover {
@@ -417,7 +421,14 @@
   }
 
   /* Smooth focus transitions */
-  a, button, input, select, textarea {
-    transition: box-shadow 0.15s ease, border-color 0.15s ease, background-color 0.15s ease;
+  a,
+  button,
+  input,
+  select,
+  textarea {
+    transition:
+      box-shadow 0.15s ease,
+      border-color 0.15s ease,
+      background-color 0.15s ease;
   }
 }

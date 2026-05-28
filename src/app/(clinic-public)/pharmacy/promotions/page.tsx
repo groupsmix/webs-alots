@@ -1,8 +1,14 @@
 "use client";
 
 import {
-  Tag, Search, Percent, Star, ShoppingBag, ArrowRight,
-  Loader2, Sparkles,
+  Tag,
+  Search,
+  Percent,
+  Star,
+  ShoppingBag,
+  ArrowRight,
+  Loader2,
+  Sparkles,
 } from "lucide-react";
 import Link from "next/link";
 import { useState, useEffect, useMemo } from "react";
@@ -32,15 +38,20 @@ async function fetchFeaturedProducts(clinicId: string): Promise<PromotionProduct
   const supabase = createClient();
 
   const [{ data: products }, { data: stockRows }] = await Promise.all([
-    supabase.from("products").select("id, name, generic_name, category, description, price, requires_prescription, is_active").eq("clinic_id", clinicId).eq("is_active", true),
+    supabase
+      .from("products")
+      .select(
+        "id, name, generic_name, category, description, price, requires_prescription, is_active",
+      )
+      .eq("clinic_id", clinicId)
+      .eq("is_active", true),
     supabase.from("stock").select("product_id, quantity").eq("clinic_id", clinicId),
   ]);
 
   if (!products) return [];
 
   const stockMap = new Map(
-    ((stockRows ?? []) as { product_id: string; quantity: number }[])
-      .map((s) => [s.product_id, s]),
+    ((stockRows ?? []) as { product_id: string; quantity: number }[]).map((s) => [s.product_id, s]),
   );
 
   return products.map((p: Record<string, unknown>) => {
@@ -79,14 +90,20 @@ export default function PromotionsPage() {
   useEffect(() => {
     const controller = new AbortController();
     fetchFeaturedProducts(tenant?.clinicId ?? "")
-      .then((d) => { if (!controller.signal.aborted) setProducts(d); })
+      .then((d) => {
+        if (!controller.signal.aborted) setProducts(d);
+      })
       .catch((err) => {
-      if (!controller.signal.aborted) {
-        setError(err instanceof Error ? err : new Error(String(err)));
-      }
-    })
-    .finally(() => { if (!controller.signal.aborted) setLoading(false); });
-    return () => { controller.abort(); };
+        if (!controller.signal.aborted) {
+          setError(err instanceof Error ? err : new Error(String(err)));
+        }
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setLoading(false);
+      });
+    return () => {
+      controller.abort();
+    };
   }, [tenant?.clinicId]);
 
   const featured = useMemo(() => {
@@ -110,7 +127,9 @@ export default function PromotionsPage() {
   if (error) {
     return (
       <div className="p-8 text-center">
-        <p className="text-red-600 font-medium">Failed to load data. Please try refreshing the page.</p>
+        <p className="text-red-600 font-medium">
+          Failed to load data. Please try refreshing the page.
+        </p>
         {error.message && <p className="text-sm text-muted-foreground mt-2">{error.message}</p>}
       </div>
     );
@@ -125,8 +144,8 @@ export default function PromotionsPage() {
         </Badge>
         <h1 className="text-3xl font-bold mb-4">Special Offers</h1>
         <p className="text-muted-foreground max-w-xl mx-auto">
-          Discover our featured products, seasonal promotions, and special deals.
-          Quality healthcare products at competitive prices.
+          Discover our featured products, seasonal promotions, and special deals. Quality healthcare
+          products at competitive prices.
         </p>
       </div>
 
@@ -199,10 +218,7 @@ export default function PromotionsPage() {
                     <span className="text-lg font-bold text-emerald-600">
                       {product.price} {product.currency}
                     </span>
-                    <Badge
-                      variant="outline"
-                      className="text-emerald-600 border-emerald-600"
-                    >
+                    <Badge variant="outline" className="text-emerald-600 border-emerald-600">
                       In Stock
                     </Badge>
                   </div>

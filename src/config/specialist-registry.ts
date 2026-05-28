@@ -9,19 +9,30 @@
 import {
   LayoutDashboard,
   // Nutritionist
-  Apple, Scale, Calculator,
+  Apple,
+  Scale,
+  Calculator,
   // Optician
-  Glasses, FileText,
+  Glasses,
+  FileText,
   // Parapharmacy
-  ShoppingBag, Receipt,
+  ShoppingBag,
+  Receipt,
   // Physiotherapist
-  Dumbbell, ClipboardList, Camera,
+  Dumbbell,
+  ClipboardList,
+  Camera,
   // Psychologist
-  Brain, Target, TrendingUp,
+  Brain,
+  Target,
+  TrendingUp,
   // Speech Therapist
   BookOpen,
   // Radiology
-  Scan, Image, Eye, FileStack,
+  Scan,
+  Image,
+  Eye,
+  FileStack,
   // Shared
   Package,
 } from "lucide-react";
@@ -46,8 +57,18 @@ const specialistRegistry: Record<SpecialistSlug, ClinicDashboardConfig> = {
     moduleName: "Nutrition",
     navItems: [
       { href: "/nutritionist/dashboard", label: "Dashboard", icon: LayoutDashboard },
-      { href: "/nutritionist/meal-plans", label: "Meal Plans", icon: Apple, requiredFeature: "meal_plans" },
-      { href: "/nutritionist/measurements", label: "Body Measurements", icon: Scale, requiredFeature: "body_measurements" },
+      {
+        href: "/nutritionist/meal-plans",
+        label: "Meal Plans",
+        icon: Apple,
+        requiredFeature: "meal_plans",
+      },
+      {
+        href: "/nutritionist/measurements",
+        label: "Body Measurements",
+        icon: Scale,
+        requiredFeature: "body_measurements",
+      },
       { href: "/nutritionist/bmi", label: "BMI Calculator", icon: Calculator },
     ],
   },
@@ -59,9 +80,24 @@ const specialistRegistry: Record<SpecialistSlug, ClinicDashboardConfig> = {
     moduleName: "Optician",
     navItems: [
       { href: "/optician/dashboard", label: "Dashboard", icon: LayoutDashboard },
-      { href: "/optician/lens-inventory", label: "Lens Inventory", icon: Package, requiredFeature: "lens_inventory" },
-      { href: "/optician/frame-catalog", label: "Frame Catalog", icon: Glasses, requiredFeature: "frame_catalog" },
-      { href: "/optician/prescriptions", label: "Prescriptions", icon: FileText, requiredFeature: "optical_prescriptions" },
+      {
+        href: "/optician/lens-inventory",
+        label: "Lens Inventory",
+        icon: Package,
+        requiredFeature: "lens_inventory",
+      },
+      {
+        href: "/optician/frame-catalog",
+        label: "Frame Catalog",
+        icon: Glasses,
+        requiredFeature: "frame_catalog",
+      },
+      {
+        href: "/optician/prescriptions",
+        label: "Prescriptions",
+        icon: FileText,
+        requiredFeature: "optical_prescriptions",
+      },
     ],
   },
   parapharmacy: {
@@ -85,9 +121,24 @@ const specialistRegistry: Record<SpecialistSlug, ClinicDashboardConfig> = {
     moduleName: "Physiotherapy",
     navItems: [
       { href: "/physiotherapist/dashboard", label: "Dashboard", icon: LayoutDashboard },
-      { href: "/physiotherapist/exercise-programs", label: "Exercise Programs", icon: Dumbbell, requiredFeature: "exercise_programs" },
-      { href: "/physiotherapist/sessions", label: "Session Tracking", icon: ClipboardList, requiredFeature: "physio_sessions" },
-      { href: "/physiotherapist/progress-photos", label: "Progress Photos", icon: Camera, requiredFeature: "progress_photos" },
+      {
+        href: "/physiotherapist/exercise-programs",
+        label: "Exercise Programs",
+        icon: Dumbbell,
+        requiredFeature: "exercise_programs",
+      },
+      {
+        href: "/physiotherapist/sessions",
+        label: "Session Tracking",
+        icon: ClipboardList,
+        requiredFeature: "physio_sessions",
+      },
+      {
+        href: "/physiotherapist/progress-photos",
+        label: "Progress Photos",
+        icon: Camera,
+        requiredFeature: "progress_photos",
+      },
     ],
   },
   psychologist: {
@@ -98,8 +149,18 @@ const specialistRegistry: Record<SpecialistSlug, ClinicDashboardConfig> = {
     moduleName: "Psychology",
     navItems: [
       { href: "/psychologist/dashboard", label: "Dashboard", icon: LayoutDashboard },
-      { href: "/psychologist/session-notes", label: "Session Notes", icon: Brain, requiredFeature: "therapy_notes" },
-      { href: "/psychologist/therapy-plans", label: "Therapy Plans", icon: Target, requiredFeature: "therapy_plans" },
+      {
+        href: "/psychologist/session-notes",
+        label: "Session Notes",
+        icon: Brain,
+        requiredFeature: "therapy_notes",
+      },
+      {
+        href: "/psychologist/therapy-plans",
+        label: "Therapy Plans",
+        icon: Target,
+        requiredFeature: "therapy_plans",
+      },
       { href: "/psychologist/progress", label: "Progress Tracking", icon: TrendingUp },
     ],
   },
@@ -111,9 +172,24 @@ const specialistRegistry: Record<SpecialistSlug, ClinicDashboardConfig> = {
     moduleName: "Speech Therapy",
     navItems: [
       { href: "/speech-therapist/dashboard", label: "Dashboard", icon: LayoutDashboard },
-      { href: "/speech-therapist/sessions", label: "Sessions", icon: ClipboardList, requiredFeature: "speech_sessions" },
-      { href: "/speech-therapist/exercise-library", label: "Exercise Library", icon: BookOpen, requiredFeature: "speech_exercises" },
-      { href: "/speech-therapist/reports", label: "Progress Reports", icon: FileText, requiredFeature: "speech_reports" },
+      {
+        href: "/speech-therapist/sessions",
+        label: "Sessions",
+        icon: ClipboardList,
+        requiredFeature: "speech_sessions",
+      },
+      {
+        href: "/speech-therapist/exercise-library",
+        label: "Exercise Library",
+        icon: BookOpen,
+        requiredFeature: "speech_exercises",
+      },
+      {
+        href: "/speech-therapist/reports",
+        label: "Progress Reports",
+        icon: FileText,
+        requiredFeature: "speech_reports",
+      },
     ],
   },
   radiology: {
@@ -138,9 +214,7 @@ const specialistRegistry: Record<SpecialistSlug, ClinicDashboardConfig> = {
  * Look up the specialist config for a given pathname.
  * Extracts the first URL segment and checks the registry.
  */
-export function getSpecialistConfigFromPathname(
-  pathname: string,
-): ClinicDashboardConfig | null {
+export function getSpecialistConfigFromPathname(pathname: string): ClinicDashboardConfig | null {
   // pathname looks like "/nutritionist/dashboard" → extract "nutritionist"
   const segments = pathname.split("/").filter(Boolean);
   const slug = segments[0] as SpecialistSlug;

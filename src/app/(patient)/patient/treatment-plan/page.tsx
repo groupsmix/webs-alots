@@ -4,11 +4,7 @@ import { useState, useEffect } from "react";
 import { TreatmentPlanBuilder } from "@/components/dental/treatment-plan-builder";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { PageLoader } from "@/components/ui/page-loader";
-import {
-  getCurrentUser,
-  fetchTreatmentPlans,
-  type TreatmentPlanView,
-} from "@/lib/data/client";
+import { getCurrentUser, fetchTreatmentPlans, type TreatmentPlanView } from "@/lib/data/client";
 
 export default function PatientTreatmentPlanPage() {
   const [myPlans, setMyPlans] = useState<TreatmentPlanView[]>([]);
@@ -18,21 +14,26 @@ export default function PatientTreatmentPlanPage() {
   useEffect(() => {
     const controller = new AbortController();
     async function load() {
-    const user = await getCurrentUser();
+      const user = await getCurrentUser();
       if (controller.signal.aborted) return;
-    if (!user?.clinic_id) { setLoading(false); return; }
-    const plans = await fetchTreatmentPlans(user.clinic_id);
+      if (!user?.clinic_id) {
+        setLoading(false);
+        return;
+      }
+      const plans = await fetchTreatmentPlans(user.clinic_id);
       if (controller.signal.aborted) return;
-    setMyPlans(plans.filter(p => p.patientId === user.id));
-    setLoading(false);
-  }
+      setMyPlans(plans.filter((p) => p.patientId === user.id));
+      setLoading(false);
+    }
     load().catch((err) => {
       if (!controller.signal.aborted) {
         setError(err instanceof Error ? err : new Error(String(err)));
         setLoading(false);
       }
     });
-    return () => { controller.abort(); };
+    return () => {
+      controller.abort();
+    };
   }, []);
 
   if (loading) {
@@ -42,7 +43,9 @@ export default function PatientTreatmentPlanPage() {
   if (error) {
     return (
       <div className="p-8 text-center">
-        <p className="text-red-600 font-medium">Failed to load data. Please try refreshing the page.</p>
+        <p className="text-red-600 font-medium">
+          Failed to load data. Please try refreshing the page.
+        </p>
         {error.message && <p className="text-sm text-muted-foreground mt-2">{error.message}</p>}
       </div>
     );
@@ -50,12 +53,20 @@ export default function PatientTreatmentPlanPage() {
 
   return (
     <div className="space-y-6">
-      <Breadcrumb items={[{ label: "Patient", href: "/patient/dashboard" }, { label: "Treatment Plan" }]} />
+      <Breadcrumb
+        items={[{ label: "Patient", href: "/patient/dashboard" }, { label: "Treatment Plan" }]}
+      />
       <h1 className="text-2xl font-bold">My Treatment Plan</h1>
       {myPlans.length === 0 ? (
         <p className="text-muted-foreground">No treatment plans found.</p>
       ) : (
-        <TreatmentPlanBuilder plans={myPlans.map(p => ({ ...p, steps: p.steps.map((s, i) => ({ ...s, step: i + 1 })) }))} editable={false} />
+        <TreatmentPlanBuilder
+          plans={myPlans.map((p) => ({
+            ...p,
+            steps: p.steps.map((s, i) => ({ ...s, step: i + 1 })),
+          }))}
+          editable={false}
+        />
       )}
     </div>
   );

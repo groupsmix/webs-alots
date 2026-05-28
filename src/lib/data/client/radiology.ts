@@ -108,8 +108,12 @@ export async function fetchRadiologyOrders(clinicId: string): Promise<RadiologyO
     id: r.id,
     patientId: r.patient_id,
     patientName: _activeUserMap?.get(r.patient_id)?.name ?? "Patient",
-    orderingDoctorName: r.ordering_doctor_id ? (_activeUserMap?.get(r.ordering_doctor_id)?.name ?? undefined) : undefined,
-    radiologistName: r.radiologist_id ? (_activeUserMap?.get(r.radiologist_id)?.name ?? undefined) : undefined,
+    orderingDoctorName: r.ordering_doctor_id
+      ? (_activeUserMap?.get(r.ordering_doctor_id)?.name ?? undefined)
+      : undefined,
+    radiologistName: r.radiologist_id
+      ? (_activeUserMap?.get(r.radiologist_id)?.name ?? undefined)
+      : undefined,
     orderNumber: r.order_number,
     modality: r.modality,
     bodyPart: r.body_part ?? undefined,
@@ -188,7 +192,10 @@ export async function fetchRadiologyTemplates(clinicId: string): Promise<Radiolo
     let match: RegExpExecArray | null;
     while ((match = sectionRegex.exec(text)) !== null) {
       if (lastTitle) {
-        sections.push({ title: lastTitle, defaultContent: text.slice(lastIndex, match.index).trim() });
+        sections.push({
+          title: lastTitle,
+          defaultContent: text.slice(lastIndex, match.index).trim(),
+        });
       }
       lastTitle = match[1];
       lastIndex = match.index + match[0].length;
@@ -214,4 +221,3 @@ export async function fetchRadiologyTemplates(clinicId: string): Promise<Radiolo
     };
   });
 }
-

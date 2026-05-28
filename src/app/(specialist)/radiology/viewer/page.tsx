@@ -20,25 +20,31 @@ export default function DicomViewerPage() {
     fetchRadiologyOrders(tenant?.clinicId ?? "")
       .then((all) => setOrders(all.filter((o) => o.imageCount > 0)))
       .catch((err) => {
-      if (!controller.signal.aborted) {
-        setError(err instanceof Error ? err : new Error(String(err)));
-      }
-    })
-    .finally(() => { if (!controller.signal.aborted) setLoading(false); });
-    return () => { controller.abort(); };
+        if (!controller.signal.aborted) {
+          setError(err instanceof Error ? err : new Error(String(err)));
+        }
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setLoading(false);
+      });
+    return () => {
+      controller.abort();
+    };
   }, [tenant?.clinicId]);
 
   const dicomOrders = orders.filter((o) =>
-    o.images.some((img) => img.isDicom || img.dicomStudyUid)
+    o.images.some((img) => img.isDicom || img.dicomStudyUid),
   );
   const nonDicomOrders = orders.filter(
-    (o) => !o.images.some((img) => img.isDicom || img.dicomStudyUid)
+    (o) => !o.images.some((img) => img.isDicom || img.dicomStudyUid),
   );
 
   if (error) {
     return (
       <div className="p-8 text-center">
-        <p className="text-red-600 font-medium">Failed to load data. Please try refreshing the page.</p>
+        <p className="text-red-600 font-medium">
+          Failed to load data. Please try refreshing the page.
+        </p>
         {error.message && <p className="text-sm text-muted-foreground mt-2">{error.message}</p>}
       </div>
     );
@@ -57,8 +63,8 @@ export default function DicomViewerPage() {
             <Monitor className="h-16 w-16 text-indigo-600 mx-auto" />
             <h2 className="text-xl font-semibold">DICOM Viewer Integration</h2>
             <p className="text-muted-foreground max-w-md mx-auto">
-              Connect to an external DICOM viewer such as OHIF Viewer or Cornerstone.js
-              to view medical images with full diagnostic tools.
+              Connect to an external DICOM viewer such as OHIF Viewer or Cornerstone.js to view
+              medical images with full diagnostic tools.
             </p>
             <div className="flex items-center justify-center gap-3 pt-4">
               <ExternalLink
@@ -94,12 +100,15 @@ export default function DicomViewerPage() {
                           <div>
                             <p className="font-medium">{order.patientName}</p>
                             <p className="text-xs text-muted-foreground">
-                              {order.orderNumber} &middot; {order.modality.toUpperCase()} &middot; {order.bodyPart ?? "N/A"}
+                              {order.orderNumber} &middot; {order.modality.toUpperCase()} &middot;{" "}
+                              {order.bodyPart ?? "N/A"}
                             </p>
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
-                          <Badge variant="outline" className="text-xs">{order.imageCount} image{order.imageCount !== 1 ? "s" : ""}</Badge>
+                          <Badge variant="outline" className="text-xs">
+                            {order.imageCount} image{order.imageCount !== 1 ? "s" : ""}
+                          </Badge>
                           {order.images.find((img) => img.dicomStudyUid) && (
                             <ExternalLink
                               href={`https://viewer.ohif.org/viewer?StudyInstanceUIDs=${order.images.find((img) => img.dicomStudyUid)?.dicomStudyUid}`}
@@ -129,7 +138,8 @@ export default function DicomViewerPage() {
                         <div className="flex-1 min-w-0">
                           <p className="font-medium text-sm truncate">{order.patientName}</p>
                           <p className="text-xs text-muted-foreground">
-                            {order.modality.toUpperCase()} &middot; {order.imageCount} image{order.imageCount !== 1 ? "s" : ""}
+                            {order.modality.toUpperCase()} &middot; {order.imageCount} image
+                            {order.imageCount !== 1 ? "s" : ""}
                           </p>
                         </div>
                         {order.images[0]?.fileUrl && (
@@ -154,7 +164,9 @@ export default function DicomViewerPage() {
                 <div className="text-center py-8">
                   <FileImage className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
                   <p className="text-muted-foreground">No studies with images found</p>
-                  <p className="text-xs text-muted-foreground mt-1">Upload images via the Image Gallery page</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Upload images via the Image Gallery page
+                  </p>
                 </div>
               </CardContent>
             </Card>

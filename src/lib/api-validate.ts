@@ -126,7 +126,5 @@ export function withAuthValidation<T>(
 
   // R-04: withAuth no longer accepts null. Use withAuthAnyRole when callers
   // pass null to preserve the "any authenticated user" behavior.
-  return allowedRoles === null
-    ? withAuthAnyRole(inner)
-    : withAuth(inner, allowedRoles);
+  return allowedRoles === null ? withAuthAnyRole(inner) : withAuth(inner, allowedRoles);
 }

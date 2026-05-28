@@ -17,9 +17,27 @@ import {
 } from "@/lib/data/client";
 
 const vitals = [
-  { label: "Blood Pressure", value: "120/80 mmHg", icon: Activity, trend: "stable", color: "text-blue-600" },
-  { label: "Heart Rate", value: "72 bpm", icon: TrendingUp, trend: "normal", color: "text-red-600" },
-  { label: "Temperature", value: "36.8°C", icon: Activity, trend: "normal", color: "text-orange-600" },
+  {
+    label: "Blood Pressure",
+    value: "120/80 mmHg",
+    icon: Activity,
+    trend: "stable",
+    color: "text-blue-600",
+  },
+  {
+    label: "Heart Rate",
+    value: "72 bpm",
+    icon: TrendingUp,
+    trend: "normal",
+    color: "text-red-600",
+  },
+  {
+    label: "Temperature",
+    value: "36.8°C",
+    icon: Activity,
+    trend: "normal",
+    color: "text-orange-600",
+  },
   { label: "Weight", value: "75 kg", icon: TrendingUp, trend: "stable", color: "text-green-600" },
 ];
 
@@ -34,35 +52,45 @@ export default function MedicalHistoryPage() {
   const [completedVisits, setCompletedVisits] = useState<AppointmentView[]>([]);
   const [patientRx, setPatientRx] = useState<PrescriptionView[]>([]);
   const [consultNotes, setConsultNotes] = useState<ConsultationNoteView[]>([]);
-  const [patient, setPatient] = useState<{ dateOfBirth: string; gender: string; insurance: string; allergies: string[] } | null>(null);
+  const [patient, setPatient] = useState<{
+    dateOfBirth: string;
+    gender: string;
+    insurance: string;
+    allergies: string[];
+  } | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
     const controller = new AbortController();
     async function load() {
-    const user = await getCurrentUser();
+      const user = await getCurrentUser();
       if (controller.signal.aborted) return;
-    if (!user?.clinic_id) { setLoading(false); return; }
-    const [appts, rxs, notes] = await Promise.all([
-      fetchPatientAppointments(user.clinic_id, user.id),
-      fetchPrescriptions(user.clinic_id),
-      fetchConsultationNotes(user.clinic_id),
-    ]);
+      if (!user?.clinic_id) {
+        setLoading(false);
+        return;
+      }
+      const [appts, rxs, notes] = await Promise.all([
+        fetchPatientAppointments(user.clinic_id, user.id),
+        fetchPrescriptions(user.clinic_id),
+        fetchConsultationNotes(user.clinic_id),
+      ]);
       if (controller.signal.aborted) return;
-    setCompletedVisits(appts.filter(a => a.status === "completed"));
-    setPatientRx(rxs.filter(rx => rx.patientId === user.id));
-    setConsultNotes(notes);
-    setPatient({ dateOfBirth: "", gender: "", insurance: "", allergies: [] });
-    setLoading(false);
-  }
+      setCompletedVisits(appts.filter((a) => a.status === "completed"));
+      setPatientRx(rxs.filter((rx) => rx.patientId === user.id));
+      setConsultNotes(notes);
+      setPatient({ dateOfBirth: "", gender: "", insurance: "", allergies: [] });
+      setLoading(false);
+    }
     load().catch((err) => {
       if (!controller.signal.aborted) {
         setError(err instanceof Error ? err : new Error(String(err)));
         setLoading(false);
       }
     });
-    return () => { controller.abort(); };
+    return () => {
+      controller.abort();
+    };
   }, []);
 
   if (loading || !patient) {
@@ -72,14 +100,15 @@ export default function MedicalHistoryPage() {
   if (error) {
     return (
       <div className="p-8 text-center">
-        <p className="text-red-600 font-medium">Failed to load data. Please try refreshing the page.</p>
+        <p className="text-red-600 font-medium">
+          Failed to load data. Please try refreshing the page.
+        </p>
         {error.message && <p className="text-sm text-muted-foreground mt-2">{error.message}</p>}
       </div>
     );
   }
 
-
-  const diagnoses = consultNotes.map(n => ({
+  const diagnoses = consultNotes.map((n) => ({
     date: n.date,
     doctor: n.doctorName ?? "",
     diagnosis: n.diagnosis,
@@ -90,7 +119,9 @@ export default function MedicalHistoryPage() {
 
   return (
     <div>
-      <Breadcrumb items={[{ label: "Patient", href: "/patient/dashboard" }, { label: "Medical History" }]} />
+      <Breadcrumb
+        items={[{ label: "Patient", href: "/patient/dashboard" }, { label: "Medical History" }]}
+      />
       <h1 className="text-2xl font-bold mb-6">Medical History</h1>
 
       <Card className="mb-6">
@@ -151,7 +182,9 @@ export default function MedicalHistoryPage() {
                 <vital.icon className={`h-4 w-4 mx-auto mb-1 ${vital.color}`} />
                 <p className="text-xs text-muted-foreground">{vital.label}</p>
                 <p className="text-sm font-bold">{vital.value}</p>
-                <Badge variant="outline" className="text-[10px] mt-1">{vital.trend}</Badge>
+                <Badge variant="outline" className="text-[10px] mt-1">
+                  {vital.trend}
+                </Badge>
               </div>
             ))}
           </div>
@@ -163,7 +196,9 @@ export default function MedicalHistoryPage() {
           <CardTitle className="text-base flex items-center gap-2">
             <FileText className="h-4 w-4" />
             Past Visits & Diagnoses
-            <Badge variant="secondary" className="ml-auto">{completedVisits.length + diagnoses.length} records</Badge>
+            <Badge variant="secondary" className="ml-auto">
+              {completedVisits.length + diagnoses.length} records
+            </Badge>
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -176,15 +211,23 @@ export default function MedicalHistoryPage() {
                     <p className="text-xs text-muted-foreground">{visit.doctor}</p>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${severityColors[visit.severity] ?? ""}`}>
+                    <span
+                      className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${severityColors[visit.severity] ?? ""}`}
+                    >
                       {visit.severity}
                     </span>
-                    <Badge variant="outline" className="text-xs">{visit.date}</Badge>
+                    <Badge variant="outline" className="text-xs">
+                      {visit.date}
+                    </Badge>
                   </div>
                 </div>
                 <div className="space-y-1 text-sm">
-                  <p><span className="text-muted-foreground">Vitals:</span> {visit.vitals}</p>
-                  <p><span className="text-muted-foreground">Notes:</span> {visit.notes}</p>
+                  <p>
+                    <span className="text-muted-foreground">Vitals:</span> {visit.vitals}
+                  </p>
+                  <p>
+                    <span className="text-muted-foreground">Notes:</span> {visit.notes}
+                  </p>
                 </div>
               </div>
             ))}
@@ -206,7 +249,9 @@ export default function MedicalHistoryPage() {
                 <div key={rx.id} className="border rounded-lg p-3">
                   <div className="flex items-center justify-between mb-2">
                     <p className="text-sm font-medium">{rx.doctorName}</p>
-                    <Badge variant="outline" className="text-xs">{rx.date}</Badge>
+                    <Badge variant="outline" className="text-xs">
+                      {rx.date}
+                    </Badge>
                   </div>
                   <div className="space-y-1">
                     {rx.medications.map((med, idx) => (

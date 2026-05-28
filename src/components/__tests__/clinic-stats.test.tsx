@@ -47,7 +47,7 @@ describe("ClinicStats", () => {
 
   it("displays stat card titles after data loads", async () => {
     render(<ClinicStats />);
-    
+
     await waitFor(() => {
       expect(screen.getByText("Total Patients")).toBeDefined();
       expect(screen.getByText("Today's Bookings")).toBeDefined();
@@ -58,7 +58,7 @@ describe("ClinicStats", () => {
 
   it("displays booking sources section", async () => {
     render(<ClinicStats />);
-    
+
     await waitFor(() => {
       expect(screen.getByText("Online")).toBeDefined();
       expect(screen.getByText("Phone")).toBeDefined();
@@ -68,7 +68,7 @@ describe("ClinicStats", () => {
 
   it("displays busiest hours section", async () => {
     render(<ClinicStats />);
-    
+
     await waitFor(() => {
       expect(screen.getByText("Busiest Hours")).toBeDefined();
     });

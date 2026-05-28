@@ -1,6 +1,31 @@
 "use client";
 
-import { LayoutDashboard, UserCog, Stethoscope, Settings, BarChart3, Star, Users, CalendarOff, Bell, Clock, UserCheck, Palette, Paintbrush, Menu, X, CreditCard, LayoutTemplate, ToggleRight, Building2, BedDouble, Monitor, Boxes, FileText, Brain } from "lucide-react";
+import {
+  LayoutDashboard,
+  UserCog,
+  Stethoscope,
+  Settings,
+  BarChart3,
+  Star,
+  Users,
+  CalendarOff,
+  Bell,
+  Clock,
+  UserCheck,
+  Palette,
+  Paintbrush,
+  Menu,
+  X,
+  CreditCard,
+  LayoutTemplate,
+  ToggleRight,
+  Building2,
+  BedDouble,
+  Monitor,
+  Boxes,
+  FileText,
+  Brain,
+} from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
@@ -28,9 +53,24 @@ interface NavItem {
 const navItems: NavItem[] = [
   { href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/admin/doctors", label: "Doctors", icon: UserCog },
-  { href: "/admin/services", label: "Services & Prices", icon: Stethoscope, requiredFeature: "appointments" },
-  { href: "/admin/working-hours", label: "Working Hours", icon: Clock, requiredFeature: "appointments" },
-  { href: "/admin/holidays", label: "Holidays / Closures", icon: CalendarOff, requiredFeature: "appointments" },
+  {
+    href: "/admin/services",
+    label: "Services & Prices",
+    icon: Stethoscope,
+    requiredFeature: "appointments",
+  },
+  {
+    href: "/admin/working-hours",
+    label: "Working Hours",
+    icon: Clock,
+    requiredFeature: "appointments",
+  },
+  {
+    href: "/admin/holidays",
+    label: "Holidays / Closures",
+    icon: CalendarOff,
+    requiredFeature: "appointments",
+  },
   { href: "/admin/receptionists", label: "Receptionists", icon: UserCheck },
   { href: "/admin/patients", label: "Patient Database", icon: Users },
   { href: "/admin/notifications", label: "Notifications", icon: Bell },
@@ -43,11 +83,36 @@ const navItems: NavItem[] = [
   { href: "/admin/billing", label: "Billing & Plan", icon: CreditCard },
   { href: "/admin/settings", label: "Settings", icon: Settings },
   // Phase 6: Clinics & Centers
-  { href: "/admin/departments", label: "Departments", icon: Building2, requiredFeature: "departments" },
-  { href: "/admin/beds", label: "Bed Management", icon: BedDouble, requiredFeature: "bed_management" },
-  { href: "/admin/machines", label: "Dialysis Machines", icon: Monitor, requiredFeature: "dialysis_machines" },
-  { href: "/admin/lab-materials", label: "Lab Materials", icon: Boxes, requiredFeature: "lab_materials" },
-  { href: "/admin/lab-invoices", label: "Lab Invoices", icon: FileText, requiredFeature: "lab_invoices" },
+  {
+    href: "/admin/departments",
+    label: "Departments",
+    icon: Building2,
+    requiredFeature: "departments",
+  },
+  {
+    href: "/admin/beds",
+    label: "Bed Management",
+    icon: BedDouble,
+    requiredFeature: "bed_management",
+  },
+  {
+    href: "/admin/machines",
+    label: "Dialysis Machines",
+    icon: Monitor,
+    requiredFeature: "dialysis_machines",
+  },
+  {
+    href: "/admin/lab-materials",
+    label: "Lab Materials",
+    icon: Boxes,
+    requiredFeature: "lab_materials",
+  },
+  {
+    href: "/admin/lab-invoices",
+    label: "Lab Invoices",
+    icon: FileText,
+    requiredFeature: "lab_invoices",
+  },
   // AI-powered features (Professional+ plan)
   { href: "/admin/ai-manager", label: "AI Manager", icon: Brain, requiredFeature: "ai_manager" },
 ];
@@ -121,40 +186,36 @@ function SidebarContent({ pathname, onNavClick }: { pathname: string; onNavClick
   );
 }
 
-export default function AdminLayoutShell({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function AdminLayoutShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [locale] = useLocale();
 
   return (
     <OnboardingProvider>
-    <div className="flex min-h-screen">
-      {/* Skip to content link for keyboard accessibility */}
-      <a
-        href="#main-content"
-        className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[100] focus:rounded-lg focus:bg-primary focus:px-4 focus:py-2 focus:text-primary-foreground focus:text-sm focus:font-medium"
-      >
-        {t(locale, "nav.skipToContent")}
-      </a>
-      {/* Mobile header bar */}
-      <div className="fixed top-0 left-0 right-0 z-40 flex items-center gap-3 border-b bg-card px-4 py-3 md:hidden">
-        <button
-          onClick={() => setMobileOpen(true)}
-          className="rounded-md p-1.5 hover:bg-muted"
-          aria-label="Open menu"
+      <div className="flex min-h-screen">
+        {/* Skip to content link for keyboard accessibility */}
+        <a
+          href="#main-content"
+          className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[100] focus:rounded-lg focus:bg-primary focus:px-4 focus:py-2 focus:text-primary-foreground focus:text-sm focus:font-medium"
         >
-          <Menu className="h-5 w-5" />
-        </button>
-        <h2 className="text-sm font-semibold">{t(locale, "nav.clinicAdmin")}</h2>
-      </div>
+          {t(locale, "nav.skipToContent")}
+        </a>
+        {/* Mobile header bar */}
+        <div className="fixed top-0 left-0 right-0 z-40 flex items-center gap-3 border-b bg-card px-4 py-3 md:hidden">
+          <button
+            onClick={() => setMobileOpen(true)}
+            className="rounded-md p-1.5 hover:bg-muted"
+            aria-label="Open menu"
+          >
+            <Menu className="h-5 w-5" />
+          </button>
+          <h2 className="text-sm font-semibold">{t(locale, "nav.clinicAdmin")}</h2>
+        </div>
 
-      {/* Mobile sidebar overlay — A11Y-01: Escape key + focus trapping */}
-      {mobileOpen && (
-        <MobileMenuOverlay onClose={() => setMobileOpen(false)}>
+        {/* Mobile sidebar overlay — A11Y-01: Escape key + focus trapping */}
+        {mobileOpen && (
+          <MobileMenuOverlay onClose={() => setMobileOpen(false)}>
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold">{t(locale, "nav.clinicAdmin")}</h2>
               <button
@@ -166,22 +227,22 @@ export default function AdminLayoutShell({
               </button>
             </div>
             <SidebarContent pathname={pathname} onNavClick={() => setMobileOpen(false)} />
-        </MobileMenuOverlay>
-      )}
+          </MobileMenuOverlay>
+        )}
 
-      {/* Desktop sidebar */}
-      <aside className="hidden w-64 border-r bg-card p-4 md:flex md:flex-col">
-        <h2 className="text-lg font-semibold mb-6">{t(locale, "nav.clinicAdmin")}</h2>
-        <SidebarContent pathname={pathname} />
-      </aside>
+        {/* Desktop sidebar */}
+        <aside className="hidden w-64 border-r bg-card p-4 md:flex md:flex-col">
+          <h2 className="text-lg font-semibold mb-6">{t(locale, "nav.clinicAdmin")}</h2>
+          <SidebarContent pathname={pathname} />
+        </aside>
 
-      <main id="main-content" className="flex-1 p-6 pt-16 md:pt-6">
-        <AutoBreadcrumb />
-        {children}
-      </main>
-      <OnboardingTourOverlay />
-      <SessionTimeoutWarning onLogout={() => signOut()} />
-    </div>
+        <main id="main-content" className="flex-1 p-6 pt-16 md:pt-6">
+          <AutoBreadcrumb />
+          {children}
+        </main>
+        <OnboardingTourOverlay />
+        <SessionTimeoutWarning onLogout={() => signOut()} />
+      </div>
     </OnboardingProvider>
   );
 }

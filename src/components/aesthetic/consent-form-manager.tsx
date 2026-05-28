@@ -37,9 +37,18 @@ interface ConsentFormManagerProps {
   onRevoke?: (id: string) => void;
 }
 
-export function ConsentFormManager({ consents, editable = false, onAdd, onRevoke }: ConsentFormManagerProps) {
+export function ConsentFormManager({
+  consents,
+  editable = false,
+  onAdd,
+  onRevoke,
+}: ConsentFormManagerProps) {
   const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState({ patientName: "", consentType: "before_after", consentText: "" });
+  const [form, setForm] = useState({
+    patientName: "",
+    consentType: "before_after",
+    consentText: "",
+  });
 
   const handleAdd = () => {
     if (form.patientName.trim() && onAdd) {
@@ -57,7 +66,9 @@ export function ConsentFormManager({ consents, editable = false, onAdd, onRevoke
         <h2 className="text-lg font-semibold flex items-center gap-2">
           <FileCheck className="h-5 w-5" />
           Photo Consent Forms
-          <Badge variant="secondary" className="ml-1">{activeCount} active</Badge>
+          <Badge variant="secondary" className="ml-1">
+            {activeCount} active
+          </Badge>
         </h2>
         {editable && (
           <Button size="sm" onClick={() => setShowForm(!showForm)}>
@@ -69,16 +80,27 @@ export function ConsentFormManager({ consents, editable = false, onAdd, onRevoke
 
       {showForm && (
         <Card>
-          <CardHeader><CardTitle className="text-sm">New Consent Form</CardTitle></CardHeader>
+          <CardHeader>
+            <CardTitle className="text-sm">New Consent Form</CardTitle>
+          </CardHeader>
           <CardContent className="space-y-3">
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <Label className="text-xs">Patient Name</Label>
-                <Input value={form.patientName} onChange={(e) => setForm({ ...form, patientName: e.target.value })} placeholder="Patient name" className="text-sm" />
+                <Input
+                  value={form.patientName}
+                  onChange={(e) => setForm({ ...form, patientName: e.target.value })}
+                  placeholder="Patient name"
+                  className="text-sm"
+                />
               </div>
               <div>
                 <Label className="text-xs">Consent Type</Label>
-                <select value={form.consentType} onChange={(e) => setForm({ ...form, consentType: e.target.value })} className="w-full rounded-md border px-3 py-2 text-sm">
+                <select
+                  value={form.consentType}
+                  onChange={(e) => setForm({ ...form, consentType: e.target.value })}
+                  className="w-full rounded-md border px-3 py-2 text-sm"
+                >
                   <option value="before_after">Before/After Photos</option>
                   <option value="marketing">Marketing Use</option>
                   <option value="medical_record">Medical Record</option>
@@ -87,11 +109,21 @@ export function ConsentFormManager({ consents, editable = false, onAdd, onRevoke
             </div>
             <div>
               <Label className="text-xs">Consent Text</Label>
-              <Textarea value={form.consentText} onChange={(e) => setForm({ ...form, consentText: e.target.value })} placeholder="I consent to the use of my photos for..." className="text-sm" rows={3} />
+              <Textarea
+                value={form.consentText}
+                onChange={(e) => setForm({ ...form, consentText: e.target.value })}
+                placeholder="I consent to the use of my photos for..."
+                className="text-sm"
+                rows={3}
+              />
             </div>
             <div className="flex gap-2">
-              <Button size="sm" onClick={handleAdd}>Create Consent</Button>
-              <Button size="sm" variant="outline" onClick={() => setShowForm(false)}>Cancel</Button>
+              <Button size="sm" onClick={handleAdd}>
+                Create Consent
+              </Button>
+              <Button size="sm" variant="outline" onClick={() => setShowForm(false)}>
+                Cancel
+              </Button>
             </div>
           </CardContent>
         </Card>
@@ -112,12 +144,15 @@ export function ConsentFormManager({ consents, editable = false, onAdd, onRevoke
               <Card key={consent.id} className={!consent.isActive || isExpired ? "opacity-60" : ""}>
                 <CardContent className="p-3 flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <ShieldCheck className={`h-4 w-4 ${consent.isActive && !isExpired ? "text-green-600" : "text-muted-foreground"}`} />
+                    <ShieldCheck
+                      className={`h-4 w-4 ${consent.isActive && !isExpired ? "text-green-600" : "text-muted-foreground"}`}
+                    />
                     <div>
                       <p className="text-sm font-medium">{consent.patientName}</p>
                       <p className="text-xs text-muted-foreground">
                         Signed: {new Date(consent.signedAt).toLocaleDateString()}
-                        {consent.expiresAt && ` · Expires: ${new Date(consent.expiresAt).toLocaleDateString()}`}
+                        {consent.expiresAt &&
+                          ` · Expires: ${new Date(consent.expiresAt).toLocaleDateString()}`}
                       </p>
                     </div>
                   </div>
@@ -130,9 +165,18 @@ export function ConsentFormManager({ consents, editable = false, onAdd, onRevoke
                         <AlertTriangle className="h-3 w-3 mr-1" /> Expired
                       </Badge>
                     )}
-                    {!consent.isActive && <Badge variant="secondary" className="text-[10px]">Revoked</Badge>}
+                    {!consent.isActive && (
+                      <Badge variant="secondary" className="text-[10px]">
+                        Revoked
+                      </Badge>
+                    )}
                     {editable && consent.isActive && !isExpired && (
-                      <Button size="sm" variant="outline" className="text-xs h-7" onClick={() => onRevoke?.(consent.id)}>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="text-xs h-7"
+                        onClick={() => onRevoke?.(consent.id)}
+                      >
                         Revoke
                       </Button>
                     )}

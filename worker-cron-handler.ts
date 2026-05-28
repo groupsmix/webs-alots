@@ -33,10 +33,10 @@ import { default as handler } from "./.open-next/worker.js";
 const CRON_ROUTES: Record<string, string[]> = {
   "*/15 * * * *": ["/api/cron/notifications", "/api/cron/audit-log-flush"],
   "*/30 * * * *": ["/api/cron/reminders"],
-  "0 * * * *":    ["/api/cron/r2-cleanup", "/api/cron/feedback", "/api/cron/rebooking-reminders"],
-  "0 2 * * *":    ["/api/cron/billing"],
-  "0 3 * * *":    ["/api/cron/gdpr-purge"],
-  "0 5 * * *":    ["/api/cron/stripe-reconcile"],
+  "0 * * * *": ["/api/cron/r2-cleanup", "/api/cron/feedback", "/api/cron/rebooking-reminders"],
+  "0 2 * * *": ["/api/cron/billing"],
+  "0 3 * * *": ["/api/cron/gdpr-purge"],
+  "0 5 * * *": ["/api/cron/stripe-reconcile"],
 };
 
 export default {
@@ -56,16 +56,21 @@ export default {
 
     const cronSecret = env.CRON_SECRET;
     if (!cronSecret) {
-      console.error(`[Cron] CRON_SECRET is not set — skipping ${controller.cron} to prevent unauthenticated requests`);
+      console.error(
+        `[Cron] CRON_SECRET is not set — skipping ${controller.cron} to prevent unauthenticated requests`,
+      );
       return;
     }
 
     // B-03 / A43.5: Build requests to the Next.js API routes via the same
     // Worker fetch handler.  CRON_SELF_BASE_URL (or ROOT_DOMAIN) must be set
     // per-environment so staging crons never accidentally hit production.
-    const cronBaseUrl = env.CRON_SELF_BASE_URL || (env.ROOT_DOMAIN ? `https://${env.ROOT_DOMAIN}` : null);
+    const cronBaseUrl =
+      env.CRON_SELF_BASE_URL || (env.ROOT_DOMAIN ? `https://${env.ROOT_DOMAIN}` : null);
     if (!cronBaseUrl) {
-      console.error(`[Cron] Neither CRON_SELF_BASE_URL nor ROOT_DOMAIN is set — refusing to fire ${controller.cron} to avoid cross-environment request`);
+      console.error(
+        `[Cron] Neither CRON_SELF_BASE_URL nor ROOT_DOMAIN is set — refusing to fire ${controller.cron} to avoid cross-environment request`,
+      );
       return;
     }
 

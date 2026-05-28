@@ -16,7 +16,7 @@ export type TranslationKey = keyof typeof fr;
 const translations = {
   fr,
   ar,
-  en
+  en,
 } as const;
 
 // ── F-A92-01: CLDR plural rules ────────────────────────────────────────
@@ -43,7 +43,11 @@ const pluralRules: Record<Locale, Intl.PluralRules> = {
  *   → looks up "appointment_other" (fr plural for 5 is "other")
  *   → falls back to "appointment" if plural key missing
  */
-export function t(locale: Locale, key: TranslationKey | string, params?: Record<string, string | number>): string {
+export function t(
+  locale: Locale,
+  key: TranslationKey | string,
+  params?: Record<string, string | number>,
+): string {
   const dict = translations[locale] || translations.fr;
 
   // F-A92-01: If `count` is provided, resolve the CLDR plural form first.
@@ -68,9 +72,10 @@ export function t(locale: Locale, key: TranslationKey | string, params?: Record<
     text = (translations.fr as Record<string, string>)[resolvedKey as string];
     if (!text) {
       // Fall back to base key if plural key not found
-      text = (dict as Record<string, string>)[key as string]
-        ?? (translations.fr as Record<string, string>)[key as string]
-        ?? key;
+      text =
+        (dict as Record<string, string>)[key as string] ??
+        (translations.fr as Record<string, string>)[key as string] ??
+        key;
     }
   }
 
@@ -131,7 +136,11 @@ export function formatDate(
  *   formatNumber("fr", 1234.5)  // "1 234,5"
  *   formatNumber("ar", 1234.5)  // "١٬٢٣٤٫٥"
  */
-export function formatNumber(locale: Locale, value: number, options?: Intl.NumberFormatOptions): string {
+export function formatNumber(
+  locale: Locale,
+  value: number,
+  options?: Intl.NumberFormatOptions,
+): string {
   return new Intl.NumberFormat(BCP47[locale], options).format(value);
 }
 
@@ -144,11 +153,7 @@ export function formatNumber(locale: Locale, value: number, options?: Intl.Numbe
  *   formatCurrency("ar", 250)   // "٢٥٠٫٠٠ د.م."
  *   formatCurrency("en", 250)   // "MAD 250.00"
  */
-export function formatCurrency(
-  locale: Locale,
-  amount: number,
-  currency = "MAD",
-): string {
+export function formatCurrency(locale: Locale, amount: number, currency = "MAD"): string {
   return new Intl.NumberFormat(BCP47[locale], {
     style: "currency",
     currency,

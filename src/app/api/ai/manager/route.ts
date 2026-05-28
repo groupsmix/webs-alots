@@ -36,10 +36,7 @@ interface ManagerInsight {
 
 // ── Data fetchers ──
 
-async function fetchClinicMetrics(
-  supabase: AuthContext["supabase"],
-  clinicId: string,
-) {
+async function fetchClinicMetrics(supabase: AuthContext["supabase"], clinicId: string) {
   const now = new Date();
   const startOfWeek = new Date(now);
   startOfWeek.setDate(now.getDate() - now.getDay());
@@ -156,9 +153,9 @@ async function fetchClinicMetrics(
   ]);
 
   // Fetch doctor names for the doctor stats
-  const doctorIds = [...new Set(
-    (doctorStats.data ?? []).map((a) => a.doctor_id).filter(Boolean) as string[],
-  )];
+  const doctorIds = [
+    ...new Set((doctorStats.data ?? []).map((a) => a.doctor_id).filter(Boolean) as string[]),
+  ];
   const doctorNames: Record<string, string> = {};
   if (doctorIds.length > 0) {
     const { data: doctors } = await supabase
@@ -172,9 +169,9 @@ async function fetchClinicMetrics(
   }
 
   // Fetch service names
-  const serviceIds = [...new Set(
-    (serviceStats.data ?? []).map((a) => a.service_id).filter(Boolean) as string[],
-  )];
+  const serviceIds = [
+    ...new Set((serviceStats.data ?? []).map((a) => a.service_id).filter(Boolean) as string[]),
+  ];
   const serviceNames: Record<string, string> = {};
   if (serviceIds.length > 0) {
     const { data: services } = await supabase
@@ -204,10 +201,14 @@ async function fetchClinicMetrics(
   }
 
   // Calculate revenues
-  const revenueThisMonthTotal = (revenueThisMonth.data ?? [])
-    .reduce((sum, e) => sum + (e.amount ?? 0), 0);
-  const revenueLastMonthTotal = (revenueLastMonth.data ?? [])
-    .reduce((sum, e) => sum + (e.amount ?? 0), 0);
+  const revenueThisMonthTotal = (revenueThisMonth.data ?? []).reduce(
+    (sum, e) => sum + (e.amount ?? 0),
+    0,
+  );
+  const revenueLastMonthTotal = (revenueLastMonth.data ?? []).reduce(
+    (sum, e) => sum + (e.amount ?? 0),
+    0,
+  );
 
   // Find busiest day this week
   const dayCount: Record<string, number> = {};
@@ -283,7 +284,9 @@ function buildUserMessage(
   parts.push(`- Ce mois: ${metrics.appointmentsThisMonth}`);
   parts.push(`- Mois dernier: ${metrics.appointmentsLastMonth}`);
   if (metrics.busiestDay) {
-    parts.push(`- Jour le plus chargé cette semaine: ${metrics.busiestDay.date} (${metrics.busiestDay.count} RDV)`);
+    parts.push(
+      `- Jour le plus chargé cette semaine: ${metrics.busiestDay.date} (${metrics.busiestDay.count} RDV)`,
+    );
   }
   parts.push(`- No-shows ce mois: ${metrics.noShowsThisMonth}`);
 
@@ -299,7 +302,10 @@ function buildUserMessage(
   parts.push(`- Ce mois: ${metrics.revenueThisMonth} MAD`);
   parts.push(`- Mois dernier: ${metrics.revenueLastMonth} MAD`);
   if (metrics.revenueLastMonth > 0) {
-    const change = ((metrics.revenueThisMonth - metrics.revenueLastMonth) / metrics.revenueLastMonth * 100).toFixed(1);
+    const change = (
+      ((metrics.revenueThisMonth - metrics.revenueLastMonth) / metrics.revenueLastMonth) *
+      100
+    ).toFixed(1);
     parts.push(`- Variation: ${change}%`);
   }
 
@@ -490,9 +496,7 @@ export const POST = withAuthValidation(
           userId,
           contentPreview: content.slice(0, 300),
         });
-        return apiInternalError(
-          "La réponse IA n'a pas pu être interprétée. Veuillez réessayer.",
-        );
+        return apiInternalError("La réponse IA n'a pas pu être interprétée. Veuillez réessayer.");
       }
 
       // Log usage (fire-and-forget)
@@ -527,9 +531,7 @@ export const POST = withAuthValidation(
         userId,
         error: err,
       });
-      return apiInternalError(
-        "Erreur lors de la requête AI Manager. Veuillez réessayer.",
-      );
+      return apiInternalError("Erreur lors de la requête AI Manager. Veuillez réessayer.");
     }
   },
   ["clinic_admin", "super_admin"],

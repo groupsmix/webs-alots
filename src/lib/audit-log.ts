@@ -12,14 +12,7 @@ import { logger } from "@/lib/logger";
 import type { Database, Json } from "@/lib/types/database";
 
 /** Audit event categories for structured filtering. */
-type AuditEventType =
-  | "booking"
-  | "patient"
-  | "payment"
-  | "admin"
-  | "auth"
-  | "config"
-  | "security";
+type AuditEventType = "booking" | "patient" | "payment" | "admin" | "auth" | "config" | "security";
 
 interface AuditLogParams {
   supabase: SupabaseClient<Database>;
@@ -93,13 +86,10 @@ export async function logAuditEvent({
       });
 
       try {
-        Sentry.captureException(
-          new Error(`Audit log write failed: ${action}`),
-          {
-            tags: { compliance: "audit_loss", clinicId },
-            extra: { action, type, clinicId, error },
-          },
-        );
+        Sentry.captureException(new Error(`Audit log write failed: ${action}`), {
+          tags: { compliance: "audit_loss", clinicId },
+          extra: { action, type, clinicId, error },
+        });
       } catch (_sentryErr) {
         // F-A91-06: Bind error for potential Sentry/debugging visibility
         // Sentry unavailable — structured log above is the fallback
@@ -114,30 +104,28 @@ export async function logAuditEvent({
       level: "warning",
       extra: { action, type, clinicId, actor },
     });
-    
+
     // AUDIT FINDING #10: Write the failed audit event to pending_audit_logs
     // for durable retry. The /api/cron/audit-log-flush cron job drains this
     // queue into activity_logs periodically.
     try {
       const { createUntypedAdminClient } = await import("@/lib/supabase-server");
       const retryClient = createUntypedAdminClient("audit_log");
-      await retryClient
-        .from("pending_audit_logs")
-        .insert({
-          payload: {
-            action,
-            type,
-            actor: actor ?? null,
-            clinic_id: clinicId,
-            clinic_name: clinicName ?? null,
-            description: description ?? null,
-            ip_address: ipAddress ?? null,
-            user_agent: userAgent ?? null,
-            metadata: metadata ?? null,
-            timestamp: new Date().toISOString(),
-          },
-          last_error: err instanceof Error ? err.message : String(err),
-        });
+      await retryClient.from("pending_audit_logs").insert({
+        payload: {
+          action,
+          type,
+          actor: actor ?? null,
+          clinic_id: clinicId,
+          clinic_name: clinicName ?? null,
+          description: description ?? null,
+          ip_address: ipAddress ?? null,
+          user_agent: userAgent ?? null,
+          metadata: metadata ?? null,
+          timestamp: new Date().toISOString(),
+        },
+        last_error: err instanceof Error ? err.message : String(err),
+      });
     } catch (retryErr) {
       logger.error("Failed to write to pending_audit_logs (audit data loss risk)", {
         context: "audit-log",

@@ -72,7 +72,10 @@ export const POST = withValidation(verifyEmailSendSchema, async (data, request: 
 
   if (error) {
     // Table may not exist yet — log but provide graceful fallback
-    logger.error("Failed to store verification code", { context: "verify-email", error: error.message });
+    logger.error("Failed to store verification code", {
+      context: "verify-email",
+      error: error.message,
+    });
     return apiError("Verification service temporarily unavailable", 503);
   }
 

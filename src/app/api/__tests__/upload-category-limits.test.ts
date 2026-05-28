@@ -62,12 +62,8 @@ describe("limitForCategory", () => {
 
 describe("categoryFromKey", () => {
   it("extracts the category segment from buildUploadKey() output", () => {
-    expect(
-      categoryFromKey("clinics/abc123/lab_report/2024-01/file.pdf"),
-    ).toBe("lab_report");
-    expect(
-      categoryFromKey("clinics/abc123/radiology/scan.dcm"),
-    ).toBe("radiology");
+    expect(categoryFromKey("clinics/abc123/lab_report/2024-01/file.pdf")).toBe("lab_report");
+    expect(categoryFromKey("clinics/abc123/radiology/scan.dcm")).toBe("radiology");
   });
 
   it("returns null for malformed or non-clinic keys", () => {

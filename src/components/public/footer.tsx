@@ -12,7 +12,13 @@ interface PublicFooterProps {
   locale?: Locale;
 }
 
-export function PublicFooter({ clinicName, phone, email, address, locale = "fr" }: PublicFooterProps) {
+export function PublicFooter({
+  clinicName,
+  phone,
+  email,
+  address,
+  locale = "fr",
+}: PublicFooterProps) {
   const contact = defaultWebsiteConfig.contact;
   const displayName = clinicName || "Oltigo";
   const displayPhone = phone || contact.phone;

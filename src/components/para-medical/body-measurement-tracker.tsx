@@ -20,7 +20,8 @@ interface ChartDataPoint {
 const LazyBodyChart = dynamic<{ chartData: ChartDataPoint[] }>(
   () =>
     import("recharts").then((mod) => {
-      const { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } = mod;
+      const { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } =
+        mod;
       function Inner({ chartData }: { chartData: ChartDataPoint[] }) {
         return (
           <ResponsiveContainer width="100%" height={250}>
@@ -31,8 +32,24 @@ const LazyBodyChart = dynamic<{ chartData: ChartDataPoint[] }>(
               <YAxis yAxisId="bmi" orientation="right" tick={{ fontSize: 10 }} />
               <Tooltip />
               <Legend />
-              <Line yAxisId="weight" type="monotone" dataKey="weight" stroke="#3b82f6" name="Weight (kg)" strokeWidth={2} dot={{ r: 3 }} />
-              <Line yAxisId="bmi" type="monotone" dataKey="bmi" stroke="#f59e0b" name="BMI" strokeWidth={2} dot={{ r: 3 }} />
+              <Line
+                yAxisId="weight"
+                type="monotone"
+                dataKey="weight"
+                stroke="#3b82f6"
+                name="Weight (kg)"
+                strokeWidth={2}
+                dot={{ r: 3 }}
+              />
+              <Line
+                yAxisId="bmi"
+                type="monotone"
+                dataKey="bmi"
+                stroke="#f59e0b"
+                name="BMI"
+                strokeWidth={2}
+                dot={{ r: 3 }}
+              />
             </LineChart>
           </ResponsiveContainer>
         );
@@ -67,16 +84,20 @@ export function BodyMeasurementTracker({ measurements }: BodyMeasurementTrackerP
   const [calcHeight, setCalcHeight] = useState("");
 
   const sorted = useMemo(
-    () => [...measurements].sort((a, b) => new Date(a.measurement_date).getTime() - new Date(b.measurement_date).getTime()),
+    () =>
+      [...measurements].sort(
+        (a, b) => new Date(a.measurement_date).getTime() - new Date(b.measurement_date).getTime(),
+      ),
     [measurements],
   );
 
   const latest = sorted[sorted.length - 1];
   const previous = sorted.length >= 2 ? sorted[sorted.length - 2] : null;
 
-  const weightChange = latest && previous && latest.weight_kg && previous.weight_kg
-    ? latest.weight_kg - previous.weight_kg
-    : null;
+  const weightChange =
+    latest && previous && latest.weight_kg && previous.weight_kg
+      ? latest.weight_kg - previous.weight_kg
+      : null;
 
   const chartData = sorted.map((m) => ({
     date: m.measurement_date,
@@ -85,9 +106,10 @@ export function BodyMeasurementTracker({ measurements }: BodyMeasurementTrackerP
     bodyFat: m.body_fat_pct,
   }));
 
-  const calcBMI = calcWeight && calcHeight
-    ? (parseFloat(calcWeight) / ((parseFloat(calcHeight) / 100) ** 2)).toFixed(1)
-    : null;
+  const calcBMI =
+    calcWeight && calcHeight
+      ? (parseFloat(calcWeight) / (parseFloat(calcHeight) / 100) ** 2).toFixed(1)
+      : null;
 
   return (
     <div className="space-y-4">
@@ -107,7 +129,10 @@ export function BodyMeasurementTracker({ measurements }: BodyMeasurementTrackerP
                 ) : (
                   <Minus className="h-3 w-3 text-muted-foreground" />
                 )}
-                <span className="text-xs">{weightChange > 0 ? "+" : ""}{weightChange.toFixed(1)} kg</span>
+                <span className="text-xs">
+                  {weightChange > 0 ? "+" : ""}
+                  {weightChange.toFixed(1)} kg
+                </span>
               </div>
             )}
           </CardContent>
@@ -117,7 +142,10 @@ export function BodyMeasurementTracker({ measurements }: BodyMeasurementTrackerP
             <p className="text-2xl font-bold">{latest?.bmi?.toFixed(1) ?? "—"}</p>
             <p className="text-xs text-muted-foreground">BMI</p>
             {latest?.bmi && (
-              <Badge variant="outline" className={`text-[10px] mt-1 ${getBMICategory(latest.bmi).color}`}>
+              <Badge
+                variant="outline"
+                className={`text-[10px] mt-1 ${getBMICategory(latest.bmi).color}`}
+              >
                 {getBMICategory(latest.bmi).label}
               </Badge>
             )}
@@ -150,17 +178,32 @@ export function BodyMeasurementTracker({ measurements }: BodyMeasurementTrackerP
             <div className="grid grid-cols-3 gap-3 items-end">
               <div>
                 <Label className="text-xs">Weight (kg)</Label>
-                <Input type="number" value={calcWeight} onChange={(e) => setCalcWeight(e.target.value)} placeholder="70" className="text-sm" />
+                <Input
+                  type="number"
+                  value={calcWeight}
+                  onChange={(e) => setCalcWeight(e.target.value)}
+                  placeholder="70"
+                  className="text-sm"
+                />
               </div>
               <div>
                 <Label className="text-xs">Height (cm)</Label>
-                <Input type="number" value={calcHeight} onChange={(e) => setCalcHeight(e.target.value)} placeholder="170" className="text-sm" />
+                <Input
+                  type="number"
+                  value={calcHeight}
+                  onChange={(e) => setCalcHeight(e.target.value)}
+                  placeholder="170"
+                  className="text-sm"
+                />
               </div>
               <div className="text-center">
                 {calcBMI && (
                   <div>
                     <p className="text-2xl font-bold">{calcBMI}</p>
-                    <Badge variant="outline" className={`text-[10px] ${getBMICategory(parseFloat(calcBMI)).color}`}>
+                    <Badge
+                      variant="outline"
+                      className={`text-[10px] ${getBMICategory(parseFloat(calcBMI)).color}`}
+                    >
                       {getBMICategory(parseFloat(calcBMI)).label}
                     </Badge>
                   </div>
@@ -168,10 +211,26 @@ export function BodyMeasurementTracker({ measurements }: BodyMeasurementTrackerP
               </div>
             </div>
             <div className="mt-3 grid grid-cols-4 gap-1 text-center text-[10px]">
-              <div className="p-1 rounded bg-blue-50 dark:bg-blue-950/20"><span className="font-medium text-blue-600">&lt;18.5</span><br />Underweight</div>
-              <div className="p-1 rounded bg-green-50 dark:bg-green-950/20"><span className="font-medium text-green-600">18.5–24.9</span><br />Normal</div>
-              <div className="p-1 rounded bg-orange-50 dark:bg-orange-950/20"><span className="font-medium text-orange-600">25–29.9</span><br />Overweight</div>
-              <div className="p-1 rounded bg-red-50 dark:bg-red-950/20"><span className="font-medium text-red-600">&ge;30</span><br />Obese</div>
+              <div className="p-1 rounded bg-blue-50 dark:bg-blue-950/20">
+                <span className="font-medium text-blue-600">&lt;18.5</span>
+                <br />
+                Underweight
+              </div>
+              <div className="p-1 rounded bg-green-50 dark:bg-green-950/20">
+                <span className="font-medium text-green-600">18.5–24.9</span>
+                <br />
+                Normal
+              </div>
+              <div className="p-1 rounded bg-orange-50 dark:bg-orange-950/20">
+                <span className="font-medium text-orange-600">25–29.9</span>
+                <br />
+                Overweight
+              </div>
+              <div className="p-1 rounded bg-red-50 dark:bg-red-950/20">
+                <span className="font-medium text-red-600">&ge;30</span>
+                <br />
+                Obese
+              </div>
             </div>
           </CardContent>
         )}
@@ -196,7 +255,9 @@ export function BodyMeasurementTracker({ measurements }: BodyMeasurementTrackerP
         </CardHeader>
         <CardContent>
           {sorted.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-4">No measurements recorded.</p>
+            <p className="text-sm text-muted-foreground text-center py-4">
+              No measurements recorded.
+            </p>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-xs">
@@ -218,7 +279,9 @@ export function BodyMeasurementTracker({ measurements }: BodyMeasurementTrackerP
                       <td className="text-right py-2 px-1">
                         {m.bmi ? (
                           <span className={getBMICategory(m.bmi).color}>{m.bmi.toFixed(1)}</span>
-                        ) : "—"}
+                        ) : (
+                          "—"
+                        )}
                       </td>
                       <td className="text-right py-2 px-1">{m.body_fat_pct ?? "—"}</td>
                       <td className="text-right py-2 px-1">{m.waist_cm ?? "—"}</td>

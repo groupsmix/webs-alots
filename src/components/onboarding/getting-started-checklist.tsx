@@ -1,17 +1,23 @@
 "use client";
 
 import {
-  Settings, Stethoscope, UserCog, Clock, Palette,
-  CheckCircle2, Circle, ChevronDown, ChevronUp, Rocket,
-  RotateCcw, X,
+  Settings,
+  Stethoscope,
+  UserCog,
+  Clock,
+  Palette,
+  CheckCircle2,
+  Circle,
+  ChevronDown,
+  ChevronUp,
+  Rocket,
+  RotateCcw,
+  X,
 } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  ONBOARDING_STEPS,
-  type OnboardingStepId,
-} from "@/lib/data/client/onboarding";
+import { ONBOARDING_STEPS, type OnboardingStepId } from "@/lib/data/client/onboarding";
 
 const STEP_ICONS: Record<OnboardingStepId, React.ComponentType<{ className?: string }>> = {
   clinic_profile: Settings,
@@ -91,7 +97,9 @@ export function GettingStartedChecklist({
         {/* Progress bar */}
         <div className="mt-2">
           <div className="flex items-center justify-between text-[10px] text-muted-foreground mb-1">
-            <span>{completedCount} of {totalSteps} steps</span>
+            <span>
+              {completedCount} of {totalSteps} steps
+            </span>
             <span>{progressPercent}%</span>
           </div>
           <div className="h-1.5 bg-muted rounded-full overflow-hidden">
@@ -114,9 +122,7 @@ export function GettingStartedChecklist({
                   key={step.id}
                   href={step.href}
                   className={`flex items-center gap-2.5 rounded-lg px-2 py-1.5 text-xs transition-colors group ${
-                    isCompleted
-                      ? "text-muted-foreground"
-                      : "text-foreground hover:bg-primary/5"
+                    isCompleted ? "text-muted-foreground" : "text-foreground hover:bg-primary/5"
                   }`}
                 >
                   {isCompleted ? (
@@ -124,7 +130,9 @@ export function GettingStartedChecklist({
                   ) : (
                     <Circle className="h-4 w-4 text-muted-foreground/50 group-hover:text-primary shrink-0" />
                   )}
-                  <Icon className={`h-3.5 w-3.5 shrink-0 ${isCompleted ? "text-muted-foreground/50" : "text-muted-foreground"}`} />
+                  <Icon
+                    className={`h-3.5 w-3.5 shrink-0 ${isCompleted ? "text-muted-foreground/50" : "text-muted-foreground"}`}
+                  />
                   <span className={isCompleted ? "line-through" : ""}>{step.title}</span>
                 </Link>
               );

@@ -87,9 +87,7 @@ export async function fetchRows<T>(
     tenantClinicId?: string;
   },
 ): Promise<T[]> {
-  const supabase = opts?.tenantClinicId
-    ? createTenantClient(opts.tenantClinicId)
-    : createClient();
+  const supabase = opts?.tenantClinicId ? createTenantClient(opts.tenantClinicId) : createClient();
   let q = supabase.from(table).select(opts?.select ?? "*");
   if (opts?.eq) {
     for (const [col, val] of opts.eq) {
@@ -124,7 +122,8 @@ interface LookupCache {
 let _lookupCache: Map<string, LookupCache> = new Map();
 
 /** Expose the current user map for internal mappers (read-only). */
-export let _activeUserMap: Map<string, { name: string; phone: string; email: string }> | null = null;
+export let _activeUserMap: Map<string, { name: string; phone: string; email: string }> | null =
+  null;
 export let _activeServiceMap: Map<string, { name: string; price: number }> | null = null;
 
 export async function ensureLookups(clinicId: string): Promise<void> {
@@ -140,10 +139,9 @@ export async function ensureLookups(clinicId: string): Promise<void> {
     supabase.from("services").select("id, name, price").eq("clinic_id", clinicId),
   ]);
   const userMap = new Map(
-    ((usersRes.data ?? []) as { id: string; name: string; phone: string; email: string }[]).map((u) => [
-      u.id,
-      { name: u.name, phone: u.phone ?? "", email: u.email ?? "" },
-    ]),
+    ((usersRes.data ?? []) as { id: string; name: string; phone: string; email: string }[]).map(
+      (u) => [u.id, { name: u.name, phone: u.phone ?? "", email: u.email ?? "" }],
+    ),
   );
   const serviceMap = new Map(
     ((servicesRes.data ?? []) as { id: string; name: string; price: number }[]).map((s) => [

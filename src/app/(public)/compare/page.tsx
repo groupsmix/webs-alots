@@ -30,8 +30,8 @@ export default function ComparePage() {
               Oltigo vs la concurrence
             </h1>
             <p className="mx-auto mt-4 max-w-2xl text-lg text-gray-600">
-              Découvrez pourquoi Oltigo est la solution la plus complète pour
-              les professionnels de santé au Maroc.
+              Découvrez pourquoi Oltigo est la solution la plus complète pour les professionnels de
+              santé au Maroc.
             </p>
           </div>
 

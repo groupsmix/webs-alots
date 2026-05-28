@@ -1,8 +1,6 @@
 "use client";
 
-import {
-  Wind, Plus, Save, Activity,
-} from "lucide-react";
+import { Wind, Plus, Save, Activity } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
@@ -12,14 +10,23 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PageLoader } from "@/components/ui/page-loader";
-import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { getCurrentUser } from "@/lib/data/client";
 import {
-  fetchSpirometryRecords, createSpirometryRecord,
-  fetchRespiratoryTests, createRespiratoryTest,
-  type SpirometryRecordView, type RespiratoryTestView,
+  fetchSpirometryRecords,
+  createSpirometryRecord,
+  fetchRespiratoryTests,
+  createRespiratoryTest,
+  type SpirometryRecordView,
+  type RespiratoryTestView,
 } from "@/lib/data/specialists";
 
 function spirometryInterpretation(fev1FvcRatio: number | null): string {
@@ -39,35 +46,47 @@ export default function PulmonologyPage() {
   const [showTestForm, setShowTestForm] = useState(false);
 
   const [spiroForm, setSpiroForm] = useState({
-    fvc: "", fev1: "", pef: "", interpretation: "", testQuality: "good", notes: "",
+    fvc: "",
+    fev1: "",
+    pef: "",
+    interpretation: "",
+    testQuality: "good",
+    notes: "",
   });
   const [testForm, setTestForm] = useState({
-    testType: "chest_xray", results: {} as Record<string, string>,
-    interpretation: "", notes: "",
+    testType: "chest_xray",
+    results: {} as Record<string, string>,
+    interpretation: "",
+    notes: "",
   });
 
   useEffect(() => {
     const controller = new AbortController();
     async function load() {
-    const user = await getCurrentUser();
+      const user = await getCurrentUser();
       if (controller.signal.aborted) return;
-    if (!user?.clinic_id) { setLoading(false); return; }
-    const [s, r] = await Promise.all([
-      fetchSpirometryRecords(user.clinic_id),
-      fetchRespiratoryTests(user.clinic_id),
-    ]);
+      if (!user?.clinic_id) {
+        setLoading(false);
+        return;
+      }
+      const [s, r] = await Promise.all([
+        fetchSpirometryRecords(user.clinic_id),
+        fetchRespiratoryTests(user.clinic_id),
+      ]);
       if (controller.signal.aborted) return;
-    setSpirometry(s);
-    setRespTests(r);
-    setLoading(false);
-  }
+      setSpirometry(s);
+      setRespTests(r);
+      setLoading(false);
+    }
     load().catch((err) => {
       if (!controller.signal.aborted) {
         setError(err instanceof Error ? err : new Error(String(err)));
         setLoading(false);
       }
     });
-    return () => { controller.abort(); };
+    return () => {
+      controller.abort();
+    };
   }, []);
 
   if (loading) {
@@ -77,7 +96,9 @@ export default function PulmonologyPage() {
   if (error) {
     return (
       <div className="p-8 text-center">
-        <p className="text-red-600 font-medium">Failed to load data. Please try refreshing the page.</p>
+        <p className="text-red-600 font-medium">
+          Failed to load data. Please try refreshing the page.
+        </p>
         {error.message && <p className="text-sm text-muted-foreground mt-2">{error.message}</p>}
       </div>
     );
@@ -90,23 +111,43 @@ export default function PulmonologyPage() {
     const fev1 = spiroForm.fev1 ? parseFloat(spiroForm.fev1) : undefined;
     const ratio = fvc && fev1 ? parseFloat((fev1 / fvc).toFixed(2)) : undefined;
     const newId = await createSpirometryRecord({
-      clinic_id: user.clinic_id, patient_id: user.id, doctor_id: user.id,
-      fvc, fev1, fev1_fvc_ratio: ratio,
+      clinic_id: user.clinic_id,
+      patient_id: user.id,
+      doctor_id: user.id,
+      fvc,
+      fev1,
+      fev1_fvc_ratio: ratio,
       pef: spiroForm.pef ? parseFloat(spiroForm.pef) : undefined,
-      interpretation: spiroForm.interpretation, test_quality: spiroForm.testQuality,
+      interpretation: spiroForm.interpretation,
+      test_quality: spiroForm.testQuality,
       notes: spiroForm.notes,
     });
     if (newId) {
-      setSpirometry((prev) => [{
-        id: newId, patientId: user.id, patientName: "",
-        testDate: new Date().toISOString().split("T")[0],
-        fvc: fvc ?? null, fev1: fev1 ?? null, fev1FvcRatio: ratio ?? null,
-        pef: spiroForm.pef ? parseFloat(spiroForm.pef) : null,
-        interpretation: spiroForm.interpretation, testQuality: spiroForm.testQuality,
-        notes: spiroForm.notes,
-      }, ...prev]);
+      setSpirometry((prev) => [
+        {
+          id: newId,
+          patientId: user.id,
+          patientName: "",
+          testDate: new Date().toISOString().split("T")[0],
+          fvc: fvc ?? null,
+          fev1: fev1 ?? null,
+          fev1FvcRatio: ratio ?? null,
+          pef: spiroForm.pef ? parseFloat(spiroForm.pef) : null,
+          interpretation: spiroForm.interpretation,
+          testQuality: spiroForm.testQuality,
+          notes: spiroForm.notes,
+        },
+        ...prev,
+      ]);
     }
-    setSpiroForm({ fvc: "", fev1: "", pef: "", interpretation: "", testQuality: "good", notes: "" });
+    setSpiroForm({
+      fvc: "",
+      fev1: "",
+      pef: "",
+      interpretation: "",
+      testQuality: "good",
+      notes: "",
+    });
     setShowSpiroForm(false);
   };
 
@@ -114,17 +155,27 @@ export default function PulmonologyPage() {
     const user = await getCurrentUser();
     if (!user?.clinic_id) return;
     const newId = await createRespiratoryTest({
-      clinic_id: user.clinic_id, patient_id: user.id, doctor_id: user.id,
-      test_type: testForm.testType, results: testForm.results,
-      interpretation: testForm.interpretation, notes: testForm.notes,
+      clinic_id: user.clinic_id,
+      patient_id: user.id,
+      doctor_id: user.id,
+      test_type: testForm.testType,
+      results: testForm.results,
+      interpretation: testForm.interpretation,
+      notes: testForm.notes,
     });
     if (newId) {
-      setRespTests((prev) => [{
-        id: newId, patientId: user.id,
-        testDate: new Date().toISOString().split("T")[0],
-        testType: testForm.testType, results: testForm.results,
-        interpretation: testForm.interpretation, notes: testForm.notes,
-      }, ...prev]);
+      setRespTests((prev) => [
+        {
+          id: newId,
+          patientId: user.id,
+          testDate: new Date().toISOString().split("T")[0],
+          testType: testForm.testType,
+          results: testForm.results,
+          interpretation: testForm.interpretation,
+          notes: testForm.notes,
+        },
+        ...prev,
+      ]);
     }
     setTestForm({ testType: "chest_xray", results: {}, interpretation: "", notes: "" });
     setShowTestForm(false);
@@ -132,7 +183,9 @@ export default function PulmonologyPage() {
 
   return (
     <div>
-      <Breadcrumb items={[{ label: "Doctor", href: "/doctor/dashboard" }, { label: "Pulmonology" }]} />
+      <Breadcrumb
+        items={[{ label: "Doctor", href: "/doctor/dashboard" }, { label: "Pulmonology" }]}
+      />
       <h1 className="text-2xl font-bold mb-6">Pulmonology</h1>
 
       <Tabs defaultValue="spirometry">
@@ -149,10 +202,12 @@ export default function PulmonologyPage() {
           </div>
 
           {spirometry.length === 0 ? (
-            <Card><CardContent className="py-8 text-center">
-              <Wind className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
-              <p className="text-sm text-muted-foreground">No spirometry records.</p>
-            </CardContent></Card>
+            <Card>
+              <CardContent className="py-8 text-center">
+                <Wind className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
+                <p className="text-sm text-muted-foreground">No spirometry records.</p>
+              </CardContent>
+            </Card>
           ) : (
             <div className="space-y-3">
               {spirometry.map((s) => (
@@ -190,7 +245,11 @@ export default function PulmonologyPage() {
                         <p className="text-lg font-bold">{s.pef?.toFixed(1) ?? "—"}</p>
                       </div>
                     </div>
-                    {s.interpretation && <p className="text-sm"><span className="font-medium">Interpretation:</span> {s.interpretation}</p>}
+                    {s.interpretation && (
+                      <p className="text-sm">
+                        <span className="font-medium">Interpretation:</span> {s.interpretation}
+                      </p>
+                    )}
                     {s.notes && <p className="text-sm text-muted-foreground mt-1">{s.notes}</p>}
                   </CardContent>
                 </Card>
@@ -207,10 +266,12 @@ export default function PulmonologyPage() {
           </div>
 
           {respTests.length === 0 ? (
-            <Card><CardContent className="py-8 text-center">
-              <Activity className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
-              <p className="text-sm text-muted-foreground">No respiratory tests recorded.</p>
-            </CardContent></Card>
+            <Card>
+              <CardContent className="py-8 text-center">
+                <Activity className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
+                <p className="text-sm text-muted-foreground">No respiratory tests recorded.</p>
+              </CardContent>
+            </Card>
           ) : (
             <div className="space-y-3">
               {respTests.map((t) => (
@@ -243,35 +304,59 @@ export default function PulmonologyPage() {
       {/* Spirometry Form */}
       <Dialog open={showSpiroForm} onOpenChange={setShowSpiroForm}>
         <DialogContent className="max-w-md">
-          <DialogHeader><DialogTitle>Add Spirometry Record</DialogTitle></DialogHeader>
+          <DialogHeader>
+            <DialogTitle>Add Spirometry Record</DialogTitle>
+          </DialogHeader>
           <div className="space-y-4 mt-4">
             <div className="grid grid-cols-3 gap-3">
               <div className="space-y-2">
                 <Label>FVC (L)</Label>
-                <Input type="number" step="0.01" placeholder="4.50" value={spiroForm.fvc}
-                  onChange={(e) => setSpiroForm((p) => ({ ...p, fvc: e.target.value }))} />
+                <Input
+                  type="number"
+                  step="0.01"
+                  placeholder="4.50"
+                  value={spiroForm.fvc}
+                  onChange={(e) => setSpiroForm((p) => ({ ...p, fvc: e.target.value }))}
+                />
               </div>
               <div className="space-y-2">
                 <Label>FEV1 (L)</Label>
-                <Input type="number" step="0.01" placeholder="3.60" value={spiroForm.fev1}
-                  onChange={(e) => setSpiroForm((p) => ({ ...p, fev1: e.target.value }))} />
+                <Input
+                  type="number"
+                  step="0.01"
+                  placeholder="3.60"
+                  value={spiroForm.fev1}
+                  onChange={(e) => setSpiroForm((p) => ({ ...p, fev1: e.target.value }))}
+                />
               </div>
               <div className="space-y-2">
                 <Label>PEF (L/s)</Label>
-                <Input type="number" step="0.1" placeholder="9.0" value={spiroForm.pef}
-                  onChange={(e) => setSpiroForm((p) => ({ ...p, pef: e.target.value }))} />
+                <Input
+                  type="number"
+                  step="0.1"
+                  placeholder="9.0"
+                  value={spiroForm.pef}
+                  onChange={(e) => setSpiroForm((p) => ({ ...p, pef: e.target.value }))}
+                />
               </div>
             </div>
             {spiroForm.fvc && spiroForm.fev1 && (
               <div className="rounded-lg bg-muted/50 p-2 text-center">
                 <p className="text-xs text-muted-foreground">Calculated FEV1/FVC Ratio</p>
-                <p className="text-lg font-bold">{(parseFloat(spiroForm.fev1) / parseFloat(spiroForm.fvc)).toFixed(2)}</p>
+                <p className="text-lg font-bold">
+                  {(parseFloat(spiroForm.fev1) / parseFloat(spiroForm.fvc)).toFixed(2)}
+                </p>
               </div>
             )}
             <div className="space-y-2">
               <Label>Test Quality</Label>
-              <Select value={spiroForm.testQuality} onValueChange={(v) => setSpiroForm((p) => ({ ...p, testQuality: v }))}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+              <Select
+                value={spiroForm.testQuality}
+                onValueChange={(v) => setSpiroForm((p) => ({ ...p, testQuality: v }))}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="good">Good</SelectItem>
                   <SelectItem value="acceptable">Acceptable</SelectItem>
@@ -281,17 +366,27 @@ export default function PulmonologyPage() {
             </div>
             <div className="space-y-2">
               <Label>Interpretation</Label>
-              <Textarea placeholder="Clinical interpretation..." value={spiroForm.interpretation}
-                onChange={(e) => setSpiroForm((p) => ({ ...p, interpretation: e.target.value }))} />
+              <Textarea
+                placeholder="Clinical interpretation..."
+                value={spiroForm.interpretation}
+                onChange={(e) => setSpiroForm((p) => ({ ...p, interpretation: e.target.value }))}
+              />
             </div>
             <div className="space-y-2">
               <Label>Notes</Label>
-              <Textarea placeholder="Additional notes..." value={spiroForm.notes}
-                onChange={(e) => setSpiroForm((p) => ({ ...p, notes: e.target.value }))} />
+              <Textarea
+                placeholder="Additional notes..."
+                value={spiroForm.notes}
+                onChange={(e) => setSpiroForm((p) => ({ ...p, notes: e.target.value }))}
+              />
             </div>
             <div className="flex gap-2 justify-end">
-              <Button variant="outline" onClick={() => setShowSpiroForm(false)}>Cancel</Button>
-              <Button onClick={handleAddSpiro}><Save className="h-4 w-4 mr-1" /> Save</Button>
+              <Button variant="outline" onClick={() => setShowSpiroForm(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleAddSpiro}>
+                <Save className="h-4 w-4 mr-1" /> Save
+              </Button>
             </div>
           </div>
         </DialogContent>
@@ -300,12 +395,19 @@ export default function PulmonologyPage() {
       {/* Respiratory Test Form */}
       <Dialog open={showTestForm} onOpenChange={setShowTestForm}>
         <DialogContent className="max-w-md">
-          <DialogHeader><DialogTitle>Add Respiratory Test</DialogTitle></DialogHeader>
+          <DialogHeader>
+            <DialogTitle>Add Respiratory Test</DialogTitle>
+          </DialogHeader>
           <div className="space-y-4 mt-4">
             <div className="space-y-2">
               <Label>Test Type</Label>
-              <Select value={testForm.testType} onValueChange={(v) => setTestForm((p) => ({ ...p, testType: v, results: {} }))}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+              <Select
+                value={testForm.testType}
+                onValueChange={(v) => setTestForm((p) => ({ ...p, testType: v, results: {} }))}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="chest_xray">Chest X-Ray</SelectItem>
                   <SelectItem value="ct_scan">CT Scan</SelectItem>
@@ -319,25 +421,42 @@ export default function PulmonologyPage() {
             <div className="space-y-2">
               <Label>Results</Label>
               {["Finding 1", "Finding 2", "Finding 3"].map((f) => (
-                <Input key={f} placeholder={f} value={testForm.results[f] ?? ""}
-                  onChange={(e) => setTestForm((p) => ({
-                    ...p, results: { ...p.results, [f]: e.target.value },
-                  }))} />
+                <Input
+                  key={f}
+                  placeholder={f}
+                  value={testForm.results[f] ?? ""}
+                  onChange={(e) =>
+                    setTestForm((p) => ({
+                      ...p,
+                      results: { ...p.results, [f]: e.target.value },
+                    }))
+                  }
+                />
               ))}
             </div>
             <div className="space-y-2">
               <Label>Interpretation</Label>
-              <Textarea placeholder="Interpretation..." value={testForm.interpretation}
-                onChange={(e) => setTestForm((p) => ({ ...p, interpretation: e.target.value }))} />
+              <Textarea
+                placeholder="Interpretation..."
+                value={testForm.interpretation}
+                onChange={(e) => setTestForm((p) => ({ ...p, interpretation: e.target.value }))}
+              />
             </div>
             <div className="space-y-2">
               <Label>Notes</Label>
-              <Textarea placeholder="Notes..." value={testForm.notes}
-                onChange={(e) => setTestForm((p) => ({ ...p, notes: e.target.value }))} />
+              <Textarea
+                placeholder="Notes..."
+                value={testForm.notes}
+                onChange={(e) => setTestForm((p) => ({ ...p, notes: e.target.value }))}
+              />
             </div>
             <div className="flex gap-2 justify-end">
-              <Button variant="outline" onClick={() => setShowTestForm(false)}>Cancel</Button>
-              <Button onClick={handleAddTest}><Save className="h-4 w-4 mr-1" /> Save</Button>
+              <Button variant="outline" onClick={() => setShowTestForm(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleAddTest}>
+                <Save className="h-4 w-4 mr-1" /> Save
+              </Button>
             </div>
           </div>
         </DialogContent>

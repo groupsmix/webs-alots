@@ -82,7 +82,11 @@ describe("profile-header-hmac", () => {
       const fallbackSig = await signWithRawKey("fallback_secret_key", profile, iat);
 
       // Case A: no key configured — must reject.
-      let result = await verifyProfileHeader({ ...profile, signature: fallbackSig, iat: String(iat) });
+      let result = await verifyProfileHeader({
+        ...profile,
+        signature: fallbackSig,
+        iat: String(iat),
+      });
       expect(result).toBeNull();
 
       // Case B: a real key is configured — must reject (key mismatch).
@@ -117,7 +121,11 @@ describe("profile-header-hmac", () => {
       process.env.PROFILE_HEADER_HMAC_KEY = "profile-key";
       process.env.CRON_SECRET = "cron-key";
 
-      const verified = await verifyProfileHeader({ ...profile, signature: cronSig, iat: String(iat) });
+      const verified = await verifyProfileHeader({
+        ...profile,
+        signature: cronSig,
+        iat: String(iat),
+      });
       expect(verified).toBeNull();
     });
 
@@ -176,13 +184,31 @@ describe("profile-header-hmac", () => {
       });
 
       expect(
-        await verifyProfileHeader({ id: null, role: "doctor", clinic_id: null, signature: signed!.sig, iat: String(signed!.iat) }),
+        await verifyProfileHeader({
+          id: null,
+          role: "doctor",
+          clinic_id: null,
+          signature: signed!.sig,
+          iat: String(signed!.iat),
+        }),
       ).toBeNull();
       expect(
-        await verifyProfileHeader({ id: "p", role: null, clinic_id: null, signature: signed!.sig, iat: String(signed!.iat) }),
+        await verifyProfileHeader({
+          id: "p",
+          role: null,
+          clinic_id: null,
+          signature: signed!.sig,
+          iat: String(signed!.iat),
+        }),
       ).toBeNull();
       expect(
-        await verifyProfileHeader({ id: "p", role: "doctor", clinic_id: null, signature: null, iat: String(signed!.iat) }),
+        await verifyProfileHeader({
+          id: "p",
+          role: "doctor",
+          clinic_id: null,
+          signature: null,
+          iat: String(signed!.iat),
+        }),
       ).toBeNull();
     });
   });

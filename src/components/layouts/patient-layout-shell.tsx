@@ -53,11 +53,7 @@ const navItems: NavItem[] = [
   { href: "/patient/payment-plan", labelKey: "patientNav.paymentPlan", icon: CreditCardIcon },
 ];
 
-export default function PatientLayoutShell({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function PatientLayoutShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [locale] = useLocale();
@@ -73,7 +69,11 @@ export default function PatientLayoutShell({
     { href: "/patient/dashboard", label: t(locale, "patientNav.dashboard"), icon: LayoutDashboard },
     { href: "/patient/appointments", label: t(locale, "patientNav.appointments"), icon: Calendar },
     { href: "/patient/prescriptions", label: t(locale, "patientNav.prescriptions"), icon: Pill },
-    { href: "/patient/medical-history", label: t(locale, "patientNav.medicalHistory"), icon: History },
+    {
+      href: "/patient/medical-history",
+      label: t(locale, "patientNav.medicalHistory"),
+      icon: History,
+    },
   ];
 
   return (
@@ -133,41 +133,46 @@ export default function PatientLayoutShell({
         {/* Mobile Menu Overlay — A11Y-01: Escape key + focus trapping */}
         {mobileMenuOpen && (
           <MobileMenuOverlay onClose={() => setMobileMenuOpen(false)}>
-              <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center gap-2">
-                  <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
-                    <Heart className="h-4 w-4 text-primary-foreground" />
-                  </div>
-                  <h2 className="text-lg font-semibold">{t(locale, "patientNav.title")}</h2>
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-2">
+                <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
+                  <Heart className="h-4 w-4 text-primary-foreground" />
                 </div>
-                <Button variant="ghost" size="sm" onClick={() => setMobileMenuOpen(false)} aria-label="Fermer le menu">
-                  <X className="h-5 w-5" />
-                </Button>
+                <h2 className="text-lg font-semibold">{t(locale, "patientNav.title")}</h2>
               </div>
-              <nav className="space-y-1">
-                {navItems.map((item) => {
-                  const isActive = pathname === item.href;
-                  return (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      onClick={() => setMobileMenuOpen(false)}
-                      aria-current={isActive ? "page" : undefined}
-                      className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors ${
-                        isActive
-                          ? "bg-primary/10 text-primary font-medium"
-                          : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                      }`}
-                    >
-                      <item.icon className="h-4 w-4" />
-                      {t(locale, item.labelKey)}
-                    </Link>
-                  );
-                })}
-              </nav>
-              <div className="mt-6 pt-4 border-t">
-                <SignOutButton />
-              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setMobileMenuOpen(false)}
+                aria-label="Fermer le menu"
+              >
+                <X className="h-5 w-5" />
+              </Button>
+            </div>
+            <nav className="space-y-1">
+              {navItems.map((item) => {
+                const isActive = pathname === item.href;
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    onClick={() => setMobileMenuOpen(false)}
+                    aria-current={isActive ? "page" : undefined}
+                    className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors ${
+                      isActive
+                        ? "bg-primary/10 text-primary font-medium"
+                        : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                    }`}
+                  >
+                    <item.icon className="h-4 w-4" />
+                    {t(locale, item.labelKey)}
+                  </Link>
+                );
+              })}
+            </nav>
+            <div className="mt-6 pt-4 border-t">
+              <SignOutButton />
+            </div>
           </MobileMenuOverlay>
         )}
 
@@ -178,10 +183,7 @@ export default function PatientLayoutShell({
       </div>
 
       {/* Mobile bottom tab bar */}
-      <MobileTabBar
-        tabs={patientMobileTabs}
-        onMoreClick={() => setMobileMenuOpen(true)}
-      />
+      <MobileTabBar tabs={patientMobileTabs} onMoreClick={() => setMobileMenuOpen(true)} />
 
       <SessionTimeoutWarning onLogout={() => signOut()} />
     </div>

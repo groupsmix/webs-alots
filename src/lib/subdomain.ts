@@ -16,10 +16,7 @@
  *   "localhost"              → null
  *   "www.example.com"        → null         ("www" is ignored)
  */
-export function extractSubdomain(
-  hostname: string,
-  rootDomain?: string,
-): string | null {
+export function extractSubdomain(hostname: string, rootDomain?: string): string | null {
   // Strip port if present
   const host = hostname.split(":")[0];
 
@@ -46,7 +43,16 @@ export function extractSubdomain(
   // Audit 8.3 — Reserved subdomains that must not be resolved as tenant
   // clinics. "staging" in particular would conflict with the staging
   // environment route (staging.oltigo.com) defined in wrangler.toml.
-  const RESERVED_SUBDOMAINS = new Set(["staging", "api", "admin", "app", "mail", "ftp", "ns1", "ns2"]);
+  const RESERVED_SUBDOMAINS = new Set([
+    "staging",
+    "api",
+    "admin",
+    "app",
+    "mail",
+    "ftp",
+    "ns1",
+    "ns2",
+  ]);
   if (RESERVED_SUBDOMAINS.has(sub)) return null;
 
   return sub;
@@ -55,9 +61,6 @@ export function extractSubdomain(
 /**
  * Check whether the current hostname is the root domain (no subdomain).
  */
-export function isRootDomain(
-  hostname: string,
-  rootDomain?: string,
-): boolean {
+export function isRootDomain(hostname: string, rootDomain?: string): boolean {
   return extractSubdomain(hostname, rootDomain) === null;
 }

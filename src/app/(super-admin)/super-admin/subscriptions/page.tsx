@@ -1,9 +1,21 @@
 "use client";
 
 import {
-  Search, Filter, Eye, Send, CreditCard, Receipt,
-  CheckCircle, Clock, AlertTriangle, Download,
-  ChevronDown, ChevronUp, Stethoscope, Crown, Pill,
+  Search,
+  Filter,
+  Eye,
+  Send,
+  CreditCard,
+  Receipt,
+  CheckCircle,
+  Clock,
+  AlertTriangle,
+  Download,
+  ChevronDown,
+  ChevronUp,
+  Stethoscope,
+  Crown,
+  Pill,
 } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
 import { Badge } from "@/components/ui/badge";
@@ -11,16 +23,17 @@ import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { CardSkeleton, TableSkeleton } from "@/components/ui/loading-skeleton";
 import { Separator } from "@/components/ui/separator";
-import {
-  systemTypeLabels,
-  tierColors,
-  statusColors,
-} from "@/lib/config/pricing";
+import { systemTypeLabels, tierColors, statusColors } from "@/lib/config/pricing";
 import { logger } from "@/lib/logger";
 import {
   fetchClientSubscriptions,
@@ -62,14 +75,17 @@ export default function SubscriptionsPage() {
   useEffect(() => {
     const controller = new AbortController();
     loadSubscriptions();
-    return () => { controller.abort(); };
+    return () => {
+      controller.abort();
+    };
   }, [loadSubscriptions]);
 
   const stats = {
     active: subscriptions.filter((s) => s.status === "active").length,
     trial: subscriptions.filter((s) => s.status === "trial").length,
     pastDue: subscriptions.filter((s) => s.status === "past_due").length,
-    cancelled: subscriptions.filter((s) => s.status === "cancelled" || s.status === "suspended").length,
+    cancelled: subscriptions.filter((s) => s.status === "cancelled" || s.status === "suspended")
+      .length,
     total: subscriptions.length,
   };
   const mrr = subscriptions
@@ -90,10 +106,14 @@ export default function SubscriptionsPage() {
 
   const statusIcon = (status: string) => {
     switch (status) {
-      case "active": return <CheckCircle className="h-3.5 w-3.5 text-green-600" />;
-      case "trial": return <Clock className="h-3.5 w-3.5 text-blue-600" />;
-      case "past_due": return <AlertTriangle className="h-3.5 w-3.5 text-orange-600" />;
-      default: return <AlertTriangle className="h-3.5 w-3.5 text-red-600" />;
+      case "active":
+        return <CheckCircle className="h-3.5 w-3.5 text-green-600" />;
+      case "trial":
+        return <Clock className="h-3.5 w-3.5 text-blue-600" />;
+      case "past_due":
+        return <AlertTriangle className="h-3.5 w-3.5 text-orange-600" />;
+      default:
+        return <AlertTriangle className="h-3.5 w-3.5 text-red-600" />;
     }
   };
 
@@ -111,13 +131,17 @@ export default function SubscriptionsPage() {
   if (loading) {
     return (
       <div>
-        <Breadcrumb items={[
-          { label: "Super Admin", href: "/super-admin/dashboard" },
-          { label: "Subscriptions" },
-        ]} />
+        <Breadcrumb
+          items={[
+            { label: "Super Admin", href: "/super-admin/dashboard" },
+            { label: "Subscriptions" },
+          ]}
+        />
         <div className="mb-6">
           <h1 className="text-2xl font-bold">Gestion des abonnements</h1>
-          <p className="text-sm text-muted-foreground mt-1">Suivi des abonnements clients, facturation et paiements</p>
+          <p className="text-sm text-muted-foreground mt-1">
+            Suivi des abonnements clients, facturation et paiements
+          </p>
         </div>
         <CardSkeleton count={4} className="mb-6" />
         <TableSkeleton rows={6} columns={7} className="mt-4" />
@@ -127,10 +151,12 @@ export default function SubscriptionsPage() {
 
   return (
     <div>
-      <Breadcrumb items={[
-        { label: "Super Admin", href: "/super-admin/dashboard" },
-        { label: "Subscriptions" },
-      ]} />
+      <Breadcrumb
+        items={[
+          { label: "Super Admin", href: "/super-admin/dashboard" },
+          { label: "Subscriptions" },
+        ]}
+      />
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
           <h1 className="text-2xl font-bold">Gestion des abonnements</h1>
@@ -179,7 +205,9 @@ export default function SubscriptionsPage() {
               <span className="text-xs text-muted-foreground">Problèmes</span>
             </div>
             <p className="text-2xl font-bold text-red-600">{stats.pastDue + stats.cancelled}</p>
-            <p className="text-xs text-muted-foreground">{stats.pastDue} impayés, {stats.cancelled} annulés</p>
+            <p className="text-xs text-muted-foreground">
+              {stats.pastDue} impayés, {stats.cancelled} annulés
+            </p>
           </CardContent>
         </Card>
       </div>
@@ -188,12 +216,23 @@ export default function SubscriptionsPage() {
       <div className="flex flex-col sm:flex-row gap-3 mb-4">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input placeholder="Rechercher par nom de client..." className="pl-10" value={search} onChange={(e) => setSearch(e.target.value)} />
+          <Input
+            placeholder="Rechercher par nom de client..."
+            className="pl-10"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
         </div>
         <div className="flex items-center gap-1">
           <Filter className="h-4 w-4 text-muted-foreground mr-1" />
           {(["all", "doctor", "dentist", "pharmacy"] as SystemFilter[]).map((s) => (
-            <Button key={s} variant={systemFilter === s ? "default" : "outline"} size="sm" onClick={() => setSystemFilter(s)} className="text-xs">
+            <Button
+              key={s}
+              variant={systemFilter === s ? "default" : "outline"}
+              size="sm"
+              onClick={() => setSystemFilter(s)}
+              className="text-xs"
+            >
               {s === "all" ? "Tous" : systemTypeLabels[s as SystemType]}
             </Button>
           ))}
@@ -201,14 +240,24 @@ export default function SubscriptionsPage() {
       </div>
 
       <div className="flex flex-wrap gap-2 mb-4">
-        {(["all", "active", "trial", "past_due", "suspended", "cancelled"] as StatusFilter[]).map((s) => (
-          <Button key={s} variant={statusFilter === s ? "default" : "outline"} size="sm" onClick={() => setStatusFilter(s)} className="text-xs">
-            {s === "all" ? "Tous" : statusLabel(s as ClientSubscription["status"])}
-            <Badge variant="secondary" className="ml-1 text-[10px] px-1">
-              {s === "all" ? subscriptions.length : subscriptions.filter((sub) => sub.status === s).length}
-            </Badge>
-          </Button>
-        ))}
+        {(["all", "active", "trial", "past_due", "suspended", "cancelled"] as StatusFilter[]).map(
+          (s) => (
+            <Button
+              key={s}
+              variant={statusFilter === s ? "default" : "outline"}
+              size="sm"
+              onClick={() => setStatusFilter(s)}
+              className="text-xs"
+            >
+              {s === "all" ? "Tous" : statusLabel(s as ClientSubscription["status"])}
+              <Badge variant="secondary" className="ml-1 text-[10px] px-1">
+                {s === "all"
+                  ? subscriptions.length
+                  : subscriptions.filter((sub) => sub.status === s).length}
+              </Badge>
+            </Button>
+          ),
+        )}
       </div>
 
       {/* Subscriptions Table */}
@@ -240,24 +289,32 @@ export default function SubscriptionsPage() {
                   const isInvoicesOpen = expandedInvoices === sub.id;
 
                   return (
-                    <tr key={sub.id} className="border-b last:border-0 hover:bg-muted/50" >
+                    <tr key={sub.id} className="border-b last:border-0 hover:bg-muted/50">
                       <td className="py-3 px-4">
                         <p className="font-medium">{sub.clinicName}</p>
-                        <p className="text-xs text-muted-foreground md:hidden">{systemTypeLabels[sub.systemType]}</p>
+                        <p className="text-xs text-muted-foreground md:hidden">
+                          {systemTypeLabels[sub.systemType]}
+                        </p>
                       </td>
                       <td className="py-3 px-4 hidden md:table-cell">
                         <div className="flex items-center gap-1.5">
                           <Icon className="h-3.5 w-3.5 text-muted-foreground" />
-                          <span className="text-muted-foreground">{systemTypeLabels[sub.systemType]}</span>
+                          <span className="text-muted-foreground">
+                            {systemTypeLabels[sub.systemType]}
+                          </span>
                         </div>
                       </td>
                       <td className="py-3 px-4">
-                        <Badge className={`text-[10px] ${tierColors[sub.tierSlug]}`}>{sub.tierName}</Badge>
+                        <Badge className={`text-[10px] ${tierColors[sub.tierSlug]}`}>
+                          {sub.tierName}
+                        </Badge>
                       </td>
                       <td className="py-3 px-4 hidden lg:table-cell text-muted-foreground">
                         {sub.billingCycle === "monthly" ? "Mensuel" : "Annuel"}
                       </td>
-                      <td className="py-3 px-4 font-medium">{sub.amount.toLocaleString()} {sub.currency}</td>
+                      <td className="py-3 px-4 font-medium">
+                        {sub.amount.toLocaleString()} {sub.currency}
+                      </td>
                       <td className="py-3 px-4 hidden lg:table-cell text-muted-foreground text-xs">
                         {sub.currentPeriodStart} — {sub.currentPeriodEnd}
                       </td>
@@ -271,17 +328,40 @@ export default function SubscriptionsPage() {
                       </td>
                       <td className="py-3 px-4 text-right">
                         <div className="flex justify-end gap-1">
-                          <Button variant="ghost" size="sm" title="Détails" onClick={() => setDetailSub(sub)}>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            title="Détails"
+                            onClick={() => setDetailSub(sub)}
+                          >
                             <Eye className="h-3.5 w-3.5" />
                           </Button>
                           {sub.invoices.length > 0 && (
-                            <Button variant="ghost" size="sm" title="Factures" onClick={() => setExpandedInvoices(isInvoicesOpen ? null : sub.id)}>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              title="Factures"
+                              onClick={() => setExpandedInvoices(isInvoicesOpen ? null : sub.id)}
+                            >
                               <Receipt className="h-3.5 w-3.5" />
-                              {isInvoicesOpen ? <ChevronUp className="h-3 w-3 ml-0.5" /> : <ChevronDown className="h-3 w-3 ml-0.5" />}
+                              {isInvoicesOpen ? (
+                                <ChevronUp className="h-3 w-3 ml-0.5" />
+                              ) : (
+                                <ChevronDown className="h-3 w-3 ml-0.5" />
+                              )}
                             </Button>
                           )}
                           {(sub.status === "past_due" || sub.status === "suspended") && (
-                            <Button variant="ghost" size="sm" title="Envoyer rappel" className="text-orange-600" onClick={() => { setReminderSub(sub); setReminderOpen(true); }}>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              title="Envoyer rappel"
+                              className="text-orange-600"
+                              onClick={() => {
+                                setReminderSub(sub);
+                                setReminderOpen(true);
+                              }}
+                            >
                               <Send className="h-3.5 w-3.5" />
                             </Button>
                           )}
@@ -292,7 +372,9 @@ export default function SubscriptionsPage() {
                 })}
                 {filtered.length === 0 && (
                   <tr>
-                    <td colSpan={8} className="py-8 text-center text-muted-foreground">Aucun abonnement trouvé.</td>
+                    <td colSpan={8} className="py-8 text-center text-muted-foreground">
+                      Aucun abonnement trouvé.
+                    </td>
                   </tr>
                 )}
               </tbody>
@@ -300,34 +382,54 @@ export default function SubscriptionsPage() {
           </div>
 
           {/* Expanded Invoices */}
-          {expandedInvoices && (() => {
-            const sub = subscriptions.find((s) => s.id === expandedInvoices);
-            if (!sub) return null;
-            return (
-              <div className="border-t bg-muted/30 p-4">
-                <h4 className="text-sm font-semibold mb-3">Factures — {sub.clinicName}</h4>
-                <div className="space-y-2">
-                  {sub.invoices.map((inv) => (
-                    <div key={inv.id} className="flex items-center justify-between rounded-lg border bg-background p-3 text-sm">
-                      <div className="flex items-center gap-3">
-                        <span className="font-mono text-xs text-muted-foreground">{inv.id}</span>
-                        <span>{inv.date}</span>
-                        <span className="font-medium">{inv.amount.toLocaleString()} MAD</span>
+          {expandedInvoices &&
+            (() => {
+              const sub = subscriptions.find((s) => s.id === expandedInvoices);
+              if (!sub) return null;
+              return (
+                <div className="border-t bg-muted/30 p-4">
+                  <h4 className="text-sm font-semibold mb-3">Factures — {sub.clinicName}</h4>
+                  <div className="space-y-2">
+                    {sub.invoices.map((inv) => (
+                      <div
+                        key={inv.id}
+                        className="flex items-center justify-between rounded-lg border bg-background p-3 text-sm"
+                      >
+                        <div className="flex items-center gap-3">
+                          <span className="font-mono text-xs text-muted-foreground">{inv.id}</span>
+                          <span>{inv.date}</span>
+                          <span className="font-medium">{inv.amount.toLocaleString()} MAD</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Badge
+                            variant={
+                              inv.status === "paid"
+                                ? "success"
+                                : inv.status === "overdue"
+                                  ? "destructive"
+                                  : inv.status === "refunded"
+                                    ? "secondary"
+                                    : "warning"
+                            }
+                          >
+                            {inv.status === "paid"
+                              ? "Payé"
+                              : inv.status === "overdue"
+                                ? "Impayé"
+                                : inv.status === "refunded"
+                                  ? "Remboursé"
+                                  : "En attente"}
+                          </Badge>
+                          <Button variant="ghost" size="sm">
+                            <Download className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <Badge variant={inv.status === "paid" ? "success" : inv.status === "overdue" ? "destructive" : inv.status === "refunded" ? "secondary" : "warning"}>
-                          {inv.status === "paid" ? "Payé" : inv.status === "overdue" ? "Impayé" : inv.status === "refunded" ? "Remboursé" : "En attente"}
-                        </Badge>
-                        <Button variant="ghost" size="sm">
-                          <Download className="h-3.5 w-3.5" />
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
-              </div>
-            );
-          })()}
+              );
+            })()}
         </CardContent>
       </Card>
 
@@ -343,15 +445,21 @@ export default function SubscriptionsPage() {
               <div className="grid grid-cols-2 gap-3 text-sm">
                 <div>
                   <span className="text-muted-foreground">Type :</span>{" "}
-                  <span className="font-medium capitalize">{systemTypeLabels[detailSub.systemType]}</span>
+                  <span className="font-medium capitalize">
+                    {systemTypeLabels[detailSub.systemType]}
+                  </span>
                 </div>
                 <div>
                   <span className="text-muted-foreground">Tier :</span>{" "}
-                  <Badge className={`text-[10px] ${tierColors[detailSub.tierSlug]}`}>{detailSub.tierName}</Badge>
+                  <Badge className={`text-[10px] ${tierColors[detailSub.tierSlug]}`}>
+                    {detailSub.tierName}
+                  </Badge>
                 </div>
                 <div>
                   <span className="text-muted-foreground">Montant :</span>{" "}
-                  <span className="font-medium">{detailSub.amount.toLocaleString()} {detailSub.currency}</span>
+                  <span className="font-medium">
+                    {detailSub.amount.toLocaleString()} {detailSub.currency}
+                  </span>
                 </div>
                 <div>
                   <span className="text-muted-foreground">Cycle :</span>{" "}
@@ -379,18 +487,19 @@ export default function SubscriptionsPage() {
                 <span className="text-sm text-muted-foreground">Statut :</span>
                 <div className="flex items-center gap-1.5">
                   {statusIcon(detailSub.status)}
-                  <Badge className={`${statusColors[detailSub.status]}`}>{statusLabel(detailSub.status)}</Badge>
+                  <Badge className={`${statusColors[detailSub.status]}`}>
+                    {statusLabel(detailSub.status)}
+                  </Badge>
                 </div>
               </div>
               {detailSub.trialEndsAt && (
                 <p className="text-sm text-muted-foreground">
-                  Essai se termine le : <span className="font-medium text-foreground">{detailSub.trialEndsAt}</span>
+                  Essai se termine le :{" "}
+                  <span className="font-medium text-foreground">{detailSub.trialEndsAt}</span>
                 </p>
               )}
               {detailSub.cancelledAt && (
-                <p className="text-sm text-red-600">
-                  Annulé le : {detailSub.cancelledAt}
-                </p>
+                <p className="text-sm text-red-600">Annulé le : {detailSub.cancelledAt}</p>
               )}
               <Separator />
               <div>
@@ -398,15 +507,33 @@ export default function SubscriptionsPage() {
                 {detailSub.invoices.length > 0 ? (
                   <div className="space-y-2">
                     {detailSub.invoices.map((inv) => (
-                      <div key={inv.id} className="flex items-center justify-between text-sm rounded-lg border p-2">
+                      <div
+                        key={inv.id}
+                        className="flex items-center justify-between text-sm rounded-lg border p-2"
+                      >
                         <div>
-                          <span className="font-mono text-xs text-muted-foreground mr-2">{inv.id}</span>
+                          <span className="font-mono text-xs text-muted-foreground mr-2">
+                            {inv.id}
+                          </span>
                           <span>{inv.date}</span>
                         </div>
                         <div className="flex items-center gap-2">
                           <span className="font-medium">{inv.amount.toLocaleString()} MAD</span>
-                          <Badge variant={inv.status === "paid" ? "success" : inv.status === "overdue" ? "destructive" : "warning"} className="text-[10px]">
-                            {inv.status === "paid" ? "Payé" : inv.status === "overdue" ? "Impayé" : "En attente"}
+                          <Badge
+                            variant={
+                              inv.status === "paid"
+                                ? "success"
+                                : inv.status === "overdue"
+                                  ? "destructive"
+                                  : "warning"
+                            }
+                            className="text-[10px]"
+                          >
+                            {inv.status === "paid"
+                              ? "Payé"
+                              : inv.status === "overdue"
+                                ? "Impayé"
+                                : "En attente"}
                           </Badge>
                         </div>
                       </div>
@@ -418,7 +545,9 @@ export default function SubscriptionsPage() {
               </div>
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setDetailSub(null)}>Fermer</Button>
+              <Button variant="outline" onClick={() => setDetailSub(null)}>
+                Fermer
+              </Button>
             </DialogFooter>
           </DialogContent>
         )}
@@ -436,12 +565,22 @@ export default function SubscriptionsPage() {
             </DialogHeader>
             <div className="rounded-lg border p-4 bg-muted/50 space-y-2">
               <p className="text-sm font-medium">{reminderSub.clinicName}</p>
-              <p className="text-xs text-muted-foreground">Tier: {reminderSub.tierName} — {reminderSub.amount.toLocaleString()} {reminderSub.currency}</p>
+              <p className="text-xs text-muted-foreground">
+                Tier: {reminderSub.tierName} — {reminderSub.amount.toLocaleString()}{" "}
+                {reminderSub.currency}
+              </p>
               <p className="text-xs text-red-600">Statut: {statusLabel(reminderSub.status)}</p>
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setReminderOpen(false)}>Annuler</Button>
-              <Button onClick={() => { setReminderOpen(false); setReminderSub(null); }}>
+              <Button variant="outline" onClick={() => setReminderOpen(false)}>
+                Annuler
+              </Button>
+              <Button
+                onClick={() => {
+                  setReminderOpen(false);
+                  setReminderSub(null);
+                }}
+              >
                 <Send className="h-4 w-4 mr-1" />
                 Envoyer le rappel
               </Button>

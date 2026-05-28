@@ -23,13 +23,22 @@ export function FooterMinimal({ clinicName, template }: FooterProps) {
           © {year} {clinicName}
         </p>
         <nav aria-label="Footer navigation" className="flex items-center gap-4">
-          <Link href="/services" className="text-xs text-muted-foreground hover:text-foreground transition-colors">
+          <Link
+            href="/services"
+            className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+          >
             {t(locale, "public.services")}
           </Link>
-          <Link href="/book" className="text-xs text-muted-foreground hover:text-foreground transition-colors">
+          <Link
+            href="/book"
+            className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+          >
             {t(locale, "public.bookAppointment")}
           </Link>
-          <Link href="/contact" className="text-xs text-muted-foreground hover:text-foreground transition-colors">
+          <Link
+            href="/contact"
+            className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+          >
             {t(locale, "public.contact")}
           </Link>
         </nav>

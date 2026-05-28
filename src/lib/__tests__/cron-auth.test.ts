@@ -2,7 +2,9 @@ import { randomBytes } from "node:crypto";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { verifyCronSecret } from "../cron-auth";
 
-function createMockRequest(authHeader?: string): { headers: { get: (name: string) => string | null } } {
+function createMockRequest(authHeader?: string): {
+  headers: { get: (name: string) => string | null };
+} {
   return {
     headers: {
       get: (name: string) => {

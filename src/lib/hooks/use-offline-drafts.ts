@@ -40,7 +40,7 @@ export function useOfflineDrafts<T>(
     autoSaveMs?: number;
     /** Max age for drafts in ms (default: 24 hours) */
     maxAgeMs?: number;
-  }
+  },
 ) {
   const { autoSaveMs, maxAgeMs = 24 * 60 * 60 * 1000 } = options ?? {};
   const storageKey = `offline-draft:${key}`;
@@ -90,10 +90,13 @@ export function useOfflineDrafts<T>(
         };
         localStorage.setItem(storageKey, JSON.stringify(entry));
       } catch (err) {
-        logger.warn("Failed to save draft to localStorage", { context: "offline-drafts", error: err });
+        logger.warn("Failed to save draft to localStorage", {
+          context: "offline-drafts",
+          error: err,
+        });
       }
     },
-    [storageKey]
+    [storageKey],
   );
 
   const clearDraft = useCallback(() => {
@@ -102,7 +105,10 @@ export function useOfflineDrafts<T>(
     try {
       localStorage.removeItem(storageKey);
     } catch (err) {
-      logger.warn("Failed to clear draft from localStorage", { context: "offline-drafts", error: err });
+      logger.warn("Failed to clear draft from localStorage", {
+        context: "offline-drafts",
+        error: err,
+      });
     }
   }, [storageKey]);
 
@@ -122,13 +128,16 @@ export function useOfflineDrafts<T>(
           };
           localStorage.setItem(storageKey, JSON.stringify(entry));
         } catch (err) {
-          logger.warn("Failed to update draft sync status in localStorage", { context: "offline-drafts", error: err });
+          logger.warn("Failed to update draft sync status in localStorage", {
+            context: "offline-drafts",
+            error: err,
+          });
         }
       } catch (err) {
         logger.warn("Draft sync failed, will retry", { context: "offline-drafts", error: err });
       }
     },
-    [storageKey]
+    [storageKey],
   );
 
   // Auto-save interval

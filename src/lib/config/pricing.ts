@@ -29,5 +29,3 @@ export const statusColors: Record<SubscriptionStatus, string> = {
   cancelled: "bg-gray-100 text-gray-500",
   suspended: "bg-red-100 text-red-700",
 };
-
-

@@ -78,9 +78,7 @@ function applyAnalyticsConsent(allowed: boolean): void {
     document.getElementById("plausible-analytics")?.remove();
     // Remove GA / GTM if present
     document
-      .querySelectorAll(
-        'script[src*="googletagmanager.com"], script[src*="google-analytics.com"]',
-      )
+      .querySelectorAll('script[src*="googletagmanager.com"], script[src*="google-analytics.com"]')
       .forEach((el) => el.remove());
     // Opt-out flag for Google Analytics (if loaded before removal)
     const gaMeasurementId = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
@@ -130,8 +128,7 @@ export function CookieConsent() {
     return true;
   });
   const [showPreferences, setShowPreferences] = useState(false);
-  const [preferences, setPreferences] =
-    useState<CookiePreferences>(DEFAULT_PREFERENCES);
+  const [preferences, setPreferences] = useState<CookiePreferences>(DEFAULT_PREFERENCES);
 
   // Listen for programmatic re-open (e.g. footer "Cookie Settings" link)
   useEffect(() => {
@@ -169,18 +166,9 @@ export function CookieConsent() {
     setShowPreferences(false);
   }, []);
 
-  const acceptAll = useCallback(
-    () => saveAndClose(ALL_ACCEPTED),
-    [saveAndClose],
-  );
-  const declineAll = useCallback(
-    () => saveAndClose(DEFAULT_PREFERENCES),
-    [saveAndClose],
-  );
-  const saveCustom = useCallback(
-    () => saveAndClose(preferences),
-    [saveAndClose, preferences],
-  );
+  const acceptAll = useCallback(() => saveAndClose(ALL_ACCEPTED), [saveAndClose]);
+  const declineAll = useCallback(() => saveAndClose(DEFAULT_PREFERENCES), [saveAndClose]);
+  const saveCustom = useCallback(() => saveAndClose(preferences), [saveAndClose, preferences]);
 
   if (!visible) return null;
 
@@ -223,9 +211,7 @@ export function CookieConsent() {
             {/* Functional — always on */}
             <label className="flex items-center justify-between gap-4">
               <div>
-                <p className="text-sm font-medium">
-                  {t(locale, "cookie.functional")}
-                </p>
+                <p className="text-sm font-medium">{t(locale, "cookie.functional")}</p>
                 <p className="text-xs text-muted-foreground">
                   {t(locale, "cookie.functionalDesc")}
                 </p>
@@ -239,20 +225,14 @@ export function CookieConsent() {
             {/* eslint-disable-next-line jsx-a11y/label-has-associated-control -- control is associated via adjacent Input/sibling element */}
             <label className="flex items-center justify-between gap-4 cursor-pointer">
               <div>
-                <p className="text-sm font-medium">
-                  {t(locale, "cookie.analytics")}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  {t(locale, "cookie.analyticsDesc")}
-                </p>
+                <p className="text-sm font-medium">{t(locale, "cookie.analytics")}</p>
+                <p className="text-xs text-muted-foreground">{t(locale, "cookie.analyticsDesc")}</p>
               </div>
               <input
                 type="checkbox"
                 className="h-4 w-4 rounded border-gray-300 accent-primary"
                 checked={preferences.analytics}
-                onChange={(e) =>
-                  setPreferences((p) => ({ ...p, analytics: e.target.checked }))
-                }
+                onChange={(e) => setPreferences((p) => ({ ...p, analytics: e.target.checked }))}
               />
             </label>
 
@@ -260,12 +240,8 @@ export function CookieConsent() {
             {/* eslint-disable-next-line jsx-a11y/label-has-associated-control -- control is associated via adjacent Input/sibling element */}
             <label className="flex items-center justify-between gap-4 cursor-pointer">
               <div>
-                <p className="text-sm font-medium">
-                  {t(locale, "cookie.marketing")}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  {t(locale, "cookie.marketingDesc")}
-                </p>
+                <p className="text-sm font-medium">{t(locale, "cookie.marketing")}</p>
+                <p className="text-xs text-muted-foreground">{t(locale, "cookie.marketingDesc")}</p>
               </div>
               <input
                 type="checkbox"

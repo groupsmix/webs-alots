@@ -18,5 +18,9 @@ interface ExecutionContext {
 
 interface ExportedHandler<Env = Record<string, string>> {
   fetch?: (request: Request, env: Env, ctx: ExecutionContext) => Response | Promise<Response>;
-  scheduled?: (controller: ScheduledController, env: Env, ctx: ExecutionContext) => void | Promise<void>;
+  scheduled?: (
+    controller: ScheduledController,
+    env: Env,
+    ctx: ExecutionContext,
+  ) => void | Promise<void>;
 }

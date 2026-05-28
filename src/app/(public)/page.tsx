@@ -15,11 +15,7 @@ import {
 } from "@/components/public/sections";
 import { ServicesPreview } from "@/components/public/services-preview";
 import { Card, CardContent } from "@/components/ui/card";
-import {
-  getPublicReviews,
-  getPublicAverageRating,
-  getPublicBranding,
-} from "@/lib/data/public";
+import { getPublicReviews, getPublicAverageRating, getPublicBranding } from "@/lib/data/public";
 import { t, type Locale } from "@/lib/i18n";
 import { safeJsonLdStringify } from "@/lib/json-ld";
 import { logger } from "@/lib/logger";
@@ -46,7 +42,7 @@ function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise
 export async function generateMetadata(): Promise<Metadata> {
   const tenant = await getTenant();
 
-  const h = await import("next/headers").then(m => m.headers());
+  const h = await import("next/headers").then((m) => m.headers());
   const locale: Locale = (h.get("x-tenant-locale") as Locale) || "fr";
 
   if (!tenant) {
@@ -81,9 +77,9 @@ export async function generateMetadata(): Promise<Metadata> {
     alternates: {
       canonical: canonicalUrl,
       languages: {
-        "fr": canonicalUrl,
-        "ar": `${canonicalUrl}?lang=ar`,
-        "en": `${canonicalUrl}?lang=en`,
+        fr: canonicalUrl,
+        ar: `${canonicalUrl}?lang=ar`,
+        en: `${canonicalUrl}?lang=en`,
         "x-default": canonicalUrl,
       },
     },
@@ -126,11 +122,7 @@ export default async function HomePage() {
 
   try {
     [branding, reviews, avgRating] = await withTimeout(
-      Promise.all([
-        getPublicBranding(),
-        getPublicReviews(),
-        getPublicAverageRating(),
-      ]),
+      Promise.all([getPublicBranding(), getPublicReviews(), getPublicAverageRating()]),
       DATA_FETCH_TIMEOUT_MS,
       "clinic public data",
     );
@@ -146,9 +138,7 @@ export default async function HomePage() {
   if (!branding) {
     notFound();
   }
-  const sections = mergeSectionVisibility(
-    branding.sectionVisibility as Record<string, boolean>,
-  );
+  const sections = mergeSectionVisibility(branding.sectionVisibility as Record<string, boolean>);
   const template = getTemplate(branding.templateId);
 
   // Issue 53: Show all ratings (not just 4+) for unfiltered display
@@ -206,7 +196,8 @@ export default async function HomePage() {
             branding.websiteConfig
               ? {
                   title: (branding.websiteConfig as { hero?: { title?: string } }).hero?.title,
-                  subtitle: (branding.websiteConfig as { hero?: { subtitle?: string } }).hero?.subtitle,
+                  subtitle: (branding.websiteConfig as { hero?: { subtitle?: string } }).hero
+                    ?.subtitle,
                 }
               : undefined
           }
@@ -224,10 +215,10 @@ export default async function HomePage() {
         <section className="py-16">
           <div className="container mx-auto px-4">
             <div className="text-center mb-12">
-              <h2 className="text-3xl font-bold mb-4">
-                {t(locale, "public.reviews.heading")}
-              </h2>
-              <p className="text-sm text-muted-foreground mb-2">{t(locale, "public.reviews.subtitle")}</p>
+              <h2 className="text-3xl font-bold mb-4">{t(locale, "public.reviews.heading")}</h2>
+              <p className="text-sm text-muted-foreground mb-2">
+                {t(locale, "public.reviews.subtitle")}
+              </p>
               <div className="flex items-center justify-center gap-2">
                 <span className="text-3xl font-bold">{avgRating}</span>
                 <div className="flex gap-0.5" role="img" aria-label={`${avgRating} out of 5 stars`}>
@@ -256,7 +247,10 @@ export default async function HomePage() {
                   const pct = Math.round((count / reviews.length) * 100);
                   return (
                     <div key={star} className="flex items-center gap-2 text-sm">
-                      <span className="w-6 text-right font-medium">{star}<span className="text-yellow-400">&#9733;</span></span>
+                      <span className="w-6 text-right font-medium">
+                        {star}
+                        <span className="text-yellow-400">&#9733;</span>
+                      </span>
                       <div className="flex-1 h-2 rounded-full bg-muted overflow-hidden">
                         <div
                           className="h-full rounded-full bg-yellow-400"
@@ -274,7 +268,11 @@ export default async function HomePage() {
               {topReviews.map((review) => (
                 <Card key={review.id}>
                   <CardContent className="pt-6">
-                    <div className="flex gap-0.5 mb-3" role="img" aria-label={`${review.rating} out of 5 stars`}>
+                    <div
+                      className="flex gap-0.5 mb-3"
+                      role="img"
+                      aria-label={`${review.rating} out of 5 stars`}
+                    >
                       {Array.from({ length: 5 }).map((_, i) => (
                         <Star
                           key={i}

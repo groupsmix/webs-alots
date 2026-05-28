@@ -2,7 +2,14 @@ import { Clock, CreditCard } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { buttonVariants } from "@/components/ui/button-variants";
-import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
 import { getPublicServices } from "@/lib/data/public";
 import { safeJsonLdStringify } from "@/lib/json-ld";
 import { defaultWebsiteConfig } from "@/lib/website-config";
@@ -13,8 +20,7 @@ export const metadata: Metadata = {
     "Découvrez nos services médicaux, consultations, soins et traitements. Tarifs transparents et prise de rendez-vous en ligne.",
   openGraph: {
     title: "Nos Services — Cabinet Médical",
-    description:
-      "Découvrez nos services médicaux, consultations, soins et traitements.",
+    description: "Découvrez nos services médicaux, consultations, soins et traitements.",
   },
 };
 
@@ -32,16 +38,18 @@ export default async function ServicesPage() {
     hasOfferCatalog: {
       "@type": "OfferCatalog",
       name: "Medical Services",
-      itemListElement: services.filter((s) => s.active).map((s) => ({
-        "@type": "Offer",
-        itemOffered: {
-          "@type": "MedicalProcedure",
-          name: s.name,
-          description: s.description,
-        },
-        price: s.price,
-        priceCurrency: s.currency,
-      })),
+      itemListElement: services
+        .filter((s) => s.active)
+        .map((s) => ({
+          "@type": "Offer",
+          itemOffered: {
+            "@type": "MedicalProcedure",
+            name: s.name,
+            description: s.description,
+          },
+          price: s.price,
+          priceCurrency: s.currency,
+        })),
     },
   };
 
@@ -55,9 +63,7 @@ export default async function ServicesPage() {
       />
       <div className="text-center mb-12">
         <h1 className="text-3xl font-bold mb-4">{cfg.title}</h1>
-        <p className="text-muted-foreground max-w-2xl mx-auto">
-          {cfg.subtitle}
-        </p>
+        <p className="text-muted-foreground max-w-2xl mx-auto">{cfg.subtitle}</p>
       </div>
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
@@ -82,10 +88,7 @@ export default async function ServicesPage() {
                 </div>
               </CardContent>
               <CardFooter>
-                <Link
-                  href="/book"
-                  className={buttonVariants({ variant: "outline", size: "sm" })}
-                >
+                <Link href="/book" className={buttonVariants({ variant: "outline", size: "sm" })}>
                   Prendre rendez-vous
                 </Link>
               </CardFooter>

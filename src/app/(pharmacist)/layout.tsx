@@ -2,10 +2,6 @@
 // ClinicDashboardLayout (a "use client" component).
 import { PharmacistLayoutShell } from "@/components/layouts/pharmacist-layout-shell";
 
-export default function PharmacistLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function PharmacistLayout({ children }: { children: React.ReactNode }) {
   return <PharmacistLayoutShell>{children}</PharmacistLayoutShell>;
 }

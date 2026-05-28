@@ -1,8 +1,12 @@
 "use client";
 
 import {
-  LayoutDashboard, ClipboardList, FlaskConical, FileText,
-  History, TestTubes,
+  LayoutDashboard,
+  ClipboardList,
+  FlaskConical,
+  FileText,
+  History,
+  TestTubes,
 } from "lucide-react";
 import {
   ClinicDashboardLayout,
@@ -24,14 +28,6 @@ const config: ClinicDashboardConfig = {
   ],
 };
 
-export function LabLayoutShell({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
-  return (
-    <ClinicDashboardLayout config={config}>
-      {children}
-    </ClinicDashboardLayout>
-  );
+export function LabLayoutShell({ children }: { children: React.ReactNode }) {
+  return <ClinicDashboardLayout config={config}>{children}</ClinicDashboardLayout>;
 }

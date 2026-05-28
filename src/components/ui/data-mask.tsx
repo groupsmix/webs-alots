@@ -36,13 +36,7 @@ interface DataMaskProps {
  *
  * Issue 46
  */
-export function DataMask({
-  value,
-  type,
-  level,
-  label,
-  className,
-}: DataMaskProps) {
+export function DataMask({ value, type, level, label, className }: DataMaskProps) {
   const effectiveLevel = level ?? getMaskLevel();
   const [revealed, setRevealed] = useState(false);
 
@@ -53,8 +47,7 @@ export function DataMask({
 
   const masked = mask(value, type, effectiveLevel);
 
-  const defaultLabel =
-    type === "phone" ? "Téléphone" : type === "email" ? "Email" : "CIN";
+  const defaultLabel = type === "phone" ? "Téléphone" : type === "email" ? "Email" : "CIN";
   const a11yLabel = label ?? defaultLabel;
 
   return (
@@ -63,10 +56,7 @@ export function DataMask({
       aria-label={`${a11yLabel}: ${revealed ? value : "masqué"}`}
     >
       <span
-        className={cn(
-          "font-mono text-sm transition-all",
-          !revealed && "select-none blur-[1px]",
-        )}
+        className={cn("font-mono text-sm transition-all", !revealed && "select-none blur-[1px]")}
         aria-hidden={!revealed}
       >
         {revealed ? value : masked}
@@ -78,11 +68,7 @@ export function DataMask({
         aria-label={revealed ? "Masquer" : "Révéler"}
         title={revealed ? "Masquer" : "Révéler"}
       >
-        {revealed ? (
-          <EyeOff className="h-3.5 w-3.5" />
-        ) : (
-          <Eye className="h-3.5 w-3.5" />
-        )}
+        {revealed ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
       </button>
     </span>
   );

@@ -77,8 +77,9 @@ export async function verifyMFAEnrollment(
 ): Promise<MFAVerifyResult> {
   const supabase = await createClient();
 
-  const { data: challengeData, error: challengeError } =
-    await supabase.auth.mfa.challenge({ factorId });
+  const { data: challengeData, error: challengeError } = await supabase.auth.mfa.challenge({
+    factorId,
+  });
 
   if (challengeError) {
     logger.warn("MFA challenge failed during enrollment", {
@@ -126,14 +127,12 @@ export async function verifyMFAEnrollment(
  * Verify a TOTP code during login (MFA challenge step).
  * On success, redirects to the appropriate dashboard.
  */
-export async function verifyMFALogin(
-  factorId: string,
-  code: string,
-): Promise<MFAVerifyResult> {
+export async function verifyMFALogin(factorId: string, code: string): Promise<MFAVerifyResult> {
   const supabase = await createClient();
 
-  const { data: challengeData, error: challengeError } =
-    await supabase.auth.mfa.challenge({ factorId });
+  const { data: challengeData, error: challengeError } = await supabase.auth.mfa.challenge({
+    factorId,
+  });
 
   if (challengeError) {
     logger.warn("MFA challenge failed during login", {
@@ -159,9 +158,7 @@ export async function verifyMFALogin(
 /**
  * Unenroll (disable) a TOTP factor from the user's account.
  */
-export async function unenrollMFA(
-  factorId: string,
-): Promise<{ error: string | null }> {
+export async function unenrollMFA(factorId: string): Promise<{ error: string | null }> {
   const supabase = await createClient();
 
   const { error } = await supabase.auth.mfa.unenroll({ factorId });
@@ -250,8 +247,7 @@ export async function getMFAAssuranceLevel(): Promise<{
 }> {
   const supabase = await createClient();
 
-  const { data, error } =
-    await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+  const { data, error } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
 
   if (error) {
     return { currentLevel: null, nextLevel: null, error: error.message };
@@ -340,9 +336,7 @@ export async function generateBackupCodes(): Promise<{
  * Verify a backup code during login.
  * Used codes are removed from the stored list.
  */
-export async function verifyBackupCode(
-  code: string,
-): Promise<{ error: string | null }> {
+export async function verifyBackupCode(code: string): Promise<{ error: string | null }> {
   const supabase = await createClient();
 
   const {
@@ -353,8 +347,7 @@ export async function verifyBackupCode(
     return { error: "auth.genericError" };
   }
 
-  const storedHashes =
-    (user.user_metadata?.mfa_backup_codes as string[] | undefined) ?? [];
+  const storedHashes = (user.user_metadata?.mfa_backup_codes as string[] | undefined) ?? [];
   if (storedHashes.length === 0) {
     return { error: "mfa.noBackupCodes" };
   }

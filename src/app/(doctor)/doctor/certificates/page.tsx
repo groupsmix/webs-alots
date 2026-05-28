@@ -24,25 +24,30 @@ export default function DoctorCertificatesPage() {
   useEffect(() => {
     const controller = new AbortController();
     async function load() {
-    const user = await getCurrentUser();
+      const user = await getCurrentUser();
       if (controller.signal.aborted) return;
-    if (!user?.clinic_id) { setLoading(false); return; }
-    const [certs, pts] = await Promise.all([
-      fetchMedicalCertificates(user.clinic_id, user.id),
-      fetchPatients(user.clinic_id),
-    ]);
+      if (!user?.clinic_id) {
+        setLoading(false);
+        return;
+      }
+      const [certs, pts] = await Promise.all([
+        fetchMedicalCertificates(user.clinic_id, user.id),
+        fetchPatients(user.clinic_id),
+      ]);
       if (controller.signal.aborted) return;
-    setCertificates(certs);
-    setPatients(pts);
-    setLoading(false);
-  }
+      setCertificates(certs);
+      setPatients(pts);
+      setLoading(false);
+    }
     load().catch((err) => {
       if (!controller.signal.aborted) {
         setError(err instanceof Error ? err : new Error(String(err)));
         setLoading(false);
       }
     });
-    return () => { controller.abort(); };
+    return () => {
+      controller.abort();
+    };
   }, []);
 
   if (loading) {
@@ -52,7 +57,9 @@ export default function DoctorCertificatesPage() {
   if (error) {
     return (
       <div className="p-8 text-center">
-        <p className="text-red-600 font-medium">Failed to load data. Please try refreshing the page.</p>
+        <p className="text-red-600 font-medium">
+          Failed to load data. Please try refreshing the page.
+        </p>
         {error.message && <p className="text-sm text-muted-foreground mt-2">{error.message}</p>}
       </div>
     );
@@ -93,7 +100,9 @@ export default function DoctorCertificatesPage() {
 
   return (
     <div className="space-y-6">
-      <Breadcrumb items={[{ label: "Doctor", href: "/doctor/dashboard" }, { label: "Certificates" }]} />
+      <Breadcrumb
+        items={[{ label: "Doctor", href: "/doctor/dashboard" }, { label: "Certificates" }]}
+      />
       <h1 className="text-2xl font-bold">Medical Certificates</h1>
       <CertificateGenerator
         certificates={certificates}

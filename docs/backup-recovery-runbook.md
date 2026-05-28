@@ -9,11 +9,11 @@
 
 Oltigo Health uses a **three-layer backup strategy**:
 
-| Layer | What | Where | Frequency | Retention |
-|-------|------|-------|-----------|-----------|
-| **Supabase Automated** | Full PostgreSQL snapshot | Supabase infrastructure | Daily (Pro plan) / Point-in-time (Team/Enterprise) | 7 days (Pro) / 30 days (Enterprise) |
-| **GitHub Actions pg_dump** | Logical SQL dump (gzipped) | Cloudflare R2 bucket (`R2_BACKUP_BUCKET`) | Nightly at 02:00 UTC | 7 daily, 4 weekly, 3 monthly |
-| **Application-level export** | Per-clinic JSON export | Downloaded by clinic admin | On-demand via admin panel | Managed by clinic |
+| Layer                        | What                       | Where                                     | Frequency                                          | Retention                           |
+| ---------------------------- | -------------------------- | ----------------------------------------- | -------------------------------------------------- | ----------------------------------- |
+| **Supabase Automated**       | Full PostgreSQL snapshot   | Supabase infrastructure                   | Daily (Pro plan) / Point-in-time (Team/Enterprise) | 7 days (Pro) / 30 days (Enterprise) |
+| **GitHub Actions pg_dump**   | Logical SQL dump (gzipped) | Cloudflare R2 bucket (`R2_BACKUP_BUCKET`) | Nightly at 02:00 UTC                               | 7 daily, 4 weekly, 3 monthly        |
+| **Application-level export** | Per-clinic JSON export     | Downloaded by clinic admin                | On-demand via admin panel                          | Managed by clinic                   |
 
 ### Storage Replication
 
@@ -23,10 +23,10 @@ An optional **R2 replication workflow** (`.github/workflows/r2-replication.yml`)
 
 ## 2. Recovery Targets
 
-| Metric | Target | Notes |
-|--------|--------|-------|
+| Metric                             | Target         | Notes                                                                         |
+| ---------------------------------- | -------------- | ----------------------------------------------------------------------------- |
 | **RPO** (Recovery Point Objective) | **< 24 hours** | Nightly pg_dump; Supabase PITR can reduce to minutes on Team/Enterprise plans |
-| **RTO** (Recovery Time Objective) | **< 2 hours** | Restore from R2 dump + re-deploy Workers |
+| **RTO** (Recovery Time Objective)  | **< 2 hours**  | Restore from R2 dump + re-deploy Workers                                      |
 
 ---
 
@@ -45,22 +45,22 @@ The workflow at `.github/workflows/backup.yml` runs nightly and:
 
 ### Required GitHub Secrets
 
-| Secret | Description |
-|--------|-------------|
-| `SUPABASE_DB_URL` | PostgreSQL connection string (e.g., `postgresql://postgres:password@db.xxx.supabase.co:5432/postgres`) |
-| `R2_ACCOUNT_ID` | Cloudflare account ID |
-| `R2_ACCESS_KEY_ID` | R2 API token access key |
-| `R2_SECRET_ACCESS_KEY` | R2 API token secret key |
-| `R2_BACKUP_BUCKET` | Dedicated R2 bucket for backups (separate from uploads) |
-| `RESEND_API_KEY` | (Optional) For email failure alerts |
+| Secret                 | Description                                                                                            |
+| ---------------------- | ------------------------------------------------------------------------------------------------------ |
+| `SUPABASE_DB_URL`      | PostgreSQL connection string (e.g., `postgresql://postgres:password@db.xxx.supabase.co:5432/postgres`) |
+| `R2_ACCOUNT_ID`        | Cloudflare account ID                                                                                  |
+| `R2_ACCESS_KEY_ID`     | R2 API token access key                                                                                |
+| `R2_SECRET_ACCESS_KEY` | R2 API token secret key                                                                                |
+| `R2_BACKUP_BUCKET`     | Dedicated R2 bucket for backups (separate from uploads)                                                |
+| `RESEND_API_KEY`       | (Optional) For email failure alerts                                                                    |
 
 ### GitHub Actions Variables
 
-| Variable | Description |
-|----------|-------------|
-| `SLACK_BACKUP_WEBHOOK_URL` | (Optional) Slack incoming webhook for failure alerts |
-| `BACKUP_ALERT_EMAIL` | (Optional) Email address for failure alerts |
-| `BACKUP_ALERT_FROM` | (Optional) Sender email for alerts (default: `noreply@yourdomain.com`) |
+| Variable                   | Description                                                            |
+| -------------------------- | ---------------------------------------------------------------------- |
+| `SLACK_BACKUP_WEBHOOK_URL` | (Optional) Slack incoming webhook for failure alerts                   |
+| `BACKUP_ALERT_EMAIL`       | (Optional) Email address for failure alerts                            |
+| `BACKUP_ALERT_FROM`        | (Optional) Sender email for alerts (default: `noreply@yourdomain.com`) |
 
 ### Manual trigger
 
@@ -109,6 +109,7 @@ rm /tmp/restore.sql.gz
 ```
 
 **Post-restore checklist:**
+
 - [ ] Verify RLS policies are intact: `SELECT * FROM pg_policies WHERE schemaname = 'public';`
 - [ ] Test login for each role (super_admin, clinic_admin, doctor, receptionist, patient)
 - [ ] Verify tenant isolation by querying from two different clinic contexts
@@ -148,6 +149,7 @@ curl -X POST https://your-domain.com/api/backup/restore \
 ```
 
 **Important notes:**
+
 - Only `clinic_admin` and `super_admin` roles can perform restores
 - Maximum restore payload: 50 MB
 - Maximum rows per table: 10,000
@@ -170,6 +172,7 @@ aws s3 sync "s3://${R2_REPLICA_BUCKET_NAME}" "s3://${R2_BUCKET_NAME}" \
 ```
 
 If no replica exists, uploaded files cannot be recovered. Enable replication by configuring:
+
 - `R2_REPLICA_ACCOUNT_ID`
 - `R2_REPLICA_ACCESS_KEY_ID`
 - `R2_REPLICA_SECRET_ACCESS_KEY`
@@ -182,6 +185,7 @@ If no replica exists, uploaded files cannot be recovered. Enable replication by 
 ### Automated verification
 
 The nightly backup workflow includes a `verify` job that:
+
 1. Downloads the latest daily backup from R2
 2. Starts a temporary PostgreSQL instance
 3. Restores the backup
@@ -191,6 +195,7 @@ The nightly backup workflow includes a `verify` job that:
 ### Manual verification
 
 Run the verify workflow manually:
+
 1. Go to **Actions > Automated Database Backups > Run workflow**
 2. Select `verify` as the backup type
 
@@ -211,12 +216,12 @@ Run the verify workflow manually:
 
 ## 6. Monitoring & Alerting
 
-| What to monitor | How | Alert channel |
-|-----------------|-----|---------------|
-| Backup workflow failures | GitHub Actions status | Slack (`SLACK_BACKUP_WEBHOOK_URL`) + Email (`BACKUP_ALERT_EMAIL`) |
-| Backup file size anomalies | Compare daily backup sizes (a sudden drop may indicate data loss) | Manual review of R2 bucket |
-| R2 replication drift | `r2-replication.yml` object count mismatch | Workflow failure alert |
-| Supabase disk usage | Supabase Dashboard > Database > Disk | Supabase built-in alerts |
+| What to monitor            | How                                                               | Alert channel                                                     |
+| -------------------------- | ----------------------------------------------------------------- | ----------------------------------------------------------------- |
+| Backup workflow failures   | GitHub Actions status                                             | Slack (`SLACK_BACKUP_WEBHOOK_URL`) + Email (`BACKUP_ALERT_EMAIL`) |
+| Backup file size anomalies | Compare daily backup sizes (a sudden drop may indicate data loss) | Manual review of R2 bucket                                        |
+| R2 replication drift       | `r2-replication.yml` object count mismatch                        | Workflow failure alert                                            |
+| Supabase disk usage        | Supabase Dashboard > Database > Disk                              | Supabase built-in alerts                                          |
 
 ---
 
@@ -244,10 +249,10 @@ When data loss or corruption is suspected:
 
 The platform uses Cloudflare Queues for reliable async processing:
 
-| Queue | Purpose | DLQ |
-|-------|---------|-----|
-| `reminders-queue` | Appointment reminder notifications | `reminders-dlq` |
-| `notifications-queue` | WhatsApp/email notifications | `notifications-dlq` |
+| Queue                 | Purpose                            | DLQ                 |
+| --------------------- | ---------------------------------- | ------------------- |
+| `reminders-queue`     | Appointment reminder notifications | `reminders-dlq`     |
+| `notifications-queue` | WhatsApp/email notifications       | `notifications-dlq` |
 
 ### DLQ Drain Procedure
 
@@ -278,6 +283,7 @@ wrangler queues list queues | grep -E "(reminders-dlq|notifications-dlq)"
 ```
 
 **Automated DLQ monitoring** (recommended):
+
 - Set up a cron job to check DLQ depth every hour
 - Alert to Slack if DLQ depth > 100 messages
 - Auto-drain if DLQ depth < 10 messages
@@ -285,6 +291,7 @@ wrangler queues list queues | grep -E "(reminders-dlq|notifications-dlq)"
 ### Queue Consumer Worker
 
 The `worker-cron-handler.ts` acts as the queue consumer. It processes messages in batches:
+
 - `max_batch_size`: 10 messages
 - `max_batch_timeout`: 30 seconds
 - `max_retries`: 5

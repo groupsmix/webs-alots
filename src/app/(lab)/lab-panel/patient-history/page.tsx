@@ -12,10 +12,13 @@ import type { PatientView, LabTestOrderView, LabTestResultView } from "@/lib/dat
 
 function FlagBadge({ flag }: { flag: string }) {
   const color =
-    flag === "critical_high" || flag === "critical_low" ? "bg-red-100 text-red-700 border-0" :
-    flag === "high" ? "bg-orange-100 text-orange-700 border-0" :
-    flag === "low" ? "bg-yellow-100 text-yellow-700 border-0" :
-    "bg-emerald-100 text-emerald-700 border-0";
+    flag === "critical_high" || flag === "critical_low"
+      ? "bg-red-100 text-red-700 border-0"
+      : flag === "high"
+        ? "bg-orange-100 text-orange-700 border-0"
+        : flag === "low"
+          ? "bg-yellow-100 text-yellow-700 border-0"
+          : "bg-emerald-100 text-emerald-700 border-0";
   const Icon = flag.includes("high") ? TrendingUp : flag.includes("low") ? TrendingDown : Minus;
   return (
     <Badge className={`${color} text-xs`}>
@@ -41,19 +44,28 @@ export default function PatientHistoryPage() {
   useEffect(() => {
     const controller = new AbortController();
     fetchPatients(tenant?.clinicId ?? "")
-      .then((d) => { if (!controller.signal.aborted) setPatients(d); })
+      .then((d) => {
+        if (!controller.signal.aborted) setPatients(d);
+      })
       .catch((err) => {
-      if (!controller.signal.aborted) {
-        setError(err instanceof Error ? err : new Error(String(err)));
-      }
-    })
-    .finally(() => { if (!controller.signal.aborted) setLoading(false); });
-    return () => { controller.abort(); };
+        if (!controller.signal.aborted) {
+          setError(err instanceof Error ? err : new Error(String(err)));
+        }
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setLoading(false);
+      });
+    return () => {
+      controller.abort();
+    };
   }, [tenant?.clinicId]);
 
   useEffect(() => {
     function loadOrders() {
-      if (!selectedPatientId) { setPatientOrders([]); return; }
+      if (!selectedPatientId) {
+        setPatientOrders([]);
+        return;
+      }
       setOrdersLoading(true);
       setSelectedOrderId(null);
       setSelectedOrderResults([]);
@@ -66,7 +78,10 @@ export default function PatientHistoryPage() {
 
   useEffect(() => {
     function loadResults() {
-      if (!selectedOrderId) { setSelectedOrderResults([]); return; }
+      if (!selectedOrderId) {
+        setSelectedOrderResults([]);
+        return;
+      }
       setResultsLoading(true);
       fetchLabTestResults(selectedOrderId)
         .then(setSelectedOrderResults)
@@ -82,7 +97,9 @@ export default function PatientHistoryPage() {
   if (error) {
     return (
       <div className="p-8 text-center">
-        <p className="text-red-600 font-medium">Failed to load data. Please try refreshing the page.</p>
+        <p className="text-red-600 font-medium">
+          Failed to load data. Please try refreshing the page.
+        </p>
         {error.message && <p className="text-sm text-muted-foreground mt-2">{error.message}</p>}
       </div>
     );
@@ -150,7 +167,9 @@ export default function PatientHistoryPage() {
             <div className="space-y-4">
               <h2 className="font-semibold">Lab Orders ({patientOrders.length})</h2>
               {patientOrders.length === 0 && (
-                <p className="text-sm text-muted-foreground">No lab orders found for this patient</p>
+                <p className="text-sm text-muted-foreground">
+                  No lab orders found for this patient
+                </p>
               )}
               {patientOrders.map((order) => (
                 <Card key={order.id}>
@@ -158,22 +177,29 @@ export default function PatientHistoryPage() {
                     {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- keyboard interaction handled by parent or child interactive element */}
                     <div
                       className="flex items-center justify-between cursor-pointer"
-                      onClick={() => setSelectedOrderId(selectedOrderId === order.id ? null : order.id)}
+                      onClick={() =>
+                        setSelectedOrderId(selectedOrderId === order.id ? null : order.id)
+                      }
                     >
                       <div className="flex items-center gap-3">
                         <FlaskConical className="h-5 w-5 text-blue-600" />
                         <div>
                           <p className="font-medium text-sm">{order.orderNumber}</p>
                           <p className="text-xs text-muted-foreground">
-                            {new Date(order.createdAt).toLocaleDateString()} &middot; {order.testCount} tests
+                            {new Date(order.createdAt).toLocaleDateString()} &middot;{" "}
+                            {order.testCount} tests
                           </p>
                         </div>
                       </div>
-                      <Badge className={
-                        order.status === "validated" ? "bg-green-100 text-green-700 border-0" :
-                        order.status === "completed" ? "bg-emerald-100 text-emerald-700 border-0" :
-                        "bg-gray-100 text-gray-700 border-0"
-                      }>
+                      <Badge
+                        className={
+                          order.status === "validated"
+                            ? "bg-green-100 text-green-700 border-0"
+                            : order.status === "completed"
+                              ? "bg-emerald-100 text-emerald-700 border-0"
+                              : "bg-gray-100 text-gray-700 border-0"
+                        }
+                      >
                         {order.status.replace("_", " ")}
                       </Badge>
                     </div>
@@ -181,7 +207,9 @@ export default function PatientHistoryPage() {
                     {selectedOrderId === order.id && (
                       <div className="mt-4 pt-4 border-t">
                         {resultsLoading ? (
-                          <p className="text-sm text-muted-foreground animate-pulse">Loading results...</p>
+                          <p className="text-sm text-muted-foreground animate-pulse">
+                            Loading results...
+                          </p>
                         ) : selectedOrderResults.length === 0 ? (
                           <p className="text-sm text-muted-foreground">No results recorded</p>
                         ) : (
@@ -206,9 +234,7 @@ export default function PatientHistoryPage() {
                                       ? `${r.referenceMin} - ${r.referenceMax}`
                                       : "—"}
                                   </td>
-                                  <td className="py-2">
-                                    {r.flag && <FlagBadge flag={r.flag} />}
-                                  </td>
+                                  <td className="py-2">{r.flag && <FlagBadge flag={r.flag} />}</td>
                                 </tr>
                               ))}
                             </tbody>

@@ -120,9 +120,9 @@ describe("withAuth", () => {
     const mockSupabase = createMockSupabase(mockUser, mockProfile);
     vi.mocked(createClient).mockResolvedValue(mockSupabase as never);
 
-    const handler = vi.fn().mockResolvedValue(
-      new Response(JSON.stringify({ ok: true }), { status: 200 }),
-    );
+    const handler = vi
+      .fn()
+      .mockResolvedValue(new Response(JSON.stringify({ ok: true }), { status: 200 }));
     const wrappedHandler = withAuth(handler, ["clinic_admin"]);
 
     await wrappedHandler(createMockRequest() as never);
@@ -141,9 +141,9 @@ describe("withAuth", () => {
     const mockSupabase = createMockSupabase(mockUser, mockProfile);
     vi.mocked(createClient).mockResolvedValue(mockSupabase as never);
 
-    const handler = vi.fn().mockResolvedValue(
-      new Response(JSON.stringify({ ok: true }), { status: 200 }),
-    );
+    const handler = vi
+      .fn()
+      .mockResolvedValue(new Response(JSON.stringify({ ok: true }), { status: 200 }));
     const wrappedHandler = withAuthAnyRole(handler);
 
     await wrappedHandler(createMockRequest() as never);
@@ -170,9 +170,9 @@ describe("withAuth", () => {
     const mockSupabase = createMockSupabase(mockUser, mockProfile);
     vi.mocked(createClient).mockResolvedValue(mockSupabase as never);
 
-    const handler = vi.fn().mockResolvedValue(
-      new Response(JSON.stringify({ ok: true }), { status: 200 }),
-    );
+    const handler = vi
+      .fn()
+      .mockResolvedValue(new Response(JSON.stringify({ ok: true }), { status: 200 }));
     const wrappedHandler = withAuth(handler, ["super_admin"]);
 
     await wrappedHandler(createMockRequest() as never);
@@ -220,9 +220,9 @@ describe("withAuth", () => {
         "x-auth-profile-sig": "deadbeef".repeat(8),
       });
 
-      const handler = vi.fn().mockResolvedValue(
-        new Response(JSON.stringify({ ok: true }), { status: 200 }),
-      );
+      const handler = vi
+        .fn()
+        .mockResolvedValue(new Response(JSON.stringify({ ok: true }), { status: 200 }));
       const wrappedHandler = withAuth(handler, ["patient"]);
 
       await wrappedHandler(request as never);
@@ -315,9 +315,9 @@ describe("withAuth", () => {
       vi.mocked(createClient).mockResolvedValue(mockSupabase as never);
       setTenantContextMock.mockRejectedValueOnce(new Error("RPC unavailable"));
 
-      const handler = vi.fn().mockResolvedValue(
-        new Response(JSON.stringify({ ok: true }), { status: 200 }),
-      );
+      const handler = vi
+        .fn()
+        .mockResolvedValue(new Response(JSON.stringify({ ok: true }), { status: 200 }));
       const wrappedHandler = withAuth(handler, ["clinic_admin"], { failOpen: true });
 
       const response = await wrappedHandler(createMockRequest() as never);
@@ -333,9 +333,9 @@ describe("withAuth", () => {
       );
       vi.mocked(createClient).mockResolvedValue(mockSupabase as never);
 
-      const handler = vi.fn().mockResolvedValue(
-        new Response(JSON.stringify({ ok: true }), { status: 200 }),
-      );
+      const handler = vi
+        .fn()
+        .mockResolvedValue(new Response(JSON.stringify({ ok: true }), { status: 200 }));
       const wrappedHandler = withAuth(handler, ["super_admin"]);
 
       const response = await wrappedHandler(createMockRequest() as never);

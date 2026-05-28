@@ -1,20 +1,36 @@
 "use client";
 
-import { Search, HandCoins, ChevronDown, AlertTriangle, Plus, Pencil, Trash2, RotateCcw } from "lucide-react";
+import {
+  Search,
+  HandCoins,
+  ChevronDown,
+  AlertTriangle,
+  Plus,
+  Pencil,
+  Trash2,
+  RotateCcw,
+} from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
 import { useTenant } from "@/components/tenant-provider";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PageLoader } from "@/components/ui/page-loader";
 import {
-  fetchEquipmentRentals, fetchEquipmentInventory,
-  createEquipmentRental, updateEquipmentRental, deleteEquipmentRental,
+  fetchEquipmentRentals,
+  fetchEquipmentInventory,
+  createEquipmentRental,
+  updateEquipmentRental,
+  deleteEquipmentRental,
 } from "@/lib/data/client";
 import type { EquipmentRentalView, EquipmentItemView } from "@/lib/data/client";
 import { useEquipmentI18n } from "@/lib/hooks/use-equipment-i18n";
@@ -47,9 +63,17 @@ interface RentalFormState {
 }
 
 const emptyRentalForm: RentalFormState = {
-  equipmentId: "", clientName: "", clientPhone: "", clientIdNumber: "",
-  rentalStart: "", rentalEnd: "", conditionOut: "good", depositAmount: "",
-  rentalAmount: "", paymentStatus: "pending", notes: "",
+  equipmentId: "",
+  clientName: "",
+  clientPhone: "",
+  clientIdNumber: "",
+  rentalStart: "",
+  rentalEnd: "",
+  conditionOut: "good",
+  depositAmount: "",
+  rentalAmount: "",
+  paymentStatus: "pending",
+  notes: "",
 };
 
 export default function EquipmentRentalsPage() {
@@ -74,36 +98,54 @@ export default function EquipmentRentalsPage() {
 
   const dateFmt = locale === "ar" ? "ar-MA" : "fr-FR";
 
-  const statusLabel = useCallback((s: string) => {
-    const map: Record<string, string> = {
-      reserved: t("statusReserved"), active: t("statusActive"),
-      returned: t("statusReturned"), overdue: t("statusOverdue"),
-      cancelled: t("statusCancelled"),
-    };
-    return map[s] ?? s;
-  }, [t]);
+  const statusLabel = useCallback(
+    (s: string) => {
+      const map: Record<string, string> = {
+        reserved: t("statusReserved"),
+        active: t("statusActive"),
+        returned: t("statusReturned"),
+        overdue: t("statusOverdue"),
+        cancelled: t("statusCancelled"),
+      };
+      return map[s] ?? s;
+    },
+    [t],
+  );
 
-  const paymentLabel = useCallback((s: string) => {
-    const map: Record<string, string> = {
-      pending: t("paymentPending"), partial: t("paymentPartial"),
-      paid: t("paymentPaid"), refunded: t("paymentRefunded"),
-    };
-    return map[s] ?? s;
-  }, [t]);
+  const paymentLabel = useCallback(
+    (s: string) => {
+      const map: Record<string, string> = {
+        pending: t("paymentPending"),
+        partial: t("paymentPartial"),
+        paid: t("paymentPaid"),
+        refunded: t("paymentRefunded"),
+      };
+      return map[s] ?? s;
+    },
+    [t],
+  );
 
-  const conditionLabel = useCallback((c: string) => {
-    const map: Record<string, string> = {
-      new: t("conditionNew"), good: t("conditionGood"),
-      fair: t("conditionFair"), needs_repair: t("conditionNeedsRepair"),
-    };
-    return map[c] ?? c;
-  }, [t]);
+  const conditionLabel = useCallback(
+    (c: string) => {
+      const map: Record<string, string> = {
+        new: t("conditionNew"),
+        good: t("conditionGood"),
+        fair: t("conditionFair"),
+        needs_repair: t("conditionNeedsRepair"),
+      };
+      return map[c] ?? c;
+    },
+    [t],
+  );
 
   function reload() {
     setLoading(true);
     const cId = tenant?.clinicId ?? "";
     Promise.all([fetchEquipmentRentals(cId), fetchEquipmentInventory(cId)])
-      .then(([r, e]) => { setRentals(r); setEquipment(e); })
+      .then(([r, e]) => {
+        setRentals(r);
+        setEquipment(e);
+      })
       .finally(() => setLoading(false));
   }
 
@@ -113,14 +155,21 @@ export default function EquipmentRentalsPage() {
       setLoading(true);
       const cId = tenant?.clinicId ?? "";
       Promise.all([fetchEquipmentRentals(cId), fetchEquipmentInventory(cId)])
-        .then(([r, e]) => { setRentals(r); setEquipment(e); })
+        .then(([r, e]) => {
+          setRentals(r);
+          setEquipment(e);
+        })
         .catch((err) => {
-      if (!controller.signal.aborted) {
-        setError(err instanceof Error ? err : new Error(String(err)));
-      }
-    })
-    .finally(() => { if (!controller.signal.aborted) setLoading(false); });
-    return () => { controller.abort(); };
+          if (!controller.signal.aborted) {
+            setError(err instanceof Error ? err : new Error(String(err)));
+          }
+        })
+        .finally(() => {
+          if (!controller.signal.aborted) setLoading(false);
+        });
+      return () => {
+        controller.abort();
+      };
     }
     init();
   }, [tenant?.clinicId]);
@@ -214,7 +263,9 @@ export default function EquipmentRentalsPage() {
   if (error) {
     return (
       <div className="p-8 text-center">
-        <p className="text-red-600 font-medium">Failed to load data. Please try refreshing the page.</p>
+        <p className="text-red-600 font-medium">
+          Failed to load data. Please try refreshing the page.
+        </p>
         {error.message && <p className="text-sm text-muted-foreground mt-2">{error.message}</p>}
       </div>
     );
@@ -234,7 +285,9 @@ export default function EquipmentRentalsPage() {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold">{t("rentalsTitle")}</h1>
-          <p className="text-muted-foreground text-sm">{rentals.length} {t("rentalRecords")}</p>
+          <p className="text-muted-foreground text-sm">
+            {rentals.length} {t("rentalRecords")}
+          </p>
         </div>
         <Button onClick={openAddDialog} size="sm" className="bg-amber-600 hover:bg-amber-700">
           <Plus className="h-4 w-4 me-1" /> {t("addRental")}
@@ -244,11 +297,21 @@ export default function EquipmentRentalsPage() {
       <div className="flex flex-col sm:flex-row gap-3 mb-6">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input placeholder={`${t("search")}...`} value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
+          <Input
+            placeholder={`${t("search")}...`}
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="pl-9"
+          />
         </div>
         <div className="flex gap-2 flex-wrap">
           {STATUS_OPTIONS.map((s) => (
-            <Button key={s} variant={statusFilter === s ? "default" : "outline"} size="sm" onClick={() => setStatusFilter(s)}>
+            <Button
+              key={s}
+              variant={statusFilter === s ? "default" : "outline"}
+              size="sm"
+              onClick={() => setStatusFilter(s)}
+            >
               {s === "all" ? t("all") : statusLabel(s)}
             </Button>
           ))}
@@ -260,11 +323,18 @@ export default function EquipmentRentalsPage() {
           <Card key={rental.id}>
             <CardContent className="pt-4 pb-4">
               {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- keyboard interaction handled by parent or child interactive element */}
-              <div className="flex items-center justify-between cursor-pointer" onClick={() => setExpandedId(expandedId === rental.id ? null : rental.id)}>
+              <div
+                className="flex items-center justify-between cursor-pointer"
+                onClick={() => setExpandedId(expandedId === rental.id ? null : rental.id)}
+              >
                 <div className="flex items-center gap-4">
-                  <div className={`h-10 w-10 rounded-full flex items-center justify-center ${
-                    rental.status === "overdue" ? "bg-red-100 dark:bg-red-900/30" : "bg-blue-100 dark:bg-blue-900/30"
-                  }`}>
+                  <div
+                    className={`h-10 w-10 rounded-full flex items-center justify-center ${
+                      rental.status === "overdue"
+                        ? "bg-red-100 dark:bg-red-900/30"
+                        : "bg-blue-100 dark:bg-blue-900/30"
+                    }`}
+                  >
                     {rental.status === "overdue" ? (
                       <AlertTriangle className="h-5 w-5 text-red-600" />
                     ) : (
@@ -274,17 +344,26 @@ export default function EquipmentRentalsPage() {
                   <div>
                     <p className="font-medium">{rental.equipmentName}</p>
                     <p className="text-xs text-muted-foreground">
-                      {rental.clientName} &middot; {new Date(rental.rentalStart).toLocaleDateString(dateFmt)}
-                      {rental.rentalEnd ? ` — ${new Date(rental.rentalEnd).toLocaleDateString(dateFmt)}` : ` — ${t("ongoing")}`}
+                      {rental.clientName} &middot;{" "}
+                      {new Date(rental.rentalStart).toLocaleDateString(dateFmt)}
+                      {rental.rentalEnd
+                        ? ` — ${new Date(rental.rentalEnd).toLocaleDateString(dateFmt)}`
+                        : ` — ${t("ongoing")}`}
                     </p>
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
-                  <Badge className={statusColors[rental.status] ?? "bg-gray-100 text-gray-700 border-0"}>
+                  <Badge
+                    className={statusColors[rental.status] ?? "bg-gray-100 text-gray-700 border-0"}
+                  >
                     {statusLabel(rental.status)}
                   </Badge>
-                  <Badge variant="outline" className="text-xs">{paymentLabel(rental.paymentStatus)}</Badge>
-                  <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${expandedId === rental.id ? "rotate-180" : ""}`} />
+                  <Badge variant="outline" className="text-xs">
+                    {paymentLabel(rental.paymentStatus)}
+                  </Badge>
+                  <ChevronDown
+                    className={`h-4 w-4 text-muted-foreground transition-transform ${expandedId === rental.id ? "rotate-180" : ""}`}
+                  />
                 </div>
               </div>
 
@@ -301,11 +380,19 @@ export default function EquipmentRentalsPage() {
                     </div>
                     <div>
                       <p className="text-muted-foreground text-xs">{t("deposit")}</p>
-                      <p className="font-medium">{rental.depositAmount != null ? `${rental.depositAmount} ${rental.currency}` : "—"}</p>
+                      <p className="font-medium">
+                        {rental.depositAmount != null
+                          ? `${rental.depositAmount} ${rental.currency}`
+                          : "—"}
+                      </p>
                     </div>
                     <div>
                       <p className="text-muted-foreground text-xs">{t("rentalAmount")}</p>
-                      <p className="font-medium">{rental.rentalAmount != null ? `${rental.rentalAmount} ${rental.currency}` : "—"}</p>
+                      <p className="font-medium">
+                        {rental.rentalAmount != null
+                          ? `${rental.rentalAmount} ${rental.currency}`
+                          : "—"}
+                      </p>
                     </div>
                   </div>
                   <div className="grid grid-cols-2 gap-4 text-sm mt-3">
@@ -315,13 +402,19 @@ export default function EquipmentRentalsPage() {
                     </div>
                     <div>
                       <p className="text-muted-foreground text-xs">{t("conditionIn")}</p>
-                      <p className="font-medium">{rental.conditionIn ? conditionLabel(rental.conditionIn) : t("notYetReturned")}</p>
+                      <p className="font-medium">
+                        {rental.conditionIn
+                          ? conditionLabel(rental.conditionIn)
+                          : t("notYetReturned")}
+                      </p>
                     </div>
                   </div>
                   {rental.actualReturn && (
                     <div className="text-sm mt-3">
                       <p className="text-muted-foreground text-xs">{t("actualReturn")}</p>
-                      <p className="font-medium">{new Date(rental.actualReturn).toLocaleDateString(dateFmt)}</p>
+                      <p className="font-medium">
+                        {new Date(rental.actualReturn).toLocaleDateString(dateFmt)}
+                      </p>
                     </div>
                   )}
                   {rental.notes && (
@@ -331,15 +424,39 @@ export default function EquipmentRentalsPage() {
                     </div>
                   )}
                   <div className="mt-4 pt-3 border-t flex items-center gap-2">
-                    <Button variant="outline" size="sm" onClick={(e) => { e.stopPropagation(); openEditDialog(rental); }}>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        openEditDialog(rental);
+                      }}
+                    >
                       <Pencil className="h-3 w-3 me-1" /> {t("edit")}
                     </Button>
                     {(rental.status === "active" || rental.status === "overdue") && (
-                      <Button variant="outline" size="sm" className="text-emerald-600" onClick={(e) => { e.stopPropagation(); setReturnDialog(rental); setReturnCondition("good"); }}>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="text-emerald-600"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setReturnDialog(rental);
+                          setReturnCondition("good");
+                        }}
+                      >
                         <RotateCcw className="h-3 w-3 me-1" /> {t("returnEquipment")}
                       </Button>
                     )}
-                    <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700 ms-auto" onClick={(e) => { e.stopPropagation(); setDeleteConfirm(rental.id); }}>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="text-red-600 hover:text-red-700 ms-auto"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setDeleteConfirm(rental.id);
+                      }}
+                    >
                       <Trash2 className="h-3 w-3 me-1" /> {t("delete")}
                     </Button>
                   </div>
@@ -359,7 +476,10 @@ export default function EquipmentRentalsPage() {
 
       {/* Add / Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent onClose={() => setDialogOpen(false)} className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent
+          onClose={() => setDialogOpen(false)}
+          className="max-w-2xl max-h-[90vh] overflow-y-auto"
+        >
           <DialogHeader>
             <DialogTitle>{editingRental ? t("editRental") : t("addRental")}</DialogTitle>
           </DialogHeader>
@@ -373,34 +493,55 @@ export default function EquipmentRentalsPage() {
                   onChange={(e) => updateField("equipmentId", e.target.value)}
                 >
                   <option value="">{t("selectEquipment")}</option>
-                  {equipment.filter((e) => e.isRentable && e.isAvailable).map((e) => (
-                    <option key={e.id} value={e.id}>{e.name} {e.serialNumber ? `(S/N: ${e.serialNumber})` : ""}</option>
-                  ))}
+                  {equipment
+                    .filter((e) => e.isRentable && e.isAvailable)
+                    .map((e) => (
+                      <option key={e.id} value={e.id}>
+                        {e.name} {e.serialNumber ? `(S/N: ${e.serialNumber})` : ""}
+                      </option>
+                    ))}
                 </select>
               </div>
             )}
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label>{t("clientName")} *</Label>
-                <Input value={form.clientName} onChange={(e) => updateField("clientName", e.target.value)} />
+                <Input
+                  value={form.clientName}
+                  onChange={(e) => updateField("clientName", e.target.value)}
+                />
               </div>
               <div>
                 <Label>{t("clientPhone")}</Label>
-                <Input value={form.clientPhone} onChange={(e) => updateField("clientPhone", e.target.value)} />
+                <Input
+                  value={form.clientPhone}
+                  onChange={(e) => updateField("clientPhone", e.target.value)}
+                />
               </div>
             </div>
             <div>
               <Label>{t("clientId")}</Label>
-              <Input value={form.clientIdNumber} onChange={(e) => updateField("clientIdNumber", e.target.value)} />
+              <Input
+                value={form.clientIdNumber}
+                onChange={(e) => updateField("clientIdNumber", e.target.value)}
+              />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label>{t("rentalStart")} *</Label>
-                <Input type="date" value={form.rentalStart} onChange={(e) => updateField("rentalStart", e.target.value)} />
+                <Input
+                  type="date"
+                  value={form.rentalStart}
+                  onChange={(e) => updateField("rentalStart", e.target.value)}
+                />
               </div>
               <div>
                 <Label>{t("rentalEnd")}</Label>
-                <Input type="date" value={form.rentalEnd} onChange={(e) => updateField("rentalEnd", e.target.value)} />
+                <Input
+                  type="date"
+                  value={form.rentalEnd}
+                  onChange={(e) => updateField("rentalEnd", e.target.value)}
+                />
               </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
@@ -412,7 +553,9 @@ export default function EquipmentRentalsPage() {
                   onChange={(e) => updateField("conditionOut", e.target.value)}
                 >
                   {CONDITIONS.map((c) => (
-                    <option key={c} value={c}>{conditionLabel(c)}</option>
+                    <option key={c} value={c}>
+                      {conditionLabel(c)}
+                    </option>
                   ))}
                 </select>
               </div>
@@ -424,7 +567,9 @@ export default function EquipmentRentalsPage() {
                   onChange={(e) => updateField("paymentStatus", e.target.value)}
                 >
                   {PAYMENT_OPTIONS.map((p) => (
-                    <option key={p} value={p}>{paymentLabel(p)}</option>
+                    <option key={p} value={p}>
+                      {paymentLabel(p)}
+                    </option>
                   ))}
                 </select>
               </div>
@@ -432,11 +577,19 @@ export default function EquipmentRentalsPage() {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label>{t("deposit")} (MAD)</Label>
-                <Input type="number" value={form.depositAmount} onChange={(e) => updateField("depositAmount", e.target.value)} />
+                <Input
+                  type="number"
+                  value={form.depositAmount}
+                  onChange={(e) => updateField("depositAmount", e.target.value)}
+                />
               </div>
               <div>
                 <Label>{t("rentalAmount")} (MAD)</Label>
-                <Input type="number" value={form.rentalAmount} onChange={(e) => updateField("rentalAmount", e.target.value)} />
+                <Input
+                  type="number"
+                  value={form.rentalAmount}
+                  onChange={(e) => updateField("rentalAmount", e.target.value)}
+                />
               </div>
             </div>
             <div>
@@ -445,10 +598,18 @@ export default function EquipmentRentalsPage() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDialogOpen(false)}>{t("cancel")}</Button>
+            <Button variant="outline" onClick={() => setDialogOpen(false)}>
+              {t("cancel")}
+            </Button>
             <Button
               onClick={handleSave}
-              disabled={saving || !form.clientName || !form.rentalStart || !form.conditionOut || (!editingRental && !form.equipmentId)}
+              disabled={
+                saving ||
+                !form.clientName ||
+                !form.rentalStart ||
+                !form.conditionOut ||
+                (!editingRental && !form.equipmentId)
+              }
               className="bg-amber-600 hover:bg-amber-700"
             >
               {saving ? t("loading") : t("save")}
@@ -464,7 +625,9 @@ export default function EquipmentRentalsPage() {
             <DialogTitle>{t("returnEquipment")}</DialogTitle>
           </DialogHeader>
           <div className="py-4 space-y-4">
-            <p className="text-sm">{returnDialog?.equipmentName} — {returnDialog?.clientName}</p>
+            <p className="text-sm">
+              {returnDialog?.equipmentName} — {returnDialog?.clientName}
+            </p>
             <div>
               <Label>{t("conditionIn")}</Label>
               <select
@@ -473,14 +636,20 @@ export default function EquipmentRentalsPage() {
                 onChange={(e) => setReturnCondition(e.target.value)}
               >
                 {CONDITIONS.map((c) => (
-                  <option key={c} value={c}>{conditionLabel(c)}</option>
+                  <option key={c} value={c}>
+                    {conditionLabel(c)}
+                  </option>
                 ))}
               </select>
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setReturnDialog(null)}>{t("cancel")}</Button>
-            <Button onClick={handleReturn} className="bg-emerald-600 hover:bg-emerald-700">{t("confirm")}</Button>
+            <Button variant="outline" onClick={() => setReturnDialog(null)}>
+              {t("cancel")}
+            </Button>
+            <Button onClick={handleReturn} className="bg-emerald-600 hover:bg-emerald-700">
+              {t("confirm")}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -491,10 +660,21 @@ export default function EquipmentRentalsPage() {
           <DialogHeader>
             <DialogTitle>{t("delete")}</DialogTitle>
           </DialogHeader>
-          <p className="py-4 text-sm">{locale === "fr" ? "Êtes-vous sûr de vouloir supprimer cette location ?" : "هل أنت متأكد من حذف هذا الإيجار؟"}</p>
+          <p className="py-4 text-sm">
+            {locale === "fr"
+              ? "Êtes-vous sûr de vouloir supprimer cette location ?"
+              : "هل أنت متأكد من حذف هذا الإيجار؟"}
+          </p>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDeleteConfirm(null)}>{t("cancel")}</Button>
-            <Button variant="destructive" onClick={() => deleteConfirm && handleDelete(deleteConfirm)}>{t("delete")}</Button>
+            <Button variant="outline" onClick={() => setDeleteConfirm(null)}>
+              {t("cancel")}
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => deleteConfirm && handleDelete(deleteConfirm)}
+            >
+              {t("delete")}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

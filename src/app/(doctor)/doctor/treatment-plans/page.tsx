@@ -15,24 +15,31 @@ export default function DoctorTreatmentPlansPage() {
   useEffect(() => {
     const controller = new AbortController();
     async function load() {
-    const user = await getCurrentUser();
+      const user = await getCurrentUser();
       if (controller.signal.aborted) return;
-    if (!user?.clinic_id) { setLoading(false); return; }
-    const data = await fetchTreatmentPlans(user.clinic_id, user.id);
+      if (!user?.clinic_id) {
+        setLoading(false);
+        return;
+      }
+      const data = await fetchTreatmentPlans(user.clinic_id, user.id);
       if (controller.signal.aborted) return;
-    setPlans(data.map(p => ({
-      ...p,
-      steps: p.steps.map((s, i) => ({ ...s, step: i + 1 })),
-    })) as TreatmentPlan[]);
-    setLoading(false);
-  }
+      setPlans(
+        data.map((p) => ({
+          ...p,
+          steps: p.steps.map((s, i) => ({ ...s, step: i + 1 })),
+        })) as TreatmentPlan[],
+      );
+      setLoading(false);
+    }
     load().catch((err) => {
       if (!controller.signal.aborted) {
         setError(err instanceof Error ? err : new Error(String(err)));
         setLoading(false);
       }
     });
-    return () => { controller.abort(); };
+    return () => {
+      controller.abort();
+    };
   }, []);
 
   if (loading) {
@@ -42,13 +49,19 @@ export default function DoctorTreatmentPlansPage() {
   if (error) {
     return (
       <div className="p-8 text-center">
-        <p className="text-red-600 font-medium">Failed to load data. Please try refreshing the page.</p>
+        <p className="text-red-600 font-medium">
+          Failed to load data. Please try refreshing the page.
+        </p>
         {error.message && <p className="text-sm text-muted-foreground mt-2">{error.message}</p>}
       </div>
     );
   }
 
-  const handleUpdateStep = async (planId: string, stepIndex: number, status: TreatmentStep["status"]) => {
+  const handleUpdateStep = async (
+    planId: string,
+    stepIndex: number,
+    status: TreatmentStep["status"],
+  ) => {
     let updatedSteps: TreatmentStep[] | null = null;
 
     setPlans((prev) =>
@@ -58,13 +71,14 @@ export default function DoctorTreatmentPlansPage() {
         steps[stepIndex] = {
           ...steps[stepIndex],
           status,
-          date: status === "completed" || status === "in_progress"
-            ? new Date().toISOString().split("T")[0]
-            : steps[stepIndex].date,
+          date:
+            status === "completed" || status === "in_progress"
+              ? new Date().toISOString().split("T")[0]
+              : steps[stepIndex].date,
         };
         updatedSteps = steps;
         return { ...p, steps, updatedAt: new Date().toISOString().split("T")[0] };
-      })
+      }),
     );
 
     if (updatedSteps) {
@@ -103,7 +117,7 @@ export default function DoctorTreatmentPlansPage() {
           totalCost: p.totalCost + cost,
           updatedAt: new Date().toISOString().split("T")[0],
         };
-      })
+      }),
     );
 
     await updateTreatmentPlan(planId, {
@@ -124,13 +138,20 @@ export default function DoctorTreatmentPlansPage() {
     if (!plan) return;
 
     const removedCost = plan.steps[stepIndex].cost;
-    const remainingSteps = plan.steps.filter((_, i) => i !== stepIndex).map((s, i) => ({ ...s, step: i + 1 }));
+    const remainingSteps = plan.steps
+      .filter((_, i) => i !== stepIndex)
+      .map((s, i) => ({ ...s, step: i + 1 }));
 
     setPlans((prev) =>
       prev.map((p) => {
         if (p.id !== planId) return p;
-        return { ...p, steps: remainingSteps, totalCost: p.totalCost - removedCost, updatedAt: new Date().toISOString().split("T")[0] };
-      })
+        return {
+          ...p,
+          steps: remainingSteps,
+          totalCost: p.totalCost - removedCost,
+          updatedAt: new Date().toISOString().split("T")[0],
+        };
+      }),
     );
 
     await updateTreatmentPlan(planId, {
@@ -148,7 +169,9 @@ export default function DoctorTreatmentPlansPage() {
 
   return (
     <div className="space-y-6">
-      <Breadcrumb items={[{ label: "Doctor", href: "/doctor/dashboard" }, { label: "Treatment Plans" }]} />
+      <Breadcrumb
+        items={[{ label: "Doctor", href: "/doctor/dashboard" }, { label: "Treatment Plans" }]}
+      />
       <h1 className="text-2xl font-bold">Treatment Plans</h1>
       <TreatmentPlanBuilder
         plans={plans}

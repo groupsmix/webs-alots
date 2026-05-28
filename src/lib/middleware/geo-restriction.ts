@@ -22,11 +22,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { logger } from "@/lib/logger";
 
 /** Admin route prefixes that should be geo-restricted. */
-const ADMIN_PREFIXES = [
-  "/admin",
-  "/dashboard",
-  "/api/admin",
-] as const;
+const ADMIN_PREFIXES = ["/admin", "/dashboard", "/api/admin"] as const;
 
 let _allowedCountries: Set<string> | null | undefined;
 
@@ -52,9 +48,7 @@ function getAllowedCountries(): Set<string> | null {
  */
 export function checkGeoRestriction(request: NextRequest): NextResponse | null {
   const { pathname } = request.nextUrl;
-  const isAdminRoute = ADMIN_PREFIXES.some((prefix) =>
-    pathname.startsWith(prefix),
-  );
+  const isAdminRoute = ADMIN_PREFIXES.some((prefix) => pathname.startsWith(prefix));
   if (!isAdminRoute) return null;
 
   const allowed = getAllowedCountries();

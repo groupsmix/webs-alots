@@ -29,86 +29,97 @@ function extractId(request: NextRequest): string {
 /**
  * GET /api/menus/[id]
  */
-export const GET = withAuth(async (request: NextRequest, auth: AuthContext) => {
-  const id = extractId(request);
-  const clinicId = auth.profile.clinic_id;
-  if (!clinicId) return apiNotFound("No clinic context");
+export const GET = withAuth(
+  async (request: NextRequest, auth: AuthContext) => {
+    const id = extractId(request);
+    const clinicId = auth.profile.clinic_id;
+    if (!clinicId) return apiNotFound("No clinic context");
 
-  const { data, error } = await auth.supabase
-    .from("menus")
-    .select("id, clinic_id, name, description, is_active, sort_order, created_at, updated_at, menu_items(id, category, name, description, price, photo_url, is_available, allergens, is_halal, sort_order)")
-    .eq("id", id)
-    .eq("clinic_id", clinicId)
-    .single();
+    const { data, error } = await auth.supabase
+      .from("menus")
+      .select(
+        "id, clinic_id, name, description, is_active, sort_order, created_at, updated_at, menu_items(id, category, name, description, price, photo_url, is_available, allergens, is_halal, sort_order)",
+      )
+      .eq("id", id)
+      .eq("clinic_id", clinicId)
+      .single();
 
-  if (error || !data) return apiNotFound("Menu not found");
+    if (error || !data) return apiNotFound("Menu not found");
 
-  return apiSuccess(data);
-}, ["super_admin", "clinic_admin", "receptionist"]);
+    return apiSuccess(data);
+  },
+  ["super_admin", "clinic_admin", "receptionist"],
+);
 
 /**
  * PATCH /api/menus/[id]
  */
-export const PATCH = withAuth(async (request: NextRequest, auth: AuthContext) => {
-  const id = extractId(request);
-  const clinicId = auth.profile.clinic_id;
-  if (!clinicId) return apiNotFound("No clinic context");
+export const PATCH = withAuth(
+  async (request: NextRequest, auth: AuthContext) => {
+    const id = extractId(request);
+    const clinicId = auth.profile.clinic_id;
+    if (!clinicId) return apiNotFound("No clinic context");
 
-  let body: unknown;
-  try {
-    body = await request.json();
-  } catch {
-    return apiError("Invalid JSON body", 422);
-  }
+    let body: unknown;
+    try {
+      body = await request.json();
+    } catch {
+      return apiError("Invalid JSON body", 422);
+    }
 
-  const result = safeParse(updateMenuSchema, body);
-  if (!result.success) return apiError(result.error, 422);
+    const result = safeParse(updateMenuSchema, body);
+    if (!result.success) return apiError(result.error, 422);
 
-  const { data, error } = await auth.supabase
-    .from("menus")
-    .update(result.data)
-    .eq("id", id)
-    .eq("clinic_id", clinicId)
-    .select()
-    .single();
+    const { data, error } = await auth.supabase
+      .from("menus")
+      .update(result.data)
+      .eq("id", id)
+      .eq("clinic_id", clinicId)
+      .select()
+      .single();
 
-  if (error) return apiSupabaseError(error, "menus/update");
-  if (!data) return apiNotFound("Menu not found");
+    if (error) return apiSupabaseError(error, "menus/update");
+    if (!data) return apiNotFound("Menu not found");
 
-  await logAuditEvent({
-    supabase: auth.supabase,
-    action: "menu.updated",
-    type: "admin",
-    clinicId,
-    description: `Menu ${id} updated`,
-  });
+    await logAuditEvent({
+      supabase: auth.supabase,
+      action: "menu.updated",
+      type: "admin",
+      clinicId,
+      description: `Menu ${id} updated`,
+    });
 
-  return apiSuccess(data);
-}, ["super_admin", "clinic_admin"]);
+    return apiSuccess(data);
+  },
+  ["super_admin", "clinic_admin"],
+);
 
 /**
  * DELETE /api/menus/[id]
  */
-export const DELETE = withAuth(async (request: NextRequest, auth: AuthContext) => {
-  const id = extractId(request);
-  const clinicId = auth.profile.clinic_id;
-  if (!clinicId) return apiNotFound("No clinic context");
+export const DELETE = withAuth(
+  async (request: NextRequest, auth: AuthContext) => {
+    const id = extractId(request);
+    const clinicId = auth.profile.clinic_id;
+    if (!clinicId) return apiNotFound("No clinic context");
 
-  const { error } = await auth.supabase
-    .from("menus")
-    .delete()
-    .eq("id", id)
-    .eq("clinic_id", clinicId);
+    const { error } = await auth.supabase
+      .from("menus")
+      .delete()
+      .eq("id", id)
+      .eq("clinic_id", clinicId);
 
-  if (error) return apiSupabaseError(error, "menus/delete");
+    if (error) return apiSupabaseError(error, "menus/delete");
 
-  await logAuditEvent({
-    supabase: auth.supabase,
-    action: "menu.deleted",
-    type: "admin",
-    clinicId,
-    description: `Menu ${id} deleted`,
-  });
+    await logAuditEvent({
+      supabase: auth.supabase,
+      action: "menu.deleted",
+      type: "admin",
+      clinicId,
+      description: `Menu ${id} deleted`,
+    });
 
-  return apiSuccess({ deleted: true });
-}, ["super_admin", "clinic_admin"]);
+    return apiSuccess({ deleted: true });
+  },
+  ["super_admin", "clinic_admin"],
+);

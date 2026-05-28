@@ -90,9 +90,7 @@ describe("logAuditEvent — enhanced fields", () => {
         type,
         clinicId: "clinic-1",
       });
-      expect(mock._insert).toHaveBeenCalledWith(
-        expect.objectContaining({ type }),
-      );
+      expect(mock._insert).toHaveBeenCalledWith(expect.objectContaining({ type }));
     }
   });
 

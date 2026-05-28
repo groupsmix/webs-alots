@@ -37,8 +37,14 @@ let _parsedOrigins: string[] | null | undefined;
 function parseAllowedOrigins(): string[] | null {
   if (_parsedOrigins !== undefined) return _parsedOrigins;
   const raw = process.env.ALLOWED_API_ORIGINS;
-  if (!raw) { _parsedOrigins = null; return null; }
-  if (raw.trim() === "*") { _parsedOrigins = ["*"]; return _parsedOrigins; }
+  if (!raw) {
+    _parsedOrigins = null;
+    return null;
+  }
+  if (raw.trim() === "*") {
+    _parsedOrigins = ["*"];
+    return _parsedOrigins;
+  }
   _parsedOrigins = raw
     .split(",")
     .map((o) => o.trim().toLowerCase())
@@ -102,5 +108,3 @@ export function handlePreflight(request: NextRequest): NextResponse {
 function _resetCorsCache(): void {
   _parsedOrigins = undefined;
 }
-
-

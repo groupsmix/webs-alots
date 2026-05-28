@@ -37,13 +37,7 @@ const PUBLIC_CACHE_ALLOWLIST = [
 ];
 
 /** Authenticated route prefixes — never cache these. */
-const AUTHED_PREFIXES = [
-  "/admin/",
-  "/doctor/",
-  "/receptionist/",
-  "/patient/",
-  "/super-admin/",
-];
+const AUTHED_PREFIXES = ["/admin/", "/doctor/", "/receptionist/", "/patient/", "/super-admin/"];
 
 function isPublicRoute(pathname) {
   // Exact match or starts with a public prefix
@@ -67,9 +61,7 @@ function isAuthedRoute(pathname) {
 // ---- Install ----
 
 self.addEventListener("install", (event) => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(PRECACHE_URLS))
-  );
+  event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(PRECACHE_URLS)));
   self.skipWaiting();
 });
 
@@ -78,13 +70,11 @@ self.addEventListener("install", (event) => {
 self.addEventListener("activate", (event) => {
   const KEEP = new Set([CACHE_NAME]);
   event.waitUntil(
-    caches.keys().then((keys) =>
-      Promise.all(
-        keys
-          .filter((key) => !KEEP.has(key))
-          .map((key) => caches.delete(key))
-      )
-    )
+    caches
+      .keys()
+      .then((keys) =>
+        Promise.all(keys.filter((key) => !KEEP.has(key)).map((key) => caches.delete(key))),
+      ),
   );
   self.clients.claim();
 });
@@ -131,11 +121,7 @@ self.addEventListener("fetch", (event) => {
   if (request.headers.get("cache-control")?.includes("no-store")) return;
 
   // --- Static assets: cache-first, update in background ---
-  if (
-    url.pathname.match(
-      /\.(js|css|png|jpg|jpeg|webp|svg|ico|woff2?|ttf|eot)$/
-    )
-  ) {
+  if (url.pathname.match(/\.(js|css|png|jpg|jpeg|webp|svg|ico|woff2?|ttf|eot)$/)) {
     event.respondWith(
       caches.match(request).then((cached) => {
         // Return cached version immediately if available
@@ -150,7 +136,7 @@ self.addEventListener("fetch", (event) => {
           .catch(() => cached);
 
         return cached || networkFetch;
-      })
+      }),
     );
     return;
   }
@@ -169,9 +155,7 @@ self.addEventListener("fetch", (event) => {
           }
           return response;
         })
-        .catch(() =>
-          caches.match(request).then((cached) => cached || caches.match(OFFLINE_URL))
-        )
+        .catch(() => caches.match(request).then((cached) => cached || caches.match(OFFLINE_URL))),
     );
     return;
   }
@@ -225,6 +209,6 @@ self.addEventListener("notificationclick", (event) => {
       }
       // Otherwise open a new window
       return self.clients.openWindow(url);
-    })
+    }),
   );
 });

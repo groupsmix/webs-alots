@@ -119,12 +119,18 @@ async function importHmacKey(secret: string, usage: "sign" | "verify"): Promise<
  * that captured headers expire after MAX_HEADER_AGE_SECONDS. The caller
  * must set `x-auth-profile-iat` alongside the signature.
  */
-export async function signProfileHeader(profile: SignedProfile): Promise<{ sig: string; iat: number } | null> {
+export async function signProfileHeader(
+  profile: SignedProfile,
+): Promise<{ sig: string; iat: number } | null> {
   const secret = getProfileHeaderSecret();
   if (!secret) return null;
   const iat = Math.floor(Date.now() / 1000);
   const key = await importHmacKey(secret, "sign");
-  const sig = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(buildPayload(profile, iat)));
+  const sig = await crypto.subtle.sign(
+    "HMAC",
+    key,
+    new TextEncoder().encode(buildPayload(profile, iat)),
+  );
   return { sig: bytesToHex(new Uint8Array(sig)), iat };
 }
 

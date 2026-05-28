@@ -63,22 +63,15 @@ describe("getPresignedUploadPost", () => {
   it("returns null when R2 is not configured", async () => {
     delete process.env.R2_ACCOUNT_ID;
     const { getPresignedUploadPost } = await import("../r2");
-    const result = await getPresignedUploadPost(
-      "clinics/abc/logos/file.png",
-      "image/png",
-    );
+    const result = await getPresignedUploadPost("clinics/abc/logos/file.png", "image/png");
     expect(result).toBeNull();
     expect(createPresignedPostMock).not.toHaveBeenCalled();
   });
 
   it("locks the policy to the requested content-length-range", async () => {
-    const { getPresignedUploadPost, DEFAULT_PRESIGNED_POST_MAX_SIZE } =
-      await import("../r2");
+    const { getPresignedUploadPost, DEFAULT_PRESIGNED_POST_MAX_SIZE } = await import("../r2");
 
-    await getPresignedUploadPost(
-      "clinics/abc/logos/file.png",
-      "image/png",
-    );
+    await getPresignedUploadPost("clinics/abc/logos/file.png", "image/png");
 
     expect(createPresignedPostMock).toHaveBeenCalledTimes(1);
     const [, params] = createPresignedPostMock.mock.calls[0] as unknown as [
@@ -110,10 +103,7 @@ describe("getPresignedUploadPost", () => {
   it("locks the policy to the exact declared Content-Type", async () => {
     const { getPresignedUploadPost } = await import("../r2");
 
-    await getPresignedUploadPost(
-      "clinics/abc/photos/file.jpg",
-      "image/jpeg",
-    );
+    await getPresignedUploadPost("clinics/abc/photos/file.jpg", "image/jpeg");
 
     const [, params] = createPresignedPostMock.mock.calls[0] as unknown as [
       unknown,
@@ -123,11 +113,7 @@ describe("getPresignedUploadPost", () => {
       },
     ];
 
-    expect(params.Conditions).toContainEqual([
-      "eq",
-      "$Content-Type",
-      "image/jpeg",
-    ]);
+    expect(params.Conditions).toContainEqual(["eq", "$Content-Type", "image/jpeg"]);
     // The Content-Type field must be pre-populated so R2 can validate it
     // against the policy condition without the client choosing the value.
     expect(params.Fields["Content-Type"]).toBe("image/jpeg");
@@ -137,31 +123,20 @@ describe("getPresignedUploadPost", () => {
     const { getPresignedUploadPost } = await import("../r2");
 
     const customMax = 512 * 1024; // 512 KB
-    await getPresignedUploadPost(
-      "clinics/abc/avatars/me.png",
-      "image/png",
-      customMax,
-    );
+    await getPresignedUploadPost("clinics/abc/avatars/me.png", "image/png", customMax);
 
     const [, params] = createPresignedPostMock.mock.calls[0] as unknown as [
       unknown,
       { Conditions: Array<unknown[]>; Expires: number },
     ];
 
-    expect(params.Conditions).toContainEqual([
-      "content-length-range",
-      0,
-      customMax,
-    ]);
+    expect(params.Conditions).toContainEqual(["content-length-range", 0, customMax]);
   });
 
   it("returns the URL, fields, and key for the client to POST", async () => {
     const { getPresignedUploadPost } = await import("../r2");
 
-    const result = await getPresignedUploadPost(
-      "clinics/abc/logos/file.png",
-      "image/png",
-    );
+    const result = await getPresignedUploadPost("clinics/abc/logos/file.png", "image/png");
 
     expect(result).not.toBeNull();
     expect(result!.url).toBe("https://r2.example/bucket");

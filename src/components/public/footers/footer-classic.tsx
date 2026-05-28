@@ -24,25 +24,35 @@ export function FooterClassic({ clinicName, template }: FooterProps) {
           {/* Column 1 — Clinic info */}
           <div>
             <h3 className="text-lg font-bold">{clinicName}</h3>
-            <p className="mt-2 text-sm text-muted-foreground">
-              {t(locale, "public.services")}
-            </p>
+            <p className="mt-2 text-sm text-muted-foreground">{t(locale, "public.services")}</p>
           </div>
 
           {/* Column 2 — Quick links */}
           <div>
             <h4 className="font-semibold">{t(locale, "public.quickLinks")}</h4>
             <nav aria-label="Footer navigation" className="mt-3 flex flex-col gap-2">
-              <Link href="/" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+              <Link
+                href="/"
+                className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+              >
                 {t(locale, "public.home")}
               </Link>
-              <Link href="/services" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+              <Link
+                href="/services"
+                className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+              >
                 {t(locale, "public.services")}
               </Link>
-              <Link href="/book" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+              <Link
+                href="/book"
+                className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+              >
                 {t(locale, "public.bookAppointment")}
               </Link>
-              <Link href="/contact" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+              <Link
+                href="/contact"
+                className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+              >
                 {t(locale, "public.contact")}
               </Link>
             </nav>

@@ -3,7 +3,14 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button-variants";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { getPublicServices } from "@/lib/data/public";
 
 export const metadata: Metadata = {
@@ -14,13 +21,41 @@ export const metadata: Metadata = {
 
 const toothDiagramCategories: Record<string, { label: string; color: string; teeth: string }> = {
   general: { label: "General Dentistry", color: "bg-sky-100 text-sky-700", teeth: "All teeth" },
-  cosmetic: { label: "Cosmetic Dentistry", color: "bg-purple-100 text-purple-700", teeth: "Front teeth (incisors, canines)" },
-  orthodontics: { label: "Orthodontics", color: "bg-pink-100 text-pink-700", teeth: "Full arch alignment" },
-  implants: { label: "Implantology", color: "bg-amber-100 text-amber-700", teeth: "Single or multiple tooth replacement" },
-  surgery: { label: "Oral Surgery", color: "bg-red-100 text-red-700", teeth: "Wisdom teeth, extractions" },
-  pediatric: { label: "Pediatric Dentistry", color: "bg-green-100 text-green-700", teeth: "Primary (baby) teeth" },
-  endodontics: { label: "Endodontics", color: "bg-orange-100 text-orange-700", teeth: "Root canal treatment" },
-  periodontics: { label: "Periodontics", color: "bg-teal-100 text-teal-700", teeth: "Gums and supporting structures" },
+  cosmetic: {
+    label: "Cosmetic Dentistry",
+    color: "bg-purple-100 text-purple-700",
+    teeth: "Front teeth (incisors, canines)",
+  },
+  orthodontics: {
+    label: "Orthodontics",
+    color: "bg-pink-100 text-pink-700",
+    teeth: "Full arch alignment",
+  },
+  implants: {
+    label: "Implantology",
+    color: "bg-amber-100 text-amber-700",
+    teeth: "Single or multiple tooth replacement",
+  },
+  surgery: {
+    label: "Oral Surgery",
+    color: "bg-red-100 text-red-700",
+    teeth: "Wisdom teeth, extractions",
+  },
+  pediatric: {
+    label: "Pediatric Dentistry",
+    color: "bg-green-100 text-green-700",
+    teeth: "Primary (baby) teeth",
+  },
+  endodontics: {
+    label: "Endodontics",
+    color: "bg-orange-100 text-orange-700",
+    teeth: "Root canal treatment",
+  },
+  periodontics: {
+    label: "Periodontics",
+    color: "bg-teal-100 text-teal-700",
+    teeth: "Gums and supporting structures",
+  },
 };
 
 function getCategoryInfo(category: string | undefined) {
@@ -41,11 +76,11 @@ function ToothDiagram({ category }: { category: string }) {
             <div
               key={`upper-${i}`}
               className={`h-3 w-2.5 rounded-t-sm ${
-                category === "cosmetic" && (i >= 2 && i <= 5)
+                category === "cosmetic" && i >= 2 && i <= 5
                   ? "bg-current opacity-80"
                   : category === "surgery" && (i === 0 || i === 7)
-                  ? "bg-current opacity-80"
-                  : "bg-current opacity-30"
+                    ? "bg-current opacity-80"
+                    : "bg-current opacity-30"
               }`}
             />
           ))}
@@ -56,11 +91,11 @@ function ToothDiagram({ category }: { category: string }) {
             <div
               key={`lower-${i}`}
               className={`h-3 w-2.5 rounded-b-sm ${
-                category === "cosmetic" && (i >= 2 && i <= 5)
+                category === "cosmetic" && i >= 2 && i <= 5
                   ? "bg-current opacity-80"
                   : category === "surgery" && (i === 0 || i === 7)
-                  ? "bg-current opacity-80"
-                  : "bg-current opacity-30"
+                    ? "bg-current opacity-80"
+                    : "bg-current opacity-30"
               }`}
             />
           ))}
@@ -89,8 +124,8 @@ export default async function DentistServicesPage() {
       <div className="text-center mb-12">
         <h1 className="text-3xl font-bold mb-4">Dental Services</h1>
         <p className="text-muted-foreground max-w-2xl mx-auto">
-          Comprehensive dental care using the latest techniques and technology.
-          Each treatment is personalized to your needs.
+          Comprehensive dental care using the latest techniques and technology. Each treatment is
+          personalized to your needs.
         </p>
       </div>
 
@@ -145,7 +180,11 @@ export default async function DentistServicesPage() {
                       <CardFooter>
                         <Link
                           href="/book"
-                          className={buttonVariants({ variant: "outline", size: "sm", className: "w-full" })}
+                          className={buttonVariants({
+                            variant: "outline",
+                            size: "sm",
+                            className: "w-full",
+                          })}
                         >
                           <Calendar className="h-4 w-4 mr-1" />
                           Book This Treatment

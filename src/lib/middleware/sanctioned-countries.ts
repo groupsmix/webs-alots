@@ -35,9 +35,7 @@ const SANCTIONED_COUNTRIES = new Set([
  * Requires Cloudflare Workers runtime (request.cf.country).
  * Falls through silently if geolocation data is unavailable (e.g. local dev).
  */
-export function checkSanctionedCountry(
-  request: Request,
-): NextResponse | null {
+export function checkSanctionedCountry(request: Request): NextResponse | null {
   // Cloudflare Workers expose geolocation on request.cf
   const cf = (request as unknown as { cf?: { country?: string } }).cf;
   const country = cf?.country;

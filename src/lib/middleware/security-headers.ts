@@ -49,8 +49,7 @@ const PERMISSIONS_POLICY = [
  * Falls back to the app's own /api/csp-report endpoint for self-hosted
  * collection when Sentry is not configured.
  */
-const CSP_REPORT_URI =
-  process.env.SENTRY_CSP_REPORT_URI || "/api/csp-report";
+const CSP_REPORT_URI = process.env.SENTRY_CSP_REPORT_URI || "/api/csp-report";
 
 /**
  * R-08: Derive the project-specific Supabase hostname from
@@ -166,10 +165,7 @@ function buildCsp(nonce: string, _options?: BuildCspOptions): string {
  * regressions surface immediately.
  */
 function isCspReportOnly(): boolean {
-  return (
-    process.env.NODE_ENV === "production" &&
-    process.env.CSP_REPORT_ONLY === "true"
-  );
+  return process.env.NODE_ENV === "production" && process.env.CSP_REPORT_ONLY === "true";
 }
 
 /**
@@ -222,10 +218,7 @@ export function buildCspHeaderValues(nonce: string): CspHeaderValues {
  * responses (CSRF block, rate-limit 429, 503) carry the same header set
  * as normal 200 responses.
  */
-export function withSecurityHeaders(
-  response: NextResponse,
-  csp: CspHeaderValues,
-): NextResponse {
+export function withSecurityHeaders(response: NextResponse, csp: CspHeaderValues): NextResponse {
   if (csp.enforce) {
     response.headers.set("Content-Security-Policy", csp.enforce);
     response.headers.delete("Content-Security-Policy-Report-Only");

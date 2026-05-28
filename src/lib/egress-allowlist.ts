@@ -97,11 +97,7 @@ export async function fetchAllowlisted(
   init?: RequestInit,
 ): Promise<Response> {
   const url =
-    typeof input === "string"
-      ? input
-      : input instanceof URL
-        ? input.toString()
-        : input.url;
+    typeof input === "string" ? input : input instanceof URL ? input.toString() : input.url;
 
   if (!isEgressAllowed(url)) {
     const hostname = (() => {

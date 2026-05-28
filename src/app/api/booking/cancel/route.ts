@@ -1,4 +1,10 @@
-import { apiError, apiForbidden, apiInternalError, apiNotFound, apiSuccess } from "@/lib/api-response";
+import {
+  apiError,
+  apiForbidden,
+  apiInternalError,
+  apiNotFound,
+  apiSuccess,
+} from "@/lib/api-response";
 import { withAuthValidation } from "@/lib/api-validate";
 import { logAuditEvent } from "@/lib/audit-log";
 import { STAFF_ROLES } from "@/lib/auth-roles";
@@ -18,8 +24,9 @@ const CANCEL_ROLES: UserRole[] = [...STAFF_ROLES, "patient"];
  *
  * Cancel an appointment if within the cancellation window.
  */
-export const POST = withAuthValidation(bookingCancelSchema, async (body, request, { supabase, profile }) => {
-
+export const POST = withAuthValidation(
+  bookingCancelSchema,
+  async (body, request, { supabase, profile }) => {
     const { tenant, config: tenantConfig } = await requireTenantWithConfig();
     const clinicId = tenant.clinicId;
 
@@ -40,7 +47,11 @@ export const POST = withAuthValidation(bookingCancelSchema, async (body, request
       return apiForbidden("Forbidden");
     }
 
-    if (appt.status === APPOINTMENT_STATUS.CANCELLED || appt.status === APPOINTMENT_STATUS.COMPLETED || appt.status === APPOINTMENT_STATUS.RESCHEDULED) {
+    if (
+      appt.status === APPOINTMENT_STATUS.CANCELLED ||
+      appt.status === APPOINTMENT_STATUS.COMPLETED ||
+      appt.status === APPOINTMENT_STATUS.RESCHEDULED
+    ) {
       return apiError("Appointment cannot be cancelled in its current state");
     }
 
@@ -49,12 +60,18 @@ export const POST = withAuthValidation(bookingCancelSchema, async (body, request
       return apiError("Appointment is missing date or time information");
     }
 
-    const appointmentDateTime = clinicDateTime(appt.appointment_date, appt.start_time, tenantConfig.timezone);
+    const appointmentDateTime = clinicDateTime(
+      appt.appointment_date,
+      appt.start_time,
+      tenantConfig.timezone,
+    );
     const hoursUntilAppt = (appointmentDateTime.getTime() - Date.now()) / (1000 * 60 * 60);
     const cancellationWindowHours = tenantConfig.booking.cancellationHours;
 
     if (hoursUntilAppt < cancellationWindowHours) {
-      return apiError(`Cancellations must be made at least ${cancellationWindowHours} hours before the appointment`);
+      return apiError(
+        `Cancellations must be made at least ${cancellationWindowHours} hours before the appointment`,
+      );
     }
 
     // Cancel the appointment
@@ -74,13 +91,15 @@ export const POST = withAuthValidation(bookingCancelSchema, async (body, request
     // RACE-02: Promote the first waiting-list entry for the freed slot
     // using the DB function with advisory locking to prevent concurrent
     // cancellations from promoting the same entry.
-     
+
     await (supabase.rpc as (...args: unknown[]) => ReturnType<typeof supabase.rpc>)(
-      "promote_waiting_list_entry", {
+      "promote_waiting_list_entry",
+      {
         p_clinic_id: clinicId,
         p_doctor_id: appt.doctor_id,
         p_preferred_date: appt.appointment_date,
-      });
+      },
+    );
 
     await logAuditEvent({
       supabase,
@@ -115,17 +134,32 @@ export const POST = withAuthValidation(bookingCancelSchema, async (body, request
 
       // cancellation → patient, doctor, receptionist
       Promise.allSettled([
-        dispatchNotification("cancellation", notifVars, appt.patient_id, ["in_app", "email", "whatsapp"]),
+        dispatchNotification("cancellation", notifVars, appt.patient_id, [
+          "in_app",
+          "email",
+          "whatsapp",
+        ]),
         dispatchNotification("cancellation", notifVars, appt.doctor_id, ["in_app"]),
       ]).catch((err) => {
-        logger.warn("Cancellation notification dispatch failed", { context: "booking/cancel", error: err });
+        logger.warn("Cancellation notification dispatch failed", {
+          context: "booking/cancel",
+          error: err,
+        });
       });
     } catch (err) {
-      logger.warn("Failed to prepare cancellation notifications", { context: "booking/cancel", error: err });
+      logger.warn("Failed to prepare cancellation notifications", {
+        context: "booking/cancel",
+        error: err,
+      });
     }
 
-    return apiSuccess({ status: APPOINTMENT_STATUS.CANCELLED, message: "Appointment cancelled successfully" });
-}, CANCEL_ROLES);
+    return apiSuccess({
+      status: APPOINTMENT_STATUS.CANCELLED,
+      message: "Appointment cancelled successfully",
+    });
+  },
+  CANCEL_ROLES,
+);
 
 /**
  * GET /api/booking/cancel?appointmentId=...
@@ -157,7 +191,11 @@ export const GET = withAuth(async (request, { supabase, profile }) => {
     return apiSuccess({ canCancel: false, reason: "Appointment not found" });
   }
 
-  if (appt.status === APPOINTMENT_STATUS.CANCELLED || appt.status === APPOINTMENT_STATUS.COMPLETED || appt.status === APPOINTMENT_STATUS.RESCHEDULED) {
+  if (
+    appt.status === APPOINTMENT_STATUS.CANCELLED ||
+    appt.status === APPOINTMENT_STATUS.COMPLETED ||
+    appt.status === APPOINTMENT_STATUS.RESCHEDULED
+  ) {
     return apiSuccess({
       canCancel: false,
       reason: "Appointment cannot be cancelled in its current state",
@@ -171,7 +209,11 @@ export const GET = withAuth(async (request, { supabase, profile }) => {
     });
   }
 
-  const appointmentDateTime = clinicDateTime(appt.appointment_date, appt.start_time, tenantCfg.timezone);
+  const appointmentDateTime = clinicDateTime(
+    appt.appointment_date,
+    appt.start_time,
+    tenantCfg.timezone,
+  );
   const hoursUntilAppt = (appointmentDateTime.getTime() - Date.now()) / (1000 * 60 * 60);
   const cancellationWindowHours = tenantCfg.booking.cancellationHours;
 

@@ -110,7 +110,10 @@ function generateCertificateSVG(cert: MedicalCertificateView): void {
   URL.revokeObjectURL(url);
 }
 
-function printCertificate(cert: MedicalCertificateView, clinic?: { name: string; address?: string; phone?: string }): void {
+function printCertificate(
+  cert: MedicalCertificateView,
+  clinic?: { name: string; address?: string; phone?: string },
+): void {
   const content = cert.content as Record<string, string>;
   const typeLabel = CERTIFICATE_TYPES.find((t) => t.value === cert.type)?.label ?? cert.type;
   const clinicName = clinic?.name || "";
@@ -148,7 +151,9 @@ ${content.recommendations ? `<div class="field"><span class="field-label">Recomm
   if (!win) return;
   win.document.write(html);
   win.document.close();
-  win.addEventListener("load", () => { win.print(); });
+  win.addEventListener("load", () => {
+    win.print();
+  });
 }
 
 export function CertificateGenerator({
@@ -193,7 +198,8 @@ export function CertificateGenerator({
 
       <div className="space-y-3">
         {certificates.map((cert) => {
-          const typeLabel = CERTIFICATE_TYPES.find((t) => t.value === cert.type)?.label ?? cert.type;
+          const typeLabel =
+            CERTIFICATE_TYPES.find((t) => t.value === cert.type)?.label ?? cert.type;
           return (
             <Card key={cert.id}>
               <CardContent className="p-4">
@@ -207,7 +213,9 @@ export function CertificateGenerator({
                       </Badge>
                     </div>
                     <div className="text-xs text-muted-foreground mt-1 space-y-0.5">
-                      <p>Doctor: {cert.doctorName} &middot; Issued: {cert.issuedDate}</p>
+                      <p>
+                        Doctor: {cert.doctorName} &middot; Issued: {cert.issuedDate}
+                      </p>
                       {(cert.content as Record<string, string>).reason && (
                         <p>Reason: {(cert.content as Record<string, string>).reason}</p>
                       )}

@@ -1,50 +1,57 @@
-"use client"
+"use client";
 
-import * as React from "react"
-import { cn } from "@/lib/utils"
+import * as React from "react";
+import { cn } from "@/lib/utils";
 
 interface DropdownMenuProps {
-  children: React.ReactNode
+  children: React.ReactNode;
 }
 
 function DropdownMenu({ children }: DropdownMenuProps) {
-  const [open, setOpen] = React.useState(false)
-  const ref = React.useRef<HTMLDivElement>(null)
+  const [open, setOpen] = React.useState(false);
+  const ref = React.useRef<HTMLDivElement>(null);
 
   React.useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (ref.current && !ref.current.contains(event.target as Node)) {
-        setOpen(false)
+        setOpen(false);
       }
     }
     function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") setOpen(false)
+      if (event.key === "Escape") setOpen(false);
     }
-    document.addEventListener("mousedown", handleClickOutside)
-    document.addEventListener("keydown", handleKeyDown)
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("keydown", handleKeyDown);
     return () => {
-      document.removeEventListener("mousedown", handleClickOutside)
-      document.removeEventListener("keydown", handleKeyDown)
-    }
-  }, [])
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, []);
 
   return (
     <div ref={ref} className="relative inline-block">
       {React.Children.map(children, (child) => {
-        if (React.isValidElement<DropdownMenuTriggerProps>(child) && child.type === DropdownMenuTrigger) {
-          return React.cloneElement(child, { onClick: () => setOpen(!open) })
+        if (
+          React.isValidElement<DropdownMenuTriggerProps>(child) &&
+          child.type === DropdownMenuTrigger
+        ) {
+          return React.cloneElement(child, { onClick: () => setOpen(!open) });
         }
         if (React.isValidElement(child) && child.type === DropdownMenuContent) {
-          return open ? React.cloneElement(child, { onClose: () => setOpen(false) } as { onClose: () => void }) : null
+          return open
+            ? React.cloneElement(child, { onClose: () => setOpen(false) } as {
+                onClose: () => void;
+              })
+            : null;
         }
-        return child
+        return child;
       })}
     </div>
-  )
+  );
 }
 
 interface DropdownMenuTriggerProps extends React.ComponentProps<"button"> {
-  asChild?: boolean
+  asChild?: boolean;
 }
 
 function DropdownMenuTrigger({ className, children, ...props }: DropdownMenuTriggerProps) {
@@ -52,7 +59,7 @@ function DropdownMenuTrigger({ className, children, ...props }: DropdownMenuTrig
     <button type="button" className={cn("outline-none", className)} {...props}>
       {children}
     </button>
-  )
+  );
 }
 
 function DropdownMenuContent({
@@ -68,18 +75,18 @@ function DropdownMenuContent({
         "absolute z-50 min-w-[8rem] overflow-hidden rounded-md border bg-popover p-1 text-popover-foreground shadow-md",
         align === "end" ? "right-0" : "left-0",
         "top-full mt-1",
-        className
+        className,
       )}
       {...props}
     >
       {React.Children.map(children, (child) => {
         if (React.isValidElement(child) && child.type === DropdownMenuItem) {
-          return React.cloneElement(child, { onClose } as { onClose?: () => void })
+          return React.cloneElement(child, { onClose } as { onClose?: () => void });
         }
-        return child
+        return child;
       })}
     </div>
-  )
+  );
 }
 
 function DropdownMenuItem({
@@ -95,32 +102,32 @@ function DropdownMenuItem({
       tabIndex={0}
       className={cn(
         "relative flex cursor-pointer select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none transition-colors hover:bg-accent hover:text-accent-foreground",
-        className
+        className,
       )}
       onClick={(e) => {
-        onClick?.(e)
-        onClose?.()
+        onClick?.(e);
+        onClose?.();
       }}
       onKeyDown={(e) => {
         if (e.key === "Enter" || e.key === " ") {
-          e.preventDefault()
-          onClick?.(e as unknown as React.MouseEvent<HTMLDivElement>)
-          onClose?.()
+          e.preventDefault();
+          onClick?.(e as unknown as React.MouseEvent<HTMLDivElement>);
+          onClose?.();
         }
       }}
       {...props}
     >
       {children}
     </div>
-  )
+  );
 }
 
 function DropdownMenuSeparator({ className, ...props }: React.ComponentProps<"div">) {
-  return <div className={cn("-mx-1 my-1 h-px bg-muted", className)} {...props} />
+  return <div className={cn("-mx-1 my-1 h-px bg-muted", className)} {...props} />;
 }
 
 function DropdownMenuLabel({ className, ...props }: React.ComponentProps<"div">) {
-  return <div className={cn("px-2 py-1.5 text-sm font-semibold", className)} {...props} />
+  return <div className={cn("px-2 py-1.5 text-sm font-semibold", className)} {...props} />;
 }
 
 export {
@@ -130,4 +137,4 @@ export {
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuLabel,
-}
+};

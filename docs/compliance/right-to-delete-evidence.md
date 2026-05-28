@@ -39,12 +39,12 @@ Runs daily. For each user where `deletion_requested_at < NOW() - 30 days`:
 
 ### Data NOT Deleted
 
-| Data | Why | Legal Basis |
-|------|-----|-------------|
-| Anonymized consent logs | Proof of consent processing | GDPR Art. 7(1) |
-| Aggregated statistics | No PII remains | Legitimate interest |
-| Audit log entries | Security compliance | Law 09-08, retained for 2 years |
-| Financial records | Tax regulations | Code General des Impots, 10-year retention |
+| Data                    | Why                         | Legal Basis                                |
+| ----------------------- | --------------------------- | ------------------------------------------ |
+| Anonymized consent logs | Proof of consent processing | GDPR Art. 7(1)                             |
+| Aggregated statistics   | No PII remains              | Legitimate interest                        |
+| Audit log entries       | Security compliance         | Law 09-08, retained for 2 years            |
+| Financial records       | Tax regulations             | Code General des Impots, 10-year retention |
 
 ---
 
@@ -108,12 +108,12 @@ Notes: [any observations]
 
 ## 4. Monitoring
 
-| Monitor | Tool | Alert |
-|---------|------|-------|
-| Cron execution | Sentry Crons (`gdpr-purge-daily`) | Alert if missed (> 5 min margin) or failed |
-| Purge errors | Sentry error tracking | Alert on `GDPR purge failed for user` errors |
-| Orphan detection | R2 cleanup cron | Alert if orphan rate exceeds threshold |
-| Deletion request backlog | Manual quarterly check | Verify no requests older than 60 days remain |
+| Monitor                  | Tool                              | Alert                                        |
+| ------------------------ | --------------------------------- | -------------------------------------------- |
+| Cron execution           | Sentry Crons (`gdpr-purge-daily`) | Alert if missed (> 5 min margin) or failed   |
+| Purge errors             | Sentry error tracking             | Alert on `GDPR purge failed for user` errors |
+| Orphan detection         | R2 cleanup cron                   | Alert if orphan rate exceeds threshold       |
+| Deletion request backlog | Manual quarterly check            | Verify no requests older than 60 days remain |
 
 ---
 

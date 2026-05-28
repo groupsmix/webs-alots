@@ -10,7 +10,9 @@ export default function AdminLabInvoicesPage() {
 
   return (
     <div className="space-y-6">
-      <Breadcrumb items={[{ label: "Admin", href: "/admin/dashboard" }, { label: "Lab Invoices" }]} />
+      <Breadcrumb
+        items={[{ label: "Admin", href: "/admin/dashboard" }, { label: "Lab Invoices" }]}
+      />
       <h1 className="text-2xl font-bold">Delivery & Invoicing</h1>
       <DeliveryInvoicing deliveries={deliveries} invoices={invoices} editable />
     </div>

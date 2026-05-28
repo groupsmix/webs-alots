@@ -3,7 +3,7 @@ name: Monthly Database Restore Drill
 on:
   # INF-001: Re-enabled monthly restore drill. Validates backup integrity.
   schedule:
-    - cron: '0 4 1 * *'
+    - cron: "0 4 1 * *"
   workflow_dispatch:
 
 # Least-privilege permissions
@@ -61,10 +61,10 @@ jobs:
             echo "::error::BACKUP_GPG_PRIVATE_KEY secret is not set. Cannot decrypt backup."
             exit 1
           fi
-          
+
           # Import the private key to decrypt the backup
           echo "$BACKUP_GPG_PRIVATE_KEY" | gpg --import --batch --yes
-          
+
           gpg --decrypt --batch --yes latest_backup.sql.gz.gpg > latest_backup.sql.gz
           gunzip latest_backup.sql.gz
 
@@ -72,7 +72,7 @@ jobs:
         uses: supabase/setup-cli@3c2f5e2ae34c34e428e8e206e2c4d21fa2d20fbf # v2.1.1
         with:
           version: latest
-      
+
       - name: Start Supabase Stack
         run: supabase start
 

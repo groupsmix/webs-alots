@@ -72,7 +72,9 @@ export function ManualBookingDialog({ trigger, onBook }: ManualBookingDialogProp
     load().catch(() => {
       // Data loading errors are non-fatal for dialog pre-population
     });
-    return () => { controller.abort(); };
+    return () => {
+      controller.abort();
+    };
   }, []);
 
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
@@ -81,8 +83,19 @@ export function ManualBookingDialog({ trigger, onBook }: ManualBookingDialogProp
   const [source, setSource] = useState<"phone" | "walk_in">("phone");
 
   const timeSlots = [
-    "09:00", "09:30", "10:00", "10:30", "11:00", "11:30",
-    "12:00", "14:00", "14:30", "15:00", "15:30", "16:00", "16:30",
+    "09:00",
+    "09:30",
+    "10:00",
+    "10:30",
+    "11:00",
+    "11:30",
+    "12:00",
+    "14:00",
+    "14:30",
+    "15:00",
+    "15:30",
+    "16:00",
+    "16:30",
   ];
 
   const handleSubmit = () => {
@@ -160,7 +173,8 @@ export function ManualBookingDialog({ trigger, onBook }: ManualBookingDialogProp
                 <SelectContent>
                   {doctors.map((d) => (
                     <SelectItem key={d.id} value={d.id}>
-                      {d.name}{d.specialty ? ` - ${d.specialty}` : ""}
+                      {d.name}
+                      {d.specialty ? ` - ${d.specialty}` : ""}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -174,11 +188,13 @@ export function ManualBookingDialog({ trigger, onBook }: ManualBookingDialogProp
                   <SelectValue placeholder="Select service..." />
                 </SelectTrigger>
                 <SelectContent>
-                  {services.filter((s) => s.active).map((s) => (
-                    <SelectItem key={s.id} value={s.id}>
-                      {s.name} ({s.duration}min - {s.price} {s.currency})
-                    </SelectItem>
-                  ))}
+                  {services
+                    .filter((s) => s.active)
+                    .map((s) => (
+                      <SelectItem key={s.id} value={s.id}>
+                        {s.name} ({s.duration}min - {s.price} {s.currency})
+                      </SelectItem>
+                    ))}
                 </SelectContent>
               </Select>
             </div>
@@ -196,7 +212,9 @@ export function ManualBookingDialog({ trigger, onBook }: ManualBookingDialogProp
                   </SelectTrigger>
                   <SelectContent>
                     {timeSlots.map((t) => (
-                      <SelectItem key={t} value={t}>{t}</SelectItem>
+                      <SelectItem key={t} value={t}>
+                        {t}
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -214,8 +232,13 @@ export function ManualBookingDialog({ trigger, onBook }: ManualBookingDialogProp
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
-            <Button onClick={handleSubmit} disabled={!patientId || !doctorId || !serviceId || !date || !time}>
+            <Button variant="outline" onClick={() => setOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={handleSubmit}
+              disabled={!patientId || !doctorId || !serviceId || !date || !time}
+            >
               Book Appointment
             </Button>
           </DialogFooter>

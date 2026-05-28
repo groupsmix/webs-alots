@@ -1,12 +1,25 @@
 "use client";
 
-import { Users, Calendar, TrendingDown, DollarSign, Activity, Clock, UserCheck, AlertTriangle } from "lucide-react";
+import {
+  Users,
+  Calendar,
+  TrendingDown,
+  DollarSign,
+  Activity,
+  Clock,
+  UserCheck,
+  AlertTriangle,
+} from "lucide-react";
 import { useState, useEffect } from "react";
 import { useLocale } from "@/components/locale-switcher";
 import { useTenant } from "@/components/tenant-provider";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { fetchDashboardStats, fetchTodayAppointments, type DashboardStats } from "@/lib/data/client";
+import {
+  fetchDashboardStats,
+  fetchTodayAppointments,
+  type DashboardStats,
+} from "@/lib/data/client";
 import { logger } from "@/lib/logger";
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { formatCurrency, formatNumber } from "@/lib/utils";
@@ -28,31 +41,57 @@ export function ClinicStats() {
     if (!clinicId) return;
 
     let cancelled = false;
-    Promise.all([
-      fetchDashboardStats(clinicId),
-      fetchTodayAppointments(clinicId),
-    ]).then(([dashStats, todayAppts]) => {
-      if (cancelled) return;
-      setDashData(dashStats);
-      setTodayCount(todayAppts.length);
-    }).catch((err) => {
-      logger.warn("Operation failed", { context: "clinic-stats", error: err });
-    });
-    return () => { cancelled = true; };
+    Promise.all([fetchDashboardStats(clinicId), fetchTodayAppointments(clinicId)])
+      .then(([dashStats, todayAppts]) => {
+        if (cancelled) return;
+        setDashData(dashStats);
+        setTodayCount(todayAppts.length);
+      })
+      .catch((err) => {
+        logger.warn("Operation failed", { context: "clinic-stats", error: err });
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [tenant?.clinicId]);
 
   const totalPatients = dashData?.totalPatients ?? 0;
   const completedAppts = dashData?.completedAppointments ?? 0;
-  const noShowRate = dashData && dashData.totalAppointments > 0
-    ? Math.round((dashData.noShowCount / dashData.totalAppointments) * 100)
-    : 0;
+  const noShowRate =
+    dashData && dashData.totalAppointments > 0
+      ? Math.round((dashData.noShowCount / dashData.totalAppointments) * 100)
+      : 0;
   const revenue = dashData?.totalRevenue ?? 0;
 
   const stats = [
-    { title: "Total Patients", value: totalPatients.toString(), icon: Users, change: "+12%", trend: "up" as const },
-    { title: "Today's Bookings", value: todayCount.toString(), icon: Calendar, change: `${completedAppts} completed`, trend: "neutral" as const },
-    { title: "No-Show Rate", value: `${noShowRate}%`, icon: TrendingDown, change: noShowRate > 10 ? "High" : "Normal", trend: noShowRate > 10 ? ("down" as const) : ("up" as const) },
-    { title: "Revenue (MTD)", value: formatCurrency(revenue, typeof locale !== "undefined" ? locale : "fr", "MAD"), icon: DollarSign, change: "+8%", trend: "up" as const },
+    {
+      title: "Total Patients",
+      value: totalPatients.toString(),
+      icon: Users,
+      change: "+12%",
+      trend: "up" as const,
+    },
+    {
+      title: "Today's Bookings",
+      value: todayCount.toString(),
+      icon: Calendar,
+      change: `${completedAppts} completed`,
+      trend: "neutral" as const,
+    },
+    {
+      title: "No-Show Rate",
+      value: `${noShowRate}%`,
+      icon: TrendingDown,
+      change: noShowRate > 10 ? "High" : "Normal",
+      trend: noShowRate > 10 ? ("down" as const) : ("up" as const),
+    },
+    {
+      title: "Revenue (MTD)",
+      value: formatCurrency(revenue, typeof locale !== "undefined" ? locale : "fr", "MAD"),
+      icon: DollarSign,
+      change: "+8%",
+      trend: "up" as const,
+    },
   ];
 
   const bookingSources = [
@@ -83,7 +122,13 @@ export function ClinicStats() {
                   <p className="text-sm text-muted-foreground">{stat.title}</p>
                   <p className="text-2xl font-bold mt-1">{stat.value}</p>
                   <Badge
-                    variant={stat.trend === "up" ? "default" : stat.trend === "down" ? "destructive" : "secondary"}
+                    variant={
+                      stat.trend === "up"
+                        ? "default"
+                        : stat.trend === "down"
+                          ? "destructive"
+                          : "secondary"
+                    }
                     className="text-xs mt-1"
                   >
                     {stat.change}
@@ -112,10 +157,15 @@ export function ClinicStats() {
                 <div key={source.source}>
                   <div className="flex items-center justify-between text-sm mb-1">
                     <span>{source.source}</span>
-                    <span className="text-muted-foreground">{source.count} ({source.percentage}%)</span>
+                    <span className="text-muted-foreground">
+                      {source.count} ({source.percentage}%)
+                    </span>
                   </div>
                   <div className="h-2 bg-muted rounded-full overflow-hidden">
-                    <div className="h-full bg-primary rounded-full transition-all" style={{ width: `${source.percentage}%` }} />
+                    <div
+                      className="h-full bg-primary rounded-full transition-all"
+                      style={{ width: `${source.percentage}%` }}
+                    />
                   </div>
                 </div>
               ))}
@@ -136,7 +186,10 @@ export function ClinicStats() {
                 <div key={hour.hour} className="flex items-center gap-3">
                   <span className="text-xs text-muted-foreground w-24">{hour.hour}</span>
                   <div className="flex-1 h-4 bg-muted rounded-full overflow-hidden">
-                    <div className="h-full bg-primary/60 rounded-full transition-all" style={{ width: `${(hour.count / maxCount) * 100}%` }} />
+                    <div
+                      className="h-full bg-primary/60 rounded-full transition-all"
+                      style={{ width: `${(hour.count / maxCount) * 100}%` }}
+                    />
                   </div>
                   <span className="text-xs font-medium w-6 text-right">{hour.count}</span>
                 </div>

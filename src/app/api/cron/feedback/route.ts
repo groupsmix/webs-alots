@@ -24,7 +24,10 @@ async function handler(request: NextRequest) {
     const supabase = createAdminClient("cron");
 
     // Audit 7.1: Short-circuit if there are no active clinics to save DB compute
-    const { count } = await supabase.from("clinics").select("*", { count: "exact", head: true }).eq("status", "active");
+    const { count } = await supabase
+      .from("clinics")
+      .select("*", { count: "exact", head: true })
+      .eq("status", "active");
     if (!count || count === 0) {
       return apiSuccess({ message: "No active clinics, skipping cron", sent: 0 });
     }
@@ -36,7 +39,8 @@ async function handler(request: NextRequest) {
     // haven't received a feedback request yet
     const { data: completedAppointments, error } = await supabase
       .from("appointments")
-      .select(`
+      .select(
+        `
         id,
         clinic_id,
         patient_id,
@@ -46,7 +50,8 @@ async function handler(request: NextRequest) {
         patients:patient_id (id, name, phone),
         doctors:doctor_id (id, name),
         clinics:clinic_id (id, name, google_place_id)
-      `)
+      `,
+      )
       .eq("status", "completed")
       .gte("updated_at", twoHoursAgo.toISOString())
       .limit(100);
@@ -66,7 +71,16 @@ async function handler(request: NextRequest) {
     // Check which appointments already have feedback entries
     // patient_feedback is added by migration 00055 — cast through unknown
     const appointmentIds = completedAppointments.map((a) => a.id);
-    const { data: existingFeedback } = await (supabase as unknown as { from(t: string): { select(s: string): { in(col: string, vals: string[]): Promise<{ data: { appointment_id: string }[] | null }> } } }).from("patient_feedback")
+    const { data: existingFeedback } = await (
+      supabase as unknown as {
+        from(t: string): {
+          select(s: string): {
+            in(col: string, vals: string[]): Promise<{ data: { appointment_id: string }[] | null }>;
+          };
+        };
+      }
+    )
+      .from("patient_feedback")
       .select("appointment_id")
       .in("appointment_id", appointmentIds);
 
@@ -102,16 +116,22 @@ async function handler(request: NextRequest) {
       // Create a feedback entry with null rating (pending)
       if (result.success) {
         // patient_feedback table added by migration 00055
-        await (supabase as unknown as { from(t: string): { insert(row: Record<string, unknown>): Promise<void> } }).from("patient_feedback").insert({
-          clinic_id: appt.clinic_id,
-          appointment_id: appt.id,
-          patient_id: patient.id,
-          doctor_id: appt.doctor_id,
-          rating: 0, // Will be updated when patient responds
-          source: "whatsapp",
-          feedback_sent_at: new Date().toISOString(),
-          whatsapp_message_id: result.messageId ?? null,
-        });
+        await (
+          supabase as unknown as {
+            from(t: string): { insert(row: Record<string, unknown>): Promise<void> };
+          }
+        )
+          .from("patient_feedback")
+          .insert({
+            clinic_id: appt.clinic_id,
+            appointment_id: appt.id,
+            patient_id: patient.id,
+            doctor_id: appt.doctor_id,
+            rating: 0, // Will be updated when patient responds
+            source: "whatsapp",
+            feedback_sent_at: new Date().toISOString(),
+            whatsapp_message_id: result.messageId ?? null,
+          });
       }
 
       results.push({ appointmentId: appt.id, success: result.success });

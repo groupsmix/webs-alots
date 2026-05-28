@@ -12,7 +12,9 @@ export default function AdminDepartmentsPage() {
 
   return (
     <div className="space-y-6">
-      <Breadcrumb items={[{ label: "Admin", href: "/admin/dashboard" }, { label: "Departments" }]} />
+      <Breadcrumb
+        items={[{ label: "Admin", href: "/admin/dashboard" }, { label: "Departments" }]}
+      />
       <h1 className="text-2xl font-bold">Department Management</h1>
       <Tabs defaultValue="departments">
         <TabsList>

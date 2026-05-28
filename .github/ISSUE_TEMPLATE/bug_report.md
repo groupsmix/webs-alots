@@ -3,7 +3,7 @@ name: Bug Report
 about: Report a bug in Oltigo Health
 title: "[BUG] "
 labels: bug
-assignees: ''
+assignees: ""
 ---
 
 ## Describe the bug

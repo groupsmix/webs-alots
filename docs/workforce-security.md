@@ -18,14 +18,14 @@ endpoint, JML (Joiner-Mover-Leaver), insider risk, and training policies.
 
 Once the team exceeds 3 people, enforce:
 
-| System | IdP / SSO | MFA Requirement |
-|--------|-----------|-----------------|
-| GitHub (org) | GitHub SSO or SAML (Google/Okta/Entra) | WebAuthn (passkey) for org owners |
-| Cloudflare | Cloudflare Access with SSO | WebAuthn for admins |
-| Supabase | Supabase Dashboard SSO (if available) or shared 1Password vault | TOTP minimum |
-| Sentry | SAML SSO | TOTP minimum |
-| Stripe | Stripe Dashboard SSO | TOTP minimum |
-| Resend | Email + MFA | TOTP minimum |
+| System       | IdP / SSO                                                       | MFA Requirement                   |
+| ------------ | --------------------------------------------------------------- | --------------------------------- |
+| GitHub (org) | GitHub SSO or SAML (Google/Okta/Entra)                          | WebAuthn (passkey) for org owners |
+| Cloudflare   | Cloudflare Access with SSO                                      | WebAuthn for admins               |
+| Supabase     | Supabase Dashboard SSO (if available) or shared 1Password vault | TOTP minimum                      |
+| Sentry       | SAML SSO                                                        | TOTP minimum                      |
+| Stripe       | Stripe Dashboard SSO                                            | TOTP minimum                      |
+| Resend       | Email + MFA                                                     | TOTP minimum                      |
 
 ### Conditional Access Rules
 
@@ -39,14 +39,14 @@ Once the team exceeds 3 people, enforce:
 
 **Rule:** Every critical system must have at least 2 named humans with admin access. No shared accounts.
 
-| System | Role | Person 1 | Person 2 | Last Recert |
-|--------|------|----------|----------|-------------|
-| GitHub (org owner) | `groupsmix` org owner | _TBD_ | _TBD_ | _TBD_ |
-| Supabase (service-role) | Project admin | _TBD_ | _TBD_ | _TBD_ |
-| Cloudflare (super admin) | Account admin | _TBD_ | _TBD_ | _TBD_ |
-| Stripe (account owner) | Account owner | _TBD_ | _TBD_ | _TBD_ |
-| Meta Business (WhatsApp) | Business admin | _TBD_ | _TBD_ | _TBD_ |
-| DNS (registrar) | Domain admin | _TBD_ | _TBD_ | _TBD_ |
+| System                   | Role                  | Person 1 | Person 2 | Last Recert |
+| ------------------------ | --------------------- | -------- | -------- | ----------- |
+| GitHub (org owner)       | `groupsmix` org owner | _TBD_    | _TBD_    | _TBD_       |
+| Supabase (service-role)  | Project admin         | _TBD_    | _TBD_    | _TBD_       |
+| Cloudflare (super admin) | Account admin         | _TBD_    | _TBD_    | _TBD_       |
+| Stripe (account owner)   | Account owner         | _TBD_    | _TBD_    | _TBD_       |
+| Meta Business (WhatsApp) | Business admin        | _TBD_    | _TBD_    | _TBD_       |
+| DNS (registrar)          | Domain admin          | _TBD_    | _TBD_    | _TBD_       |
 
 ### Recertification
 
@@ -66,11 +66,11 @@ Emergency-only accounts for when normal authentication is unavailable
 
 ### Accounts
 
-| System | Account Name | Credential Storage | Alert On Use |
-|--------|-------------|-------------------|--------------|
-| GitHub | `oltigo-breakglass` (org owner) | 1Password vault (split: Person A has password, Person B has MFA recovery) | Sentry alert + PagerDuty |
-| Supabase | Supabase project owner (email-based) | 1Password vault (split custody) | Sentry alert |
-| Cloudflare | `breakglass@oltigo.com` | 1Password vault (split custody) | Cloudflare audit log alert |
+| System     | Account Name                         | Credential Storage                                                        | Alert On Use               |
+| ---------- | ------------------------------------ | ------------------------------------------------------------------------- | -------------------------- |
+| GitHub     | `oltigo-breakglass` (org owner)      | 1Password vault (split: Person A has password, Person B has MFA recovery) | Sentry alert + PagerDuty   |
+| Supabase   | Supabase project owner (email-based) | 1Password vault (split custody)                                           | Sentry alert               |
+| Cloudflare | `breakglass@oltigo.com`              | 1Password vault (split custody)                                           | Cloudflare audit log alert |
 
 ### Procedures
 
@@ -85,11 +85,11 @@ Emergency-only accounts for when normal authentication is unavailable
 
 ### Drill Schedule
 
-| System | Last Drill | Next Drill | Owner |
-|--------|-----------|------------|-------|
-| GitHub | _Not yet_ | Q3 2026 | Security Officer |
-| Supabase | _Not yet_ | Q3 2026 | Security Officer |
-| Cloudflare | _Not yet_ | Q3 2026 | Security Officer |
+| System     | Last Drill | Next Drill | Owner            |
+| ---------- | ---------- | ---------- | ---------------- |
+| GitHub     | _Not yet_  | Q3 2026    | Security Officer |
+| Supabase   | _Not yet_  | Q3 2026    | Security Officer |
+| Cloudflare | _Not yet_  | Q3 2026    | Security Officer |
 
 ---
 
@@ -100,24 +100,24 @@ Emergency-only accounts for when normal authentication is unavailable
 Any device that accesses production data (Supabase, Cloudflare dashboard,
 patient data via the app) must meet:
 
-| Control | Requirement | Enforcement |
-|---------|------------|-------------|
-| Full Disk Encryption (FDE) | Enabled (FileVault / BitLocker / LUKS) | MDM policy |
-| Auto screen lock | < 5 minutes | MDM policy |
-| OS patching | Within 14 days of release | MDM compliance check |
-| Antivirus / EDR | Active (macOS: built-in XProtect; Windows: Defender) | MDM policy |
-| USB mass storage | Blocked on devices with PHI access | MDM policy |
-| Browser extensions | Security-reviewed allowlist only | MDM policy |
-| BYOD | Not permitted for PHI access | Policy |
+| Control                    | Requirement                                          | Enforcement          |
+| -------------------------- | ---------------------------------------------------- | -------------------- |
+| Full Disk Encryption (FDE) | Enabled (FileVault / BitLocker / LUKS)               | MDM policy           |
+| Auto screen lock           | < 5 minutes                                          | MDM policy           |
+| OS patching                | Within 14 days of release                            | MDM compliance check |
+| Antivirus / EDR            | Active (macOS: built-in XProtect; Windows: Defender) | MDM policy           |
+| USB mass storage           | Blocked on devices with PHI access                   | MDM policy           |
+| Browser extensions         | Security-reviewed allowlist only                     | MDM policy           |
+| BYOD                       | Not permitted for PHI access                         | Policy               |
 
 ### MDM Options (Choose One)
 
-| Tool | Platform | Cost |
-|------|----------|------|
-| **Kandji** | macOS, iOS | $$ |
-| **Jamf** | macOS, iOS | $$$ |
+| Tool                 | Platform                     | Cost                       |
+| -------------------- | ---------------------------- | -------------------------- |
+| **Kandji**           | macOS, iOS                   | $$                         |
+| **Jamf**             | macOS, iOS                   | $$$                        |
 | **Microsoft Intune** | Windows, macOS, iOS, Android | $$ (included with M365 E3) |
-| **Mosyle** | macOS, iOS | $ |
+| **Mosyle**           | macOS, iOS                   | $                          |
 
 ### Action Items
 
@@ -188,13 +188,13 @@ Ticket required. Signed exit checklist:
 
 Configure alerts for:
 
-| Signal | Source | Alert Destination |
-|--------|--------|-------------------|
-| Supabase service-role key usage outside CI IPs | Supabase Dashboard logs | Sentry / PagerDuty |
-| GitHub mass clone / bulk download events | GitHub Audit Log | Sentry |
-| Cloudflare admin login from new geolocation | Cloudflare Audit Log | Email alert |
-| `SELECT *` on production tables (bulk export) | Supabase query logs | Manual review weekly |
-| Off-hours admin activity (outside 07:00-22:00 Africa/Casablanca) | Supabase + Cloudflare logs | Sentry |
+| Signal                                                           | Source                     | Alert Destination    |
+| ---------------------------------------------------------------- | -------------------------- | -------------------- |
+| Supabase service-role key usage outside CI IPs                   | Supabase Dashboard logs    | Sentry / PagerDuty   |
+| GitHub mass clone / bulk download events                         | GitHub Audit Log           | Sentry               |
+| Cloudflare admin login from new geolocation                      | Cloudflare Audit Log       | Email alert          |
+| `SELECT *` on production tables (bulk export)                    | Supabase query logs        | Manual review weekly |
+| Off-hours admin activity (outside 07:00-22:00 Africa/Casablanca) | Supabase + Cloudflare logs | Sentry               |
 
 ### Shadow IT (A185)
 
@@ -208,18 +208,19 @@ being used with patient data.
 
 ### Requirements
 
-| Training | Audience | Frequency | Format |
-|----------|----------|-----------|--------|
-| Security onboarding | All new hires | On join | Self-paced module + quiz |
-| Annual security awareness | All team members | Annual | Self-paced module + quiz |
-| Phishing simulation | All team members | Annual (minimum) | Simulated phishing campaign |
-| PHI handling | Anyone with PHI access | Annual | Role-based module |
-| Incident response | On-call engineers | Annual | Tabletop exercise (see A189) |
-| Secure coding | Developers | Annual | OWASP Top 10 review + code review exercise |
+| Training                  | Audience               | Frequency        | Format                                     |
+| ------------------------- | ---------------------- | ---------------- | ------------------------------------------ |
+| Security onboarding       | All new hires          | On join          | Self-paced module + quiz                   |
+| Annual security awareness | All team members       | Annual           | Self-paced module + quiz                   |
+| Phishing simulation       | All team members       | Annual (minimum) | Simulated phishing campaign                |
+| PHI handling              | Anyone with PHI access | Annual           | Role-based module                          |
+| Incident response         | On-call engineers      | Annual           | Tabletop exercise (see A189)               |
+| Secure coding             | Developers             | Annual           | OWASP Top 10 review + code review exercise |
 
 ### Training Records
 
 Maintain records in `docs/training/YYYY-name.md` with:
+
 - Date completed
 - Training type
 - Pass/fail status

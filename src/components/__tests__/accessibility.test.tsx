@@ -19,10 +19,20 @@ vi.mock("@/lib/auth", () => ({
 
 // Mock UI components with accessible HTML
 vi.mock("@/components/ui/card", () => ({
-  Card: ({ children, ...props }: { children: React.ReactNode; [key: string]: unknown }) => <div role="region" aria-label="card" {...props}>{children}</div>,
-  CardContent: ({ children, ...props }: { children: React.ReactNode; [key: string]: unknown }) => <div {...props}>{children}</div>,
-  CardHeader: ({ children, ...props }: { children: React.ReactNode; [key: string]: unknown }) => <div {...props}>{children}</div>,
-  CardTitle: ({ children, ...props }: { children: React.ReactNode; [key: string]: unknown }) => <h2 {...props}>{children}</h2>,
+  Card: ({ children, ...props }: { children: React.ReactNode; [key: string]: unknown }) => (
+    <div role="region" aria-label="card" {...props}>
+      {children}
+    </div>
+  ),
+  CardContent: ({ children, ...props }: { children: React.ReactNode; [key: string]: unknown }) => (
+    <div {...props}>{children}</div>
+  ),
+  CardHeader: ({ children, ...props }: { children: React.ReactNode; [key: string]: unknown }) => (
+    <div {...props}>{children}</div>
+  ),
+  CardTitle: ({ children, ...props }: { children: React.ReactNode; [key: string]: unknown }) => (
+    <h2 {...props}>{children}</h2>
+  ),
   CardDescription: ({ children }: { children: React.ReactNode }) => <p>{children}</p>,
   CardFooter: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
 }));
@@ -34,9 +44,7 @@ vi.mock("@/components/ui/input", () => ({
 }));
 
 vi.mock("@/components/ui/textarea", () => ({
-  Textarea: (props: { [key: string]: unknown }) => (
-    <textarea {...props} />
-  ),
+  Textarea: (props: { [key: string]: unknown }) => <textarea {...props} />,
 }));
 
 vi.mock("@/components/ui/label", () => ({
@@ -46,8 +54,22 @@ vi.mock("@/components/ui/label", () => ({
 }));
 
 vi.mock("@/components/ui/button", () => ({
-  Button: ({ children, type, onClick, disabled, ...props }: { children: React.ReactNode; type?: "submit" | "reset" | "button"; onClick?: () => void; disabled?: boolean; [key: string]: unknown }) => (
-    <button type={type} onClick={onClick} disabled={disabled} {...props}>{children}</button>
+  Button: ({
+    children,
+    type,
+    onClick,
+    disabled,
+    ...props
+  }: {
+    children: React.ReactNode;
+    type?: "submit" | "reset" | "button";
+    onClick?: () => void;
+    disabled?: boolean;
+    [key: string]: unknown;
+  }) => (
+    <button type={type} onClick={onClick} disabled={disabled} {...props}>
+      {children}
+    </button>
   ),
 }));
 
@@ -58,7 +80,19 @@ vi.mock("@/components/ui/badge", () => ({
 }));
 
 vi.mock("next/link", () => ({
-  default: ({ children, href, ...props }: { children: React.ReactNode; href: string; [key: string]: unknown }) => <a href={href} {...props}>{children}</a>,
+  default: ({
+    children,
+    href,
+    ...props
+  }: {
+    children: React.ReactNode;
+    href: string;
+    [key: string]: unknown;
+  }) => (
+    <a href={href} {...props}>
+      {children}
+    </a>
+  ),
 }));
 
 // Mock tenant provider for BookingForm
@@ -151,13 +185,10 @@ describe("Accessibility (WCAG)", () => {
       <form>
         <div>
           <label htmlFor="test-email">Email</label>
-          <input
-            id="test-email"
-            type="email"
-            aria-invalid="true"
-            aria-describedby="email-error"
-          />
-          <p id="email-error" role="alert">Invalid email address</p>
+          <input id="test-email" type="email" aria-invalid="true" aria-describedby="email-error" />
+          <p id="email-error" role="alert">
+            Invalid email address
+          </p>
         </div>
         <div>
           <label htmlFor="test-password">Password</label>
@@ -167,7 +198,9 @@ describe("Accessibility (WCAG)", () => {
             aria-invalid="true"
             aria-describedby="password-error"
           />
-          <p id="password-error" role="alert">Password too short</p>
+          <p id="password-error" role="alert">
+            Password too short
+          </p>
         </div>
         <button type="submit">Submit</button>
       </form>,
@@ -178,11 +211,7 @@ describe("Accessibility (WCAG)", () => {
 
   it("modal dialog pattern has correct ARIA roles", async () => {
     const { container } = render(
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="dialog-title"
-      >
+      <div role="dialog" aria-modal="true" aria-labelledby="dialog-title">
         <h2 id="dialog-title">Confirm Appointment</h2>
         <p>Are you sure you want to book this appointment?</p>
         <button type="button">Cancel</button>
@@ -197,10 +226,18 @@ describe("Accessibility (WCAG)", () => {
     const { container } = render(
       <nav aria-label="Main navigation">
         <ul>
-          <li><a href="/dashboard">Dashboard</a></li>
-          <li><a href="/patients">Patients</a></li>
-          <li><a href="/appointments">Appointments</a></li>
-          <li><a href="/settings">Settings</a></li>
+          <li>
+            <a href="/dashboard">Dashboard</a>
+          </li>
+          <li>
+            <a href="/patients">Patients</a>
+          </li>
+          <li>
+            <a href="/appointments">Appointments</a>
+          </li>
+          <li>
+            <a href="/settings">Settings</a>
+          </li>
         </ul>
       </nav>,
     );
@@ -224,8 +261,14 @@ describe("Accessibility (WCAG)", () => {
           <tr>
             <td>John Doe</td>
             <td>2026-03-15</td>
-            <td><span role="status">Confirmed</span></td>
-            <td><button type="button" aria-label="View John Doe appointment">View</button></td>
+            <td>
+              <span role="status">Confirmed</span>
+            </td>
+            <td>
+              <button type="button" aria-label="View John Doe appointment">
+                View
+              </button>
+            </td>
           </tr>
         </tbody>
       </table>,

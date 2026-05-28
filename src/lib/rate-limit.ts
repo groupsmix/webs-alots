@@ -75,9 +75,12 @@ export function extractClientIp(request: NextRequest): string {
     const first = xff.split(",")[0]?.trim();
     if (first && isPlausibleIp(first)) {
       if (isProduction) {
-        logger.warn("Rate limiter fell back to X-Forwarded-For (CF-Connecting-IP absent in production)", {
-          context: "rate-limit",
-        });
+        logger.warn(
+          "Rate limiter fell back to X-Forwarded-For (CF-Connecting-IP absent in production)",
+          {
+            context: "rate-limit",
+          },
+        );
       }
       return first;
     }
@@ -197,7 +200,7 @@ function recordFailure(state: CircuitBreakerState, options: RateLimiterOptions):
       state.fallback = createMemoryRateLimiter(options);
     }
     logger.warn(
-      `Rate limiter circuit breaker tripped after ${state.consecutiveFailures} failures — ${state.failClosed ? 'failing closed' : 'falling back to in-memory limiter'}`,
+      `Rate limiter circuit breaker tripped after ${state.consecutiveFailures} failures — ${state.failClosed ? "failing closed" : "falling back to in-memory limiter"}`,
       { context: "rate-limit" },
     );
   }
@@ -270,13 +273,12 @@ function createSupabaseRateLimiter(options: RateLimiterOptions): RateLimiter {
         // If the RPC doesn't exist, fall back to the non-atomic approach
         // with a single upsert that's still better than separate SELECT+UPDATE.
         const resetAt = now + windowMs;
-        const { data: rpcResult, error: rpcError } = await supabase
-          .rpc("rate_limit_increment", {
-            p_key: key,
-            p_window_start: windowStart,
-            p_reset_at: resetAt,
-            p_now: new Date(now).toISOString(),
-          });
+        const { data: rpcResult, error: rpcError } = await supabase.rpc("rate_limit_increment", {
+          p_key: key,
+          p_window_start: windowStart,
+          p_reset_at: resetAt,
+          p_now: new Date(now).toISOString(),
+        });
 
         if (!rpcError && rpcResult != null) {
           // RPC succeeded — rpcResult is the new count
@@ -288,7 +290,10 @@ function createSupabaseRateLimiter(options: RateLimiterOptions): RateLimiter {
         // This is still susceptible to a narrow race window but is
         // better than the original SELECT → UPDATE pattern.
         if (rpcError) {
-          logger.warn("Rate limiter RPC unavailable, falling back to upsert", { context: "rate-limit", error: rpcError });
+          logger.warn("Rate limiter RPC unavailable, falling back to upsert", {
+            context: "rate-limit",
+            error: rpcError,
+          });
         }
 
         const { data, error } = await supabase
@@ -318,7 +323,10 @@ function createSupabaseRateLimiter(options: RateLimiterOptions): RateLimiter {
             );
 
           if (upsertError) {
-            logger.error("Rate limiter upsert failed", { context: "rate-limit", error: upsertError });
+            logger.error("Rate limiter upsert failed", {
+              context: "rate-limit",
+              error: upsertError,
+            });
             recordFailure(circuitBreaker, options);
             reportRateLimitBackendError("upsert", upsertError);
             if (circuitBreaker.failClosed) return false;
@@ -401,7 +409,7 @@ function createKVRateLimiter(options: RateLimiterOptions): RateLimiter {
   // endpoints (public reads) should explicitly set failClosed: false.
   const { windowMs, max, failClosed = true } = options;
   const circuitBreaker = createCircuitBreaker(failClosed);
-  
+
   // KV-backed limiters have a configured grace period before they fail-closed
   const getKvGraceMs = () => {
     const raw = process.env.RATE_LIMIT_KV_GRACE_MS;
@@ -422,7 +430,7 @@ function createKVRateLimiter(options: RateLimiterOptions): RateLimiter {
           logger.error("Rate limiter KV grace period expired, failing closed", {
             context: "rate-limit",
             key,
-            elapsedMs: elapsed
+            elapsedMs: elapsed,
           });
           return false; // Fail closed after grace period
         }
@@ -440,7 +448,9 @@ function createKVRateLimiter(options: RateLimiterOptions): RateLimiter {
 
         if (!kv) {
           // KV binding not available, fall back to memory
-          logger.warn("Rate limiter KV binding not available, falling back to in-memory", { context: "rate-limit" });
+          logger.warn("Rate limiter KV binding not available, falling back to in-memory", {
+            context: "rate-limit",
+          });
           recordFailure(circuitBreaker, options);
           if (circuitBreaker.failClosed) return false;
           const elapsed = Date.now() - (circuitBreaker.lastFailure || 0);
@@ -523,7 +533,7 @@ function createMemoryRateLimiter(options: RateLimiterOptions): RateLimiter {
         if (process.env.NODE_ENV !== "test") {
           logger.warn(
             "In-memory rate limiter active — counters are not shared across isolates and will reset on cold starts. " +
-            "Configure RATE_LIMIT_BACKEND=kv or RATE_LIMIT_BACKEND=supabase for production use.",
+              "Configure RATE_LIMIT_BACKEND=kv or RATE_LIMIT_BACKEND=supabase for production use.",
             { context: "rate-limit" },
           );
         }
@@ -568,9 +578,9 @@ export function createRateLimiter(options: RateLimiterOptions): RateLimiter {
   if (process.env.NODE_ENV !== "test") {
     logger.warn(
       "Rate limiter falling back to in-memory backend. " +
-      "This is unsuitable for production serverless deployments — " +
-      "counters reset on cold starts and are not shared across isolates. " +
-      "Set RATE_LIMIT_BACKEND=kv or configure NEXT_PUBLIC_SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY.",
+        "This is unsuitable for production serverless deployments — " +
+        "counters reset on cold starts and are not shared across isolates. " +
+        "Set RATE_LIMIT_BACKEND=kv or configure NEXT_PUBLIC_SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY.",
       { context: "rate-limit" },
     );
   }
@@ -776,17 +786,47 @@ export const rateLimitRules: RateLimitRule[] = [
   // RL-01: Public check-in kiosk endpoints
   { prefix: "/api/checkin", limiter: apiMutationLimiter, windowMs: 60_000, max: 30 },
   // RL-01: Password reset — strict limit to prevent email spam
-  { prefix: "/api/patient/delete-account", limiter: passwordResetLimiter, windowMs: 60_000, max: 3 },
-  { prefix: "/api/booking/waiting-list", limiter: waitingListLimiter, windowMs: 60 * 60_000, max: 3 },
+  {
+    prefix: "/api/patient/delete-account",
+    limiter: passwordResetLimiter,
+    windowMs: 60_000,
+    max: 3,
+  },
+  {
+    prefix: "/api/booking/waiting-list",
+    limiter: waitingListLimiter,
+    windowMs: 60 * 60_000,
+    max: 3,
+  },
   { prefix: "/api/book", limiter: bookingLimiter, windowMs: 60_000, max: 10 },
   { prefix: "/api/verify-email", limiter: emailVerificationLimiter, windowMs: 60_000, max: 5 },
   { prefix: "/api/upload", limiter: uploadLimiter, windowMs: 60_000, max: 10 },
   { prefix: "/api/onboarding", limiter: onboardingLimiter, windowMs: 60_000, max: 5 },
-  { prefix: "/api/v1/ai/patient-summary", limiter: aiPatientSummaryLimiter, windowMs: 24 * 60 * 60_000, max: 30 },
-  { prefix: "/api/v1/ai/drug-check", limiter: aiDrugCheckLimiter, windowMs: 24 * 60 * 60_000, max: 100 },
-  { prefix: "/api/v1/ai/prescription", limiter: aiPrescriptionLimiter, windowMs: 24 * 60 * 60_000, max: 50 },
+  {
+    prefix: "/api/v1/ai/patient-summary",
+    limiter: aiPatientSummaryLimiter,
+    windowMs: 24 * 60 * 60_000,
+    max: 30,
+  },
+  {
+    prefix: "/api/v1/ai/drug-check",
+    limiter: aiDrugCheckLimiter,
+    windowMs: 24 * 60 * 60_000,
+    max: 100,
+  },
+  {
+    prefix: "/api/v1/ai/prescription",
+    limiter: aiPrescriptionLimiter,
+    windowMs: 24 * 60 * 60_000,
+    max: 50,
+  },
   { prefix: "/api/ai/manager", limiter: aiManagerLimiter, windowMs: 24 * 60 * 60_000, max: 30 },
-  { prefix: "/api/ai/auto-suggest", limiter: aiAutoSuggestLimiter, windowMs: 24 * 60 * 60_000, max: 100 },
+  {
+    prefix: "/api/ai/auto-suggest",
+    limiter: aiAutoSuggestLimiter,
+    windowMs: 24 * 60 * 60_000,
+    max: 100,
+  },
   { prefix: "/api/chat", limiter: chatLimiter, windowMs: 60_000, max: 15 },
   { prefix: "/api/webhooks", limiter: webhookLimiter, windowMs: 60_000, max: 100 },
   { prefix: "/api/branding", limiter: brandingLimiter, windowMs: 60_000, max: 20 },

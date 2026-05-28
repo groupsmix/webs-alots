@@ -21,8 +21,7 @@ function getQuickActions(clinicType?: string): string[] {
 }
 
 export function ChatbotWidget() {
-  const { messages, isOpen, isLoading, setIsOpen, sendMessage, clearMessages } =
-    useChatbot();
+  const { messages, isOpen, isLoading, setIsOpen, sendMessage, clearMessages } = useChatbot();
   const tenant = useTenant();
   const [input, setInput] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -53,9 +52,7 @@ export function ChatbotWidget() {
     await sendMessage(msg);
   }
 
-  const unreadCount = messages.filter(
-    (m) => m.role === "assistant" && !isOpen
-  ).length;
+  const unreadCount = messages.filter((m) => m.role === "assistant" && !isOpen).length;
 
   const quickActions = getQuickActions(clinicType);
 
@@ -63,7 +60,8 @@ export function ChatbotWidget() {
     <>
       {/* Chat Panel */}
       {isOpen && (
-        <div className="fixed bottom-20 right-4 z-50 w-[360px] max-w-[calc(100vw-2rem)] rounded-xl border bg-card shadow-2xl flex flex-col overflow-hidden"
+        <div
+          className="fixed bottom-20 right-4 z-50 w-[360px] max-w-[calc(100vw-2rem)] rounded-xl border bg-card shadow-2xl flex flex-col overflow-hidden"
           style={{ height: "min(500px, calc(100vh - 8rem))" }}
         >
           {/* Header */}
@@ -146,8 +144,12 @@ export function ChatbotWidget() {
                     {msg.content || (
                       <span className="inline-flex gap-1">
                         <span className="animate-pulse">.</span>
-                        <span className="animate-pulse" style={{ animationDelay: "0.2s" }}>.</span>
-                        <span className="animate-pulse" style={{ animationDelay: "0.4s" }}>.</span>
+                        <span className="animate-pulse" style={{ animationDelay: "0.2s" }}>
+                          .
+                        </span>
+                        <span className="animate-pulse" style={{ animationDelay: "0.4s" }}>
+                          .
+                        </span>
                       </span>
                     )}
                   </div>
@@ -159,8 +161,12 @@ export function ChatbotWidget() {
                   <div className="max-w-[85%] rounded-2xl rounded-bl-sm bg-muted px-3.5 py-2 text-sm">
                     <span className="inline-flex gap-1">
                       <span className="animate-pulse">.</span>
-                      <span className="animate-pulse" style={{ animationDelay: "0.2s" }}>.</span>
-                      <span className="animate-pulse" style={{ animationDelay: "0.4s" }}>.</span>
+                      <span className="animate-pulse" style={{ animationDelay: "0.2s" }}>
+                        .
+                      </span>
+                      <span className="animate-pulse" style={{ animationDelay: "0.4s" }}>
+                        .
+                      </span>
                     </span>
                   </div>
                 </div>
@@ -169,10 +175,7 @@ export function ChatbotWidget() {
           </ScrollArea>
 
           {/* Input */}
-          <form
-            onSubmit={handleSubmit}
-            className="flex items-center gap-2 border-t px-3 py-2.5"
-          >
+          <form onSubmit={handleSubmit} className="flex items-center gap-2 border-t px-3 py-2.5">
             <Input
               ref={inputRef}
               value={input}

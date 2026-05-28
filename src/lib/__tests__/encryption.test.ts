@@ -55,7 +55,7 @@ describe("encryption", () => {
 
     // Corrupt the ciphertext (flip a byte after the IV)
     const corrupted = Buffer.from(encrypted!);
-    corrupted[15] = corrupted[15] ^ 0xFF;
+    corrupted[15] = corrupted[15] ^ 0xff;
 
     const decrypted = await decryptBuffer(corrupted);
     expect(decrypted).toBeNull();

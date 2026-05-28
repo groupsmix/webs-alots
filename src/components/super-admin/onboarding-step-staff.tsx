@@ -1,13 +1,6 @@
 "use client";
 
-import {
-  Users,
-  Plus,
-  Trash2,
-  ArrowLeft,
-  ArrowRight,
-  Loader2,
-} from "lucide-react";
+import { Users, Plus, Trash2, ArrowLeft, ArrowRight, Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -50,15 +43,12 @@ export function OnboardingStepStaff({
       </CardHeader>
       <CardContent className="space-y-4">
         <p className="text-sm text-muted-foreground">
-          Add the clinic owner (admin), doctors, and receptionists.
-          At least one clinic_admin is required.
+          Add the clinic owner (admin), doctors, and receptionists. At least one clinic_admin is
+          required.
         </p>
 
         {users.map((user, index) => (
-          <div
-            key={index}
-            className="rounded-lg border p-4 space-y-3"
-          >
+          <div key={index} className="rounded-lg border p-4 space-y-3">
             <div className="flex items-center justify-between">
               <Badge variant="outline" className="capitalize">
                 Staff #{index + 1}
@@ -80,13 +70,9 @@ export function OnboardingStepStaff({
                 <select
                   className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
                   value={user.role}
-                  onChange={(e) =>
-                    onUpdateUser(index, "role", e.target.value)
-                  }
+                  onChange={(e) => onUpdateUser(index, "role", e.target.value)}
                 >
-                  <option value="clinic_admin">
-                    Clinic Admin (Owner)
-                  </option>
+                  <option value="clinic_admin">Clinic Admin (Owner)</option>
                   <option value="doctor">Doctor</option>
                   <option value="receptionist">Receptionist</option>
                 </select>
@@ -98,9 +84,7 @@ export function OnboardingStepStaff({
                 <Input
                   placeholder="Dr. Sara Tazi"
                   value={user.name}
-                  onChange={(e) =>
-                    onUpdateUser(index, "name", e.target.value)
-                  }
+                  onChange={(e) => onUpdateUser(index, "name", e.target.value)}
                 />
               </div>
             </div>
@@ -110,22 +94,21 @@ export function OnboardingStepStaff({
                 <Input
                   placeholder="+212 6 XX XX XX XX"
                   value={user.phone}
-                  onChange={(e) =>
-                    onUpdateUser(index, "phone", e.target.value)
-                  }
+                  onChange={(e) => onUpdateUser(index, "phone", e.target.value)}
                 />
               </div>
               <div className="space-y-2">
                 <Label>
-                  Email{user.role === "clinic_admin" ? <span className="text-destructive"> *</span> : null}
+                  Email
+                  {user.role === "clinic_admin" ? (
+                    <span className="text-destructive"> *</span>
+                  ) : null}
                 </Label>
                 <Input
                   type="email"
                   placeholder="sara@clinic.ma"
                   value={user.email}
-                  onChange={(e) =>
-                    onUpdateUser(index, "email", e.target.value)
-                  }
+                  onChange={(e) => onUpdateUser(index, "email", e.target.value)}
                   required={user.role === "clinic_admin"}
                 />
                 <p className="text-[11px] text-muted-foreground">

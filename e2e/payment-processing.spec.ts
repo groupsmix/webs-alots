@@ -25,18 +25,14 @@ test.describe("Stripe checkout — access control", () => {
     expect([401, 403, 404, 405, 503]).toContain(response.status());
   });
 
-  test("POST /api/payments/create-checkout rejects empty body", async ({
-    request,
-  }) => {
+  test("POST /api/payments/create-checkout rejects empty body", async ({ request }) => {
     const response = await request.post("/api/payments/create-checkout", {
       data: {},
     });
     expect([400, 401, 403, 404, 405, 503]).toContain(response.status());
   });
 
-  test("POST /api/payments/create-checkout rejects negative amount", async ({
-    request,
-  }) => {
+  test("POST /api/payments/create-checkout rejects negative amount", async ({ request }) => {
     const response = await request.post("/api/payments/create-checkout", {
       data: {
         amount: -100,
@@ -47,9 +43,7 @@ test.describe("Stripe checkout — access control", () => {
     expect([400, 401, 403, 404, 405, 503]).toContain(response.status());
   });
 
-  test("POST /api/payments/create-checkout rejects zero amount", async ({
-    request,
-  }) => {
+  test("POST /api/payments/create-checkout rejects zero amount", async ({ request }) => {
     const response = await request.post("/api/payments/create-checkout", {
       data: {
         amount: 0,
@@ -62,9 +56,7 @@ test.describe("Stripe checkout — access control", () => {
 });
 
 test.describe("Stripe webhook — signature verification", () => {
-  test("rejects webhook without stripe-signature header", async ({
-    request,
-  }) => {
+  test("rejects webhook without stripe-signature header", async ({ request }) => {
     const payload = JSON.stringify({
       type: "checkout.session.completed",
       data: {
@@ -85,9 +77,7 @@ test.describe("Stripe webhook — signature verification", () => {
     expect([400, 401, 403, 503]).toContain(response.status());
   });
 
-  test("rejects webhook with invalid stripe-signature", async ({
-    request,
-  }) => {
+  test("rejects webhook with invalid stripe-signature", async ({ request }) => {
     const payload = JSON.stringify({
       type: "checkout.session.completed",
       data: {
@@ -110,9 +100,7 @@ test.describe("Stripe webhook — signature verification", () => {
     expect([400, 401, 403, 503]).toContain(response.status());
   });
 
-  test("rejects webhook with expired timestamp in signature", async ({
-    request,
-  }) => {
+  test("rejects webhook with expired timestamp in signature", async ({ request }) => {
     const payload = JSON.stringify({
       type: "checkout.session.completed",
       data: {
@@ -136,9 +124,7 @@ test.describe("Stripe webhook — signature verification", () => {
     expect([400, 401, 403, 503]).toContain(response.status());
   });
 
-  test("rejects webhook with missing timestamp in signature", async ({
-    request,
-  }) => {
+  test("rejects webhook with missing timestamp in signature", async ({ request }) => {
     const payload = JSON.stringify({
       type: "payment_intent.payment_failed",
       data: {
@@ -159,9 +145,7 @@ test.describe("Stripe webhook — signature verification", () => {
     expect([400, 401, 403, 503]).toContain(response.status());
   });
 
-  test("rejects checkout.session.completed with forged clinic_id", async ({
-    request,
-  }) => {
+  test("rejects checkout.session.completed with forged clinic_id", async ({ request }) => {
     // An attacker tries to mark a payment as completed for another clinic
     const payload = JSON.stringify({
       type: "checkout.session.completed",
@@ -189,9 +173,7 @@ test.describe("Stripe webhook — signature verification", () => {
     expect([400, 401, 403, 503]).toContain(response.status());
   });
 
-  test("rejects payment_intent.payment_failed with invalid signature", async ({
-    request,
-  }) => {
+  test("rejects payment_intent.payment_failed with invalid signature", async ({ request }) => {
     const payload = JSON.stringify({
       type: "payment_intent.payment_failed",
       data: {
@@ -219,9 +201,7 @@ test.describe("Stripe webhook — signature verification", () => {
 });
 
 test.describe("CMI payment gateway — access control", () => {
-  test("POST /api/payments/cmi rejects unauthenticated request", async ({
-    request,
-  }) => {
+  test("POST /api/payments/cmi rejects unauthenticated request", async ({ request }) => {
     const response = await request.post("/api/payments/cmi", {
       data: {
         amount: 200,
@@ -239,9 +219,7 @@ test.describe("CMI payment gateway — access control", () => {
     expect([400, 401, 403, 404, 405, 503]).toContain(response.status());
   });
 
-  test("POST /api/payments/cmi rejects negative amount", async ({
-    request,
-  }) => {
+  test("POST /api/payments/cmi rejects negative amount", async ({ request }) => {
     const response = await request.post("/api/payments/cmi", {
       data: {
         amount: -50,
@@ -253,9 +231,7 @@ test.describe("CMI payment gateway — access control", () => {
 });
 
 test.describe("CMI callback — hash verification", () => {
-  test("POST /api/payments/cmi/callback rejects invalid hash", async ({
-    request,
-  }) => {
+  test("POST /api/payments/cmi/callback rejects invalid hash", async ({ request }) => {
     const formData = new URLSearchParams();
     formData.append("oid", "ord_test_123");
     formData.append("amount", "200.00");
@@ -271,9 +247,7 @@ test.describe("CMI callback — hash verification", () => {
     expect([400, 401, 403]).toContain(response.status());
   });
 
-  test("POST /api/payments/cmi/callback rejects missing hash", async ({
-    request,
-  }) => {
+  test("POST /api/payments/cmi/callback rejects missing hash", async ({ request }) => {
     const formData = new URLSearchParams();
     formData.append("oid", "ord_test_no_hash");
     formData.append("amount", "100.00");
@@ -286,9 +260,7 @@ test.describe("CMI callback — hash verification", () => {
     expect([400, 401, 403]).toContain(response.status());
   });
 
-  test("POST /api/payments/cmi/callback rejects tampered amount", async ({
-    request,
-  }) => {
+  test("POST /api/payments/cmi/callback rejects tampered amount", async ({ request }) => {
     // Attacker modifies the amount after CMI processes the payment
     const formData = new URLSearchParams();
     formData.append("oid", "ord_test_tampered");
@@ -305,9 +277,7 @@ test.describe("CMI callback — hash verification", () => {
     expect([400, 401, 403]).toContain(response.status());
   });
 
-  test("POST /api/payments/cmi/callback rejects declined payment hash", async ({
-    request,
-  }) => {
+  test("POST /api/payments/cmi/callback rejects declined payment hash", async ({ request }) => {
     const formData = new URLSearchParams();
     formData.append("oid", "ord_test_declined");
     formData.append("amount", "300.00");
@@ -340,9 +310,7 @@ test.describe("Payment — open redirect prevention", () => {
     expect([400, 401, 403, 404, 405, 503]).toContain(response.status());
   });
 
-  test("POST /api/payments/cmi rejects cross-origin successUrl", async ({
-    request,
-  }) => {
+  test("POST /api/payments/cmi rejects cross-origin successUrl", async ({ request }) => {
     const response = await request.post("/api/payments/cmi", {
       data: {
         amount: 200,
@@ -357,9 +325,7 @@ test.describe("Payment — open redirect prevention", () => {
 });
 
 test.describe("Payment — booking payment flow access control", () => {
-  test("POST /api/booking/payment/initiate requires auth context", async ({
-    request,
-  }) => {
+  test("POST /api/booking/payment/initiate requires auth context", async ({ request }) => {
     const response = await request.post("/api/booking/payment/initiate", {
       data: {
         appointmentId: "test-appointment",
@@ -369,9 +335,7 @@ test.describe("Payment — booking payment flow access control", () => {
     expect([401, 403, 404, 405, 500]).toContain(response.status());
   });
 
-  test("POST /api/booking/payment/confirm requires auth context", async ({
-    request,
-  }) => {
+  test("POST /api/booking/payment/confirm requires auth context", async ({ request }) => {
     const response = await request.post("/api/booking/payment/confirm", {
       data: {
         paymentId: "test-payment",
@@ -381,9 +345,7 @@ test.describe("Payment — booking payment flow access control", () => {
     expect([401, 403, 404, 405, 500]).toContain(response.status());
   });
 
-  test("POST /api/booking/payment/refund requires auth context", async ({
-    request,
-  }) => {
+  test("POST /api/booking/payment/refund requires auth context", async ({ request }) => {
     const response = await request.post("/api/booking/payment/refund", {
       data: {
         paymentId: "test-payment",

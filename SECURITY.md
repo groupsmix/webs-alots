@@ -19,12 +19,12 @@ If you discover a security vulnerability in Oltigo Health, please report it resp
 
 ### Response Timeline
 
-| Stage | Target |
-|---|---|
-| Acknowledgement | Within **48 hours** |
-| Initial triage | Within **5 business days** |
-| Status update | Within **10 business days** |
-| Fix deployed | Within **30 days** for critical/high severity |
+| Stage           | Target                                        |
+| --------------- | --------------------------------------------- |
+| Acknowledgement | Within **48 hours**                           |
+| Initial triage  | Within **5 business days**                    |
+| Status update   | Within **10 business days**                   |
+| Fix deployed    | Within **30 days** for critical/high severity |
 
 ### Scope
 
@@ -61,11 +61,11 @@ Oltigo Health supports safe harbor for security researchers who:
 
 ## Supported Versions
 
-| Version | Supported |
-|---|---|
-| Latest `main` | Yes |
-| `staging` | Best-effort |
-| Older commits | No |
+| Version       | Supported   |
+| ------------- | ----------- |
+| Latest `main` | Yes         |
+| `staging`     | Best-effort |
+| Older commits | No          |
 
 ## Security Architecture Overview
 
@@ -83,11 +83,11 @@ Oltigo Health implements defense-in-depth security:
 The UI masks Protected Health Information (PHI) — phone numbers, emails,
 CIN — based on `NEXT_PUBLIC_DATA_MASKING`:
 
-| Value     | Behaviour                                              |
-|-----------|--------------------------------------------------------|
-| `full`    | Aggressive masking (demos, public screens)             |
-| `partial` | Moderate masking — staff who need partial visibility   |
-| `none`    | No masking (authorized personnel only)                 |
+| Value     | Behaviour                                            |
+| --------- | ---------------------------------------------------- |
+| `full`    | Aggressive masking (demos, public screens)           |
+| `partial` | Moderate masking — staff who need partial visibility |
+| `none`    | No masking (authorized personnel only)               |
 
 **Production default is `partial`.** It is configured in two places that
 must agree:

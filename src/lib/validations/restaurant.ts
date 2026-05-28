@@ -73,9 +73,9 @@ export const restaurantOrderCreateSchema = z.object({
 
 export const restaurantOrderUpdateSchema = z.object({
   id: z.string().min(1),
-  status: z.enum([
-    "pending", "confirmed", "preparing", "ready", "served", "paid", "cancelled",
-  ]).optional(),
+  status: z
+    .enum(["pending", "confirmed", "preparing", "ready", "served", "paid", "cancelled"])
+    .optional(),
   items: z.array(orderItemSchema).optional(),
   notes: z.string().max(2000).nullable().optional(),
 });

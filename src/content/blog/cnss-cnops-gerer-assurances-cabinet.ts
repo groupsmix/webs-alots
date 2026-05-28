@@ -8,14 +8,7 @@ const post: BlogPost = {
   excerpt:
     "La gestion des assurances (CNSS, CNOPS, mutuelles) est un defi quotidien pour les cabinets medicaux au Maroc. Decouvrez comment simplifier la facturation et le suivi des remboursements.",
   category: "assurance",
-  tags: [
-    "CNSS",
-    "CNOPS",
-    "assurance maladie",
-    "mutuelle",
-    "facturation medicale",
-    "AMO",
-  ],
+  tags: ["CNSS", "CNOPS", "assurance maladie", "mutuelle", "facturation medicale", "AMO"],
   author: "Equipe Oltigo",
   publishedAt: "2026-03-12",
   readTime: "7 min",

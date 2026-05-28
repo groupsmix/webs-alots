@@ -1,8 +1,6 @@
 "use client";
 
-import {
-  CheckCircle, XCircle, Target, Clock,
-} from "lucide-react";
+import { CheckCircle, XCircle, Target, Clock } from "lucide-react";
 import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -22,17 +20,22 @@ export function SpeechSessionTracker({ sessions }: SpeechSessionTrackerProps) {
   });
 
   const sorted = [...filtered].sort(
-    (a, b) => new Date(b.session_date).getTime() - new Date(a.session_date).getTime()
+    (a, b) => new Date(b.session_date).getTime() - new Date(a.session_date).getTime(),
   );
 
   const attendanceRate = sessions.length
     ? Math.round((sessions.filter((s) => s.attended).length / sessions.length) * 100)
     : 0;
 
-  const avgAccuracy = sessions.filter((s) => s.accuracy_pct !== null).length > 0
-    ? Math.round(sessions.filter((s) => s.accuracy_pct !== null).reduce((s, n) => s + (n.accuracy_pct ?? 0), 0) /
-      sessions.filter((s) => s.accuracy_pct !== null).length)
-    : null;
+  const avgAccuracy =
+    sessions.filter((s) => s.accuracy_pct !== null).length > 0
+      ? Math.round(
+          sessions
+            .filter((s) => s.accuracy_pct !== null)
+            .reduce((s, n) => s + (n.accuracy_pct ?? 0), 0) /
+            sessions.filter((s) => s.accuracy_pct !== null).length,
+        )
+      : null;
 
   return (
     <div className="space-y-4">
@@ -95,36 +98,48 @@ export function SpeechSessionTracker({ sessions }: SpeechSessionTrackerProps) {
                         <Target className="h-3 w-3" /> {session.accuracy_pct}%
                       </Badge>
                     )}
-                    <Badge variant={session.attended ? "success" : "destructive"} className="text-xs">
+                    <Badge
+                      variant={session.attended ? "success" : "destructive"}
+                      className="text-xs"
+                    >
                       {session.attended ? "Attended" : "Missed"}
                     </Badge>
                   </div>
                 </div>
                 <p className="text-xs text-muted-foreground mt-0.5 flex items-center gap-2">
                   {session.session_date}
-                  <span className="flex items-center gap-1"><Clock className="h-3 w-3" /> {session.duration_minutes} min</span>
+                  <span className="flex items-center gap-1">
+                    <Clock className="h-3 w-3" /> {session.duration_minutes} min
+                  </span>
                 </p>
 
                 {session.exercises_completed.length > 0 && (
                   <div className="mt-2">
                     <p className="text-[10px] text-muted-foreground mb-1">
-                      Completed: {session.exercises_completed.length}/{session.exercises_assigned.length} exercises
+                      Completed: {session.exercises_completed.length}/
+                      {session.exercises_assigned.length} exercises
                     </p>
                     <div className="flex flex-wrap gap-1">
                       {session.exercises_completed.map((ex, i) => (
-                        <Badge key={i} variant="outline" className="text-[10px]">{ex}</Badge>
+                        <Badge key={i} variant="outline" className="text-[10px]">
+                          {ex}
+                        </Badge>
                       ))}
                     </div>
                   </div>
                 )}
 
                 {session.notes && (
-                  <p className="text-xs text-muted-foreground mt-2 border-t pt-2">{session.notes}</p>
+                  <p className="text-xs text-muted-foreground mt-2 border-t pt-2">
+                    {session.notes}
+                  </p>
                 )}
 
                 {session.home_practice && (
                   <div className="mt-2 p-2 rounded bg-blue-50/50 dark:bg-blue-950/20">
-                    <p className="text-[10px] font-medium text-blue-800 dark:text-blue-200">Home Practice:</p>
+                    <p className="text-[10px] font-medium text-blue-800 dark:text-blue-200">
+                      Home Practice:
+                    </p>
                     <p className="text-[10px] text-muted-foreground">{session.home_practice}</p>
                   </div>
                 )}

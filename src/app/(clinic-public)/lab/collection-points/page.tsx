@@ -1,7 +1,4 @@
-import {
-  MapPin, Phone, Clock, Car, Accessibility,
-  FlaskConical,
-} from "lucide-react";
+import { MapPin, Phone, Clock, Car, Accessibility, FlaskConical } from "lucide-react";
 import type { Metadata } from "next";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -9,7 +6,8 @@ import { getPublicCollectionPoints } from "@/lib/data/lab-public";
 
 export const metadata: Metadata = {
   title: "Points de Prélèvement — Laboratoire",
-  description: "Trouvez le point de prélèvement le plus proche avec nos horaires d'ouverture et informations d'accès.",
+  description:
+    "Trouvez le point de prélèvement le plus proche avec nos horaires d'ouverture et informations d'accès.",
 };
 
 const dayNames = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
@@ -22,7 +20,8 @@ export default async function CollectionPointsPage() {
       <div className="text-center mb-12">
         <h1 className="text-3xl font-bold mb-4">Sample Collection Points</h1>
         <p className="text-muted-foreground max-w-2xl mx-auto">
-          Find the nearest collection point and check opening hours. All our points are staffed by trained phlebotomists.
+          Find the nearest collection point and check opening hours. All our points are staffed by
+          trained phlebotomists.
         </p>
       </div>
 
@@ -30,7 +29,9 @@ export default async function CollectionPointsPage() {
         <div className="text-center py-16">
           <MapPin className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
           <p className="text-lg font-medium mb-2">No collection points listed</p>
-          <p className="text-muted-foreground">Please contact us directly for sample collection information.</p>
+          <p className="text-muted-foreground">
+            Please contact us directly for sample collection information.
+          </p>
         </div>
       ) : (
         <div className="grid gap-6 md:grid-cols-2">
@@ -68,7 +69,10 @@ export default async function CollectionPointsPage() {
                 <div className="space-y-3 mb-4">
                   <div className="flex items-start gap-2 text-sm">
                     <MapPin className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
-                    <span>{point.address}{point.city ? `, ${point.city}` : ""}</span>
+                    <span>
+                      {point.address}
+                      {point.city ? `, ${point.city}` : ""}
+                    </span>
                   </div>
                   <div className="flex items-center gap-2 text-sm">
                     <Phone className="h-4 w-4 text-muted-foreground shrink-0" />
@@ -85,7 +89,10 @@ export default async function CollectionPointsPage() {
                     </h4>
                     <div className="grid grid-cols-2 gap-1">
                       {point.hours.map((h, idx) => (
-                        <div key={idx} className="flex justify-between text-sm py-1 px-2 rounded bg-muted/50">
+                        <div
+                          key={idx}
+                          className="flex justify-between text-sm py-1 px-2 rounded bg-muted/50"
+                        >
                           <span className="text-muted-foreground">{h.day ?? dayNames[idx]}</span>
                           <span className="font-medium">
                             {h.open === "closed" || !h.open ? "Closed" : `${h.open} - ${h.close}`}

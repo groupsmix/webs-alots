@@ -23,8 +23,16 @@ const scheduleEntrySchema = z.object({
   day_of_week: z.number().int().min(0).max(6),
   start_time: z.string().regex(/^\d{2}:\d{2}$/, "Expected HH:MM"),
   end_time: z.string().regex(/^\d{2}:\d{2}$/, "Expected HH:MM"),
-  break_start: z.string().regex(/^\d{2}:\d{2}$/).nullable().optional(),
-  break_end: z.string().regex(/^\d{2}:\d{2}$/).nullable().optional(),
+  break_start: z
+    .string()
+    .regex(/^\d{2}:\d{2}$/)
+    .nullable()
+    .optional(),
+  break_end: z
+    .string()
+    .regex(/^\d{2}:\d{2}$/)
+    .nullable()
+    .optional(),
 });
 
 const brandingSchema = z.object({
@@ -51,8 +59,9 @@ const wizardSchema = z.object({
 // welcome message when go_live is true.
 // ---------------------------------------------------------------------------
 
-export const POST = withAuthValidation(wizardSchema, async (body, request, { supabase, profile }) => {
-
+export const POST = withAuthValidation(
+  wizardSchema,
+  async (body, request, { supabase, profile }) => {
     // Verify the authenticated user owns the clinic
     if (profile.clinic_id !== body.clinic_id) {
       return apiForbidden("You are not authorised for this clinic");
@@ -87,9 +96,7 @@ export const POST = withAuthValidation(wizardSchema, async (body, request, { sup
         is_active: true,
       }));
 
-      const { error: svcError } = await supabase
-        .from("services")
-        .insert(serviceRows);
+      const { error: svcError } = await supabase.from("services").insert(serviceRows);
 
       if (svcError) {
         logger.warn("Failed to insert services", {
@@ -108,12 +115,48 @@ export const POST = withAuthValidation(wizardSchema, async (body, request, { sup
     if (scheduleToInsert.length === 0 && body.auto_seed) {
       // Auto-seed Mon-Sat 9am-6pm schedule
       scheduleToInsert = [
-        { day_of_week: 1, start_time: "09:00", end_time: "18:00", break_start: null, break_end: null },
-        { day_of_week: 2, start_time: "09:00", end_time: "18:00", break_start: null, break_end: null },
-        { day_of_week: 3, start_time: "09:00", end_time: "18:00", break_start: null, break_end: null },
-        { day_of_week: 4, start_time: "09:00", end_time: "18:00", break_start: null, break_end: null },
-        { day_of_week: 5, start_time: "09:00", end_time: "18:00", break_start: null, break_end: null },
-        { day_of_week: 6, start_time: "09:00", end_time: "13:00", break_start: null, break_end: null },
+        {
+          day_of_week: 1,
+          start_time: "09:00",
+          end_time: "18:00",
+          break_start: null,
+          break_end: null,
+        },
+        {
+          day_of_week: 2,
+          start_time: "09:00",
+          end_time: "18:00",
+          break_start: null,
+          break_end: null,
+        },
+        {
+          day_of_week: 3,
+          start_time: "09:00",
+          end_time: "18:00",
+          break_start: null,
+          break_end: null,
+        },
+        {
+          day_of_week: 4,
+          start_time: "09:00",
+          end_time: "18:00",
+          break_start: null,
+          break_end: null,
+        },
+        {
+          day_of_week: 5,
+          start_time: "09:00",
+          end_time: "18:00",
+          break_start: null,
+          break_end: null,
+        },
+        {
+          day_of_week: 6,
+          start_time: "09:00",
+          end_time: "13:00",
+          break_start: null,
+          break_end: null,
+        },
       ];
     }
 
@@ -129,9 +172,7 @@ export const POST = withAuthValidation(wizardSchema, async (body, request, { sup
         is_active: true,
       }));
 
-      const { error: slotError } = await supabase
-        .from("time_slots")
-        .insert(slotRows);
+      const { error: slotError } = await supabase.from("time_slots").insert(slotRows);
 
       if (slotError) {
         logger.warn("Failed to insert time_slots", {
@@ -155,21 +196,17 @@ export const POST = withAuthValidation(wizardSchema, async (body, request, { sup
         hero_subtitle_ar?: string;
       } = {};
 
-      if (body.branding?.primary_color)
-        brandingUpdate.primary_color = body.branding.primary_color;
+      if (body.branding?.primary_color) brandingUpdate.primary_color = body.branding.primary_color;
       if (body.branding?.secondary_color)
         brandingUpdate.secondary_color = body.branding.secondary_color;
-      if (body.branding?.template_id)
-        brandingUpdate.template_id = body.branding.template_id;
+      if (body.branding?.template_id) brandingUpdate.template_id = body.branding.template_id;
 
       // Auto-seed branding from preset if not explicitly provided
       if (body.auto_seed && preset) {
-        if (!brandingUpdate.primary_color)
-          brandingUpdate.primary_color = preset.theme.primaryColor;
+        if (!brandingUpdate.primary_color) brandingUpdate.primary_color = preset.theme.primaryColor;
         if (!brandingUpdate.secondary_color)
           brandingUpdate.secondary_color = preset.theme.secondaryColor;
-        if (!brandingUpdate.template_id)
-          brandingUpdate.template_id = preset.templateId;
+        if (!brandingUpdate.template_id) brandingUpdate.template_id = preset.templateId;
         // Set hero content from preset
         brandingUpdate.hero_title = preset.hero.title;
         brandingUpdate.hero_title_ar = preset.hero.titleAr;
@@ -282,8 +319,8 @@ export const POST = withAuthValidation(wizardSchema, async (body, request, { sup
 
     return apiSuccess({
       status: "ok",
-      message: body.go_live
-        ? "Clinic is live — congratulations!"
-        : "Wizard data saved",
+      message: body.go_live ? "Clinic is live — congratulations!" : "Wizard data saved",
     });
-}, null);
+  },
+  null,
+);

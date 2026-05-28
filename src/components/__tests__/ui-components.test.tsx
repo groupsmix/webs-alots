@@ -33,24 +33,14 @@ describe("Skeleton", () => {
 describe("EmptyState", () => {
   it("renders title and description", () => {
     render(
-      <EmptyState
-        icon={SearchIcon}
-        title="No results"
-        description="Try a different search"
-      />
+      <EmptyState icon={SearchIcon} title="No results" description="Try a different search" />,
     );
     expect(screen.getByText("No results")).toBeTruthy();
     expect(screen.getByText("Try a different search")).toBeTruthy();
   });
 
   it("renders action slot when provided", () => {
-    render(
-      <EmptyState
-        icon={SearchIcon}
-        title="Empty"
-        action={<button>Add item</button>}
-      />
-    );
+    render(<EmptyState icon={SearchIcon} title="Empty" action={<button>Add item</button>} />);
     expect(screen.getByText("Add item")).toBeTruthy();
   });
 });
@@ -64,7 +54,7 @@ describe("Breadcrumb", () => {
           { label: "Patients", href: "/admin/patients" },
           { label: "Details" },
         ]}
-      />
+      />,
     );
 
     expect(screen.getByLabelText("Fil d'Ariane")).toBeTruthy();
@@ -74,14 +64,7 @@ describe("Breadcrumb", () => {
   });
 
   it("marks last item as current page", () => {
-    render(
-      <Breadcrumb
-        items={[
-          { label: "Home", href: "/" },
-          { label: "Current Page" },
-        ]}
-      />
-    );
+    render(<Breadcrumb items={[{ label: "Home", href: "/" }, { label: "Current Page" }]} />);
 
     const currentPage = screen.getByText("Current Page");
     expect(currentPage.getAttribute("aria-current")).toBe("page");

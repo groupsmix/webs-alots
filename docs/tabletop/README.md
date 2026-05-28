@@ -12,10 +12,10 @@ memory without impacting production.
 
 **Frequency:** Quarterly (minimum)
 
-| Quarter | Scenario | Date | Facilitator | Gaps Found |
-|---------|----------|------|-------------|------------|
-| Q3 2026 | _TBD (pick from library below)_ | _TBD_ | _TBD_ | _TBD_ |
-| Q4 2026 | _TBD_ | _TBD_ | _TBD_ | _TBD_ |
+| Quarter | Scenario                        | Date  | Facilitator | Gaps Found |
+| ------- | ------------------------------- | ----- | ----------- | ---------- |
+| Q3 2026 | _TBD (pick from library below)_ | _TBD_ | _TBD_       | _TBD_      |
+| Q4 2026 | _TBD_                           | _TBD_ | _TBD_       | _TBD_      |
 
 ---
 
@@ -103,9 +103,9 @@ Use this template for each exercise. Store completed exercises in
 
 ## Gaps Identified
 
-| # | Gap | Severity | Owner | Remediation | Due Date |
-|---|-----|----------|-------|-------------|----------|
-| 1 | [Description] | [H/M/L] | [Name] | [Action] | [Date] |
+| #   | Gap           | Severity | Owner  | Remediation | Due Date |
+| --- | ------------- | -------- | ------ | ----------- | -------- |
+| 1   | [Description] | [H/M/L]  | [Name] | [Action]    | [Date]   |
 
 ## Action Items
 

@@ -81,14 +81,16 @@ async function findTodayAppointments(
 
   const { data: appointments } = await supabase
     .from("appointments")
-    .select(`
+    .select(
+      `
       id,
       appointment_date,
       start_time,
       status,
       doctors:doctor_id (name),
       services:service_id (name)
-    `)
+    `,
+    )
     .eq("patient_id", patientId)
     .eq("clinic_id", clinicId)
     .eq("appointment_date", today)

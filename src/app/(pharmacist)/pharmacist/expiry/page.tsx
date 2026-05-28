@@ -23,14 +23,20 @@ export default function ExpiryTrackerPage() {
   useEffect(() => {
     const controller = new AbortController();
     fetchProducts(tenant?.clinicId ?? "")
-      .then((d) => { if (!controller.signal.aborted) setAllProducts(d); })
+      .then((d) => {
+        if (!controller.signal.aborted) setAllProducts(d);
+      })
       .catch((err) => {
-      if (!controller.signal.aborted) {
-        setError(err instanceof Error ? err : new Error(String(err)));
-      }
-    })
-    .finally(() => { if (!controller.signal.aborted) setLoading(false); });
-    return () => { controller.abort(); };
+        if (!controller.signal.aborted) {
+          setError(err instanceof Error ? err : new Error(String(err)));
+        }
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setLoading(false);
+      });
+    return () => {
+      controller.abort();
+    };
   }, [tenant?.clinicId]);
 
   const products = useMemo(() => {
@@ -40,7 +46,7 @@ export default function ExpiryTrackerPage() {
         ...p,
         expiryStatus: getExpiryStatus(p.expiryDate),
         daysUntilExpiry: Math.ceil(
-          (new Date(p.expiryDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)
+          (new Date(p.expiryDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24),
         ),
       }))
       .sort((a, b) => a.daysUntilExpiry - b.daysUntilExpiry);
@@ -53,7 +59,9 @@ export default function ExpiryTrackerPage() {
   if (error) {
     return (
       <div className="p-8 text-center">
-        <p className="text-red-600 font-medium">Failed to load data. Please try refreshing the page.</p>
+        <p className="text-red-600 font-medium">
+          Failed to load data. Please try refreshing the page.
+        </p>
         {error.message && <p className="text-sm text-muted-foreground mt-2">{error.message}</p>}
       </div>
     );
@@ -64,16 +72,36 @@ export default function ExpiryTrackerPage() {
   const safe = products.filter((p) => p.expiryStatus === "green");
 
   const colorMap = {
-    red: { bg: "bg-red-50 dark:bg-red-950/10", border: "border-red-200 dark:border-red-800", badge: "bg-red-100 text-red-700", icon: <X className="h-4 w-4" />, label: "Expired" },
-    yellow: { bg: "bg-yellow-50 dark:bg-yellow-950/10", border: "border-yellow-200 dark:border-yellow-800", badge: "bg-yellow-100 text-yellow-700", icon: <Clock className="h-4 w-4" />, label: "Expiring Soon" },
-    green: { bg: "bg-emerald-50 dark:bg-emerald-950/10", border: "border-emerald-200 dark:border-emerald-800", badge: "bg-emerald-100 text-emerald-700", icon: <Check className="h-4 w-4" />, label: "Safe" },
+    red: {
+      bg: "bg-red-50 dark:bg-red-950/10",
+      border: "border-red-200 dark:border-red-800",
+      badge: "bg-red-100 text-red-700",
+      icon: <X className="h-4 w-4" />,
+      label: "Expired",
+    },
+    yellow: {
+      bg: "bg-yellow-50 dark:bg-yellow-950/10",
+      border: "border-yellow-200 dark:border-yellow-800",
+      badge: "bg-yellow-100 text-yellow-700",
+      icon: <Clock className="h-4 w-4" />,
+      label: "Expiring Soon",
+    },
+    green: {
+      bg: "bg-emerald-50 dark:bg-emerald-950/10",
+      border: "border-emerald-200 dark:border-emerald-800",
+      badge: "bg-emerald-100 text-emerald-700",
+      icon: <Check className="h-4 w-4" />,
+      label: "Safe",
+    },
   };
 
   return (
     <div>
       <div className="mb-6">
         <h1 className="text-2xl font-bold">Expiry Tracker</h1>
-        <p className="text-muted-foreground text-sm">Monitor product expiration dates with color-coded alerts</p>
+        <p className="text-muted-foreground text-sm">
+          Monitor product expiration dates with color-coded alerts
+        </p>
       </div>
 
       {/* Stats */}
@@ -165,20 +193,32 @@ export default function ExpiryTrackerPage() {
                       </td>
                       <td className="py-3 px-2">
                         <p className="font-medium">{product.name}</p>
-                        {product.genericName && <p className="text-xs text-muted-foreground">{product.genericName}</p>}
+                        {product.genericName && (
+                          <p className="text-xs text-muted-foreground">{product.genericName}</p>
+                        )}
                       </td>
                       <td className="py-3 px-2">
-                        <Badge variant="outline" className="text-xs capitalize">{product.category.replace("-", " ")}</Badge>
+                        <Badge variant="outline" className="text-xs capitalize">
+                          {product.category.replace("-", " ")}
+                        </Badge>
                       </td>
                       <td className="py-3 px-2 font-medium">{product.expiryDate}</td>
                       <td className="py-3 px-2">
-                        <span className={`font-bold ${product.expiryStatus === "red" ? "text-red-600" : product.expiryStatus === "yellow" ? "text-yellow-600" : "text-emerald-600"}`}>
-                          {product.daysUntilExpiry <= 0 ? "EXPIRED" : `${product.daysUntilExpiry} days`}
+                        <span
+                          className={`font-bold ${product.expiryStatus === "red" ? "text-red-600" : product.expiryStatus === "yellow" ? "text-yellow-600" : "text-emerald-600"}`}
+                        >
+                          {product.daysUntilExpiry <= 0
+                            ? "EXPIRED"
+                            : `${product.daysUntilExpiry} days`}
                         </span>
                       </td>
                       <td className="py-3 px-2">{product.stockQuantity}</td>
                       <td className="py-3 px-2 font-medium">
-                        {formatCurrency((product.price * product.stockQuantity), typeof locale !== "undefined" ? locale : "fr", "MAD")}
+                        {formatCurrency(
+                          product.price * product.stockQuantity,
+                          typeof locale !== "undefined" ? locale : "fr",
+                          "MAD",
+                        )}
                       </td>
                     </tr>
                   );

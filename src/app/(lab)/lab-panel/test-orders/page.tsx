@@ -1,8 +1,16 @@
 "use client";
 
 import {
-  Search, Filter, ChevronDown, FlaskConical, Plus,
-  Clock, CheckCircle, Loader2, UserPlus, ArrowRight,
+  Search,
+  Filter,
+  ChevronDown,
+  FlaskConical,
+  Plus,
+  Clock,
+  CheckCircle,
+  Loader2,
+  UserPlus,
+  ArrowRight,
 } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
 import { useLocale } from "@/components/locale-switcher";
@@ -11,25 +19,46 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
-  Dialog, DialogContent, DialogDescription, DialogFooter,
-  DialogHeader, DialogTitle, DialogTrigger,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PageLoader } from "@/components/ui/page-loader";
 import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import {
-  fetchLabTestOrders, fetchLabTestCatalog, fetchPatients,
-  createLabTestOrder, updateLabOrderStatus, assignLabTechnician,
+  fetchLabTestOrders,
+  fetchLabTestCatalog,
+  fetchPatients,
+  createLabTestOrder,
+  updateLabOrderStatus,
+  assignLabTechnician,
 } from "@/lib/data/client";
 import type { LabTestOrderView, LabTestCatalogView, PatientView } from "@/lib/data/client";
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { formatCurrency, formatNumber } from "@/lib/utils";
 
-const statusOptions = ["all", "pending", "sample_collected", "in_progress", "completed", "validated", "cancelled"] as const;
+const statusOptions = [
+  "all",
+  "pending",
+  "sample_collected",
+  "in_progress",
+  "completed",
+  "validated",
+  "cancelled",
+] as const;
 const priorityOptions = ["normal", "urgent", "stat"] as const;
 
 export default function TestOrdersPage() {
@@ -73,19 +102,24 @@ export default function TestOrdersPage() {
       fetchLabTestOrders(tenant?.clinicId ?? ""),
       fetchLabTestCatalog(tenant?.clinicId ?? ""),
       fetchPatients(tenant?.clinicId ?? ""),
-    ]).then(([o, c, p]) => {
-      if (controller.signal.aborted) return;
-      setOrders(o);
-      setCatalog(c);
-      setPatients(p);
-    }).catch((err) => {
-      if (!controller.signal.aborted) {
-        setError(err instanceof Error ? err : new Error(String(err)));
-      }
-    }).finally(() => {
-      if (!controller.signal.aborted) setLoading(false);
-    });
-    return () => { controller.abort(); };
+    ])
+      .then(([o, c, p]) => {
+        if (controller.signal.aborted) return;
+        setOrders(o);
+        setCatalog(c);
+        setPatients(p);
+      })
+      .catch((err) => {
+        if (!controller.signal.aborted) {
+          setError(err instanceof Error ? err : new Error(String(err)));
+        }
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setLoading(false);
+      });
+    return () => {
+      controller.abort();
+    };
   }, [tenant?.clinicId]);
 
   const handleCreateOrder = async () => {
@@ -101,7 +135,13 @@ export default function TestOrdersPage() {
         test_ids: newOrder.selectedTests.length > 0 ? newOrder.selectedTests : undefined,
       });
       setNewOrderOpen(false);
-      setNewOrder({ patientId: "", priority: "normal", clinicalNotes: "", fastingRequired: false, selectedTests: [] });
+      setNewOrder({
+        patientId: "",
+        priority: "normal",
+        clinicalNotes: "",
+        fastingRequired: false,
+        selectedTests: [],
+      });
       refreshOrders();
     } finally {
       setNewOrderSaving(false);
@@ -158,7 +198,9 @@ export default function TestOrdersPage() {
   if (error) {
     return (
       <div className="p-8 text-center">
-        <p className="text-red-600 font-medium">Failed to load data. Please try refreshing the page.</p>
+        <p className="text-red-600 font-medium">
+          Failed to load data. Please try refreshing the page.
+        </p>
         {error.message && <p className="text-sm text-muted-foreground mt-2">{error.message}</p>}
       </div>
     );
@@ -196,7 +238,9 @@ export default function TestOrdersPage() {
         </div>
         <Dialog open={newOrderOpen} onOpenChange={setNewOrderOpen}>
           <DialogTrigger asChild>
-            <Button><Plus className="h-4 w-4 mr-2" /> New Order</Button>
+            <Button>
+              <Plus className="h-4 w-4 mr-2" /> New Order
+            </Button>
           </DialogTrigger>
           <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
             <DialogHeader>
@@ -206,22 +250,36 @@ export default function TestOrdersPage() {
             <div className="grid gap-4 py-4">
               <div className="grid gap-2">
                 <Label>Patient</Label>
-                <Select value={newOrder.patientId} onValueChange={(v) => setNewOrder((p) => ({ ...p, patientId: v }))}>
-                  <SelectTrigger><SelectValue placeholder="Select a patient..." /></SelectTrigger>
+                <Select
+                  value={newOrder.patientId}
+                  onValueChange={(v) => setNewOrder((p) => ({ ...p, patientId: v }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a patient..." />
+                  </SelectTrigger>
                   <SelectContent>
                     {patients.map((p) => (
-                      <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                      <SelectItem key={p.id} value={p.id}>
+                        {p.name}
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
               <div className="grid gap-2">
                 <Label>Priority</Label>
-                <Select value={newOrder.priority} onValueChange={(v) => setNewOrder((p) => ({ ...p, priority: v }))}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+                <Select
+                  value={newOrder.priority}
+                  onValueChange={(v) => setNewOrder((p) => ({ ...p, priority: v }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
                   <SelectContent>
                     {priorityOptions.map((pr) => (
-                      <SelectItem key={pr} value={pr} className="capitalize">{pr}</SelectItem>
+                      <SelectItem key={pr} value={pr} className="capitalize">
+                        {pr}
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -231,7 +289,10 @@ export default function TestOrdersPage() {
                   <Label>Tests ({newOrder.selectedTests.length} selected)</Label>
                   <div className="max-h-48 overflow-y-auto border rounded-md p-2 space-y-1">
                     {catalog.map((test) => (
-                      <label key={test.id} className="flex items-center gap-2 text-sm p-1 hover:bg-muted/50 rounded cursor-pointer">
+                      <label
+                        key={test.id}
+                        className="flex items-center gap-2 text-sm p-1 hover:bg-muted/50 rounded cursor-pointer"
+                      >
                         <input
                           type="checkbox"
                           checked={newOrder.selectedTests.includes(test.id)}
@@ -239,7 +300,11 @@ export default function TestOrdersPage() {
                           className="rounded"
                         />
                         <span>{test.name}</span>
-                        {test.category && <Badge variant="outline" className="text-xs ml-auto">{test.category}</Badge>}
+                        {test.category && (
+                          <Badge variant="outline" className="text-xs ml-auto">
+                            {test.category}
+                          </Badge>
+                        )}
                       </label>
                     ))}
                   </div>
@@ -258,14 +323,18 @@ export default function TestOrdersPage() {
                 <input
                   type="checkbox"
                   checked={newOrder.fastingRequired}
-                  onChange={(e) => setNewOrder((p) => ({ ...p, fastingRequired: e.target.checked }))}
+                  onChange={(e) =>
+                    setNewOrder((p) => ({ ...p, fastingRequired: e.target.checked }))
+                  }
                   className="rounded"
                 />
                 Fasting Required
               </label>
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setNewOrderOpen(false)}>Cancel</Button>
+              <Button variant="outline" onClick={() => setNewOrderOpen(false)}>
+                Cancel
+              </Button>
               <Button onClick={handleCreateOrder} disabled={newOrderSaving || !newOrder.patientId}>
                 {newOrderSaving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
                 Create Order
@@ -316,27 +385,40 @@ export default function TestOrdersPage() {
                   <div>
                     <p className="font-medium">{order.patientName}</p>
                     <p className="text-xs text-muted-foreground">
-                      {order.orderNumber} &middot; {order.testCount} test{order.testCount !== 1 ? "s" : ""} &middot; {new Date(order.createdAt).toLocaleDateString()}
+                      {order.orderNumber} &middot; {order.testCount} test
+                      {order.testCount !== 1 ? "s" : ""} &middot;{" "}
+                      {new Date(order.createdAt).toLocaleDateString()}
                     </p>
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
                   {(order.priority === "urgent" || order.priority === "stat") && (
-                    <Badge variant="destructive" className="text-xs uppercase">{order.priority}</Badge>
+                    <Badge variant="destructive" className="text-xs uppercase">
+                      {order.priority}
+                    </Badge>
                   )}
-                  <Badge className={
-                    order.status === "pending" ? "bg-yellow-100 text-yellow-700 border-0" :
-                    order.status === "sample_collected" ? "bg-cyan-100 text-cyan-700 border-0" :
-                    order.status === "in_progress" ? "bg-blue-100 text-blue-700 border-0" :
-                    order.status === "completed" ? "bg-emerald-100 text-emerald-700 border-0" :
-                    order.status === "validated" ? "bg-green-100 text-green-700 border-0" :
-                    "bg-gray-100 text-gray-700 border-0"
-                  }>
+                  <Badge
+                    className={
+                      order.status === "pending"
+                        ? "bg-yellow-100 text-yellow-700 border-0"
+                        : order.status === "sample_collected"
+                          ? "bg-cyan-100 text-cyan-700 border-0"
+                          : order.status === "in_progress"
+                            ? "bg-blue-100 text-blue-700 border-0"
+                            : order.status === "completed"
+                              ? "bg-emerald-100 text-emerald-700 border-0"
+                              : order.status === "validated"
+                                ? "bg-green-100 text-green-700 border-0"
+                                : "bg-gray-100 text-gray-700 border-0"
+                    }
+                  >
                     {order.status === "pending" && <Clock className="h-3 w-3 mr-1" />}
                     {order.status === "completed" && <CheckCircle className="h-3 w-3 mr-1" />}
                     {order.status.replace("_", " ")}
                   </Badge>
-                  <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${expandedId === order.id ? "rotate-180" : ""}`} />
+                  <ChevronDown
+                    className={`h-4 w-4 text-muted-foreground transition-transform ${expandedId === order.id ? "rotate-180" : ""}`}
+                  />
                 </div>
               </div>
 
@@ -357,7 +439,11 @@ export default function TestOrdersPage() {
                     </div>
                     <div>
                       <p className="text-muted-foreground text-xs">Sample Collected</p>
-                      <p className="font-medium">{order.sampleCollectedAt ? new Date(order.sampleCollectedAt).toLocaleString() : "—"}</p>
+                      <p className="font-medium">
+                        {order.sampleCollectedAt
+                          ? new Date(order.sampleCollectedAt).toLocaleString()
+                          : "—"}
+                      </p>
                     </div>
                   </div>
                   {order.clinicalNotes && (
@@ -382,15 +468,29 @@ export default function TestOrdersPage() {
                       <Button
                         size="sm"
                         variant="outline"
-                        onClick={(e) => { e.stopPropagation(); handleStatusUpdate(order.id, getNextStatus(order.status)!); }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleStatusUpdate(order.id, getNextStatus(order.status)!);
+                        }}
                         disabled={updatingStatusId === order.id}
                       >
-                        {updatingStatusId === order.id ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <ArrowRight className="h-3 w-3 mr-1" />}
+                        {updatingStatusId === order.id ? (
+                          <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                        ) : (
+                          <ArrowRight className="h-3 w-3 mr-1" />
+                        )}
                         Move to {getNextStatus(order.status)!.replace("_", " ")}
                       </Button>
                     )}
                     {order.status !== "cancelled" && order.status !== "validated" && (
-                      <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); openTechDialog(order.id); }}>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          openTechDialog(order.id);
+                        }}
+                      >
                         <UserPlus className="h-3 w-3 mr-1" /> Assign Technician
                       </Button>
                     )}
@@ -399,7 +499,10 @@ export default function TestOrdersPage() {
                         size="sm"
                         variant="ghost"
                         className="text-red-600 hover:text-red-700"
-                        onClick={(e) => { e.stopPropagation(); handleStatusUpdate(order.id, "cancelled"); }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleStatusUpdate(order.id, "cancelled");
+                        }}
                         disabled={updatingStatusId === order.id}
                       >
                         Cancel Order
@@ -428,10 +531,16 @@ export default function TestOrdersPage() {
           </DialogHeader>
           <div className="py-4">
             <Label>Technician ID</Label>
-            <Input placeholder="Enter technician user ID..." value={techId} onChange={(e) => setTechId(e.target.value)} />
+            <Input
+              placeholder="Enter technician user ID..."
+              value={techId}
+              onChange={(e) => setTechId(e.target.value)}
+            />
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setTechDialogOpen(false)}>Cancel</Button>
+            <Button variant="outline" onClick={() => setTechDialogOpen(false)}>
+              Cancel
+            </Button>
             <Button onClick={handleAssignTech} disabled={techSaving}>
               {techSaving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
               Assign

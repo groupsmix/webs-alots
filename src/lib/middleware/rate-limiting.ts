@@ -62,7 +62,10 @@ export async function applyRateLimit(
         rateLimitInfo: { limit: rule.max, remaining: 0, reset },
       };
     }
-  } else if (!pathname.startsWith("/_next/") && !pathname.match(/\.(ico|png|jpg|jpeg|svg|css|js|woff2?|ttf|eot)$/i)) {
+  } else if (
+    !pathname.startsWith("/_next/") &&
+    !pathname.match(/\.(ico|png|jpg|jpeg|svg|css|js|woff2?|ttf|eot)$/i)
+  ) {
     // A36.4: Apply a dedicated global rate limiter for non-API paths (HTML
     // pages, etc.) to prevent subdomain-enumeration DDoS attacks.
     // Previously this depended on a lookup against the /api/ catch-all rule

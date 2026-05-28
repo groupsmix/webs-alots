@@ -29,19 +29,80 @@ interface PatientDocument {
 }
 
 const initialDocuments: PatientDocument[] = [
-  { id: "doc1", name: "Blood Test Results", type: "analysis", date: "2026-03-15", size: "1.2 MB", icon: FileText },
-  { id: "doc2", name: "Chest X-Ray", type: "radiology", date: "2026-02-20", size: "3.5 MB", icon: Image },
-  { id: "doc3", name: "CNSS Insurance Card", type: "insurance", date: "2026-01-10", size: "0.8 MB", icon: CreditCard },
-  { id: "doc4", name: "ECG Report", type: "analysis", date: "2025-12-05", size: "0.5 MB", icon: FileText },
-  { id: "doc5", name: "Spine MRI", type: "radiology", date: "2025-11-18", size: "8.2 MB", icon: Image },
-  { id: "doc6", name: "Allergy Panel Results", type: "analysis", date: "2025-10-02", size: "0.3 MB", icon: FileText },
+  {
+    id: "doc1",
+    name: "Blood Test Results",
+    type: "analysis",
+    date: "2026-03-15",
+    size: "1.2 MB",
+    icon: FileText,
+  },
+  {
+    id: "doc2",
+    name: "Chest X-Ray",
+    type: "radiology",
+    date: "2026-02-20",
+    size: "3.5 MB",
+    icon: Image,
+  },
+  {
+    id: "doc3",
+    name: "CNSS Insurance Card",
+    type: "insurance",
+    date: "2026-01-10",
+    size: "0.8 MB",
+    icon: CreditCard,
+  },
+  {
+    id: "doc4",
+    name: "ECG Report",
+    type: "analysis",
+    date: "2025-12-05",
+    size: "0.5 MB",
+    icon: FileText,
+  },
+  {
+    id: "doc5",
+    name: "Spine MRI",
+    type: "radiology",
+    date: "2025-11-18",
+    size: "8.2 MB",
+    icon: Image,
+  },
+  {
+    id: "doc6",
+    name: "Allergy Panel Results",
+    type: "analysis",
+    date: "2025-10-02",
+    size: "0.3 MB",
+    icon: FileText,
+  },
 ];
 
-const typeConfig: Record<DocType, { label: string; color: string; variant: "default" | "secondary" | "outline" | "destructive" }> = {
-  analysis: { label: "Analysis", color: "text-blue-600 bg-blue-100 dark:bg-blue-900/50", variant: "default" },
-  radiology: { label: "Radiology", color: "text-purple-600 bg-purple-100 dark:bg-purple-900/50", variant: "secondary" },
-  insurance: { label: "Insurance", color: "text-green-600 bg-green-100 dark:bg-green-900/50", variant: "outline" },
-  other: { label: "Other", color: "text-gray-600 bg-gray-100 dark:bg-gray-900/50", variant: "outline" },
+const typeConfig: Record<
+  DocType,
+  { label: string; color: string; variant: "default" | "secondary" | "outline" | "destructive" }
+> = {
+  analysis: {
+    label: "Analysis",
+    color: "text-blue-600 bg-blue-100 dark:bg-blue-900/50",
+    variant: "default",
+  },
+  radiology: {
+    label: "Radiology",
+    color: "text-purple-600 bg-purple-100 dark:bg-purple-900/50",
+    variant: "secondary",
+  },
+  insurance: {
+    label: "Insurance",
+    color: "text-green-600 bg-green-100 dark:bg-green-900/50",
+    variant: "outline",
+  },
+  other: {
+    label: "Other",
+    color: "text-gray-600 bg-gray-100 dark:bg-gray-900/50",
+    variant: "outline",
+  },
 };
 
 export default function PatientDocumentsPage() {
@@ -86,7 +147,9 @@ export default function PatientDocumentsPage() {
 
   return (
     <div>
-      <Breadcrumb items={[{ label: "Patient", href: "/patient/dashboard" }, { label: "Documents" }]} />
+      <Breadcrumb
+        items={[{ label: "Patient", href: "/patient/dashboard" }, { label: "Documents" }]}
+      />
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold">My Documents</h1>
@@ -133,13 +196,17 @@ export default function PatientDocumentsPage() {
             return (
               <Card key={doc.id} className="hover:shadow-md transition-shadow">
                 <CardContent className="flex items-center gap-4 p-4">
-                  <div className={`flex h-12 w-12 items-center justify-center rounded-lg ${config.color}`}>
+                  <div
+                    className={`flex h-12 w-12 items-center justify-center rounded-lg ${config.color}`}
+                  >
                     <doc.icon className="h-6 w-6" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="font-medium text-sm truncate">{doc.name}</p>
                     <div className="flex items-center gap-2 mt-1">
-                      <Badge variant={config.variant} className="text-xs">{config.label}</Badge>
+                      <Badge variant={config.variant} className="text-xs">
+                        {config.label}
+                      </Badge>
                       <span className="text-xs text-muted-foreground">{doc.date}</span>
                       <span className="text-xs text-muted-foreground">{doc.size}</span>
                     </div>
@@ -151,7 +218,12 @@ export default function PatientDocumentsPage() {
                     <Button variant="ghost" size="sm" title="Download">
                       <Download className="h-4 w-4 text-muted-foreground" />
                     </Button>
-                    <Button variant="ghost" size="sm" title="Delete" onClick={() => setDeleteId(doc.id)}>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      title="Delete"
+                      onClick={() => setDeleteId(doc.id)}
+                    >
                       <Trash2 className="h-4 w-4 text-muted-foreground" />
                     </Button>
                   </div>
@@ -166,14 +238,18 @@ export default function PatientDocumentsPage() {
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>Upload Document</DialogTitle>
-            <DialogDescription>Upload radiology images, lab analyses, or insurance cards.</DialogDescription>
+            <DialogDescription>
+              Upload radiology images, lab analyses, or insurance cards.
+            </DialogDescription>
           </DialogHeader>
           {uploadSuccess ? (
             <div className="text-center py-6">
               <div className="h-12 w-12 rounded-full bg-green-100 dark:bg-green-900/50 flex items-center justify-center mx-auto mb-3">
                 <Upload className="h-6 w-6 text-green-600" />
               </div>
-              <p className="text-sm font-medium text-green-700 dark:text-green-400">Document uploaded successfully!</p>
+              <p className="text-sm font-medium text-green-700 dark:text-green-400">
+                Document uploaded successfully!
+              </p>
             </div>
           ) : (
             <div className="space-y-4 mt-2">
@@ -203,7 +279,9 @@ export default function PatientDocumentsPage() {
               <div className="border-2 border-dashed rounded-lg p-6 text-center cursor-pointer hover:border-primary transition-colors">
                 <Upload className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
                 <p className="text-sm font-medium">Click to select a file</p>
-                <p className="text-xs text-muted-foreground mt-1">PDF, JPG, PNG, DICOM up to 25MB</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  PDF, JPG, PNG, DICOM up to 25MB
+                </p>
               </div>
               <Button className="w-full" onClick={handleUpload} disabled={uploading}>
                 {uploading ? "Uploading..." : "Upload Document"}
@@ -217,13 +295,19 @@ export default function PatientDocumentsPage() {
         <DialogContent className="max-w-sm">
           <DialogHeader>
             <DialogTitle>Delete Document</DialogTitle>
-            <DialogDescription>Are you sure you want to delete this document? This action cannot be undone.</DialogDescription>
+            <DialogDescription>
+              Are you sure you want to delete this document? This action cannot be undone.
+            </DialogDescription>
           </DialogHeader>
           <div className="flex gap-2 mt-4">
             <Button variant="outline" className="flex-1" onClick={() => setDeleteId(null)}>
               Cancel
             </Button>
-            <Button variant="destructive" className="flex-1" onClick={() => deleteId && handleDelete(deleteId)}>
+            <Button
+              variant="destructive"
+              className="flex-1"
+              onClick={() => deleteId && handleDelete(deleteId)}
+            >
               <Trash2 className="h-4 w-4 mr-1" />
               Delete
             </Button>

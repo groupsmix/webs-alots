@@ -20,7 +20,7 @@ export function createClient() {
   if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
     throw new Error(
       "Missing Supabase environment variables. " +
-      "Ensure NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY are set at build time.",
+        "Ensure NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY are set at build time.",
     );
   }
   return createBrowserClient<Database>(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -39,7 +39,7 @@ export function createTenantClient(clinicId: string) {
   if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
     throw new Error(
       "Missing Supabase environment variables. " +
-      "Ensure NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY are set at build time.",
+        "Ensure NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY are set at build time.",
     );
   }
   return createBrowserClient<Database>(SUPABASE_URL, SUPABASE_ANON_KEY, {

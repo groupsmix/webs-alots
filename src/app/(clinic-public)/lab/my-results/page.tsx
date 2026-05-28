@@ -1,9 +1,6 @@
 "use client";
 
-import {
-  FileText, Shield, Search, AlertCircle, Clock,
-  CheckCircle, Lock,
-} from "lucide-react";
+import { FileText, Shield, Search, AlertCircle, Clock, CheckCircle, Lock } from "lucide-react";
 import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -46,7 +43,10 @@ export default function LabResultsPage() {
     setLoading(false);
   };
 
-  const statusConfig: Record<string, { label: string; variant: "default" | "secondary" | "outline"; icon: React.ReactNode }> = {
+  const statusConfig: Record<
+    string,
+    { label: string; variant: "default" | "secondary" | "outline"; icon: React.ReactNode }
+  > = {
     ready: { label: "Ready", variant: "default", icon: <CheckCircle className="h-3 w-3" /> },
     pending: { label: "Pending", variant: "secondary", icon: <Clock className="h-3 w-3" /> },
     "in-progress": { label: "Processing", variant: "outline", icon: <Clock className="h-3 w-3" /> },
@@ -57,7 +57,8 @@ export default function LabResultsPage() {
       <div className="text-center mb-12">
         <h1 className="text-3xl font-bold mb-4">Access Your Results</h1>
         <p className="text-muted-foreground max-w-2xl mx-auto">
-          Enter your patient code and date of birth to securely access your lab and radiology results online.
+          Enter your patient code and date of birth to securely access your lab and radiology
+          results online.
         </p>
       </div>
 
@@ -68,7 +69,8 @@ export default function LabResultsPage() {
           <div>
             <p className="text-sm font-medium text-blue-700 dark:text-blue-400">Secure Access</p>
             <p className="text-xs text-blue-600 dark:text-blue-300">
-              Your results are protected. You need your patient code (provided at sample collection) and your date of birth to access them.
+              Your results are protected. You need your patient code (provided at sample collection)
+              and your date of birth to access them.
             </p>
           </div>
         </div>
@@ -152,9 +154,9 @@ export default function LabResultsPage() {
                   <FileText className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
                   <p className="font-medium mb-1">No Results Found</p>
                   <p className="text-sm text-muted-foreground">
-                    No results were found for the provided code and date of birth.
-                    Results typically become available within 24-48 hours after sample collection.
-                    Please verify your information or contact us for assistance.
+                    No results were found for the provided code and date of birth. Results typically
+                    become available within 24-48 hours after sample collection. Please verify your
+                    information or contact us for assistance.
                   </p>
                 </CardContent>
               </Card>

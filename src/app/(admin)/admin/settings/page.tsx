@@ -1,6 +1,21 @@
 "use client";
 
-import { CreditCard, MessageCircle, Calendar, Save, Edit, Ban, Building2, Phone, MapPin, Globe, RefreshCw, Languages, Monitor, Star } from "lucide-react";
+import {
+  CreditCard,
+  MessageCircle,
+  Calendar,
+  Save,
+  Edit,
+  Ban,
+  Building2,
+  Phone,
+  MapPin,
+  Globe,
+  RefreshCw,
+  Languages,
+  Monitor,
+  Star,
+} from "lucide-react";
 import { useState } from "react";
 import { useTenant } from "@/components/tenant-provider";
 import { Badge } from "@/components/ui/badge";
@@ -66,56 +81,64 @@ const defaultTemplates: WhatsAppTemplate[] = [
     name: "booking_confirmation",
     label: "Booking Confirmation",
     enabled: true,
-    template: "Hello {{patient_name}}, your appointment with {{doctor_name}} is confirmed for {{date}} at {{time}}. Reply CANCEL to cancel.",
+    template:
+      "Hello {{patient_name}}, your appointment with {{doctor_name}} is confirmed for {{date}} at {{time}}. Reply CANCEL to cancel.",
   },
   {
     id: "t2",
     name: "appointment_reminder",
     label: "Appointment Reminder",
     enabled: true,
-    template: "Reminder: You have an appointment with {{doctor_name}} tomorrow at {{time}}. {{clinic_name}} — {{clinic_address}}",
+    template:
+      "Reminder: You have an appointment with {{doctor_name}} tomorrow at {{time}}. {{clinic_name}} — {{clinic_address}}",
   },
   {
     id: "t3",
     name: "cancellation_notice",
     label: "Cancellation Notice",
     enabled: true,
-    template: "Your appointment with {{doctor_name}} on {{date}} at {{time}} has been cancelled. Please contact us to reschedule.",
+    template:
+      "Your appointment with {{doctor_name}} on {{date}} at {{time}} has been cancelled. Please contact us to reschedule.",
   },
   {
     id: "t4",
     name: "follow_up",
     label: "Follow-up Message",
     enabled: false,
-    template: "Hello {{patient_name}}, we hope you are feeling better. It's time for your follow-up visit. Book now at {{booking_url}}.",
+    template:
+      "Hello {{patient_name}}, we hope you are feeling better. It's time for your follow-up visit. Book now at {{booking_url}}.",
   },
   {
     id: "t5",
     name: "no_show",
     label: "No-show Notification",
     enabled: false,
-    template: "Hello {{patient_name}}, we noticed you missed your appointment on {{date}}. Would you like to reschedule? Contact us at {{clinic_phone}}.",
+    template:
+      "Hello {{patient_name}}, we noticed you missed your appointment on {{date}}. Would you like to reschedule? Contact us at {{clinic_phone}}.",
   },
   {
     id: "t6",
     name: "prescription_ready",
     label: "Prescription Ready",
     enabled: true,
-    template: "Hello {{patient_name}}, your prescription from {{doctor_name}} is ready. You can collect it at {{clinic_name}} or view it online.",
+    template:
+      "Hello {{patient_name}}, your prescription from {{doctor_name}} is ready. You can collect it at {{clinic_name}} or view it online.",
   },
   {
     id: "t7",
     name: "payment_receipt",
     label: "Payment Receipt",
     enabled: false,
-    template: "Payment received: {{amount}} {{currency}} for your visit with {{doctor_name}} on {{date}}. Thank you! — {{clinic_name}}",
+    template:
+      "Payment received: {{amount}} {{currency}} for your visit with {{doctor_name}} on {{date}}. Thank you! — {{clinic_name}}",
   },
   {
     id: "t8",
     name: "waitlist_available",
     label: "Waitlist Availability",
     enabled: false,
-    template: "Good news {{patient_name}}! A slot has opened with {{doctor_name}} on {{date}} at {{time}}. Reply YES to book or it will be offered to the next patient.",
+    template:
+      "Good news {{patient_name}}! A slot has opened with {{doctor_name}} on {{date}} at {{time}}. Reply YES to book or it will be offered to the next patient.",
   },
 ];
 
@@ -155,7 +178,8 @@ export default function ClinicSettingsPage() {
     allowRescheduling: true,
     rescheduleHours: 12,
     autoConfirm: false,
-    noShowPolicy: "Patient will be marked as no-show if they do not arrive within 15 minutes of their appointment time.",
+    noShowPolicy:
+      "Patient will be marked as no-show if they do not arrive within 15 minutes of their appointment time.",
   });
 
   const [templates, setTemplates] = useState<WhatsAppTemplate[]>(defaultTemplates);
@@ -174,7 +198,7 @@ export default function ClinicSettingsPage() {
     setPaymentSettings({
       ...paymentSettings,
       methods: paymentSettings.methods.map((m) =>
-        m.name === name ? { ...m, enabled: !m.enabled } : m
+        m.name === name ? { ...m, enabled: !m.enabled } : m,
       ),
     });
   };
@@ -251,7 +275,9 @@ export default function ClinicSettingsPage() {
                       <Label>Phone Number</Label>
                       <Input
                         value={clinicProfile.phone}
-                        onChange={(e) => setClinicProfile({ ...clinicProfile, phone: e.target.value })}
+                        onChange={(e) =>
+                          setClinicProfile({ ...clinicProfile, phone: e.target.value })
+                        }
                         placeholder="+212 6 00 00 00 00"
                       />
                     </div>
@@ -259,7 +285,9 @@ export default function ClinicSettingsPage() {
                       <Label>WhatsApp Number</Label>
                       <Input
                         value={clinicProfile.whatsapp}
-                        onChange={(e) => setClinicProfile({ ...clinicProfile, whatsapp: e.target.value })}
+                        onChange={(e) =>
+                          setClinicProfile({ ...clinicProfile, whatsapp: e.target.value })
+                        }
                         placeholder="+212 6 00 00 00 00"
                       />
                     </div>
@@ -268,15 +296,21 @@ export default function ClinicSettingsPage() {
                       <Input
                         type="email"
                         value={clinicProfile.email}
-                        onChange={(e) => setClinicProfile({ ...clinicProfile, email: e.target.value })}
+                        onChange={(e) =>
+                          setClinicProfile({ ...clinicProfile, email: e.target.value })
+                        }
                         placeholder="contact@clinic.ma"
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label className="flex items-center gap-1"><Globe className="h-3.5 w-3.5" /> Website / Domain</Label>
+                      <Label className="flex items-center gap-1">
+                        <Globe className="h-3.5 w-3.5" /> Website / Domain
+                      </Label>
                       <Input
                         value={clinicProfile.website}
-                        onChange={(e) => setClinicProfile({ ...clinicProfile, website: e.target.value })}
+                        onChange={(e) =>
+                          setClinicProfile({ ...clinicProfile, website: e.target.value })
+                        }
                         placeholder="www.myclinic.ma"
                       />
                     </div>
@@ -293,7 +327,9 @@ export default function ClinicSettingsPage() {
                       <Label>Address</Label>
                       <Input
                         value={clinicProfile.address}
-                        onChange={(e) => setClinicProfile({ ...clinicProfile, address: e.target.value })}
+                        onChange={(e) =>
+                          setClinicProfile({ ...clinicProfile, address: e.target.value })
+                        }
                         placeholder="123 Rue Example, Quartier"
                       />
                     </div>
@@ -301,7 +337,9 @@ export default function ClinicSettingsPage() {
                       <Label>City</Label>
                       <Input
                         value={clinicProfile.city}
-                        onChange={(e) => setClinicProfile({ ...clinicProfile, city: e.target.value })}
+                        onChange={(e) =>
+                          setClinicProfile({ ...clinicProfile, city: e.target.value })
+                        }
                         placeholder="Casablanca"
                       />
                     </div>
@@ -309,7 +347,9 @@ export default function ClinicSettingsPage() {
                       <Label>Google Maps URL</Label>
                       <Input
                         value={clinicProfile.googleMapsUrl}
-                        onChange={(e) => setClinicProfile({ ...clinicProfile, googleMapsUrl: e.target.value })}
+                        onChange={(e) =>
+                          setClinicProfile({ ...clinicProfile, googleMapsUrl: e.target.value })
+                        }
                         placeholder="https://maps.google.com/..."
                       />
                     </div>
@@ -342,7 +382,9 @@ export default function ClinicSettingsPage() {
                     <Label>Default Currency</Label>
                     <Input
                       value={paymentSettings.currency}
-                      onChange={(e) => setPaymentSettings({ ...paymentSettings, currency: e.target.value })}
+                      onChange={(e) =>
+                        setPaymentSettings({ ...paymentSettings, currency: e.target.value })
+                      }
                     />
                   </div>
                 </div>
@@ -350,10 +392,16 @@ export default function ClinicSettingsPage() {
                 <div className="space-y-3">
                   <Label>Accepted Payment Methods</Label>
                   {paymentSettings.methods.map((method) => (
-                    <div key={method.name} className="flex items-center justify-between border rounded-lg p-3">
+                    <div
+                      key={method.name}
+                      className="flex items-center justify-between border rounded-lg p-3"
+                    >
                       <span className="text-sm font-medium">{method.name}</span>
                       <div className="flex items-center gap-2">
-                        <Switch checked={method.enabled} onCheckedChange={() => togglePaymentMethod(method.name)} />
+                        <Switch
+                          checked={method.enabled}
+                          onCheckedChange={() => togglePaymentMethod(method.name)}
+                        />
                         <Badge variant={method.enabled ? "default" : "secondary"}>
                           {method.enabled ? "Enabled" : "Disabled"}
                         </Badge>
@@ -370,7 +418,9 @@ export default function ClinicSettingsPage() {
                       <Input
                         placeholder="Enter CMI Merchant ID"
                         value={paymentSettings.cmiMerchantId}
-                        onChange={(e) => setPaymentSettings({ ...paymentSettings, cmiMerchantId: e.target.value })}
+                        onChange={(e) =>
+                          setPaymentSettings({ ...paymentSettings, cmiMerchantId: e.target.value })
+                        }
                       />
                     </div>
                     <div className="space-y-2">
@@ -379,7 +429,9 @@ export default function ClinicSettingsPage() {
                         type="password"
                         placeholder="Enter CMI Secret Key"
                         value={paymentSettings.cmiSecretKey}
-                        onChange={(e) => setPaymentSettings({ ...paymentSettings, cmiSecretKey: e.target.value })}
+                        onChange={(e) =>
+                          setPaymentSettings({ ...paymentSettings, cmiSecretKey: e.target.value })
+                        }
                       />
                     </div>
                   </div>
@@ -411,7 +463,9 @@ export default function ClinicSettingsPage() {
                   <Input
                     type="number"
                     value={bookingRules.slotDuration}
-                    onChange={(e) => setBookingRules({ ...bookingRules, slotDuration: Number(e.target.value) })}
+                    onChange={(e) =>
+                      setBookingRules({ ...bookingRules, slotDuration: Number(e.target.value) })
+                    }
                   />
                 </div>
                 <div className="space-y-2">
@@ -419,7 +473,9 @@ export default function ClinicSettingsPage() {
                   <Input
                     type="number"
                     value={bookingRules.bufferTime}
-                    onChange={(e) => setBookingRules({ ...bookingRules, bufferTime: Number(e.target.value) })}
+                    onChange={(e) =>
+                      setBookingRules({ ...bookingRules, bufferTime: Number(e.target.value) })
+                    }
                   />
                 </div>
                 <div className="space-y-2">
@@ -427,7 +483,9 @@ export default function ClinicSettingsPage() {
                   <Input
                     type="number"
                     value={bookingRules.maxAdvanceDays}
-                    onChange={(e) => setBookingRules({ ...bookingRules, maxAdvanceDays: Number(e.target.value) })}
+                    onChange={(e) =>
+                      setBookingRules({ ...bookingRules, maxAdvanceDays: Number(e.target.value) })
+                    }
                   />
                 </div>
                 <div className="space-y-2">
@@ -435,7 +493,9 @@ export default function ClinicSettingsPage() {
                   <Input
                     type="number"
                     value={bookingRules.maxPerSlot}
-                    onChange={(e) => setBookingRules({ ...bookingRules, maxPerSlot: Number(e.target.value) })}
+                    onChange={(e) =>
+                      setBookingRules({ ...bookingRules, maxPerSlot: Number(e.target.value) })
+                    }
                   />
                 </div>
               </div>
@@ -451,10 +511,16 @@ export default function ClinicSettingsPage() {
                     <Input
                       type="number"
                       value={bookingRules.cancellationHours}
-                      onChange={(e) => setBookingRules({ ...bookingRules, cancellationHours: Number(e.target.value) })}
+                      onChange={(e) =>
+                        setBookingRules({
+                          ...bookingRules,
+                          cancellationHours: Number(e.target.value),
+                        })
+                      }
                     />
                     <p className="text-xs text-muted-foreground">
-                      Patients must cancel at least {bookingRules.cancellationHours} hours before their appointment.
+                      Patients must cancel at least {bookingRules.cancellationHours} hours before
+                      their appointment.
                     </p>
                   </div>
                   <div className="space-y-2">
@@ -462,7 +528,9 @@ export default function ClinicSettingsPage() {
                       <Label>Allow Rescheduling</Label>
                       <Switch
                         checked={bookingRules.allowRescheduling}
-                        onCheckedChange={(checked) => setBookingRules({ ...bookingRules, allowRescheduling: checked })}
+                        onCheckedChange={(checked) =>
+                          setBookingRules({ ...bookingRules, allowRescheduling: checked })
+                        }
                       />
                     </div>
                     {bookingRules.allowRescheduling && (
@@ -471,7 +539,12 @@ export default function ClinicSettingsPage() {
                         <Input
                           type="number"
                           value={bookingRules.rescheduleHours}
-                          onChange={(e) => setBookingRules({ ...bookingRules, rescheduleHours: Number(e.target.value) })}
+                          onChange={(e) =>
+                            setBookingRules({
+                              ...bookingRules,
+                              rescheduleHours: Number(e.target.value),
+                            })
+                          }
                         />
                       </div>
                     )}
@@ -488,18 +561,24 @@ export default function ClinicSettingsPage() {
                   <div className="flex items-center justify-between border rounded-lg p-3">
                     <div>
                       <span className="text-sm font-medium">Auto-confirm Bookings</span>
-                      <p className="text-xs text-muted-foreground">Automatically confirm new appointments without manual approval</p>
+                      <p className="text-xs text-muted-foreground">
+                        Automatically confirm new appointments without manual approval
+                      </p>
                     </div>
                     <Switch
                       checked={bookingRules.autoConfirm}
-                      onCheckedChange={(checked) => setBookingRules({ ...bookingRules, autoConfirm: checked })}
+                      onCheckedChange={(checked) =>
+                        setBookingRules({ ...bookingRules, autoConfirm: checked })
+                      }
                     />
                   </div>
                   <div className="space-y-2">
                     <Label>No-show Policy</Label>
                     <Textarea
                       value={bookingRules.noShowPolicy}
-                      onChange={(e) => setBookingRules({ ...bookingRules, noShowPolicy: e.target.value })}
+                      onChange={(e) =>
+                        setBookingRules({ ...bookingRules, noShowPolicy: e.target.value })
+                      }
                       className="min-h-[80px]"
                     />
                   </div>
@@ -532,16 +611,21 @@ export default function ClinicSettingsPage() {
                   <h4 className="text-sm font-medium">Patient Message Language</h4>
                 </div>
                 <p className="text-xs text-muted-foreground mb-3">
-                  Choose the language for patient-facing WhatsApp notifications. Darija (Moroccan Arabic) is recommended for higher engagement.
+                  Choose the language for patient-facing WhatsApp notifications. Darija (Moroccan
+                  Arabic) is recommended for higher engagement.
                 </p>
                 <select
                   value={patientMessageLocale}
-                  onChange={(e) => setPatientMessageLocale(e.target.value as "fr" | "ar" | "darija")}
+                  onChange={(e) =>
+                    setPatientMessageLocale(e.target.value as "fr" | "ar" | "darija")
+                  }
                   className="flex h-10 w-full max-w-xs rounded-md border border-input bg-background px-3 py-2 text-sm"
                 >
                   <option value="fr">Fran\u00e7ais (French)</option>
                   <option value="ar">\u0627\u0644\u0639\u0631\u0628\u064a\u0629 (Arabic)</option>
-                  <option value="darija">\u0627\u0644\u062f\u0627\u0631\u062c\u0629 (Darija / Moroccan Arabic)</option>
+                  <option value="darija">
+                    \u0627\u0644\u062f\u0627\u0631\u062c\u0629 (Darija / Moroccan Arabic)
+                  </option>
                 </select>
               </div>
 
@@ -580,7 +664,9 @@ export default function ClinicSettingsPage() {
                         className="min-h-[100px]"
                       />
                     ) : (
-                      <p className="text-sm text-muted-foreground bg-muted/50 p-3 rounded-md">{t.template}</p>
+                      <p className="text-sm text-muted-foreground bg-muted/50 p-3 rounded-md">
+                        {t.template}
+                      </p>
                     )}
                   </div>
                 ))}
@@ -611,15 +697,13 @@ export default function ClinicSettingsPage() {
                     <div>
                       <span className="text-sm font-medium">Enable Kiosk Mode</span>
                       <p className="text-xs text-muted-foreground mt-1">
-                        When enabled, patients can self-check-in using a tablet at your clinic entrance.
-                        Access via <code className="bg-muted px-1 rounded text-xs">/checkin</code>
+                        When enabled, patients can self-check-in using a tablet at your clinic
+                        entrance. Access via{" "}
+                        <code className="bg-muted px-1 rounded text-xs">/checkin</code>
                       </p>
                     </div>
                     <div className="flex items-center gap-2">
-                      <Switch
-                        checked={kioskModeEnabled}
-                        onCheckedChange={setKioskModeEnabled}
-                      />
+                      <Switch checked={kioskModeEnabled} onCheckedChange={setKioskModeEnabled} />
                       <Badge variant={kioskModeEnabled ? "default" : "secondary"}>
                         {kioskModeEnabled ? "Enabled" : "Disabled"}
                       </Badge>
@@ -649,8 +733,9 @@ export default function ClinicSettingsPage() {
               <CardContent>
                 <div className="space-y-4">
                   <p className="text-sm text-muted-foreground">
-                    After appointments, patients receive a WhatsApp message asking to rate their experience.
-                    Positive ratings (4-5 stars) are redirected to leave a Google Review.
+                    After appointments, patients receive a WhatsApp message asking to rate their
+                    experience. Positive ratings (4-5 stars) are redirected to leave a Google
+                    Review.
                   </p>
                   <div className="space-y-2">
                     <Label>Google Place ID</Label>

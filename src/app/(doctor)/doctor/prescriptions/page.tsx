@@ -37,7 +37,7 @@ function generatePrescriptionPDF(rx: Prescription) {
   const addLine = (text: string, fontSize: number = 12, bold: boolean = false) => {
     const weight = bold ? "bold" : "normal";
     lines.push(
-      `<text x="40" y="${y}" font-size="${fontSize}" font-weight="${weight}" font-family="Helvetica, Arial, sans-serif">${escapeXml(text)}</text>`
+      `<text x="40" y="${y}" font-size="${fontSize}" font-weight="${weight}" font-family="Helvetica, Arial, sans-serif">${escapeXml(text)}</text>`,
     );
     y += lineHeight + (fontSize > 12 ? 8 : 2);
   };
@@ -111,26 +111,31 @@ export default function DoctorPrescriptionsPage() {
   useEffect(() => {
     const controller = new AbortController();
     async function load() {
-    const user = await getCurrentUser();
+      const user = await getCurrentUser();
       if (controller.signal.aborted) return;
-    if (!user?.clinic_id) { setLoading(false); return; }
-    const [rxs, pts] = await Promise.all([
-      fetchPrescriptions(user.clinic_id),
-      fetchPatients(user.clinic_id),
-    ]);
+      if (!user?.clinic_id) {
+        setLoading(false);
+        return;
+      }
+      const [rxs, pts] = await Promise.all([
+        fetchPrescriptions(user.clinic_id),
+        fetchPatients(user.clinic_id),
+      ]);
       if (controller.signal.aborted) return;
-    setRxList(rxs);
-    setPatients(pts);
-    if (pts.length > 0) setSelectedPatient(pts[0].id);
-    setLoading(false);
-  }
+      setRxList(rxs);
+      setPatients(pts);
+      if (pts.length > 0) setSelectedPatient(pts[0].id);
+      setLoading(false);
+    }
     load().catch((err) => {
       if (!controller.signal.aborted) {
         setError(err instanceof Error ? err : new Error(String(err)));
         setLoading(false);
       }
     });
-    return () => { controller.abort(); };
+    return () => {
+      controller.abort();
+    };
   }, []);
 
   if (loading) {
@@ -140,7 +145,9 @@ export default function DoctorPrescriptionsPage() {
   if (error) {
     return (
       <div className="p-8 text-center">
-        <p className="text-red-600 font-medium">Failed to load data. Please try refreshing the page.</p>
+        <p className="text-red-600 font-medium">
+          Failed to load data. Please try refreshing the page.
+        </p>
         {error.message && <p className="text-sm text-muted-foreground mt-2">{error.message}</p>}
       </div>
     );
@@ -171,7 +178,11 @@ export default function DoctorPrescriptionsPage() {
 
     const items = medications
       .filter((m) => m.name.trim())
-      .map((m) => ({ name: m.name, dosage: `${m.dosage} ${m.frequency}`.trim(), duration: m.duration }));
+      .map((m) => ({
+        name: m.name,
+        dosage: `${m.dosage} ${m.frequency}`.trim(),
+        duration: m.duration,
+      }));
 
     const result = await createPrescription({
       clinic_id: user.clinic_id,
@@ -207,7 +218,11 @@ export default function DoctorPrescriptionsPage() {
 
     const items = medications
       .filter((m) => m.name.trim())
-      .map((m) => ({ name: m.name, dosage: `${m.dosage} ${m.frequency}`.trim(), duration: m.duration }));
+      .map((m) => ({
+        name: m.name,
+        dosage: `${m.dosage} ${m.frequency}`.trim(),
+        duration: m.duration,
+      }));
 
     const result = await createPrescription({
       clinic_id: user.clinic_id,
@@ -239,7 +254,9 @@ export default function DoctorPrescriptionsPage() {
 
   return (
     <div>
-      <Breadcrumb items={[{ label: "Doctor", href: "/doctor/dashboard" }, { label: "Prescriptions" }]} />
+      <Breadcrumb
+        items={[{ label: "Doctor", href: "/doctor/dashboard" }, { label: "Prescriptions" }]}
+      />
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold">Prescriptions</h1>
         <Button onClick={() => setShowWriter(true)}>
@@ -293,7 +310,10 @@ export default function DoctorPrescriptionsPage() {
 
       {/* Prescription Writer Dialog */}
       <Dialog open={showWriter} onOpenChange={setShowWriter}>
-        <DialogContent className="max-w-2xl max-h-[85vh] overflow-auto" onClose={() => setShowWriter(false)}>
+        <DialogContent
+          className="max-w-2xl max-h-[85vh] overflow-auto"
+          onClose={() => setShowWriter(false)}
+        >
           <DialogHeader>
             <DialogTitle>New Prescription</DialogTitle>
           </DialogHeader>
@@ -308,7 +328,9 @@ export default function DoctorPrescriptionsPage() {
                   className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 >
                   {patients.map((p) => (
-                    <option key={p.id} value={p.id}>{p.name}</option>
+                    <option key={p.id} value={p.id}>
+                      {p.name}
+                    </option>
                   ))}
                 </select>
               </div>
@@ -341,7 +363,12 @@ export default function DoctorPrescriptionsPage() {
                     <div className="flex items-center justify-between">
                       <Badge variant="outline">Medication {index + 1}</Badge>
                       {medications.length > 1 && (
-                        <Button variant="ghost" size="sm" onClick={() => removeMedication(index)} className="text-destructive">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => removeMedication(index)}
+                          className="text-destructive"
+                        >
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       )}
@@ -349,23 +376,43 @@ export default function DoctorPrescriptionsPage() {
                     <div className="grid gap-3 sm:grid-cols-2">
                       <div className="space-y-1">
                         <Label className="text-xs">Name</Label>
-                        <Input placeholder="e.g., Amoxicillin" value={med.name} onChange={(e) => updateMedication(index, "name", e.target.value)} />
+                        <Input
+                          placeholder="e.g., Amoxicillin"
+                          value={med.name}
+                          onChange={(e) => updateMedication(index, "name", e.target.value)}
+                        />
                       </div>
                       <div className="space-y-1">
                         <Label className="text-xs">Dosage</Label>
-                        <Input placeholder="e.g., 500mg" value={med.dosage} onChange={(e) => updateMedication(index, "dosage", e.target.value)} />
+                        <Input
+                          placeholder="e.g., 500mg"
+                          value={med.dosage}
+                          onChange={(e) => updateMedication(index, "dosage", e.target.value)}
+                        />
                       </div>
                       <div className="space-y-1">
                         <Label className="text-xs">Frequency</Label>
-                        <Input placeholder="e.g., 3x/day" value={med.frequency} onChange={(e) => updateMedication(index, "frequency", e.target.value)} />
+                        <Input
+                          placeholder="e.g., 3x/day"
+                          value={med.frequency}
+                          onChange={(e) => updateMedication(index, "frequency", e.target.value)}
+                        />
                       </div>
                       <div className="space-y-1">
                         <Label className="text-xs">Duration</Label>
-                        <Input placeholder="e.g., 7 days" value={med.duration} onChange={(e) => updateMedication(index, "duration", e.target.value)} />
+                        <Input
+                          placeholder="e.g., 7 days"
+                          value={med.duration}
+                          onChange={(e) => updateMedication(index, "duration", e.target.value)}
+                        />
                       </div>
                       <div className="space-y-1 sm:col-span-2">
                         <Label className="text-xs">Instructions</Label>
-                        <Input placeholder="e.g., Take with food" value={med.instructions} onChange={(e) => updateMedication(index, "instructions", e.target.value)} />
+                        <Input
+                          placeholder="e.g., Take with food"
+                          value={med.instructions}
+                          onChange={(e) => updateMedication(index, "instructions", e.target.value)}
+                        />
                       </div>
                     </div>
                   </div>
@@ -386,7 +433,9 @@ export default function DoctorPrescriptionsPage() {
 
             {/* Actions */}
             <div className="flex gap-2 justify-end">
-              <Button variant="outline" onClick={() => setShowWriter(false)}>Cancel</Button>
+              <Button variant="outline" onClick={() => setShowWriter(false)}>
+                Cancel
+              </Button>
               <Button variant="outline" onClick={handleSavePrescription}>
                 <Save className="h-4 w-4 mr-1" />
                 Save

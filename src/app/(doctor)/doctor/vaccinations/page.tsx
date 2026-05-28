@@ -6,12 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PageLoader } from "@/components/ui/page-loader";
@@ -34,13 +29,31 @@ import {
 } from "@/lib/data/client";
 
 const COMMON_VACCINES = [
-  "BCG", "Hepatitis B", "DTP (Diphtheria-Tetanus-Pertussis)",
-  "Polio (IPV)", "Polio (OPV)", "Hib", "PCV13",
-  "Rotavirus", "MMR", "Varicella", "Hepatitis A",
-  "Meningococcal", "HPV", "Influenza", "COVID-19",
+  "BCG",
+  "Hepatitis B",
+  "DTP (Diphtheria-Tetanus-Pertussis)",
+  "Polio (IPV)",
+  "Polio (OPV)",
+  "Hib",
+  "PCV13",
+  "Rotavirus",
+  "MMR",
+  "Varicella",
+  "Hepatitis A",
+  "Meningococcal",
+  "HPV",
+  "Influenza",
+  "COVID-19",
 ];
 
-const statusConfig: Record<string, { icon: React.ComponentType<{ className?: string }>; variant: "default" | "success" | "warning" | "destructive"; label: string }> = {
+const statusConfig: Record<
+  string,
+  {
+    icon: React.ComponentType<{ className?: string }>;
+    variant: "default" | "success" | "warning" | "destructive";
+    label: string;
+  }
+> = {
   scheduled: { icon: Clock, variant: "default", label: "Scheduled" },
   administered: { icon: CheckCircle, variant: "success", label: "Administered" },
   overdue: { icon: AlertTriangle, variant: "destructive", label: "Overdue" },
@@ -95,7 +108,9 @@ export default function VaccinationsPage() {
       .finally(() => {
         if (!controller.signal.aborted) setLoading(false);
       });
-    return () => { controller.abort(); };
+    return () => {
+      controller.abort();
+    };
   }, [fetchData]);
 
   const reload = async () => {
@@ -120,7 +135,13 @@ export default function VaccinationsPage() {
       notes: form.notes || undefined,
     });
     setShowAdd(false);
-    setForm({ patientId: "", vaccineName: "", doseNumber: "1", scheduledDate: new Date().toISOString().split("T")[0], notes: "" });
+    setForm({
+      patientId: "",
+      vaccineName: "",
+      doseNumber: "1",
+      scheduledDate: new Date().toISOString().split("T")[0],
+      notes: "",
+    });
     reload();
   };
 
@@ -148,7 +169,9 @@ export default function VaccinationsPage() {
 
   return (
     <div>
-      <Breadcrumb items={[{ label: "Doctor", href: "/doctor/dashboard" }, { label: "Vaccinations" }]} />
+      <Breadcrumb
+        items={[{ label: "Doctor", href: "/doctor/dashboard" }, { label: "Vaccinations" }]}
+      />
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold">Vaccination Tracking</h1>
         <Button onClick={() => setShowAdd(true)}>
@@ -158,12 +181,19 @@ export default function VaccinationsPage() {
 
       {/* Patient filter */}
       <div className="mb-6 max-w-xs">
-        <Select value={selectedPatient} onValueChange={(v) => setSelectedPatient(v === "all" ? "" : v)}>
-          <SelectTrigger><SelectValue placeholder="All patients" /></SelectTrigger>
+        <Select
+          value={selectedPatient}
+          onValueChange={(v) => setSelectedPatient(v === "all" ? "" : v)}
+        >
+          <SelectTrigger>
+            <SelectValue placeholder="All patients" />
+          </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All patients</SelectItem>
             {patients.map((p) => (
-              <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+              <SelectItem key={p.id} value={p.id}>
+                {p.name}
+              </SelectItem>
             ))}
           </SelectContent>
         </Select>
@@ -212,7 +242,10 @@ export default function VaccinationsPage() {
           <CardContent>
             <div className="space-y-2">
               {overdue.map((v) => (
-                <div key={v.id} className="flex items-center justify-between rounded-lg bg-red-50 dark:bg-red-900/20 p-3">
+                <div
+                  key={v.id}
+                  className="flex items-center justify-between rounded-lg bg-red-50 dark:bg-red-900/20 p-3"
+                >
                   <div>
                     <p className="text-sm font-medium">{v.patientName}</p>
                     <p className="text-xs text-muted-foreground">
@@ -223,7 +256,9 @@ export default function VaccinationsPage() {
                     <Button size="sm" variant="outline" onClick={() => handleAdminister(v.id)}>
                       <Syringe className="h-3 w-3 mr-1" /> Administer
                     </Button>
-                    <Button size="sm" variant="ghost" onClick={() => handleSkip(v.id)}>Skip</Button>
+                    <Button size="sm" variant="ghost" onClick={() => handleSkip(v.id)}>
+                      Skip
+                    </Button>
                   </div>
                 </div>
               ))}
@@ -270,7 +305,11 @@ export default function VaccinationsPage() {
                         <td className="py-2">
                           {(v.status === "scheduled" || v.status === "overdue") && (
                             <div className="flex gap-1">
-                              <Button size="sm" variant="ghost" onClick={() => handleAdminister(v.id)}>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => handleAdminister(v.id)}
+                              >
                                 <Syringe className="h-3 w-3" />
                               </Button>
                               <Button size="sm" variant="ghost" onClick={() => handleSkip(v.id)}>
@@ -300,22 +339,36 @@ export default function VaccinationsPage() {
           <div className="space-y-4 mt-4">
             <div className="space-y-2">
               <Label>Patient</Label>
-              <Select value={form.patientId} onValueChange={(v) => setForm((p) => ({ ...p, patientId: v }))}>
-                <SelectTrigger><SelectValue placeholder="Select patient" /></SelectTrigger>
+              <Select
+                value={form.patientId}
+                onValueChange={(v) => setForm((p) => ({ ...p, patientId: v }))}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select patient" />
+                </SelectTrigger>
                 <SelectContent>
                   {patients.map((p) => (
-                    <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                    <SelectItem key={p.id} value={p.id}>
+                      {p.name}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-2">
               <Label>Vaccine</Label>
-              <Select value={form.vaccineName} onValueChange={(v) => setForm((p) => ({ ...p, vaccineName: v }))}>
-                <SelectTrigger><SelectValue placeholder="Select vaccine" /></SelectTrigger>
+              <Select
+                value={form.vaccineName}
+                onValueChange={(v) => setForm((p) => ({ ...p, vaccineName: v }))}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select vaccine" />
+                </SelectTrigger>
                 <SelectContent>
                   {COMMON_VACCINES.map((v) => (
-                    <SelectItem key={v} value={v}>{v}</SelectItem>
+                    <SelectItem key={v} value={v}>
+                      {v}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -323,20 +376,37 @@ export default function VaccinationsPage() {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Dose Number</Label>
-                <Input type="number" min="1" value={form.doseNumber} onChange={(e) => setForm((p) => ({ ...p, doseNumber: e.target.value }))} />
+                <Input
+                  type="number"
+                  min="1"
+                  value={form.doseNumber}
+                  onChange={(e) => setForm((p) => ({ ...p, doseNumber: e.target.value }))}
+                />
               </div>
               <div className="space-y-2">
                 <Label>Scheduled Date</Label>
-                <Input type="date" value={form.scheduledDate} onChange={(e) => setForm((p) => ({ ...p, scheduledDate: e.target.value }))} />
+                <Input
+                  type="date"
+                  value={form.scheduledDate}
+                  onChange={(e) => setForm((p) => ({ ...p, scheduledDate: e.target.value }))}
+                />
               </div>
             </div>
             <div className="space-y-2">
               <Label>Notes</Label>
-              <Textarea value={form.notes} onChange={(e) => setForm((p) => ({ ...p, notes: e.target.value }))} placeholder="Optional notes..." />
+              <Textarea
+                value={form.notes}
+                onChange={(e) => setForm((p) => ({ ...p, notes: e.target.value }))}
+                placeholder="Optional notes..."
+              />
             </div>
             <div className="flex gap-2 justify-end">
-              <Button variant="outline" onClick={() => setShowAdd(false)}>Cancel</Button>
-              <Button onClick={handleSave} disabled={!form.patientId || !form.vaccineName}>Schedule</Button>
+              <Button variant="outline" onClick={() => setShowAdd(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleSave} disabled={!form.patientId || !form.vaccineName}>
+                Schedule
+              </Button>
             </div>
           </div>
         </DialogContent>

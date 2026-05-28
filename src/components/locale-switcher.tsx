@@ -43,7 +43,12 @@ export function useLocale(): [Locale, (l: Locale) => void] {
     setLocaleState(l);
     if (typeof window !== "undefined") {
       localStorage.setItem(LOCALE_STORAGE_KEY, l);
-      Cookies.set(LOCALE_STORAGE_KEY, l, { expires: 365, path: "/", secure: window.location.protocol === "https:", sameSite: "lax" });
+      Cookies.set(LOCALE_STORAGE_KEY, l, {
+        expires: 365,
+        path: "/",
+        secure: window.location.protocol === "https:",
+        sameSite: "lax",
+      });
     }
     applyDirection(l);
   }, []);
@@ -88,10 +93,7 @@ export function LocaleSwitcher({ className, onLocaleChange }: LocaleSwitcherProp
       {isOpen && (
         <>
           {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- keyboard interaction handled by parent or child interactive element */}
-          <div
-            className="fixed inset-0 z-40"
-            onClick={() => setIsOpen(false)}
-          />
+          <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
           <div className="absolute top-full mt-1 right-0 z-50 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg py-1 min-w-[160px]">
             {(Object.keys(LOCALE_LABELS) as Locale[]).map((l) => (
               <button
@@ -105,9 +107,7 @@ export function LocaleSwitcher({ className, onLocaleChange }: LocaleSwitcherProp
               >
                 <span className="text-lg">{LOCALE_LABELS[l].flag}</span>
                 <span>{LOCALE_LABELS[l].label}</span>
-                {locale === l && (
-                  <span className="ml-auto text-blue-500">✓</span>
-                )}
+                {locale === l && <span className="ml-auto text-blue-500">✓</span>}
               </button>
             ))}
           </div>

@@ -50,19 +50,25 @@ export async function encryptAndUpload(
     // Silently falling back to plaintext would create a legal and data-breach risk
     // if the encryption key is accidentally unset. Fail hard to surface the issue.
     if (process.env.NODE_ENV === "production") {
-      logger.error("PHI encryption not configured in production — aborting upload to prevent unencrypted PHI storage", {
-        context: "r2-encrypted",
-        key,
-        metadata,
-      });
+      logger.error(
+        "PHI encryption not configured in production — aborting upload to prevent unencrypted PHI storage",
+        {
+          context: "r2-encrypted",
+          key,
+          metadata,
+        },
+      );
       return null;
     }
     // Allow plaintext fallback only in development/test for convenience.
-    logger.warn("PHI encryption not configured — uploading plaintext as fallback (non-production only)", {
-      context: "r2-encrypted",
-      key,
-      metadata,
-    });
+    logger.warn(
+      "PHI encryption not configured — uploading plaintext as fallback (non-production only)",
+      {
+        context: "r2-encrypted",
+        key,
+        metadata,
+      },
+    );
     return uploadToR2(key, Buffer.from(plaintext), contentType);
   }
 
@@ -89,9 +95,7 @@ export async function encryptAndUpload(
  * @param key  R2 object key (with or without `.enc` suffix)
  * @returns Decrypted file contents as Buffer, or null on failure
  */
-export async function downloadAndDecrypt(
-  key: string,
-): Promise<Buffer | null> {
+export async function downloadAndDecrypt(key: string): Promise<Buffer | null> {
   if (!isEncryptionConfigured()) {
     logger.warn("PHI encryption not configured — cannot decrypt", {
       context: "r2-encrypted",
@@ -120,9 +124,7 @@ export async function downloadAndDecrypt(
     });
 
     const encKey = key.endsWith(".enc") ? key : `${key}.enc`;
-    const response = await client.send(
-      new GetObjectCommand({ Bucket: bucketName, Key: encKey }),
-    );
+    const response = await client.send(new GetObjectCommand({ Bucket: bucketName, Key: encKey }));
 
     if (!response.Body) return null;
 

@@ -93,11 +93,7 @@ export async function fetchOnboardingState(): Promise<OnboardingState> {
   if (!user) return DEFAULT_ONBOARDING_STATE;
 
   const supabase = createClient();
-  const { data } = await supabase
-    .from("users")
-    .select("metadata")
-    .eq("id", user.id)
-    .single();
+  const { data } = await supabase.from("users").select("metadata").eq("id", user.id).single();
 
   const metadata = (data?.metadata ?? {}) as UserMetadata;
   const onboarding = metadata.onboarding ?? {};
@@ -109,9 +105,7 @@ export async function fetchOnboardingState(): Promise<OnboardingState> {
   };
 }
 
-export async function updateOnboardingState(
-  updates: Partial<OnboardingState>,
-): Promise<boolean> {
+export async function updateOnboardingState(updates: Partial<OnboardingState>): Promise<boolean> {
   const user = await getCurrentUser();
   if (!user) return false;
 
@@ -184,7 +178,11 @@ export async function autoDetectCompletedSteps(clinicId: string): Promise<Onboar
   ]);
 
   // Check clinic profile
-  const clinic = clinicRes.data as { name: string; phone: string | null; address: string | null } | null;
+  const clinic = clinicRes.data as {
+    name: string;
+    phone: string | null;
+    address: string | null;
+  } | null;
   if (clinic?.name && (clinic.phone || clinic.address)) {
     completed.push("clinic_profile");
   }

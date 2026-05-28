@@ -1,8 +1,16 @@
 "use client";
 
 import {
-  Camera, Plus, MapPin, Calendar, Tag, Eye,
-  AlertTriangle, CheckCircle, Search, Save,
+  Camera,
+  Plus,
+  MapPin,
+  Calendar,
+  Tag,
+  Eye,
+  AlertTriangle,
+  CheckCircle,
+  Search,
+  Save,
 } from "lucide-react";
 import Image from "next/image";
 import { useState, useEffect } from "react";
@@ -14,20 +22,41 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PageLoader } from "@/components/ui/page-loader";
-import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { getCurrentUser } from "@/lib/data/client";
 import {
-  fetchSkinPhotos, createSkinPhoto,
-  fetchSkinConditions, createSkinCondition, updateSkinCondition,
-  type SkinPhotoView, type SkinConditionView,
+  fetchSkinPhotos,
+  createSkinPhoto,
+  fetchSkinConditions,
+  createSkinCondition,
+  updateSkinCondition,
+  type SkinPhotoView,
+  type SkinConditionView,
 } from "@/lib/data/specialists";
 
 const BODY_REGIONS = [
-  "Face", "Scalp", "Neck", "Chest", "Back", "Abdomen",
-  "Left Arm", "Right Arm", "Left Hand", "Right Hand",
-  "Left Leg", "Right Leg", "Left Foot", "Right Foot",
+  "Face",
+  "Scalp",
+  "Neck",
+  "Chest",
+  "Back",
+  "Abdomen",
+  "Left Arm",
+  "Right Arm",
+  "Left Hand",
+  "Right Hand",
+  "Left Leg",
+  "Right Leg",
+  "Left Foot",
+  "Right Foot",
 ];
 
 const SEVERITY_COLORS: Record<string, string> = {
@@ -52,35 +81,46 @@ export default function DermatologyPage() {
   const [searchQuery, setSearchQuery] = useState("");
 
   const [photoForm, setPhotoForm] = useState({
-    bodyRegion: "", description: "", tags: "",
+    bodyRegion: "",
+    description: "",
+    tags: "",
   });
   const [conditionForm, setConditionForm] = useState({
-    conditionName: "", bodyRegion: "", severity: "mild",
-    notes: "", treatmentName: "", treatmentNotes: "",
+    conditionName: "",
+    bodyRegion: "",
+    severity: "mild",
+    notes: "",
+    treatmentName: "",
+    treatmentNotes: "",
   });
 
   useEffect(() => {
     const controller = new AbortController();
     async function load() {
-    const user = await getCurrentUser();
+      const user = await getCurrentUser();
       if (controller.signal.aborted) return;
-    if (!user?.clinic_id) { setLoading(false); return; }
-    const [p, c] = await Promise.all([
-      fetchSkinPhotos(user.clinic_id),
-      fetchSkinConditions(user.clinic_id),
-    ]);
+      if (!user?.clinic_id) {
+        setLoading(false);
+        return;
+      }
+      const [p, c] = await Promise.all([
+        fetchSkinPhotos(user.clinic_id),
+        fetchSkinConditions(user.clinic_id),
+      ]);
       if (controller.signal.aborted) return;
-    setPhotos(p);
-    setConditions(c);
-    setLoading(false);
-  }
+      setPhotos(p);
+      setConditions(c);
+      setLoading(false);
+    }
     load().catch((err) => {
       if (!controller.signal.aborted) {
         setError(err instanceof Error ? err : new Error(String(err)));
         setLoading(false);
       }
     });
-    return () => { controller.abort(); };
+    return () => {
+      controller.abort();
+    };
   }, []);
 
   if (loading) {
@@ -90,7 +130,9 @@ export default function DermatologyPage() {
   if (error) {
     return (
       <div className="p-8 text-center">
-        <p className="text-red-600 font-medium">Failed to load data. Please try refreshing the page.</p>
+        <p className="text-red-600 font-medium">
+          Failed to load data. Please try refreshing the page.
+        </p>
         {error.message && <p className="text-sm text-muted-foreground mt-2">{error.message}</p>}
       </div>
     );
@@ -100,17 +142,34 @@ export default function DermatologyPage() {
     const user = await getCurrentUser();
     if (!user?.clinic_id || !photoForm.bodyRegion) return;
     const newId = await createSkinPhoto({
-      clinic_id: user.clinic_id, patient_id: user.id, doctor_id: user.id,
-      body_region: photoForm.bodyRegion, description: photoForm.description,
-      tags: photoForm.tags.split(",").map((t) => t.trim()).filter(Boolean),
+      clinic_id: user.clinic_id,
+      patient_id: user.id,
+      doctor_id: user.id,
+      body_region: photoForm.bodyRegion,
+      description: photoForm.description,
+      tags: photoForm.tags
+        .split(",")
+        .map((t) => t.trim())
+        .filter(Boolean),
     });
     if (newId) {
-      setPhotos((prev) => [{
-        id: newId, patientId: user.id, patientName: "", doctorId: user.id,
-        bodyRegion: photoForm.bodyRegion, description: photoForm.description,
-        imageUrl: "", photoDate: new Date().toISOString().split("T")[0],
-        tags: photoForm.tags.split(",").map((t) => t.trim()).filter(Boolean),
-      }, ...prev]);
+      setPhotos((prev) => [
+        {
+          id: newId,
+          patientId: user.id,
+          patientName: "",
+          doctorId: user.id,
+          bodyRegion: photoForm.bodyRegion,
+          description: photoForm.description,
+          imageUrl: "",
+          photoDate: new Date().toISOString().split("T")[0],
+          tags: photoForm.tags
+            .split(",")
+            .map((t) => t.trim())
+            .filter(Boolean),
+        },
+        ...prev,
+      ]);
     }
     setPhotoForm({ bodyRegion: "", description: "", tags: "" });
     setShowPhotoForm(false);
@@ -119,42 +178,66 @@ export default function DermatologyPage() {
   const handleAddCondition = async () => {
     const user = await getCurrentUser();
     if (!user?.clinic_id || !conditionForm.conditionName) return;
-    const treatments = conditionForm.treatmentName ? [{
-      name: conditionForm.treatmentName,
-      startDate: new Date().toISOString().split("T")[0],
-      notes: conditionForm.treatmentNotes,
-    }] : [];
+    const treatments = conditionForm.treatmentName
+      ? [
+          {
+            name: conditionForm.treatmentName,
+            startDate: new Date().toISOString().split("T")[0],
+            notes: conditionForm.treatmentNotes,
+          },
+        ]
+      : [];
     const newId = await createSkinCondition({
-      clinic_id: user.clinic_id, patient_id: user.id, doctor_id: user.id,
+      clinic_id: user.clinic_id,
+      patient_id: user.id,
+      doctor_id: user.id,
       condition_name: conditionForm.conditionName,
       body_region: conditionForm.bodyRegion,
       severity: conditionForm.severity,
-      notes: conditionForm.notes, treatments,
+      notes: conditionForm.notes,
+      treatments,
     });
     if (newId) {
-      setConditions((prev) => [{
-        id: newId, patientId: user.id, patientName: "", conditionName: conditionForm.conditionName,
-        bodyRegion: conditionForm.bodyRegion, severity: conditionForm.severity,
-        status: "active", diagnosisDate: new Date().toISOString().split("T")[0],
-        notes: conditionForm.notes, treatments,
-      }, ...prev]);
+      setConditions((prev) => [
+        {
+          id: newId,
+          patientId: user.id,
+          patientName: "",
+          conditionName: conditionForm.conditionName,
+          bodyRegion: conditionForm.bodyRegion,
+          severity: conditionForm.severity,
+          status: "active",
+          diagnosisDate: new Date().toISOString().split("T")[0],
+          notes: conditionForm.notes,
+          treatments,
+        },
+        ...prev,
+      ]);
     }
-    setConditionForm({ conditionName: "", bodyRegion: "", severity: "mild", notes: "", treatmentName: "", treatmentNotes: "" });
+    setConditionForm({
+      conditionName: "",
+      bodyRegion: "",
+      severity: "mild",
+      notes: "",
+      treatmentName: "",
+      treatmentNotes: "",
+    });
     setShowConditionForm(false);
   };
 
   const handleStatusChange = async (id: string, status: string) => {
     const ok = await updateSkinCondition(id, { status });
     if (ok) {
-      setConditions((prev) => prev.map((c) => c.id === id ? { ...c, status } : c));
+      setConditions((prev) => prev.map((c) => (c.id === id ? { ...c, status } : c)));
     }
   };
 
   const filteredPhotos = searchQuery.trim()
-    ? photos.filter((p) =>
-        p.bodyRegion.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        p.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        p.tags.some((t) => t.toLowerCase().includes(searchQuery.toLowerCase()))
+    ? photos.filter(
+        (p) =>
+          p.bodyRegion.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          p.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          p.tags.some((t) => t.toLowerCase().includes(searchQuery.toLowerCase())),
       )
     : photos;
 
@@ -200,7 +283,12 @@ export default function DermatologyPage() {
                   <CardContent className="p-4">
                     <div className="relative aspect-square rounded-lg bg-muted flex items-center justify-center mb-3">
                       {photo.imageUrl ? (
-                        <Image src={photo.imageUrl} alt={photo.description} fill className="rounded-lg object-cover" />
+                        <Image
+                          src={photo.imageUrl}
+                          alt={photo.description}
+                          fill
+                          className="rounded-lg object-cover"
+                        />
                       ) : (
                         <div className="text-center">
                           <Camera className="h-8 w-8 mx-auto text-muted-foreground" />
@@ -222,7 +310,8 @@ export default function DermatologyPage() {
                       </div>
                       {photo.tags.map((tag) => (
                         <Badge key={tag} variant="outline" className="text-[10px]">
-                          <Tag className="h-2 w-2 mr-1" />{tag}
+                          <Tag className="h-2 w-2 mr-1" />
+                          {tag}
                         </Badge>
                       ))}
                     </div>
@@ -294,16 +383,30 @@ export default function DermatologyPage() {
                     <div className="flex gap-2">
                       {cond.status === "active" && (
                         <>
-                          <Button variant="outline" size="sm" onClick={() => handleStatusChange(cond.id, "monitoring")}>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleStatusChange(cond.id, "monitoring")}
+                          >
                             <Eye className="h-3.5 w-3.5 mr-1" /> Monitor
                           </Button>
-                          <Button variant="outline" size="sm" className="text-green-600" onClick={() => handleStatusChange(cond.id, "resolved")}>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="text-green-600"
+                            onClick={() => handleStatusChange(cond.id, "resolved")}
+                          >
                             <CheckCircle className="h-3.5 w-3.5 mr-1" /> Resolved
                           </Button>
                         </>
                       )}
                       {cond.status === "monitoring" && (
-                        <Button variant="outline" size="sm" className="text-green-600" onClick={() => handleStatusChange(cond.id, "resolved")}>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="text-green-600"
+                          onClick={() => handleStatusChange(cond.id, "resolved")}
+                        >
                           <CheckCircle className="h-3.5 w-3.5 mr-1" /> Mark Resolved
                         </Button>
                       )}
@@ -331,8 +434,8 @@ export default function DermatologyPage() {
                 </div>
               ) : (
                 <div className="space-y-6">
-                  {BODY_REGIONS.filter((region) =>
-                    photos.filter((p) => p.bodyRegion === region).length >= 2
+                  {BODY_REGIONS.filter(
+                    (region) => photos.filter((p) => p.bodyRegion === region).length >= 2,
                   ).map((region) => {
                     const regionPhotos = photos
                       .filter((p) => p.bodyRegion === region)
@@ -341,20 +444,31 @@ export default function DermatologyPage() {
                     const last = regionPhotos[regionPhotos.length - 1];
                     return (
                       <div key={region}>
-                        <Breadcrumb items={[{ label: "Doctor", href: "/doctor/dashboard" }, { label: "Dermatology" }]} />
+                        <Breadcrumb
+                          items={[
+                            { label: "Doctor", href: "/doctor/dashboard" },
+                            { label: "Dermatology" },
+                          ]}
+                        />
                         <h3 className="text-sm font-medium mb-2 flex items-center gap-2">
                           <MapPin className="h-3 w-3" /> {region}
-                          <Badge variant="outline" className="text-[10px]">{regionPhotos.length} photos</Badge>
+                          <Badge variant="outline" className="text-[10px]">
+                            {regionPhotos.length} photos
+                          </Badge>
                         </h3>
                         <div className="grid grid-cols-2 gap-4">
                           <div>
-                            <p className="text-xs text-muted-foreground mb-1">Before — {first.photoDate}</p>
+                            <p className="text-xs text-muted-foreground mb-1">
+                              Before — {first.photoDate}
+                            </p>
                             <div className="aspect-square rounded-lg bg-muted flex items-center justify-center">
                               <Camera className="h-6 w-6 text-muted-foreground" />
                             </div>
                           </div>
                           <div>
-                            <p className="text-xs text-muted-foreground mb-1">After — {last.photoDate}</p>
+                            <p className="text-xs text-muted-foreground mb-1">
+                              After — {last.photoDate}
+                            </p>
                             <div className="aspect-square rounded-lg bg-muted flex items-center justify-center">
                               <Camera className="h-6 w-6 text-muted-foreground" />
                             </div>
@@ -363,8 +477,8 @@ export default function DermatologyPage() {
                       </div>
                     );
                   })}
-                  {BODY_REGIONS.filter((region) =>
-                    photos.filter((p) => p.bodyRegion === region).length >= 2
+                  {BODY_REGIONS.filter(
+                    (region) => photos.filter((p) => p.bodyRegion === region).length >= 2,
                   ).length === 0 && (
                     <p className="text-sm text-muted-foreground text-center py-4">
                       No body regions with multiple photos for comparison yet.
@@ -380,14 +494,25 @@ export default function DermatologyPage() {
       {/* Add Photo Dialog */}
       <Dialog open={showPhotoForm} onOpenChange={setShowPhotoForm}>
         <DialogContent className="max-w-md">
-          <DialogHeader><DialogTitle>Document Skin Photo</DialogTitle></DialogHeader>
+          <DialogHeader>
+            <DialogTitle>Document Skin Photo</DialogTitle>
+          </DialogHeader>
           <div className="space-y-4 mt-4">
             <div className="space-y-2">
               <Label>Body Region</Label>
-              <Select value={photoForm.bodyRegion} onValueChange={(v) => setPhotoForm((p) => ({ ...p, bodyRegion: v }))}>
-                <SelectTrigger><SelectValue placeholder="Select region" /></SelectTrigger>
+              <Select
+                value={photoForm.bodyRegion}
+                onValueChange={(v) => setPhotoForm((p) => ({ ...p, bodyRegion: v }))}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select region" />
+                </SelectTrigger>
                 <SelectContent>
-                  {BODY_REGIONS.map((r) => <SelectItem key={r} value={r}>{r}</SelectItem>)}
+                  {BODY_REGIONS.map((r) => (
+                    <SelectItem key={r} value={r}>
+                      {r}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
@@ -402,7 +527,9 @@ export default function DermatologyPage() {
             <div className="border-2 border-dashed rounded-lg p-6 text-center">
               <Camera className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
               <p className="text-xs text-muted-foreground">Upload Photo</p>
-              <Button variant="outline" size="sm" className="mt-2 text-xs">Browse</Button>
+              <Button variant="outline" size="sm" className="mt-2 text-xs">
+                Browse
+              </Button>
             </div>
             <div className="space-y-2">
               <Label>Tags (comma separated)</Label>
@@ -413,8 +540,12 @@ export default function DermatologyPage() {
               />
             </div>
             <div className="flex gap-2 justify-end">
-              <Button variant="outline" onClick={() => setShowPhotoForm(false)}>Cancel</Button>
-              <Button onClick={handleAddPhoto}><Save className="h-4 w-4 mr-1" /> Save</Button>
+              <Button variant="outline" onClick={() => setShowPhotoForm(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleAddPhoto}>
+                <Save className="h-4 w-4 mr-1" /> Save
+              </Button>
             </div>
           </div>
         </DialogContent>
@@ -423,7 +554,9 @@ export default function DermatologyPage() {
       {/* Add Condition Dialog */}
       <Dialog open={showConditionForm} onOpenChange={setShowConditionForm}>
         <DialogContent className="max-w-md">
-          <DialogHeader><DialogTitle>Add Skin Condition</DialogTitle></DialogHeader>
+          <DialogHeader>
+            <DialogTitle>Add Skin Condition</DialogTitle>
+          </DialogHeader>
           <div className="space-y-4 mt-4">
             <div className="space-y-2">
               <Label>Condition Name</Label>
@@ -436,17 +569,31 @@ export default function DermatologyPage() {
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">
                 <Label>Body Region</Label>
-                <Select value={conditionForm.bodyRegion} onValueChange={(v) => setConditionForm((p) => ({ ...p, bodyRegion: v }))}>
-                  <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+                <Select
+                  value={conditionForm.bodyRegion}
+                  onValueChange={(v) => setConditionForm((p) => ({ ...p, bodyRegion: v }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select" />
+                  </SelectTrigger>
                   <SelectContent>
-                    {BODY_REGIONS.map((r) => <SelectItem key={r} value={r}>{r}</SelectItem>)}
+                    {BODY_REGIONS.map((r) => (
+                      <SelectItem key={r} value={r}>
+                        {r}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-2">
                 <Label>Severity</Label>
-                <Select value={conditionForm.severity} onValueChange={(v) => setConditionForm((p) => ({ ...p, severity: v }))}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+                <Select
+                  value={conditionForm.severity}
+                  onValueChange={(v) => setConditionForm((p) => ({ ...p, severity: v }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="mild">Mild</SelectItem>
                     <SelectItem value="moderate">Moderate</SelectItem>
@@ -473,7 +620,9 @@ export default function DermatologyPage() {
                   <Input
                     placeholder="e.g., Topical cream"
                     value={conditionForm.treatmentName}
-                    onChange={(e) => setConditionForm((p) => ({ ...p, treatmentName: e.target.value }))}
+                    onChange={(e) =>
+                      setConditionForm((p) => ({ ...p, treatmentName: e.target.value }))
+                    }
                   />
                 </div>
                 <div className="space-y-2">
@@ -481,14 +630,20 @@ export default function DermatologyPage() {
                   <Input
                     placeholder="Details..."
                     value={conditionForm.treatmentNotes}
-                    onChange={(e) => setConditionForm((p) => ({ ...p, treatmentNotes: e.target.value }))}
+                    onChange={(e) =>
+                      setConditionForm((p) => ({ ...p, treatmentNotes: e.target.value }))
+                    }
                   />
                 </div>
               </div>
             </div>
             <div className="flex gap-2 justify-end">
-              <Button variant="outline" onClick={() => setShowConditionForm(false)}>Cancel</Button>
-              <Button onClick={handleAddCondition}><Save className="h-4 w-4 mr-1" /> Save</Button>
+              <Button variant="outline" onClick={() => setShowConditionForm(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleAddCondition}>
+                <Save className="h-4 w-4 mr-1" /> Save
+              </Button>
             </div>
           </div>
         </DialogContent>

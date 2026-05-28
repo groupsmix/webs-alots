@@ -98,14 +98,15 @@ export const defaultWebsiteConfig: WebsiteConfig = {
     specialization: "Médecine Générale",
     experience: "Plus de 10 ans d'expérience",
     languages: "Français, Arabe, Anglais",
-    practiceDescription: "Notre cabinet offre des soins médicaux complets dans un environnement moderne et accueillant.",
-    practiceDetails: "Nous nous engageons à fournir des soins de qualité, en utilisant les dernières technologies médicales et en maintenant une approche centrée sur le patient.",
+    practiceDescription:
+      "Notre cabinet offre des soins médicaux complets dans un environnement moderne et accueillant.",
+    practiceDetails:
+      "Nous nous engageons à fournir des soins de qualité, en utilisant les dernières technologies médicales et en maintenant une approche centrée sur le patient.",
   },
 
   howToBook: {
     title: "Comment Prendre Rendez-vous",
-    subtitle:
-      "Prendre rendez-vous est rapide et facile. Suivez ces étapes simples pour commencer.",
+    subtitle: "Prendre rendez-vous est rapide et facile. Suivez ces étapes simples pour commencer.",
     steps: [
       {
         title: "Choisir un service",
@@ -132,8 +133,7 @@ export const defaultWebsiteConfig: WebsiteConfig = {
 
   location: {
     title: "Localisation & Horaires",
-    subtitle:
-      "Rendez-nous visite dans notre cabinet. Nous serons ravis de vous accueillir.",
+    subtitle: "Rendez-nous visite dans notre cabinet. Nous serons ravis de vous accueillir.",
     address: "Casablanca, Maroc",
     city: "Casablanca",
     googleMapsEmbedUrl: "",

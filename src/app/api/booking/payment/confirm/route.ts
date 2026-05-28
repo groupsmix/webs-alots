@@ -10,8 +10,9 @@ import { paymentConfirmSchema } from "@/lib/validations";
  *
  * Confirm a pending payment.
  */
-export const POST = withAuthValidation(paymentConfirmSchema, async (body, request, { supabase }) => {
-
+export const POST = withAuthValidation(
+  paymentConfirmSchema,
+  async (body, request, { supabase }) => {
     const tenant = await requireTenant();
     const clinicId = tenant.clinicId;
 
@@ -60,4 +61,6 @@ export const POST = withAuthValidation(paymentConfirmSchema, async (body, reques
     });
 
     return apiSuccess({ status: "confirmed", message: "Payment confirmed" });
-}, STAFF_ROLES);
+  },
+  STAFF_ROLES,
+);

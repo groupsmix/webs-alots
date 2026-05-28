@@ -1,13 +1,5 @@
-import {
-  apiSuccess,
-  apiError,
-  apiForbidden,
-  apiInternalError,
-} from "@/lib/api-response";
-import {
-  findAlternativeSlots,
-  buildBookedSlotsSet,
-} from "@/lib/find-alternative-slots";
+import { apiSuccess, apiError, apiForbidden, apiInternalError } from "@/lib/api-response";
+import { findAlternativeSlots, buildBookedSlotsSet } from "@/lib/find-alternative-slots";
 import { logger } from "@/lib/logger";
 import { enqueueNotification } from "@/lib/notification-queue";
 import { requireTenant, getClinicConfig } from "@/lib/tenant";
@@ -28,7 +20,8 @@ import { withAuth } from "@/lib/with-auth";
  * requireTenant(). The clinicId is now derived from the subdomain, preventing
  * cross-tenant data mutation.
  */
-export const POST = withAuth(async (request, auth) => {
+export const POST = withAuth(
+  async (request, auth) => {
     const supabase = auth.supabase;
 
     // AUDIT F-01: Derive clinicId from subdomain, not from the request body.
@@ -46,7 +39,11 @@ export const POST = withAuth(async (request, auth) => {
     }
     const parsed = doctorUnavailabilitySchema.safeParse(rawBody);
     if (!parsed.success) {
-      return apiError(parsed.error.issues.map(i => i.message).join(", "), 422, "VALIDATION_ERROR");
+      return apiError(
+        parsed.error.issues.map((i) => i.message).join(", "),
+        422,
+        "VALIDATION_ERROR",
+      );
     }
 
     const { doctorId, clinicId: bodyClinicId, startDate, endDate, reason } = parsed.data;
@@ -54,12 +51,15 @@ export const POST = withAuth(async (request, auth) => {
     // AUDIT F-01: If a body-supplied clinicId is present, it MUST match the
     // subdomain-derived value. This prevents cross-tenant mutations.
     if (bodyClinicId && bodyClinicId !== clinicId) {
-      logger.error("Tenant mismatch in doctor-unavailability: body clinicId does not match subdomain", {
-        context: "doctor-unavailability",
-        bodyClinicId,
-        subdomainClinicId: clinicId,
-        userId: auth.profile.id,
-      });
+      logger.error(
+        "Tenant mismatch in doctor-unavailability: body clinicId does not match subdomain",
+        {
+          context: "doctor-unavailability",
+          bodyClinicId,
+          subdomainClinicId: clinicId,
+          userId: auth.profile.id,
+        },
+      );
       return apiForbidden("clinicId does not match subdomain");
     }
 
@@ -105,7 +105,8 @@ export const POST = withAuth(async (request, auth) => {
     // 2. Find all affected appointments in the date range
     const { data: affectedAppointments, error: apptError } = await supabase
       .from("appointments")
-      .select(`
+      .select(
+        `
         id,
         patient_id,
         doctor_id,
@@ -119,7 +120,8 @@ export const POST = withAuth(async (request, auth) => {
         patients:patient_id (id, name, phone),
         doctors:doctor_id (id, name),
         services:service_id (name)
-      `)
+      `,
+      )
       .eq("doctor_id", doctorId)
       .eq("clinic_id", clinicId)
       .gte("appointment_date", startDate)
@@ -221,7 +223,10 @@ export const POST = withAuth(async (request, auth) => {
           `on ${appt.appointment_date} at ${appt.start_time?.slice(0, 5) ?? ""} ` +
           `has been cancelled because the doctor is unavailable.\n\n` +
           `Please choose a new time slot:\n` +
-          alternatives.slice(0, 3).map((alt, idx) => `${idx + 1}. ${alt.label}`).join("\n");
+          alternatives
+            .slice(0, 3)
+            .map((alt, idx) => `${idx + 1}. ${alt.label}`)
+            .join("\n");
 
         try {
           const queueId = await enqueueNotification({
@@ -259,7 +264,9 @@ export const POST = withAuth(async (request, auth) => {
       alternatives,
       rebookingResults,
     });
-}, ["clinic_admin", "doctor"]);
+  },
+  ["clinic_admin", "doctor"],
+);
 
 /**
  * GET /api/doctor-unavailability?doctorId=...
@@ -269,70 +276,73 @@ export const POST = withAuth(async (request, auth) => {
  * AUDIT F-01: clinicId is now derived from the subdomain via requireTenant().
  * The query-param clinicId is ignored to prevent cross-tenant reads.
  */
-export const GET = withAuth(async (request, auth) => {
-  try {
-    const supabase = auth.supabase;
+export const GET = withAuth(
+  async (request, auth) => {
+    try {
+      const supabase = auth.supabase;
 
-    // AUDIT F-01: Derive clinicId from subdomain, not from query params.
-    const tenant = await requireTenant();
-    const clinicId = tenant.clinicId;
+      // AUDIT F-01: Derive clinicId from subdomain, not from query params.
+      const tenant = await requireTenant();
+      const clinicId = tenant.clinicId;
 
-    const { searchParams } = new URL(request.url);
-    const doctorId = searchParams.get("doctorId");
+      const { searchParams } = new URL(request.url);
+      const doctorId = searchParams.get("doctorId");
 
-    // rebooking_requests not yet in generated types — cast through unknown
-    type RbRow = { id: string; status: string; [k: string]: unknown };
-    type RbQueryClient = {
-      from(t: string): {
-        select(s: string): {
-          eq(c: string, v: string): RbQueryChain;
+      // rebooking_requests not yet in generated types — cast through unknown
+      type RbRow = { id: string; status: string; [k: string]: unknown };
+      type RbQueryClient = {
+        from(t: string): {
+          select(s: string): {
+            eq(c: string, v: string): RbQueryChain;
+          };
         };
       };
-    };
-    type RbQueryChain = {
-      eq(c: string, v: string): RbQueryChain;
-      order(c: string, o: { ascending: boolean }): RbQueryChain;
-      limit(n: number): Promise<{ data: RbRow[] | null; error: unknown }>;
-    };
-    const rbQuery = supabase as unknown as RbQueryClient;
+      type RbQueryChain = {
+        eq(c: string, v: string): RbQueryChain;
+        order(c: string, o: { ascending: boolean }): RbQueryChain;
+        limit(n: number): Promise<{ data: RbRow[] | null; error: unknown }>;
+      };
+      const rbQuery = supabase as unknown as RbQueryClient;
 
-    let query = rbQuery
-      .from("rebooking_requests")
-      .select("id, appointment_id, unavailability_id, clinic_id, doctor_id, patient_id, status, alternatives, sent_at, created_at")
-      .eq("clinic_id", clinicId);
+      let query = rbQuery
+        .from("rebooking_requests")
+        .select(
+          "id, appointment_id, unavailability_id, clinic_id, doctor_id, patient_id, status, alternatives, sent_at, created_at",
+        )
+        .eq("clinic_id", clinicId);
 
-    if (doctorId) {
-      query = query.eq("doctor_id", doctorId);
-    }
+      if (doctorId) {
+        query = query.eq("doctor_id", doctorId);
+      }
 
-    const { data, error } = await query
-      .order("created_at", { ascending: false })
-      .limit(100);
+      const { data, error } = await query.order("created_at", { ascending: false }).limit(100);
 
-    if (error) {
-      logger.warn("Failed to fetch rebooking requests", {
-        context: "doctor-unavailability",
-        error,
+      if (error) {
+        logger.warn("Failed to fetch rebooking requests", {
+          context: "doctor-unavailability",
+          error,
+        });
+        return apiInternalError("Failed to fetch rebooking status");
+      }
+
+      // Calculate summary stats
+      const requests = data ?? [];
+      const total = requests.length;
+      const rebooked = requests.filter((r) => r.status === "rebooked").length;
+      const pending = requests.filter((r) => r.status === "pending").length;
+      const expired = requests.filter((r) => r.status === "expired").length;
+
+      return apiSuccess({
+        requests,
+        summary: { total, rebooked, pending, expired },
+      });
+    } catch (err) {
+      logger.warn("Operation failed", {
+        context: "doctor-unavailability/GET",
+        error: err,
       });
       return apiInternalError("Failed to fetch rebooking status");
     }
-
-    // Calculate summary stats
-    const requests = data ?? [];
-    const total = requests.length;
-    const rebooked = requests.filter((r) => r.status === "rebooked").length;
-    const pending = requests.filter((r) => r.status === "pending").length;
-    const expired = requests.filter((r) => r.status === "expired").length;
-
-    return apiSuccess({
-      requests,
-      summary: { total, rebooked, pending, expired },
-    });
-  } catch (err) {
-    logger.warn("Operation failed", {
-      context: "doctor-unavailability/GET",
-      error: err,
-    });
-    return apiInternalError("Failed to fetch rebooking status");
-  }
-}, ["clinic_admin", "doctor"]);
+  },
+  ["clinic_admin", "doctor"],
+);

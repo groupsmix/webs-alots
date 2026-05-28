@@ -97,10 +97,7 @@ export interface ClinicConfig {
   };
 
   /** Working hours per day (0 = Sunday, 6 = Saturday) */
-  workingHours: Record<
-    number,
-    { open: string; close: string; enabled: boolean }
-  >;
+  workingHours: Record<number, { open: string; close: string; enabled: boolean }>;
 
   /** Booking configuration */
   booking: {
@@ -257,7 +254,16 @@ export const clinicConfig: ClinicConfig = {
       startDate: "",
       endDate: "",
     },
-    paymentMethods: ["cash", "cmi", "cashplus", "wafacash", "baridbank", "bank_transfer", "check", "insurance"],
+    paymentMethods: [
+      "cash",
+      "cmi",
+      "cashplus",
+      "wafacash",
+      "baridbank",
+      "bank_transfer",
+      "check",
+      "insurance",
+    ],
     acceptedInsurance: ["cnss", "cnops", "amo", "ramed"],
     defaultTVARate: "standard",
   },

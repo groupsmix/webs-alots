@@ -89,15 +89,25 @@ export function VitalsTracker({ sessions, editable = false, onSaveVitals }: Vita
         <div className="space-y-3">
           {sessions.map((session) => {
             const isEditing = editingId === session.id;
-            const weightChange = session.preWeight && session.postWeight ? (session.preWeight - session.postWeight).toFixed(1) : null;
+            const weightChange =
+              session.preWeight && session.postWeight
+                ? (session.preWeight - session.postWeight).toFixed(1)
+                : null;
 
             return (
               <Card key={session.id}>
                 <CardHeader className="pb-2">
                   <div className="flex items-center justify-between">
-                    <CardTitle className="text-sm">{session.patientName} — {session.sessionDate}</CardTitle>
+                    <CardTitle className="text-sm">
+                      {session.patientName} — {session.sessionDate}
+                    </CardTitle>
                     {editable && !isEditing && (
-                      <Button size="sm" variant="outline" className="text-xs h-7" onClick={() => startEditing(session)}>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="text-xs h-7"
+                        onClick={() => startEditing(session)}
+                      >
                         Record Vitals
                       </Button>
                     )}
@@ -112,22 +122,76 @@ export function VitalsTracker({ sessions, editable = false, onSaveVitals }: Vita
                           <div className="grid grid-cols-2 gap-2">
                             <div>
                               <Label className="text-[10px]">Weight (kg)</Label>
-                              <Input type="number" step="0.1" value={editForm.preWeight ?? ""} onChange={(e) => setEditForm({ ...editForm, preWeight: parseFloat(e.target.value) || null })} className="text-sm h-8" />
+                              <Input
+                                type="number"
+                                step="0.1"
+                                value={editForm.preWeight ?? ""}
+                                onChange={(e) =>
+                                  setEditForm({
+                                    ...editForm,
+                                    preWeight: parseFloat(e.target.value) || null,
+                                  })
+                                }
+                                className="text-sm h-8"
+                              />
                             </div>
                             <div>
                               <Label className="text-[10px]">BP (sys/dia)</Label>
                               <div className="flex gap-1">
-                                <Input type="number" value={editForm.preBpSystolic ?? ""} onChange={(e) => setEditForm({ ...editForm, preBpSystolic: parseInt(e.target.value) || null })} className="text-sm h-8" placeholder="120" />
-                                <Input type="number" value={editForm.preBpDiastolic ?? ""} onChange={(e) => setEditForm({ ...editForm, preBpDiastolic: parseInt(e.target.value) || null })} className="text-sm h-8" placeholder="80" />
+                                <Input
+                                  type="number"
+                                  value={editForm.preBpSystolic ?? ""}
+                                  onChange={(e) =>
+                                    setEditForm({
+                                      ...editForm,
+                                      preBpSystolic: parseInt(e.target.value) || null,
+                                    })
+                                  }
+                                  className="text-sm h-8"
+                                  placeholder="120"
+                                />
+                                <Input
+                                  type="number"
+                                  value={editForm.preBpDiastolic ?? ""}
+                                  onChange={(e) =>
+                                    setEditForm({
+                                      ...editForm,
+                                      preBpDiastolic: parseInt(e.target.value) || null,
+                                    })
+                                  }
+                                  className="text-sm h-8"
+                                  placeholder="80"
+                                />
                               </div>
                             </div>
                             <div>
                               <Label className="text-[10px]">Pulse</Label>
-                              <Input type="number" value={editForm.prePulse ?? ""} onChange={(e) => setEditForm({ ...editForm, prePulse: parseInt(e.target.value) || null })} className="text-sm h-8" />
+                              <Input
+                                type="number"
+                                value={editForm.prePulse ?? ""}
+                                onChange={(e) =>
+                                  setEditForm({
+                                    ...editForm,
+                                    prePulse: parseInt(e.target.value) || null,
+                                  })
+                                }
+                                className="text-sm h-8"
+                              />
                             </div>
                             <div>
                               <Label className="text-[10px]">Temp (&deg;C)</Label>
-                              <Input type="number" step="0.1" value={editForm.preTemperature ?? ""} onChange={(e) => setEditForm({ ...editForm, preTemperature: parseFloat(e.target.value) || null })} className="text-sm h-8" />
+                              <Input
+                                type="number"
+                                step="0.1"
+                                value={editForm.preTemperature ?? ""}
+                                onChange={(e) =>
+                                  setEditForm({
+                                    ...editForm,
+                                    preTemperature: parseFloat(e.target.value) || null,
+                                  })
+                                }
+                                className="text-sm h-8"
+                              />
                             </div>
                           </div>
                         </div>
@@ -136,22 +200,76 @@ export function VitalsTracker({ sessions, editable = false, onSaveVitals }: Vita
                           <div className="grid grid-cols-2 gap-2">
                             <div>
                               <Label className="text-[10px]">Weight (kg)</Label>
-                              <Input type="number" step="0.1" value={editForm.postWeight ?? ""} onChange={(e) => setEditForm({ ...editForm, postWeight: parseFloat(e.target.value) || null })} className="text-sm h-8" />
+                              <Input
+                                type="number"
+                                step="0.1"
+                                value={editForm.postWeight ?? ""}
+                                onChange={(e) =>
+                                  setEditForm({
+                                    ...editForm,
+                                    postWeight: parseFloat(e.target.value) || null,
+                                  })
+                                }
+                                className="text-sm h-8"
+                              />
                             </div>
                             <div>
                               <Label className="text-[10px]">BP (sys/dia)</Label>
                               <div className="flex gap-1">
-                                <Input type="number" value={editForm.postBpSystolic ?? ""} onChange={(e) => setEditForm({ ...editForm, postBpSystolic: parseInt(e.target.value) || null })} className="text-sm h-8" placeholder="120" />
-                                <Input type="number" value={editForm.postBpDiastolic ?? ""} onChange={(e) => setEditForm({ ...editForm, postBpDiastolic: parseInt(e.target.value) || null })} className="text-sm h-8" placeholder="80" />
+                                <Input
+                                  type="number"
+                                  value={editForm.postBpSystolic ?? ""}
+                                  onChange={(e) =>
+                                    setEditForm({
+                                      ...editForm,
+                                      postBpSystolic: parseInt(e.target.value) || null,
+                                    })
+                                  }
+                                  className="text-sm h-8"
+                                  placeholder="120"
+                                />
+                                <Input
+                                  type="number"
+                                  value={editForm.postBpDiastolic ?? ""}
+                                  onChange={(e) =>
+                                    setEditForm({
+                                      ...editForm,
+                                      postBpDiastolic: parseInt(e.target.value) || null,
+                                    })
+                                  }
+                                  className="text-sm h-8"
+                                  placeholder="80"
+                                />
                               </div>
                             </div>
                             <div>
                               <Label className="text-[10px]">Pulse</Label>
-                              <Input type="number" value={editForm.postPulse ?? ""} onChange={(e) => setEditForm({ ...editForm, postPulse: parseInt(e.target.value) || null })} className="text-sm h-8" />
+                              <Input
+                                type="number"
+                                value={editForm.postPulse ?? ""}
+                                onChange={(e) =>
+                                  setEditForm({
+                                    ...editForm,
+                                    postPulse: parseInt(e.target.value) || null,
+                                  })
+                                }
+                                className="text-sm h-8"
+                              />
                             </div>
                             <div>
                               <Label className="text-[10px]">Temp (&deg;C)</Label>
-                              <Input type="number" step="0.1" value={editForm.postTemperature ?? ""} onChange={(e) => setEditForm({ ...editForm, postTemperature: parseFloat(e.target.value) || null })} className="text-sm h-8" />
+                              <Input
+                                type="number"
+                                step="0.1"
+                                value={editForm.postTemperature ?? ""}
+                                onChange={(e) =>
+                                  setEditForm({
+                                    ...editForm,
+                                    postTemperature: parseFloat(e.target.value) || null,
+                                  })
+                                }
+                                className="text-sm h-8"
+                              />
                             </div>
                           </div>
                         </div>
@@ -159,28 +277,82 @@ export function VitalsTracker({ sessions, editable = false, onSaveVitals }: Vita
                       <div className="grid grid-cols-4 gap-2">
                         <div>
                           <Label className="text-[10px]">UF Goal (L)</Label>
-                          <Input type="number" step="0.1" value={editForm.ufGoal ?? ""} onChange={(e) => setEditForm({ ...editForm, ufGoal: parseFloat(e.target.value) || null })} className="text-sm h-8" />
+                          <Input
+                            type="number"
+                            step="0.1"
+                            value={editForm.ufGoal ?? ""}
+                            onChange={(e) =>
+                              setEditForm({
+                                ...editForm,
+                                ufGoal: parseFloat(e.target.value) || null,
+                              })
+                            }
+                            className="text-sm h-8"
+                          />
                         </div>
                         <div>
                           <Label className="text-[10px]">UF Actual (L)</Label>
-                          <Input type="number" step="0.1" value={editForm.ufActual ?? ""} onChange={(e) => setEditForm({ ...editForm, ufActual: parseFloat(e.target.value) || null })} className="text-sm h-8" />
+                          <Input
+                            type="number"
+                            step="0.1"
+                            value={editForm.ufActual ?? ""}
+                            onChange={(e) =>
+                              setEditForm({
+                                ...editForm,
+                                ufActual: parseFloat(e.target.value) || null,
+                              })
+                            }
+                            className="text-sm h-8"
+                          />
                         </div>
                         <div>
                           <Label className="text-[10px]">Blood Flow (ml/min)</Label>
-                          <Input type="number" value={editForm.bloodFlow ?? ""} onChange={(e) => setEditForm({ ...editForm, bloodFlow: parseInt(e.target.value) || null })} className="text-sm h-8" />
+                          <Input
+                            type="number"
+                            value={editForm.bloodFlow ?? ""}
+                            onChange={(e) =>
+                              setEditForm({
+                                ...editForm,
+                                bloodFlow: parseInt(e.target.value) || null,
+                              })
+                            }
+                            className="text-sm h-8"
+                          />
                         </div>
                         <div>
                           <Label className="text-[10px]">Dialysate Flow (ml/min)</Label>
-                          <Input type="number" value={editForm.dialysateFlow ?? ""} onChange={(e) => setEditForm({ ...editForm, dialysateFlow: parseInt(e.target.value) || null })} className="text-sm h-8" />
+                          <Input
+                            type="number"
+                            value={editForm.dialysateFlow ?? ""}
+                            onChange={(e) =>
+                              setEditForm({
+                                ...editForm,
+                                dialysateFlow: parseInt(e.target.value) || null,
+                              })
+                            }
+                            className="text-sm h-8"
+                          />
                         </div>
                       </div>
                       <div>
                         <Label className="text-[10px]">Complications</Label>
-                        <Textarea value={editForm.complications ?? ""} onChange={(e) => setEditForm({ ...editForm, complications: e.target.value })} className="text-sm" rows={1} placeholder="Any complications..." />
+                        <Textarea
+                          value={editForm.complications ?? ""}
+                          onChange={(e) =>
+                            setEditForm({ ...editForm, complications: e.target.value })
+                          }
+                          className="text-sm"
+                          rows={1}
+                          placeholder="Any complications..."
+                        />
                       </div>
                       <div className="flex gap-2">
-                        <Button size="sm" onClick={handleSave}><Save className="h-3 w-3 mr-1" /> Save Vitals</Button>
-                        <Button size="sm" variant="outline" onClick={() => setEditingId(null)}>Cancel</Button>
+                        <Button size="sm" onClick={handleSave}>
+                          <Save className="h-3 w-3 mr-1" /> Save Vitals
+                        </Button>
+                        <Button size="sm" variant="outline" onClick={() => setEditingId(null)}>
+                          Cancel
+                        </Button>
                       </div>
                     </div>
                   ) : (
@@ -191,7 +363,9 @@ export function VitalsTracker({ sessions, editable = false, onSaveVitals }: Vita
                           <p className="text-muted-foreground">Weight</p>
                           <p className="font-medium">
                             {session.preWeight ?? "—"} → {session.postWeight ?? "—"} kg
-                            {weightChange && <span className="text-green-600 ml-1">(-{weightChange})</span>}
+                            {weightChange && (
+                              <span className="text-green-600 ml-1">(-{weightChange})</span>
+                            )}
                           </p>
                         </div>
                       </div>
@@ -200,7 +374,8 @@ export function VitalsTracker({ sessions, editable = false, onSaveVitals }: Vita
                         <div className="text-xs">
                           <p className="text-muted-foreground">BP</p>
                           <p className="font-medium">
-                            {session.preBpSystolic ?? "—"}/{session.preBpDiastolic ?? "—"} → {session.postBpSystolic ?? "—"}/{session.postBpDiastolic ?? "—"}
+                            {session.preBpSystolic ?? "—"}/{session.preBpDiastolic ?? "—"} →{" "}
+                            {session.postBpSystolic ?? "—"}/{session.postBpDiastolic ?? "—"}
                           </p>
                         </div>
                       </div>
@@ -218,13 +393,16 @@ export function VitalsTracker({ sessions, editable = false, onSaveVitals }: Vita
                         <div className="text-xs">
                           <p className="text-muted-foreground">UF / Flow</p>
                           <p className="font-medium">
-                            {session.ufActual ?? "—"}/{session.ufGoal ?? "—"}L · {session.bloodFlow ?? "—"} ml/min
+                            {session.ufActual ?? "—"}/{session.ufGoal ?? "—"}L ·{" "}
+                            {session.bloodFlow ?? "—"} ml/min
                           </p>
                         </div>
                       </div>
                       {session.complications && (
                         <div className="col-span-full">
-                          <Badge variant="destructive" className="text-xs">{session.complications}</Badge>
+                          <Badge variant="destructive" className="text-xs">
+                            {session.complications}
+                          </Badge>
                         </div>
                       )}
                     </div>

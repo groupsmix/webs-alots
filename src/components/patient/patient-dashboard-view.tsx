@@ -1,6 +1,17 @@
 "use client";
 
-import { Calendar, FileText, Clock, Bell, Pill, CreditCard, Users, MessageSquare, ArrowRight, Activity } from "lucide-react";
+import {
+  Calendar,
+  FileText,
+  Clock,
+  Bell,
+  Pill,
+  CreditCard,
+  Users,
+  MessageSquare,
+  ArrowRight,
+  Activity,
+} from "lucide-react";
 import Link from "next/link";
 import { useLocale } from "@/components/locale-switcher";
 import { Badge } from "@/components/ui/badge";
@@ -13,14 +24,54 @@ import { t } from "@/lib/i18n";
 import { formatDisplayDate } from "@/lib/utils";
 
 const quickLinkDefs = [
-  { icon: Calendar, labelKey: "patient.myAppointments" as const, descKey: "patient.myAppointmentsDesc" as const, href: "/patient/appointments" },
-  { icon: Activity, labelKey: "patient.medicalHistory" as const, descKey: "patient.medicalHistoryDesc" as const, href: "/patient/medical-history" },
-  { icon: Pill, labelKey: "patient.prescriptions" as const, descKey: "patient.prescriptionsDesc" as const, href: "/patient/prescriptions" },
-  { icon: FileText, labelKey: "patient.documents" as const, descKey: "patient.documentsDesc" as const, href: "/patient/documents" },
-  { icon: CreditCard, labelKey: "patient.invoices" as const, descKey: "patient.invoicesDesc" as const, href: "/patient/invoices" },
-  { icon: Users, labelKey: "patient.familyMembers" as const, descKey: "patient.familyMembersDesc" as const, href: "/patient/family" },
-  { icon: Bell, labelKey: "patient.notifications" as const, descKey: "patient.notificationsDesc" as const, href: "/patient/notifications" },
-  { icon: MessageSquare, labelKey: "patient.feedback" as const, descKey: "patient.feedbackDesc" as const, href: "/patient/feedback" },
+  {
+    icon: Calendar,
+    labelKey: "patient.myAppointments" as const,
+    descKey: "patient.myAppointmentsDesc" as const,
+    href: "/patient/appointments",
+  },
+  {
+    icon: Activity,
+    labelKey: "patient.medicalHistory" as const,
+    descKey: "patient.medicalHistoryDesc" as const,
+    href: "/patient/medical-history",
+  },
+  {
+    icon: Pill,
+    labelKey: "patient.prescriptions" as const,
+    descKey: "patient.prescriptionsDesc" as const,
+    href: "/patient/prescriptions",
+  },
+  {
+    icon: FileText,
+    labelKey: "patient.documents" as const,
+    descKey: "patient.documentsDesc" as const,
+    href: "/patient/documents",
+  },
+  {
+    icon: CreditCard,
+    labelKey: "patient.invoices" as const,
+    descKey: "patient.invoicesDesc" as const,
+    href: "/patient/invoices",
+  },
+  {
+    icon: Users,
+    labelKey: "patient.familyMembers" as const,
+    descKey: "patient.familyMembersDesc" as const,
+    href: "/patient/family",
+  },
+  {
+    icon: Bell,
+    labelKey: "patient.notifications" as const,
+    descKey: "patient.notificationsDesc" as const,
+    href: "/patient/notifications",
+  },
+  {
+    icon: MessageSquare,
+    labelKey: "patient.feedback" as const,
+    descKey: "patient.feedbackDesc" as const,
+    href: "/patient/feedback",
+  },
 ];
 
 interface PatientDashboardViewProps {
@@ -29,25 +80,60 @@ interface PatientDashboardViewProps {
 
 export function PatientDashboardView({ data }: PatientDashboardViewProps) {
   const [locale] = useLocale();
-  const { userName, appointments: appointmentsList, prescriptions: prescriptionsList, invoices: invoicesList, notifications: notificationsList } = data;
+  const {
+    userName,
+    appointments: appointmentsList,
+    prescriptions: prescriptionsList,
+    invoices: invoicesList,
+    notifications: notificationsList,
+  } = data;
 
-  const upcoming = appointmentsList.filter((a) => a.status === "scheduled" || a.status === "confirmed");
+  const upcoming = appointmentsList.filter(
+    (a) => a.status === "scheduled" || a.status === "confirmed",
+  );
   const completedVisits = appointmentsList.filter((a) => a.status === "completed");
   const patientPrescriptions = prescriptionsList;
   const unreadNotifications = notificationsList.filter((n) => !n.read);
   const pendingInvoices = invoicesList.filter((inv) => inv.status === "pending");
 
   const statCards = [
-    { icon: Calendar, label: t(locale, "patient.upcomingAppointments"), value: upcoming.length.toString(), color: "text-blue-600 bg-blue-100 dark:bg-blue-900/50", href: "/patient/appointments" },
-    { icon: Pill, label: t(locale, "patient.activePrescriptions"), value: patientPrescriptions.length.toString(), color: "text-green-600 bg-green-100 dark:bg-green-900/50", href: "/patient/prescriptions" },
-    { icon: Clock, label: t(locale, "patient.totalVisits"), value: completedVisits.length.toString(), color: "text-purple-600 bg-purple-100 dark:bg-purple-900/50", href: "/patient/medical-history" },
-    { icon: Bell, label: t(locale, "patient.unreadNotifications"), value: unreadNotifications.length.toString(), color: "text-orange-600 bg-orange-100 dark:bg-orange-900/50", href: "/patient/notifications" },
+    {
+      icon: Calendar,
+      label: t(locale, "patient.upcomingAppointments"),
+      value: upcoming.length.toString(),
+      color: "text-blue-600 bg-blue-100 dark:bg-blue-900/50",
+      href: "/patient/appointments",
+    },
+    {
+      icon: Pill,
+      label: t(locale, "patient.activePrescriptions"),
+      value: patientPrescriptions.length.toString(),
+      color: "text-green-600 bg-green-100 dark:bg-green-900/50",
+      href: "/patient/prescriptions",
+    },
+    {
+      icon: Clock,
+      label: t(locale, "patient.totalVisits"),
+      value: completedVisits.length.toString(),
+      color: "text-purple-600 bg-purple-100 dark:bg-purple-900/50",
+      href: "/patient/medical-history",
+    },
+    {
+      icon: Bell,
+      label: t(locale, "patient.unreadNotifications"),
+      value: unreadNotifications.length.toString(),
+      color: "text-orange-600 bg-orange-100 dark:bg-orange-900/50",
+      href: "/patient/notifications",
+    },
   ];
 
   return (
     <div>
       <div className="mb-6">
-        <h1 className="text-2xl font-bold">{t(locale, "patient.welcome")}{userName ? `, ${userName.split(" ")[0]}` : ""}</h1>
+        <h1 className="text-2xl font-bold">
+          {t(locale, "patient.welcome")}
+          {userName ? `, ${userName.split(" ")[0]}` : ""}
+        </h1>
         <p className="text-muted-foreground text-sm mt-1">{t(locale, "patient.portalOverview")}</p>
       </div>
 
@@ -56,7 +142,9 @@ export function PatientDashboardView({ data }: PatientDashboardViewProps) {
           <Link key={stat.label} href={stat.href}>
             <Card className="hover:shadow-md transition-shadow cursor-pointer">
               <CardContent className="flex items-center gap-3 p-4">
-                <div className={`flex h-10 w-10 items-center justify-center rounded-lg ${stat.color}`}>
+                <div
+                  className={`flex h-10 w-10 items-center justify-center rounded-lg ${stat.color}`}
+                >
                   <stat.icon className="h-5 w-5" />
                 </div>
                 <div>
@@ -71,90 +159,101 @@ export function PatientDashboardView({ data }: PatientDashboardViewProps) {
 
       <div className="grid gap-6 lg:grid-cols-2 mb-8">
         <ErrorBoundary section={t(locale, "patient.upcomingAppointments")} compact>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-base">{t(locale, "patient.upcomingAppointments")}</CardTitle>
-            <Link href="/patient/appointments">
-              <Button variant="ghost" size="sm">
-                {t(locale, "patient.viewAll")} <ArrowRight className="h-3 w-3 ml-1" />
-              </Button>
-            </Link>
-          </CardHeader>
-          <CardContent>
-            {upcoming.length === 0 ? (
-              <EmptyState
-                icon={Calendar}
-                title={t(locale, "patient.noUpcoming")}
-                description={t(locale, "patient.bookAppointment")}
-                action={
-                  <Link href="/book">
-                    <Button size="sm">{t(locale, "patient.bookAppointment")}</Button>
-                  </Link>
-                }
-              />
-            ) : (
-              <div className="space-y-3">
-                {upcoming.slice(0, 3).map((apt) => (
-                  <div key={apt.id} className="flex items-center justify-between rounded-lg border p-3 hover:bg-muted/50 transition-colors">
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-900/50">
-                        <Calendar className="h-5 w-5 text-blue-600" />
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-base">
+                {t(locale, "patient.upcomingAppointments")}
+              </CardTitle>
+              <Link href="/patient/appointments">
+                <Button variant="ghost" size="sm">
+                  {t(locale, "patient.viewAll")} <ArrowRight className="h-3 w-3 ml-1" />
+                </Button>
+              </Link>
+            </CardHeader>
+            <CardContent>
+              {upcoming.length === 0 ? (
+                <EmptyState
+                  icon={Calendar}
+                  title={t(locale, "patient.noUpcoming")}
+                  description={t(locale, "patient.bookAppointment")}
+                  action={
+                    <Link href="/book">
+                      <Button size="sm">{t(locale, "patient.bookAppointment")}</Button>
+                    </Link>
+                  }
+                />
+              ) : (
+                <div className="space-y-3">
+                  {upcoming.slice(0, 3).map((apt) => (
+                    <div
+                      key={apt.id}
+                      className="flex items-center justify-between rounded-lg border p-3 hover:bg-muted/50 transition-colors"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-900/50">
+                          <Calendar className="h-5 w-5 text-blue-600" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium">{apt.serviceName}</p>
+                          <p className="text-xs text-muted-foreground">{apt.doctorName}</p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="text-sm font-medium">{apt.serviceName}</p>
-                        <p className="text-xs text-muted-foreground">{apt.doctorName}</p>
+                      <div className="text-right">
+                        <p className="text-sm font-medium">
+                          {formatDisplayDate(apt.date, locale, "long")}
+                        </p>
+                        <p className="text-xs text-muted-foreground">{apt.time}</p>
                       </div>
                     </div>
-                    <div className="text-right">
-                      <p className="text-sm font-medium">{formatDisplayDate(apt.date, locale, "long")}</p>
-                      <p className="text-xs text-muted-foreground">{apt.time}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </ErrorBoundary>
 
         <ErrorBoundary section={t(locale, "patient.prescriptions")} compact>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-base">{t(locale, "patient.recentPrescriptions")}</CardTitle>
-            <Link href="/patient/prescriptions">
-              <Button variant="ghost" size="sm">
-                {t(locale, "patient.viewAll")} <ArrowRight className="h-3 w-3 ml-1" />
-              </Button>
-            </Link>
-          </CardHeader>
-          <CardContent>
-            {patientPrescriptions.length === 0 ? (
-              <EmptyState
-                icon={Pill}
-                title={t(locale, "patient.noPrescriptions")}
-                description={t(locale, "patient.noPrescriptions")}
-              />
-            ) : (
-              <div className="space-y-3">
-                {patientPrescriptions.map((rx) => (
-                  <div key={rx.id} className="rounded-lg border p-3">
-                    <div className="flex items-center justify-between mb-2">
-                      <p className="text-sm font-medium">{rx.doctorName}</p>
-                      <Badge variant="outline">{formatDisplayDate(rx.date, locale, "short")}</Badge>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-base">
+                {t(locale, "patient.recentPrescriptions")}
+              </CardTitle>
+              <Link href="/patient/prescriptions">
+                <Button variant="ghost" size="sm">
+                  {t(locale, "patient.viewAll")} <ArrowRight className="h-3 w-3 ml-1" />
+                </Button>
+              </Link>
+            </CardHeader>
+            <CardContent>
+              {patientPrescriptions.length === 0 ? (
+                <EmptyState
+                  icon={Pill}
+                  title={t(locale, "patient.noPrescriptions")}
+                  description={t(locale, "patient.noPrescriptions")}
+                />
+              ) : (
+                <div className="space-y-3">
+                  {patientPrescriptions.map((rx) => (
+                    <div key={rx.id} className="rounded-lg border p-3">
+                      <div className="flex items-center justify-between mb-2">
+                        <p className="text-sm font-medium">{rx.doctorName}</p>
+                        <Badge variant="outline">
+                          {formatDisplayDate(rx.date, locale, "short")}
+                        </Badge>
+                      </div>
+                      <div className="space-y-1">
+                        {rx.medications.map((med, i) => (
+                          <p key={i} className="text-xs text-muted-foreground">
+                            {med.name} — {med.dosage}
+                          </p>
+                        ))}
+                      </div>
                     </div>
-                    <div className="space-y-1">
-                      {rx.medications.map((med, i) => (
-                        <p key={i} className="text-xs text-muted-foreground">
-                          {med.name} — {med.dosage}
-                        </p>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </ErrorBoundary>
       </div>
 
@@ -169,13 +268,20 @@ export function PatientDashboardView({ data }: PatientDashboardViewProps) {
           <CardContent>
             <div className="space-y-2">
               {pendingInvoices.map((inv) => (
-                <div key={inv.id} className="flex items-center justify-between rounded-lg border p-3">
+                <div
+                  key={inv.id}
+                  className="flex items-center justify-between rounded-lg border p-3"
+                >
                   <div>
                     <p className="text-sm font-medium">Invoice #{inv.id.toUpperCase()}</p>
-                    <p className="text-xs text-muted-foreground">{formatDisplayDate(inv.date, locale, "short")}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {formatDisplayDate(inv.date, locale, "short")}
+                    </p>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="text-sm font-semibold">{inv.amount} {inv.currency}</span>
+                    <span className="text-sm font-semibold">
+                      {inv.amount} {inv.currency}
+                    </span>
                     <Badge variant="warning">{t(locale, "patient.pending")}</Badge>
                   </div>
                 </div>

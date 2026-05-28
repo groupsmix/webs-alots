@@ -1,6 +1,13 @@
 import {
-  Smile, Phone, Clock, MapPin, ArrowRight, Star,
-  Shield, CalendarCheck, AlertTriangle,
+  Smile,
+  Phone,
+  Clock,
+  MapPin,
+  ArrowRight,
+  Star,
+  Shield,
+  CalendarCheck,
+  AlertTriangle,
 } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
@@ -50,8 +57,8 @@ export default async function DentistHomePage() {
                 Your Smile, <span className="text-sky-600">Our Expertise</span>
               </h1>
               <p className="text-lg text-muted-foreground mb-8 max-w-lg">
-                Comprehensive dental care with a gentle touch. From routine cleanings
-                to advanced cosmetic dentistry, we create beautiful, healthy smiles.
+                Comprehensive dental care with a gentle touch. From routine cleanings to advanced
+                cosmetic dentistry, we create beautiful, healthy smiles.
               </p>
               <div className="flex flex-wrap gap-3">
                 <Link href="/book" className={linkBtnPrimary}>
@@ -140,7 +147,8 @@ export default async function DentistHomePage() {
         <div className="container mx-auto px-4 text-center">
           <h2 className="text-3xl font-bold mb-4">See Our Results</h2>
           <p className="text-muted-foreground mb-8 max-w-xl mx-auto">
-            Browse our before &amp; after gallery to see real transformations from our dental treatments.
+            Browse our before &amp; after gallery to see real transformations from our dental
+            treatments.
           </p>
           <Link href="/dentist/gallery" className={linkBtnPrimary}>
             View Gallery <ArrowRight className="ml-2 h-4 w-4" />
@@ -157,7 +165,11 @@ export default async function DentistHomePage() {
               {topReviews.map((review) => (
                 <Card key={review.id}>
                   <CardContent className="pt-6">
-                    <div className="flex gap-0.5 mb-3" role="img" aria-label={`${review.rating} out of 5 stars`}>
+                    <div
+                      className="flex gap-0.5 mb-3"
+                      role="img"
+                      aria-label={`${review.rating} out of 5 stars`}
+                    >
                       {Array.from({ length: 5 }).map((_, i) => (
                         <Star
                           key={i}
@@ -190,8 +202,8 @@ export default async function DentistHomePage() {
             <h2 className="text-2xl font-bold text-red-700 dark:text-red-400">Dental Emergency?</h2>
           </div>
           <p className="text-muted-foreground mb-6 max-w-lg mx-auto">
-            For urgent dental issues such as severe pain, broken teeth, or swelling,
-            contact us immediately. We prioritize emergency appointments.
+            For urgent dental issues such as severe pain, broken teeth, or swelling, contact us
+            immediately. We prioritize emergency appointments.
           </p>
           <div className="flex justify-center gap-3">
             {branding.phone && (

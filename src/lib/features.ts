@@ -138,7 +138,10 @@ export const RESTAURANT_DEFAULT_FEATURES: FeaturesConfig = {
  * Cloudflare KV binding type
  */
 interface CloudflareKV {
-  get(key: string, options?: { type: "text" | "json" }): Promise<string | Record<string, unknown> | null>;
+  get(
+    key: string,
+    options?: { type: "text" | "json" },
+  ): Promise<string | Record<string, unknown> | null>;
   put(key: string, value: string, options?: { expirationTtl?: number }): Promise<void>;
 }
 
@@ -204,9 +207,7 @@ async function getKVFeatureFlags(): Promise<FeaturesConfig> {
  * Get feature flag override for a specific clinic
  * Returns clinic-specific override if exists, otherwise null
  */
-async function getClinicFeatureOverride(
-  clinicId: string,
-): Promise<FeaturesConfig | null> {
+async function getClinicFeatureOverride(clinicId: string): Promise<FeaturesConfig | null> {
   try {
     const kv = (globalThis as unknown as { FEATURE_FLAGS_KV?: CloudflareKV }).FEATURE_FLAGS_KV;
     if (!kv) {
@@ -292,7 +293,9 @@ export async function setClinicFeatureOverride(
         type: "config",
         clinicId,
         actor,
-        description: `Feature flags updated: ${Object.entries(changes).map(([k, v]) => `${k}: ${v.from} → ${v.to}`).join(", ")}`,
+        description: `Feature flags updated: ${Object.entries(changes)
+          .map(([k, v]) => `${k}: ${v.from} → ${v.to}`)
+          .join(", ")}`,
         metadata: { changes: JSON.parse(JSON.stringify(changes)) },
       });
     } catch (auditErr) {
@@ -464,7 +467,6 @@ export function filterByFeatures<T extends { requiredFeature?: ClinicFeatureKey 
   config: FeaturesConfig | undefined | null,
 ): T[] {
   return items.filter(
-    (item) =>
-      !item.requiredFeature || isFeatureEnabled(config, item.requiredFeature),
+    (item) => !item.requiredFeature || isFeatureEnabled(config, item.requiredFeature),
   );
 }

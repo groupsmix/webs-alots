@@ -8,12 +8,8 @@ export function LocationSection() {
   return (
     <section className="py-16 bg-muted/30">
       <div className="container mx-auto px-4">
-        <h2 className="text-center text-3xl font-bold mb-4">
-          Localisation &amp; Horaires
-        </h2>
-        <p className="text-center text-muted-foreground mb-8 max-w-xl mx-auto">
-          {loc.subtitle}
-        </p>
+        <h2 className="text-center text-3xl font-bold mb-4">Localisation &amp; Horaires</h2>
+        <p className="text-center text-muted-foreground mb-8 max-w-xl mx-auto">{loc.subtitle}</p>
         <div className="grid gap-8 lg:grid-cols-2 max-w-4xl mx-auto">
           {/* Map */}
           <Card>
@@ -53,16 +49,11 @@ export function LocationSection() {
               </div>
               <div className="space-y-3">
                 {loc.workingHours.map((wh) => (
-                  <div
-                    key={wh.day}
-                    className="flex items-center justify-between text-sm"
-                  >
+                  <div key={wh.day} className="flex items-center justify-between text-sm">
                     <span className="font-medium">{wh.day}</span>
                     <span
                       className={
-                        wh.hours === "Fermé"
-                          ? "text-destructive"
-                          : "text-muted-foreground"
+                        wh.hours === "Fermé" ? "text-destructive" : "text-muted-foreground"
                       }
                     >
                       {wh.hours}

@@ -85,7 +85,10 @@ function mapPatient(raw: UserRaw): PatientView {
 
 export async function fetchDoctors(clinicId: string): Promise<DoctorView[]> {
   const rows = await fetchRows<UserRaw>("users", {
-    eq: [["clinic_id", clinicId], ["role", "doctor"]],
+    eq: [
+      ["clinic_id", clinicId],
+      ["role", "doctor"],
+    ],
     order: ["name", { ascending: true }],
     tenantClinicId: clinicId,
   });
@@ -94,7 +97,10 @@ export async function fetchDoctors(clinicId: string): Promise<DoctorView[]> {
 
 export async function fetchPatients(clinicId: string): Promise<PatientView[]> {
   const rows = await fetchRows<UserRaw>("users", {
-    eq: [["clinic_id", clinicId], ["role", "patient"]],
+    eq: [
+      ["clinic_id", clinicId],
+      ["role", "patient"],
+    ],
     order: ["name", { ascending: true }],
   });
   return rows.map(mapPatient);
@@ -102,8 +108,10 @@ export async function fetchPatients(clinicId: string): Promise<PatientView[]> {
 
 async function _fetchReceptionists(clinicId: string): Promise<UserRaw[]> {
   return fetchRows<UserRaw>("users", {
-    eq: [["clinic_id", clinicId], ["role", "receptionist"]],
+    eq: [
+      ["clinic_id", clinicId],
+      ["role", "receptionist"],
+    ],
     order: ["name", { ascending: true }],
   });
 }
-

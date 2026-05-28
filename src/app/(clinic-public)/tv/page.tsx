@@ -58,10 +58,7 @@ async function fetchQueue(supabase: ReturnType<typeof createClient>): Promise<Qu
   const nameMap = new Map<string, string>();
 
   if (patientIds.length > 0) {
-    const { data: users } = await supabase
-      .from("users")
-      .select("id, name")
-      .in("id", patientIds);
+    const { data: users } = await supabase.from("users").select("id, name").in("id", patientIds);
 
     if (users) {
       for (const u of users) {

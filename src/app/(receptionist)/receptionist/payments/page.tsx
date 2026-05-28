@@ -38,7 +38,10 @@ export default function PaymentsPage() {
     async function load() {
       const user = await getCurrentUser();
       if (controller.signal.aborted) return;
-      if (!user?.clinic_id) { setLoading(false); return; }
+      if (!user?.clinic_id) {
+        setLoading(false);
+        return;
+      }
       const clinicId = user.clinic_id;
       const [appts, invoices] = await Promise.all([
         fetchTodayAppointments(clinicId),
@@ -71,23 +74,31 @@ export default function PaymentsPage() {
         setLoading(false);
       }
     });
-    return () => { controller.abort(); };
+    return () => {
+      controller.abort();
+    };
   }, []);
 
   const filteredEntries = paymentEntries.filter((e) =>
-    e.patientName.toLowerCase().includes(searchQuery.toLowerCase())
+    e.patientName.toLowerCase().includes(searchQuery.toLowerCase()),
   );
 
-  const totalCollected = paymentEntries.filter((e) => e.status === "paid").reduce((s, e) => s + e.amount, 0);
-  const totalPending = paymentEntries.filter((e) => e.status === "pending").reduce((s, e) => s + e.amount, 0);
+  const totalCollected = paymentEntries
+    .filter((e) => e.status === "paid")
+    .reduce((s, e) => s + e.amount, 0);
+  const totalPending = paymentEntries
+    .filter((e) => e.status === "pending")
+    .reduce((s, e) => s + e.amount, 0);
   const paidCount = paymentEntries.filter((e) => e.status === "paid").length;
   const pendingCount = paymentEntries.filter((e) => e.status === "pending").length;
 
   const handleCollectPayment = (entryId: string, payment: { amount: number; method: string }) => {
     setPaymentEntries((prev) =>
       prev.map((e) =>
-        e.id === entryId ? { ...e, status: "paid" as const, amount: payment.amount, method: payment.method } : e
-      )
+        e.id === entryId
+          ? { ...e, status: "paid" as const, amount: payment.amount, method: payment.method }
+          : e,
+      ),
     );
   };
 
@@ -98,7 +109,9 @@ export default function PaymentsPage() {
   if (error) {
     return (
       <div className="p-8 text-center">
-        <p className="text-red-600 font-medium">Failed to load data. Please try refreshing the page.</p>
+        <p className="text-red-600 font-medium">
+          Failed to load data. Please try refreshing the page.
+        </p>
         {error.message && <p className="text-sm text-muted-foreground mt-2">{error.message}</p>}
       </div>
     );
@@ -162,7 +175,10 @@ export default function PaymentsPage() {
                 <div key={entry.id} className="flex items-center gap-3 rounded-lg border p-3">
                   <Avatar>
                     <AvatarFallback className="text-xs bg-primary/10 text-primary">
-                      {entry.patientName.split(" ").map((n) => n[0]).join("")}
+                      {entry.patientName
+                        .split(" ")
+                        .map((n) => n[0])
+                        .join("")}
                     </AvatarFallback>
                   </Avatar>
                   <div className="flex-1 min-w-0">
@@ -206,7 +222,9 @@ export default function PaymentsPage() {
               );
             })}
             {filteredEntries.length === 0 && (
-              <p className="text-center text-sm text-muted-foreground py-8">No payment entries found.</p>
+              <p className="text-center text-sm text-muted-foreground py-8">
+                No payment entries found.
+              </p>
             )}
           </div>
         </CardContent>

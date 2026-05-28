@@ -33,7 +33,10 @@ export function Breadcrumb({ items, className }: BreadcrumbProps) {
             <li key={`${item.label}-${index}`} className="flex items-center gap-1.5">
               <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/50" aria-hidden="true" />
               {isLast || !item.href ? (
-                <span className={cn(isLast && "font-medium text-foreground")} aria-current={isLast ? "page" : undefined}>
+                <span
+                  className={cn(isLast && "font-medium text-foreground")}
+                  aria-current={isLast ? "page" : undefined}
+                >
                   {item.label}
                 </span>
               ) : (

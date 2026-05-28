@@ -110,9 +110,7 @@ export function QuickPatientRegistration({
             onChange={(e) => setPhone(e.target.value)}
             disabled={submitting}
           />
-          {error && (
-            <p className="text-xs text-red-600">{error}</p>
-          )}
+          {error && <p className="text-xs text-red-600">{error}</p>}
           <Button
             type="submit"
             size="sm"

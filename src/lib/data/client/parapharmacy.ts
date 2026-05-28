@@ -23,7 +23,8 @@ export async function createParapharmacyProduct(data: {
   is_active?: boolean;
 }): Promise<string | null> {
   const supabase = createClient();
-  const { data: result, error } = await supabase.from("products")
+  const { data: result, error } = await supabase
+    .from("products")
     .insert({
       clinic_id: data.clinic_id,
       name: data.name,
@@ -64,7 +65,10 @@ export async function updateParapharmacyProduct(
   const supabase = createClient();
   const { error } = await supabase
     .from("products")
-    .update({ ...data, updated_at: new Date().toISOString() } as Database["public"]["Tables"]["products"]["Update"])
+    .update({
+      ...data,
+      updated_at: new Date().toISOString(),
+    } as Database["public"]["Tables"]["products"]["Update"])
     .eq("id", id);
   if (error) {
     logger.warn("Query failed", { context: "data/client", error });
@@ -92,7 +96,8 @@ export async function createParapharmacySale(data: {
   const supabase = createClient();
   const total = data.items.reduce((sum, item) => sum + item.quantity * item.unit_price, 0);
   const now = new Date();
-  const { data: result, error } = await supabase.from("sales")
+  const { data: result, error } = await supabase
+    .from("sales")
     // @ts-expect-error -- Supabase generated types lag behind actual DB schema
     .insert({
       clinic_id: data.clinic_id,
@@ -129,7 +134,10 @@ export async function createParapharmacySale(data: {
           .single()
           .then(({ data: stockRow }) => {
             if (stockRow) {
-              const newQty = Math.max(0, (stockRow as { quantity: number }).quantity - item.quantity);
+              const newQty = Math.max(
+                0,
+                (stockRow as { quantity: number }).quantity - item.quantity,
+              );
               supabase
                 .from("stock")
                 .update({ quantity: newQty } as Database["public"]["Tables"]["stock"]["Update"])
@@ -142,19 +150,21 @@ export async function createParapharmacySale(data: {
   return result?.id ?? null;
 }
 
-async function _adjustParapharmacyStock(
-  productId: string,
-  newQuantity: number,
-): Promise<boolean> {
+async function _adjustParapharmacyStock(productId: string, newQuantity: number): Promise<boolean> {
   const supabase = createClient();
   const { error } = await supabase
     .from("stock")
-    .update({ quantity: newQuantity, updated_at: new Date().toISOString() } as Database["public"]["Tables"]["stock"]["Update"])
+    .update({
+      quantity: newQuantity,
+      updated_at: new Date().toISOString(),
+    } as Database["public"]["Tables"]["stock"]["Update"])
     .eq("product_id", productId);
   if (error) {
     // Try insert if no stock row exists
-    const { error: insertError } = await supabase.from("stock")
-      .insert({ product_id: productId, quantity: newQuantity } as Database["public"]["Tables"]["stock"]["Insert"]);
+    const { error: insertError } = await supabase.from("stock").insert({
+      product_id: productId,
+      quantity: newQuantity,
+    } as Database["public"]["Tables"]["stock"]["Insert"]);
     if (insertError) {
       void insertError;
       return false;
@@ -191,7 +201,9 @@ interface ParapharmacyCategoryRaw {
   is_active: boolean;
 }
 
-export async function fetchParapharmacyCategories(clinicId: string): Promise<ParapharmacyCategoryView[]> {
+export async function fetchParapharmacyCategories(
+  clinicId: string,
+): Promise<ParapharmacyCategoryView[]> {
   const rows = await fetchRows<ParapharmacyCategoryRaw>("parapharmacy_categories", {
     eq: [["clinic_id", clinicId]],
     order: ["sort_order", { ascending: true }],
@@ -213,7 +225,10 @@ export async function fetchParapharmacyCategories(clinicId: string): Promise<Par
 export async function fetchParapharmacyProducts(clinicId: string): Promise<ProductView[]> {
   const [products, stock] = await Promise.all([
     fetchRows<ProductRaw>("products", {
-      eq: [["clinic_id", clinicId], ["is_parapharmacy", true]],
+      eq: [
+        ["clinic_id", clinicId],
+        ["is_parapharmacy", true],
+      ],
       order: ["name", { ascending: true }],
     }),
     fetchRows<StockRaw>("stock", { eq: [["clinic_id", clinicId]] }),

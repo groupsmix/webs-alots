@@ -77,7 +77,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // NEXT_PHASE and skip gracefully.
   const isBuildPhase = process.env.NEXT_PHASE === "phase-production-build";
   const isProductionRuntime = process.env.NODE_ENV === "production" && !isBuildPhase;
-  const hasAnonKey = !!(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
+  const hasAnonKey = !!(
+    process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  );
 
   // Audit Finding #8 / S-20: The sitemap no longer requires the service-role
   // key. The anon client is sufficient because the clinics table RLS policy
@@ -104,21 +106,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         .not("subdomain", "is", null);
 
       if (clinics) {
-        const clinicPublicPages = [
-          "/",
-          "/services",
-          "/about",
-          "/book",
-          "/reviews",
-          "/contact",
-        ];
+        const clinicPublicPages = ["/", "/services", "/about", "/book", "/reviews", "/contact"];
 
         for (const clinic of clinics) {
           if (!clinic.subdomain) continue;
           const clinicBase = `https://${clinic.subdomain}.${rootDomain}`;
-          const modified = clinic.updated_at
-            ? new Date(clinic.updated_at)
-            : now;
+          const modified = clinic.updated_at ? new Date(clinic.updated_at) : now;
 
           for (const page of clinicPublicPages) {
             entries.push({
@@ -132,10 +125,16 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       }
     } catch (err) {
       if (isProductionRuntime) throw err;
-      logger.warn("Failed to fetch clinic subdomains for sitemap", { context: "sitemap", error: err });
+      logger.warn("Failed to fetch clinic subdomains for sitemap", {
+        context: "sitemap",
+        error: err,
+      });
     }
   } else {
-    logger.info("Skipping dynamic sitemap generation: Supabase credentials missing (expected in dev/build)", { context: "sitemap" });
+    logger.info(
+      "Skipping dynamic sitemap generation: Supabase credentials missing (expected in dev/build)",
+      { context: "sitemap" },
+    );
   }
 
   // ── Doctor Directory pages ──
@@ -182,7 +181,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       }
     } catch (err) {
       if (isProductionRuntime) throw err;
-      logger.warn("Failed to fetch directory doctors for sitemap", { context: "sitemap", error: err });
+      logger.warn("Failed to fetch directory doctors for sitemap", {
+        context: "sitemap",
+        error: err,
+      });
     }
   }
 

@@ -33,9 +33,7 @@ async function handler(request: NextRequest) {
 
   try {
     const supabase = createAdminClient("cron") as UntypedClient;
-    const thirtyDaysAgo = new Date(
-      Date.now() - 30 * 24 * 60 * 60 * 1000,
-    ).toISOString();
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
 
     // Find users whose deletion grace period has expired
     const { data: usersToDelete, error: queryError } = await supabase
@@ -118,10 +116,7 @@ async function handler(request: NextRequest) {
         ];
 
         for (const { table, column } of dependentTables) {
-          const { error: delError } = await supabase
-            .from(table)
-            .delete()
-            .eq(column, user.id);
+          const { error: delError } = await supabase.from(table).delete().eq(column, user.id);
 
           if (delError) {
             // Log but continue — some tables may not exist
@@ -173,10 +168,7 @@ async function handler(request: NextRequest) {
         }
 
         // 3. Delete the user record itself
-        const { error: userDelError } = await supabase
-          .from("users")
-          .delete()
-          .eq("id", user.id);
+        const { error: userDelError } = await supabase.from("users").delete().eq("id", user.id);
 
         if (userDelError) {
           logger.error("Failed to delete user", {

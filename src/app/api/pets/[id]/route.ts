@@ -18,7 +18,11 @@ const updatePetSchema = z.object({
   species: z.string().min(1).max(100).optional(),
   breed: z.string().max(200).nullable().optional(),
   weight_kg: z.number().positive().max(9999.99).nullable().optional(),
-  date_of_birth: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Expected YYYY-MM-DD").nullable().optional(),
+  date_of_birth: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, "Expected YYYY-MM-DD")
+    .nullable()
+    .optional(),
   photo_url: z.string().url().nullable().optional(),
   notes: z.string().max(2000).nullable().optional(),
 });
@@ -32,86 +36,97 @@ function extractId(request: NextRequest): string {
 /**
  * GET /api/pets/[id]
  */
-export const GET = withAuth(async (request: NextRequest, auth: AuthContext) => {
-  const id = extractId(request);
-  const clinicId = auth.profile.clinic_id;
-  if (!clinicId) return apiNotFound("No clinic context");
+export const GET = withAuth(
+  async (request: NextRequest, auth: AuthContext) => {
+    const id = extractId(request);
+    const clinicId = auth.profile.clinic_id;
+    if (!clinicId) return apiNotFound("No clinic context");
 
-  const { data, error } = await auth.supabase
-    .from("pet_profiles")
-    .select("id, clinic_id, owner_id, name, species, breed, weight_kg, date_of_birth, photo_url, notes, is_active, created_at, updated_at")
-    .eq("id", id)
-    .eq("clinic_id", clinicId)
-    .single();
+    const { data, error } = await auth.supabase
+      .from("pet_profiles")
+      .select(
+        "id, clinic_id, owner_id, name, species, breed, weight_kg, date_of_birth, photo_url, notes, is_active, created_at, updated_at",
+      )
+      .eq("id", id)
+      .eq("clinic_id", clinicId)
+      .single();
 
-  if (error || !data) return apiNotFound("Pet not found");
+    if (error || !data) return apiNotFound("Pet not found");
 
-  return apiSuccess(data);
-}, ["super_admin", "clinic_admin", "receptionist", "doctor", "patient"]);
+    return apiSuccess(data);
+  },
+  ["super_admin", "clinic_admin", "receptionist", "doctor", "patient"],
+);
 
 /**
  * PATCH /api/pets/[id]
  */
-export const PATCH = withAuth(async (request: NextRequest, auth: AuthContext) => {
-  const id = extractId(request);
-  const clinicId = auth.profile.clinic_id;
-  if (!clinicId) return apiNotFound("No clinic context");
+export const PATCH = withAuth(
+  async (request: NextRequest, auth: AuthContext) => {
+    const id = extractId(request);
+    const clinicId = auth.profile.clinic_id;
+    if (!clinicId) return apiNotFound("No clinic context");
 
-  let body: unknown;
-  try {
-    body = await request.json();
-  } catch {
-    return apiError("Invalid JSON body", 422);
-  }
+    let body: unknown;
+    try {
+      body = await request.json();
+    } catch {
+      return apiError("Invalid JSON body", 422);
+    }
 
-  const result = safeParse(updatePetSchema, body);
-  if (!result.success) return apiError(result.error, 422);
+    const result = safeParse(updatePetSchema, body);
+    if (!result.success) return apiError(result.error, 422);
 
-  const { data, error } = await auth.supabase
-    .from("pet_profiles")
-    .update(result.data)
-    .eq("id", id)
-    .eq("clinic_id", clinicId)
-    .select()
-    .single();
+    const { data, error } = await auth.supabase
+      .from("pet_profiles")
+      .update(result.data)
+      .eq("id", id)
+      .eq("clinic_id", clinicId)
+      .select()
+      .single();
 
-  if (error) return apiSupabaseError(error, "pets/update");
-  if (!data) return apiNotFound("Pet not found");
+    if (error) return apiSupabaseError(error, "pets/update");
+    if (!data) return apiNotFound("Pet not found");
 
-  await logAuditEvent({
-    supabase: auth.supabase,
-    action: "pet_profile.updated",
-    type: "patient",
-    clinicId,
-    description: `Pet profile ${id} updated`,
-  });
+    await logAuditEvent({
+      supabase: auth.supabase,
+      action: "pet_profile.updated",
+      type: "patient",
+      clinicId,
+      description: `Pet profile ${id} updated`,
+    });
 
-  return apiSuccess(data);
-}, ["super_admin", "clinic_admin", "receptionist", "doctor"]);
+    return apiSuccess(data);
+  },
+  ["super_admin", "clinic_admin", "receptionist", "doctor"],
+);
 
 /**
  * DELETE /api/pets/[id]
  */
-export const DELETE = withAuth(async (request: NextRequest, auth: AuthContext) => {
-  const id = extractId(request);
-  const clinicId = auth.profile.clinic_id;
-  if (!clinicId) return apiNotFound("No clinic context");
+export const DELETE = withAuth(
+  async (request: NextRequest, auth: AuthContext) => {
+    const id = extractId(request);
+    const clinicId = auth.profile.clinic_id;
+    if (!clinicId) return apiNotFound("No clinic context");
 
-  const { error } = await auth.supabase
-    .from("pet_profiles")
-    .delete()
-    .eq("id", id)
-    .eq("clinic_id", clinicId);
+    const { error } = await auth.supabase
+      .from("pet_profiles")
+      .delete()
+      .eq("id", id)
+      .eq("clinic_id", clinicId);
 
-  if (error) return apiSupabaseError(error, "pets/delete");
+    if (error) return apiSupabaseError(error, "pets/delete");
 
-  await logAuditEvent({
-    supabase: auth.supabase,
-    action: "pet_profile.deleted",
-    type: "admin",
-    clinicId,
-    description: `Pet profile ${id} deleted`,
-  });
+    await logAuditEvent({
+      supabase: auth.supabase,
+      action: "pet_profile.deleted",
+      type: "admin",
+      clinicId,
+      description: `Pet profile ${id} deleted`,
+    });
 
-  return apiSuccess({ deleted: true });
-}, ["super_admin", "clinic_admin"]);
+    return apiSuccess({ deleted: true });
+  },
+  ["super_admin", "clinic_admin"],
+);

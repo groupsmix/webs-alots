@@ -115,7 +115,8 @@ export function CashRegister({ onPaymentRecorded }: CashRegisterProps) {
           {amount && method && (
             <div className="rounded-lg border border-green-200 bg-green-50 p-2 dark:border-green-900 dark:bg-green-950/20">
               <p className="text-xs font-medium text-green-800 dark:text-green-200">
-                {parseFloat(amount).toFixed(2)} MAD via {paymentMethods.find((p) => p.value === method)?.label ?? method}
+                {parseFloat(amount).toFixed(2)} MAD via{" "}
+                {paymentMethods.find((p) => p.value === method)?.label ?? method}
               </p>
             </div>
           )}

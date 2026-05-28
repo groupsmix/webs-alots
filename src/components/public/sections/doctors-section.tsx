@@ -38,9 +38,7 @@ export async function DoctorsSection() {
                   )}
                   <h3 className="text-lg font-semibold">{doctor.name}</h3>
                   {doctor.specialty && (
-                    <p className="text-sm text-primary font-medium">
-                      {doctor.specialty}
-                    </p>
+                    <p className="text-sm text-primary font-medium">{doctor.specialty}</p>
                   )}
                 </CardContent>
               </Card>

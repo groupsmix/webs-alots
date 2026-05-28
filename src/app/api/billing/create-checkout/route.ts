@@ -36,95 +36,99 @@ function validateRedirectUrl(
  *
  * Requires: STRIPE_SECRET_KEY env var
  */
-export const POST = withAuthValidation(subscriptionCheckoutSchema, async (body, request, { user, profile }) => {
-  const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
+export const POST = withAuthValidation(
+  subscriptionCheckoutSchema,
+  async (body, request, { user, profile }) => {
+    const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
 
-  if (!stripeSecretKey) {
-    return apiError("Stripe is not configured. Set STRIPE_SECRET_KEY environment variable.", 503);
-  }
+    if (!stripeSecretKey) {
+      return apiError("Stripe is not configured. Set STRIPE_SECRET_KEY environment variable.", 503);
+    }
 
-  const { planId, successUrl, cancelUrl } = body;
-  const plan = SUBSCRIPTION_PLANS[planId as PlanSlug];
+    const { planId, successUrl, cancelUrl } = body;
+    const plan = SUBSCRIPTION_PLANS[planId as PlanSlug];
 
-  if (!plan) {
-    return apiError("Invalid plan selected", 400, "INVALID_PLAN");
-  }
+    if (!plan) {
+      return apiError("Invalid plan selected", 400, "INVALID_PLAN");
+    }
 
-  if (!plan.stripePriceId) {
-    return apiError(
-      "This plan is not available for purchase. Please contact support.",
-      400,
-      "PLAN_NOT_CONFIGURED",
+    if (!plan.stripePriceId) {
+      return apiError(
+        "This plan is not available for purchase. Please contact support.",
+        400,
+        "PLAN_NOT_CONFIGURED",
+      );
+    }
+
+    const clinicId = profile.clinic_id;
+    if (!clinicId) {
+      return apiError("No clinic associated with your account", 400, "NO_CLINIC");
+    }
+
+    const origin = request.nextUrl.origin;
+    const validatedSuccessUrl = validateRedirectUrl(
+      successUrl,
+      origin,
+      "/admin/billing?subscription=success",
     );
-  }
+    const validatedCancelUrl = validateRedirectUrl(
+      cancelUrl,
+      origin,
+      "/admin/billing?subscription=cancelled",
+    );
 
-  const clinicId = profile.clinic_id;
-  if (!clinicId) {
-    return apiError("No clinic associated with your account", 400, "NO_CLINIC");
-  }
+    // Create Stripe Checkout Session for subscription via API
+    const params = new URLSearchParams();
+    params.append("mode", "subscription");
+    params.append("payment_method_types[0]", "card");
+    params.append("line_items[0][price]", plan.stripePriceId);
+    params.append("line_items[0][quantity]", "1");
+    params.append("success_url", validatedSuccessUrl);
+    params.append("cancel_url", validatedCancelUrl);
 
-  const origin = request.nextUrl.origin;
-  const validatedSuccessUrl = validateRedirectUrl(
-    successUrl,
-    origin,
-    "/admin/billing?subscription=success",
-  );
-  const validatedCancelUrl = validateRedirectUrl(
-    cancelUrl,
-    origin,
-    "/admin/billing?subscription=cancelled",
-  );
+    // Attach metadata for webhook processing
+    params.append("metadata[clinic_id]", clinicId);
+    params.append("metadata[user_id]", user.id);
+    params.append("metadata[plan_id]", planId);
+    params.append("subscription_data[metadata][clinic_id]", clinicId);
+    params.append("subscription_data[metadata][plan_id]", planId);
 
-  // Create Stripe Checkout Session for subscription via API
-  const params = new URLSearchParams();
-  params.append("mode", "subscription");
-  params.append("payment_method_types[0]", "card");
-  params.append("line_items[0][price]", plan.stripePriceId);
-  params.append("line_items[0][quantity]", "1");
-  params.append("success_url", validatedSuccessUrl);
-  params.append("cancel_url", validatedCancelUrl);
+    // Set customer email for Stripe to pre-fill
+    if (user.email) {
+      params.append("customer_email", user.email);
+    }
 
-  // Attach metadata for webhook processing
-  params.append("metadata[clinic_id]", clinicId);
-  params.append("metadata[user_id]", user.id);
-  params.append("metadata[plan_id]", planId);
-  params.append("subscription_data[metadata][clinic_id]", clinicId);
-  params.append("subscription_data[metadata][plan_id]", planId);
+    // MEDIUM-2: Idempotency-Key prevents duplicate Checkout Sessions.
+    const billingClinicId = profile.clinic_id ?? "unknown";
+    const idempotencyKey = `billing_${billingClinicId}_${user.id}_${planId}_${Date.now()}`;
 
-  // Set customer email for Stripe to pre-fill
-  if (user.email) {
-    params.append("customer_email", user.email);
-  }
-
-  // MEDIUM-2: Idempotency-Key prevents duplicate Checkout Sessions.
-  const billingClinicId = profile.clinic_id ?? "unknown";
-  const idempotencyKey = `billing_${billingClinicId}_${user.id}_${planId}_${Date.now()}`;
-
-  const stripeResponse = await fetch("https://api.stripe.com/v1/checkout/sessions", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${stripeSecretKey}`,
-      "Content-Type": "application/x-www-form-urlencoded",
-      "Idempotency-Key": idempotencyKey,
-    },
-    body: params.toString(),
-    signal: AbortSignal.timeout(10_000),
-  });
-
-  const session = await stripeResponse.json();
-
-  if (!stripeResponse.ok) {
-    logger.error("Stripe checkout session creation failed", {
-      context: "billing/create-checkout",
-      clinicId,
-      planId,
-      stripeError: session.error?.message,
+    const stripeResponse = await fetch("https://api.stripe.com/v1/checkout/sessions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${stripeSecretKey}`,
+        "Content-Type": "application/x-www-form-urlencoded",
+        "Idempotency-Key": idempotencyKey,
+      },
+      body: params.toString(),
+      signal: AbortSignal.timeout(10_000),
     });
-    return apiError("Failed to create checkout session");
-  }
 
-  return apiSuccess({
-    sessionId: session.id,
-    url: session.url,
-  });
-}, ["clinic_admin"]);
+    const session = await stripeResponse.json();
+
+    if (!stripeResponse.ok) {
+      logger.error("Stripe checkout session creation failed", {
+        context: "billing/create-checkout",
+        clinicId,
+        planId,
+        stripeError: session.error?.message,
+      });
+      return apiError("Failed to create checkout session");
+    }
+
+    return apiSuccess({
+      sessionId: session.id,
+      url: session.url,
+    });
+  },
+  ["clinic_admin"],
+);

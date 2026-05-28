@@ -9,7 +9,9 @@ export default function DoctorLabMaterialsPage() {
 
   return (
     <div className="space-y-6">
-      <Breadcrumb items={[{ label: "Doctor", href: "/doctor/dashboard" }, { label: "Lab Materials" }]} />
+      <Breadcrumb
+        items={[{ label: "Doctor", href: "/doctor/dashboard" }, { label: "Lab Materials" }]}
+      />
       <h1 className="text-2xl font-bold">Lab Materials</h1>
       <MaterialsInventory materials={materials} editable />
     </div>

@@ -7,11 +7,7 @@ import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageLoader } from "@/components/ui/page-loader";
-import {
-  getCurrentUser,
-  fetchPrescriptions,
-  type PrescriptionView,
-} from "@/lib/data/client";
+import { getCurrentUser, fetchPrescriptions, type PrescriptionView } from "@/lib/data/client";
 
 export default function PatientPrescriptionsPage() {
   const [downloading, setDownloading] = useState<string | null>(null);
@@ -22,21 +18,26 @@ export default function PatientPrescriptionsPage() {
   useEffect(() => {
     const controller = new AbortController();
     async function load() {
-    const user = await getCurrentUser();
+      const user = await getCurrentUser();
       if (controller.signal.aborted) return;
-    if (!user?.clinic_id) { setLoading(false); return; }
-    const rxs = await fetchPrescriptions(user.clinic_id);
+      if (!user?.clinic_id) {
+        setLoading(false);
+        return;
+      }
+      const rxs = await fetchPrescriptions(user.clinic_id);
       if (controller.signal.aborted) return;
-    setPatientPrescriptions(rxs.filter(rx => rx.patientId === user.id));
-    setLoading(false);
-  }
+      setPatientPrescriptions(rxs.filter((rx) => rx.patientId === user.id));
+      setLoading(false);
+    }
     load().catch((err) => {
       if (!controller.signal.aborted) {
         setError(err instanceof Error ? err : new Error(String(err)));
         setLoading(false);
       }
     });
-    return () => { controller.abort(); };
+    return () => {
+      controller.abort();
+    };
   }, []);
 
   if (loading) {
@@ -46,7 +47,9 @@ export default function PatientPrescriptionsPage() {
   if (error) {
     return (
       <div className="p-8 text-center">
-        <p className="text-red-600 font-medium">Failed to load data. Please try refreshing the page.</p>
+        <p className="text-red-600 font-medium">
+          Failed to load data. Please try refreshing the page.
+        </p>
         {error.message && <p className="text-sm text-muted-foreground mt-2">{error.message}</p>}
       </div>
     );
@@ -61,11 +64,15 @@ export default function PatientPrescriptionsPage() {
 
   return (
     <div>
-      <Breadcrumb items={[{ label: "Patient", href: "/patient/dashboard" }, { label: "Prescriptions" }]} />
+      <Breadcrumb
+        items={[{ label: "Patient", href: "/patient/dashboard" }, { label: "Prescriptions" }]}
+      />
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold">My Prescriptions</h1>
-          <p className="text-sm text-muted-foreground mt-1">{patientPrescriptions.length} prescription{patientPrescriptions.length !== 1 ? "s" : ""}</p>
+          <p className="text-sm text-muted-foreground mt-1">
+            {patientPrescriptions.length} prescription{patientPrescriptions.length !== 1 ? "s" : ""}
+          </p>
         </div>
       </div>
 
@@ -130,7 +137,9 @@ export default function PatientPrescriptionsPage() {
                   onClick={() => handleDownload(rx.id)}
                   disabled={downloading === rx.id}
                 >
-                  <Download className={`h-4 w-4 mr-1 ${downloading === rx.id ? "animate-bounce" : ""}`} />
+                  <Download
+                    className={`h-4 w-4 mr-1 ${downloading === rx.id ? "animate-bounce" : ""}`}
+                  />
                   {downloading === rx.id ? "Downloading..." : "Download PDF"}
                 </Button>
               </CardContent>

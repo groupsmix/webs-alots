@@ -7,6 +7,7 @@
 ## Context
 
 Healthcare applications handle Protected Health Information (PHI) governed by Moroccan Law 09-08. Logging, error reporting, and audit trails must balance:
+
 - **Debuggability**: Engineers need enough context to diagnose issues.
 - **Privacy**: PHI must not appear in logs, error trackers, or browser consoles.
 
@@ -15,6 +16,7 @@ Healthcare applications handle Protected Health Information (PHI) governed by Mo
 Use partial masking by default: show enough of a value to identify the record (first/last characters) while redacting the middle.
 
 Examples:
+
 - Patient name: `Mo****ed` (first 2, last 2 visible)
 - Phone: `+212*****89` (country code + last 2 digits)
 - Email: `pr***@gmail.com` (first 2 chars + domain)

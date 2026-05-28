@@ -68,8 +68,7 @@ export interface AIConfig {
  * 4. F-AI-07: Model is pinned (falls back to DEFAULT_MODEL)
  */
 export async function resolveAIConfig(): Promise<
-  | { ok: true; config: AIConfig }
-  | { ok: false; reason: string; statusCode: number }
+  { ok: true; config: AIConfig } | { ok: false; reason: string; statusCode: number }
 > {
   // F-AI-01: Kill switch
   if (!(await isAIEnabled())) {

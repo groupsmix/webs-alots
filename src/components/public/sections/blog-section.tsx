@@ -14,12 +14,9 @@ export async function BlogSection() {
   return (
     <section className="py-16">
       <div className="container mx-auto px-4">
-        <h2 className="text-center text-3xl font-bold mb-4">
-          Articles Santé
-        </h2>
+        <h2 className="text-center text-3xl font-bold mb-4">Articles Santé</h2>
         <p className="text-center text-muted-foreground mb-8 max-w-xl mx-auto">
-          Restez informé avec les derniers conseils santé et actualités
-          médicales de notre équipe.
+          Restez informé avec les derniers conseils santé et actualités médicales de notre équipe.
         </p>
         {previewPosts.length > 0 ? (
           <div className="grid gap-6 md:grid-cols-3 max-w-4xl mx-auto">

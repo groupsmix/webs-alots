@@ -34,21 +34,24 @@ export function SessionTimeoutWarning({
     if (warningTimerRef.current) clearTimeout(warningTimerRef.current);
     if (countdownRef.current) clearInterval(countdownRef.current);
 
-    warningTimerRef.current = setTimeout(() => {
-      setShowWarning(true);
-      setRemainingSeconds(logoutAfterMinutes * 60);
+    warningTimerRef.current = setTimeout(
+      () => {
+        setShowWarning(true);
+        setRemainingSeconds(logoutAfterMinutes * 60);
 
-      countdownRef.current = setInterval(() => {
-        setRemainingSeconds((prev) => {
-          if (prev <= 1) {
-            if (countdownRef.current) clearInterval(countdownRef.current);
-            onLogout?.();
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
-    }, warningAfterMinutes * 60 * 1000);
+        countdownRef.current = setInterval(() => {
+          setRemainingSeconds((prev) => {
+            if (prev <= 1) {
+              if (countdownRef.current) clearInterval(countdownRef.current);
+              onLogout?.();
+              return 0;
+            }
+            return prev - 1;
+          });
+        }, 1000);
+      },
+      warningAfterMinutes * 60 * 1000,
+    );
   }, [warningAfterMinutes, logoutAfterMinutes, onLogout]);
 
   useEffect(() => {
@@ -60,21 +63,24 @@ export function SessionTimeoutWarning({
     events.forEach((event) => document.addEventListener(event, handleActivity));
 
     // Start timer on mount via ref to avoid setState-in-effect warning
-    const timerId = setTimeout(() => {
-      setShowWarning(true);
-      setRemainingSeconds(logoutAfterMinutes * 60);
+    const timerId = setTimeout(
+      () => {
+        setShowWarning(true);
+        setRemainingSeconds(logoutAfterMinutes * 60);
 
-      countdownRef.current = setInterval(() => {
-        setRemainingSeconds((prev) => {
-          if (prev <= 1) {
-            if (countdownRef.current) clearInterval(countdownRef.current);
-            onLogout?.();
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
-    }, warningAfterMinutes * 60 * 1000);
+        countdownRef.current = setInterval(() => {
+          setRemainingSeconds((prev) => {
+            if (prev <= 1) {
+              if (countdownRef.current) clearInterval(countdownRef.current);
+              onLogout?.();
+              return 0;
+            }
+            return prev - 1;
+          });
+        }, 1000);
+      },
+      warningAfterMinutes * 60 * 1000,
+    );
     warningTimerRef.current = timerId;
 
     return () => {
@@ -96,23 +102,30 @@ export function SessionTimeoutWarning({
 
   return (
     // A80-2 fix: role="alertdialog" already implies assertive live-region - remove explicit aria-live
-      // to prevent screen readers (NVDA, JAWS) from double-announcing the dialog content.
-      <div className="fixed inset-0 z-[90] flex items-center justify-center bg-black/60" role="alertdialog" aria-labelledby="session-timeout-title">
+    // to prevent screen readers (NVDA, JAWS) from double-announcing the dialog content.
+    <div
+      className="fixed inset-0 z-[90] flex items-center justify-center bg-black/60"
+      role="alertdialog"
+      aria-labelledby="session-timeout-title"
+    >
       <div className="mx-4 w-full max-w-sm rounded-lg border bg-background p-6 shadow-xl">
         <div className="flex items-center gap-3 mb-4">
           <div className="flex h-10 w-10 items-center justify-center rounded-full bg-yellow-100 dark:bg-yellow-900">
             <Clock className="h-5 w-5 text-yellow-600 dark:text-yellow-400" />
           </div>
           <div>
-            <h2 id="session-timeout-title" className="font-semibold">{t(locale, "session.expiring")}</h2>
+            <h2 id="session-timeout-title" className="font-semibold">
+              {t(locale, "session.expiring")}
+            </h2>
             <p className="text-sm text-muted-foreground">
-              {t(locale, "session.logoutIn").replace("{time}", `${minutes}:${seconds.toString().padStart(2, "0")}`)}
+              {t(locale, "session.logoutIn").replace(
+                "{time}",
+                `${minutes}:${seconds.toString().padStart(2, "0")}`,
+              )}
             </p>
           </div>
         </div>
-        <p className="text-sm text-muted-foreground mb-4">
-          {t(locale, "session.expiryMessage")}
-        </p>
+        <p className="text-sm text-muted-foreground mb-4">{t(locale, "session.expiryMessage")}</p>
         <div className="flex gap-2">
           <Button onClick={handleExtend} className="flex-1">
             {t(locale, "session.stayConnected")}

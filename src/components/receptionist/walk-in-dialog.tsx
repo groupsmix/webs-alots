@@ -70,7 +70,9 @@ export function WalkInDialog({ trigger, onRegister }: WalkInDialogProps) {
     load().catch(() => {
       // Data loading errors are non-fatal for dialog pre-population
     });
-    return () => { controller.abort(); };
+    return () => {
+      controller.abort();
+    };
   }, []);
 
   const [patientId, setPatientId] = useState("");
@@ -191,7 +193,8 @@ export function WalkInDialog({ trigger, onRegister }: WalkInDialogProps) {
                 <SelectContent>
                   {doctors.map((d) => (
                     <SelectItem key={d.id} value={d.id}>
-                      {d.name}{d.specialty ? ` - ${d.specialty}` : ""}
+                      {d.name}
+                      {d.specialty ? ` - ${d.specialty}` : ""}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -205,11 +208,13 @@ export function WalkInDialog({ trigger, onRegister }: WalkInDialogProps) {
                   <SelectValue placeholder="Select service..." />
                 </SelectTrigger>
                 <SelectContent>
-                  {services.filter((s) => s.active).map((s) => (
-                    <SelectItem key={s.id} value={s.id}>
-                      {s.name} ({s.duration}min - {s.price} {s.currency})
-                    </SelectItem>)
-                  )}
+                  {services
+                    .filter((s) => s.active)
+                    .map((s) => (
+                      <SelectItem key={s.id} value={s.id}>
+                        {s.name} ({s.duration}min - {s.price} {s.currency})
+                      </SelectItem>
+                    ))}
                 </SelectContent>
               </Select>
             </div>
@@ -225,7 +230,9 @@ export function WalkInDialog({ trigger, onRegister }: WalkInDialogProps) {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
+            <Button variant="outline" onClick={() => setOpen(false)}>
+              Cancel
+            </Button>
             <Button
               onClick={handleSubmit}
               disabled={

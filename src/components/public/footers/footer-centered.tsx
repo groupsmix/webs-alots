@@ -24,17 +24,32 @@ export function FooterCentered({ clinicName, template }: FooterProps) {
         <h3 className="text-xl font-bold">{clinicName}</h3>
 
         {/* Navigation links */}
-        <nav aria-label="Footer navigation" className="flex flex-wrap items-center justify-center gap-4">
-          <Link href="/" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+        <nav
+          aria-label="Footer navigation"
+          className="flex flex-wrap items-center justify-center gap-4"
+        >
+          <Link
+            href="/"
+            className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+          >
             {t(locale, "public.home")}
           </Link>
-          <Link href="/services" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+          <Link
+            href="/services"
+            className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+          >
             {t(locale, "public.services")}
           </Link>
-          <Link href="/book" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+          <Link
+            href="/book"
+            className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+          >
             {t(locale, "public.bookAppointment")}
           </Link>
-          <Link href="/contact" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+          <Link
+            href="/contact"
+            className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+          >
             {t(locale, "public.contact")}
           </Link>
         </nav>

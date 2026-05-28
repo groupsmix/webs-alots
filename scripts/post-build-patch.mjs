@@ -24,7 +24,7 @@ const HANDLER_PATH = path.join(
   ".open-next",
   "server-functions",
   "default",
-  "handler.mjs"
+  "handler.mjs",
 );
 
 if (!fs.existsSync(HANDLER_PATH)) {
@@ -34,14 +34,14 @@ if (!fs.existsSync(HANDLER_PATH)) {
 
 let content = fs.readFileSync(HANDLER_PATH, "utf-8");
 
-const THROW_PATTERN = 'throw new Error(`Unexpected loadManifest(${';
-const REPLACEMENT = 'if(handleMissing)return undefined;throw new Error(`Unexpected loadManifest(${';
+const THROW_PATTERN = "throw new Error(`Unexpected loadManifest(${";
+const REPLACEMENT = "if(handleMissing)return undefined;throw new Error(`Unexpected loadManifest(${";
 
-if (content.includes(THROW_PATTERN) && !content.includes('if(handleMissing)return undefined;')) {
+if (content.includes(THROW_PATTERN) && !content.includes("if(handleMissing)return undefined;")) {
   content = content.replace(THROW_PATTERN, REPLACEMENT);
   fs.writeFileSync(HANDLER_PATH, content, "utf-8");
   console.log("✓ Patched handler.mjs — optional manifests now return undefined");
-} else if (content.includes('if(handleMissing)return undefined;')) {
+} else if (content.includes("if(handleMissing)return undefined;")) {
   console.log("· handler.mjs already patched");
 } else {
   console.log("⚠ Could not find loadManifest throw pattern — patch may not be needed");

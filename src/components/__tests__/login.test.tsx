@@ -30,13 +30,29 @@ vi.mock("@/components/ui/label", () => ({
 }));
 
 vi.mock("@/components/ui/button", () => ({
-  Button: ({ children, type, onClick, disabled, ...props }: { children: React.ReactNode; type?: "submit" | "reset" | "button"; onClick?: () => void; disabled?: boolean; [key: string]: unknown }) => (
-    <button type={type} onClick={onClick} disabled={disabled} {...props}>{children}</button>
+  Button: ({
+    children,
+    type,
+    onClick,
+    disabled,
+    ...props
+  }: {
+    children: React.ReactNode;
+    type?: "submit" | "reset" | "button";
+    onClick?: () => void;
+    disabled?: boolean;
+    [key: string]: unknown;
+  }) => (
+    <button type={type} onClick={onClick} disabled={disabled} {...props}>
+      {children}
+    </button>
   ),
 }));
 
 vi.mock("next/link", () => ({
-  default: ({ children, href }: { children: React.ReactNode; href: string }) => <a href={href}>{children}</a>,
+  default: ({ children, href }: { children: React.ReactNode; href: string }) => (
+    <a href={href}>{children}</a>
+  ),
 }));
 
 describe("LoginPage", () => {

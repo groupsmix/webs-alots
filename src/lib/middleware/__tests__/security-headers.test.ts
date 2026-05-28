@@ -27,9 +27,7 @@ describe("withSecurityHeaders — CSP guard", () => {
     withSecurityHeaders(response, csp);
 
     expect(response.headers.get("Content-Security-Policy")).toBe(csp.enforce);
-    expect(response.headers.has("Content-Security-Policy-Report-Only")).toBe(
-      false,
-    );
+    expect(response.headers.has("Content-Security-Policy-Report-Only")).toBe(false);
   });
 
   it("does not forward an empty Content-Security-Policy header", () => {
@@ -65,8 +63,6 @@ describe("applyAllSecurityHeaders — CSP guard", () => {
     applyAllSecurityHeaders(response, csp, "test-nonce");
 
     expect(response.headers.has("Content-Security-Policy")).toBe(false);
-    expect(response.headers.get("Referrer-Policy")).toBe(
-      "strict-origin-when-cross-origin",
-    );
+    expect(response.headers.get("Referrer-Policy")).toBe("strict-origin-when-cross-origin");
   });
 });

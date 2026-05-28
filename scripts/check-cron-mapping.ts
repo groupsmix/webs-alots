@@ -25,16 +25,26 @@ if (declared.length === 0) {
 // Check wrangler → handler direction
 const missingInHandler = declared.filter((c) => !handler.includes(`"${c}"`));
 if (missingInHandler.length) {
-  console.error("Cron mismatch — these wrangler.toml schedules have no handler mapping:", missingInHandler);
+  console.error(
+    "Cron mismatch — these wrangler.toml schedules have no handler mapping:",
+    missingInHandler,
+  );
   process.exit(1);
 }
 
 // Check handler → wrangler direction: extract schedule keys from CRON_ROUTES
-const handlerSchedules = [...handler.matchAll(/"([^"]+)":\s/g)].map((m) => m[1]).filter((s) => /^[\d*/,\- a-zA-Z]+$/.test(s));
+const handlerSchedules = [...handler.matchAll(/"([^"]+)":\s/g)]
+  .map((m) => m[1])
+  .filter((s) => /^[\d*/,\- a-zA-Z]+$/.test(s));
 const missingInWrangler = handlerSchedules.filter((c) => !cronsBlock.includes(`"${c}"`));
 if (missingInWrangler.length) {
-  console.error("Cron mismatch — these handler schedules are not in wrangler.toml:", missingInWrangler);
+  console.error(
+    "Cron mismatch — these handler schedules are not in wrangler.toml:",
+    missingInWrangler,
+  );
   process.exit(1);
 }
 
-console.log(`Cron mapping OK — ${declared.length} wrangler schedule(s), ${handlerSchedules.length} handler schedule(s) verified.`);
+console.log(
+  `Cron mapping OK — ${declared.length} wrangler schedule(s), ${handlerSchedules.length} handler schedule(s) verified.`,
+);

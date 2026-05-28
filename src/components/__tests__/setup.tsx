@@ -5,7 +5,8 @@ import "@testing-library/dom";
 // no longer falls back to a hardcoded "default-salt" when hashing upload keys
 // or signing URLs, so every test that exercises `r2.ts` needs a real value.
 // This is a test-only constant and must never be used outside Vitest.
-process.env.R2_SIGNED_URL_SECRET = process.env.R2_SIGNED_URL_SECRET || "test-r2-signing-secret-0123456789abcdef";
+process.env.R2_SIGNED_URL_SECRET =
+  process.env.R2_SIGNED_URL_SECRET || "test-r2-signing-secret-0123456789abcdef";
 
 // Mock window.matchMedia
 Object.defineProperty(window, "matchMedia", {

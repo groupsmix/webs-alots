@@ -43,8 +43,8 @@ export function ManifestoSection() {
               color: "var(--ink-70)",
             }}
           >
-            Des outils simples et puissants pour vous concentrer sur
-            l&apos;essentiel&nbsp;: vos patients.
+            Des outils simples et puissants pour vous concentrer sur l&apos;essentiel&nbsp;: vos
+            patients.
           </p>
         </div>
         {/* eslint-enable i18next/no-literal-string */}

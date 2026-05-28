@@ -50,11 +50,13 @@ function slugify(text) {
   return text
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "") // strip accents
-    .replace(/[^a-zA-Z0-9 ]/g, "")  // remove non-alphanum
+    .replace(/[^a-zA-Z0-9 ]/g, "") // remove non-alphanum
     .trim()
     .split(/\s+/)
-    .slice(0, 4)                     // max 4 words
-    .map((w, i) => i === 0 ? w.toLowerCase() : w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+    .slice(0, 4) // max 4 words
+    .map((w, i) =>
+      i === 0 ? w.toLowerCase() : w.charAt(0).toUpperCase() + w.slice(1).toLowerCase(),
+    )
     .join("");
 }
 
@@ -66,7 +68,10 @@ function derivePrefix(filePath) {
   const parts = rel
     .replace(/\.(tsx?|jsx?)$/, "")
     .split("/")
-    .filter((p) => !p.startsWith("(") && p !== "app" && p !== "components" && p !== "page" && p !== "index");
+    .filter(
+      (p) =>
+        !p.startsWith("(") && p !== "app" && p !== "components" && p !== "page" && p !== "index",
+    );
   return parts.join(".");
 }
 
@@ -85,9 +90,9 @@ const FRENCH_PATTERN = /[À-ÿ]|[\u0600-\u06FF]/;
 // Skip patterns
 const SKIP_PATTERNS = [
   /^[a-zA-Z0-9_.\-:/#@?&=+%]+$/, // URLs, identifiers
-  /^\{.*\}$/,                       // JSX expressions
-  /^[0-9.,\s]+$/,                   // numbers
-  /^\s*$/,                          // whitespace
+  /^\{.*\}$/, // JSX expressions
+  /^[0-9.,\s]+$/, // numbers
+  /^\s*$/, // whitespace
 ];
 
 function shouldExtract(text) {
@@ -188,5 +193,7 @@ if (!dryRun) {
   saveJson(EN_PATH, en);
 }
 
-console.log(`\n${dryRun ? "[DRY RUN] " : ""}Extracted ${totalExtracted} strings from ${totalFiles} files.`);
+console.log(
+  `\n${dryRun ? "[DRY RUN] " : ""}Extracted ${totalExtracted} strings from ${totalFiles} files.`,
+);
 console.log(`Total keys in fr.json: ${Object.keys(fr).length}`);

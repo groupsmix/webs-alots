@@ -30,7 +30,10 @@ export function HeaderTopSticky({ logoUrl, clinicName, navItems, template }: Hea
   }
 
   return (
-    <header className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur" dir={isRtl ? "rtl" : undefined}>
+    <header
+      className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur"
+      dir={isRtl ? "rtl" : undefined}
+    >
       <div className="container mx-auto flex h-16 items-center justify-between px-4">
         <Link href="/" className="flex items-center gap-2 text-xl font-bold">
           {logoUrl && (
@@ -70,7 +73,11 @@ export function HeaderTopSticky({ logoUrl, clinicName, navItems, template }: Hea
 
       {/* Mobile navigation */}
       {mobileMenuOpen && (
-        <nav id="header-mobile-nav" aria-label="Navigation mobile" className="border-t px-4 py-4 md:hidden">
+        <nav
+          id="header-mobile-nav"
+          aria-label="Navigation mobile"
+          className="border-t px-4 py-4 md:hidden"
+        >
           <div className="flex flex-col gap-3">
             {navItems.map((item) => (
               <Link

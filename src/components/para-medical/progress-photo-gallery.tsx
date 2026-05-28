@@ -20,7 +20,7 @@ export function ProgressPhotoGallery({ photos }: ProgressPhotoGalleryProps) {
     : photos;
 
   const sortedPhotos = [...filteredPhotos].sort(
-    (a, b) => new Date(b.photo_date).getTime() - new Date(a.photo_date).getTime()
+    (a, b) => new Date(b.photo_date).getTime() - new Date(a.photo_date).getTime(),
   );
 
   // Group by date for comparison
@@ -46,7 +46,9 @@ export function ProgressPhotoGallery({ photos }: ProgressPhotoGalleryProps) {
           <button
             key={name}
             className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
-              selectedPatient === name ? "bg-primary text-primary-foreground" : "border hover:bg-muted"
+              selectedPatient === name
+                ? "bg-primary text-primary-foreground"
+                : "border hover:bg-muted"
             }`}
             onClick={() => setSelectedPatient(name)}
           >
@@ -68,7 +70,9 @@ export function ProgressPhotoGallery({ photos }: ProgressPhotoGalleryProps) {
               <div className="flex items-center gap-2 mb-3">
                 <Calendar className="h-4 w-4 text-muted-foreground" />
                 <h3 className="text-sm font-medium">{date}</h3>
-                <Badge variant="outline" className="text-[10px]">{datePhotos.length} photo(s)</Badge>
+                <Badge variant="outline" className="text-[10px]">
+                  {datePhotos.length} photo(s)
+                </Badge>
               </div>
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
                 {datePhotos.map((photo) => (
@@ -87,9 +91,13 @@ export function ProgressPhotoGallery({ photos }: ProgressPhotoGalleryProps) {
                     </div>
                     <CardContent className="p-2">
                       <p className="text-xs font-medium truncate">{photo.patient_name}</p>
-                      <Badge variant="outline" className="text-[10px] mt-1">{photo.category}</Badge>
+                      <Badge variant="outline" className="text-[10px] mt-1">
+                        {photo.category}
+                      </Badge>
                       {photo.notes && (
-                        <p className="text-[10px] text-muted-foreground mt-1 line-clamp-2">{photo.notes}</p>
+                        <p className="text-[10px] text-muted-foreground mt-1 line-clamp-2">
+                          {photo.notes}
+                        </p>
                       )}
                     </CardContent>
                   </Card>
@@ -113,20 +121,34 @@ export function ProgressPhotoGallery({ photos }: ProgressPhotoGalleryProps) {
           <CardContent>
             <div className="grid grid-cols-2 gap-4">
               <div className="text-center">
-                <p className="text-xs text-muted-foreground mb-2">Earliest: {sortedPhotos[sortedPhotos.length - 1].photo_date}</p>
+                <p className="text-xs text-muted-foreground mb-2">
+                  Earliest: {sortedPhotos[sortedPhotos.length - 1].photo_date}
+                </p>
                 <div className="relative aspect-square bg-muted rounded-lg flex items-center justify-center overflow-hidden">
                   {sortedPhotos[sortedPhotos.length - 1].photo_url ? (
-                    <Image src={sortedPhotos[sortedPhotos.length - 1].photo_url} alt="Before" fill className="object-cover" />
+                    <Image
+                      src={sortedPhotos[sortedPhotos.length - 1].photo_url}
+                      alt="Before"
+                      fill
+                      className="object-cover"
+                    />
                   ) : (
                     <Camera className="h-8 w-8 text-muted-foreground" />
                   )}
                 </div>
               </div>
               <div className="text-center">
-                <p className="text-xs text-muted-foreground mb-2">Latest: {sortedPhotos[0].photo_date}</p>
+                <p className="text-xs text-muted-foreground mb-2">
+                  Latest: {sortedPhotos[0].photo_date}
+                </p>
                 <div className="relative aspect-square bg-muted rounded-lg flex items-center justify-center overflow-hidden">
                   {sortedPhotos[0].photo_url ? (
-                    <Image src={sortedPhotos[0].photo_url} alt="After" fill className="object-cover" />
+                    <Image
+                      src={sortedPhotos[0].photo_url}
+                      alt="After"
+                      fill
+                      className="object-cover"
+                    />
                   ) : (
                     <Camera className="h-8 w-8 text-muted-foreground" />
                   )}

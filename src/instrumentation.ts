@@ -28,7 +28,9 @@ function getSampleRate(transactionContext: {
     transactionContext.name || "",
     transactionContext.description || "",
     ...Object.values(transactionContext.tags || {}),
-  ].join(" ").toLowerCase();
+  ]
+    .join(" ")
+    .toLowerCase();
 
   // Critical paths
   if (
@@ -93,8 +95,12 @@ export function register() {
             // Remove auth-related headers that could contain session tokens.
             const safeHeaders: Record<string, string> = {};
             const SAFE_HEADER_NAMES = new Set([
-              "content-type", "accept", "user-agent", "referer",
-              "x-trace-id", "host",
+              "content-type",
+              "accept",
+              "user-agent",
+              "referer",
+              "x-trace-id",
+              "host",
             ]);
             for (const [k, v] of Object.entries(event.request.headers)) {
               if (SAFE_HEADER_NAMES.has(k.toLowerCase())) {
@@ -109,10 +115,23 @@ export function register() {
         // recursively; these may be nested via Sentry.setContext()), and
         // event.tags (flat via Sentry.setTag()).
         const PHI_KEYS = new Set([
-          "phone", "email", "name", "patientname", "patient_name",
-          "name_ar", "full_name", "address", "notes", "content",
-          "message", "file_name", "date_of_birth", "dob",
-          "insurance_number", "cin", "ssn",
+          "phone",
+          "email",
+          "name",
+          "patientname",
+          "patient_name",
+          "name_ar",
+          "full_name",
+          "address",
+          "notes",
+          "content",
+          "message",
+          "file_name",
+          "date_of_birth",
+          "dob",
+          "insurance_number",
+          "cin",
+          "ssn",
         ]);
         const scrubPHI = (value: unknown, depth = 0): unknown => {
           if (depth > 10 || value === null || value === undefined) return value;
@@ -161,14 +180,16 @@ export function register() {
   // Next.js has finished bootstrapping.
   // AUDIT P1-5: The .then() must re-throw so the error propagates as an
   // unhandled rejection that crashes the Worker, rather than being swallowed.
-  import("@/lib/env").then(({ enforceEnvValidation }) => {
-    enforceEnvValidation();
-  }).catch((err) => {
-    // Re-throw to ensure the Worker/server process crashes on missing
-    // required env vars instead of silently serving traffic.
-    console.error("[FATAL] Environment validation failed:", err);
-    throw err;
-  });
+  import("@/lib/env")
+    .then(({ enforceEnvValidation }) => {
+      enforceEnvValidation();
+    })
+    .catch((err) => {
+      // Re-throw to ensure the Worker/server process crashes on missing
+      // required env vars instead of silently serving traffic.
+      console.error("[FATAL] Environment validation failed:", err);
+      throw err;
+    });
 
   // F-12: Fatal throw when staging env uses production Supabase.
   if (process.env.ROOT_DOMAIN?.includes("staging")) {
@@ -177,9 +198,13 @@ export function register() {
       const message =
         "[FATAL] Staging environment detected (ROOT_DOMAIN contains 'staging') " +
         "but NEXT_PUBLIC_SUPABASE_URL does not point to a staging Supabase project.\n" +
-        "Current value: " + supabaseUrl + "\n" +
+        "Current value: " +
+        supabaseUrl +
+        "\n" +
         "Staging MUST use a separate Supabase project to prevent data leakage.";
-      import("@/lib/logger").then(({ logger }) => logger.error(message, { context: "instrumentation" }));
+      import("@/lib/logger").then(({ logger }) =>
+        logger.error(message, { context: "instrumentation" }),
+      );
       throw new Error(message);
     }
   }
@@ -214,7 +239,9 @@ export function register() {
         "  a0000000-0000-0000-0000-000000000010..0014 (patients)\n" +
         "\n" +
         "The application will NOT start until this is resolved.";
-      import("@/lib/logger").then(({ logger }) => logger.error(message, { context: "instrumentation" }));
+      import("@/lib/logger").then(({ logger }) =>
+        logger.error(message, { context: "instrumentation" }),
+      );
       throw new Error(message);
     }
 
@@ -239,7 +266,7 @@ export function register() {
               import("@/lib/logger").then(({ logger }) => {
                 logger.error(
                   "[STARTUP WARNING] Seed user accounts still exist in the database despite " +
-                  "SEED_PASSWORDS_ROTATED being set. Delete seed accounts for full security.",
+                    "SEED_PASSWORDS_ROTATED being set. Delete seed accounts for full security.",
                   { context: "instrumentation", seedUsersFound: data.length },
                 );
               });
@@ -254,9 +281,9 @@ export function register() {
       import("@/lib/logger").then(({ logger }) => {
         logger.warn(
           "[STARTUP WARNING] SEED_PASSWORDS_ROTATED is set but SEED_USERS_DELETED is not.\n" +
-          "The seed user emails (e.g. admin@health-saas.ma) are publicly visible in the\n" +
-          "GitHub repository. Deleting these accounts entirely is strongly recommended.\n" +
-          "Set SEED_USERS_DELETED=true after removing them to silence this warning.",
+            "The seed user emails (e.g. admin@health-saas.ma) are publicly visible in the\n" +
+            "GitHub repository. Deleting these accounts entirely is strongly recommended.\n" +
+            "Set SEED_USERS_DELETED=true after removing them to silence this warning.",
           { context: "instrumentation" },
         );
       });

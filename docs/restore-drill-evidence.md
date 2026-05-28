@@ -105,18 +105,18 @@ Notes: [any additional observations]
 
 ### Drill 2026-05-26 (Pre-Launch Attempt)
 
-| Field | Value |
-|-------|-------|
-| Date | 2026-05-26 |
-| Operator | Devin (automated) |
-| Method | Automated (restore-test.yml — manual trigger) |
-| Backup file | N/A — R2 credentials not yet configured |
-| GPG decrypt | N/A |
-| gunzip decompress | N/A |
-| PostgreSQL restore | N/A |
-| Total drill duration | < 1 min (failed at fetch step) |
-| Issues found | **R2 backup secrets not configured in GitHub Actions.** The workflow requires: `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BACKUP_BUCKET`, `CLOUDFLARE_ACCOUNT_ID`, `BACKUP_GPG_PRIVATE_KEY` as repository secrets. |
-| GitHub Actions run URL | https://github.com/groupsmix/webs-alots/actions/runs/26469810438 |
-| Approved by | _Pending — re-run after secrets are configured_ |
+| Field                  | Value                                                                                                                                                                                                                   |
+| ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Date                   | 2026-05-26                                                                                                                                                                                                              |
+| Operator               | Devin (automated)                                                                                                                                                                                                       |
+| Method                 | Automated (restore-test.yml — manual trigger)                                                                                                                                                                           |
+| Backup file            | N/A — R2 credentials not yet configured                                                                                                                                                                                 |
+| GPG decrypt            | N/A                                                                                                                                                                                                                     |
+| gunzip decompress      | N/A                                                                                                                                                                                                                     |
+| PostgreSQL restore     | N/A                                                                                                                                                                                                                     |
+| Total drill duration   | < 1 min (failed at fetch step)                                                                                                                                                                                          |
+| Issues found           | **R2 backup secrets not configured in GitHub Actions.** The workflow requires: `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BACKUP_BUCKET`, `CLOUDFLARE_ACCOUNT_ID`, `BACKUP_GPG_PRIVATE_KEY` as repository secrets. |
+| GitHub Actions run URL | https://github.com/groupsmix/webs-alots/actions/runs/26469810438                                                                                                                                                        |
+| Approved by            | _Pending — re-run after secrets are configured_                                                                                                                                                                         |
 
 Notes: This is the first-ever drill attempt. The workflow infrastructure is verified (triggers correctly, steps are wired). Once the R2 and GPG secrets are added to GitHub repository secrets, re-trigger via: `gh workflow run restore-test.yml` or the Actions UI.

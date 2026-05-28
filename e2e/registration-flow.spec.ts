@@ -51,9 +51,7 @@ test.describe("Registration flow", () => {
     if ((await emailInput.count()) > 0) {
       await emailInput.fill("not-an-email");
       // Check browser-level validity on the email input itself
-      const isInvalid = await emailInput.evaluate(
-        (el) => !(el as HTMLInputElement).validity.valid,
-      );
+      const isInvalid = await emailInput.evaluate((el) => !(el as HTMLInputElement).validity.valid);
       expect(isInvalid).toBe(true);
     }
   });

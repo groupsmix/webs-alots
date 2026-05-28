@@ -20,9 +20,7 @@ const ALLOWED_TYPES = new Set([
 
 const MAGIC_BYTES: Record<string, Uint8Array[]> = {
   "image/jpeg": [new Uint8Array([0xff, 0xd8, 0xff])],
-  "image/png": [
-    new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
-  ],
+  "image/png": [new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])],
   "image/webp": [new Uint8Array([0x52, 0x49, 0x46, 0x46])],
   "image/tiff": [
     new Uint8Array([0x49, 0x49, 0x2a, 0x00]),
@@ -39,14 +37,10 @@ function validateFileContent(buffer: Buffer, declaredType: string): boolean {
 
   if (declaredType === "application/dicom") {
     if (buffer.length < 132) return false;
-    return signatures.some((sig) =>
-      sig.every((byte, i) => buffer[128 + i] === byte),
-    );
+    return signatures.some((sig) => sig.every((byte, i) => buffer[128 + i] === byte));
   }
 
-  return signatures.some((sig) =>
-    sig.every((byte, i) => i < buffer.length && buffer[i] === byte),
-  );
+  return signatures.some((sig) => sig.every((byte, i) => i < buffer.length && buffer[i] === byte));
 }
 
 // ── ALLOWED_TYPES ──
@@ -82,9 +76,7 @@ describe("radiology upload — validateFileContent", () => {
   });
 
   it("validates a PNG file (89504E47 header)", () => {
-    const buf = Buffer.from([
-      0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00,
-    ]);
+    const buf = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00]);
     expect(validateFileContent(buf, "image/png")).toBe(true);
   });
 
@@ -114,9 +106,7 @@ describe("radiology upload — validateFileContent", () => {
   });
 
   it("rejects a file with mismatched magic bytes", () => {
-    const pngHeader = Buffer.from([
-      0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a,
-    ]);
+    const pngHeader = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
     expect(validateFileContent(pngHeader, "image/jpeg")).toBe(false);
   });
 

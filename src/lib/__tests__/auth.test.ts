@@ -2,13 +2,7 @@ import { headers } from "next/headers";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { loginLimiter, accountLockoutLimiter } from "@/lib/rate-limit";
 import { createClient } from "@/lib/supabase-server";
-import {
-  signInWithPassword,
-  signOut,
-  getUserProfile,
-  requireAuth,
-  requireRole,
-} from "../auth";
+import { signInWithPassword, signOut, getUserProfile, requireAuth, requireRole } from "../auth";
 
 vi.mock("next/headers", () => ({
   headers: vi.fn(),
@@ -85,7 +79,9 @@ function createMockSupabase({
 describe("signInWithPassword", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.mocked(headers).mockResolvedValue(createMockHeaders({ "cf-connecting-ip": "1.2.3.4" }) as never);
+    vi.mocked(headers).mockResolvedValue(
+      createMockHeaders({ "cf-connecting-ip": "1.2.3.4" }) as never,
+    );
   });
 
   it("returns error when IP rate limit is exceeded", async () => {

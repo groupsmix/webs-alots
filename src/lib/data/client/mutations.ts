@@ -10,7 +10,6 @@ export type { MutationResult } from "./_core";
 // Mutations
 // ─────────────────────────────────────────────
 
-
 export async function updateAppointmentStatus(
   appointmentId: string,
   status: string,
@@ -53,12 +52,16 @@ async function _createPayment(data: {
   status?: string;
 }): Promise<MutationResult<{ id: string }>> {
   const supabase = createClient();
-  const { data: created, error } = await supabase.from("payments").insert({
-    ...data,
-    status: data.status ?? "completed",
-    payment_type: "full",
-    refunded_amount: 0,
-  }).select("id").single();
+  const { data: created, error } = await supabase
+    .from("payments")
+    .insert({
+      ...data,
+      status: data.status ?? "completed",
+      payment_type: "full",
+      refunded_amount: 0,
+    })
+    .select("id")
+    .single();
   if (error) {
     logger.warn("Query failed", { context: "data/client", error });
     return { success: false, error: { code: error.code, message: error.message } };
@@ -74,7 +77,11 @@ async function _upsertReview(data: {
   comment?: string;
 }): Promise<MutationResult<{ id: string }>> {
   const supabase = createClient();
-  const { data: created, error } = await supabase.from("reviews").insert(data).select("id").single();
+  const { data: created, error } = await supabase
+    .from("reviews")
+    .insert(data)
+    .select("id")
+    .single();
   if (error) {
     logger.warn("Query failed", { context: "data/client", error });
     return { success: false, error: { code: error.code, message: error.message } };
@@ -100,7 +107,11 @@ export async function createPrescription(data: {
 }): Promise<MutationResult<{ id: string }>> {
   const supabase = createClient();
   // Issue 45: Return created entity data via .select()
-  const { data: created, error } = await supabase.from("prescriptions").insert(data).select("id").single();
+  const { data: created, error } = await supabase
+    .from("prescriptions")
+    .insert(data)
+    .select("id")
+    .single();
   if (error) {
     logger.warn("Query failed", { context: "data/client", error });
     return { success: false, error: { code: error.code, message: error.message } };
@@ -163,7 +174,10 @@ export async function updateConsultationNote(
   const supabase = createClient();
   const { error } = await supabase
     .from("consultation_notes")
-    .update({ ...data, updated_at: new Date().toISOString() } as Database["public"]["Tables"]["consultation_notes"]["Update"])
+    .update({
+      ...data,
+      updated_at: new Date().toISOString(),
+    } as Database["public"]["Tables"]["consultation_notes"]["Update"])
     .eq("id", id);
   if (error) {
     logger.warn("Query failed", { context: "data/client", error });
@@ -196,9 +210,13 @@ export async function upsertOdontogramEntry(data: {
 }): Promise<MutationResult<{ id: string }>> {
   const supabase = createClient();
   // Issue 45: Return created/updated entity data via .select()
-  const { data: created, error } = await supabase.from("odontogram").upsert(data, {
-    onConflict: "clinic_id,patient_id,tooth_number",
-  }).select("id").single();
+  const { data: created, error } = await supabase
+    .from("odontogram")
+    .upsert(data, {
+      onConflict: "clinic_id,patient_id,tooth_number",
+    })
+    .select("id")
+    .single();
   if (error) {
     logger.warn("Query failed", { context: "data/client", error });
     return { success: false, error: { code: error.code, message: error.message } };
@@ -234,12 +252,20 @@ async function _createTreatmentPlan(data: {
   patient_id: string;
   doctor_id: string;
   title: string;
-  steps: { step: number; description: string; status: string; date: string | null; cost: number; toothNumbers?: number[] }[];
+  steps: {
+    step: number;
+    description: string;
+    status: string;
+    date: string | null;
+    cost: number;
+    toothNumbers?: number[];
+  }[];
   total_cost: number;
   status?: string;
 }): Promise<string | null> {
   const supabase = createClient();
-  const { data: result, error } = await supabase.from("treatment_plans")
+  const { data: result, error } = await supabase
+    .from("treatment_plans")
     .insert({ ...data, status: data.status ?? "planned" })
     .select("id")
     .single();
@@ -254,7 +280,14 @@ export async function updateTreatmentPlan(
   id: string,
   data: {
     title?: string;
-    steps?: { step: number; description: string; status: string; date: string | null; cost: number; toothNumbers?: number[] }[];
+    steps?: {
+      step: number;
+      description: string;
+      status: string;
+      date: string | null;
+      cost: number;
+      toothNumbers?: number[];
+    }[];
     total_cost?: number;
     status?: string;
   },
@@ -262,7 +295,10 @@ export async function updateTreatmentPlan(
   const supabase = createClient();
   const { error } = await supabase
     .from("treatment_plans")
-    .update({ ...data, updated_at: new Date().toISOString() } as Database["public"]["Tables"]["treatment_plans"]["Update"])
+    .update({
+      ...data,
+      updated_at: new Date().toISOString(),
+    } as Database["public"]["Tables"]["treatment_plans"]["Update"])
     .eq("id", id);
   if (error) {
     logger.warn("Query failed", { context: "data/client", error });
@@ -286,7 +322,8 @@ export async function createSterilizationEntry(data: {
   cycle_number?: number;
 }): Promise<string | null> {
   const supabase = createClient();
-  const { data: result, error } = await supabase.from("sterilization_log")
+  const { data: result, error } = await supabase
+    .from("sterilization_log")
     .insert({ ...data, sterilized_at: new Date().toISOString() })
     .select("id")
     .single();
@@ -309,7 +346,10 @@ async function _updateSterilizationEntry(
   },
 ): Promise<boolean> {
   const supabase = createClient();
-  const { error } = await supabase.from("sterilization_log").update(data as Database["public"]["Tables"]["sterilization_log"]["Update"]).eq("id", id);
+  const { error } = await supabase
+    .from("sterilization_log")
+    .update(data as Database["public"]["Tables"]["sterilization_log"]["Update"])
+    .eq("id", id);
   if (error) {
     logger.warn("Query failed", { context: "data/client", error });
     return false;
@@ -376,4 +416,3 @@ async function _deleteBeforeAfterPhoto(id: string): Promise<boolean> {
   }
   return true;
 }
-

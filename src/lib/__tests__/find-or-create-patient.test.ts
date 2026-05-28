@@ -51,11 +51,7 @@ function createMockSupabase(
 
 describe("findOrCreatePatient", () => {
   it("returns the ID as-is when it does not start with 'patient-'", async () => {
-    const mockSupabase = createMockSupabase(
-      { data: null },
-      { data: null },
-      { data: null },
-    );
+    const mockSupabase = createMockSupabase({ data: null }, { data: null }, { data: null });
     const result = await findOrCreatePatient(
       mockSupabase as never,
       "clinic-1",
@@ -68,11 +64,7 @@ describe("findOrCreatePatient", () => {
   });
 
   it("returns the ID as-is for UUIDs", async () => {
-    const mockSupabase = createMockSupabase(
-      { data: null },
-      { data: null },
-      { data: null },
-    );
+    const mockSupabase = createMockSupabase({ data: null }, { data: null }, { data: null });
     const result = await findOrCreatePatient(
       mockSupabase as never,
       "clinic-1",

@@ -8,13 +8,7 @@ const post: BlogPost = {
   excerpt:
     "WhatsApp est le canal de communication prefere des Marocains. Decouvrez comment l'utiliser professionnellement dans votre cabinet pour les rappels, confirmations et le suivi patient.",
   category: "communication",
-  tags: [
-    "WhatsApp",
-    "communication patient",
-    "rappels",
-    "WhatsApp Business",
-    "notifications",
-  ],
+  tags: ["WhatsApp", "communication patient", "rappels", "WhatsApp Business", "notifications"],
   author: "Equipe Oltigo",
   publishedAt: "2026-02-25",
   readTime: "6 min",

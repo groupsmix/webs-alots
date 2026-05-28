@@ -146,9 +146,7 @@ function MessageBubble({ message }: { message: ChatMessage }) {
         {/* Suggestions */}
         {message.suggestions && message.suggestions.length > 0 && (
           <div className="mt-3 space-y-1">
-            <span className="text-xs font-medium text-muted-foreground">
-              Suggestions:
-            </span>
+            <span className="text-xs font-medium text-muted-foreground">Suggestions:</span>
             <ul className="space-y-1">
               {message.suggestions.map((s, i) => (
                 <li key={i} className="flex items-start gap-1.5 text-xs text-muted-foreground">
@@ -316,8 +314,8 @@ function AiManagerChat() {
       <div className="flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 mb-3 dark:border-amber-800 dark:bg-amber-950/30">
         <Info className="h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
         <p className="text-xs text-amber-800 dark:text-amber-300">
-          Outil d&apos;aide &agrave; la d&eacute;cision uniquement. Ne remplace
-          pas le jugement clinique du professionnel de sant&eacute;.
+          Outil d&apos;aide &agrave; la d&eacute;cision uniquement. Ne remplace pas le jugement
+          clinique du professionnel de sant&eacute;.
         </p>
       </div>
 
@@ -331,12 +329,10 @@ function AiManagerChat() {
                 <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-violet-100 dark:bg-violet-900/30">
                   <Brain className="h-7 w-7 text-violet-600 dark:text-violet-400" />
                 </div>
-                <h2 className="text-lg font-semibold mb-1">
-                  Bienvenue dans AI Manager
-                </h2>
+                <h2 className="text-lg font-semibold mb-1">Bienvenue dans AI Manager</h2>
                 <p className="text-sm text-muted-foreground max-w-md">
-                  Posez n&apos;importe quelle question sur votre clinique — revenus,
-                  rendez-vous, patients, performance des médecins, et plus encore.
+                  Posez n&apos;importe quelle question sur votre clinique — revenus, rendez-vous,
+                  patients, performance des médecins, et plus encore.
                 </p>
               </div>
 
@@ -365,9 +361,7 @@ function AiManagerChat() {
                 <div className="flex justify-start">
                   <div className="flex items-center gap-2 rounded-2xl bg-muted px-4 py-3">
                     <Loader2 className="h-4 w-4 animate-spin text-violet-600 dark:text-violet-400" />
-                    <span className="text-sm text-muted-foreground">
-                      Analyse en cours...
-                    </span>
+                    <span className="text-sm text-muted-foreground">Analyse en cours...</span>
                   </div>
                 </div>
               )}

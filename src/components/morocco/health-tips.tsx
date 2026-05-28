@@ -72,10 +72,7 @@ interface HealthTipsWidgetProps {
  * Rotating health tips widget for TV display.
  * Shows tips in French with Darija translation.
  */
-export function HealthTipsWidget({
-  locale = "fr",
-  interval = 8000,
-}: HealthTipsWidgetProps) {
+export function HealthTipsWidget({ locale = "fr", interval = 8000 }: HealthTipsWidgetProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isVisible, setIsVisible] = useState(true);
 
@@ -99,12 +96,8 @@ export function HealthTipsWidget({
         <span className="text-lg">💡</span>
         {locale === "ar" ? "نصيحة صحية" : "Conseil santé"}
       </h3>
-      <div
-        className={`transition-opacity duration-500 ${isVisible ? "opacity-100" : "opacity-0"}`}
-      >
-        <p className="text-sm text-blue-50 leading-relaxed">
-          {locale === "ar" ? tip.ar : tip.fr}
-        </p>
+      <div className={`transition-opacity duration-500 ${isVisible ? "opacity-100" : "opacity-0"}`}>
+        <p className="text-sm text-blue-50 leading-relaxed">{locale === "ar" ? tip.ar : tip.fr}</p>
         {locale === "fr" && (
           <p className="text-xs text-blue-300 mt-1 italic" dir="rtl">
             {tip.ar}

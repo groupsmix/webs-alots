@@ -12,7 +12,14 @@
 
 import { NextRequest } from "next/server";
 import { z } from "zod";
-import { apiError, apiSuccess, apiValidationError, apiInternalError, apiForbidden, apiRateLimited } from "@/lib/api-response";
+import {
+  apiError,
+  apiSuccess,
+  apiValidationError,
+  apiInternalError,
+  apiForbidden,
+  apiRateLimited,
+} from "@/lib/api-response";
 import { DEMO_USERS, DEMO_SUBDOMAIN } from "@/lib/demo";
 import { logger } from "@/lib/logger";
 import { loginLimiter, extractClientIp } from "@/lib/rate-limit";
@@ -29,9 +36,7 @@ const demoLoginSchema = z.object({
 const MAX_DEMO_ROLE = "patient" as const;
 
 /** Emails allowed for demo login. */
-const ALLOWED_DEMO_EMAILS: Set<string> = new Set(
-  Object.values(DEMO_USERS).map((u) => u.email),
-);
+const ALLOWED_DEMO_EMAILS: Set<string> = new Set(Object.values(DEMO_USERS).map((u) => u.email));
 
 export async function POST(request: NextRequest) {
   // SEC-006: Refuse demo login when NEXT_PUBLIC_FEATURE_DEMO_MODE is
@@ -91,19 +96,16 @@ export async function POST(request: NextRequest) {
       return apiError("Turnstile verification is required", 400);
     }
     try {
-      const verifyRes = await fetch(
-        "https://challenges.cloudflare.com/turnstile/v0/siteverify",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/x-www-form-urlencoded" },
-          body: new URLSearchParams({
-            secret: turnstileSecret,
-            response: turnstile_token,
-            remoteip: clientIp,
-          }),
-          signal: AbortSignal.timeout(5_000),
-        },
-      );
+      const verifyRes = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams({
+          secret: turnstileSecret,
+          response: turnstile_token,
+          remoteip: clientIp,
+        }),
+        signal: AbortSignal.timeout(5_000),
+      });
       const verifyData = (await verifyRes.json()) as { success: boolean };
       if (!verifyData.success) {
         logger.warn("Turnstile verification failed for demo login", {
@@ -129,9 +131,7 @@ export async function POST(request: NextRequest) {
   // R-10: Refuse to mint sessions for any role above patient.
   const demoUser = Object.values(DEMO_USERS).find((u) => u.email === email);
   if (!demoUser || demoUser.role !== MAX_DEMO_ROLE) {
-    return apiForbidden(
-      "Demo login is restricted to the patient role",
-    );
+    return apiForbidden("Demo login is restricted to the patient role");
   }
 
   try {
@@ -167,11 +167,10 @@ export async function POST(request: NextRequest) {
     }
 
     // Generate a magic link token for the demo user
-    const { data: linkData, error: linkError } =
-      await supabase.auth.admin.generateLink({
-        type: "magiclink",
-        email,
-      });
+    const { data: linkData, error: linkError } = await supabase.auth.admin.generateLink({
+      type: "magiclink",
+      email,
+    });
 
     if (linkError || !linkData) {
       logger.error("Failed to generate demo magic link", {

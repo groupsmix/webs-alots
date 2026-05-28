@@ -23,9 +23,7 @@ export default function HowToBookPage() {
     <div className="container mx-auto px-4 py-12">
       <div className="text-center mb-12">
         <h1 className="text-3xl font-bold mb-4">{cfg.title}</h1>
-        <p className="text-muted-foreground max-w-2xl mx-auto">
-          {cfg.subtitle}
-        </p>
+        <p className="text-muted-foreground max-w-2xl mx-auto">{cfg.subtitle}</p>
       </div>
 
       <div className="max-w-2xl mx-auto space-y-6 mb-12">
@@ -37,9 +35,7 @@ export default function HowToBookPage() {
               </div>
               <div>
                 <h3 className="font-semibold mb-1">{step.title}</h3>
-                <p className="text-sm text-muted-foreground">
-                  {step.description}
-                </p>
+                <p className="text-sm text-muted-foreground">{step.description}</p>
               </div>
             </CardContent>
           </Card>

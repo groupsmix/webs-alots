@@ -34,7 +34,12 @@ export function SpeechExerciseLibrary({ exercises }: SpeechExerciseLibraryProps)
   const categories = Array.from(new Set(exercises.map((e) => e.category)));
 
   const filtered = exercises.filter((ex) => {
-    if (search && !ex.name.toLowerCase().includes(search.toLowerCase()) && !ex.description.toLowerCase().includes(search.toLowerCase())) return false;
+    if (
+      search &&
+      !ex.name.toLowerCase().includes(search.toLowerCase()) &&
+      !ex.description.toLowerCase().includes(search.toLowerCase())
+    )
+      return false;
     if (categoryFilter && ex.category !== categoryFilter) return false;
     if (difficultyFilter && ex.difficulty !== difficultyFilter) return false;
     return true;
@@ -66,7 +71,9 @@ export function SpeechExerciseLibrary({ exercises }: SpeechExerciseLibraryProps)
             <button
               key={cat}
               className={`px-3 py-1.5 rounded-md text-xs font-medium capitalize transition-colors ${
-                categoryFilter === cat ? "bg-primary text-primary-foreground" : "border hover:bg-muted"
+                categoryFilter === cat
+                  ? "bg-primary text-primary-foreground"
+                  : "border hover:bg-muted"
               }`}
               onClick={() => setCategoryFilter(cat)}
             >
@@ -79,7 +86,9 @@ export function SpeechExerciseLibrary({ exercises }: SpeechExerciseLibraryProps)
             <button
               key={d}
               className={`px-3 py-1.5 rounded-md text-xs font-medium capitalize transition-colors ${
-                difficultyFilter === d ? "bg-primary text-primary-foreground" : "border hover:bg-muted"
+                difficultyFilter === d
+                  ? "bg-primary text-primary-foreground"
+                  : "border hover:bg-muted"
               }`}
               onClick={() => setDifficultyFilter(difficultyFilter === d ? null : d)}
             >
@@ -95,7 +104,9 @@ export function SpeechExerciseLibrary({ exercises }: SpeechExerciseLibraryProps)
       {/* Exercise cards */}
       <div className="grid gap-3 md:grid-cols-2">
         {filtered.length === 0 && (
-          <p className="text-sm text-muted-foreground text-center py-8 col-span-2">No exercises found.</p>
+          <p className="text-sm text-muted-foreground text-center py-8 col-span-2">
+            No exercises found.
+          </p>
         )}
         {filtered.map((ex) => (
           <Card key={ex.id}>
@@ -112,7 +123,9 @@ export function SpeechExerciseLibrary({ exercises }: SpeechExerciseLibraryProps)
             </CardHeader>
             <CardContent>
               <div className="flex items-center gap-2 mb-2">
-                <span className={`px-2 py-0.5 rounded text-[10px] font-medium capitalize ${CATEGORY_COLORS[ex.category] ?? ""}`}>
+                <span
+                  className={`px-2 py-0.5 rounded text-[10px] font-medium capitalize ${CATEGORY_COLORS[ex.category] ?? ""}`}
+                >
                   {ex.category}
                 </span>
                 <span className="flex items-center gap-1 text-xs text-muted-foreground">
@@ -124,7 +137,9 @@ export function SpeechExerciseLibrary({ exercises }: SpeechExerciseLibraryProps)
               {ex.target_sounds.length > 0 && (
                 <div className="flex flex-wrap gap-1 mt-2">
                   {ex.target_sounds.map((sound, i) => (
-                    <Badge key={i} variant="outline" className="text-[10px]">{sound}</Badge>
+                    <Badge key={i} variant="outline" className="text-[10px]">
+                      {sound}
+                    </Badge>
                   ))}
                 </div>
               )}
@@ -139,7 +154,9 @@ export function SpeechExerciseLibrary({ exercises }: SpeechExerciseLibraryProps)
               )}
 
               {ex.materials_needed && (
-                <p className="text-[10px] text-muted-foreground mt-1">Materials: {ex.materials_needed}</p>
+                <p className="text-[10px] text-muted-foreground mt-1">
+                  Materials: {ex.materials_needed}
+                </p>
               )}
             </CardContent>
           </Card>

@@ -119,7 +119,14 @@ describe("booking cancellation window (timezone-aware)", () => {
 
 describe("appointment status cancellability", () => {
   const NON_CANCELLABLE: AppointmentStatus[] = ["cancelled", "completed", "rescheduled"];
-  const CANCELLABLE: AppointmentStatus[] = ["pending", "scheduled", "confirmed", "checked_in", "in_progress", "no_show"];
+  const CANCELLABLE: AppointmentStatus[] = [
+    "pending",
+    "scheduled",
+    "confirmed",
+    "checked_in",
+    "in_progress",
+    "no_show",
+  ];
 
   NON_CANCELLABLE.forEach((status) => {
     it(`rejects cancellation for ${status} appointments`, () => {

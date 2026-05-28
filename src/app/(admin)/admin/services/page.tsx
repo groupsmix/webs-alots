@@ -30,21 +30,26 @@ export default function ManageServicesPage() {
   useEffect(() => {
     const controller = new AbortController();
     async function load() {
-    const user = await getCurrentUser();
+      const user = await getCurrentUser();
       if (controller.signal.aborted) return;
-    if (!user?.clinic_id) { setLoading(false); return; }
-    const svcs = await fetchServices(user.clinic_id);
+      if (!user?.clinic_id) {
+        setLoading(false);
+        return;
+      }
+      const svcs = await fetchServices(user.clinic_id);
       if (controller.signal.aborted) return;
-    setServicesList(svcs);
-    setLoading(false);
-  }
+      setServicesList(svcs);
+      setLoading(false);
+    }
     load().catch((err) => {
       if (!controller.signal.aborted) {
         setError(err instanceof Error ? err : new Error(String(err)));
         setLoading(false);
       }
     });
-    return () => { controller.abort(); };
+    return () => {
+      controller.abort();
+    };
   }, []);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingService, setEditingService] = useState<Service | null>(null);
@@ -86,14 +91,30 @@ export default function ManageServicesPage() {
       setServicesList(
         servicesList.map((s) =>
           s.id === editingService.id
-            ? { ...s, name: formName, description: formDescription, duration: formDuration, price: formPrice, currency: formCurrency, active: formActive }
-            : s
-        )
+            ? {
+                ...s,
+                name: formName,
+                description: formDescription,
+                duration: formDuration,
+                price: formPrice,
+                currency: formCurrency,
+                active: formActive,
+              }
+            : s,
+        ),
       );
     } else {
       setServicesList([
         ...servicesList,
-        { id: `s${Date.now()}`, name: formName, description: formDescription, duration: formDuration, price: formPrice, currency: formCurrency, active: formActive },
+        {
+          id: `s${Date.now()}`,
+          name: formName,
+          description: formDescription,
+          duration: formDuration,
+          price: formPrice,
+          currency: formCurrency,
+          active: formActive,
+        },
       ]);
     }
     setDialogOpen(false);
@@ -119,12 +140,13 @@ export default function ManageServicesPage() {
   if (error) {
     return (
       <div className="p-8 text-center">
-        <p className="text-red-600 font-medium">Failed to load data. Please try refreshing the page.</p>
+        <p className="text-red-600 font-medium">
+          Failed to load data. Please try refreshing the page.
+        </p>
         {error.message && <p className="text-sm text-muted-foreground mt-2">{error.message}</p>}
       </div>
     );
   }
-
 
   return (
     <div>
@@ -144,7 +166,10 @@ export default function ManageServicesPage() {
               <div className="flex items-start justify-between mb-2">
                 <h3 className="font-medium">{service.name}</h3>
                 <div className="flex items-center gap-2">
-                  <Switch checked={service.active} onCheckedChange={() => toggleActive(service.id)} />
+                  <Switch
+                    checked={service.active}
+                    onCheckedChange={() => toggleActive(service.id)}
+                  />
                   <Badge variant={service.active ? "default" : "secondary"}>
                     {service.active ? "Active" : "Inactive"}
                   </Badge>
@@ -162,11 +187,21 @@ export default function ManageServicesPage() {
                 </span>
               </div>
               <div className="flex gap-1">
-                <Button variant="outline" size="sm" className="flex-1" onClick={() => openEditDialog(service)}>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="flex-1"
+                  onClick={() => openEditDialog(service)}
+                >
                   <Edit className="h-3.5 w-3.5 mr-1" />
                   Edit
                 </Button>
-                <Button variant="ghost" size="sm" className="text-red-500" onClick={() => setDeleteConfirm(service.id)}>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-red-500"
+                  onClick={() => setDeleteConfirm(service.id)}
+                >
                   <Trash2 className="h-3.5 w-3.5" />
                 </Button>
               </div>
@@ -177,7 +212,9 @@ export default function ManageServicesPage() {
 
       {servicesList.length === 0 && (
         <div className="text-center py-12">
-          <p className="text-sm text-muted-foreground">No services added yet. Click &quot;Add Service&quot; to get started.</p>
+          <p className="text-sm text-muted-foreground">
+            No services added yet. Click &quot;Add Service&quot; to get started.
+          </p>
         </div>
       )}
 
@@ -187,26 +224,44 @@ export default function ManageServicesPage() {
           <DialogHeader>
             <DialogTitle>{editingService ? "Edit Service" : "Add New Service"}</DialogTitle>
             <DialogDescription>
-              {editingService ? "Update the service details below." : "Fill in the details to add a new service."}
+              {editingService
+                ? "Update the service details below."
+                : "Fill in the details to add a new service."}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 mt-4">
             <div className="space-y-2">
               <Label>Service Name</Label>
-              <Input placeholder="General Consultation" value={formName} onChange={(e) => setFormName(e.target.value)} />
+              <Input
+                placeholder="General Consultation"
+                value={formName}
+                onChange={(e) => setFormName(e.target.value)}
+              />
             </div>
             <div className="space-y-2">
               <Label>Description</Label>
-              <Textarea placeholder="Describe the service..." value={formDescription} onChange={(e) => setFormDescription(e.target.value)} />
+              <Textarea
+                placeholder="Describe the service..."
+                value={formDescription}
+                onChange={(e) => setFormDescription(e.target.value)}
+              />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Duration (minutes)</Label>
-                <Input type="number" value={formDuration} onChange={(e) => setFormDuration(Number(e.target.value))} />
+                <Input
+                  type="number"
+                  value={formDuration}
+                  onChange={(e) => setFormDuration(Number(e.target.value))}
+                />
               </div>
               <div className="space-y-2">
                 <Label>Price ({formCurrency})</Label>
-                <Input type="number" value={formPrice} onChange={(e) => setFormPrice(Number(e.target.value))} />
+                <Input
+                  type="number"
+                  value={formPrice}
+                  onChange={(e) => setFormPrice(Number(e.target.value))}
+                />
               </div>
             </div>
             <div className="flex items-center justify-between">
@@ -215,7 +270,9 @@ export default function ManageServicesPage() {
             </div>
           </div>
           <DialogFooter className="mt-6">
-            <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancel</Button>
+            <Button variant="outline" onClick={() => setDialogOpen(false)}>
+              Cancel
+            </Button>
             <Button onClick={handleSave}>{editingService ? "Save Changes" : "Add Service"}</Button>
           </DialogFooter>
         </DialogContent>
@@ -226,11 +283,20 @@ export default function ManageServicesPage() {
         <DialogContent onClose={() => setDeleteConfirm(null)} className="max-w-sm">
           <DialogHeader>
             <DialogTitle>Remove Service</DialogTitle>
-            <DialogDescription>Are you sure you want to remove this service? This action cannot be undone.</DialogDescription>
+            <DialogDescription>
+              Are you sure you want to remove this service? This action cannot be undone.
+            </DialogDescription>
           </DialogHeader>
           <DialogFooter className="mt-4">
-            <Button variant="outline" onClick={() => setDeleteConfirm(null)}>Cancel</Button>
-            <Button variant="destructive" onClick={() => deleteConfirm && handleDelete(deleteConfirm)}>Remove</Button>
+            <Button variant="outline" onClick={() => setDeleteConfirm(null)}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => deleteConfirm && handleDelete(deleteConfirm)}
+            >
+              Remove
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

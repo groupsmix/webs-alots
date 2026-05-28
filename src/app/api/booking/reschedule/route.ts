@@ -1,4 +1,10 @@
-import { apiError, apiForbidden, apiInternalError, apiNotFound, apiSuccess } from "@/lib/api-response";
+import {
+  apiError,
+  apiForbidden,
+  apiInternalError,
+  apiNotFound,
+  apiSuccess,
+} from "@/lib/api-response";
 import { withAuthValidation } from "@/lib/api-validate";
 import { logAuditEvent } from "@/lib/audit-log";
 import { STAFF_ROLES } from "@/lib/auth-roles";
@@ -20,8 +26,9 @@ const RESCHEDULE_ROLES: UserRole[] = [...STAFF_ROLES, "patient"];
  * Validates working hours, slot availability, and prevents
  * rescheduling to past dates or double-booking conflicts.
  */
-export const POST = withAuthValidation(rescheduleSchema, async (body, request, { supabase, profile }) => {
-
+export const POST = withAuthValidation(
+  rescheduleSchema,
+  async (body, request, { supabase, profile }) => {
     const { tenant, config: tenantConfig } = await requireTenantWithConfig();
     const clinicId = tenant.clinicId;
 
@@ -41,7 +48,13 @@ export const POST = withAuthValidation(rescheduleSchema, async (body, request, {
       timeZone: tenantConfig.timezone,
     });
     const dayMap: Record<string, number> = {
-      Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6,
+      Sun: 0,
+      Mon: 1,
+      Tue: 2,
+      Wed: 3,
+      Thu: 4,
+      Fri: 5,
+      Sat: 6,
     };
     const dayOfWeek = dayMap[dayFormatter.format(parsedDate)] ?? parsedDate.getDay();
     const hours = tenantConfig.workingHours[dayOfWeek];
@@ -52,7 +65,9 @@ export const POST = withAuthValidation(rescheduleSchema, async (body, request, {
     // Get the existing appointment (include patient_id for ownership check)
     const { data: existing, error: fetchError } = await supabase
       .from("appointments")
-      .select("id, status, clinic_id, patient_id, doctor_id, service_id, appointment_date, start_time, end_time, slot_start, slot_end")
+      .select(
+        "id, status, clinic_id, patient_id, doctor_id, service_id, appointment_date, start_time, end_time, slot_start, slot_end",
+      )
       .eq("id", body.appointmentId)
       .eq("clinic_id", clinicId)
       .single();
@@ -67,7 +82,11 @@ export const POST = withAuthValidation(rescheduleSchema, async (body, request, {
     }
 
     // Only allow rescheduling appointments in a valid state
-    if (existing.status === APPOINTMENT_STATUS.CANCELLED || existing.status === APPOINTMENT_STATUS.COMPLETED || existing.status === APPOINTMENT_STATUS.RESCHEDULED) {
+    if (
+      existing.status === APPOINTMENT_STATUS.CANCELLED ||
+      existing.status === APPOINTMENT_STATUS.COMPLETED ||
+      existing.status === APPOINTMENT_STATUS.RESCHEDULED
+    ) {
       return apiError("Appointment cannot be rescheduled in its current state");
     }
 
@@ -181,13 +200,23 @@ export const POST = withAuthValidation(rescheduleSchema, async (body, request, {
 
       // rescheduled → patient, doctor
       Promise.allSettled([
-        dispatchNotification("rescheduled", notifVars, existing.patient_id, ["in_app", "email", "whatsapp"]),
+        dispatchNotification("rescheduled", notifVars, existing.patient_id, [
+          "in_app",
+          "email",
+          "whatsapp",
+        ]),
         dispatchNotification("rescheduled", notifVars, existing.doctor_id, ["in_app"]),
       ]).catch((err) => {
-        logger.warn("Reschedule notification dispatch failed", { context: "booking/reschedule", error: err });
+        logger.warn("Reschedule notification dispatch failed", {
+          context: "booking/reschedule",
+          error: err,
+        });
       });
     } catch (err) {
-      logger.warn("Failed to prepare reschedule notifications", { context: "booking/reschedule", error: err });
+      logger.warn("Failed to prepare reschedule notifications", {
+        context: "booking/reschedule",
+        error: err,
+      });
     }
 
     return apiSuccess({
@@ -195,4 +224,6 @@ export const POST = withAuthValidation(rescheduleSchema, async (body, request, {
       message: "Appointment rescheduled successfully",
       newAppointmentId: body.appointmentId,
     });
-}, RESCHEDULE_ROLES);
+  },
+  RESCHEDULE_ROLES,
+);

@@ -12,13 +12,13 @@ securing Oltigo Health's email and domain infrastructure.
 Before applying any of the records below, verify that these mailboxes exist
 and are monitored:
 
-| Mailbox | Purpose | Monitored by |
-|---------|---------|--------------|
-| `dmarc@oltigo.com` | DMARC aggregate + forensic reports | Security team |
-| `tls-rpt@oltigo.com` | TLS-RPT failure reports | Security team |
-| `security@oltigo.com` | VDP / vulnerability reports | Security team |
-| `abuse@oltigo.com` | Abuse complaints (RFC 2142) | Security team |
-| `postmaster@oltigo.com` | Email delivery issues (RFC 2142) | Security team |
+| Mailbox                 | Purpose                            | Monitored by  |
+| ----------------------- | ---------------------------------- | ------------- |
+| `dmarc@oltigo.com`      | DMARC aggregate + forensic reports | Security team |
+| `tls-rpt@oltigo.com`    | TLS-RPT failure reports            | Security team |
+| `security@oltigo.com`   | VDP / vulnerability reports        | Security team |
+| `abuse@oltigo.com`      | Abuse complaints (RFC 2142)        | Security team |
+| `postmaster@oltigo.com` | Email delivery issues (RFC 2142)   | Security team |
 
 **Action:** Create all mailboxes (or aliases forwarding to a shared inbox)
 and confirm delivery before publishing the DNS records below.
@@ -37,6 +37,7 @@ TXT  oltigo.com  "v=spf1 include:send.resend.com include:_spf.mx.cloudflare.net 
 ```
 
 **Notes:**
+
 - `~all` (softfail) is recommended during initial rollout. Move to `-all`
   (hardfail) once DMARC is at `p=reject` and all legitimate senders are
   confirmed.
@@ -67,6 +68,7 @@ TXT  _dmarc.oltigo.com  "v=DMARC1; p=reject; rua=mailto:dmarc@oltigo.com; ruf=ma
 ```
 
 **Notes:**
+
 - `fo=1` sends forensic reports on any alignment failure (useful during
   monitor phase).
 - `adkim=s; aspf=s` (strict alignment) should only be set at Phase 3 once
@@ -108,6 +110,7 @@ CAA  oltigo.com  0 iodef "mailto:security@oltigo.com"
 ```
 
 **Notes:**
+
 - `digicert.com` is included because Cloudflare may use DigiCert for
   certain certificate types (Advanced Certificate Manager).
 - Review annually; if Cloudflare changes CA providers, update accordingly.
@@ -134,6 +137,7 @@ The policy file must be served at:
 `https://mta-sts.oltigo.com/.well-known/mta-sts.txt`
 
 This requires either:
+
 - A Cloudflare Worker on the `mta-sts.oltigo.com` subdomain, or
 - A static site / Pages project serving the file.
 
@@ -188,21 +192,21 @@ TXT  default._bimi.oltigo.com  "v=BIMI1; l=https://oltigo.com/bimi-logo.svg"
 
 ## 9. Complete DNS Record Summary
 
-| Type | Name | Value | Priority |
-|------|------|-------|----------|
-| TXT | `oltigo.com` | `v=spf1 include:send.resend.com include:_spf.mx.cloudflare.net ~all` | -- |
-| TXT | `_dmarc.oltigo.com` | (see Phase 1/2/3 above) | -- |
-| CNAME | `resend._domainkey.oltigo.com` | (from Resend dashboard) | -- |
-| CAA | `oltigo.com` | `0 issue "letsencrypt.org"` | -- |
-| CAA | `oltigo.com` | `0 issue "pki.goog"` | -- |
-| CAA | `oltigo.com` | `0 issue "digicert.com"` | -- |
-| CAA | `oltigo.com` | `0 issuewild "letsencrypt.org"` | -- |
-| CAA | `oltigo.com` | `0 issuewild "pki.goog"` | -- |
-| CAA | `oltigo.com` | `0 issuewild "digicert.com"` | -- |
-| CAA | `oltigo.com` | `0 iodef "mailto:security@oltigo.com"` | -- |
-| TXT | `_mta-sts.oltigo.com` | `v=STSv1; id=20260430T000000` | -- |
-| TXT | `_smtp._tls.oltigo.com` | `v=TLSRPTv1; rua=mailto:tls-rpt@oltigo.com` | -- |
-| TXT | `default._bimi.oltigo.com` | `v=BIMI1; l=https://oltigo.com/bimi-logo.svg; a=https://oltigo.com/vmc.pem` | -- |
+| Type  | Name                           | Value                                                                       | Priority |
+| ----- | ------------------------------ | --------------------------------------------------------------------------- | -------- |
+| TXT   | `oltigo.com`                   | `v=spf1 include:send.resend.com include:_spf.mx.cloudflare.net ~all`        | --       |
+| TXT   | `_dmarc.oltigo.com`            | (see Phase 1/2/3 above)                                                     | --       |
+| CNAME | `resend._domainkey.oltigo.com` | (from Resend dashboard)                                                     | --       |
+| CAA   | `oltigo.com`                   | `0 issue "letsencrypt.org"`                                                 | --       |
+| CAA   | `oltigo.com`                   | `0 issue "pki.goog"`                                                        | --       |
+| CAA   | `oltigo.com`                   | `0 issue "digicert.com"`                                                    | --       |
+| CAA   | `oltigo.com`                   | `0 issuewild "letsencrypt.org"`                                             | --       |
+| CAA   | `oltigo.com`                   | `0 issuewild "pki.goog"`                                                    | --       |
+| CAA   | `oltigo.com`                   | `0 issuewild "digicert.com"`                                                | --       |
+| CAA   | `oltigo.com`                   | `0 iodef "mailto:security@oltigo.com"`                                      | --       |
+| TXT   | `_mta-sts.oltigo.com`          | `v=STSv1; id=20260430T000000`                                               | --       |
+| TXT   | `_smtp._tls.oltigo.com`        | `v=TLSRPTv1; rua=mailto:tls-rpt@oltigo.com`                                 | --       |
+| TXT   | `default._bimi.oltigo.com`     | `v=BIMI1; l=https://oltigo.com/bimi-logo.svg; a=https://oltigo.com/vmc.pem` | --       |
 
 ---
 

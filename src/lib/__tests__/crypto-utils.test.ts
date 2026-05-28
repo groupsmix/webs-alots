@@ -21,9 +21,7 @@ describe("hexToBytes", () => {
 
   it("round-trips with bytesToHex", () => {
     const original = new Uint8Array([0, 1, 127, 128, 255]);
-    expect(Array.from(hexToBytes(bytesToHex(original)))).toEqual(
-      Array.from(original),
-    );
+    expect(Array.from(hexToBytes(bytesToHex(original)))).toEqual(Array.from(original));
   });
 
   it("throws on empty input rather than producing a 500 (A10-07)", () => {

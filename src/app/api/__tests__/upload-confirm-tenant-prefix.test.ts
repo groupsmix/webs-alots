@@ -24,22 +24,14 @@ import { expectedKeyPrefixForProfile } from "../upload/route";
 
 describe("expectedKeyPrefixForProfile", () => {
   it("returns the clinic-scoped prefix for staff with a clinic_id", () => {
-    expect(expectedKeyPrefixForProfile("clinic_admin", "abc123")).toBe(
-      "clinics/abc123/",
-    );
-    expect(expectedKeyPrefixForProfile("doctor", "abc123")).toBe(
-      "clinics/abc123/",
-    );
-    expect(expectedKeyPrefixForProfile("receptionist", "abc123")).toBe(
-      "clinics/abc123/",
-    );
+    expect(expectedKeyPrefixForProfile("clinic_admin", "abc123")).toBe("clinics/abc123/");
+    expect(expectedKeyPrefixForProfile("doctor", "abc123")).toBe("clinics/abc123/");
+    expect(expectedKeyPrefixForProfile("receptionist", "abc123")).toBe("clinics/abc123/");
   });
 
   it("returns the shared `clinics/` prefix for super_admin", () => {
     expect(expectedKeyPrefixForProfile("super_admin", null)).toBe("clinics/");
-    expect(expectedKeyPrefixForProfile("super_admin", "abc123")).toBe(
-      "clinics/",
-    );
+    expect(expectedKeyPrefixForProfile("super_admin", "abc123")).toBe("clinics/");
   });
 
   it("returns null for non-super-admin staff with no clinic_id", () => {
@@ -129,8 +121,7 @@ vi.mock("@/lib/r2", async () => {
     isR2Configured: vi.fn(() => true),
     readR2ObjectHead: (...args: unknown[]) => readR2ObjectHeadMock(...args),
     deleteFromR2: (...args: unknown[]) => deleteFromR2Mock(...args),
-    getR2ObjectMetadata: (...args: unknown[]) =>
-      getR2ObjectMetadataMock(...args),
+    getR2ObjectMetadata: (...args: unknown[]) => getR2ObjectMetadataMock(...args),
   };
 });
 
@@ -216,9 +207,7 @@ describe("PUT /api/upload — tenant prefix enforcement", () => {
     const realKey = buildUploadKey(OWNER_CLINIC_ID, "photos", "file.pdf");
 
     const { PUT } = await import("../upload/route");
-    const response = await PUT(
-      buildPutRequest({ key: realKey, contentType: "application/pdf" }),
-    );
+    const response = await PUT(buildPutRequest({ key: realKey, contentType: "application/pdf" }));
     const json = await response.json();
 
     expect(response.status).toBe(200);

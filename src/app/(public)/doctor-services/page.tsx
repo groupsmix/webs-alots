@@ -3,7 +3,14 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button-variants";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { getPublicServices, getPublicBranding } from "@/lib/data/public";
 
 export const metadata: Metadata = {
@@ -17,10 +24,7 @@ export const metadata: Metadata = {
 };
 
 export default async function DoctorServicesPage() {
-  const [services, branding] = await Promise.all([
-    getPublicServices(),
-    getPublicBranding(),
-  ]);
+  const [services, branding] = await Promise.all([getPublicServices(), getPublicBranding()]);
 
   const activeServices = services.filter((s) => s.active);
 
@@ -29,8 +33,8 @@ export default async function DoctorServicesPage() {
       <div className="text-center mb-12">
         <h1 className="text-3xl font-bold mb-4">Our Medical Services</h1>
         <p className="text-muted-foreground max-w-2xl mx-auto">
-          Comprehensive healthcare services at {branding.clinicName}. Each consultation includes
-          a thorough examination and personalized treatment plan.
+          Comprehensive healthcare services at {branding.clinicName}. Each consultation includes a
+          thorough examination and personalized treatment plan.
         </p>
       </div>
 
@@ -50,9 +54,7 @@ export default async function DoctorServicesPage() {
                   </div>
                 </div>
                 {service.description && (
-                  <CardDescription className="line-clamp-3">
-                    {service.description}
-                  </CardDescription>
+                  <CardDescription className="line-clamp-3">{service.description}</CardDescription>
                 )}
               </CardHeader>
               <CardContent className="flex-1">
@@ -79,7 +81,11 @@ export default async function DoctorServicesPage() {
               <CardFooter>
                 <Link
                   href="/book"
-                  className={buttonVariants({ variant: "outline", size: "sm", className: "w-full" })}
+                  className={buttonVariants({
+                    variant: "outline",
+                    size: "sm",
+                    className: "w-full",
+                  })}
                 >
                   <Calendar className="h-4 w-4 mr-1" />
                   Book Now

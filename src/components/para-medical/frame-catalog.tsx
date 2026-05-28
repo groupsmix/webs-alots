@@ -1,8 +1,6 @@
 "use client";
 
-import {
-  Glasses, Search, AlertTriangle, Package,
-} from "lucide-react";
+import { Glasses, Search, AlertTriangle, Package } from "lucide-react";
 import Image from "next/image";
 import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
@@ -35,7 +33,12 @@ export function FrameCatalog({ frames }: FrameCatalogProps) {
   const filtered = frames.filter((f) => {
     if (search) {
       const q = search.toLowerCase();
-      if (!f.brand.toLowerCase().includes(q) && !f.model.toLowerCase().includes(q) && !f.color.toLowerCase().includes(q)) return false;
+      if (
+        !f.brand.toLowerCase().includes(q) &&
+        !f.model.toLowerCase().includes(q) &&
+        !f.color.toLowerCase().includes(q)
+      )
+        return false;
     }
     if (genderFilter && f.gender !== genderFilter) return false;
     if (typeFilter && f.frame_type !== typeFilter) return false;
@@ -80,19 +83,37 @@ export function FrameCatalog({ frames }: FrameCatalogProps) {
       <div className="flex flex-col gap-3">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input placeholder="Search brand, model, color..." className="pl-10" value={search} onChange={(e) => setSearch(e.target.value)} />
+          <Input
+            placeholder="Search brand, model, color..."
+            className="pl-10"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
         </div>
         <div className="flex gap-2 flex-wrap">
-          <button className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${!genderFilter ? "bg-primary text-primary-foreground" : "border hover:bg-muted"}`} onClick={() => setGenderFilter(null)}>All</button>
+          <button
+            className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${!genderFilter ? "bg-primary text-primary-foreground" : "border hover:bg-muted"}`}
+            onClick={() => setGenderFilter(null)}
+          >
+            All
+          </button>
           {(["men", "women", "unisex", "kids"] as const).map((g) => (
-            <button key={g} className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${genderFilter === g ? "bg-primary text-primary-foreground" : "border hover:bg-muted"}`} onClick={() => setGenderFilter(g)}>
+            <button
+              key={g}
+              className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${genderFilter === g ? "bg-primary text-primary-foreground" : "border hover:bg-muted"}`}
+              onClick={() => setGenderFilter(g)}
+            >
               {GENDER_LABELS[g]}
             </button>
           ))}
         </div>
         <div className="flex gap-2 flex-wrap">
           {(["full_rim", "semi_rimless", "rimless"] as const).map((t) => (
-            <button key={t} className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${typeFilter === t ? "bg-primary text-primary-foreground" : "border hover:bg-muted"}`} onClick={() => setTypeFilter(typeFilter === t ? null : t)}>
+            <button
+              key={t}
+              className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${typeFilter === t ? "bg-primary text-primary-foreground" : "border hover:bg-muted"}`}
+              onClick={() => setTypeFilter(typeFilter === t ? null : t)}
+            >
               {FRAME_TYPE_LABELS[t]}
             </button>
           ))}
@@ -102,13 +123,20 @@ export function FrameCatalog({ frames }: FrameCatalogProps) {
       {/* Frame grid */}
       <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
         {filtered.length === 0 && (
-          <p className="text-sm text-muted-foreground text-center py-8 col-span-full">No frames found.</p>
+          <p className="text-sm text-muted-foreground text-center py-8 col-span-full">
+            No frames found.
+          </p>
         )}
         {filtered.map((frame) => (
           <Card key={frame.id} className={!frame.is_active ? "opacity-60" : ""}>
             <div className="relative aspect-video bg-muted flex items-center justify-center overflow-hidden">
               {frame.photo_url ? (
-                <Image src={frame.photo_url} alt={`${frame.brand} ${frame.model}`} fill className="object-cover" />
+                <Image
+                  src={frame.photo_url}
+                  alt={`${frame.brand} ${frame.model}`}
+                  fill
+                  className="object-cover"
+                />
               ) : (
                 <Glasses className="h-12 w-12 text-muted-foreground" />
               )}
@@ -116,9 +144,13 @@ export function FrameCatalog({ frames }: FrameCatalogProps) {
             <CardContent className="p-3">
               <div className="flex items-center justify-between mb-1">
                 <p className="text-sm font-medium">{frame.brand}</p>
-                <Badge variant="outline" className="text-[10px]">{GENDER_LABELS[frame.gender]}</Badge>
+                <Badge variant="outline" className="text-[10px]">
+                  {GENDER_LABELS[frame.gender]}
+                </Badge>
               </div>
-              <p className="text-xs text-muted-foreground">{frame.model} — {frame.color}</p>
+              <p className="text-xs text-muted-foreground">
+                {frame.model} — {frame.color}
+              </p>
               <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
                 <span>{frame.material}</span>
                 <span>&middot;</span>
@@ -130,9 +162,14 @@ export function FrameCatalog({ frames }: FrameCatalogProps) {
                 <p className="text-sm font-bold">{frame.price} MAD</p>
                 <div className="flex items-center gap-1">
                   {frame.stock_quantity === 0 ? (
-                    <Badge variant="destructive" className="text-[10px]">Out of Stock</Badge>
+                    <Badge variant="destructive" className="text-[10px]">
+                      Out of Stock
+                    </Badge>
                   ) : frame.stock_quantity <= 3 ? (
-                    <Badge variant="outline" className="text-[10px] text-orange-600 border-orange-300">
+                    <Badge
+                      variant="outline"
+                      className="text-[10px] text-orange-600 border-orange-300"
+                    >
                       <AlertTriangle className="h-3 w-3 mr-0.5" /> {frame.stock_quantity} left
                     </Badge>
                   ) : (

@@ -6,13 +6,13 @@ Built with **Next.js 16** (App Router) + **Supabase** + **Cloudflare Workers** (
 
 ## Stack
 
-| Layer | Technology |
-|---|---|
-| Frontend | Next.js 16, React 19, Tailwind CSS 4, shadcn/ui |
-| Backend | Supabase (Auth, Database, Storage, Edge Functions) |
-| Notifications | WhatsApp Business API (Meta Cloud API) |
-| Hosting | Cloudflare Workers (via OpenNext) |
-| Payments | CMI Payment Gateway (optional) |
+| Layer         | Technology                                         |
+| ------------- | -------------------------------------------------- |
+| Frontend      | Next.js 16, React 19, Tailwind CSS 4, shadcn/ui    |
+| Backend       | Supabase (Auth, Database, Storage, Edge Functions) |
+| Notifications | WhatsApp Business API (Meta Cloud API)             |
+| Hosting       | Cloudflare Workers (via OpenNext)                  |
+| Payments      | CMI Payment Gateway (optional)                     |
 
 ## User Roles
 
@@ -191,13 +191,13 @@ Images and documents (clinic logos, doctor photos, patient files) are stored in 
 2. Create an R2 API token with read/write permissions
 3. Add env vars to `.env.local`:
 
-| Variable | Description |
-|---|---|
-| `R2_ACCOUNT_ID` | Cloudflare account ID |
-| `R2_ACCESS_KEY_ID` | R2 API token access key |
-| `R2_SECRET_ACCESS_KEY` | R2 API token secret key |
-| `R2_BUCKET_NAME` | Bucket name (e.g., `webs-alots-uploads`) |
-| `R2_PUBLIC_URL` | Public URL for the bucket (custom domain or `.r2.dev` URL) |
+| Variable               | Description                                                |
+| ---------------------- | ---------------------------------------------------------- |
+| `R2_ACCOUNT_ID`        | Cloudflare account ID                                      |
+| `R2_ACCESS_KEY_ID`     | R2 API token access key                                    |
+| `R2_SECRET_ACCESS_KEY` | R2 API token secret key                                    |
+| `R2_BUCKET_NAME`       | Bucket name (e.g., `webs-alots-uploads`)                   |
+| `R2_PUBLIC_URL`        | Public URL for the bucket (custom domain or `.r2.dev` URL) |
 
 ### API Endpoints
 
@@ -237,12 +237,12 @@ The middleware enforces Origin-header checks on all mutation requests (`POST`, `
 
 ## Documentation
 
-| Document | Description |
-|---|---|
-| [WhatsApp Template Approval Guide](docs/whatsapp-template-approval.md) | How to submit and manage WhatsApp message templates for Meta Business API approval — includes all 10 Darija templates with variable mappings |
-| [Backup & Recovery Runbook](docs/backup-recovery-runbook.md) | Operational procedures for database backups, disaster recovery, and data restoration — includes RPO/RPT targets, incident response checklist, and DR drill guide |
-| [Plausible Analytics Privacy](docs/plausible-privacy.md) | Privacy & compliance documentation for Plausible analytics — explains what is/isn't tracked, Moroccan Law 09-08 compliance, GDPR status, and self-hosted option |
-| [API Docs (generated)](docs/api/) | Auto-generated TypeDoc API reference for `src/lib/` utilities (run `npm run docs:generate` to rebuild) |
+| Document                                                               | Description                                                                                                                                                      |
+| ---------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [WhatsApp Template Approval Guide](docs/whatsapp-template-approval.md) | How to submit and manage WhatsApp message templates for Meta Business API approval — includes all 10 Darija templates with variable mappings                     |
+| [Backup & Recovery Runbook](docs/backup-recovery-runbook.md)           | Operational procedures for database backups, disaster recovery, and data restoration — includes RPO/RPT targets, incident response checklist, and DR drill guide |
+| [Plausible Analytics Privacy](docs/plausible-privacy.md)               | Privacy & compliance documentation for Plausible analytics — explains what is/isn't tracked, Moroccan Law 09-08 compliance, GDPR status, and self-hosted option  |
+| [API Docs (generated)](docs/api/)                                      | Auto-generated TypeDoc API reference for `src/lib/` utilities (run `npm run docs:generate` to rebuild)                                                           |
 
 ## Deploy on Cloudflare Workers
 
@@ -269,11 +269,11 @@ Staging uses a separate Supabase project for data isolation. Set `STAGING_SUPABA
 
 Pushes to `main` and `staging` automatically build and deploy to Cloudflare Workers. Add these secrets in your GitHub repo settings (**Settings > Secrets and variables > Actions**):
 
-| Secret | Description |
-|---|---|
-| `CLOUDFLARE_API_TOKEN` | Cloudflare API token with Workers edit permissions |
-| `CLOUDFLARE_ACCOUNT_ID` | Your Cloudflare account ID |
-| `NEXT_PUBLIC_SUPABASE_URL` | Supabase project URL (used at build time) |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase anon key (used at build time) |
-| `STAGING_SUPABASE_URL` | Staging Supabase project URL (staging branch only) |
-| `STAGING_SUPABASE_ANON_KEY` | Staging Supabase anon key (staging branch only) |
+| Secret                          | Description                                        |
+| ------------------------------- | -------------------------------------------------- |
+| `CLOUDFLARE_API_TOKEN`          | Cloudflare API token with Workers edit permissions |
+| `CLOUDFLARE_ACCOUNT_ID`         | Your Cloudflare account ID                         |
+| `NEXT_PUBLIC_SUPABASE_URL`      | Supabase project URL (used at build time)          |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase anon key (used at build time)             |
+| `STAGING_SUPABASE_URL`          | Staging Supabase project URL (staging branch only) |
+| `STAGING_SUPABASE_ANON_KEY`     | Staging Supabase anon key (staging branch only)    |

@@ -17,16 +17,10 @@ import { test, expect } from "@playwright/test";
 // ── Stripe webhook helpers ──────────────────────────────────────────
 
 /** Build a Stripe-compatible webhook signature for testing. */
-function buildStripeSignature(
-  payload: string,
-  secret: string,
-  timestamp?: number,
-): string {
+function buildStripeSignature(payload: string, secret: string, timestamp?: number): string {
   const ts = timestamp ?? Math.floor(Date.now() / 1000);
   const signedPayload = `${ts}.${payload}`;
-  const signature = createHmac("sha256", secret)
-    .update(signedPayload)
-    .digest("hex");
+  const signature = createHmac("sha256", secret).update(signedPayload).digest("hex");
   return `t=${ts},v1=${signature}`;
 }
 
@@ -38,11 +32,8 @@ function buildCmiHash(params: Record<string, string>, storeKey: string): string 
   const sortedKeys = Object.keys(params)
     .filter((k) => k !== "HASH")
     .sort();
-  const hashInput =
-    sortedKeys.map((k) => params[k]).join("|") + "|" + storeKey;
-  return createHmac("sha512", storeKey)
-    .update(hashInput)
-    .digest("base64");
+  const hashInput = sortedKeys.map((k) => params[k]).join("|") + "|" + storeKey;
+  return createHmac("sha512", storeKey).update(hashInput).digest("base64");
 }
 
 // ── Stripe webhook flow tests ───────────────────────────────────────
@@ -149,9 +140,7 @@ test.describe("Stripe webhook — event flow", () => {
     expect([200, 400, 503]).toContain(response.status());
   });
 
-  test("idempotency — duplicate event ID returns same result", async ({
-    request,
-  }) => {
+  test("idempotency — duplicate event ID returns same result", async ({ request }) => {
     const eventId = "evt_test_idempotent_001";
     const payload = JSON.stringify({
       id: eventId,
@@ -214,9 +203,7 @@ test.describe("Stripe webhook — event flow", () => {
     expect([400, 503]).toContain(response.status());
   });
 
-  test("rejects replay attack with reused old timestamp", async ({
-    request,
-  }) => {
+  test("rejects replay attack with reused old timestamp", async ({ request }) => {
     const payload = JSON.stringify({
       id: "evt_test_replay",
       type: "checkout.session.completed",
@@ -285,9 +272,7 @@ test.describe("CMI callback — payment flow", () => {
     expect([200, 400, 403]).toContain(response.status());
   });
 
-  test("idempotency — duplicate order ID handled gracefully", async ({
-    request,
-  }) => {
+  test("idempotency — duplicate order ID handled gracefully", async ({ request }) => {
     const params: Record<string, string> = {
       oid: "ord_e2e_idempotent_001",
       amount: "200.00",
@@ -324,9 +309,7 @@ test.describe("CMI callback — payment flow", () => {
     expect([400, 401, 403]).toContain(response.status());
   });
 
-  test("rejects callback with missing required fields", async ({
-    request,
-  }) => {
+  test("rejects callback with missing required fields", async ({ request }) => {
     const formData = new URLSearchParams();
     formData.append("oid", "ord_e2e_incomplete");
     // Missing amount, ProcReturnCode, HASH

@@ -1,9 +1,6 @@
 "use client";
 
-import {
-  Brain, Plus, FileText, Save, Activity,
-  AlertTriangle, ClipboardList,
-} from "lucide-react";
+import { Brain, Plus, FileText, Save, Activity, AlertTriangle, ClipboardList } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
@@ -17,19 +14,66 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { getCurrentUser } from "@/lib/data/client";
 import {
-  fetchEEGRecords, createEEGRecord,
-  fetchNeuroExams, createNeuroExam,
-  type EEGRecordView, type NeuroExamView,
+  fetchEEGRecords,
+  createEEGRecord,
+  fetchNeuroExams,
+  createNeuroExam,
+  type EEGRecordView,
+  type NeuroExamView,
 } from "@/lib/data/specialists";
 
 const NEURO_EXAM_SECTIONS = [
-  { key: "mentalStatus", label: "Mental Status", fields: ["Orientation", "Attention", "Memory", "Language", "Calculation"] },
-  { key: "cranialNerves", label: "Cranial Nerves", fields: ["CN I (Olfactory)", "CN II (Optic)", "CN III/IV/VI (Eye Movement)", "CN V (Trigeminal)", "CN VII (Facial)", "CN VIII (Vestibulocochlear)", "CN IX/X (Glossopharyngeal/Vagus)", "CN XI (Accessory)", "CN XII (Hypoglossal)"] },
-  { key: "motorFunction", label: "Motor Function", fields: ["Upper Extremity Strength", "Lower Extremity Strength", "Muscle Tone", "Bulk", "Involuntary Movements"] },
-  { key: "sensoryFunction", label: "Sensory Function", fields: ["Light Touch", "Pain/Temperature", "Vibration", "Proprioception"] },
-  { key: "reflexes", label: "Reflexes", fields: ["Biceps", "Triceps", "Brachioradialis", "Patellar", "Achilles", "Plantar"] },
-  { key: "coordination", label: "Coordination", fields: ["Finger-to-Nose", "Heel-to-Shin", "Rapid Alternating", "Romberg"] },
-  { key: "gait", label: "Gait", fields: ["Normal Gait", "Tandem Gait", "Heel Walking", "Toe Walking"] },
+  {
+    key: "mentalStatus",
+    label: "Mental Status",
+    fields: ["Orientation", "Attention", "Memory", "Language", "Calculation"],
+  },
+  {
+    key: "cranialNerves",
+    label: "Cranial Nerves",
+    fields: [
+      "CN I (Olfactory)",
+      "CN II (Optic)",
+      "CN III/IV/VI (Eye Movement)",
+      "CN V (Trigeminal)",
+      "CN VII (Facial)",
+      "CN VIII (Vestibulocochlear)",
+      "CN IX/X (Glossopharyngeal/Vagus)",
+      "CN XI (Accessory)",
+      "CN XII (Hypoglossal)",
+    ],
+  },
+  {
+    key: "motorFunction",
+    label: "Motor Function",
+    fields: [
+      "Upper Extremity Strength",
+      "Lower Extremity Strength",
+      "Muscle Tone",
+      "Bulk",
+      "Involuntary Movements",
+    ],
+  },
+  {
+    key: "sensoryFunction",
+    label: "Sensory Function",
+    fields: ["Light Touch", "Pain/Temperature", "Vibration", "Proprioception"],
+  },
+  {
+    key: "reflexes",
+    label: "Reflexes",
+    fields: ["Biceps", "Triceps", "Brachioradialis", "Patellar", "Achilles", "Plantar"],
+  },
+  {
+    key: "coordination",
+    label: "Coordination",
+    fields: ["Finger-to-Nose", "Heel-to-Shin", "Rapid Alternating", "Romberg"],
+  },
+  {
+    key: "gait",
+    label: "Gait",
+    fields: ["Normal Gait", "Tandem Gait", "Heel Walking", "Toe Walking"],
+  },
 ];
 
 export default function NeurologyPage() {
@@ -42,35 +86,46 @@ export default function NeurologyPage() {
   const [activeSection, setActiveSection] = useState(0);
 
   const [eegForm, setEegForm] = useState({
-    durationMinutes: "", findings: "", interpretation: "", notes: "", isAbnormal: false,
+    durationMinutes: "",
+    findings: "",
+    interpretation: "",
+    notes: "",
+    isAbnormal: false,
   });
   const [examForm, setExamForm] = useState({
     sections: {} as Record<string, Record<string, string>>,
-    diagnosis: "", plan: "", notes: "",
+    diagnosis: "",
+    plan: "",
+    notes: "",
   });
 
   useEffect(() => {
     const controller = new AbortController();
     async function load() {
-    const user = await getCurrentUser();
+      const user = await getCurrentUser();
       if (controller.signal.aborted) return;
-    if (!user?.clinic_id) { setLoading(false); return; }
-    const [e, x] = await Promise.all([
-      fetchEEGRecords(user.clinic_id),
-      fetchNeuroExams(user.clinic_id),
-    ]);
+      if (!user?.clinic_id) {
+        setLoading(false);
+        return;
+      }
+      const [e, x] = await Promise.all([
+        fetchEEGRecords(user.clinic_id),
+        fetchNeuroExams(user.clinic_id),
+      ]);
       if (controller.signal.aborted) return;
-    setEegs(e);
-    setExams(x);
-    setLoading(false);
-  }
+      setEegs(e);
+      setExams(x);
+      setLoading(false);
+    }
     load().catch((err) => {
       if (!controller.signal.aborted) {
         setError(err instanceof Error ? err : new Error(String(err)));
         setLoading(false);
       }
     });
-    return () => { controller.abort(); };
+    return () => {
+      controller.abort();
+    };
   }, []);
 
   if (loading) {
@@ -80,7 +135,9 @@ export default function NeurologyPage() {
   if (error) {
     return (
       <div className="p-8 text-center">
-        <p className="text-red-600 font-medium">Failed to load data. Please try refreshing the page.</p>
+        <p className="text-red-600 font-medium">
+          Failed to load data. Please try refreshing the page.
+        </p>
         {error.message && <p className="text-sm text-muted-foreground mt-2">{error.message}</p>}
       </div>
     );
@@ -90,21 +147,39 @@ export default function NeurologyPage() {
     const user = await getCurrentUser();
     if (!user?.clinic_id) return;
     const newId = await createEEGRecord({
-      clinic_id: user.clinic_id, patient_id: user.id, doctor_id: user.id,
+      clinic_id: user.clinic_id,
+      patient_id: user.id,
+      doctor_id: user.id,
       duration_minutes: eegForm.durationMinutes ? parseInt(eegForm.durationMinutes) : undefined,
-      findings: eegForm.findings, interpretation: eegForm.interpretation,
-      notes: eegForm.notes, is_abnormal: eegForm.isAbnormal,
+      findings: eegForm.findings,
+      interpretation: eegForm.interpretation,
+      notes: eegForm.notes,
+      is_abnormal: eegForm.isAbnormal,
     });
     if (newId) {
-      setEegs((prev) => [{
-        id: newId, patientId: user.id, patientName: "",
-        recordDate: new Date().toISOString().split("T")[0],
-        fileUrl: "", durationMinutes: eegForm.durationMinutes ? parseInt(eegForm.durationMinutes) : null,
-        findings: eegForm.findings, interpretation: eegForm.interpretation,
-        isAbnormal: eegForm.isAbnormal, notes: eegForm.notes,
-      }, ...prev]);
+      setEegs((prev) => [
+        {
+          id: newId,
+          patientId: user.id,
+          patientName: "",
+          recordDate: new Date().toISOString().split("T")[0],
+          fileUrl: "",
+          durationMinutes: eegForm.durationMinutes ? parseInt(eegForm.durationMinutes) : null,
+          findings: eegForm.findings,
+          interpretation: eegForm.interpretation,
+          isAbnormal: eegForm.isAbnormal,
+          notes: eegForm.notes,
+        },
+        ...prev,
+      ]);
     }
-    setEegForm({ durationMinutes: "", findings: "", interpretation: "", notes: "", isAbnormal: false });
+    setEegForm({
+      durationMinutes: "",
+      findings: "",
+      interpretation: "",
+      notes: "",
+      isAbnormal: false,
+    });
     setShowEegForm(false);
   };
 
@@ -112,7 +187,9 @@ export default function NeurologyPage() {
     const user = await getCurrentUser();
     if (!user?.clinic_id) return;
     const newId = await createNeuroExam({
-      clinic_id: user.clinic_id, patient_id: user.id, doctor_id: user.id,
+      clinic_id: user.clinic_id,
+      patient_id: user.id,
+      doctor_id: user.id,
       mental_status: examForm.sections["mentalStatus"] ?? {},
       cranial_nerves: examForm.sections["cranialNerves"] ?? {},
       motor_function: examForm.sections["motorFunction"] ?? {},
@@ -120,21 +197,30 @@ export default function NeurologyPage() {
       reflexes: examForm.sections["reflexes"] ?? {},
       coordination: examForm.sections["coordination"] ?? {},
       gait: examForm.sections["gait"] ?? {},
-      diagnosis: examForm.diagnosis, plan: examForm.plan, notes: examForm.notes,
+      diagnosis: examForm.diagnosis,
+      plan: examForm.plan,
+      notes: examForm.notes,
     });
     if (newId) {
-      setExams((prev) => [{
-        id: newId, patientId: user.id, patientName: "",
-        examDate: new Date().toISOString().split("T")[0],
-        mentalStatus: examForm.sections["mentalStatus"] ?? {},
-        cranialNerves: examForm.sections["cranialNerves"] ?? {},
-        motorFunction: examForm.sections["motorFunction"] ?? {},
-        sensoryFunction: examForm.sections["sensoryFunction"] ?? {},
-        reflexes: examForm.sections["reflexes"] ?? {},
-        coordination: examForm.sections["coordination"] ?? {},
-        gait: examForm.sections["gait"] ?? {},
-        diagnosis: examForm.diagnosis, plan: examForm.plan, notes: examForm.notes,
-      }, ...prev]);
+      setExams((prev) => [
+        {
+          id: newId,
+          patientId: user.id,
+          patientName: "",
+          examDate: new Date().toISOString().split("T")[0],
+          mentalStatus: examForm.sections["mentalStatus"] ?? {},
+          cranialNerves: examForm.sections["cranialNerves"] ?? {},
+          motorFunction: examForm.sections["motorFunction"] ?? {},
+          sensoryFunction: examForm.sections["sensoryFunction"] ?? {},
+          reflexes: examForm.sections["reflexes"] ?? {},
+          coordination: examForm.sections["coordination"] ?? {},
+          gait: examForm.sections["gait"] ?? {},
+          diagnosis: examForm.diagnosis,
+          plan: examForm.plan,
+          notes: examForm.notes,
+        },
+        ...prev,
+      ]);
     }
     setExamForm({ sections: {}, diagnosis: "", plan: "", notes: "" });
     setActiveSection(0);
@@ -170,10 +256,12 @@ export default function NeurologyPage() {
           </div>
 
           {eegs.length === 0 ? (
-            <Card><CardContent className="py-8 text-center">
-              <Activity className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
-              <p className="text-sm text-muted-foreground">No EEG records.</p>
-            </CardContent></Card>
+            <Card>
+              <CardContent className="py-8 text-center">
+                <Activity className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
+                <p className="text-sm text-muted-foreground">No EEG records.</p>
+              </CardContent>
+            </Card>
           ) : (
             <div className="space-y-3">
               {eegs.map((eeg) => (
@@ -184,7 +272,9 @@ export default function NeurologyPage() {
                         <Activity className="h-4 w-4 text-purple-500" />
                         <span className="font-medium text-sm">{eeg.recordDate}</span>
                         {eeg.durationMinutes && (
-                          <Badge variant="outline" className="text-xs">{eeg.durationMinutes} min</Badge>
+                          <Badge variant="outline" className="text-xs">
+                            {eeg.durationMinutes} min
+                          </Badge>
                         )}
                       </div>
                       {eeg.isAbnormal && (
@@ -227,10 +317,12 @@ export default function NeurologyPage() {
           </div>
 
           {exams.length === 0 ? (
-            <Card><CardContent className="py-8 text-center">
-              <ClipboardList className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
-              <p className="text-sm text-muted-foreground">No neurological exams recorded.</p>
-            </CardContent></Card>
+            <Card>
+              <CardContent className="py-8 text-center">
+                <ClipboardList className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
+                <p className="text-sm text-muted-foreground">No neurological exams recorded.</p>
+              </CardContent>
+            </Card>
           ) : (
             <div className="space-y-4">
               {exams.map((exam) => (
@@ -245,11 +337,18 @@ export default function NeurologyPage() {
                   <CardContent>
                     <div className="grid gap-3 sm:grid-cols-2">
                       {NEURO_EXAM_SECTIONS.map(({ key, label }) => {
-                        const data = exam[key as keyof NeuroExamView] as Record<string, string> | undefined;
+                        const data = exam[key as keyof NeuroExamView] as
+                          | Record<string, string>
+                          | undefined;
                         if (!data || Object.keys(data).length === 0) return null;
                         return (
                           <div key={key} className="rounded-lg bg-muted/50 p-3">
-                            <Breadcrumb items={[{ label: "Doctor", href: "/doctor/dashboard" }, { label: "Neurology" }]} />
+                            <Breadcrumb
+                              items={[
+                                { label: "Doctor", href: "/doctor/dashboard" },
+                                { label: "Neurology" },
+                              ]}
+                            />
                             <p className="text-xs font-medium mb-1">{label}</p>
                             {Object.entries(data).map(([k, v]) => (
                               <div key={k} className="text-xs flex gap-1">
@@ -284,41 +383,68 @@ export default function NeurologyPage() {
       {/* EEG Form Dialog */}
       <Dialog open={showEegForm} onOpenChange={setShowEegForm}>
         <DialogContent className="max-w-md">
-          <DialogHeader><DialogTitle>Add EEG Record</DialogTitle></DialogHeader>
+          <DialogHeader>
+            <DialogTitle>Add EEG Record</DialogTitle>
+          </DialogHeader>
           <div className="space-y-4 mt-4">
             <div className="space-y-2">
               <Label>Duration (minutes)</Label>
-              <Input type="number" placeholder="30" value={eegForm.durationMinutes}
-                onChange={(e) => setEegForm((p) => ({ ...p, durationMinutes: e.target.value }))} />
+              <Input
+                type="number"
+                placeholder="30"
+                value={eegForm.durationMinutes}
+                onChange={(e) => setEegForm((p) => ({ ...p, durationMinutes: e.target.value }))}
+              />
             </div>
             <div className="border-2 border-dashed rounded-lg p-4 text-center">
               <FileText className="h-6 w-6 mx-auto text-muted-foreground mb-1" />
               <p className="text-xs text-muted-foreground">Attach EEG File</p>
-              <Button variant="outline" size="sm" className="mt-2 text-xs">Browse</Button>
+              <Button variant="outline" size="sm" className="mt-2 text-xs">
+                Browse
+              </Button>
             </div>
             <div className="space-y-2">
               <Label>Findings</Label>
-              <Textarea placeholder="EEG findings..." value={eegForm.findings}
-                onChange={(e) => setEegForm((p) => ({ ...p, findings: e.target.value }))} />
+              <Textarea
+                placeholder="EEG findings..."
+                value={eegForm.findings}
+                onChange={(e) => setEegForm((p) => ({ ...p, findings: e.target.value }))}
+              />
             </div>
             <div className="space-y-2">
               <Label>Interpretation</Label>
-              <Textarea placeholder="Clinical interpretation..." value={eegForm.interpretation}
-                onChange={(e) => setEegForm((p) => ({ ...p, interpretation: e.target.value }))} />
+              <Textarea
+                placeholder="Clinical interpretation..."
+                value={eegForm.interpretation}
+                onChange={(e) => setEegForm((p) => ({ ...p, interpretation: e.target.value }))}
+              />
             </div>
             <div className="space-y-2">
               <Label>Notes</Label>
-              <Textarea placeholder="Additional notes..." value={eegForm.notes}
-                onChange={(e) => setEegForm((p) => ({ ...p, notes: e.target.value }))} />
+              <Textarea
+                placeholder="Additional notes..."
+                value={eegForm.notes}
+                onChange={(e) => setEegForm((p) => ({ ...p, notes: e.target.value }))}
+              />
             </div>
             <div className="flex items-center gap-2">
-              <input type="checkbox" id="eegAbnormal" checked={eegForm.isAbnormal}
-                onChange={(e) => setEegForm((p) => ({ ...p, isAbnormal: e.target.checked }))} />
-              <Label htmlFor="eegAbnormal" className="text-sm">Mark as abnormal</Label>
+              <input
+                type="checkbox"
+                id="eegAbnormal"
+                checked={eegForm.isAbnormal}
+                onChange={(e) => setEegForm((p) => ({ ...p, isAbnormal: e.target.checked }))}
+              />
+              <Label htmlFor="eegAbnormal" className="text-sm">
+                Mark as abnormal
+              </Label>
             </div>
             <div className="flex gap-2 justify-end">
-              <Button variant="outline" onClick={() => setShowEegForm(false)}>Cancel</Button>
-              <Button onClick={handleAddEeg}><Save className="h-4 w-4 mr-1" /> Save</Button>
+              <Button variant="outline" onClick={() => setShowEegForm(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleAddEeg}>
+                <Save className="h-4 w-4 mr-1" /> Save
+              </Button>
             </div>
           </div>
         </DialogContent>
@@ -327,13 +453,20 @@ export default function NeurologyPage() {
       {/* Neuro Exam Form Dialog */}
       <Dialog open={showExamForm} onOpenChange={setShowExamForm}>
         <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-          <DialogHeader><DialogTitle>Neurological Examination</DialogTitle></DialogHeader>
+          <DialogHeader>
+            <DialogTitle>Neurological Examination</DialogTitle>
+          </DialogHeader>
           <div className="space-y-4 mt-4">
             {/* Section Navigation */}
             <div className="flex gap-1 flex-wrap">
               {NEURO_EXAM_SECTIONS.map((s, i) => (
-                <Button key={s.key} variant={activeSection === i ? "default" : "outline"} size="sm"
-                  className="text-xs" onClick={() => setActiveSection(i)}>
+                <Button
+                  key={s.key}
+                  variant={activeSection === i ? "default" : "outline"}
+                  size="sm"
+                  className="text-xs"
+                  onClick={() => setActiveSection(i)}
+                >
                   {s.label}
                 </Button>
               ))}
@@ -348,7 +481,9 @@ export default function NeurologyPage() {
                   <Input
                     placeholder={`${field} findings...`}
                     value={examForm.sections[NEURO_EXAM_SECTIONS[activeSection].key]?.[field] ?? ""}
-                    onChange={(e) => updateExamField(NEURO_EXAM_SECTIONS[activeSection].key, field, e.target.value)}
+                    onChange={(e) =>
+                      updateExamField(NEURO_EXAM_SECTIONS[activeSection].key, field, e.target.value)
+                    }
                   />
                 </div>
               ))}
@@ -356,17 +491,27 @@ export default function NeurologyPage() {
 
             <div className="space-y-2">
               <Label>Diagnosis</Label>
-              <Textarea placeholder="Diagnosis..." value={examForm.diagnosis}
-                onChange={(e) => setExamForm((p) => ({ ...p, diagnosis: e.target.value }))} />
+              <Textarea
+                placeholder="Diagnosis..."
+                value={examForm.diagnosis}
+                onChange={(e) => setExamForm((p) => ({ ...p, diagnosis: e.target.value }))}
+              />
             </div>
             <div className="space-y-2">
               <Label>Plan</Label>
-              <Textarea placeholder="Treatment plan..." value={examForm.plan}
-                onChange={(e) => setExamForm((p) => ({ ...p, plan: e.target.value }))} />
+              <Textarea
+                placeholder="Treatment plan..."
+                value={examForm.plan}
+                onChange={(e) => setExamForm((p) => ({ ...p, plan: e.target.value }))}
+              />
             </div>
             <div className="flex gap-2 justify-end">
-              <Button variant="outline" onClick={() => setShowExamForm(false)}>Cancel</Button>
-              <Button onClick={handleAddExam}><Save className="h-4 w-4 mr-1" /> Save</Button>
+              <Button variant="outline" onClick={() => setShowExamForm(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleAddExam}>
+                <Save className="h-4 w-4 mr-1" /> Save
+              </Button>
             </div>
           </div>
         </DialogContent>

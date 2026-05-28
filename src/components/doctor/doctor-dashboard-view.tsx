@@ -1,9 +1,18 @@
 "use client";
 
 import {
-  Calendar, Clock, CheckCircle, XCircle, Activity,
-  TrendingUp, BarChart3, Search, ArrowRight,
-  DollarSign, CalendarClock, Stethoscope,
+  Calendar,
+  Clock,
+  CheckCircle,
+  XCircle,
+  Activity,
+  TrendingUp,
+  BarChart3,
+  Search,
+  ArrowRight,
+  DollarSign,
+  CalendarClock,
+  Stethoscope,
 } from "lucide-react";
 import { useState, useMemo, useEffect, useCallback } from "react";
 import { useLocale } from "@/components/locale-switcher";
@@ -55,7 +64,10 @@ function toDateStr(d: Date): string {
   return getLocalDateStr(d);
 }
 
-const statusVariant: Record<string, "default" | "success" | "warning" | "destructive" | "secondary" | "outline"> = {
+const statusVariant: Record<
+  string,
+  "default" | "success" | "warning" | "destructive" | "secondary" | "outline"
+> = {
   scheduled: "outline",
   confirmed: "default",
   "in-progress": "warning",
@@ -78,7 +90,11 @@ export function DoctorDashboardView({
   invoices,
 }: DoctorDashboardViewProps) {
   const [locale] = useLocale();
-  const { data: appointmentList, mutate: mutateAppointments, isPending: _isStatusUpdating } = useOptimisticUpdate(initialAppointments);
+  const {
+    data: appointmentList,
+    mutate: mutateAppointments,
+    isPending: _isStatusUpdating,
+  } = useOptimisticUpdate(initialAppointments);
   const [searchQuery, setSearchQuery] = useState("");
   const [error, _setError] = useState<Error | null>(null);
   const { addToast } = useToast();
@@ -109,16 +125,19 @@ export function DoctorDashboardView({
   // Consultations this week/month (completed or in-progress)
   const consultationStatuses = useMemo(() => new Set(["completed", "in-progress"]), []);
   const weekConsultations = appointmentList.filter(
-    (a) => a.date >= weekStart && a.date <= todayStr && consultationStatuses.has(a.status)
+    (a) => a.date >= weekStart && a.date <= todayStr && consultationStatuses.has(a.status),
   );
   const monthConsultations = appointmentList.filter(
-    (a) => a.date >= monthStart && a.date <= todayStr && consultationStatuses.has(a.status)
+    (a) => a.date >= monthStart && a.date <= todayStr && consultationStatuses.has(a.status),
   );
 
   // Revenue from consultations (paid invoices linked to this doctor's appointments)
-  const appointmentIds = useMemo(() => new Set(appointmentList.map((a) => a.id)), [appointmentList]);
+  const appointmentIds = useMemo(
+    () => new Set(appointmentList.map((a) => a.id)),
+    [appointmentList],
+  );
   const consultationInvoices = invoices.filter(
-    (inv) => inv.appointmentId && appointmentIds.has(inv.appointmentId) && inv.status === "paid"
+    (inv) => inv.appointmentId && appointmentIds.has(inv.appointmentId) && inv.status === "paid",
   );
   const weekRevenue = consultationInvoices
     .filter((inv) => inv.date >= weekStart && inv.date <= todayStr)
@@ -136,7 +155,7 @@ export function DoctorDashboardView({
     (a) =>
       a.date > todayStr &&
       (a.status === "scheduled" || a.status === "confirmed") &&
-      completedPatientIds.has(a.patientId)
+      completedPatientIds.has(a.patientId),
   );
 
   // Week/month aggregate stats
@@ -160,38 +179,51 @@ export function DoctorDashboardView({
   };
 
   const stats = [
-    { icon: Calendar, label: t(locale, "dashboard.todayAppointments"), value: todayAppts.length.toString(), color: "text-blue-600" },
-    { icon: Stethoscope, label: t(locale, "dashboard.consultationsWeek"), value: weekConsultations.length.toString(), color: "text-indigo-600" },
-    { icon: DollarSign, label: t(locale, "dashboard.revenueMonth"), value: `${monthRevenue.toLocaleString()} MAD`, color: "text-emerald-600" },
-    { icon: CalendarClock, label: t(locale, "dashboard.upcomingFollowUps"), value: upcomingFollowUps.length.toString(), color: "text-purple-600" },
+    {
+      icon: Calendar,
+      label: t(locale, "dashboard.todayAppointments"),
+      value: todayAppts.length.toString(),
+      color: "text-blue-600",
+    },
+    {
+      icon: Stethoscope,
+      label: t(locale, "dashboard.consultationsWeek"),
+      value: weekConsultations.length.toString(),
+      color: "text-indigo-600",
+    },
+    {
+      icon: DollarSign,
+      label: t(locale, "dashboard.revenueMonth"),
+      value: `${monthRevenue.toLocaleString()} MAD`,
+      color: "text-emerald-600",
+    },
+    {
+      icon: CalendarClock,
+      label: t(locale, "dashboard.upcomingFollowUps"),
+      value: upcomingFollowUps.length.toString(),
+      color: "text-purple-600",
+    },
   ];
 
-  const applyStatusChange = useCallback(async (
-    appointmentId: string,
-    newStatus: string,
-    previousStatus: string,
-  ) => {
-    const optimisticList = appointmentList.map((a) =>
-      a.id === appointmentId ? { ...a, status: newStatus } : a
-    );
+  const applyStatusChange = useCallback(
+    async (appointmentId: string, newStatus: string, previousStatus: string) => {
+      const optimisticList = appointmentList.map((a) =>
+        a.id === appointmentId ? { ...a, status: newStatus } : a,
+      );
 
-    await mutateAppointments(
-      optimisticList,
-      async () => {
-        const result = await updateAppointmentStatus(appointmentId, newStatus);
-        if (!result.success) throw new Error(result.error?.message ?? "Failed to update status");
-      },
-      {
-        onSuccess: () => {
-          addToast(
-            t(locale, "dashboard.statusChanged"),
-            "success",
-            10_000,
-            {
+      await mutateAppointments(
+        optimisticList,
+        async () => {
+          const result = await updateAppointmentStatus(appointmentId, newStatus);
+          if (!result.success) throw new Error(result.error?.message ?? "Failed to update status");
+        },
+        {
+          onSuccess: () => {
+            addToast(t(locale, "dashboard.statusChanged"), "success", 10_000, {
               label: t(locale, "dashboard.undo"),
               onClick: () => {
                 const undoList = appointmentList.map((a) =>
-                  a.id === appointmentId ? { ...a, status: previousStatus } : a
+                  a.id === appointmentId ? { ...a, status: previousStatus } : a,
                 );
                 void mutateAppointments(
                   undoList,
@@ -208,16 +240,20 @@ export function DoctorDashboardView({
                   },
                 );
               },
-            },
-          );
+            });
+          },
+          onError: (err) => {
+            logger.warn("Failed to update appointment status", {
+              context: "doctor-dashboard",
+              error: err,
+            });
+            addToast(t(locale, "error.updateFailed"), "error");
+          },
         },
-        onError: (err) => {
-          logger.warn("Failed to update appointment status", { context: "doctor-dashboard", error: err });
-          addToast(t(locale, "error.updateFailed"), "error");
-        },
-      },
-    );
-  }, [appointmentList, mutateAppointments, addToast, locale]);
+      );
+    },
+    [appointmentList, mutateAppointments, addToast, locale],
+  );
 
   const handleConfirmAction = useCallback(async () => {
     if (!confirmAction) return;
@@ -237,14 +273,15 @@ export function DoctorDashboardView({
 
   const handleStartConsultation = async (appointmentId: string) => {
     const optimisticList = appointmentList.map((a) =>
-      a.id === appointmentId ? { ...a, status: "in-progress" } : a
+      a.id === appointmentId ? { ...a, status: "in-progress" } : a,
     );
 
     await mutateAppointments(
       optimisticList,
       async () => {
         const result = await updateAppointmentStatus(appointmentId, "in-progress");
-        if (!result.success) throw new Error(result.error?.message ?? "Failed to start consultation");
+        if (!result.success)
+          throw new Error(result.error?.message ?? "Failed to start consultation");
       },
       {
         onError: (err) => {
@@ -258,8 +295,7 @@ export function DoctorDashboardView({
   const filteredPatients = searchQuery.trim()
     ? patients.filter(
         (p) =>
-          p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          p.phone.includes(searchQuery)
+          p.name.toLowerCase().includes(searchQuery.toLowerCase()) || p.phone.includes(searchQuery),
       )
     : [];
 
@@ -307,14 +343,21 @@ export function DoctorDashboardView({
           </CardHeader>
           <CardContent>
             {todayAppts.length === 0 ? (
-              <EmptyState icon={Calendar} title={t(locale, "dashboard.noAppointmentsToday")} className="py-6" />
+              <EmptyState
+                icon={Calendar}
+                title={t(locale, "dashboard.noAppointmentsToday")}
+                className="py-6"
+              />
             ) : (
               <div className="space-y-3">
                 {todayAppts.map((apt) => (
                   <div key={apt.id} className="flex items-center gap-3 rounded-lg border p-3">
                     <Avatar>
                       <AvatarFallback className="text-xs">
-                        {apt.patientName.split(" ").map((n) => n[0]).join("")}
+                        {apt.patientName
+                          .split(" ")
+                          .map((n) => n[0])
+                          .join("")}
                       </AvatarFallback>
                     </Avatar>
                     <div className="flex-1 min-w-0">
@@ -348,16 +391,18 @@ export function DoctorDashboardView({
                           <CheckCircle className="h-4 w-4 text-green-600" />
                         </Button>
                       )}
-                      {apt.status !== "completed" && apt.status !== "no-show" && apt.status !== "cancelled" && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          title={t(locale, "dashboard.noShow")}
-                          onClick={() => handleNoShow(apt.id, apt.patientName)}
-                        >
-                          <XCircle className="h-4 w-4 text-red-500" />
-                        </Button>
-                      )}
+                      {apt.status !== "completed" &&
+                        apt.status !== "no-show" &&
+                        apt.status !== "cancelled" && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            title={t(locale, "dashboard.noShow")}
+                            onClick={() => handleNoShow(apt.id, apt.patientName)}
+                          >
+                            <XCircle className="h-4 w-4 text-red-500" />
+                          </Button>
+                        )}
                     </div>
                   </div>
                 ))}
@@ -383,14 +428,21 @@ export function DoctorDashboardView({
             </CardHeader>
             <CardContent>
               {waitingRoomEntries.length === 0 ? (
-                <EmptyState icon={Clock} title={t(locale, "dashboard.noPatientsWaiting")} className="py-6" />
+                <EmptyState
+                  icon={Clock}
+                  title={t(locale, "dashboard.noPatientsWaiting")}
+                  className="py-6"
+                />
               ) : (
                 <div className="space-y-3">
                   {waitingRoomEntries.map((wr) => (
                     <div key={wr.id} className="flex items-center gap-3 rounded-lg border p-3">
                       <Avatar>
                         <AvatarFallback className="text-xs bg-orange-100 text-orange-700">
-                          {wr.patientName.split(" ").map((n) => n[0]).join("")}
+                          {wr.patientName
+                            .split(" ")
+                            .map((n) => n[0])
+                            .join("")}
                         </AvatarFallback>
                       </Avatar>
                       <div className="flex-1">
@@ -400,7 +452,9 @@ export function DoctorDashboardView({
                         </p>
                       </div>
                       {wr.priority === "urgent" && (
-                        <Badge variant="destructive" className="text-[10px]">{t(locale, "dashboard.urgent")}</Badge>
+                        <Badge variant="destructive" className="text-[10px]">
+                          {t(locale, "dashboard.urgent")}
+                        </Badge>
                       )}
                     </div>
                   ))}
@@ -424,14 +478,21 @@ export function DoctorDashboardView({
             </CardHeader>
             <CardContent>
               {upcomingFollowUps.length === 0 ? (
-                <EmptyState icon={CalendarClock} title={t(locale, "dashboard.noFollowUps")} className="py-6" />
+                <EmptyState
+                  icon={CalendarClock}
+                  title={t(locale, "dashboard.noFollowUps")}
+                  className="py-6"
+                />
               ) : (
                 <div className="space-y-3">
                   {upcomingFollowUps.slice(0, 5).map((apt) => (
                     <div key={apt.id} className="flex items-center gap-3 rounded-lg border p-3">
                       <Avatar className="h-8 w-8">
                         <AvatarFallback className="text-[10px] bg-purple-100 text-purple-700">
-                          {apt.patientName.split(" ").map((n) => n[0]).join("")}
+                          {apt.patientName
+                            .split(" ")
+                            .map((n) => n[0])
+                            .join("")}
                         </AvatarFallback>
                       </Avatar>
                       <div className="flex-1 min-w-0">
@@ -439,7 +500,9 @@ export function DoctorDashboardView({
                         <p className="text-xs text-muted-foreground">{apt.serviceName}</p>
                       </div>
                       <div className="text-right">
-                        <p className="text-xs font-medium">{formatDisplayDate(apt.date, locale, "short")}</p>
+                        <p className="text-xs font-medium">
+                          {formatDisplayDate(apt.date, locale, "short")}
+                        </p>
                         <p className="text-xs text-muted-foreground">{apt.time}</p>
                       </div>
                     </div>
@@ -470,18 +533,30 @@ export function DoctorDashboardView({
               {searchQuery.trim() && (
                 <div className="space-y-2 max-h-48 overflow-auto">
                   {filteredPatients.length === 0 ? (
-                    <p className="text-sm text-muted-foreground">{t(locale, "dashboard.noPatientsFound")}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {t(locale, "dashboard.noPatientsFound")}
+                    </p>
                   ) : (
                     filteredPatients.slice(0, 5).map((p) => (
-                      <div key={p.id} className="flex items-center gap-2 rounded border p-2 text-sm">
+                      <div
+                        key={p.id}
+                        className="flex items-center gap-2 rounded border p-2 text-sm"
+                      >
                         <Avatar className="h-7 w-7">
                           <AvatarFallback className="text-[10px]">
-                            {p.name.split(" ").map((n) => n[0]).join("")}
+                            {p.name
+                              .split(" ")
+                              .map((n) => n[0])
+                              .join("")}
                           </AvatarFallback>
                         </Avatar>
                         <div className="flex-1 min-w-0">
                           <p className="font-medium truncate">{p.name}</p>
-                          <DataMask value={p.phone} type="phone" className="text-xs text-muted-foreground" />
+                          <DataMask
+                            value={p.phone}
+                            type="phone"
+                            className="text-xs text-muted-foreground"
+                          />
                         </div>
                       </div>
                     ))
@@ -511,25 +586,33 @@ export function DoctorDashboardView({
             <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-6">
               <Card>
                 <CardContent className="p-4">
-                  <p className="text-xs text-muted-foreground">{t(locale, "dashboard.appointments")}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {t(locale, "dashboard.appointments")}
+                  </p>
                   <p className="text-2xl font-bold">{weekStats.totalAppointments}</p>
                 </CardContent>
               </Card>
               <Card>
                 <CardContent className="p-4">
-                  <p className="text-xs text-muted-foreground">{t(locale, "dashboard.consultations")}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {t(locale, "dashboard.consultations")}
+                  </p>
                   <p className="text-2xl font-bold text-indigo-600">{weekStats.consultations}</p>
                 </CardContent>
               </Card>
               <Card>
                 <CardContent className="p-4">
-                  <p className="text-xs text-muted-foreground">{t(locale, "dashboard.uniquePatients")}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {t(locale, "dashboard.uniquePatients")}
+                  </p>
                   <p className="text-2xl font-bold">{weekStats.uniquePatients}</p>
                 </CardContent>
               </Card>
               <Card>
                 <CardContent className="p-4">
-                  <p className="text-xs text-muted-foreground">{t(locale, "dashboard.completedStat")}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {t(locale, "dashboard.completedStat")}
+                  </p>
                   <p className="text-2xl font-bold text-green-600">{weekStats.completed}</p>
                 </CardContent>
               </Card>
@@ -542,7 +625,9 @@ export function DoctorDashboardView({
               <Card>
                 <CardContent className="p-4 flex items-center gap-2">
                   <div>
-                    <p className="text-xs text-muted-foreground">{t(locale, "dashboard.revenue")}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {t(locale, "dashboard.revenue")}
+                    </p>
                     <p className="text-2xl font-bold">{weekStats.revenue.toLocaleString()} MAD</p>
                   </div>
                   <TrendingUp className="h-5 w-5 text-green-500" />
@@ -555,25 +640,33 @@ export function DoctorDashboardView({
             <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-6">
               <Card>
                 <CardContent className="p-4">
-                  <p className="text-xs text-muted-foreground">{t(locale, "dashboard.appointments")}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {t(locale, "dashboard.appointments")}
+                  </p>
                   <p className="text-2xl font-bold">{monthStats.totalAppointments}</p>
                 </CardContent>
               </Card>
               <Card>
                 <CardContent className="p-4">
-                  <p className="text-xs text-muted-foreground">{t(locale, "dashboard.consultations")}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {t(locale, "dashboard.consultations")}
+                  </p>
                   <p className="text-2xl font-bold text-indigo-600">{monthStats.consultations}</p>
                 </CardContent>
               </Card>
               <Card>
                 <CardContent className="p-4">
-                  <p className="text-xs text-muted-foreground">{t(locale, "dashboard.uniquePatients")}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {t(locale, "dashboard.uniquePatients")}
+                  </p>
                   <p className="text-2xl font-bold">{monthStats.uniquePatients}</p>
                 </CardContent>
               </Card>
               <Card>
                 <CardContent className="p-4">
-                  <p className="text-xs text-muted-foreground">{t(locale, "dashboard.completedStat")}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {t(locale, "dashboard.completedStat")}
+                  </p>
                   <p className="text-2xl font-bold text-green-600">{monthStats.completed}</p>
                 </CardContent>
               </Card>
@@ -586,7 +679,9 @@ export function DoctorDashboardView({
               <Card>
                 <CardContent className="p-4 flex items-center gap-2">
                   <div>
-                    <p className="text-xs text-muted-foreground">{t(locale, "dashboard.revenue")}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {t(locale, "dashboard.revenue")}
+                    </p>
                     <p className="text-2xl font-bold">{monthStats.revenue.toLocaleString()} MAD</p>
                   </div>
                   <TrendingUp className="h-5 w-5 text-green-500" />

@@ -91,7 +91,10 @@ export function PatientRegistrationDialog({ trigger, onRegister }: PatientRegist
         )}
       </span>
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="sm:max-w-[600px] max-h-[85vh] overflow-y-auto" onClose={() => setOpen(false)}>
+        <DialogContent
+          className="sm:max-w-[600px] max-h-[85vh] overflow-y-auto"
+          onClose={() => setOpen(false)}
+        >
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <UserPlus className="h-5 w-5" />
@@ -204,7 +207,9 @@ export function PatientRegistrationDialog({ trigger, onRegister }: PatientRegist
               {/* Mutuelle (complementary insurance) */}
               {form.insurance && form.insurance !== "none" && (
                 <div className="mt-4">
-                  <p className="text-xs text-muted-foreground mb-2">Mutuelle complémentaire (optionnel)</p>
+                  <p className="text-xs text-muted-foreground mb-2">
+                    Mutuelle complémentaire (optionnel)
+                  </p>
                   <div className="grid grid-cols-3 gap-4">
                     <div className="space-y-2">
                       <Label>Nom de la mutuelle</Label>
@@ -291,7 +296,9 @@ export function PatientRegistrationDialog({ trigger, onRegister }: PatientRegist
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
+            <Button variant="outline" onClick={() => setOpen(false)}>
+              Cancel
+            </Button>
             <Button
               onClick={handleSubmit}
               disabled={!form.name || !form.phone || !form.dateOfBirth || !form.gender}

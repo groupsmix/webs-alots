@@ -53,11 +53,7 @@ export function maskCIN(value: string, level: MaskLevel = getMaskLevel()): strin
 }
 
 /** Generic masker that dispatches on field type. */
-export function mask(
-  value: string,
-  type: "phone" | "email" | "cin",
-  level?: MaskLevel,
-): string {
+export function mask(value: string, type: "phone" | "email" | "cin", level?: MaskLevel): string {
   switch (type) {
     case "phone":
       return maskPhone(value, level);

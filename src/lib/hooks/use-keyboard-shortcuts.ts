@@ -30,16 +30,26 @@ export function useKeyboardShortcuts(shortcuts: ShortcutConfig[]) {
     function handleKeyDown(e: KeyboardEvent) {
       const target = e.target as HTMLElement;
       const tagName = target.tagName.toLowerCase();
-      if (tagName === "input" || tagName === "textarea" || tagName === "select" || target.isContentEditable) {
+      if (
+        tagName === "input" ||
+        tagName === "textarea" ||
+        tagName === "select" ||
+        target.isContentEditable
+      ) {
         return;
       }
 
       for (const shortcut of shortcutsRef.current) {
-        const ctrlMatch = shortcut.ctrl ? (e.ctrlKey || e.metaKey) : !(e.ctrlKey || e.metaKey);
+        const ctrlMatch = shortcut.ctrl ? e.ctrlKey || e.metaKey : !(e.ctrlKey || e.metaKey);
         const shiftMatch = shortcut.shift ? e.shiftKey : !e.shiftKey;
         const altMatch = shortcut.alt ? e.altKey : !e.altKey;
 
-        if (e.key.toLowerCase() === shortcut.key.toLowerCase() && ctrlMatch && shiftMatch && altMatch) {
+        if (
+          e.key.toLowerCase() === shortcut.key.toLowerCase() &&
+          ctrlMatch &&
+          shiftMatch &&
+          altMatch
+        ) {
           e.preventDefault();
           shortcut.handler();
           return;

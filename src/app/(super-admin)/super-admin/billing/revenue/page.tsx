@@ -1,9 +1,6 @@
 "use client";
 
-import {
-  TrendingUp, DollarSign, Users, AlertTriangle,
-  BarChart3, Loader2,
-} from "lucide-react";
+import { TrendingUp, DollarSign, Users, AlertTriangle, BarChart3, Loader2 } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
@@ -42,11 +39,13 @@ export default function RevenueDashboardPage() {
 
   return (
     <div>
-      <Breadcrumb items={[
-        { label: "Super Admin", href: "/super-admin/dashboard" },
-        { label: "Billing", href: "/super-admin/billing" },
-        { label: "Revenue" },
-      ]} />
+      <Breadcrumb
+        items={[
+          { label: "Super Admin", href: "/super-admin/dashboard" },
+          { label: "Billing", href: "/super-admin/billing" },
+          { label: "Revenue" },
+        ]}
+      />
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold">Revenue Dashboard</h1>
@@ -163,9 +162,14 @@ export default function RevenueDashboardPage() {
               {stats.revenueByMonth.length > 0 ? (
                 <div className="space-y-2">
                   {stats.revenueByMonth.map((entry) => (
-                    <div key={entry.month} className="flex items-center justify-between rounded-lg border p-3">
+                    <div
+                      key={entry.month}
+                      className="flex items-center justify-between rounded-lg border p-3"
+                    >
                       <span className="text-sm font-medium">{entry.month}</span>
-                      <span className="text-sm font-bold">{entry.revenue.toLocaleString()} MAD</span>
+                      <span className="text-sm font-bold">
+                        {entry.revenue.toLocaleString()} MAD
+                      </span>
                     </div>
                   ))}
                 </div>
@@ -173,10 +177,12 @@ export default function RevenueDashboardPage() {
                 <div className="text-center py-8">
                   <Loader2 className="h-6 w-6 text-muted-foreground mx-auto mb-2 opacity-50" />
                   <p className="text-sm text-muted-foreground">
-                    Les données de revenus mensuels seront disponibles une fois les abonnements actifs.
+                    Les données de revenus mensuels seront disponibles une fois les abonnements
+                    actifs.
                   </p>
                   <p className="text-xs text-muted-foreground mt-1">
-                    MRR estimé actuel : <span className="font-medium">{stats.mrr.toLocaleString()} MAD</span>
+                    MRR estimé actuel :{" "}
+                    <span className="font-medium">{stats.mrr.toLocaleString()} MAD</span>
                   </p>
                 </div>
               )}

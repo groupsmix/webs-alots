@@ -50,8 +50,15 @@ interface ApiErrorBody {
 /**
  * Return a success JSON response with standard shape.
  */
-export function apiSuccess<T>(data: T, status = 200, headers?: HeadersInit): NextResponse<ApiSuccessBody<T>> {
-  return NextResponse.json({ ok: true as const, data }, { status, headers: withRequestId(headers) });
+export function apiSuccess<T>(
+  data: T,
+  status = 200,
+  headers?: HeadersInit,
+): NextResponse<ApiSuccessBody<T>> {
+  return NextResponse.json(
+    { ok: true as const, data },
+    { status, headers: withRequestId(headers) },
+  );
 }
 
 /**
@@ -100,7 +107,9 @@ export function apiNotFound(message = "Resource not found"): NextResponse<ApiErr
 /**
  * Return a 429 rate limit error response.
  */
-export function apiRateLimited(message = "Too many requests. Please try again later."): NextResponse<ApiErrorBody> {
+export function apiRateLimited(
+  message = "Too many requests. Please try again later.",
+): NextResponse<ApiErrorBody> {
   return apiError(message, 429, "RATE_LIMITED");
 }
 

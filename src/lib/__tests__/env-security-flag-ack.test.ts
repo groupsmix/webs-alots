@@ -1,8 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import {
-  enforceSecurityFlagAcknowledgments,
-  SECURITY_FLAG_ACKNOWLEDGMENTS,
-} from "../env";
+import { enforceSecurityFlagAcknowledgments, SECURITY_FLAG_ACKNOWLEDGMENTS } from "../env";
 
 vi.mock("../logger", () => ({
   logger: {
@@ -78,7 +75,7 @@ describe("enforceSecurityFlagAcknowledgments (A2-08)", () => {
     );
   });
 
-  it("treats anything other than the literal string \"true\" as off", () => {
+  it('treats anything other than the literal string "true" as off', () => {
     // Mirrors the existing pattern for other flags so accidental non-boolean
     // values (e.g. "yes", "1") do not silently widen the attack surface.
     vi.stubEnv("NODE_ENV", "production");

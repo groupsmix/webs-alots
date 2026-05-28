@@ -64,9 +64,9 @@ describe("egress-allowlist", () => {
     it("throws when enforce mode is on and host is blocked", async () => {
       process.env.EGRESS_ALLOWLIST_ENFORCE = "true";
       const { fetchAllowlisted } = await import("@/lib/egress-allowlist");
-      await expect(
-        fetchAllowlisted("https://evil.example.com/exfil"),
-      ).rejects.toThrow("A39.2: Egress blocked");
+      await expect(fetchAllowlisted("https://evil.example.com/exfil")).rejects.toThrow(
+        "A39.2: Egress blocked",
+      );
     });
 
     it("logs warning but proceeds when enforce is off", async () => {

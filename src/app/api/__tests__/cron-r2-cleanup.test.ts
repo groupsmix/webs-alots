@@ -15,15 +15,7 @@
  *   5. Alert propagation — `alertEmitted` reflects whether any clinic's
  *      orphan rate crossed the configured threshold.
  */
-import {
-  describe,
-  it,
-  expect,
-  vi,
-  beforeEach,
-  afterEach,
-  type Mock,
-} from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach, type Mock } from "vitest";
 
 /* ─── Module mocks ─── */
 
@@ -32,8 +24,7 @@ const mockReconcileOrphans = vi.fn();
 const mockCreateAdminClient = vi.fn();
 
 vi.mock("@/lib/r2-cleanup", () => ({
-  cleanupAbandonedUploads: (...args: unknown[]) =>
-    mockCleanupAbandoned(...args),
+  cleanupAbandonedUploads: (...args: unknown[]) => mockCleanupAbandoned(...args),
   reconcileOrphans: (...args: unknown[]) => mockReconcileOrphans(...args),
 }));
 
@@ -46,11 +37,7 @@ vi.mock("@/lib/supabase-server", () => ({
 vi.mock("@/lib/sentry-cron", () => ({
   // Pass-through wrapper so the route's GET export is just the handler
   // — keeps the test focused on route behaviour, not Sentry plumbing.
-  withSentryCron: (
-    _slug: string,
-    _schedule: string,
-    handler: (req: unknown) => unknown,
-  ) => handler,
+  withSentryCron: (_slug: string, _schedule: string, handler: (req: unknown) => unknown) => handler,
 }));
 
 vi.mock("@/lib/logger", () => ({
@@ -109,9 +96,7 @@ describe("Cron r2-cleanup — authentication", () => {
   it("rejects requests without a bearer token (401)", async () => {
     process.env.CRON_SECRET = "test-secret-that-is-at-least-32chars";
     const { GET } = await import("@/app/api/cron/r2-cleanup/route");
-    const req = new Request(
-      "http://localhost/api/cron/r2-cleanup",
-    ) as unknown as Request;
+    const req = new Request("http://localhost/api/cron/r2-cleanup") as unknown as Request;
     const res = (await GET(req as never)) as Response;
     expect(res.status).toBe(401);
   });
@@ -136,11 +121,7 @@ describe("Cron r2-cleanup — authentication", () => {
   it("does NOT call any cleanup primitives on a 401", async () => {
     process.env.CRON_SECRET = "test-secret-that-is-at-least-32chars";
     const { GET } = await import("@/app/api/cron/r2-cleanup/route");
-    await GET(
-      new Request(
-        "http://localhost/api/cron/r2-cleanup",
-      ) as unknown as never,
-    );
+    await GET(new Request("http://localhost/api/cron/r2-cleanup") as unknown as never);
     expect(mockCleanupAbandoned).not.toHaveBeenCalled();
     expect(mockReconcileOrphans).not.toHaveBeenCalled();
   });
@@ -171,10 +152,7 @@ describe("Cron r2-cleanup — per-clinic iteration (AGENTS.md rule #6)", () => {
   });
 
   it("calls cleanup primitives once per active clinic with a clinic-scoped prefix", async () => {
-    const adminClient = makeAdminClient([
-      { id: VALID_UUID_A },
-      { id: VALID_UUID_B },
-    ]);
+    const adminClient = makeAdminClient([{ id: VALID_UUID_A }, { id: VALID_UUID_B }]);
     mockCreateAdminClient.mockReturnValue(adminClient);
     mockCleanupAbandoned.mockResolvedValue({
       scanned: 0,
@@ -201,30 +179,18 @@ describe("Cron r2-cleanup — per-clinic iteration (AGENTS.md rule #6)", () => {
 
     // Per AGENTS.md rule #6, every call must pass the clinic_id and a
     // prefix scoped to that clinic — NEVER a bucket-wide prefix.
-    expect(mockCleanupAbandoned).toHaveBeenNthCalledWith(
-      1,
-      expect.anything(),
-      VALID_UUID_A,
-      { prefix: `clinics/${VALID_UUID_A}/` },
-    );
-    expect(mockReconcileOrphans).toHaveBeenNthCalledWith(
-      1,
-      expect.anything(),
-      VALID_UUID_A,
-      { prefix: `clinics/${VALID_UUID_A}/` },
-    );
-    expect(mockCleanupAbandoned).toHaveBeenNthCalledWith(
-      2,
-      expect.anything(),
-      VALID_UUID_B,
-      { prefix: `clinics/${VALID_UUID_B}/` },
-    );
-    expect(mockReconcileOrphans).toHaveBeenNthCalledWith(
-      2,
-      expect.anything(),
-      VALID_UUID_B,
-      { prefix: `clinics/${VALID_UUID_B}/` },
-    );
+    expect(mockCleanupAbandoned).toHaveBeenNthCalledWith(1, expect.anything(), VALID_UUID_A, {
+      prefix: `clinics/${VALID_UUID_A}/`,
+    });
+    expect(mockReconcileOrphans).toHaveBeenNthCalledWith(1, expect.anything(), VALID_UUID_A, {
+      prefix: `clinics/${VALID_UUID_A}/`,
+    });
+    expect(mockCleanupAbandoned).toHaveBeenNthCalledWith(2, expect.anything(), VALID_UUID_B, {
+      prefix: `clinics/${VALID_UUID_B}/`,
+    });
+    expect(mockReconcileOrphans).toHaveBeenNthCalledWith(2, expect.anything(), VALID_UUID_B, {
+      prefix: `clinics/${VALID_UUID_B}/`,
+    });
   });
 
   it("returns 500 when the active-clinics query fails", async () => {
@@ -232,8 +198,7 @@ describe("Cron r2-cleanup — per-clinic iteration (AGENTS.md rule #6)", () => {
     mockCreateAdminClient.mockReturnValue(adminClient);
 
     const { GET } = await import("@/app/api/cron/r2-cleanup/route");
-    const res = (await GET(buildAuthorizedRequest() as unknown as never)) as
-      Response;
+    const res = (await GET(buildAuthorizedRequest() as unknown as never)) as Response;
     expect(res.status).toBe(500);
     expect(mockCleanupAbandoned).not.toHaveBeenCalled();
     expect(mockReconcileOrphans).not.toHaveBeenCalled();
@@ -292,8 +257,7 @@ describe("Cron r2-cleanup — aggregate response", () => {
       });
 
     const { GET } = await import("@/app/api/cron/r2-cleanup/route");
-    const res = (await GET(buildAuthorizedRequest() as unknown as never)) as
-      Response;
+    const res = (await GET(buildAuthorizedRequest() as unknown as never)) as Response;
     expect(res.status).toBe(200);
 
     const body = (await res.json()) as {
@@ -328,9 +292,7 @@ describe("Cron r2-cleanup — aggregate response", () => {
   });
 
   it("alertEmitted is false when no clinic crosses the threshold", async () => {
-    mockCreateAdminClient.mockReturnValue(
-      makeAdminClient([{ id: VALID_UUID_A }]),
-    );
+    mockCreateAdminClient.mockReturnValue(makeAdminClient([{ id: VALID_UUID_A }]));
     mockCleanupAbandoned.mockResolvedValue({
       scanned: 0,
       deletedFromR2: 0,
@@ -349,8 +311,7 @@ describe("Cron r2-cleanup — aggregate response", () => {
     });
 
     const { GET } = await import("@/app/api/cron/r2-cleanup/route");
-    const res = (await GET(buildAuthorizedRequest() as unknown as never)) as
-      Response;
+    const res = (await GET(buildAuthorizedRequest() as unknown as never)) as Response;
     const body = (await res.json()) as { data: { alertEmitted: boolean } };
     expect(body.data.alertEmitted).toBe(false);
   });
@@ -392,8 +353,7 @@ describe("Cron r2-cleanup — per-clinic resilience", () => {
     });
 
     const { GET } = await import("@/app/api/cron/r2-cleanup/route");
-    const res = (await GET(buildAuthorizedRequest() as unknown as never)) as
-      Response;
+    const res = (await GET(buildAuthorizedRequest() as unknown as never)) as Response;
     expect(res.status).toBe(200);
 
     const body = (await res.json()) as {
@@ -407,8 +367,6 @@ describe("Cron r2-cleanup — per-clinic resilience", () => {
     expect(body.data.clinics).toBe(2);
     expect(body.data.errors).toBeGreaterThanOrEqual(1);
     expect(body.data.deleted).toBe(1); // only the second clinic's delete counted
-    expect(body.data.perClinic.find((c) => c.clinicId === VALID_UUID_A)?.error).toBe(
-      "kaboom",
-    );
+    expect(body.data.perClinic.find((c) => c.clinicId === VALID_UUID_A)?.error).toBe("kaboom");
   });
 });

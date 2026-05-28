@@ -35,7 +35,10 @@ interface GrowthMeasurementRaw {
   notes: string | null;
 }
 
-export async function fetchGrowthMeasurements(clinicId: string, patientId?: string): Promise<GrowthMeasurementView[]> {
+export async function fetchGrowthMeasurements(
+  clinicId: string,
+  patientId?: string,
+): Promise<GrowthMeasurementView[]> {
   await ensureLookups(clinicId);
   const eq: [string, unknown][] = [["clinic_id", clinicId]];
   if (patientId) eq.push(["patient_id", patientId]);
@@ -76,7 +79,10 @@ export async function createGrowthMeasurement(data: {
     .insert(data)
     .select("id")
     .single();
-  if (error) { logger.warn("Query failed", { context: "data/client", error }); return null; }
+  if (error) {
+    logger.warn("Query failed", { context: "data/client", error });
+    return null;
+  }
   return row?.id ?? null;
 }
 
@@ -114,7 +120,10 @@ interface VaccinationRaw {
   notes: string | null;
 }
 
-export async function fetchVaccinations(clinicId: string, patientId?: string): Promise<VaccinationView[]> {
+export async function fetchVaccinations(
+  clinicId: string,
+  patientId?: string,
+): Promise<VaccinationView[]> {
   await ensureLookups(clinicId);
   const eq: [string, unknown][] = [["clinic_id", clinicId]];
   if (patientId) eq.push(["patient_id", patientId]);
@@ -152,19 +161,29 @@ export async function createVaccination(data: {
   notes?: string;
 }): Promise<string | null> {
   const supabase = createClient();
-  const { data: row, error } = await supabase.from("vaccinations")
+  const { data: row, error } = await supabase
+    .from("vaccinations")
     .insert(data)
     .select("id")
     .single();
-  if (error) { logger.warn("Query failed", { context: "data/client", error }); return null; }
+  if (error) {
+    logger.warn("Query failed", { context: "data/client", error });
+    return null;
+  }
   return row?.id ?? null;
 }
 
-export async function updateVaccination(id: string, updates: Record<string, unknown>): Promise<boolean> {
+export async function updateVaccination(
+  id: string,
+  updates: Record<string, unknown>,
+): Promise<boolean> {
   const supabase = createClient();
   // @ts-expect-error -- Supabase generated types lag behind actual DB schema
   const { error } = await supabase.from("vaccinations").update(updates).eq("id", id);
-  if (error) { logger.warn("Mutation failed", { context: "data/client", error }); return false; }
+  if (error) {
+    logger.warn("Mutation failed", { context: "data/client", error });
+    return false;
+  }
   return true;
 }
 
@@ -197,7 +216,10 @@ interface MilestoneRaw {
   notes: string | null;
 }
 
-export async function fetchMilestones(clinicId: string, patientId?: string): Promise<MilestoneView[]> {
+export async function fetchMilestones(
+  clinicId: string,
+  patientId?: string,
+): Promise<MilestoneView[]> {
   await ensureLookups(clinicId);
   const eq: [string, unknown][] = [["clinic_id", clinicId]];
   if (patientId) eq.push(["patient_id", patientId]);
@@ -230,19 +252,29 @@ export async function createMilestone(data: {
   notes?: string;
 }): Promise<string | null> {
   const supabase = createClient();
-  const { data: row, error } = await supabase.from("developmental_milestones")
+  const { data: row, error } = await supabase
+    .from("developmental_milestones")
     .insert(data)
     .select("id")
     .single();
-  if (error) { logger.warn("Query failed", { context: "data/client", error }); return null; }
+  if (error) {
+    logger.warn("Query failed", { context: "data/client", error });
+    return null;
+  }
   return row?.id ?? null;
 }
 
-export async function updateMilestone(id: string, updates: Record<string, unknown>): Promise<boolean> {
+export async function updateMilestone(
+  id: string,
+  updates: Record<string, unknown>,
+): Promise<boolean> {
   const supabase = createClient();
   // @ts-expect-error -- Supabase generated types lag behind actual DB schema
   const { error } = await supabase.from("developmental_milestones").update(updates).eq("id", id);
-  if (error) { logger.warn("Mutation failed", { context: "data/client", error }); return false; }
+  if (error) {
+    logger.warn("Mutation failed", { context: "data/client", error });
+    return false;
+  }
   return true;
 }
 

@@ -47,46 +47,89 @@ export type StripeWebhookEvent = z.infer<typeof stripeWebhookEventSchema>;
  * attacker-injected fields.
  */
 const CMI_ALLOWED_PARAMS = new Set([
-  'oid', 'OID', 'amount', 'AMOUNT', 'currency', 'ProcReturnCode',
-  'procreturncode', 'TransId', 'transid', 'AuthCode', 'authcode',
-  'HASH', 'hash', 'encoding', 'hashAlgorithm', 'clientid',
-  'okUrl', 'failUrl', 'callbackUrl', 'shopurl', 'TranType', 'lang',
-  'BillToName', 'email', 'description', 'storeType', 'Response',
-  'mdStatus', 'txstatus', 'iReqCode', 'iReqDetail', 'vendorCode',
-  'PAResSyntaxOK', 'PAResVerified', 'cavv', 'cavvAlgorithm', 'eci',
-  'xid', 'md', 'rnd', 'EXTRA.TRXDATE', 'EXTRA.CARDBRAND',
-  'EXTRA.CARDISSUER', 'EXTRA.CARDTYPE', 'EXTRA.HOSTMSG',
+  "oid",
+  "OID",
+  "amount",
+  "AMOUNT",
+  "currency",
+  "ProcReturnCode",
+  "procreturncode",
+  "TransId",
+  "transid",
+  "AuthCode",
+  "authcode",
+  "HASH",
+  "hash",
+  "encoding",
+  "hashAlgorithm",
+  "clientid",
+  "okUrl",
+  "failUrl",
+  "callbackUrl",
+  "shopurl",
+  "TranType",
+  "lang",
+  "BillToName",
+  "email",
+  "description",
+  "storeType",
+  "Response",
+  "mdStatus",
+  "txstatus",
+  "iReqCode",
+  "iReqDetail",
+  "vendorCode",
+  "PAResSyntaxOK",
+  "PAResVerified",
+  "cavv",
+  "cavvAlgorithm",
+  "eci",
+  "xid",
+  "md",
+  "rnd",
+  "EXTRA.TRXDATE",
+  "EXTRA.CARDBRAND",
+  "EXTRA.CARDISSUER",
+  "EXTRA.CARDTYPE",
+  "EXTRA.HOSTMSG",
 ]);
 
-export const cmiCallbackFieldsSchema = z.object({
-  oid: z.string().optional(),
-  OID: z.string().optional(),
-  amount: z.string().optional(),
-  AMOUNT: z.string().optional(),
-  ProcReturnCode: z.string().optional(),
-  procreturncode: z.string().optional(),
-  TransId: z.string().optional(),
-  transid: z.string().optional(),
-  AuthCode: z.string().optional(),
-  authcode: z.string().optional(),
-  HASH: z.string().optional(),
-  hash: z.string().optional(),
-}).passthrough().refine(
-  (data) => Boolean(data.HASH || data.hash),
-  { message: "Missing required HASH field" },
-).refine(
-  (data) => {
-    const keys = Object.keys(data);
-    return keys.every((k) => CMI_ALLOWED_PARAMS.has(k) || k.startsWith('rnd_') || k.startsWith('EXTRA.'));
-  },
-  { message: "Unknown parameter in CMI callback — potential tampering" },
-);
+export const cmiCallbackFieldsSchema = z
+  .object({
+    oid: z.string().optional(),
+    OID: z.string().optional(),
+    amount: z.string().optional(),
+    AMOUNT: z.string().optional(),
+    ProcReturnCode: z.string().optional(),
+    procreturncode: z.string().optional(),
+    TransId: z.string().optional(),
+    transid: z.string().optional(),
+    AuthCode: z.string().optional(),
+    authcode: z.string().optional(),
+    HASH: z.string().optional(),
+    hash: z.string().optional(),
+  })
+  .passthrough()
+  .refine((data) => Boolean(data.HASH || data.hash), { message: "Missing required HASH field" })
+  .refine(
+    (data) => {
+      const keys = Object.keys(data);
+      return keys.every(
+        (k) => CMI_ALLOWED_PARAMS.has(k) || k.startsWith("rnd_") || k.startsWith("EXTRA."),
+      );
+    },
+    { message: "Unknown parameter in CMI callback — potential tampering" },
+  );
 
 export type CmiCallbackFields = z.infer<typeof cmiCallbackFieldsSchema>;
 
 export const cmiPaymentSchema = z.object({
   amount: z.number().positive().finite(),
-  description: z.string().max(200).regex(/^[\w\s\-.,;:!?()éèêëàâôùûçïöüÉÈÊËÀÂÔÙÛÇÏÖÜ]*$/u, "Invalid characters in description").optional(),
+  description: z
+    .string()
+    .max(200)
+    .regex(/^[\w\s\-.,;:!?()éèêëàâôùûçïöüÉÈÊËÀÂÔÙÛÇÏÖÜ]*$/u, "Invalid characters in description")
+    .optional(),
   patientId: z.string().optional(),
   appointmentId: z.string().optional(),
   successUrl: z.string().url().optional(),
@@ -121,11 +164,15 @@ const subscriptionWebhookObjectSchema = z.object({
   subscription: z.string().max(255).regex(stripeSubscriptionIdRegex).optional(),
   status: z.string().optional(),
   current_period_end: z.number().optional(),
-  items: z.object({
-    data: z.array(z.object({
-      price: z.object({ id: z.string().max(255).regex(stripeIdRegex) }).optional(),
-    })),
-  }).optional(),
+  items: z
+    .object({
+      data: z.array(
+        z.object({
+          price: z.object({ id: z.string().max(255).regex(stripeIdRegex) }).optional(),
+        }),
+      ),
+    })
+    .optional(),
 });
 
 export const subscriptionWebhookEventSchema = z.object({

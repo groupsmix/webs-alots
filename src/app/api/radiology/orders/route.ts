@@ -18,8 +18,18 @@ import {
 } from "@/lib/data/server";
 import { radiologyOrderCreateSchema, radiologyOrderPatchSchema } from "@/lib/validations";
 
-export const POST = withAuthValidation(radiologyOrderCreateSchema, async (body, request, { profile }) => {
-    const { patientId, modality, bodyPart, clinicalIndication, priority, scheduledAt, orderingDoctorId } = body;
+export const POST = withAuthValidation(
+  radiologyOrderCreateSchema,
+  async (body, request, { profile }) => {
+    const {
+      patientId,
+      modality,
+      bodyPart,
+      clinicalIndication,
+      priority,
+      scheduledAt,
+      orderingDoctorId,
+    } = body;
     // Derive clinic_id from the authenticated user's profile — never from the request body
     const clinicId = profile.clinic_id;
     if (!clinicId) {
@@ -42,9 +52,13 @@ export const POST = withAuthValidation(radiologyOrderCreateSchema, async (body, 
     }
 
     return apiSuccess(result, 201);
-}, STAFF_ROLES);
+  },
+  STAFF_ROLES,
+);
 
-export const PATCH = withAuthValidation(radiologyOrderPatchSchema, async (body, _request) => {
+export const PATCH = withAuthValidation(
+  radiologyOrderPatchSchema,
+  async (body, _request) => {
     const { orderId, action } = body;
 
     if (action === "status") {
@@ -75,4 +89,6 @@ export const PATCH = withAuthValidation(radiologyOrderPatchSchema, async (body, 
     }
 
     return apiError(`Unknown action: ${action}`);
-}, STAFF_ROLES);
+  },
+  STAFF_ROLES,
+);

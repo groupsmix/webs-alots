@@ -1,8 +1,13 @@
 "use client";
 
 import {
-  ClipboardList, AlertTriangle, Clock, FlaskConical,
-  ArrowRight, CheckCircle, Hourglass,
+  ClipboardList,
+  AlertTriangle,
+  Clock,
+  FlaskConical,
+  ArrowRight,
+  CheckCircle,
+  Hourglass,
 } from "lucide-react";
 import Link from "next/link";
 import { useState, useEffect } from "react";
@@ -22,14 +27,20 @@ export default function LabDashboardPage() {
   useEffect(() => {
     const controller = new AbortController();
     fetchLabTestOrders(tenant?.clinicId ?? "")
-      .then((d) => { if (!controller.signal.aborted) setOrders(d); })
+      .then((d) => {
+        if (!controller.signal.aborted) setOrders(d);
+      })
       .catch((err) => {
-      if (!controller.signal.aborted) {
-        setError(err instanceof Error ? err : new Error(String(err)));
-      }
-    })
-    .finally(() => { if (!controller.signal.aborted) setLoading(false); });
-    return () => { controller.abort(); };
+        if (!controller.signal.aborted) {
+          setError(err instanceof Error ? err : new Error(String(err)));
+        }
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setLoading(false);
+      });
+    return () => {
+      controller.abort();
+    };
   }, [tenant?.clinicId]);
 
   if (loading) {
@@ -39,14 +50,18 @@ export default function LabDashboardPage() {
   if (error) {
     return (
       <div className="p-8 text-center">
-        <p className="text-red-600 font-medium">Failed to load data. Please try refreshing the page.</p>
+        <p className="text-red-600 font-medium">
+          Failed to load data. Please try refreshing the page.
+        </p>
         {error.message && <p className="text-sm text-muted-foreground mt-2">{error.message}</p>}
       </div>
     );
   }
 
   const pending = orders.filter((o) => o.status === "pending");
-  const inProgress = orders.filter((o) => o.status === "sample_collected" || o.status === "in_progress");
+  const inProgress = orders.filter(
+    (o) => o.status === "sample_collected" || o.status === "in_progress",
+  );
   const completedToday = orders.filter((o) => {
     if (o.status !== "completed" && o.status !== "validated") return false;
     const today = new Date().toISOString().split("T")[0];
@@ -63,7 +78,11 @@ export default function LabDashboardPage() {
         </div>
         <Badge variant="outline" className="text-blue-600 border-blue-600">
           <Clock className="h-3 w-3 mr-1" />
-          {new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}
+          {new Date().toLocaleDateString("en-US", {
+            weekday: "long",
+            month: "long",
+            day: "numeric",
+          })}
         </Badge>
       </div>
 
@@ -79,7 +98,10 @@ export default function LabDashboardPage() {
                 <ClipboardList className="h-6 w-6" />
               </div>
             </div>
-            <Link href="/lab-panel/test-orders" className="text-sm text-blue-600 hover:underline mt-2 inline-flex items-center">
+            <Link
+              href="/lab-panel/test-orders"
+              className="text-sm text-blue-600 hover:underline mt-2 inline-flex items-center"
+            >
               View Orders <ArrowRight className="h-3 w-3 ml-1" />
             </Link>
           </CardContent>
@@ -96,7 +118,10 @@ export default function LabDashboardPage() {
                 <Hourglass className="h-6 w-6" />
               </div>
             </div>
-            <Link href="/lab-panel/results" className="text-sm text-blue-600 hover:underline mt-2 inline-flex items-center">
+            <Link
+              href="/lab-panel/results"
+              className="text-sm text-blue-600 hover:underline mt-2 inline-flex items-center"
+            >
               Enter Results <ArrowRight className="h-3 w-3 ml-1" />
             </Link>
           </CardContent>
@@ -113,7 +138,10 @@ export default function LabDashboardPage() {
                 <CheckCircle className="h-6 w-6" />
               </div>
             </div>
-            <Link href="/lab-panel/reports" className="text-sm text-blue-600 hover:underline mt-2 inline-flex items-center">
+            <Link
+              href="/lab-panel/reports"
+              className="text-sm text-blue-600 hover:underline mt-2 inline-flex items-center"
+            >
               View Reports <ArrowRight className="h-3 w-3 ml-1" />
             </Link>
           </CardContent>
@@ -140,24 +168,36 @@ export default function LabDashboardPage() {
           <CardContent className="pt-6">
             <div className="flex items-center justify-between mb-4">
               <h2 className="font-semibold text-lg">Recent Orders</h2>
-              <Link href="/lab-panel/test-orders" className="text-sm text-blue-600 hover:underline">View All</Link>
+              <Link href="/lab-panel/test-orders" className="text-sm text-blue-600 hover:underline">
+                View All
+              </Link>
             </div>
             <div className="space-y-3">
               {orders.slice(0, 5).map((order) => (
-                <div key={order.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                <div
+                  key={order.id}
+                  className="flex items-center justify-between p-3 bg-muted/50 rounded-lg"
+                >
                   <div>
                     <p className="font-medium text-sm">{order.patientName}</p>
                     <p className="text-xs text-muted-foreground">
-                      {order.orderNumber} &middot; {order.testCount} test{order.testCount !== 1 ? "s" : ""}
+                      {order.orderNumber} &middot; {order.testCount} test
+                      {order.testCount !== 1 ? "s" : ""}
                     </p>
                   </div>
-                  <Badge className={
-                    order.status === "pending" ? "bg-yellow-100 text-yellow-700 border-0" :
-                    order.status === "in_progress" ? "bg-blue-100 text-blue-700 border-0" :
-                    order.status === "completed" ? "bg-emerald-100 text-emerald-700 border-0" :
-                    order.status === "validated" ? "bg-green-100 text-green-700 border-0" :
-                    "bg-gray-100 text-gray-700 border-0"
-                  }>
+                  <Badge
+                    className={
+                      order.status === "pending"
+                        ? "bg-yellow-100 text-yellow-700 border-0"
+                        : order.status === "in_progress"
+                          ? "bg-blue-100 text-blue-700 border-0"
+                          : order.status === "completed"
+                            ? "bg-emerald-100 text-emerald-700 border-0"
+                            : order.status === "validated"
+                              ? "bg-green-100 text-green-700 border-0"
+                              : "bg-gray-100 text-gray-700 border-0"
+                    }
+                  >
                     {order.priority === "stat" && <AlertTriangle className="h-3 w-3 mr-1" />}
                     {order.status.replace("_", " ")}
                   </Badge>
@@ -178,15 +218,21 @@ export default function LabDashboardPage() {
             </div>
             <div className="space-y-3">
               {urgent.slice(0, 5).map((order) => (
-                <div key={order.id} className="flex items-center justify-between p-3 bg-red-50 dark:bg-red-950/10 rounded-lg">
+                <div
+                  key={order.id}
+                  className="flex items-center justify-between p-3 bg-red-50 dark:bg-red-950/10 rounded-lg"
+                >
                   <div>
                     <p className="font-medium text-sm">{order.patientName}</p>
                     <p className="text-xs text-muted-foreground">
-                      {order.orderNumber} &middot; {order.testCount} test{order.testCount !== 1 ? "s" : ""}
+                      {order.orderNumber} &middot; {order.testCount} test
+                      {order.testCount !== 1 ? "s" : ""}
                     </p>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Badge variant="destructive" className="text-xs uppercase">{order.priority}</Badge>
+                    <Badge variant="destructive" className="text-xs uppercase">
+                      {order.priority}
+                    </Badge>
                     <FlaskConical className="h-4 w-4 text-muted-foreground" />
                   </div>
                 </div>

@@ -20,13 +20,13 @@ const BASE_URL = __ENV.BASE_URL || "https://staging.oltigo.com";
 
 export const options = {
   stages: [
-    { duration: "30s", target: 20 },  // ramp up
-    { duration: "3m", target: 100 },  // sustain
-    { duration: "30s", target: 0 },   // ramp down
+    { duration: "30s", target: 20 }, // ramp up
+    { duration: "3m", target: 100 }, // sustain
+    { duration: "30s", target: 0 }, // ramp down
   ],
   thresholds: {
-    http_req_duration: ["p(95)<800"],  // SLO: p95 < 800ms
-    http_req_failed: ["rate<0.001"],   // SLO: error rate < 0.1%
+    http_req_duration: ["p(95)<800"], // SLO: p95 < 800ms
+    http_req_failed: ["rate<0.001"], // SLO: error rate < 0.1%
   },
 };
 

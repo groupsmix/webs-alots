@@ -40,9 +40,7 @@ export function PricingSection() {
               style={{
                 paddingInline: "var(--space-4)",
                 paddingBlock: "var(--space-4)",
-                borderInlineStart: plan.highlighted
-                  ? "2px solid var(--oltigo-green)"
-                  : "none",
+                borderInlineStart: plan.highlighted ? "2px solid var(--oltigo-green)" : "none",
               }}
             >
               <span

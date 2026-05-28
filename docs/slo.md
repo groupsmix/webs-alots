@@ -22,32 +22,32 @@ This document defines the Service Level Objectives (SLOs) for the Oltigo Health 
 
 ### 2.1 Availability SLOs
 
-| Service | Availability Target | Measurement Window |
-|---------|---------------------|---------------------|
-| **API (booking, appointments)** | 99.9% (4-9s downtime/month) | Rolling 30 days |
-| **Branding (clinic pages)** | 99.9% (4-9s downtime/month) | Rolling 30 days |
-| **Webhook processing** | 99.5% (22m downtime/month) | Rolling 30 days |
-| **Dashboard (authenticated)** | 99.5% (22m downtime/month) | Rolling 30 days |
+| Service                         | Availability Target         | Measurement Window |
+| ------------------------------- | --------------------------- | ------------------ |
+| **API (booking, appointments)** | 99.9% (4-9s downtime/month) | Rolling 30 days    |
+| **Branding (clinic pages)**     | 99.9% (4-9s downtime/month) | Rolling 30 days    |
+| **Webhook processing**          | 99.5% (22m downtime/month)  | Rolling 30 days    |
+| **Dashboard (authenticated)**   | 99.5% (22m downtime/month)  | Rolling 30 days    |
 
 ### 2.2 Latency SLOs (p95)
 
-| Route | Method | p95 Latency Target | Notes |
-|-------|--------|---------------------|-------|
-| `/api/v1/booking` | POST | < 800ms | Patient booking flow |
-| `/api/branding/{clinic}` | GET | < 200ms | Public clinic pages |
-| `/api/webhooks/*` | POST | < 500ms | Must ack quickly, process async |
-| `/api/appointments/*` | GET/POST | < 500ms | Appointment management |
-| `/api/v1/availability/*` | GET | < 300ms | Availability checks |
-| Health check (`/`) | GET | < 100ms | Basic liveness probe |
+| Route                    | Method   | p95 Latency Target | Notes                           |
+| ------------------------ | -------- | ------------------ | ------------------------------- |
+| `/api/v1/booking`        | POST     | < 800ms            | Patient booking flow            |
+| `/api/branding/{clinic}` | GET      | < 200ms            | Public clinic pages             |
+| `/api/webhooks/*`        | POST     | < 500ms            | Must ack quickly, process async |
+| `/api/appointments/*`    | GET/POST | < 500ms            | Appointment management          |
+| `/api/v1/availability/*` | GET      | < 300ms            | Availability checks             |
+| Health check (`/`)       | GET      | < 100ms            | Basic liveness probe            |
 
 ### 2.3 Error Budget
 
-| Service | Monthly Error Budget | Burn Rate Alert |
-|---------|---------------------|-----------------|
-| API (booking) | 0.1% (4-9s) | > 50% in 7 days |
-| Branding | 0.1% (4-9s) | > 50% in 7 days |
-| Webhook | 0.5% (22m) | > 50% in 7 days |
-| Dashboard | 0.5% (22m) | > 50% in 7 days |
+| Service       | Monthly Error Budget | Burn Rate Alert |
+| ------------- | -------------------- | --------------- |
+| API (booking) | 0.1% (4-9s)          | > 50% in 7 days |
+| Branding      | 0.1% (4-9s)          | > 50% in 7 days |
+| Webhook       | 0.5% (22m)           | > 50% in 7 days |
+| Dashboard     | 0.5% (22m)           | > 50% in 7 days |
 
 ---
 
@@ -56,6 +56,7 @@ This document defines the Service Level Objectives (SLOs) for the Oltigo Health 
 ### 3.1 Error Budget Calculation
 
 For a 99.9% SLO over 30 days:
+
 - Total minutes in month: 43,200 (30 days × 24 hours × 60 minutes)
 - Allowed downtime: 43.2 minutes (0.1%)
 - Error budget: 43.2 minutes of downtime
@@ -64,11 +65,11 @@ For a 99.9% SLO over 30 days:
 
 When error budget consumption exceeds thresholds, trigger alerts:
 
-| Burn Rate | Alert Level | Action |
-|-----------|-------------|--------|
-| > 50% in 7 days | Warning | Monitor closely, investigate root causes |
-| > 75% in 3 days | Critical | Active incident, all hands on deck |
-| > 100% (budget exhausted) | Emergency | Page on-call immediately |
+| Burn Rate                 | Alert Level | Action                                   |
+| ------------------------- | ----------- | ---------------------------------------- |
+| > 50% in 7 days           | Warning     | Monitor closely, investigate root causes |
+| > 75% in 3 days           | Critical    | Active incident, all hands on deck       |
+| > 100% (budget exhausted) | Emergency   | Page on-call immediately                 |
 
 ### 3.3 Error Budget Spending Policy
 
@@ -95,6 +96,7 @@ Availability = (Total Requests - Failed Requests) / Total Requests * 100
 ```
 
 Where "Failed Requests" includes:
+
 - HTTP 5xx responses
 - Requests that timed out (> 30 seconds)
 - Requests that triggered circuit breakers
@@ -102,6 +104,7 @@ Where "Failed Requests" includes:
 ### 4.3 Latency Calculation
 
 p95 latency is calculated from the 95th percentile of request durations:
+
 - Only counted for successful responses (2xx, 3xx)
 - Excludes requests that failed before reaching the application
 
@@ -112,6 +115,7 @@ p95 latency is calculated from the 95th percentile of request durations:
 ### 5.1 Weekly SLO Report
 
 Every Monday, automated report generated covering:
+
 - Current SLO status (previous 7 days)
 - Error budget consumption
 - Any SLO violations
@@ -120,6 +124,7 @@ Every Monday, automated report generated covering:
 ### 5.2 Monthly SLO Review
 
 Monthly review meeting covering:
+
 - SLO trend analysis
 - Error budget analysis
 - Identify top 3 reliability improvement opportunities
@@ -128,6 +133,7 @@ Monthly review meeting covering:
 ### 5.3 Error Budget Alerts
 
 Configured in Cloudflare (or external monitoring tool):
+
 - Slack: `#alerts-slo` for warnings
 - PagerDuty: For critical/emergency alerts (budget exhausted)
 
@@ -144,6 +150,7 @@ Configured in Cloudflare (or external monitoring tool):
 ### 6.2 Changing SLOs
 
 SLO changes require:
+
 1. Engineering lead approval
 2. Stakeholder notification (48 hours minimum)
 3. Documentation update
@@ -152,6 +159,7 @@ SLO changes require:
 ### 6.3 Sunset Policy
 
 When deprecating a service:
+
 1. Set SLO to 0% (allow any downtime)
 2. Communicate deprecation timeline
 3. Remove from active monitoring after sunset date

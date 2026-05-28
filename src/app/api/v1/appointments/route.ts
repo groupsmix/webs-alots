@@ -35,7 +35,12 @@ export async function GET(request: NextRequest) {
   const cors = getCorsHeaders(request);
   const auth = await authenticateApiKey(request);
   if (!auth) {
-    return apiError("Unauthorized. Provide a valid API key as Bearer token.", 401, "UNAUTHORIZED", cors);
+    return apiError(
+      "Unauthorized. Provide a valid API key as Bearer token.",
+      401,
+      "UNAUTHORIZED",
+      cors,
+    );
   }
 
   logTenantContext(auth.clinicId, "v1/appointments:GET");
@@ -62,7 +67,9 @@ export async function GET(request: NextRequest) {
   // extra round-trip or a COUNT query.
   let query = supabase
     .from("appointments")
-    .select("id, clinic_id, patient_id, doctor_id, service_id, appointment_date, start_time, end_time, slot_start, slot_end, status, is_first_visit, insurance_flag, is_emergency, is_walk_in, booking_source, source, notes, cancellation_reason, cancelled_at, recurrence_group_id, recurrence_index, recurrence_pattern, rescheduled_from, created_at, updated_at")
+    .select(
+      "id, clinic_id, patient_id, doctor_id, service_id, appointment_date, start_time, end_time, slot_start, slot_end, status, is_first_visit, insurance_flag, is_emergency, is_walk_in, booking_source, source, notes, cancellation_reason, cancelled_at, recurrence_group_id, recurrence_index, recurrence_pattern, rescheduled_from, created_at, updated_at",
+    )
     .eq("clinic_id", auth.clinicId)
     .order("appointment_date", { ascending: false })
     .order("start_time", { ascending: false })
@@ -104,11 +111,7 @@ export async function GET(request: NextRequest) {
   // nullable sort key — the columns are ORDER BY targets and rows
   // missing them cannot meaningfully participate in a cursor.
   const nextCursor =
-    hasMore &&
-    lastRow &&
-    lastRow.appointment_date &&
-    lastRow.start_time &&
-    lastRow.id
+    hasMore && lastRow && lastRow.appointment_date && lastRow.start_time && lastRow.id
       ? encodeCursor({
           appointment_date: lastRow.appointment_date,
           start_time: lastRow.start_time,
@@ -126,12 +129,19 @@ export async function GET(request: NextRequest) {
   );
 }
 
-export const POST = withValidation(v1AppointmentCreateSchema, async (body, request: NextRequest) => {
-  const cors = getCorsHeaders(request);
-  const auth = await authenticateApiKey(request);
-  if (!auth) {
-    return apiError("Unauthorized. Provide a valid API key as Bearer token.", 401, "UNAUTHORIZED", cors);
-  }
+export const POST = withValidation(
+  v1AppointmentCreateSchema,
+  async (body, request: NextRequest) => {
+    const cors = getCorsHeaders(request);
+    const auth = await authenticateApiKey(request);
+    if (!auth) {
+      return apiError(
+        "Unauthorized. Provide a valid API key as Bearer token.",
+        401,
+        "UNAUTHORIZED",
+        cors,
+      );
+    }
 
     // Build slot_start / slot_end from appointment_date + start_time / end_time.
     // These are required NOT NULL columns in the appointments table.
@@ -167,4 +177,5 @@ export const POST = withValidation(v1AppointmentCreateSchema, async (body, reque
     }
 
     return apiSuccess({ data }, 201, cors);
-});
+  },
+);

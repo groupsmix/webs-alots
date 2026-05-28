@@ -23,7 +23,13 @@ const initialHolidays: Holiday[] = [
   { id: "h3", name: "Labour Day", date: "2026-05-01", type: "national", recurring: true },
   { id: "h4", name: "Eid Al-Fitr", date: "2026-03-30", type: "national", recurring: false },
   { id: "h5", name: "Eid Al-Adha", date: "2026-06-07", type: "national", recurring: false },
-  { id: "h6", name: "Clinic Annual Maintenance", date: "2026-08-15", type: "clinic", recurring: false },
+  {
+    id: "h6",
+    name: "Clinic Annual Maintenance",
+    date: "2026-08-15",
+    type: "clinic",
+    recurring: false,
+  },
   { id: "h7", name: "Dr. Ahmed Conference", date: "2026-04-10", type: "doctor", recurring: false },
   { id: "h8", name: "Staff Training Day", date: "2026-05-15", type: "clinic", recurring: false },
 ];
@@ -130,7 +136,10 @@ export default function AdminHolidaysPage() {
           <CardContent>
             <div className="space-y-2">
               {upcoming.map((holiday) => (
-                <div key={holiday.id} className="flex items-center justify-between border rounded-lg p-3">
+                <div
+                  key={holiday.id}
+                  className="flex items-center justify-between border rounded-lg p-3"
+                >
                   <div className="flex items-center gap-3">
                     <Calendar className="h-4 w-4 text-muted-foreground" />
                     <div>
@@ -139,10 +148,16 @@ export default function AdminHolidaysPage() {
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className={`text-[10px] px-2 py-0.5 rounded-full ${typeColors[holiday.type]}`}>
+                    <span
+                      className={`text-[10px] px-2 py-0.5 rounded-full ${typeColors[holiday.type]}`}
+                    >
                       {holiday.type}
                     </span>
-                    {holiday.recurring && <Badge variant="outline" className="text-[10px]">Recurring</Badge>}
+                    {holiday.recurring && (
+                      <Badge variant="outline" className="text-[10px]">
+                        Recurring
+                      </Badge>
+                    )}
                     <Button
                       variant="ghost"
                       size="sm"
@@ -155,7 +170,9 @@ export default function AdminHolidaysPage() {
                 </div>
               ))}
               {upcoming.length === 0 && (
-                <p className="text-sm text-muted-foreground text-center py-4">No upcoming holidays</p>
+                <p className="text-sm text-muted-foreground text-center py-4">
+                  No upcoming holidays
+                </p>
               )}
             </div>
           </CardContent>
@@ -171,7 +188,10 @@ export default function AdminHolidaysPage() {
           <CardContent>
             <div className="space-y-2">
               {past.map((holiday) => (
-                <div key={holiday.id} className="flex items-center justify-between border rounded-lg p-3 opacity-60">
+                <div
+                  key={holiday.id}
+                  className="flex items-center justify-between border rounded-lg p-3 opacity-60"
+                >
                   <div className="flex items-center gap-3">
                     <Calendar className="h-4 w-4 text-muted-foreground" />
                     <div>
@@ -179,7 +199,9 @@ export default function AdminHolidaysPage() {
                       <p className="text-xs text-muted-foreground">{holiday.date}</p>
                     </div>
                   </div>
-                  <span className={`text-[10px] px-2 py-0.5 rounded-full ${typeColors[holiday.type]}`}>
+                  <span
+                    className={`text-[10px] px-2 py-0.5 rounded-full ${typeColors[holiday.type]}`}
+                  >
                     {holiday.type}
                   </span>
                 </div>

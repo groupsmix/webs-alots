@@ -8,14 +8,14 @@ Oltigo Health uses [Plausible Analytics](https://plausible.io) for aggregate web
 
 ## Why Plausible?
 
-| Feature | Details |
-|---|---|
-| No cookies | Plausible does not set any cookies — no cookie banner required |
-| No personal data | Does not collect IP addresses, device fingerprints, or cross-site identifiers |
-| No tracking across sites | Each domain is isolated; no cross-domain tracking |
-| EU-hosted infrastructure | Plausible Cloud servers are in the EU (Germany) |
-| Open source | Fully auditable source code ([github.com/plausible/analytics](https://github.com/plausible/analytics)) |
-| Lightweight | < 1 kB script — no impact on page performance |
+| Feature                  | Details                                                                                                |
+| ------------------------ | ------------------------------------------------------------------------------------------------------ |
+| No cookies               | Plausible does not set any cookies — no cookie banner required                                         |
+| No personal data         | Does not collect IP addresses, device fingerprints, or cross-site identifiers                          |
+| No tracking across sites | Each domain is isolated; no cross-domain tracking                                                      |
+| EU-hosted infrastructure | Plausible Cloud servers are in the EU (Germany)                                                        |
+| Open source              | Fully auditable source code ([github.com/plausible/analytics](https://github.com/plausible/analytics)) |
+| Lightweight              | < 1 kB script — no impact on page performance                                                          |
 
 ## What Is Tracked
 
@@ -50,10 +50,10 @@ The script is conditionally rendered via `<PlausibleScript />` in `src/component
 
 ## Configuration
 
-| Environment Variable | Required | Description |
-|---|---|---|
-| `NEXT_PUBLIC_PLAUSIBLE_DOMAIN` | Yes | Domain to track (e.g., `oltigo.com`) |
-| `NEXT_PUBLIC_PLAUSIBLE_HOST` | No | Custom Plausible host (default: `https://plausible.io`). Set this if using a self-hosted instance. |
+| Environment Variable           | Required | Description                                                                                        |
+| ------------------------------ | -------- | -------------------------------------------------------------------------------------------------- |
+| `NEXT_PUBLIC_PLAUSIBLE_DOMAIN` | Yes      | Domain to track (e.g., `oltigo.com`)                                                               |
+| `NEXT_PUBLIC_PLAUSIBLE_HOST`   | No       | Custom Plausible host (default: `https://plausible.io`). Set this if using a self-hosted instance. |
 
 ### Self-Hosted Option
 

@@ -70,9 +70,18 @@ export function OutcomeStatistics({ stats }: OutcomeStatisticsProps) {
           <CardContent className="p-4">
             <p className="text-xs text-muted-foreground mb-1">Averages</p>
             <div className="space-y-0.5 text-xs">
-              <p>Eggs retrieved: <span className="font-medium">{stats.averageEggsRetrieved.toFixed(1)}</span></p>
-              <p>Fertilized: <span className="font-medium">{stats.averageEggsFertilized.toFixed(1)}</span></p>
-              <p>Transferred: <span className="font-medium">{stats.averageEmbryosTransferred.toFixed(1)}</span></p>
+              <p>
+                Eggs retrieved:{" "}
+                <span className="font-medium">{stats.averageEggsRetrieved.toFixed(1)}</span>
+              </p>
+              <p>
+                Fertilized:{" "}
+                <span className="font-medium">{stats.averageEggsFertilized.toFixed(1)}</span>
+              </p>
+              <p>
+                Transferred:{" "}
+                <span className="font-medium">{stats.averageEmbryosTransferred.toFixed(1)}</span>
+              </p>
             </div>
           </CardContent>
         </Card>
@@ -92,12 +101,16 @@ export function OutcomeStatistics({ stats }: OutcomeStatisticsProps) {
                 { label: "Ongoing", value: stats.ongoingCycles, color: "bg-blue-500" },
                 { label: "Cancelled", value: stats.cancelledCycles, color: "bg-gray-400" },
               ].map((item) => {
-                const pct = stats.completedCycles > 0 ? (item.value / stats.completedCycles) * 100 : 0;
+                const pct =
+                  stats.completedCycles > 0 ? (item.value / stats.completedCycles) * 100 : 0;
                 return (
                   <div key={item.label} className="flex items-center gap-3">
                     <span className="text-xs w-20">{item.label}</span>
                     <div className="flex-1 h-3 bg-muted rounded-full overflow-hidden">
-                      <div className={`h-full rounded-full ${item.color}`} style={{ width: `${pct}%` }} />
+                      <div
+                        className={`h-full rounded-full ${item.color}`}
+                        style={{ width: `${pct}%` }}
+                      />
                     </div>
                     <span className="text-xs font-medium w-8 text-right">{item.value}</span>
                   </div>
@@ -123,7 +136,10 @@ export function OutcomeStatistics({ stats }: OutcomeStatisticsProps) {
                       <span className="font-medium uppercase">{ct.type.replace("_", " ")}</span>
                       <div className="flex items-center gap-2">
                         <span>{ct.count} cycles</span>
-                        <Badge variant={rate > 30 ? "success" : "secondary"} className="text-[10px]">
+                        <Badge
+                          variant={rate > 30 ? "success" : "secondary"}
+                          className="text-[10px]"
+                        >
                           {rate}% success
                         </Badge>
                       </div>
@@ -148,10 +164,18 @@ export function OutcomeStatistics({ stats }: OutcomeStatisticsProps) {
                 <div key={mo.month} className="flex items-center gap-3">
                   <span className="text-xs w-16 text-muted-foreground">{mo.month}</span>
                   <div className="flex-1 flex items-center gap-1">
-                    <div className="h-4 bg-green-500 rounded" style={{ width: `${mo.total > 0 ? (mo.positive / mo.total) * 100 : 0}%` }} />
-                    <div className="h-4 bg-red-400 rounded" style={{ width: `${mo.total > 0 ? (mo.negative / mo.total) * 100 : 0}%` }} />
+                    <div
+                      className="h-4 bg-green-500 rounded"
+                      style={{ width: `${mo.total > 0 ? (mo.positive / mo.total) * 100 : 0}%` }}
+                    />
+                    <div
+                      className="h-4 bg-red-400 rounded"
+                      style={{ width: `${mo.total > 0 ? (mo.negative / mo.total) * 100 : 0}%` }}
+                    />
                   </div>
-                  <span className="text-xs font-medium w-12 text-right">{mo.positive}/{mo.total}</span>
+                  <span className="text-xs font-medium w-12 text-right">
+                    {mo.positive}/{mo.total}
+                  </span>
                 </div>
               ))}
             </div>

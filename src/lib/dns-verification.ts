@@ -56,7 +56,10 @@ export function normalizeDomain(domain: string): string | null {
   } catch {
     hostname = domain;
   }
-  hostname = hostname.replace(/^www\./i, "").replace(/\.$/, "").toLowerCase();
+  hostname = hostname
+    .replace(/^www\./i, "")
+    .replace(/\.$/, "")
+    .toLowerCase();
   if (!hostname || !/^[a-z0-9.-]+\.[a-z]{2,}$/i.test(hostname)) return null;
   return hostname;
 }

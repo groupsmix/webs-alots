@@ -25,7 +25,12 @@
  * See src/lib/encryption.ts for the full key rotation procedure.
  */
 
-import { S3Client, ListObjectsV2Command, GetObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
+import {
+  S3Client,
+  ListObjectsV2Command,
+  GetObjectCommand,
+  PutObjectCommand,
+} from "@aws-sdk/client-s3";
 
 // ── Configuration ──
 
@@ -51,7 +56,9 @@ const IV_LENGTH = 12; // 96-bit IV for AES-GCM
 // ── Helpers ──
 
 function hexToBytes(hex: string): Uint8Array<ArrayBuffer> {
-  return new Uint8Array(hex.match(/.{2}/g)!.map((byte) => parseInt(byte, 16))) as Uint8Array<ArrayBuffer>;
+  return new Uint8Array(
+    hex.match(/.{2}/g)!.map((byte) => parseInt(byte, 16)),
+  ) as Uint8Array<ArrayBuffer>;
 }
 
 async function importKey(hexKey: string): Promise<CryptoKey> {
@@ -65,7 +72,10 @@ async function importKey(hexKey: string): Promise<CryptoKey> {
   ]);
 }
 
-async function decryptWithKey(encrypted: Uint8Array<ArrayBuffer>, key: CryptoKey): Promise<Uint8Array<ArrayBuffer>> {
+async function decryptWithKey(
+  encrypted: Uint8Array<ArrayBuffer>,
+  key: CryptoKey,
+): Promise<Uint8Array<ArrayBuffer>> {
   if (encrypted.length < IV_LENGTH + 1) {
     throw new Error("Encrypted data too short");
   }
@@ -75,7 +85,10 @@ async function decryptWithKey(encrypted: Uint8Array<ArrayBuffer>, key: CryptoKey
   return new Uint8Array(plaintext) as Uint8Array<ArrayBuffer>;
 }
 
-async function encryptWithKey(plaintext: Uint8Array<ArrayBuffer>, key: CryptoKey): Promise<Uint8Array<ArrayBuffer>> {
+async function encryptWithKey(
+  plaintext: Uint8Array<ArrayBuffer>,
+  key: CryptoKey,
+): Promise<Uint8Array<ArrayBuffer>> {
   const iv = crypto.getRandomValues(new Uint8Array(IV_LENGTH) as Uint8Array<ArrayBuffer>);
   const ciphertext = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, key, plaintext);
   const result = new Uint8Array(iv.length + ciphertext.byteLength) as Uint8Array<ArrayBuffer>;
@@ -87,9 +100,16 @@ async function encryptWithKey(plaintext: Uint8Array<ArrayBuffer>, key: CryptoKey
 function isPHIFile(key: string): boolean {
   if (!key.endsWith(".enc")) return false;
   const categories = [
-    "documents", "prescriptions", "lab-results", "lab_results",
-    "x-rays", "xrays", "medical-records", "medical_records",
-    "patient-files", "patient_files",
+    "documents",
+    "prescriptions",
+    "lab-results",
+    "lab_results",
+    "x-rays",
+    "xrays",
+    "medical-records",
+    "medical_records",
+    "patient-files",
+    "patient_files",
   ];
   return categories.some((cat) => key.includes(`/${cat}/`));
 }
@@ -120,7 +140,9 @@ async function main() {
   }
 
   if (!accountId || !accessKeyId || !secretAccessKey || !bucketName) {
-    console.error("ERROR: R2 credentials not configured (R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_BUCKET_NAME).");
+    console.error(
+      "ERROR: R2 credentials not configured (R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_BUCKET_NAME).",
+    );
     process.exit(1);
   }
 
@@ -190,9 +212,7 @@ async function main() {
       }
 
       // Download
-      const getResponse = await client.send(
-        new GetObjectCommand({ Bucket: bucketName, Key: key }),
-      );
+      const getResponse = await client.send(new GetObjectCommand({ Bucket: bucketName, Key: key }));
 
       if (!getResponse.Body) {
         throw new Error("Empty response body");
@@ -203,9 +223,7 @@ async function main() {
       for await (const chunk of body) {
         chunks.push(chunk);
       }
-      const encrypted = new Uint8Array(
-        chunks.reduce((acc, c) => acc + c.length, 0),
-      );
+      const encrypted = new Uint8Array(chunks.reduce((acc, c) => acc + c.length, 0));
       let offset = 0;
       for (const chunk of chunks) {
         encrypted.set(chunk, offset);
@@ -251,7 +269,9 @@ async function main() {
     for (const f of failures) {
       console.log(`  ${f.key}: ${f.error}`);
     }
-    console.log("\nWARNING: Do NOT remove PHI_ENCRYPTION_KEY_OLD until all files are re-encrypted.");
+    console.log(
+      "\nWARNING: Do NOT remove PHI_ENCRYPTION_KEY_OLD until all files are re-encrypted.",
+    );
     process.exit(1);
   }
 

@@ -34,7 +34,12 @@ interface DynamicHeaderProps {
  * Converts translation keys to localized labels and passes
  * them to the selected header component.
  */
-export function DynamicHeader({ logoUrl, clinicName, headerVariant, template }: DynamicHeaderProps) {
+export function DynamicHeader({
+  logoUrl,
+  clinicName,
+  headerVariant,
+  template,
+}: DynamicHeaderProps) {
   const [locale] = useLocale();
 
   const navItems = defaultNavLinks.map((link) => ({

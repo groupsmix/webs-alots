@@ -1,6 +1,16 @@
 "use client";
 
-import { Calendar, Users, UserPlus, Clock, CreditCard, FileText, Phone, MessageCircle, CheckCircle } from "lucide-react";
+import {
+  Calendar,
+  Users,
+  UserPlus,
+  Clock,
+  CreditCard,
+  FileText,
+  Phone,
+  MessageCircle,
+  CheckCircle,
+} from "lucide-react";
 import { useState, useEffect } from "react";
 import { CashRegister } from "@/components/receptionist/cash-register";
 import { EndOfDayReportButton } from "@/components/receptionist/end-of-day-report-button";
@@ -23,7 +33,10 @@ import {
   type PatientView,
 } from "@/lib/data/client";
 
-const statusVariant: Record<string, "default" | "success" | "warning" | "destructive" | "secondary" | "outline"> = {
+const statusVariant: Record<
+  string,
+  "default" | "success" | "warning" | "destructive" | "secondary" | "outline"
+> = {
   scheduled: "outline",
   confirmed: "default",
   "in-progress": "warning",
@@ -46,7 +59,10 @@ export default function ReceptionistDashboardPage() {
     async function load() {
       const user = await getCurrentUser();
       if (controller.signal.aborted) return;
-      if (!user?.clinic_id) { setLoading(false); return; }
+      if (!user?.clinic_id) {
+        setLoading(false);
+        return;
+      }
       setClinicId(user.clinic_id);
       const [appts, invoices, patients] = await Promise.all([
         fetchTodayAppointments(user.clinic_id),
@@ -68,16 +84,35 @@ export default function ReceptionistDashboardPage() {
         setLoading(false);
       }
     });
-    return () => { controller.abort(); };
+    return () => {
+      controller.abort();
+    };
   }, []);
 
-  const checkedIn = todayAppts.filter((a) => a.status === "confirmed" || a.status === "in-progress").length;
+  const checkedIn = todayAppts.filter(
+    (a) => a.status === "confirmed" || a.status === "in-progress",
+  ).length;
 
   const stats = [
-    { icon: Calendar, label: "Today's Bookings", value: todayAppts.length.toString(), color: "text-blue-600" },
-    { icon: Users, label: "Checked In", value: (checkedIn + checkedInIds.size).toString(), color: "text-green-600" },
+    {
+      icon: Calendar,
+      label: "Today's Bookings",
+      value: todayAppts.length.toString(),
+      color: "text-blue-600",
+    },
+    {
+      icon: Users,
+      label: "Checked In",
+      value: (checkedIn + checkedInIds.size).toString(),
+      color: "text-green-600",
+    },
     { icon: UserPlus, label: "Walk-ins Today", value: "0", color: "text-purple-600" },
-    { icon: CreditCard, label: "Revenue (Month)", value: `${totalRevenue} MAD`, color: "text-orange-600" },
+    {
+      icon: CreditCard,
+      label: "Revenue (Month)",
+      value: `${totalRevenue} MAD`,
+      color: "text-orange-600",
+    },
   ];
 
   const handleCheckIn = (id: string) => {
@@ -100,7 +135,9 @@ export default function ReceptionistDashboardPage() {
   if (error) {
     return (
       <div className="p-8 text-center">
-        <p className="text-red-600 font-medium">Failed to load data. Please try refreshing the page.</p>
+        <p className="text-red-600 font-medium">
+          Failed to load data. Please try refreshing the page.
+        </p>
         {error.message && <p className="text-sm text-muted-foreground mt-2">{error.message}</p>}
       </div>
     );
@@ -162,12 +199,17 @@ export default function ReceptionistDashboardPage() {
                     <div key={apt.id} className="flex items-center gap-2 rounded-lg border p-2">
                       <Avatar className="h-8 w-8">
                         <AvatarFallback className="text-[10px]">
-                          {apt.patientName.split(" ").map((n) => n[0]).join("")}
+                          {apt.patientName
+                            .split(" ")
+                            .map((n) => n[0])
+                            .join("")}
                         </AvatarFallback>
                       </Avatar>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium truncate">{apt.patientName}</p>
-                        <p className="text-[10px] text-muted-foreground truncate">{apt.serviceName}</p>
+                        <p className="text-[10px] text-muted-foreground truncate">
+                          {apt.serviceName}
+                        </p>
                       </div>
                       <div className="text-right shrink-0">
                         <p className="text-xs font-medium">{apt.time}</p>
@@ -179,17 +221,37 @@ export default function ReceptionistDashboardPage() {
                         </Badge>
                       </div>
                       <div className="flex flex-col gap-0.5 shrink-0">
-                        {!isCheckedIn && apt.status !== "completed" && apt.status !== "cancelled" && (
-                          <Button variant="outline" size="sm" className="h-6 w-6 p-0" onClick={() => handleCheckIn(apt.id)} title="Check in">
-                            <CheckCircle className="h-3 w-3 text-green-600" />
-                          </Button>
-                        )}
+                        {!isCheckedIn &&
+                          apt.status !== "completed" &&
+                          apt.status !== "cancelled" && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="h-6 w-6 p-0"
+                              onClick={() => handleCheckIn(apt.id)}
+                              title="Check in"
+                            >
+                              <CheckCircle className="h-3 w-3 text-green-600" />
+                            </Button>
+                          )}
                         {patient && (
                           <>
-                            <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={() => handleCallPatient(patient.phone)} title="Call">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-6 w-6 p-0"
+                              onClick={() => handleCallPatient(patient.phone)}
+                              title="Call"
+                            >
                               <Phone className="h-3 w-3 text-blue-600" />
                             </Button>
-                            <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={() => handleWhatsApp(patient.phone)} title="WhatsApp">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-6 w-6 p-0"
+                              onClick={() => handleWhatsApp(patient.phone)}
+                              title="WhatsApp"
+                            >
                               <MessageCircle className="h-3 w-3 text-green-600" />
                             </Button>
                           </>
@@ -205,10 +267,7 @@ export default function ReceptionistDashboardPage() {
 
         {/* Column 2: Waiting Room (Real-time via Supabase) */}
         {clinicId ? (
-          <RealtimeWaitingRoom
-            clinicId={clinicId}
-            onCallIn={(id) => handleCheckIn(id)}
-          />
+          <RealtimeWaitingRoom clinicId={clinicId} onCallIn={(id) => handleCheckIn(id)} />
         ) : (
           <Card>
             <CardHeader>
@@ -236,9 +295,7 @@ export default function ReceptionistDashboardPage() {
           />
 
           {/* Quick Patient Registration */}
-          {clinicId && (
-            <QuickPatientRegistration clinicId={clinicId} />
-          )}
+          {clinicId && <QuickPatientRegistration clinicId={clinicId} />}
 
           {/* Cash Register */}
           <CashRegister />

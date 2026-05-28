@@ -27,7 +27,9 @@ const ALL_AUTHENTICATED_ROLES: UserRole[] = [
  * Body: { trigger, variables, recipientId, channels }
  */
 
-export const POST = withAuthValidation(notificationDispatchSchema, async (body, request, { supabase, profile }) => {
+export const POST = withAuthValidation(
+  notificationDispatchSchema,
+  async (body, request, { supabase, profile }) => {
     const { trigger, variables, recipientId, channels } = body as {
       trigger: NotificationTrigger;
       variables: TemplateVariables;
@@ -49,15 +51,12 @@ export const POST = withAuthValidation(notificationDispatchSchema, async (body, 
       }
     }
 
-    const results = await dispatchNotification(
-      trigger,
-      variables || {},
-      recipientId,
-      channels,
-    );
+    const results = await dispatchNotification(trigger, variables || {}, recipientId, channels);
 
     return apiSuccess({ results });
-}, STAFF_ROLES);
+  },
+  STAFF_ROLES,
+);
 
 /**
  * GET /api/notifications
@@ -117,9 +116,7 @@ export const GET = withAuth(async (request, { supabase, profile }) => {
       query = query.eq("type", type);
     }
 
-    query = query
-      .order("sent_at", { ascending: false })
-      .range(offset, offset + limit - 1);
+    query = query.order("sent_at", { ascending: false }).range(offset, offset + limit - 1);
 
     const { data: notifications, error, count } = await query;
 
@@ -135,7 +132,10 @@ export const GET = withAuth(async (request, { supabase, profile }) => {
     });
   } catch (err) {
     // F-A93-03: Use logger.error for actual failures
-    logger.error("Unhandled error fetching notifications", { context: "notifications", error: err });
+    logger.error("Unhandled error fetching notifications", {
+      context: "notifications",
+      error: err,
+    });
     return apiInternalError("Failed to fetch notifications");
   }
 }, ALL_AUTHENTICATED_ROLES);

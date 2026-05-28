@@ -133,15 +133,21 @@ export async function POST(request: NextRequest) {
     if (stripeEventId) {
       try {
         const clinicIdFromMeta = event.data?.object?.metadata?.clinic_id ?? null;
-        const { error: dedupErr } = await (supabase as never as {
-          from(t: string): {
-            insert(r: Record<string, unknown>): Promise<{ error: { code?: string; message: string } | null }>;
-          };
-        }).from("processed_stripe_events").insert({
-          event_id: stripeEventId,
-          event_type: event.type,
-          clinic_id: clinicIdFromMeta,
-        });
+        const { error: dedupErr } = await (
+          supabase as never as {
+            from(t: string): {
+              insert(
+                r: Record<string, unknown>,
+              ): Promise<{ error: { code?: string; message: string } | null }>;
+            };
+          }
+        )
+          .from("processed_stripe_events")
+          .insert({
+            event_id: stripeEventId,
+            event_type: event.type,
+            clinic_id: clinicIdFromMeta,
+          });
 
         if (dedupErr) {
           if (dedupErr.code === "23505") {

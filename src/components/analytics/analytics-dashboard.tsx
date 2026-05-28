@@ -1,8 +1,17 @@
 "use client";
 
 import {
-  Users, TrendingUp, Calendar, XCircle, Globe, Footprints,
-  Star, Clock, RefreshCw, BarChart3, Download,
+  Users,
+  TrendingUp,
+  Calendar,
+  XCircle,
+  Globe,
+  Footprints,
+  Star,
+  Clock,
+  RefreshCw,
+  BarChart3,
+  Download,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 /**
@@ -13,9 +22,21 @@ import { useState, useEffect } from "react";
  * the analytics/reports route.
  */
 import {
-  BarChart, Bar, LineChart, Line, PieChart, Pie, Cell,
-  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip,
-  Legend, ResponsiveContainer,
+  BarChart,
+  Bar,
+  LineChart,
+  Line,
+  PieChart,
+  Pie,
+  Cell,
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
 } from "recharts";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -31,8 +52,15 @@ import {
 import { exportToCSV } from "@/lib/export-data";
 
 const COLORS = [
-  "#2563eb", "#7c3aed", "#db2777", "#ea580c",
-  "#16a34a", "#0891b2", "#ca8a04", "#dc2626", "#4f46e5",
+  "#2563eb",
+  "#7c3aed",
+  "#db2777",
+  "#ea580c",
+  "#16a34a",
+  "#0891b2",
+  "#ca8a04",
+  "#dc2626",
+  "#4f46e5",
 ];
 
 const PERIOD_LABELS: Record<AnalyticsPeriod, string> = {
@@ -49,10 +77,15 @@ function ChangeIndicator({ value, inverted = false }: { value: number; inverted?
     <Badge
       variant="outline"
       className={`text-xs ${
-        isPositive ? "text-green-600 border-green-200" : isNegative ? "text-red-600 border-red-200" : ""
+        isPositive
+          ? "text-green-600 border-green-200"
+          : isNegative
+            ? "text-red-600 border-red-200"
+            : ""
       }`}
     >
-      {value > 0 ? "+" : ""}{value}%
+      {value > 0 ? "+" : ""}
+      {value}%
     </Badge>
   );
 }
@@ -67,22 +100,27 @@ export function AnalyticsDashboard({ role = "admin" }: { role?: "admin" | "docto
   useEffect(() => {
     const controller = new AbortController();
     async function load() {
-    setLoading(true);
-    const user = await getCurrentUser();
+      setLoading(true);
+      const user = await getCurrentUser();
       if (controller.signal.aborted) return;
-    if (!user?.clinic_id) { setLoading(false); return; }
-    const data = await fetchAnalytics(user.clinic_id, timePeriod);
+      if (!user?.clinic_id) {
+        setLoading(false);
+        return;
+      }
+      const data = await fetchAnalytics(user.clinic_id, timePeriod);
       if (controller.signal.aborted) return;
-    setAnalytics(data);
-    setLoading(false);
-  }
+      setAnalytics(data);
+      setLoading(false);
+    }
     load().catch((err) => {
       if (!controller.signal.aborted) {
         setError(err instanceof Error ? err : new Error(String(err)));
         setLoading(false);
       }
     });
-    return () => { controller.abort(); };
+    return () => {
+      controller.abort();
+    };
   }, [timePeriod]);
 
   if (loading) {
@@ -92,7 +130,9 @@ export function AnalyticsDashboard({ role = "admin" }: { role?: "admin" | "docto
   if (error) {
     return (
       <div className="p-8 text-center">
-        <p className="text-red-600 font-medium">Failed to load data. Please try refreshing the page.</p>
+        <p className="text-red-600 font-medium">
+          Failed to load data. Please try refreshing the page.
+        </p>
         {error.message && <p className="text-sm text-muted-foreground mt-2">{error.message}</p>}
       </div>
     );
@@ -120,25 +160,38 @@ export function AnalyticsDashboard({ role = "admin" }: { role?: "admin" | "docto
   } = analytics;
 
   const noShowAppts = dailyAnalytics.reduce((sum, d) => sum + d.noShows, 0);
-  const noShowRate = totalAppointments > 0 ? Math.round((noShowAppts / totalAppointments) * 100) : 0;
+  const noShowRate =
+    totalAppointments > 0 ? Math.round((noShowAppts / totalAppointments) * 100) : 0;
 
   const onlineBookings = dailyAnalytics.reduce((sum, d) => sum + d.onlineBookings, 0);
   const walkInBookings = dailyAnalytics.reduce((sum, d) => sum + d.walkIns, 0);
   const totalBookings = onlineBookings + walkInBookings || 1;
 
   const bookingSourceData = [
-    { name: "Online", value: onlineBookings, percentage: Math.round((onlineBookings / totalBookings) * 100) },
-    { name: "Walk-in", value: walkInBookings, percentage: Math.round((walkInBookings / totalBookings) * 100) },
+    {
+      name: "Online",
+      value: onlineBookings,
+      percentage: Math.round((onlineBookings / totalBookings) * 100),
+    },
+    {
+      name: "Walk-in",
+      value: walkInBookings,
+      percentage: Math.round((walkInBookings / totalBookings) * 100),
+    },
   ];
 
   const _latestRetention = patientRetention[patientRetention.length - 1];
 
   const revenueData =
     revenuePeriod === "daily"
-      ? dailyAnalytics.map((d) => ({ name: d.date.slice(5), revenue: d.revenue, patients: d.patientCount }))
+      ? dailyAnalytics.map((d) => ({
+          name: d.date.slice(5),
+          revenue: d.revenue,
+          patients: d.patientCount,
+        }))
       : revenuePeriod === "weekly"
-      ? weeklyRevenue.map((w) => ({ name: w.week, revenue: w.revenue, patients: w.patients }))
-      : monthlyRevenue.map((m) => ({ name: m.month, revenue: m.revenue, patients: m.patients }));
+        ? weeklyRevenue.map((w) => ({ name: w.week, revenue: w.revenue, patients: w.patients }))
+        : monthlyRevenue.map((m) => ({ name: m.month, revenue: m.revenue, patients: m.patients }));
 
   const _totalDailyRevenue = dailyAnalytics.reduce((sum, d) => sum + d.revenue, 0);
   const _totalDailyPatients = dailyAnalytics.reduce((sum, d) => sum + d.patientCount, 0);
@@ -164,27 +217,31 @@ export function AnalyticsDashboard({ role = "admin" }: { role?: "admin" | "docto
               </Button>
             ))}
           </div>
-          <Button variant="outline" size="sm" onClick={() => {
-            exportToCSV(
-              dailyAnalytics.map((d) => ({
-                date: d.date,
-                patients: d.patientCount,
-                revenue: d.revenue,
-                noShows: d.noShows,
-                onlineBookings: d.onlineBookings,
-                walkIns: d.walkIns,
-              })),
-              [
-                { key: "date", label: "Date" },
-                { key: "patients", label: "Patients" },
-                { key: "revenue", label: "Revenue (MAD)" },
-                { key: "noShows", label: "No-Shows" },
-                { key: "onlineBookings", label: "Online Bookings" },
-                { key: "walkIns", label: "Walk-Ins" },
-              ],
-              `analytics-${new Date().toISOString().split("T")[0]}.csv`,
-            );
-          }}>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              exportToCSV(
+                dailyAnalytics.map((d) => ({
+                  date: d.date,
+                  patients: d.patientCount,
+                  revenue: d.revenue,
+                  noShows: d.noShows,
+                  onlineBookings: d.onlineBookings,
+                  walkIns: d.walkIns,
+                })),
+                [
+                  { key: "date", label: "Date" },
+                  { key: "patients", label: "Patients" },
+                  { key: "revenue", label: "Revenue (MAD)" },
+                  { key: "noShows", label: "No-Shows" },
+                  { key: "onlineBookings", label: "Online Bookings" },
+                  { key: "walkIns", label: "Walk-Ins" },
+                ],
+                `analytics-${new Date().toISOString().split("T")[0]}.csv`,
+              );
+            }}
+          >
             <Download className="h-4 w-4 mr-1" />
             Export CSV
           </Button>
@@ -205,7 +262,9 @@ export function AnalyticsDashboard({ role = "admin" }: { role?: "admin" | "docto
             </div>
             <p className="text-2xl font-bold">{periodComparison.currentPatients}</p>
             <p className="text-xs text-muted-foreground">Patients ({PERIOD_LABELS[timePeriod]})</p>
-            <p className="text-[10px] text-muted-foreground mt-0.5">vs prev: {periodComparison.previousPatients}</p>
+            <p className="text-[10px] text-muted-foreground mt-0.5">
+              vs prev: {periodComparison.previousPatients}
+            </p>
           </CardContent>
         </Card>
         <Card>
@@ -214,9 +273,13 @@ export function AnalyticsDashboard({ role = "admin" }: { role?: "admin" | "docto
               <TrendingUp className="h-5 w-5 text-green-600" />
               <ChangeIndicator value={periodComparison.revenueChange} />
             </div>
-            <p className="text-2xl font-bold">{periodComparison.currentRevenue.toLocaleString()} MAD</p>
+            <p className="text-2xl font-bold">
+              {periodComparison.currentRevenue.toLocaleString()} MAD
+            </p>
             <p className="text-xs text-muted-foreground">Revenue ({PERIOD_LABELS[timePeriod]})</p>
-            <p className="text-[10px] text-muted-foreground mt-0.5">vs prev: {periodComparison.previousRevenue.toLocaleString()} MAD</p>
+            <p className="text-[10px] text-muted-foreground mt-0.5">
+              vs prev: {periodComparison.previousRevenue.toLocaleString()} MAD
+            </p>
           </CardContent>
         </Card>
         <Card>
@@ -227,7 +290,9 @@ export function AnalyticsDashboard({ role = "admin" }: { role?: "admin" | "docto
             </div>
             <p className="text-2xl font-bold">{noShowRate}%</p>
             <p className="text-xs text-muted-foreground">No-show Rate</p>
-            <p className="text-[10px] text-muted-foreground mt-0.5">{periodComparison.currentNoShows} no-shows ({PERIOD_LABELS[timePeriod]})</p>
+            <p className="text-[10px] text-muted-foreground mt-0.5">
+              {periodComparison.currentNoShows} no-shows ({PERIOD_LABELS[timePeriod]})
+            </p>
           </CardContent>
         </Card>
         <Card>
@@ -237,8 +302,12 @@ export function AnalyticsDashboard({ role = "admin" }: { role?: "admin" | "docto
               <ChangeIndicator value={periodComparison.appointmentChange} />
             </div>
             <p className="text-2xl font-bold">{periodComparison.currentAppointments}</p>
-            <p className="text-xs text-muted-foreground">Appointments ({PERIOD_LABELS[timePeriod]})</p>
-            <p className="text-[10px] text-muted-foreground mt-0.5">vs prev: {periodComparison.previousAppointments}</p>
+            <p className="text-xs text-muted-foreground">
+              Appointments ({PERIOD_LABELS[timePeriod]})
+            </p>
+            <p className="text-[10px] text-muted-foreground mt-0.5">
+              vs prev: {periodComparison.previousAppointments}
+            </p>
           </CardContent>
         </Card>
       </div>
@@ -300,7 +369,12 @@ export function AnalyticsDashboard({ role = "admin" }: { role?: "admin" | "docto
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={250}>
-              <BarChart data={dailyAnalytics.map((d) => ({ name: d.date.slice(8), patients: d.patientCount }))}>
+              <BarChart
+                data={dailyAnalytics.map((d) => ({
+                  name: d.date.slice(8),
+                  patients: d.patientCount,
+                }))}
+              >
                 <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
                 <XAxis dataKey="name" tick={{ fontSize: 11 }} />
                 <YAxis tick={{ fontSize: 11 }} />
@@ -329,7 +403,9 @@ export function AnalyticsDashboard({ role = "admin" }: { role?: "admin" | "docto
                   cx="50%"
                   cy="50%"
                   outerRadius={90}
-                  label={({ name, percent }) => `${name} ${((percent as number) * 100).toFixed(0)}%`}
+                  label={({ name, percent }) =>
+                    `${name} ${((percent as number) * 100).toFixed(0)}%`
+                  }
                   labelLine={false}
                 >
                   {servicePopularity.map((_, index) => (
@@ -377,10 +453,15 @@ export function AnalyticsDashboard({ role = "admin" }: { role?: "admin" | "docto
               <div className="space-y-4">
                 {bookingSourceData.map((source, i) => (
                   <div key={source.name} className="flex items-center gap-3">
-                    <div className="h-3 w-3 rounded-full" style={{ backgroundColor: i === 0 ? "#2563eb" : "#f97316" }} />
+                    <div
+                      className="h-3 w-3 rounded-full"
+                      style={{ backgroundColor: i === 0 ? "#2563eb" : "#f97316" }}
+                    />
                     <div>
                       <p className="text-sm font-medium">{source.name}</p>
-                      <p className="text-xs text-muted-foreground">{source.value} bookings ({source.percentage}%)</p>
+                      <p className="text-xs text-muted-foreground">
+                        {source.value} bookings ({source.percentage}%)
+                      </p>
                     </div>
                   </div>
                 ))}
@@ -407,7 +488,13 @@ export function AnalyticsDashboard({ role = "admin" }: { role?: "admin" | "docto
                   formatter={(value) => [`${value}%`, "Retention Rate"]}
                   contentStyle={{ borderRadius: "8px", fontSize: "12px" }}
                 />
-                <Line type="monotone" dataKey="retentionRate" stroke="#16a34a" strokeWidth={2} dot={{ r: 4 }} />
+                <Line
+                  type="monotone"
+                  dataKey="retentionRate"
+                  stroke="#16a34a"
+                  strokeWidth={2}
+                  dot={{ r: 4 }}
+                />
               </LineChart>
             </ResponsiveContainer>
           </CardContent>
@@ -428,7 +515,9 @@ export function AnalyticsDashboard({ role = "admin" }: { role?: "admin" | "docto
               <div className="min-w-[400px]">
                 <div className="flex gap-1 mb-1 pl-10">
                   {[9, 10, 11, 12, 14, 15, 16, 17].map((h) => (
-                    <div key={h} className="flex-1 text-center text-[10px] text-muted-foreground">{h}:00</div>
+                    <div key={h} className="flex-1 text-center text-[10px] text-muted-foreground">
+                      {h}:00
+                    </div>
                   ))}
                 </div>
                 {hourlyHeatmap.map((day) => (
@@ -444,9 +533,10 @@ export function AnalyticsDashboard({ role = "admin" }: { role?: "admin" | "docto
                           key={hour}
                           className="flex-1 h-8 rounded text-center flex items-center justify-center text-[10px] font-medium"
                           style={{
-                            backgroundColor: count === 0
-                              ? "var(--muted)"
-                              : `rgba(37, 99, 235, ${0.15 + intensity * 0.75})`,
+                            backgroundColor:
+                              count === 0
+                                ? "var(--muted)"
+                                : `rgba(37, 99, 235, ${0.15 + intensity * 0.75})`,
                             color: intensity > 0.5 ? "white" : "inherit",
                           }}
                           title={`${day.day} ${hour}:00 - ${count} patients`}
@@ -462,7 +552,11 @@ export function AnalyticsDashboard({ role = "admin" }: { role?: "admin" | "docto
             <div className="flex items-center gap-2 mt-3 justify-end">
               <span className="text-[10px] text-muted-foreground">Less</span>
               {[0.15, 0.35, 0.55, 0.75, 0.9].map((o, i) => (
-                <div key={i} className="h-3 w-6 rounded" style={{ backgroundColor: `rgba(37, 99, 235, ${o})` }} />
+                <div
+                  key={i}
+                  className="h-3 w-6 rounded"
+                  style={{ backgroundColor: `rgba(37, 99, 235, ${o})` }}
+                />
               ))}
               <span className="text-[10px] text-muted-foreground">More</span>
             </div>
@@ -491,8 +585,23 @@ export function AnalyticsDashboard({ role = "admin" }: { role?: "admin" | "docto
                   contentStyle={{ borderRadius: "8px", fontSize: "12px" }}
                 />
                 <Legend />
-                <Line type="monotone" dataKey="averageScore" stroke="#eab308" strokeWidth={2} dot={{ r: 4 }} name="Avg Score" />
-                <Line type="monotone" dataKey="count" stroke="#8b5cf6" strokeWidth={2} dot={{ r: 4 }} name="Review Count" yAxisId="right" />
+                <Line
+                  type="monotone"
+                  dataKey="averageScore"
+                  stroke="#eab308"
+                  strokeWidth={2}
+                  dot={{ r: 4 }}
+                  name="Avg Score"
+                />
+                <Line
+                  type="monotone"
+                  dataKey="count"
+                  stroke="#8b5cf6"
+                  strokeWidth={2}
+                  dot={{ r: 4 }}
+                  name="Review Count"
+                  yAxisId="right"
+                />
               </LineChart>
             </ResponsiveContainer>
           </CardContent>
@@ -519,9 +628,14 @@ export function AnalyticsDashboard({ role = "admin" }: { role?: "admin" | "docto
                     </div>
                     <div className="flex items-center gap-2">
                       <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
-                        <div className="h-full bg-primary rounded-full" style={{ width: `${service.percentage}%` }} />
+                        <div
+                          className="h-full bg-primary rounded-full"
+                          style={{ width: `${service.percentage}%` }}
+                        />
                       </div>
-                      <Badge variant="outline" className="text-[10px]">{service.count} visits</Badge>
+                      <Badge variant="outline" className="text-[10px]">
+                        {service.count} visits
+                      </Badge>
                     </div>
                   </div>
                 ))}
@@ -536,8 +650,18 @@ export function AnalyticsDashboard({ role = "admin" }: { role?: "admin" | "docto
                   <YAxis tick={{ fontSize: 11 }} />
                   <Tooltip contentStyle={{ borderRadius: "8px", fontSize: "12px" }} />
                   <Legend />
-                  <Bar dataKey="newPatients" fill="#2563eb" radius={[4, 4, 0, 0]} name="New Patients" />
-                  <Bar dataKey="returningPatients" fill="#16a34a" radius={[4, 4, 0, 0]} name="Returning" />
+                  <Bar
+                    dataKey="newPatients"
+                    fill="#2563eb"
+                    radius={[4, 4, 0, 0]}
+                    name="New Patients"
+                  />
+                  <Bar
+                    dataKey="returningPatients"
+                    fill="#16a34a"
+                    radius={[4, 4, 0, 0]}
+                    name="Returning"
+                  />
                 </BarChart>
               </ResponsiveContainer>
             </TabsContent>
@@ -553,7 +677,12 @@ export function AnalyticsDashboard({ role = "admin" }: { role?: "admin" | "docto
                     contentStyle={{ borderRadius: "8px", fontSize: "12px" }}
                   />
                   <Legend />
-                  <Bar dataKey="revenue" fill="#7c3aed" radius={[4, 4, 0, 0]} name="Revenue (MAD)" />
+                  <Bar
+                    dataKey="revenue"
+                    fill="#7c3aed"
+                    radius={[4, 4, 0, 0]}
+                    name="Revenue (MAD)"
+                  />
                 </BarChart>
               </ResponsiveContainer>
             </TabsContent>

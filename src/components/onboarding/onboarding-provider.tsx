@@ -75,7 +75,9 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
       setLoading(false);
     }
     init().catch(() => setLoading(false));
-    return () => { controller.abort(); };
+    return () => {
+      controller.abort();
+    };
   }, []);
 
   const markComplete = useCallback((stepId: OnboardingStepId) => {
@@ -102,15 +104,17 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
   }, []);
 
   return (
-    <OnboardingContext value={{
-      state,
-      loading,
-      showTour,
-      setShowTour,
-      markComplete,
-      dismiss,
-      reshow,
-    }}>
+    <OnboardingContext
+      value={{
+        state,
+        loading,
+        showTour,
+        setShowTour,
+        markComplete,
+        dismiss,
+        reshow,
+      }}
+    >
       {children}
     </OnboardingContext>
   );

@@ -170,44 +170,42 @@ async function verifyDnsTxtRecord(hostname: string, token: string): Promise<bool
 // bytes before length checks, so attackers cannot register two visually
 // identical clinics using composed-vs-decomposed Unicode and cannot smuggle
 // `\u0000` past downstream consumers.
-const registerClinicSchema = z.object({
-  clinic_name: z
-    .string()
-    .transform(normalizeText)
-    .pipe(z.string().min(2, "Le nom de la clinique est requis").max(200)),
-  doctor_name: z
-    .string()
-    .transform(normalizeText)
-    .pipe(z.string().min(2, "Le nom du docteur est requis").max(200)),
-  email: z.string().email("Email invalide").max(254),
-  phone: z.string().min(8, "Numéro de téléphone invalide").max(30),
-  specialty: z
-    .string()
-    .transform(normalizeText)
-    .pipe(z.string().min(1, "La spécialité est requise").max(200)),
-  city: z
-    .string()
-    .transform(normalizeText)
-    .pipe(z.string().max(200))
-    .optional(),
-  // F-28: Cloudflare Turnstile token for bot protection
-  turnstile_token: z.string().min(1, "Turnstile verification required").optional(),
-  // R-12: Identity verification
-  // Option 1: DNS TXT record verification.
-  // The token is NOT supplied by the client — the server derives it from
-  // (email, website_domain) so attackers cannot self-verify by supplying
-  // their own token alongside their own domain. Clients must first call
-  // POST /api/v1/register-clinic/verification-token to fetch the token,
-  // then publish it as a TXT record before calling this endpoint.
-  // Accepts either a full URL (`https://myclinic.ma`) or a bare hostname
-  // (`myclinic.ma`); both are normalized via normalizeDomain() before use,
-  // and the verification-token endpoint accepts the same shapes so the
-  // value the user supplies to both endpoints is identical.
-  website_domain: z.string().min(1, "Domain is required").max(255).optional(),
-  // Option 2: Phone OTP from pre-listed registry
-  phone_otp: z.string().optional(),
-  phone_otp_id: z.string().optional(),
-}).strict();
+const registerClinicSchema = z
+  .object({
+    clinic_name: z
+      .string()
+      .transform(normalizeText)
+      .pipe(z.string().min(2, "Le nom de la clinique est requis").max(200)),
+    doctor_name: z
+      .string()
+      .transform(normalizeText)
+      .pipe(z.string().min(2, "Le nom du docteur est requis").max(200)),
+    email: z.string().email("Email invalide").max(254),
+    phone: z.string().min(8, "Numéro de téléphone invalide").max(30),
+    specialty: z
+      .string()
+      .transform(normalizeText)
+      .pipe(z.string().min(1, "La spécialité est requise").max(200)),
+    city: z.string().transform(normalizeText).pipe(z.string().max(200)).optional(),
+    // F-28: Cloudflare Turnstile token for bot protection
+    turnstile_token: z.string().min(1, "Turnstile verification required").optional(),
+    // R-12: Identity verification
+    // Option 1: DNS TXT record verification.
+    // The token is NOT supplied by the client — the server derives it from
+    // (email, website_domain) so attackers cannot self-verify by supplying
+    // their own token alongside their own domain. Clients must first call
+    // POST /api/v1/register-clinic/verification-token to fetch the token,
+    // then publish it as a TXT record before calling this endpoint.
+    // Accepts either a full URL (`https://myclinic.ma`) or a bare hostname
+    // (`myclinic.ma`); both are normalized via normalizeDomain() before use,
+    // and the verification-token endpoint accepts the same shapes so the
+    // value the user supplies to both endpoints is identical.
+    website_domain: z.string().min(1, "Domain is required").max(255).optional(),
+    // Option 2: Phone OTP from pre-listed registry
+    phone_otp: z.string().optional(),
+    phone_otp_id: z.string().optional(),
+  })
+  .strict();
 
 // ---------------------------------------------------------------------------
 // Handler
@@ -223,7 +221,10 @@ export async function POST(request: NextRequest) {
   // Rate limiting (IP-based)
   const clientIp = extractClientIp(request);
   if (!(await registerLimiter.check(`register_${clientIp}`))) {
-    logger.warn("Public registration rate-limit exceeded", { context: "register-clinic", ip: clientIp });
+    logger.warn("Public registration rate-limit exceeded", {
+      context: "register-clinic",
+      ip: clientIp,
+    });
     return apiError("Too many registration attempts. Please try again later.", 429);
   }
 
@@ -296,8 +297,8 @@ export async function POST(request: NextRequest) {
   else {
     return apiError(
       "Identity verification is required. Please provide one of:\n" +
-      "- DNS TXT record on your website domain (set website_domain — token is issued via /api/v1/register-clinic/verification-token)\n" +
-      "- Phone OTP from pre-listed registry (coming soon)",
+        "- DNS TXT record on your website domain (set website_domain — token is issued via /api/v1/register-clinic/verification-token)\n" +
+        "- Phone OTP from pre-listed registry (coming soon)",
       400,
       "VERIFICATION_REQUIRED",
     );
@@ -310,19 +311,16 @@ export async function POST(request: NextRequest) {
       return apiError("Turnstile verification is required", 400);
     }
     try {
-      const verifyRes = await fetch(
-        "https://challenges.cloudflare.com/turnstile/v0/siteverify",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/x-www-form-urlencoded" },
-          body: new URLSearchParams({
-            secret: turnstileSecret,
-            response: data.turnstile_token,
-            remoteip: clientIp,
-          }),
-          signal: AbortSignal.timeout(5_000),
-        },
-      );
+      const verifyRes = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams({
+          secret: turnstileSecret,
+          response: data.turnstile_token,
+          remoteip: clientIp,
+        }),
+        signal: AbortSignal.timeout(5_000),
+      });
       const verifyData = (await verifyRes.json()) as { success: boolean };
       if (!verifyData.success) {
         logger.warn("Turnstile verification failed", {
@@ -408,7 +406,7 @@ export async function POST(request: NextRequest) {
         p_city: string | null;
         p_specialty: string;
         p_auth_id: string;
-      }
+      },
     ) => ReturnType<typeof supabase.rpc>;
 
     const { data: clinicId, error: rpcError } = await rpc("register_new_clinic", {
@@ -437,7 +435,7 @@ export async function POST(request: NextRequest) {
       user_metadata: {
         full_name: data.doctor_name,
         clinic_id: clinicId,
-      }
+      },
     });
 
     // MEDIUM-10: Self-service clinics require manual review before activation.

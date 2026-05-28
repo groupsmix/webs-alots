@@ -13,7 +13,16 @@ interface TimeSlotPickerProps {
   showWaitingList?: boolean;
 }
 
-export function TimeSlotPicker({ slots, allSlots, slotCounts, maxPerSlot = 1, selectedSlot, onSelectSlot, onJoinWaitingList, showWaitingList = false }: TimeSlotPickerProps) {
+export function TimeSlotPicker({
+  slots,
+  allSlots,
+  slotCounts,
+  maxPerSlot = 1,
+  selectedSlot,
+  onSelectSlot,
+  onJoinWaitingList,
+  showWaitingList = false,
+}: TimeSlotPickerProps) {
   const displaySlots = allSlots && allSlots.length > 0 ? allSlots : slots;
 
   if (displaySlots.length === 0) {

@@ -1,6 +1,16 @@
 "use client";
 
-import { ChevronLeft, ChevronRight, Check, Stethoscope, User, Clock, Phone, Loader2, MessageCircle } from "lucide-react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  Check,
+  Stethoscope,
+  User,
+  Clock,
+  Phone,
+  Loader2,
+  MessageCircle,
+} from "lucide-react";
 import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { useLocale } from "@/components/locale-switcher";
 import { useTenant } from "@/components/tenant-provider";
@@ -29,7 +39,11 @@ const DEFAULT_SHOW_WAITING_LIST = true;
 // Step 2: Pick Date & Time
 // Step 3: Confirm (phone number only, no account required)
 
-const STEP_KEYS = ["booking.steps.service", "booking.steps.dateTime", "booking.steps.confirmation"] as const;
+const STEP_KEYS = [
+  "booking.steps.service",
+  "booking.steps.dateTime",
+  "booking.steps.confirmation",
+] as const;
 
 /**
  * Validate Moroccan phone numbers.
@@ -126,10 +140,20 @@ export function BookingForm() {
   const stepAnnouncerRef = useRef<HTMLDivElement>(null);
 
   // Inline validation via useFormValidation hook
-  const validationRules = useMemo(() => ({
-    phone: [commonRules.required(t(locale, "booking.validationPhoneRequired")), commonRules.phone()],
-  }), [locale]);
-  const { onFieldChange: onValidationChange, onFieldBlur: onValidationBlur, getFieldError } = useFormValidation<{ phone: string }>(validationRules);
+  const validationRules = useMemo(
+    () => ({
+      phone: [
+        commonRules.required(t(locale, "booking.validationPhoneRequired")),
+        commonRules.phone(),
+      ],
+    }),
+    [locale],
+  );
+  const {
+    onFieldChange: onValidationChange,
+    onFieldBlur: onValidationBlur,
+    getFieldError,
+  } = useFormValidation<{ phone: string }>(validationRules);
   const { addToast } = useToast();
   const [isJoiningWaitlist, setIsJoiningWaitlist] = useState(false);
 
@@ -152,19 +176,20 @@ export function BookingForm() {
 
     let cancelled = false;
     setLoading(true);
-    Promise.all([
-      fetchDoctors(clinicId),
-      fetchServices(clinicId),
-    ]).then(([dbDoctors, dbServices]) => {
-      if (cancelled) return;
-      setDoctors(dbDoctors.map(mapDoctor));
-      setServices(dbServices.map(mapService));
-      setLoading(false);
-    }).catch((err) => {
-      logger.warn("Operation failed", { context: "booking-form", error: err });
-      if (!cancelled) setLoading(false);
-    });
-    return () => { cancelled = true; };
+    Promise.all([fetchDoctors(clinicId), fetchServices(clinicId)])
+      .then(([dbDoctors, dbServices]) => {
+        if (cancelled) return;
+        setDoctors(dbDoctors.map(mapDoctor));
+        setServices(dbServices.map(mapService));
+        setLoading(false);
+      })
+      .catch((err) => {
+        logger.warn("Operation failed", { context: "booking-form", error: err });
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [tenant?.clinicId]);
 
   // Fetch available slots when date or doctor changes
@@ -177,21 +202,29 @@ export function BookingForm() {
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
         if (cancelled) return;
-        setSlotData(data
-          ? { available: data.slots ?? [], all: data.allSlots ?? [], counts: data.bookedCounts ?? {} }
-          : { available: [], all: [], counts: {} });
+        setSlotData(
+          data
+            ? {
+                available: data.slots ?? [],
+                all: data.allSlots ?? [],
+                counts: data.bookedCounts ?? {},
+              }
+            : { available: [], all: [], counts: {} },
+        );
       })
       .catch(() => {
         if (!cancelled) setSlotData({ available: [], all: [], counts: {} });
       });
 
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [selectedDate, selectedDoctor]);
 
   // Derive slot arrays
-  const availableSlots = (selectedDate && selectedDoctor) ? slotData.available : [];
-  const allSlots = (selectedDate && selectedDoctor) ? slotData.all : [];
-  const slotCounts = (selectedDate && selectedDoctor) ? slotData.counts : {};
+  const availableSlots = selectedDate && selectedDoctor ? slotData.available : [];
+  const allSlots = selectedDate && selectedDoctor ? slotData.all : [];
+  const slotCounts = selectedDate && selectedDoctor ? slotData.counts : {};
 
   const activeServices = useMemo(() => services.filter((s) => s.active), [services]);
 
@@ -207,14 +240,19 @@ export function BookingForm() {
     });
     // Announce step change to screen readers
     if (stepAnnouncerRef.current) {
-      stepAnnouncerRef.current.textContent = t(locale, "booking.stepAnnounce", { step: steps[newStep], current: newStep + 1, total: steps.length });
+      stepAnnouncerRef.current.textContent = t(locale, "booking.stepAnnounce", {
+        step: steps[newStep],
+        current: newStep + 1,
+        total: steps.length,
+      });
     }
   }, []);
 
   const canNext = () => {
     if (step === 0) return !!selectedService && !!selectedDoctor;
     if (step === 1) return !!selectedDate && !!selectedTime;
-    if (step === 2) return !!patientPhone.trim() && isValidMoroccanPhone(patientPhone) && confirmChecked;
+    if (step === 2)
+      return !!patientPhone.trim() && isValidMoroccanPhone(patientPhone) && confirmChecked;
     return true;
   };
 
@@ -224,15 +262,47 @@ export function BookingForm() {
   const stepErrors = useMemo(() => {
     const show = (field: string) => touchedFields[field] || stepAttempted;
     return {
-      doctor: show("doctor") && step === 0 && !selectedDoctor ? t(locale, "booking.error.chooseDoctor") : null,
-      service: show("service") && step === 0 && selectedDoctor && !selectedService ? t(locale, "booking.error.chooseService") : null,
-      date: show("date") && step === 1 && !selectedDate ? t(locale, "booking.error.chooseDate") : null,
-      time: show("time") && step === 1 && selectedDate && !selectedTime ? t(locale, "booking.error.chooseTime") : null,
-      phone: show("phone") && step === 2 && patientPhone.trim() !== "" && !isValidMoroccanPhone(patientPhone) ? t(locale, "booking.error.invalidPhone") : null,
-      phoneRequired: show("phone") && step === 2 && patientPhone.trim() === "" ? t(locale, "booking.error.phoneRequired") : null,
-      confirm: show("confirm") && step === 2 && !confirmChecked ? t(locale, "booking.error.confirmRequired") : null,
+      doctor:
+        show("doctor") && step === 0 && !selectedDoctor
+          ? t(locale, "booking.error.chooseDoctor")
+          : null,
+      service:
+        show("service") && step === 0 && selectedDoctor && !selectedService
+          ? t(locale, "booking.error.chooseService")
+          : null,
+      date:
+        show("date") && step === 1 && !selectedDate ? t(locale, "booking.error.chooseDate") : null,
+      time:
+        show("time") && step === 1 && selectedDate && !selectedTime
+          ? t(locale, "booking.error.chooseTime")
+          : null,
+      phone:
+        show("phone") &&
+        step === 2 &&
+        patientPhone.trim() !== "" &&
+        !isValidMoroccanPhone(patientPhone)
+          ? t(locale, "booking.error.invalidPhone")
+          : null,
+      phoneRequired:
+        show("phone") && step === 2 && patientPhone.trim() === ""
+          ? t(locale, "booking.error.phoneRequired")
+          : null,
+      confirm:
+        show("confirm") && step === 2 && !confirmChecked
+          ? t(locale, "booking.error.confirmRequired")
+          : null,
     };
-  }, [touchedFields, stepAttempted, step, selectedDoctor, selectedService, selectedDate, selectedTime, patientPhone, confirmChecked]);
+  }, [
+    touchedFields,
+    stepAttempted,
+    step,
+    selectedDoctor,
+    selectedService,
+    selectedDate,
+    selectedTime,
+    patientPhone,
+    confirmChecked,
+  ]);
 
   const handleJoinWaitingList = async (slot: string) => {
     // Require a valid phone before joining the waiting list (Issue 17)
@@ -259,7 +329,10 @@ export function BookingForm() {
       });
       const data = await res.json();
       if (res.ok) {
-        addToast(t(locale, "booking.waitlist.success", { date: selectedDate, time: slot }), "success");
+        addToast(
+          t(locale, "booking.waitlist.success", { date: selectedDate, time: slot }),
+          "success",
+        );
       } else {
         addToast(data.error ?? t(locale, "booking.waitlist.error"), "error");
       }
@@ -306,7 +379,7 @@ export function BookingForm() {
             ? t(locale, "booking.errorServiceUnavailable")
             : verifyRes.status === 400
               ? t(locale, "booking.errorInvalidPhone")
-              : (verifyData.error as string | undefined) ?? t(locale, "booking.errorConnection");
+              : ((verifyData.error as string | undefined) ?? t(locale, "booking.errorConnection"));
         setBookingError(errorMsg);
         setVerificationStatus(null);
         return;
@@ -381,12 +454,42 @@ export function BookingForm() {
           </p>
 
           <div className="rounded-lg border p-4 max-w-sm mx-auto text-left text-sm space-y-1">
-            <p><span className="text-muted-foreground">{t(locale, "booking.success.labelService")}</span> {service?.name ?? "—"}</p>
-            <p><span className="text-muted-foreground">{t(locale, "booking.success.labelDoctor")}</span> {doctor?.name ?? "—"}</p>
-            <p><span className="text-muted-foreground">{t(locale, "booking.success.labelDate")}</span> {formatDisplayDate(selectedDate, locale, "long")}</p>
-            <p><span className="text-muted-foreground">{t(locale, "booking.success.labelTime")}</span> {selectedTime}</p>
-            <p><span className="text-muted-foreground">{t(locale, "booking.success.labelDuration")}</span> {service?.duration ?? "—"} min</p>
-            <p><span className="text-muted-foreground">{t(locale, "booking.success.labelPrice")}</span> {service?.price ?? "—"} {service?.currency ?? ""}</p>
+            <p>
+              <span className="text-muted-foreground">
+                {t(locale, "booking.success.labelService")}
+              </span>{" "}
+              {service?.name ?? "—"}
+            </p>
+            <p>
+              <span className="text-muted-foreground">
+                {t(locale, "booking.success.labelDoctor")}
+              </span>{" "}
+              {doctor?.name ?? "—"}
+            </p>
+            <p>
+              <span className="text-muted-foreground">
+                {t(locale, "booking.success.labelDate")}
+              </span>{" "}
+              {formatDisplayDate(selectedDate, locale, "long")}
+            </p>
+            <p>
+              <span className="text-muted-foreground">
+                {t(locale, "booking.success.labelTime")}
+              </span>{" "}
+              {selectedTime}
+            </p>
+            <p>
+              <span className="text-muted-foreground">
+                {t(locale, "booking.success.labelDuration")}
+              </span>{" "}
+              {service?.duration ?? "—"} min
+            </p>
+            <p>
+              <span className="text-muted-foreground">
+                {t(locale, "booking.success.labelPrice")}
+              </span>{" "}
+              {service?.price ?? "—"} {service?.currency ?? ""}
+            </p>
           </div>
 
           {manageUrl && (
@@ -405,19 +508,22 @@ export function BookingForm() {
             <span>{t(locale, "booking.success.whatsappSent")}</span>
           </div>
 
-          <Button className="mt-6" onClick={() => {
-            setSubmitted(false);
-            setStep(0);
-            setSelectedDoctor("");
-            setSelectedService("");
-            setSelectedDate("");
-            setSelectedTime("");
-            setPatientPhone("");
-            setPatientName("");
-            setIsFirstVisit(true);
-            setBookingId(null);
-            setBookingError(null);
-          }}>
+          <Button
+            className="mt-6"
+            onClick={() => {
+              setSubmitted(false);
+              setStep(0);
+              setSelectedDoctor("");
+              setSelectedService("");
+              setSelectedDate("");
+              setSelectedTime("");
+              setPatientPhone("");
+              setPatientName("");
+              setIsFirstVisit(true);
+              setBookingId(null);
+              setBookingError(null);
+            }}
+          >
             {t(locale, "booking.success.bookAnother")}
           </Button>
         </CardContent>
@@ -454,7 +560,9 @@ export function BookingForm() {
               >
                 {i < step ? <Check className="h-4 w-4" /> : i + 1}
               </div>
-              <span className={`text-xs ml-2 hidden sm:block ${i <= step ? "font-medium" : "text-muted-foreground"}`}>
+              <span
+                className={`text-xs ml-2 hidden sm:block ${i <= step ? "font-medium" : "text-muted-foreground"}`}
+              >
                 {s}
               </span>
               {i < steps.length - 1 && (
@@ -474,18 +582,30 @@ export function BookingForm() {
           <div className="space-y-6" role="tabpanel" aria-labelledby="step-heading-0">
             {/* Select doctor */}
             <div>
-              <p id="step-heading-0" ref={(el) => { stepHeadingRefs.current[0] = el; }} tabIndex={-1} className="text-sm font-medium mb-3 flex items-center gap-2 outline-none">
+              <p
+                id="step-heading-0"
+                ref={(el) => {
+                  stepHeadingRefs.current[0] = el;
+                }}
+                tabIndex={-1}
+                className="text-sm font-medium mb-3 flex items-center gap-2 outline-none"
+              >
                 <User className="h-4 w-4 text-primary" />
                 {t(locale, "booking.chooseDoctor")}
               </p>
               {stepErrors.doctor && (
-                <p className="text-xs text-destructive mb-2" role="alert">{stepErrors.doctor}</p>
+                <p className="text-xs text-destructive mb-2" role="alert">
+                  {stepErrors.doctor}
+                </p>
               )}
               <div className="grid gap-2">
                 {doctors.map((d) => (
                   <button
                     key={d.id}
-                    onClick={() => { setSelectedDoctor(d.id); setSelectedService(""); }}
+                    onClick={() => {
+                      setSelectedDoctor(d.id);
+                      setSelectedService("");
+                    }}
                     className={`rounded-lg border p-3 min-h-11 text-left transition-colors ${
                       selectedDoctor === d.id ? "border-primary bg-primary/5" : "hover:bg-muted/50"
                     }`}
@@ -498,7 +618,9 @@ export function BookingForm() {
                         <p className="font-medium text-sm">{d.name}</p>
                         <p className="text-xs text-muted-foreground">{d.specialty}</p>
                       </div>
-                      <Badge variant="outline" className="text-xs shrink-0">{d.consultationFee} MAD</Badge>
+                      <Badge variant="outline" className="text-xs shrink-0">
+                        {d.consultationFee} MAD
+                      </Badge>
                     </div>
                   </button>
                 ))}
@@ -513,7 +635,9 @@ export function BookingForm() {
                   {t(locale, "booking.chooseService")}
                 </p>
                 {stepErrors.service && (
-                  <p className="text-xs text-destructive mb-2" role="alert">{stepErrors.service}</p>
+                  <p className="text-xs text-destructive mb-2" role="alert">
+                    {stepErrors.service}
+                  </p>
                 )}
                 <div className="grid gap-2">
                   {activeServices.map((s) => (
@@ -521,7 +645,9 @@ export function BookingForm() {
                       key={s.id}
                       onClick={() => setSelectedService(s.id)}
                       className={`rounded-lg border p-3 min-h-11 text-left transition-colors ${
-                        selectedService === s.id ? "border-primary bg-primary/5" : "hover:bg-muted/50"
+                        selectedService === s.id
+                          ? "border-primary bg-primary/5"
+                          : "hover:bg-muted/50"
                       }`}
                     >
                       <div className="flex items-center justify-between">
@@ -531,7 +657,9 @@ export function BookingForm() {
                             {s.description} \u00b7 {s.duration} min
                           </p>
                         </div>
-                        <Badge variant="outline" className="text-xs shrink-0">{s.price} {s.currency}</Badge>
+                        <Badge variant="outline" className="text-xs shrink-0">
+                          {s.price} {s.currency}
+                        </Badge>
                       </div>
                     </button>
                   ))}
@@ -545,23 +673,39 @@ export function BookingForm() {
         {step === 1 && (
           <div className="space-y-6" role="tabpanel" aria-labelledby="step-heading-1">
             <div>
-              <p id="step-heading-1" ref={(el) => { stepHeadingRefs.current[1] = el; }} tabIndex={-1} className="text-sm text-muted-foreground mb-3 flex items-center gap-2 outline-none">
+              <p
+                id="step-heading-1"
+                ref={(el) => {
+                  stepHeadingRefs.current[1] = el;
+                }}
+                tabIndex={-1}
+                className="text-sm text-muted-foreground mb-3 flex items-center gap-2 outline-none"
+              >
                 <Clock className="h-4 w-4" />
                 {t(locale, "booking.chooseDateTime")}
               </p>
               {stepErrors.date && (
-                <p className="text-xs text-destructive mb-2" role="alert">{stepErrors.date}</p>
+                <p className="text-xs text-destructive mb-2" role="alert">
+                  {stepErrors.date}
+                </p>
               )}
               <BookingCalendar
                 selectedDate={selectedDate}
-                onSelectDate={(date) => { setSelectedDate(date); setSelectedTime(""); }}
+                onSelectDate={(date) => {
+                  setSelectedDate(date);
+                  setSelectedTime("");
+                }}
               />
             </div>
             {selectedDate && (
               <div>
-                <p className="text-sm text-muted-foreground mb-3">{t(locale, "booking.availableSlots")}</p>
+                <p className="text-sm text-muted-foreground mb-3">
+                  {t(locale, "booking.availableSlots")}
+                </p>
                 {stepErrors.time && (
-                  <p className="text-xs text-destructive mb-2" role="alert">{stepErrors.time}</p>
+                  <p className="text-xs text-destructive mb-2" role="alert">
+                    {stepErrors.time}
+                  </p>
                 )}
                 <TimeSlotPicker
                   slots={availableSlots}
@@ -579,9 +723,22 @@ export function BookingForm() {
             {/* Selected summary */}
             {selectedDate && selectedTime && (
               <div className="rounded-lg bg-muted/50 p-3 text-sm space-y-1">
-                <p className="font-medium text-xs text-muted-foreground uppercase tracking-wide">{t(locale, "booking.summary")}</p>
-                <p>{t(locale, "booking.summaryWith", { service: service?.name ?? "—", doctor: doctor?.name ?? "—" })}</p>
-                <p>{t(locale, "booking.summaryDateTime", { date: formatDisplayDate(selectedDate, locale, "long"), time: selectedTime, duration: String(service?.duration ?? "—") })}</p>
+                <p className="font-medium text-xs text-muted-foreground uppercase tracking-wide">
+                  {t(locale, "booking.summary")}
+                </p>
+                <p>
+                  {t(locale, "booking.summaryWith", {
+                    service: service?.name ?? "—",
+                    doctor: doctor?.name ?? "—",
+                  })}
+                </p>
+                <p>
+                  {t(locale, "booking.summaryDateTime", {
+                    date: formatDisplayDate(selectedDate, locale, "long"),
+                    time: selectedTime,
+                    duration: String(service?.duration ?? "—"),
+                  })}
+                </p>
               </div>
             )}
           </div>
@@ -592,16 +749,54 @@ export function BookingForm() {
           <div className="space-y-6" role="tabpanel" aria-labelledby="step-heading-2">
             {/* Booking summary */}
             <div className="rounded-lg border p-4 space-y-2 text-sm">
-              <h3 id="step-heading-2" ref={(el) => { stepHeadingRefs.current[2] = el; }} tabIndex={-1} className="font-semibold text-base mb-3 outline-none">{t(locale, "booking.recap")}</h3>
+              <h3
+                id="step-heading-2"
+                ref={(el) => {
+                  stepHeadingRefs.current[2] = el;
+                }}
+                tabIndex={-1}
+                className="font-semibold text-base mb-3 outline-none"
+              >
+                {t(locale, "booking.recap")}
+              </h3>
               <div className="grid gap-1.5">
-                <div className="flex justify-between"><span className="text-muted-foreground">{t(locale, "booking.recapService")}</span><span className="font-medium">{service?.name ?? "—"}</span></div>
-                <div className="flex justify-between"><span className="text-muted-foreground">{t(locale, "booking.recapDoctor")}</span><span className="font-medium">{doctor?.name ?? "—"}</span></div>
-                <div className="flex justify-between"><span className="text-muted-foreground">{t(locale, "booking.recapSpecialty")}</span><span className="font-medium">{doctor?.specialty ?? "—"}</span></div>
-                <div className="flex justify-between"><span className="text-muted-foreground">{t(locale, "booking.recapDate")}</span><span className="font-medium">{formatDisplayDate(selectedDate, locale, "long")}</span></div>
-                <div className="flex justify-between"><span className="text-muted-foreground">{t(locale, "booking.recapTime")}</span><span className="font-medium">{selectedTime}</span></div>
-                <div className="flex justify-between"><span className="text-muted-foreground">{t(locale, "booking.recapDuration")}</span><span className="font-medium">{service?.duration ?? "—"} min</span></div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">{t(locale, "booking.recapService")}</span>
+                  <span className="font-medium">{service?.name ?? "—"}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">{t(locale, "booking.recapDoctor")}</span>
+                  <span className="font-medium">{doctor?.name ?? "—"}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">
+                    {t(locale, "booking.recapSpecialty")}
+                  </span>
+                  <span className="font-medium">{doctor?.specialty ?? "—"}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">{t(locale, "booking.recapDate")}</span>
+                  <span className="font-medium">
+                    {formatDisplayDate(selectedDate, locale, "long")}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">{t(locale, "booking.recapTime")}</span>
+                  <span className="font-medium">{selectedTime}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">
+                    {t(locale, "booking.recapDuration")}
+                  </span>
+                  <span className="font-medium">{service?.duration ?? "—"} min</span>
+                </div>
                 <hr />
-                <div className="flex justify-between font-medium"><span>{t(locale, "booking.recapPrice")}</span><span>{service?.price ?? "—"} {service?.currency ?? ""}</span></div>
+                <div className="flex justify-between font-medium">
+                  <span>{t(locale, "booking.recapPrice")}</span>
+                  <span>
+                    {service?.price ?? "—"} {service?.currency ?? ""}
+                  </span>
+                </div>
               </div>
             </div>
 
@@ -634,22 +829,36 @@ export function BookingForm() {
                   type="tel"
                   required
                   autoFocus
-                  className={phoneError || stepErrors.phone || stepErrors.phoneRequired ? "border-destructive" : patientPhone.trim() && isValidMoroccanPhone(patientPhone) ? "border-green-500" : ""}
+                  className={
+                    phoneError || stepErrors.phone || stepErrors.phoneRequired
+                      ? "border-destructive"
+                      : patientPhone.trim() && isValidMoroccanPhone(patientPhone)
+                        ? "border-green-500"
+                        : ""
+                  }
                   aria-invalid={!!phoneError}
                   aria-describedby={phoneError ? "phone-error" : undefined}
                 />
-                {(phoneError || getFieldError("phone") || stepErrors.phone || stepErrors.phoneRequired) ? (
-                  <p id="phone-error" className="text-xs text-destructive">{phoneError || getFieldError("phone") || stepErrors.phone || stepErrors.phoneRequired}</p>
-                ) : (
-                  <p className="text-xs text-muted-foreground">
-                    {t(locale, "booking.phoneHint")}
+                {phoneError ||
+                getFieldError("phone") ||
+                stepErrors.phone ||
+                stepErrors.phoneRequired ? (
+                  <p id="phone-error" className="text-xs text-destructive">
+                    {phoneError ||
+                      getFieldError("phone") ||
+                      stepErrors.phone ||
+                      stepErrors.phoneRequired}
                   </p>
+                ) : (
+                  <p className="text-xs text-muted-foreground">{t(locale, "booking.phoneHint")}</p>
                 )}
               </div>
 
               {/* Optional name */}
               <div className="space-y-2">
-                <Label htmlFor="b-name" className="text-sm">{t(locale, "booking.nameLabel")}</Label>
+                <Label htmlFor="b-name" className="text-sm">
+                  {t(locale, "booking.nameLabel")}
+                </Label>
                 <Input
                   id="b-name"
                   value={patientName}
@@ -678,7 +887,10 @@ export function BookingForm() {
                   id="b-confirm"
                   type="checkbox"
                   checked={confirmChecked}
-                  onChange={(e) => { setConfirmChecked(e.target.checked); markTouched("confirm"); }}
+                  onChange={(e) => {
+                    setConfirmChecked(e.target.checked);
+                    markTouched("confirm");
+                  }}
                   className="h-5 w-5 mt-0.5 rounded border-gray-300 text-primary focus:ring-primary"
                 />
                 <Label htmlFor="b-confirm" className="text-sm cursor-pointer leading-snug">
@@ -686,7 +898,9 @@ export function BookingForm() {
                 </Label>
               </div>
               {stepErrors.confirm && (
-                <p className="text-xs text-destructive" role="alert">{stepErrors.confirm}</p>
+                <p className="text-xs text-destructive" role="alert">
+                  {stepErrors.confirm}
+                </p>
               )}
 
               {/* Honeypot field - hidden from real users, catches bots */}
@@ -714,20 +928,14 @@ export function BookingForm() {
             {/* WhatsApp note */}
             <div className="flex items-start gap-2 rounded-lg bg-green-50 p-3 text-xs text-green-800">
               <MessageCircle className="h-4 w-4 shrink-0 mt-0.5" />
-              <span>
-                {t(locale, "booking.whatsappNote")}
-              </span>
+              <span>{t(locale, "booking.whatsappNote")}</span>
             </div>
           </div>
         )}
 
         {/* Navigation */}
         <div className="flex justify-between mt-6">
-          <Button
-            variant="outline"
-            onClick={() => goToStep(step - 1)}
-            disabled={step === 0}
-          >
+          <Button variant="outline" onClick={() => goToStep(step - 1)} disabled={step === 0}>
             <ChevronLeft className="h-4 w-4 mr-1" />
             {t(locale, "action.back")}
           </Button>

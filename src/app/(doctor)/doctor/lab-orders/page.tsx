@@ -15,21 +15,26 @@ export default function DoctorLabOrdersPage() {
   useEffect(() => {
     const controller = new AbortController();
     async function load() {
-    const user = await getCurrentUser();
+      const user = await getCurrentUser();
       if (controller.signal.aborted) return;
-    if (!user?.clinic_id) { setLoading(false); return; }
-    const data = await fetchLabOrders(user.clinic_id);
+      if (!user?.clinic_id) {
+        setLoading(false);
+        return;
+      }
+      const data = await fetchLabOrders(user.clinic_id);
       if (controller.signal.aborted) return;
-    setOrders(data as LabOrder[]);
-    setLoading(false);
-  }
+      setOrders(data as LabOrder[]);
+      setLoading(false);
+    }
     load().catch((err) => {
       if (!controller.signal.aborted) {
         setError(err instanceof Error ? err : new Error(String(err)));
         setLoading(false);
       }
     });
-    return () => { controller.abort(); };
+    return () => {
+      controller.abort();
+    };
   }, []);
 
   if (loading) {
@@ -39,7 +44,9 @@ export default function DoctorLabOrdersPage() {
   if (error) {
     return (
       <div className="p-8 text-center">
-        <p className="text-red-600 font-medium">Failed to load data. Please try refreshing the page.</p>
+        <p className="text-red-600 font-medium">
+          Failed to load data. Please try refreshing the page.
+        </p>
         {error.message && <p className="text-sm text-muted-foreground mt-2">{error.message}</p>}
       </div>
     );
@@ -48,10 +55,8 @@ export default function DoctorLabOrdersPage() {
   const handleUpdateStatus = (orderId: string, status: LabOrder["status"]) => {
     setOrders((prev) =>
       prev.map((o) =>
-        o.id === orderId
-          ? { ...o, status, updatedAt: new Date().toISOString().split("T")[0] }
-          : o
-      )
+        o.id === orderId ? { ...o, status, updatedAt: new Date().toISOString().split("T")[0] } : o,
+      ),
     );
   };
 
@@ -83,7 +88,9 @@ export default function DoctorLabOrdersPage() {
 
   return (
     <div className="space-y-6">
-      <Breadcrumb items={[{ label: "Doctor", href: "/doctor/dashboard" }, { label: "Lab Orders" }]} />
+      <Breadcrumb
+        items={[{ label: "Doctor", href: "/doctor/dashboard" }, { label: "Lab Orders" }]}
+      />
       <h1 className="text-2xl font-bold">Lab Orders</h1>
       <LabOrdersPanel
         orders={orders}

@@ -11,9 +11,7 @@ export async function generateMetadata(): Promise<Metadata> {
   const tenant = await getTenant();
   const clinicName = tenant?.clinicName;
 
-  const title = clinicName
-    ? `Prendre Rendez-vous — ${clinicName}`
-    : "Prendre Rendez-vous";
+  const title = clinicName ? `Prendre Rendez-vous — ${clinicName}` : "Prendre Rendez-vous";
   const description = clinicName
     ? `Réservez votre rendez-vous chez ${clinicName} en ligne en quelques clics. Choisissez votre créneau et confirmez instantanément.`
     : "Réservez votre rendez-vous médical en ligne en quelques clics. Choisissez votre créneau et confirmez instantanément.";
@@ -37,7 +35,10 @@ export default function BookingPage() {
     target: {
       "@type": "EntryPoint",
       urlTemplate: `${baseUrl}/book`,
-      actionPlatform: ["http://schema.org/DesktopWebPlatform", "http://schema.org/MobileWebPlatform"],
+      actionPlatform: [
+        "http://schema.org/DesktopWebPlatform",
+        "http://schema.org/MobileWebPlatform",
+      ],
     },
     result: {
       "@type": "MedicalAppointment",

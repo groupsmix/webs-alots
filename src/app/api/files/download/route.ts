@@ -115,7 +115,10 @@ export function extractClinicIdFromKey(key: string): string | null {
   return match ? match[1] : null;
 }
 
-async function handler(request: NextRequest, { supabase, profile }: AuthContext): Promise<NextResponse> {
+async function handler(
+  request: NextRequest,
+  { supabase, profile }: AuthContext,
+): Promise<NextResponse> {
   if (!ALLOWED_DOWNLOAD_ROLES.has(profile.role)) {
     return apiForbidden();
   }
@@ -154,17 +157,26 @@ async function handler(request: NextRequest, { supabase, profile }: AuthContext)
   if (profile.role === "patient" && profile.clinic_id) {
     // patient_files may not be in the generated DB types yet — use
     // an untyped query to avoid TS errors while still enforcing the check.
-    const { data: fileRecord } = await (supabase as unknown as {
-      from(table: string): {
-        select(cols: string): {
-          eq(col: string, val: string): {
-            eq(col2: string, val2: string): {
-              maybeSingle(): Promise<{ data: { id: string; patient_id: string } | null }>;
+    const { data: fileRecord } = await (
+      supabase as unknown as {
+        from(table: string): {
+          select(cols: string): {
+            eq(
+              col: string,
+              val: string,
+            ): {
+              eq(
+                col2: string,
+                val2: string,
+              ): {
+                maybeSingle(): Promise<{ data: { id: string; patient_id: string } | null }>;
+              };
             };
           };
         };
-      };
-    }).from("patient_files")
+      }
+    )
+      .from("patient_files")
       .select("id, patient_id")
       .eq("clinic_id", profile.clinic_id)
       .eq("r2_key", baseKey)
@@ -206,8 +218,7 @@ async function handler(request: NextRequest, { supabase, profile }: AuthContext)
   // 09-08 requires that PHI access be auditable; silently skipping audit
   // writes when `profile.clinic_id` is null would create a privileged
   // back-door.
-  const auditClinicId =
-    profile.clinic_id ?? extractClinicIdFromKey(baseKey);
+  const auditClinicId = profile.clinic_id ?? extractClinicIdFromKey(baseKey);
 
   if (auditClinicId) {
     await logAuditEvent({

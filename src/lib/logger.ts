@@ -69,9 +69,21 @@ function formatError(err: unknown): Record<string, unknown> {
 // Developers may accidentally pass these in `meta.extra`; the logger
 // strips them before serialization so PHI never reaches log sinks.
 const PHI_FIELD_PATTERNS = new Set([
-  "email", "phone", "name", "patient_name", "patient_email", "patient_phone",
-  "cin", "date_of_birth", "dob", "address", "ssn", "insurance_number",
-  "medical_record", "prescription", "diagnosis",
+  "email",
+  "phone",
+  "name",
+  "patient_name",
+  "patient_email",
+  "patient_phone",
+  "cin",
+  "date_of_birth",
+  "dob",
+  "address",
+  "ssn",
+  "insurance_number",
+  "medical_record",
+  "prescription",
+  "diagnosis",
 ]);
 
 /** Recursively redact known PHI fields from a metadata object. */
@@ -132,14 +144,19 @@ function emit(level: LogLevel, message: string, meta?: LogMeta): void {
 // actual resolution is near-instant after the first await.
 type SentryModule = {
   captureException?: (err: unknown, ctx?: Record<string, unknown>) => void;
-  withScope?: (cb: (scope: { setTag: (k: string, v: string) => void; setExtra: (k: string, v: unknown) => void }) => void) => void;
+  withScope?: (
+    cb: (scope: {
+      setTag: (k: string, v: string) => void;
+      setExtra: (k: string, v: unknown) => void;
+    }) => void,
+  ) => void;
   addBreadcrumb?: (crumb: Record<string, unknown>) => void;
 };
 
 let _sentryPromise: Promise<SentryModule> | null = null;
 function getSentry(): Promise<SentryModule> {
   if (!_sentryPromise) {
-    _sentryPromise = import("@sentry/nextjs").catch(() => ({} as SentryModule));
+    _sentryPromise = import("@sentry/nextjs").catch(() => ({}) as SentryModule);
   }
   return _sentryPromise;
 }
@@ -165,7 +182,11 @@ async function captureSentryError(message: string, meta?: LogMeta): Promise<void
   }
 }
 
-async function captureSentryBreadcrumb(level: string, message: string, meta?: LogMeta): Promise<void> {
+async function captureSentryBreadcrumb(
+  level: string,
+  message: string,
+  meta?: LogMeta,
+): Promise<void> {
   try {
     const Sentry = await getSentry();
     if (!Sentry?.addBreadcrumb) return;

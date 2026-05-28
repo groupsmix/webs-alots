@@ -15,10 +15,7 @@ import { useTenant } from "@/components/tenant-provider";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageLoader } from "@/components/ui/page-loader";
-import {
-  fetchClinicCenterDashboardKPIs,
-  type ClinicCenterDashboardKPIs,
-} from "@/lib/data/client";
+import { fetchClinicCenterDashboardKPIs, type ClinicCenterDashboardKPIs } from "@/lib/data/client";
 import { logger } from "@/lib/logger";
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { formatCurrency, formatNumber } from "@/lib/utils";
@@ -43,16 +40,26 @@ export function ClinicCenterDashboardKPIsComponent() {
     const clinicId = tenant?.clinicId;
     let cancelled = false;
     if (!clinicId) {
-      Promise.resolve().then(() => { if (!cancelled) setLoading(false); });
-      return () => { cancelled = true; };
+      Promise.resolve().then(() => {
+        if (!cancelled) setLoading(false);
+      });
+      return () => {
+        cancelled = true;
+      };
     }
     fetchClinicCenterDashboardKPIs(clinicId)
       .then((result) => {
         if (!cancelled) setData(result);
       })
-      .catch((err: unknown) => { logger.warn("Operation failed", { context: "clinic-center-dashboard-kpis", error: err }); })
-      .finally(() => { if (!cancelled) setLoading(false); });
-    return () => { cancelled = true; };
+      .catch((err: unknown) => {
+        logger.warn("Operation failed", { context: "clinic-center-dashboard-kpis", error: err });
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [tenant?.clinicId]);
 
   if (loading) {
@@ -191,7 +198,9 @@ export function ClinicCenterDashboardKPIsComponent() {
           </CardHeader>
           <CardContent>
             {departmentLoad.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-4">No departments configured</p>
+              <p className="text-sm text-muted-foreground text-center py-4">
+                No departments configured
+              </p>
             ) : (
               <div className="space-y-3">
                 {departmentLoad.map((dept) => (
@@ -218,9 +227,13 @@ export function ClinicCenterDashboardKPIsComponent() {
                       />
                     </div>
                     <div className="flex items-center justify-between mt-1">
-                      <span className="text-xs text-muted-foreground">{dept.occupancyRate}% occupancy</span>
+                      <span className="text-xs text-muted-foreground">
+                        {dept.occupancyRate}% occupancy
+                      </span>
                       {dept.occupancyRate > 85 && (
-                        <Badge variant="destructive" className="text-[10px]">Critical</Badge>
+                        <Badge variant="destructive" className="text-[10px]">
+                          Critical
+                        </Badge>
                       )}
                     </div>
                   </div>
@@ -239,7 +252,12 @@ export function ClinicCenterDashboardKPIsComponent() {
                 Revenue by Department
               </CardTitle>
               <Badge variant="outline" className="text-xs">
-                Total: {formatCurrency(totalDeptRevenue, typeof locale !== "undefined" ? locale : "fr", "MAD")}
+                Total:{" "}
+                {formatCurrency(
+                  totalDeptRevenue,
+                  typeof locale !== "undefined" ? locale : "fr",
+                  "MAD",
+                )}
               </Badge>
             </div>
           </CardHeader>
@@ -252,7 +270,13 @@ export function ClinicCenterDashboardKPIsComponent() {
                   <div key={dept.departmentId}>
                     <div className="flex items-center justify-between text-sm mb-1">
                       <span>{dept.departmentName}</span>
-                      <span className="font-medium">{formatCurrency(dept.revenue, typeof locale !== "undefined" ? locale : "fr", "MAD")}</span>
+                      <span className="font-medium">
+                        {formatCurrency(
+                          dept.revenue,
+                          typeof locale !== "undefined" ? locale : "fr",
+                          "MAD",
+                        )}
+                      </span>
                     </div>
                     <div className="flex items-center gap-2">
                       <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">

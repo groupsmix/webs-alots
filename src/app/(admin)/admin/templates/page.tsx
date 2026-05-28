@@ -16,20 +16,11 @@ import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import type { VerticalId } from "@/lib/config/verticals";
 import { useAsyncData } from "@/lib/hooks/use-async-data";
-import {
-  presetList,
-  type TemplatePreset,
-} from "@/lib/template-presets";
+import { presetList, type TemplatePreset } from "@/lib/template-presets";
 import { templateList, type TemplateId } from "@/lib/templates";
 
 const VERTICAL_LABELS: Record<VerticalId, string> = {
@@ -46,7 +37,11 @@ const VERTICAL_FILTERS: { value: string; label: string }[] = [
 ];
 
 export default function TemplatesPage() {
-  const { data: initialTemplate, loading, error } = useAsyncData(
+  const {
+    data: initialTemplate,
+    loading,
+    error,
+  } = useAsyncData(
     (signal) =>
       fetch("/api/branding", { signal })
         .then((r) => {
@@ -118,9 +113,7 @@ export default function TemplatesPage() {
   const hasChanges = selected !== saved;
 
   const filteredPresets =
-    verticalFilter === "all"
-      ? presetList
-      : presetList.filter((p) => p.vertical === verticalFilter);
+    verticalFilter === "all" ? presetList : presetList.filter((p) => p.vertical === verticalFilter);
 
   if (loading) {
     return (
@@ -153,11 +146,13 @@ export default function TemplatesPage() {
     <div>
       <div className="flex items-center justify-between mb-6">
         <div>
-          <Breadcrumb items={[{ label: "Admin", href: "/admin/dashboard" }, { label: "Templates" }]} />
+          <Breadcrumb
+            items={[{ label: "Admin", href: "/admin/dashboard" }, { label: "Templates" }]}
+          />
           <h1 className="text-2xl font-bold">Layout Templates</h1>
           <p className="text-sm text-muted-foreground">
-            Choose a preset for instant setup, or pick a base template and
-            customize in the branding editor.
+            Choose a preset for instant setup, or pick a base template and customize in the branding
+            editor.
           </p>
         </div>
       </div>
@@ -191,19 +186,14 @@ export default function TemplatesPage() {
           </div>
 
           {filteredPresets.length === 0 ? (
-            <p className="text-sm text-muted-foreground">
-              No presets available for this vertical.
-            </p>
+            <p className="text-sm text-muted-foreground">No presets available for this vertical.</p>
           ) : (
             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
               {filteredPresets.map((preset) => {
                 const isApplying = applyingPreset === preset.id;
                 const justApplied = appliedPreset === preset.id;
                 return (
-                  <Card
-                    key={preset.id}
-                    className="relative transition-all hover:shadow-md"
-                  >
+                  <Card key={preset.id} className="relative transition-all hover:shadow-md">
                     <CardHeader className="pb-3">
                       <div className="flex items-center justify-between">
                         <CardTitle className="text-base flex items-center gap-2">
@@ -238,9 +228,7 @@ export default function TemplatesPage() {
                         </div>
                       </div>
 
-                      <p className="text-xs text-muted-foreground mb-3">
-                        {preset.preview}
-                      </p>
+                      <p className="text-xs text-muted-foreground mb-3">{preset.preview}</p>
 
                       {/* Action buttons */}
                       <div className="flex gap-2">
@@ -277,15 +265,8 @@ export default function TemplatesPage() {
                           )}
                         </Button>
                       </div>
-                      <a
-                        href={`/admin/branding?preset=${preset.id}`}
-                        className="mt-2 block"
-                      >
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="w-full text-xs"
-                        >
+                      <a href={`/admin/branding?preset=${preset.id}`} className="mt-2 block">
+                        <Button variant="ghost" size="sm" className="w-full text-xs">
                           <Palette className="h-3.5 w-3.5 mr-1" />
                           Customize
                         </Button>
@@ -306,8 +287,7 @@ export default function TemplatesPage() {
           {/* Customize CTA */}
           <div className="mt-6 rounded-lg border-2 border-dashed p-4 text-center">
             <p className="text-sm text-muted-foreground mb-2">
-              Want more control? Fine-tune colors, fonts, and images in the
-              branding editor.
+              Want more control? Fine-tune colors, fonts, and images in the branding editor.
             </p>
             <a href="/admin/branding">
               <Button variant="outline">
@@ -334,9 +314,7 @@ export default function TemplatesPage() {
                 <Card
                   key={tmpl.id}
                   className={`cursor-pointer transition-all hover:shadow-md ${
-                    isSelected
-                      ? "ring-2 ring-primary shadow-md"
-                      : "hover:ring-1 hover:ring-border"
+                    isSelected ? "ring-2 ring-primary shadow-md" : "hover:ring-1 hover:ring-border"
                   }`}
                   onClick={() => setSelected(tmpl.id)}
                 >
@@ -357,9 +335,7 @@ export default function TemplatesPage() {
                   </CardHeader>
                   <CardContent>
                     {/* Template preview card */}
-                    <div
-                      className={`rounded-lg border p-4 text-xs space-y-2 ${tmpl.wrapperClass}`}
-                    >
+                    <div className={`rounded-lg border p-4 text-xs space-y-2 ${tmpl.wrapperClass}`}>
                       {/* Mini hero preview */}
                       <div
                         className={`h-12 rounded flex items-center justify-center text-[10px] font-medium ${
@@ -406,9 +382,7 @@ export default function TemplatesPage() {
                         )}
                       </div>
                     </div>
-                    <p className="text-xs text-muted-foreground mt-3">
-                      {tmpl.preview}
-                    </p>
+                    <p className="text-xs text-muted-foreground mt-3">{tmpl.preview}</p>
                   </CardContent>
                 </Card>
               );
@@ -422,14 +396,8 @@ export default function TemplatesPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
           <div className="bg-background rounded-xl shadow-2xl max-w-lg w-full max-h-[80vh] overflow-y-auto">
             <div className="flex items-center justify-between p-4 border-b">
-              <h2 className="font-semibold text-lg">
-                {previewPreset.name}
-              </h2>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setPreviewPreset(null)}
-              >
+              <h2 className="font-semibold text-lg">{previewPreset.name}</h2>
+              <Button variant="ghost" size="sm" onClick={() => setPreviewPreset(null)}>
                 <X className="h-4 w-4" />
               </Button>
             </div>
@@ -441,12 +409,8 @@ export default function TemplatesPage() {
                   background: `linear-gradient(135deg, ${previewPreset.theme.primaryColor}, ${previewPreset.theme.secondaryColor})`,
                 }}
               >
-                <h3 className="text-xl font-bold mb-2">
-                  {previewPreset.hero.title}
-                </h3>
-                <p className="text-sm opacity-90">
-                  {previewPreset.hero.subtitle}
-                </p>
+                <h3 className="text-xl font-bold mb-2">{previewPreset.hero.title}</h3>
+                <p className="text-sm opacity-90">{previewPreset.hero.subtitle}</p>
               </div>
 
               {/* Arabic preview */}
@@ -457,12 +421,8 @@ export default function TemplatesPage() {
                   background: `linear-gradient(135deg, ${previewPreset.theme.secondaryColor}, ${previewPreset.theme.primaryColor})`,
                 }}
               >
-                <h3 className="text-xl font-bold mb-2">
-                  {previewPreset.hero.titleAr}
-                </h3>
-                <p className="text-sm opacity-90">
-                  {previewPreset.hero.subtitleAr}
-                </p>
+                <h3 className="text-xl font-bold mb-2">{previewPreset.hero.titleAr}</h3>
+                <p className="text-sm opacity-90">{previewPreset.hero.subtitleAr}</p>
               </div>
 
               {/* Details */}
@@ -493,34 +453,26 @@ export default function TemplatesPage() {
                 </div>
                 <div className="flex items-center gap-3">
                   <span className="text-sm font-medium w-24">Vertical:</span>
-                  <Badge variant="outline">
-                    {VERTICAL_LABELS[previewPreset.vertical]}
-                  </Badge>
+                  <Badge variant="outline">{VERTICAL_LABELS[previewPreset.vertical]}</Badge>
                 </div>
                 <div>
                   <span className="text-sm font-medium">Sections:</span>
                   <div className="flex flex-wrap gap-1 mt-1">
-                    {Object.entries(previewPreset.sections).map(
-                      ([key, enabled]) => (
-                        <Badge
-                          key={key}
-                          variant={enabled ? "default" : "outline"}
-                          className="text-xs"
-                        >
-                          {key}
-                        </Badge>
-                      ),
-                    )}
+                    {Object.entries(previewPreset.sections).map(([key, enabled]) => (
+                      <Badge
+                        key={key}
+                        variant={enabled ? "default" : "outline"}
+                        className="text-xs"
+                      >
+                        {key}
+                      </Badge>
+                    ))}
                   </div>
                 </div>
               </div>
             </div>
             <div className="flex gap-2 p-4 border-t">
-              <Button
-                variant="outline"
-                className="flex-1"
-                onClick={() => setPreviewPreset(null)}
-              >
+              <Button variant="outline" className="flex-1" onClick={() => setPreviewPreset(null)}>
                 Close
               </Button>
               <Button

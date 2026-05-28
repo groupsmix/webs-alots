@@ -60,16 +60,13 @@ async function handler(request: NextRequest) {
       });
       if (startingAfter) params.set("starting_after", startingAfter);
 
-      const res = await fetch(
-        `https://api.stripe.com/v1/checkout/sessions?${params.toString()}`,
-        {
-          headers: {
-            Authorization: `Bearer ${stripeKey}`,
-            "Content-Type": "application/x-www-form-urlencoded",
-          },
-          signal: AbortSignal.timeout(10_000),
+      const res = await fetch(`https://api.stripe.com/v1/checkout/sessions?${params.toString()}`, {
+        headers: {
+          Authorization: `Bearer ${stripeKey}`,
+          "Content-Type": "application/x-www-form-urlencoded",
         },
-      );
+        signal: AbortSignal.timeout(10_000),
+      });
 
       if (!res.ok) {
         logger.error("Stripe API error during reconciliation", {
@@ -102,9 +99,7 @@ async function handler(request: NextRequest) {
       .select("reference")
       .in("reference", sessionIds);
 
-    const localRefs = new Set(
-      (localPayments ?? []).map((p) => p.reference).filter(Boolean),
-    );
+    const localRefs = new Set((localPayments ?? []).map((p) => p.reference).filter(Boolean));
 
     // Find drift: Stripe says paid, local DB has no record
     const driftSessions = allSessions.filter(

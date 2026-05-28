@@ -65,7 +65,10 @@ function calcGestationalAge(lmpDate: string): { weeks: number; days: number; tri
   return { weeks, days, trimester };
 }
 
-export async function fetchPregnancies(clinicId: string, patientId?: string): Promise<PregnancyView[]> {
+export async function fetchPregnancies(
+  clinicId: string,
+  patientId?: string,
+): Promise<PregnancyView[]> {
   await ensureLookups(clinicId);
   const eq: [string, unknown][] = [["clinic_id", clinicId]];
   if (patientId) eq.push(["patient_id", patientId]);
@@ -121,15 +124,24 @@ export async function createPregnancy(data: {
     .insert(data)
     .select("id")
     .single();
-  if (error) { logger.warn("Query failed", { context: "data/client", error }); return null; }
+  if (error) {
+    logger.warn("Query failed", { context: "data/client", error });
+    return null;
+  }
   return row?.id ?? null;
 }
 
-export async function updatePregnancy(id: string, updates: Record<string, unknown>): Promise<boolean> {
+export async function updatePregnancy(
+  id: string,
+  updates: Record<string, unknown>,
+): Promise<boolean> {
   const supabase = createClient();
   // @ts-expect-error -- Supabase generated types lag behind actual DB schema
   const { error } = await supabase.from("pregnancies").update(updates).eq("id", id);
-  if (error) { logger.warn("Mutation failed", { context: "data/client", error }); return false; }
+  if (error) {
+    logger.warn("Mutation failed", { context: "data/client", error });
+    return false;
+  }
   return true;
 }
 
@@ -169,7 +181,10 @@ interface UltrasoundRaw {
   notes: string | null;
 }
 
-export async function fetchUltrasounds(clinicId: string, pregnancyId?: string): Promise<UltrasoundView[]> {
+export async function fetchUltrasounds(
+  clinicId: string,
+  pregnancyId?: string,
+): Promise<UltrasoundView[]> {
   await ensureLookups(clinicId);
   const eq: [string, unknown][] = [["clinic_id", clinicId]];
   if (pregnancyId) eq.push(["pregnancy_id", pregnancyId]);
@@ -209,11 +224,15 @@ export async function createUltrasound(data: {
   notes?: string;
 }): Promise<string | null> {
   const supabase = createClient();
-  const { data: row, error } = await supabase.from("ultrasound_records")
+  const { data: row, error } = await supabase
+    .from("ultrasound_records")
     .insert(data as Database["public"]["Tables"]["ultrasound_records"]["Insert"])
     .select("id")
     .single();
-  if (error) { logger.warn("Query failed", { context: "data/client", error }); return null; }
+  if (error) {
+    logger.warn("Query failed", { context: "data/client", error });
+    return null;
+  }
   return row?.id ?? null;
 }
 

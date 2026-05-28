@@ -9,17 +9,17 @@ preserve, and analyze evidence without scrambling for tools or access.
 
 ## 1. Pre-Positioned Evidence Sources
 
-| Source | What It Contains | How to Collect | Retention |
-|--------|-----------------|----------------|-----------|
-| **Supabase `audit_logs`** | All state-changing operations (user, clinic, action, IP, user-agent) | `psql` export or Supabase Dashboard | Indefinite (DB) + 1y archive (R2 WORM) |
-| **Supabase PITR** | Point-in-time database snapshots | Supabase Dashboard (Team/Enterprise plan) | 7-30 days (plan-dependent) |
-| **Cloudflare Workers Logs** | Request/response metadata, errors | Cloudflare Dashboard or Logpush | 72h (Workers) / configurable (Logpush) |
-| **Cloudflare Audit Log** | Admin actions (DNS changes, Worker deploys, WAF changes) | Cloudflare Dashboard -> Audit Log | 18 months |
-| **Sentry** | Error traces with stack traces, breadcrumbs, request context | Sentry Dashboard or API | 90 days |
-| **GitHub Audit Log** | Org-level events (member changes, repo access, secret access) | GitHub Settings -> Audit Log or API | 90 days (free) / 6 months (enterprise) |
-| **R2 Backup Bucket** | Nightly pg_dump, R2 file replicas | S3 API | Per lifecycle policy |
-| **GitHub Actions Logs** | CI/CD execution logs, deploy artifacts | GitHub Actions UI or API | 90 days |
-| **Stripe Dashboard** | Payment events, webhook delivery logs | Stripe Dashboard | 2 years |
+| Source                      | What It Contains                                                     | How to Collect                            | Retention                              |
+| --------------------------- | -------------------------------------------------------------------- | ----------------------------------------- | -------------------------------------- |
+| **Supabase `audit_logs`**   | All state-changing operations (user, clinic, action, IP, user-agent) | `psql` export or Supabase Dashboard       | Indefinite (DB) + 1y archive (R2 WORM) |
+| **Supabase PITR**           | Point-in-time database snapshots                                     | Supabase Dashboard (Team/Enterprise plan) | 7-30 days (plan-dependent)             |
+| **Cloudflare Workers Logs** | Request/response metadata, errors                                    | Cloudflare Dashboard or Logpush           | 72h (Workers) / configurable (Logpush) |
+| **Cloudflare Audit Log**    | Admin actions (DNS changes, Worker deploys, WAF changes)             | Cloudflare Dashboard -> Audit Log         | 18 months                              |
+| **Sentry**                  | Error traces with stack traces, breadcrumbs, request context         | Sentry Dashboard or API                   | 90 days                                |
+| **GitHub Audit Log**        | Org-level events (member changes, repo access, secret access)        | GitHub Settings -> Audit Log or API       | 90 days (free) / 6 months (enterprise) |
+| **R2 Backup Bucket**        | Nightly pg_dump, R2 file replicas                                    | S3 API                                    | Per lifecycle policy                   |
+| **GitHub Actions Logs**     | CI/CD execution logs, deploy artifacts                               | GitHub Actions UI or API                  | 90 days                                |
+| **Stripe Dashboard**        | Payment events, webhook delivery logs                                | Stripe Dashboard                          | 2 years                                |
 
 ---
 
@@ -112,12 +112,12 @@ sha256sum evidence_github_audit.json > evidence_github_audit.json.sha256
 
 Accurate timestamps are critical for evidence correlation.
 
-| System | NTP Source | Accuracy |
-|--------|-----------|----------|
-| Cloudflare Workers | Cloudflare internal NTP | Sub-millisecond |
-| Supabase (PostgreSQL) | AWS NTP (chrony) | Sub-millisecond |
-| Sentry | Sentry server NTP | Seconds (client clock skew possible) |
-| Developer laptops | OS default NTP | Depends on MDM enforcement |
+| System                | NTP Source              | Accuracy                             |
+| --------------------- | ----------------------- | ------------------------------------ |
+| Cloudflare Workers    | Cloudflare internal NTP | Sub-millisecond                      |
+| Supabase (PostgreSQL) | AWS NTP (chrony)        | Sub-millisecond                      |
+| Sentry                | Sentry server NTP       | Seconds (client clock skew possible) |
+| Developer laptops     | OS default NTP          | Depends on MDM enforcement           |
 
 **Action:** Enforce NTP on developer machines via MDM policy (see
 `docs/workforce-security.md` Section 4).
@@ -149,11 +149,11 @@ Accurate timestamps are critical for evidence correlation.
 
 ## 6. Evidence Storage
 
-| Location | Purpose | Access |
-|----------|---------|--------|
-| `s3://oltigo-audit-archive/incidents/INC-XXXX/` | Immutable incident evidence | Security Officer + DPO only |
-| Encrypted external drive (offline) | Disk images, memory dumps | Physical custody (two-person) |
-| `docs/comms-templates/README.md` (chain of custody log) | Tracking evidence handling | Incident team |
+| Location                                                | Purpose                     | Access                        |
+| ------------------------------------------------------- | --------------------------- | ----------------------------- |
+| `s3://oltigo-audit-archive/incidents/INC-XXXX/`         | Immutable incident evidence | Security Officer + DPO only   |
+| Encrypted external drive (offline)                      | Disk images, memory dumps   | Physical custody (two-person) |
+| `docs/comms-templates/README.md` (chain of custody log) | Tracking evidence handling  | Incident team                 |
 
 ---
 

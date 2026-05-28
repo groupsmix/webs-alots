@@ -137,8 +137,9 @@ export default function LoginPage() {
 
     try {
       const supabase = createClient();
-      const { data: challengeData, error: challengeError } =
-        await supabase.auth.mfa.challenge({ factorId: mfaFactorId });
+      const { data: challengeData, error: challengeError } = await supabase.auth.mfa.challenge({
+        factorId: mfaFactorId,
+      });
 
       if (challengeError) {
         setError(t(locale, "auth.mfaVerifyError" as TranslationKey));
@@ -276,7 +277,9 @@ export default function LoginPage() {
                 />
               </div>
               <Button type="submit" className="w-full" disabled={loading || mfaCode.length !== 6}>
-                {loading ? t(locale, "auth.verifying") : t(locale, "auth.mfaVerifyButton" as TranslationKey)}
+                {loading
+                  ? t(locale, "auth.verifying")
+                  : t(locale, "auth.mfaVerifyButton" as TranslationKey)}
               </Button>
               <div className="text-center">
                 <button
@@ -311,7 +314,9 @@ export default function LoginPage() {
             /* Backup Code Verification Step */
             <form className="space-y-4" onSubmit={handleBackupCodeVerify}>
               <div className="space-y-2">
-                <Label htmlFor="backup-code">{t(locale, "auth.mfaBackupCodeLabel" as TranslationKey)}</Label>
+                <Label htmlFor="backup-code">
+                  {t(locale, "auth.mfaBackupCodeLabel" as TranslationKey)}
+                </Label>
                 <Input
                   id="backup-code"
                   placeholder="XXXX-XXXX"
@@ -324,7 +329,9 @@ export default function LoginPage() {
                 />
               </div>
               <Button type="submit" className="w-full" disabled={loading || backupCode.length < 8}>
-                {loading ? t(locale, "auth.verifying") : t(locale, "auth.mfaVerifyButton" as TranslationKey)}
+                {loading
+                  ? t(locale, "auth.verifying")
+                  : t(locale, "auth.mfaVerifyButton" as TranslationKey)}
               </Button>
               <Button
                 type="button"
@@ -362,7 +369,9 @@ export default function LoginPage() {
                     onClick={() => handleSendOTP()}
                     disabled={otpCooldown > 0}
                   >
-                    {otpCooldown > 0 ? `${t(locale, "auth.resendCountdown")} (${otpCooldown}s)` : t(locale, "auth.resend")}
+                    {otpCooldown > 0
+                      ? `${t(locale, "auth.resendCountdown")} (${otpCooldown}s)`
+                      : t(locale, "auth.resend")}
                   </button>
                 </p>
               </div>
@@ -394,7 +403,8 @@ export default function LoginPage() {
                   value={email}
                   onChange={(e) => {
                     setEmail(e.target.value);
-                    if (fieldErrors.email) setFieldErrors((prev) => ({ ...prev, email: undefined }));
+                    if (fieldErrors.email)
+                      setFieldErrors((prev) => ({ ...prev, email: undefined }));
                   }}
                   required
                   className={`text-base ${fieldErrors.email ? "border-destructive" : ""}`}
@@ -402,7 +412,9 @@ export default function LoginPage() {
                   aria-describedby={fieldErrors.email ? "email-error" : undefined}
                 />
                 {fieldErrors.email && (
-                  <p id="email-error" className="text-xs text-destructive">{fieldErrors.email}</p>
+                  <p id="email-error" className="text-xs text-destructive">
+                    {fieldErrors.email}
+                  </p>
                 )}
               </div>
               <div className="space-y-2">
@@ -414,7 +426,8 @@ export default function LoginPage() {
                   value={password}
                   onChange={(e) => {
                     setPassword(e.target.value);
-                    if (fieldErrors.password) setFieldErrors((prev) => ({ ...prev, password: undefined }));
+                    if (fieldErrors.password)
+                      setFieldErrors((prev) => ({ ...prev, password: undefined }));
                   }}
                   required
                   className={`text-base ${fieldErrors.password ? "border-destructive" : ""}`}
@@ -422,14 +435,13 @@ export default function LoginPage() {
                   aria-describedby={fieldErrors.password ? "password-error" : undefined}
                 />
                 {fieldErrors.password && (
-                  <p id="password-error" className="text-xs text-destructive">{fieldErrors.password}</p>
+                  <p id="password-error" className="text-xs text-destructive">
+                    {fieldErrors.password}
+                  </p>
                 )}
               </div>
               <div className="flex justify-end">
-                <Link
-                  href="/forgot-password"
-                  className="text-xs text-primary hover:underline"
-                >
+                <Link href="/forgot-password" className="text-xs text-primary hover:underline">
                   {t(locale, "auth.forgotPassword")}
                 </Link>
               </div>
@@ -443,7 +455,9 @@ export default function LoginPage() {
                       <span className="w-full border-t" />
                     </div>
                     <div className="relative flex justify-center text-xs uppercase">
-                      <span className="bg-card px-2 text-muted-foreground">{t(locale, "auth.or")}</span>
+                      <span className="bg-card px-2 text-muted-foreground">
+                        {t(locale, "auth.or")}
+                      </span>
                     </div>
                   </div>
                   <Button
@@ -474,9 +488,7 @@ export default function LoginPage() {
                   required
                   className="text-base"
                 />
-                <p className="text-xs text-muted-foreground">
-                  {t(locale, "auth.phoneHint")}
-                </p>
+                <p className="text-xs text-muted-foreground">{t(locale, "auth.phoneHint")}</p>
               </div>
               <Button type="submit" className="w-full" disabled={loading}>
                 {loading ? t(locale, "auth.sendingCode") : t(locale, "auth.sendCode")}
@@ -507,10 +519,7 @@ export default function LoginPage() {
         <CardFooter className="justify-center border-t pt-4">
           <p className="text-sm text-muted-foreground">
             {t(locale, "auth.noAccount")}{" "}
-            <Link
-              href="/register"
-              className="text-primary hover:underline font-medium"
-            >
+            <Link href="/register" className="text-primary hover:underline font-medium">
               {t(locale, "auth.register")}
             </Link>
           </p>

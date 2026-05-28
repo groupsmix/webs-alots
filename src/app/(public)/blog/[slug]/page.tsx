@@ -15,9 +15,7 @@ export async function generateStaticParams() {
   return getAllPosts().map((post) => ({ slug: post.slug }));
 }
 
-export async function generateMetadata({
-  params,
-}: BlogPostPageProps): Promise<Metadata> {
+export async function generateMetadata({ params }: BlogPostPageProps): Promise<Metadata> {
   const { slug } = await params;
   const post = getPostBySlug(slug);
   if (!post) return {};
@@ -115,9 +113,7 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
           </span>
         </div>
 
-        <h1 className="text-3xl md:text-4xl font-bold mb-4 leading-tight">
-          {post.title}
-        </h1>
+        <h1 className="text-3xl md:text-4xl font-bold mb-4 leading-tight">{post.title}</h1>
 
         <p className="text-lg text-muted-foreground">{post.excerpt}</p>
 

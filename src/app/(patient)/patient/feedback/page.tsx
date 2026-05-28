@@ -30,17 +30,22 @@ export default function PatientFeedbackPage() {
     const controller = new AbortController();
     async function loadData() {
       const user = await getCurrentUser();
-      if (!user?.clinic_id) { setPageLoading(false); return; }
+      if (!user?.clinic_id) {
+        setPageLoading(false);
+        return;
+      }
       const [docs, reviews] = await Promise.all([
         fetchDoctors(user.clinic_id),
         fetchReviews(user.clinic_id),
       ]);
       setDoctors(docs);
-      setPastFeedback(reviews.filter(r => r.patientId === user.id));
+      setPastFeedback(reviews.filter((r) => r.patientId === user.id));
       setPageLoading(false);
     }
     loadData();
-    return () => { controller.abort(); };
+    return () => {
+      controller.abort();
+    };
   }, []);
 
   if (pageLoading) {
@@ -68,7 +73,9 @@ export default function PatientFeedbackPage() {
 
   return (
     <div>
-      <Breadcrumb items={[{ label: "Patient", href: "/patient/dashboard" }, { label: "Feedback" }]} />
+      <Breadcrumb
+        items={[{ label: "Patient", href: "/patient/dashboard" }, { label: "Feedback" }]}
+      />
       <h1 className="text-2xl font-bold mb-6">Feedback & Reviews</h1>
 
       <div className="grid gap-6 lg:grid-cols-2">
@@ -85,8 +92,12 @@ export default function PatientFeedbackPage() {
                 <div className="h-14 w-14 rounded-full bg-green-100 dark:bg-green-900/50 flex items-center justify-center mx-auto mb-3">
                   <CheckCircle2 className="h-7 w-7 text-green-600" />
                 </div>
-                <p className="font-medium text-green-700 dark:text-green-400">Thank you for your feedback!</p>
-                <p className="text-sm text-muted-foreground mt-1">Your review has been submitted successfully.</p>
+                <p className="font-medium text-green-700 dark:text-green-400">
+                  Thank you for your feedback!
+                </p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Your review has been submitted successfully.
+                </p>
               </div>
             ) : (
               <div className="space-y-4">
@@ -127,7 +138,9 @@ export default function PatientFeedbackPage() {
                       </button>
                     ))}
                     {rating > 0 && (
-                      <span className="ml-2 text-sm text-muted-foreground self-center">{rating}/5</span>
+                      <span className="ml-2 text-sm text-muted-foreground self-center">
+                        {rating}/5
+                      </span>
                     )}
                   </div>
                 </div>
@@ -171,7 +184,9 @@ export default function PatientFeedbackPage() {
                   <div key={fb.id} className="border rounded-lg p-4">
                     <div className="flex items-center justify-between mb-2">
                       <p className="text-sm font-medium">{fb.doctorName}</p>
-                      <Badge variant="outline" className="text-xs">{fb.status}</Badge>
+                      <Badge variant="outline" className="text-xs">
+                        {fb.status}
+                      </Badge>
                     </div>
                     <div className="flex gap-0.5 mb-2">
                       {[1, 2, 3, 4, 5].map((star) => (

@@ -60,7 +60,11 @@ export function usePerformanceMonitoring() {
           });
         }
       });
-      inpObserver.observe({ type: "event", buffered: true, durationThreshold: 16 } as PerformanceObserverInit);
+      inpObserver.observe({
+        type: "event",
+        buffered: true,
+        durationThreshold: 16,
+      } as PerformanceObserverInit);
       observers.push(inpObserver);
     } catch (err) {
       logger.warn("INP observer not supported", { context: "web-vitals", error: err });
@@ -71,7 +75,10 @@ export function usePerformanceMonitoring() {
       let clsValue = 0;
       const clsObserver = new PerformanceObserver((list) => {
         for (const entry of list.getEntries()) {
-          const layoutShift = entry as PerformanceEntry & { hadRecentInput?: boolean; value?: number };
+          const layoutShift = entry as PerformanceEntry & {
+            hadRecentInput?: boolean;
+            value?: number;
+          };
           if (!layoutShift.hadRecentInput && layoutShift.value) {
             clsValue += layoutShift.value;
           }

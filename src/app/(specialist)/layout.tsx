@@ -12,10 +12,6 @@ import { SpecialistLayoutShell } from "@/components/layouts/specialist-layout-sh
  * Equipment uses its own layout within (specialist)/equipment/ because
  * it has a custom i18n-aware sidebar that differs from ClinicDashboardLayout.
  */
-export default function SpecialistLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function SpecialistLayout({ children }: { children: React.ReactNode }) {
   return <SpecialistLayoutShell>{children}</SpecialistLayoutShell>;
 }
