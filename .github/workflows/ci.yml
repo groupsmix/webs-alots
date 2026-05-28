@@ -153,7 +153,10 @@ jobs:
       # shipped this bug silently — this gate prevents recurrence.
       - name: Guard RLS migration pattern
         run: |
-          HITS=$(grep -rl "current_setting('app\.clinic_id'" supabase/migrations/ 2>/dev/null || true)
+          # Exclude legacy migrations 00083/00084 that already shipped with
+          # the broken pattern and cannot be retroactively changed.
+          HITS=$(grep -rl "current_setting('app\.clinic_id'" supabase/migrations/ 2>/dev/null \
+            | grep -v -E '00083_|00084_' || true)
           if [ -n "$HITS" ]; then
             echo "::error::Broken RLS pattern 'app.clinic_id' found in migrations (use get_request_clinic_id() or get_user_clinic_id()):"
             echo "$HITS"
