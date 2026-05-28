@@ -26,6 +26,7 @@ import { createTenantClient } from "@/lib/supabase-server";
 import { requireTenantWithConfig } from "@/lib/tenant";
 import { computeEndTime } from "@/lib/timezone";
 import { APPOINTMENT_STATUS, BOOKING_SOURCE } from "@/lib/types/database";
+import { safeName, safeText } from "@/lib/validations/primitives";
 // findOrCreatePatient is used by authenticated routes (recurring, emergency-slot, etc.)
 // For the anonymous booking flow we use the booking_find_or_create_patient RPC instead
 // (SECURITY DEFINER function that bypasses users-table RLS).
@@ -40,14 +41,15 @@ const bookingRequestSchema = z.object({
   isFirstVisit: z.boolean(),
   hasInsurance: z.boolean(),
   patient: z.object({
-    name: z.string().min(2).max(200),
+    // IV-05: Use safeName/safeText to strip bidi overrides + NFC normalize.
+    name: safeName.pipe(z.string().min(2).max(200)),
     phone: z
       .string()
       .min(8)
       .max(30)
       .regex(/^\+?[0-9 ()\-]{8,30}$/, "Invalid phone number format"),
-    email: z.string().email().optional(),
-    reason: z.string().max(1000).optional(),
+    email: z.string().email().max(254).optional(),
+    reason: safeText.pipe(z.string().max(1000)).optional(),
   }),
   slotDuration: z.number().int().positive(),
   bufferTime: z.number().int().min(0),
