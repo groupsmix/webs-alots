@@ -67,8 +67,13 @@ export function t(
 
   let text = (dict as Record<string, string>)[resolvedKey as string];
 
+  // Track whether the requested locale lacked a value and we silently
+  // resolved to French. Used below to surface the gap in development.
+  let usedFrenchFallback = false;
+
   if (!text) {
     // Fallback to French
+    usedFrenchFallback = true;
     text = (translations.fr as Record<string, string>)[resolvedKey as string];
     if (!text) {
       // Fall back to base key if plural key not found
@@ -83,6 +88,13 @@ export function t(
     Object.entries(params).forEach(([k, v]) => {
       text = text.replace(new RegExp(`\\{${k}\\}`, "g"), String(v));
     });
+  }
+
+  // [003]: A missing en/ar value silently renders the French string. That is
+  // invisible in production, so in development we prefix an explicit marker
+  // to force the gap into review. Production behaviour is unchanged.
+  if (usedFrenchFallback && locale !== "fr" && process.env.NODE_ENV === "development") {
+    return `[MISSING:${locale}:${resolvedKey as string}] ${text}`;
   }
 
   return text;
