@@ -58,6 +58,30 @@ binding = "RATE_LIMIT_KV"
 id = "7ac37dff0a794542b0c766f38e73f105"
 preview_id = "854c78ea8c9442ed8706d3ec31fe292e"
 
+# ── Durable Objects ───────────────────────────────────────────────────
+# H-03: Strongly consistent rate limiting across all edge locations.
+# Each rate-limited key (IP, email) maps to a single DO instance,
+# providing atomic counter increments with no eventual-consistency races.
+#
+# To activate:
+#   1. Deploy this config: wrangler deploy
+#   2. Set RATE_LIMIT_BACKEND=do in [vars] below
+#   3. The factory in rate-limit.ts auto-detects the DO binding
+#
+# To keep using KV (current): leave RATE_LIMIT_BACKEND=kv (no change needed)
+#
+# NOTE: Durable Objects require Workers Paid plan. The DO class is exported
+# from src/lib/rate-limit-do.ts. After deploying, Cloudflare automatically
+# provisions DO instances on demand.
+[durable_objects]
+bindings = [
+  { name = "RATE_LIMITER_DO", class_name = "RateLimiterDO" }
+]
+
+[[migrations]]
+tag = "v1"
+new_classes = ["RateLimiterDO"]
+
 # ── R2 Buckets ────────────────────────────────────────────────────────
 # AUDIT-LB3: IaC — PHI file storage (encrypted uploads).
 # INF-003: Production bucket is declared at the top level. Staging overrides
@@ -175,8 +199,17 @@ enabled = true
 cpu_ms = 50
 
 # ── Limits ────────────────────────────────────────────────────────────
-[limits]
-cpu_ms = 50  # Default: 50ms CPU time per request (Workers Paid plan)
+# H-04: Workers Unbound removes the 50ms CPU ceiling. Routes that need
+# sustained compute (AI Manager, Stripe webhook, CMI callback, PDF
+# generation) can now run for up to 30 000 ms without hitting CPU limits.
+#
+# Pre-requisite: The account must be on Workers Paid + Unbound pricing.
+# Check: Cloudflare dashboard → Workers & Pages → Overview → Plan.
+# If still on Bundled pricing, the deploy will fail — uncomment the
+# 50ms fallback below until the plan is upgraded.
+#
+# [limits]
+# cpu_ms = 50  # Bundled-plan fallback — uncomment if Unbound is not active
 
 # ── Observability ─────────────────────────────────────────────────────
 # A40.2: Enable Workers Logs for request-rate, 4xx-rate, and cold-start
