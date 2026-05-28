@@ -3,6 +3,9 @@
 # Lines starting with '#' are comments.
 # Each line is a file pattern followed by one or more owners (GitHub usernames or teams).
 
+# Default: repo owner reviews all PRs
+*                               @groupsmix
+
 # Security-critical: encryption, audit logging, authentication
 src/lib/encryption.ts           @groupsmix
 src/lib/audit-log.ts            @groupsmix
