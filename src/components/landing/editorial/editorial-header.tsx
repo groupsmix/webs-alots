@@ -33,38 +33,18 @@ export function EditorialHeader({
   return (
     <>
       {/* 1px hairline at viewport top */}
-      <div style={{ height: 1, backgroundColor: "var(--rule)" }} />
+      <div className="h-px bg-[var(--rule)]" />
 
-      <header
-        className="sticky top-0 z-50"
-        style={{
-          backgroundColor: "var(--bone)",
-          borderBottom: "1px solid var(--rule)",
-        }}
-      >
-        <div
-          className="mx-auto flex w-full items-center justify-between"
-          style={{
-            maxWidth: "var(--container-max)",
-            paddingInline: "var(--gutter-desktop)",
-            height: 64,
-          }}
-        >
+      <header className="sticky top-0 z-50 bg-[var(--bone)] border-b border-b-[var(--rule)]">
+        <div className="mx-auto flex w-full items-center justify-between max-w-[var(--container-max)] px-[var(--gutter-desktop)] h-16">
           {/* eslint-disable i18next/no-literal-string */}
 
           {/* Logo */}
           <Link
             href="/"
-            style={{
-              fontFamily: "var(--font-sans-landing)",
-              fontSize: "var(--text-small)",
-              fontWeight: 700,
-              letterSpacing: "-0.02em",
-              color: "var(--ink)",
-              textDecoration: "none",
-            }}
+            className="font-[var(--font-sans-landing)] text-[length:var(--text-small)] font-bold tracking-[-0.02em] text-[var(--ink)] no-underline"
           >
-            oltigo
+            oltig<span style={{ color: "var(--oltigo-green)" }}>o</span>
           </Link>
 
           {/* Desktop nav links */}
@@ -73,14 +53,7 @@ export function EditorialHeader({
               <a
                 key={link.href}
                 href={link.href}
-                style={{
-                  fontFamily: "var(--font-sans-landing)",
-                  fontSize: "var(--text-small)",
-                  fontWeight: 500,
-                  color: "var(--ink-70)",
-                  textDecoration: "none",
-                  transition: `color var(--duration) var(--easing)`,
-                }}
+                className="font-[var(--font-sans-landing)] text-[length:var(--text-small)] font-medium text-[var(--ink-70)] no-underline transition-colors duration-[var(--duration)] ease-[var(--easing)]"
               >
                 {link.label}
               </a>
@@ -89,16 +62,7 @@ export function EditorialHeader({
             {/* Status dot link */}
             <a
               href="#status"
-              className="inline-flex items-center gap-1.5"
-              style={{
-                fontFamily: "var(--font-mono-landing)",
-                fontSize: "var(--text-mono)",
-                letterSpacing: "var(--ls-mono)",
-                textTransform: "uppercase",
-                fontWeight: 500,
-                color: "var(--ink-60)",
-                textDecoration: "none",
-              }}
+              className="inline-flex items-center gap-1.5 font-[var(--font-mono-landing)] text-[length:var(--text-mono)] tracking-[var(--ls-mono)] uppercase font-medium text-[var(--ink-60)] no-underline"
             >
               Statut <StatusDot />
             </a>
@@ -109,18 +73,7 @@ export function EditorialHeader({
             {/* Language switcher (mono) */}
             <button
               onClick={onToggleLang}
-              style={{
-                fontFamily: "var(--font-mono-landing)",
-                fontSize: "var(--text-mono)",
-                letterSpacing: "var(--ls-mono)",
-                textTransform: "uppercase",
-                fontWeight: 500,
-                color: "var(--ink-60)",
-                background: "none",
-                border: "none",
-                cursor: "pointer",
-                padding: "4px 0",
-              }}
+              className="font-[var(--font-mono-landing)] text-[length:var(--text-mono)] tracking-[var(--ls-mono)] uppercase font-medium text-[var(--ink-60)] bg-transparent border-none cursor-pointer py-1 px-0"
               aria-label="Change language"
             >
               {lang === "fr" ? "FR" : lang === "ar" ? "AR" : "EN"}
@@ -129,36 +82,16 @@ export function EditorialHeader({
             {/* Theme toggle */}
             <button
               onClick={onToggleTheme}
-              className="flex items-center justify-center"
-              style={{
-                width: 32,
-                height: 32,
-                borderRadius: "var(--radius-landing)",
-                border: "1px solid var(--rule)",
-                color: "var(--ink-60)",
-                background: "none",
-                cursor: "pointer",
-              }}
+              className="flex items-center justify-center size-8 rounded-[var(--radius-landing)] border border-[var(--rule)] text-[var(--ink-60)] bg-transparent cursor-pointer"
               aria-label={theme === "light" ? "Mode sombre" : "Mode clair"}
             >
-              {theme === "light" ? (
-                <Moon style={{ width: 14, height: 14 }} />
-              ) : (
-                <Sun style={{ width: 14, height: 14 }} />
-              )}
+              {theme === "light" ? <Moon className="size-3.5" /> : <Sun className="size-3.5" />}
             </button>
 
             {/* Connexion (hidden on mobile) */}
             <Link
               href="/login"
-              className="hidden md:inline-flex"
-              style={{
-                fontFamily: "var(--font-sans-landing)",
-                fontSize: "var(--text-small)",
-                fontWeight: 500,
-                color: "var(--ink-70)",
-                textDecoration: "none",
-              }}
+              className="hidden md:inline-flex font-[var(--font-sans-landing)] text-[length:var(--text-small)] font-medium text-[var(--ink-70)] no-underline"
             >
               Connexion
             </Link>
@@ -166,44 +99,18 @@ export function EditorialHeader({
             {/* Primary CTA (hidden on mobile) */}
             <Link
               href="/register-clinic"
-              className="hidden md:inline-flex"
-              style={{
-                fontFamily: "var(--font-sans-landing)",
-                fontSize: "var(--text-small)",
-                fontWeight: 500,
-                height: 32,
-                paddingInline: 16,
-                display: "inline-flex",
-                alignItems: "center",
-                borderRadius: "var(--radius-landing)",
-                backgroundColor: "var(--oltigo-green)",
-                color: "var(--bone)",
-                textDecoration: "none",
-                transition: `opacity var(--duration) var(--easing)`,
-              }}
+              className="hidden md:inline-flex items-center font-[var(--font-sans-landing)] text-[length:var(--text-small)] font-medium h-8 px-4 rounded-[var(--radius-landing)] bg-[var(--oltigo-green)] text-[var(--bone)] no-underline transition-opacity duration-[var(--duration)] ease-[var(--easing)]"
             >
               Ouvrir un compte
             </Link>
 
             {/* Mobile hamburger */}
             <button
-              className="flex items-center justify-center md:hidden"
+              className="flex items-center justify-center md:hidden size-8 text-[var(--ink)] bg-transparent border-none cursor-pointer"
               onClick={() => setMenuOpen(!menuOpen)}
-              style={{
-                width: 32,
-                height: 32,
-                color: "var(--ink)",
-                background: "none",
-                border: "none",
-                cursor: "pointer",
-              }}
               aria-label={menuOpen ? "Close menu" : "Open menu"}
             >
-              {menuOpen ? (
-                <X style={{ width: 20, height: 20 }} />
-              ) : (
-                <Menu style={{ width: 20, height: 20 }} />
-              )}
+              {menuOpen ? <X className="size-5" /> : <Menu className="size-5" />}
             </button>
           </div>
 
@@ -212,45 +119,21 @@ export function EditorialHeader({
 
         {/* Mobile menu */}
         {menuOpen && (
-          <nav
-            className="flex flex-col gap-4 border-t px-[var(--gutter-mobile)] py-4 md:hidden"
-            style={{
-              borderColor: "var(--rule)",
-              backgroundColor: "var(--bone)",
-            }}
-          >
+          <nav className="flex flex-col gap-4 border-t border-t-[var(--rule)] bg-[var(--bone)] px-[var(--gutter-mobile)] py-4 md:hidden">
             {/* eslint-disable i18next/no-literal-string */}
             {navLinks.map((link) => (
               <a
                 key={link.href}
                 href={link.href}
                 onClick={() => setMenuOpen(false)}
-                style={{
-                  fontFamily: "var(--font-sans-landing)",
-                  fontSize: "var(--text-body)",
-                  fontWeight: 500,
-                  color: "var(--ink-70)",
-                  textDecoration: "none",
-                }}
+                className="font-[var(--font-sans-landing)] text-[length:var(--text-body)] font-medium text-[var(--ink-70)] no-underline"
               >
                 {link.label}
               </a>
             ))}
             <Link
               href="/register-clinic"
-              style={{
-                fontFamily: "var(--font-sans-landing)",
-                fontSize: "var(--text-small)",
-                fontWeight: 500,
-                height: 44,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                borderRadius: "var(--radius-landing)",
-                backgroundColor: "var(--oltigo-green)",
-                color: "var(--bone)",
-                textDecoration: "none",
-              }}
+              className="flex items-center justify-center font-[var(--font-sans-landing)] text-[length:var(--text-small)] font-medium h-11 rounded-[var(--radius-landing)] bg-[var(--oltigo-green)] text-[var(--bone)] no-underline"
             >
               Ouvrir un compte
             </Link>

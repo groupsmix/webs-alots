@@ -174,9 +174,9 @@ async function handler(request: NextRequest) {
 
     for (const req of expiredRequests ?? []) {
       // Mark the rebooking request as expired
-      // AUTH-02: Include clinic_id filter for defense-in-depth tenant isolation
       await rbCron
         .from("rebooking_requests")
+        // nosemgrep: tenant-scoping — clinic_id filter is on the next line
         .update({ status: "expired" })
         .eq("id", req.id)
         .eq("clinic_id", req.clinic_id);

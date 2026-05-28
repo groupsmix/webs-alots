@@ -1,18 +1,10 @@
 "use client";
 
-import {
-  LayoutDashboard,
-  Package,
-  HandCoins,
-  Wrench,
-  Menu,
-  X,
-  Stethoscope,
-  Languages,
-} from "lucide-react";
+import { LayoutDashboard, Package, HandCoins, Wrench, Menu, X, Languages } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState, createContext, useContext, useCallback } from "react";
+import { OltigoMonogram } from "@/components/brand/oltigo-mark";
 import { FeatureGate } from "@/components/feature-gate";
 import { SignOutButton } from "@/components/sign-out-button";
 
@@ -77,7 +69,7 @@ function SidebarContent({
               onClick={onNavClick}
               className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors ${
                 isActive
-                  ? "bg-amber-600/10 text-amber-600 font-medium"
+                  ? "bg-primary/10 text-primary font-medium"
                   : "text-muted-foreground hover:bg-muted hover:text-foreground"
               }`}
             >
@@ -123,7 +115,7 @@ export default function EquipmentLayoutShell({ children }: { children: React.Rea
             <Menu className="h-5 w-5" />
           </button>
           <div className="flex items-center gap-2 flex-1">
-            <Stethoscope className="h-4 w-4 text-amber-600" />
+            <OltigoMonogram size="sm" />
             <h2 className="text-sm font-semibold">{shortTitle}</h2>
           </div>
           <button
@@ -144,7 +136,7 @@ export default function EquipmentLayoutShell({ children }: { children: React.Rea
             <aside className="absolute left-0 top-0 bottom-0 w-64 bg-card p-4 flex flex-col shadow-xl">
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
-                  <Stethoscope className="h-5 w-5 text-amber-600" />
+                  <OltigoMonogram size="sm" />
                   <h2 className="text-lg font-semibold">{shortTitle}</h2>
                 </div>
                 <button
@@ -167,9 +159,7 @@ export default function EquipmentLayoutShell({ children }: { children: React.Rea
         {/* Desktop sidebar */}
         <aside className="hidden w-64 border-r bg-card p-4 md:flex md:flex-col">
           <div className="flex items-center gap-2 mb-6">
-            <div className="h-8 w-8 rounded-lg bg-amber-600 flex items-center justify-center">
-              <Stethoscope className="h-4 w-4 text-white" />
-            </div>
+            <OltigoMonogram size="sm" />
             <h2 className="text-lg font-semibold flex-1">{title}</h2>
             <button
               onClick={toggleLocale}

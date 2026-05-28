@@ -29,6 +29,7 @@ import {
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
+import { OltigoMonogram } from "@/components/brand/oltigo-mark";
 import { MobileMenuOverlay } from "@/components/layouts/mobile-menu-overlay";
 import { useLocale } from "@/components/locale-switcher";
 import { GettingStartedChecklist } from "@/components/onboarding/getting-started-checklist";
@@ -210,6 +211,7 @@ export default function AdminLayoutShell({ children }: { children: React.ReactNo
           >
             <Menu className="h-5 w-5" />
           </button>
+          <OltigoMonogram size="sm" />
           <h2 className="text-sm font-semibold">{t(locale, "nav.clinicAdmin")}</h2>
         </div>
 
@@ -217,7 +219,10 @@ export default function AdminLayoutShell({ children }: { children: React.ReactNo
         {mobileOpen && (
           <MobileMenuOverlay onClose={() => setMobileOpen(false)}>
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold">{t(locale, "nav.clinicAdmin")}</h2>
+              <div className="flex items-center gap-2">
+                <OltigoMonogram size="sm" />
+                <h2 className="text-lg font-semibold">{t(locale, "nav.clinicAdmin")}</h2>
+              </div>
               <button
                 onClick={() => setMobileOpen(false)}
                 className="rounded-md p-1 hover:bg-muted"
@@ -232,7 +237,10 @@ export default function AdminLayoutShell({ children }: { children: React.ReactNo
 
         {/* Desktop sidebar */}
         <aside className="hidden w-64 border-r bg-card p-4 md:flex md:flex-col">
-          <h2 className="text-lg font-semibold mb-6">{t(locale, "nav.clinicAdmin")}</h2>
+          <div className="flex items-center gap-2 mb-6">
+            <OltigoMonogram size="sm" />
+            <h2 className="text-lg font-semibold">{t(locale, "nav.clinicAdmin")}</h2>
+          </div>
           <SidebarContent pathname={pathname} />
         </aside>
 

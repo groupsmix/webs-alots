@@ -76,7 +76,9 @@ function getOldProfileHeaderSecret(): string | null {
 }
 
 function buildPayload(profile: SignedProfile, iat: number): string {
-  return `${profile.id}:${profile.role}:${profile.clinic_id ?? ""}:${iat}`;
+  // FP-01: JSON-encode to avoid delimiter collision — a role containing ":"
+  // would let a forged (id, "role:clinic_X", "", iat) match (id, "role", "clinic_X", iat).
+  return JSON.stringify([profile.id, profile.role, profile.clinic_id ?? "", iat]);
 }
 
 function bytesToHex(bytes: Uint8Array): string {
@@ -100,18 +102,13 @@ function timingSafeHexEqual(a: string, b: string): boolean {
   return diff === 0;
 }
 
-/**
- * PERF-02: Cache imported CryptoKeys per secret+usage to avoid repeated
- * crypto.subtle.importKey calls on every request. Stores the Promise
- * (not the resolved key) to prevent re-import races under concurrency.
- */
-const _hmacKeyCache = new Map<string, Promise<CryptoKey>>();
+// PERF-02: Cache imported CryptoKeys per secret+usage to avoid repeated importKey calls.
+const _keyCache = new Map<string, Promise<CryptoKey>>();
 
 async function importHmacKey(secret: string, usage: "sign" | "verify"): Promise<CryptoKey> {
   const cacheKey = `${secret}:${usage}`;
-  const cached = _hmacKeyCache.get(cacheKey);
+  const cached = _keyCache.get(cacheKey);
   if (cached) return cached;
-
   const promise = crypto.subtle.importKey(
     "raw",
     new TextEncoder().encode(secret),
@@ -119,7 +116,7 @@ async function importHmacKey(secret: string, usage: "sign" | "verify"): Promise<
     false,
     [usage],
   );
-  _hmacKeyCache.set(cacheKey, promise);
+  _keyCache.set(cacheKey, promise);
   return promise;
 }
 
@@ -182,17 +179,23 @@ export async function verifyProfileHeader(input: VerifyHeaderInput): Promise<Sig
   const payload = new TextEncoder().encode(buildPayload(profile, iat));
 
   // SEC-003: Try the current key first, then the old key for rotation overlap.
+  // W8-A1-01: Compute HMAC for ALL configured keys regardless of whether the
+  // first one matches. This eliminates the ~30 µs timing delta between the
+  // "current key matched" and "old key matched" paths.
   const keysToTry = [getProfileHeaderSecret(), getOldProfileHeaderSecret()].filter(
     (k): k is string => k !== null,
   );
   if (keysToTry.length === 0) return null;
 
+  let matched = false;
   for (const secret of keysToTry) {
     const key = await importHmacKey(secret, "sign");
     const expected = await crypto.subtle.sign("HMAC", key, payload);
     const expectedHex = bytesToHex(new Uint8Array(expected));
-    if (timingSafeHexEqual(expectedHex, input.signature)) return profile;
+    if (timingSafeHexEqual(expectedHex, input.signature)) {
+      matched = true;
+    }
   }
 
-  return null;
+  return matched ? profile : null;
 }

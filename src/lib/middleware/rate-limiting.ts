@@ -5,6 +5,7 @@ import {
   globalPageLimiter,
   perClinicLimiter,
 } from "@/lib/rate-limit";
+import { subdomainCache, SUBDOMAIN_CACHE_TTL_MS } from "@/lib/subdomain-cache";
 import type { CspHeaderValues } from "./security-headers";
 
 /**
@@ -34,6 +35,9 @@ export async function applyRateLimit(
   // is not internet-facing so rate limiting provides no security value.
   // Gate on GITHUB_ACTIONS (not CI) per src/lib/env.ts convention —
   // CI=true is easy to set accidentally on a real deployment.
+  // M-05: This bypass is intentional and accepted. E2E tests exercise the
+  // application logic; rate-limiting is validated via unit tests in
+  // src/lib/__tests__/rate-limit.test.ts.
   if (process.env.GITHUB_ACTIONS === "true") {
     return { response: null };
   }
@@ -46,10 +50,16 @@ export async function applyRateLimit(
   // (withAuth) for /api/chat and /api/ai/* endpoints.
   const rateLimitKey = `${hostname}:${extractClientIp(request)}`;
 
+  // W8-RL-02: The `/api/` catch-all rule at the end of rateLimitRules is only
+  // meant for mutations (POST/PUT/PATCH/DELETE), not GETs. Skip it for safe
+  // methods so polling endpoints like /api/health don't trip the 30 req/min cap.
+  const MUTATION_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
+
   // Find a specific API rule if applicable
   const rule = rateLimitRules.find((r) => pathname.startsWith(r.prefix));
+  const isCatchAll = rule?.prefix === "/api/";
 
-  if (rule) {
+  if (rule && !(isCatchAll && !MUTATION_METHODS.has(request.method))) {
     const allowed = await rule.limiter.check(rateLimitKey);
     if (!allowed) {
       const retryAfterSec = Math.ceil(rule.windowMs / 1000);
@@ -90,12 +100,19 @@ export async function applyRateLimit(
     }
   }
 
-  // A39-04: Per-clinic global rate cap. Keyed by subdomain (tenant) so a
-  // single clinic cannot accumulate unlimited API traffic across sessions.
-  // Uses hostname as the clinic key since clinic_id isn't resolved yet at
-  // the rate-limiting stage.
+  // A39-04: Per-clinic global rate cap.
+  // W8-T-02/W8-RL-03: Key on clinic_id rather than hostname so custom-domain
+  // aliases for the same clinic share a single counter. The subdomain cache is
+  // populated by earlier middleware invocations and is a fast Map lookup.
   if (pathname.startsWith("/api/") && hostname) {
-    const clinicAllowed = await perClinicLimiter.check(`clinic:${hostname}`);
+    let clinicKey = hostname;
+    const parts = hostname.split(".");
+    const subdomain = parts.length >= 3 ? parts[0] : hostname;
+    const cached = subdomainCache.get(subdomain);
+    if (cached && Date.now() - cached.cachedAt <= SUBDOMAIN_CACHE_TTL_MS) {
+      clinicKey = cached.id;
+    }
+    const clinicAllowed = await perClinicLimiter.check(`clinic:${clinicKey}`);
     if (!clinicAllowed) {
       const response = withSecurityHeaders(
         NextResponse.json(

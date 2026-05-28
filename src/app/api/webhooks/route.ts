@@ -162,8 +162,6 @@ function extractStatusUpdates(entry: WaEntry): Array<{
           status: status.status,
           timestamp:
             typeof status.timestamp === "string" ? status.timestamp : new Date().toISOString(),
-          // FP-08: Use null instead of empty string when recipient_id is missing
-          // to prevent matching other empty rows in queries
           recipientPhone:
             typeof status.recipient_id === "string" && status.recipient_id
               ? status.recipient_id
@@ -223,14 +221,14 @@ export async function POST(request: NextRequest) {
             const updateData: Record<string, string> = {
               status: statusUpdate.status,
             };
+            // FP-27: Use explicit isNaN check instead of falsy || for timestamp.
+            // parseInt("0") returns 0 which is falsy, causing incorrect Date.now() fallback.
+            const parsedTs = parseInt(statusUpdate.timestamp);
+            const tsMs = isNaN(parsedTs) ? Date.now() : parsedTs * 1000;
             if (statusUpdate.status === "delivered") {
-              updateData.delivered_at = new Date(
-                parseInt(statusUpdate.timestamp) * 1000 || Date.now(),
-              ).toISOString();
+              updateData.delivered_at = new Date(tsMs).toISOString();
             } else if (statusUpdate.status === "read") {
-              updateData.read_at = new Date(
-                parseInt(statusUpdate.timestamp) * 1000 || Date.now(),
-              ).toISOString();
+              updateData.read_at = new Date(tsMs).toISOString();
             }
 
             await admin

@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import {
-  Geist,
-  Geist_Mono,
+  Inter,
+  JetBrains_Mono,
   IBM_Plex_Sans_Arabic,
   Noto_Sans_Arabic,
   Playfair_Display,
@@ -18,14 +18,15 @@ import { ToastProvider } from "@/components/ui/toast";
 import { getDirection, t, type Locale, type TranslationKey } from "@/lib/i18n";
 import { getTenant } from "@/lib/tenant";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+// Editorial typography: Inter for UI/body, JetBrains Mono for metadata/labels.
+const inter = Inter({
+  variable: "--font-inter",
   subsets: ["latin"],
   display: "swap",
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const jetbrainsMono = JetBrains_Mono({
+  variable: "--font-jetbrains-mono",
   subsets: ["latin"],
   display: "swap",
 });
@@ -144,7 +145,7 @@ export default async function RootLayout({
       lang={locale}
       dir={dir}
       suppressHydrationWarning
-      className={`${geistSans.variable} ${geistMono.variable} ${notoSansArabic.variable} ${playfairDisplay.variable} ${ibmPlexArabic.variable} h-full antialiased`}
+      className={`${inter.variable} ${jetbrainsMono.variable} ${notoSansArabic.variable} ${playfairDisplay.variable} ${ibmPlexArabic.variable} h-full antialiased`}
     >
       <head>
         {/* PERF-005: Preconnect to Supabase to shave ~100ms off first SSR fetch */}

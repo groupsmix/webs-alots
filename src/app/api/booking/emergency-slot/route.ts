@@ -106,9 +106,9 @@ export const POST = withAuthValidation(
       );
       if (!patientId) {
         // Rollback: release the slot claim if patient resolution fails
-        // AUTH-01: Include clinic_id filter for defense-in-depth tenant isolation
         await supabase
           .from("emergency_slots")
+          // nosemgrep: tenant-scoping — clinic_id filter is on the next line
           .update({ is_booked: false })
           .eq("id", body.slotId)
           .eq("clinic_id", clinicId);
@@ -142,9 +142,9 @@ export const POST = withAuthValidation(
 
       if (apptError || !appointment) {
         // Rollback: release the slot claim if appointment creation fails
-        // AUTH-01: Include clinic_id filter for defense-in-depth tenant isolation
         await supabase
           .from("emergency_slots")
+          // nosemgrep: tenant-scoping — clinic_id filter is on the next line
           .update({ is_booked: false })
           .eq("id", body.slotId)
           .eq("clinic_id", clinicId);

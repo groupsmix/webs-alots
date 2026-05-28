@@ -1,8 +1,9 @@
 "use client";
 
-import { Phone, ShieldCheck, ArrowLeft, Heart, Mail, Lock, Key } from "lucide-react";
+import { Phone, ArrowLeft, Lock, Key } from "lucide-react";
 import Link from "next/link";
 import { useState, useEffect, useCallback } from "react";
+import { OltigoWordmark } from "@/components/brand/oltigo-mark";
 import { useLocale } from "@/components/locale-switcher";
 import { Button } from "@/components/ui/button";
 import {
@@ -211,27 +212,16 @@ export default function LoginPage() {
 
   return (
     <div className="w-full max-w-md mx-auto">
-      <div className="text-center mb-6">
-        <div className="flex items-center justify-center gap-2 mb-2">
-          <div className="h-10 w-10 rounded-xl bg-primary flex items-center justify-center">
-            <Heart className="h-5 w-5 text-primary-foreground" />
-          </div>
-        </div>
-        <h1 className="text-xl font-bold">{t(locale, "auth.portalTitle")}</h1>
-        <p className="text-sm text-muted-foreground">{t(locale, "auth.loginSubtitle")}</p>
+      <div className="mb-8 text-center">
+        <OltigoWordmark size="lg" className="justify-center" />
+        <p className="mt-3 font-mono text-[0.7rem] uppercase tracking-[0.2em] text-muted-foreground">
+          {t(locale, "auth.portalTitle")}
+        </p>
+        <p className="mt-1 text-sm text-muted-foreground">{t(locale, "auth.loginSubtitle")}</p>
       </div>
 
       <Card>
-        <CardHeader className="text-center pb-4">
-          <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
-            {step === "otp" || step === "mfa" || step === "backup" ? (
-              <ShieldCheck className="h-6 w-6 text-primary" />
-            ) : method === "email" ? (
-              <Mail className="h-6 w-6 text-primary" />
-            ) : (
-              <Phone className="h-6 w-6 text-primary" />
-            )}
-          </div>
+        <CardHeader className="pb-4">
           <CardTitle className="text-xl">
             {step === "otp"
               ? t(locale, "auth.verifyNumber")

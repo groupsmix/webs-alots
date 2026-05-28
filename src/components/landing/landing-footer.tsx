@@ -46,66 +46,28 @@ export function LandingFooter() {
   const { t, locale, setLocale } = useLandingLocale();
 
   return (
-    <footer
-      style={{
-        backgroundColor: "var(--bone)",
-        borderTop: "1px solid var(--rule)",
-      }}
-    >
-      <div
-        className="mx-auto px-[var(--gutter-mobile)] py-[var(--space-8)] md:px-[var(--gutter-tablet)] lg:px-[var(--gutter-desktop)]"
-        style={{ maxWidth: "var(--container-max)" }}
-      >
+    <footer className="bg-[var(--bone)] border-t border-t-[var(--rule)]">
+      <div className="mx-auto px-[var(--gutter-mobile)] py-[var(--space-8)] md:px-[var(--gutter-tablet)] lg:px-[var(--gutter-desktop)] max-w-[var(--container-max)]">
         {/* 4-column grid */}
         <div className="grid grid-cols-1 gap-[var(--space-7)] sm:grid-cols-2 lg:grid-cols-4">
           {/* Col 1: Wordmark + address */}
           <div>
-            <Link
-              href="/"
-              style={{
-                fontSize: "17px",
-                fontWeight: 500,
-                color: "var(--ink)",
-                textDecoration: "none",
-              }}
-            >
-              {"Oltigo"}
+            <Link href="/" className="text-[17px] font-medium text-[var(--ink)] no-underline">
+              {/* eslint-disable i18next/no-literal-string -- brand name, never translated */}
+              Oltig<span className="text-[var(--oltigo-green)]">o</span>
+              {/* eslint-enable i18next/no-literal-string */}
             </Link>
-            <address
-              className="mt-[var(--space-4)] not-italic"
-              style={{
-                fontSize: "var(--text-small)",
-                lineHeight: "var(--lh-small)",
-                color: "var(--ink-60)",
-              }}
-            >
+            <address className="mt-[var(--space-4)] not-italic text-[length:var(--text-small)] leading-[var(--lh-small)] text-[var(--ink-60)]">
               {"Casablanca, Morocco"}
             </address>
-            <p
-              className="mt-[var(--space-2)]"
-              style={{
-                fontFamily: "var(--font-mono-landing)",
-                fontSize: "var(--text-mono)",
-                lineHeight: "var(--lh-mono)",
-                color: "var(--ink-60)",
-              }}
-            >
+            <p className="mt-[var(--space-2)] font-[var(--font-mono-landing)] text-[length:var(--text-mono)] leading-[var(--lh-mono)] text-[var(--ink-60)]">
               {t("landing.footerRegistration" as TranslationKey)}
             </p>
           </div>
 
           {/* Col 2: Product */}
           <div>
-            <h3
-              style={{
-                fontFamily: "var(--font-mono-landing)",
-                fontSize: "var(--text-mono)",
-                lineHeight: "var(--lh-mono)",
-                color: "var(--ink-60)",
-                textTransform: "uppercase",
-                marginBottom: "var(--space-4)",
-              }}
-            >
+            <h3 className="font-[var(--font-mono-landing)] text-[length:var(--text-mono)] leading-[var(--lh-mono)] text-[var(--ink-60)] uppercase mb-[var(--space-4)]">
               {t("landing.footerProductHeading" as TranslationKey)}
             </h3>
             <nav aria-label="Product links">
@@ -114,13 +76,7 @@ export function LandingFooter() {
                   <li key={href} className="mb-[var(--space-2)]">
                     <Link
                       href={href}
-                      className="transition-colors"
-                      style={{
-                        fontSize: "var(--text-small)",
-                        color: "var(--ink-80)",
-                        textDecoration: "none",
-                        transitionDuration: "var(--duration)",
-                      }}
+                      className="transition-colors text-[length:var(--text-small)] text-[var(--ink-80)] no-underline duration-[var(--duration)]"
                     >
                       {t(key)}
                     </Link>
@@ -132,16 +88,7 @@ export function LandingFooter() {
 
           {/* Col 3: Company */}
           <div>
-            <h3
-              style={{
-                fontFamily: "var(--font-mono-landing)",
-                fontSize: "var(--text-mono)",
-                lineHeight: "var(--lh-mono)",
-                color: "var(--ink-60)",
-                textTransform: "uppercase",
-                marginBottom: "var(--space-4)",
-              }}
-            >
+            <h3 className="font-[var(--font-mono-landing)] text-[length:var(--text-mono)] leading-[var(--lh-mono)] text-[var(--ink-60)] uppercase mb-[var(--space-4)]">
               {t("landing.footerCompanyHeading" as TranslationKey)}
             </h3>
             <nav aria-label="Company links">
@@ -150,13 +97,7 @@ export function LandingFooter() {
                   <li key={href} className="mb-[var(--space-2)]">
                     <Link
                       href={href}
-                      className="transition-colors"
-                      style={{
-                        fontSize: "var(--text-small)",
-                        color: "var(--ink-80)",
-                        textDecoration: "none",
-                        transitionDuration: "var(--duration)",
-                      }}
+                      className="transition-colors text-[length:var(--text-small)] text-[var(--ink-80)] no-underline duration-[var(--duration)]"
                     >
                       {t(key)}
                     </Link>
@@ -168,16 +109,7 @@ export function LandingFooter() {
 
           {/* Col 4: Legal & Compliance */}
           <div>
-            <h3
-              style={{
-                fontFamily: "var(--font-mono-landing)",
-                fontSize: "var(--text-mono)",
-                lineHeight: "var(--lh-mono)",
-                color: "var(--ink-60)",
-                textTransform: "uppercase",
-                marginBottom: "var(--space-4)",
-              }}
-            >
+            <h3 className="font-[var(--font-mono-landing)] text-[length:var(--text-mono)] leading-[var(--lh-mono)] text-[var(--ink-60)] uppercase mb-[var(--space-4)]">
               {t("landing.footerLegalHeading" as TranslationKey)}
             </h3>
             <nav aria-label="Legal links">
@@ -186,13 +118,7 @@ export function LandingFooter() {
                   <li key={href} className="mb-[var(--space-2)]">
                     <Link
                       href={href}
-                      className="transition-colors"
-                      style={{
-                        fontSize: "var(--text-small)",
-                        color: "var(--ink-80)",
-                        textDecoration: "none",
-                        transitionDuration: "var(--duration)",
-                      }}
+                      className="transition-colors text-[length:var(--text-small)] text-[var(--ink-80)] no-underline duration-[var(--duration)]"
                     >
                       {t(key)}
                     </Link>
@@ -204,19 +130,8 @@ export function LandingFooter() {
         </div>
 
         {/* Bottom bar */}
-        <div
-          className="mt-[var(--space-8)] flex flex-col items-center justify-between gap-[var(--space-3)] sm:flex-row"
-          style={{
-            borderTop: "1px solid var(--rule)",
-            paddingTop: "var(--space-5)",
-          }}
-        >
-          <p
-            style={{
-              fontSize: "var(--text-small)",
-              color: "var(--ink-60)",
-            }}
-          >
+        <div className="mt-[var(--space-8)] flex flex-col items-center justify-between gap-[var(--space-3)] sm:flex-row border-t border-t-[var(--rule)] pt-[var(--space-5)]">
+          <p className="text-[length:var(--text-small)] text-[var(--ink-60)]">
             {`\u00A9 ${new Date().getFullYear()} Oltigo. `}
             {t("landing.footerCopyright")}
           </p>
@@ -228,18 +143,7 @@ export function LandingFooter() {
                 key={code}
                 type="button"
                 onClick={() => setLocale(code)}
-                className="transition-colors"
-                style={{
-                  fontSize: "var(--text-small)",
-                  fontWeight: locale === code ? 500 : 400,
-                  color: locale === code ? "var(--ink)" : "var(--ink-60)",
-                  background: "none",
-                  border: "none",
-                  cursor: "pointer",
-                  textDecoration: "none",
-                  padding: 0,
-                  transitionDuration: "var(--duration)",
-                }}
+                className={`transition-colors text-[length:var(--text-small)] bg-transparent border-none cursor-pointer no-underline p-0 duration-[var(--duration)] ${locale === code ? "font-medium text-[var(--ink)]" : "font-normal text-[var(--ink-60)]"}`}
                 aria-current={locale === code ? "true" : undefined}
               >
                 {label}

@@ -18,21 +18,22 @@ export const metadata: Metadata = {
 export default function ComparePage() {
   return (
     <LandingLocaleProvider>
-      <div className="flex min-h-screen flex-col bg-white">
+      <div className="flex min-h-screen flex-col bg-background">
         <LandingHeader />
         <main className="flex-1">
           {/* Header */}
-          <div className="mx-auto max-w-6xl px-4 pb-12 pt-20 text-center sm:px-6">
-            <p className="mb-3 text-sm font-semibold uppercase tracking-widest text-blue-600">
-              Comparatif complet
+          <div className="mx-auto max-w-6xl px-4 pb-12 pt-20 sm:px-6">
+            <p className="mb-3 font-mono text-xs font-medium uppercase tracking-[0.2em] text-primary">
+              <span className="text-muted-foreground">01 — </span>Comparatif complet
             </p>
-            <h1 className="text-4xl font-bold tracking-tight text-gray-900 sm:text-5xl">
+            <h1 className="max-w-3xl text-4xl font-bold tracking-tight text-foreground sm:text-5xl">
               Oltigo vs la concurrence
             </h1>
-            <p className="mx-auto mt-4 max-w-2xl text-lg text-gray-600">
+            <p className="mt-4 max-w-2xl text-lg text-muted-foreground">
               Découvrez pourquoi Oltigo est la solution la plus complète pour les professionnels de
               santé au Maroc.
             </p>
+            <div className="mt-8 h-px w-full bg-border" />
           </div>
 
           {/* Full comparison table */}

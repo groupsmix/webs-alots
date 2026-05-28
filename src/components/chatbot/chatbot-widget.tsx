@@ -60,10 +60,7 @@ export function ChatbotWidget() {
     <>
       {/* Chat Panel */}
       {isOpen && (
-        <div
-          className="fixed bottom-20 right-4 z-50 w-[360px] max-w-[calc(100vw-2rem)] rounded-xl border bg-card shadow-2xl flex flex-col overflow-hidden"
-          style={{ height: "min(500px, calc(100vh - 8rem))" }}
-        >
+        <div className="fixed bottom-20 right-4 z-50 w-[360px] max-w-[calc(100vw-2rem)] rounded-xl border bg-card shadow-2xl flex flex-col overflow-hidden h-[min(500px,calc(100vh-8rem))]">
           {/* Header */}
           <div className="flex items-center justify-between gap-2 border-b bg-primary px-4 py-3">
             <div className="flex items-center gap-2 text-primary-foreground">
@@ -144,12 +141,8 @@ export function ChatbotWidget() {
                     {msg.content || (
                       <span className="inline-flex gap-1">
                         <span className="animate-pulse">.</span>
-                        <span className="animate-pulse" style={{ animationDelay: "0.2s" }}>
-                          .
-                        </span>
-                        <span className="animate-pulse" style={{ animationDelay: "0.4s" }}>
-                          .
-                        </span>
+                        <span className="animate-pulse [animation-delay:0.2s]">.</span>
+                        <span className="animate-pulse [animation-delay:0.4s]">.</span>
                       </span>
                     )}
                   </div>
@@ -161,12 +154,8 @@ export function ChatbotWidget() {
                   <div className="max-w-[85%] rounded-2xl rounded-bl-sm bg-muted px-3.5 py-2 text-sm">
                     <span className="inline-flex gap-1">
                       <span className="animate-pulse">.</span>
-                      <span className="animate-pulse" style={{ animationDelay: "0.2s" }}>
-                        .
-                      </span>
-                      <span className="animate-pulse" style={{ animationDelay: "0.4s" }}>
-                        .
-                      </span>
+                      <span className="animate-pulse [animation-delay:0.2s]">.</span>
+                      <span className="animate-pulse [animation-delay:0.4s]">.</span>
                     </span>
                   </div>
                 </div>
