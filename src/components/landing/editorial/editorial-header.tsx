@@ -64,7 +64,7 @@ export function EditorialHeader({
               textDecoration: "none",
             }}
           >
-            oltigo
+            oltig<span style={{ color: "var(--oltigo-green)" }}>o</span>
           </Link>
 
           {/* Desktop nav links */}
