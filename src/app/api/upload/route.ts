@@ -468,13 +468,13 @@ export const PUT = withAuthValidation(
     // W8-R-01: AV scan for presigned uploads. The POST path runs ClamAV but
     // the PUT (confirm) path did not — an inconsistent control. Fetch the
     // full object body and send it to the AV scanner.
-    // nosemgrep: env-access — AV_SCAN_URL validated at boot in env.ts
+    // nosemgrep: semgrep.env-access — AV_SCAN_URL validated at boot in env.ts
     if (process.env.AV_SCAN_URL) {
       try {
         const fullBody = await readR2ObjectHead(key, metadata.contentLength);
         if (fullBody) {
+          // nosemgrep: semgrep.env-access — same var, second access
           const avResponse = await fetch(process.env.AV_SCAN_URL, {
-            // nosemgrep: env-access
             method: "POST",
             body: new Uint8Array(fullBody),
             headers: { "Content-Type": contentType },
@@ -497,8 +497,8 @@ export const PUT = withAuthValidation(
               status: avResponse.status,
               key,
             });
+            // nosemgrep: semgrep.env-access — AV_SCAN_REQUIRED checked at runtime for fail-closed
             if (process.env.AV_SCAN_REQUIRED === "true") {
-              // nosemgrep: env-access
               await deleteFromR2(key);
               return apiError("Virus scan unavailable — upload rejected", 503);
             }
@@ -510,8 +510,8 @@ export const PUT = withAuthValidation(
           error: err instanceof Error ? err.message : String(err),
           key,
         });
+        // nosemgrep: semgrep.env-access — AV_SCAN_REQUIRED checked at runtime for fail-closed
         if (process.env.AV_SCAN_REQUIRED === "true") {
-          // nosemgrep: env-access
           await deleteFromR2(key);
           return apiError("Virus scan unavailable — upload rejected", 503);
         }

@@ -43,7 +43,7 @@ export const POST = withAuthValidation(
     // AUTH-02: Prevent impersonation of other super_admin accounts.
     // W8-A30-01: Use admin client for the pre-check so RLS cannot hide
     // super_admin rows in other clinics and silently bypass the block.
-    // nosemgrep: admin-client-guard — intentional cross-tenant read to check for super_admins
+    // nosemgrep: semgrep.admin-client-guard — intentional cross-tenant read to check for super_admins
     const precheckClient = createAdminClient("impersonate-precheck");
     const { data: superAdminsInClinic } = await precheckClient
       .from("users")

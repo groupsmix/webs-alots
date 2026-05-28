@@ -198,7 +198,7 @@ export async function POST(request: NextRequest) {
     // callbacks carry no Supabase session cookies, so the anon client
     // has auth.uid() IS NULL and RLS may return zero rows on legitimate
     // callbacks, leaving payments stuck at 'pending'.
-    // nosemgrep: admin-client-guard — CMI callbacks have no user session; admin needed for RLS bypass
+    // nosemgrep: semgrep.admin-client-guard — CMI callbacks have no user session; admin needed for RLS bypass
     const supabase = createAdminClient("payments/cmi");
 
     if (callbackData.status === "approved") {

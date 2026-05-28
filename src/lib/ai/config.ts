@@ -30,7 +30,8 @@ function isAllowedBaseUrl(url: string): boolean {
   try {
     const parsed = new URL(url);
     if (parsed.hostname.endsWith(".openai.azure.com")) {
-      const resourceName = process.env.AZURE_OPENAI_RESOURCE_NAME; // nosemgrep: env-access
+      // nosemgrep: semgrep.env-access — pinned Azure resource name, validated at boot
+      const resourceName = process.env.AZURE_OPENAI_RESOURCE_NAME;
       if (!resourceName) return false;
       const expected = `${resourceName}.openai.azure.com`;
       return parsed.hostname === expected;
