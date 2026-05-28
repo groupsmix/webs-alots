@@ -43,6 +43,7 @@ export async function POST(request: NextRequest) {
   // In production, DEMO_ENABLED must be "true" to allow demo login.
   // This prevents the demo path from being accidentally accessible in
   // production routing — a known attack vector class (audit finding #25).
+  // nosemgrep: semgrep.env-access — runtime production + feature-flag check for demo login gating
   if (process.env.NODE_ENV === "production" && process.env.DEMO_ENABLED !== "true") {
     return apiForbidden("Demo mode is disabled in production");
   }

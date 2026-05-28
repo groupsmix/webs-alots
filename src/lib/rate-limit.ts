@@ -258,6 +258,7 @@ function createSupabaseRateLimiter(options: RateLimiterOptions): RateLimiter {
   // is NOT subject to multi-tenant isolation. RLS is enabled on the table as
   // defense-in-depth (blocks anon/authenticated access) but the service role
   // bypasses it to perform atomic counter operations.
+  // nosemgrep: semgrep.env-access — Supabase credentials for rate-limit backend; validated below
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!supabaseUrl || !serviceRoleKey) {
@@ -428,6 +429,7 @@ function createKVRateLimiter(options: RateLimiterOptions): RateLimiter {
 
   // KV-backed limiters have a configured grace period before they fail-closed
   const getKvGraceMs = () => {
+    // nosemgrep: semgrep.env-access — operator-tunable grace period for KV circuit breaker
     const raw = process.env.RATE_LIMIT_KV_GRACE_MS;
     const DEFAULT_KV_GRACE_MS = 60_000;
     if (!raw) return DEFAULT_KV_GRACE_MS;
