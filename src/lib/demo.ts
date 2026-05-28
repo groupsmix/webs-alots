@@ -6,7 +6,7 @@
  */
 
 /** The well-known UUID for the demo clinic (seeded in migration 00046). */
-export const DEMO_CLINIC_ID = "c0000000-de00-0000-0000-000000000001";
+export const DEMO_CLINIC_ID = process.env.DEMO_CLINIC_ID || "c0000000-de00-0000-0000-000000000001";
 
 /** The subdomain used for the demo tenant. */
 export const DEMO_SUBDOMAIN = "demo";
