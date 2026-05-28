@@ -73,6 +73,41 @@ jobs:
             exit 1
           fi
 
+      # [003]: i18n translation-coverage ratchet. Counts keys that are
+      # non-empty in fr.json but empty/missing in en/ar (these silently
+      # fall back to French at runtime). Fails if any locale's count rises
+      # above .i18n-coverage-baseline.json — stops the gap from growing
+      # while the backlog is translated by humans.
+      - name: Run i18n coverage ratchet
+        run: node scripts/check-i18n-coverage.mjs
+
+      # Prevent raising the i18n coverage baseline in PRs (mirror of the
+      # ESLint ratchet guard above): a PR may lower counts, never raise them.
+      - name: Guard i18n coverage baseline ratchet
+        if: github.event_name == 'pull_request'
+        run: |
+          git fetch origin "${{ github.event.pull_request.base.ref }}" --depth=1 2>/dev/null || true
+          node -e '
+            const fs = require("fs");
+            const { execSync } = require("child_process");
+            const base = "${{ github.event.pull_request.base.ref }}";
+            const pr = JSON.parse(fs.readFileSync(".i18n-coverage-baseline.json", "utf8"));
+            let main;
+            try {
+              main = JSON.parse(execSync(`git show origin/${base}:.i18n-coverage-baseline.json`, { encoding: "utf8" }));
+            } catch {
+              process.exit(0); // file is new on this branch
+            }
+            let failed = false;
+            for (const locale of Object.keys(pr)) {
+              if (main[locale] !== undefined && pr[locale] > main[locale]) {
+                console.error(`::error::i18n baseline for "${locale}" increased from ${main[locale]} to ${pr[locale]} — ratchet must only go down`);
+                failed = true;
+              }
+            }
+            if (failed) process.exit(1);
+          '
+
       # R-08: Ban direct process.env.CRON_SECRET access outside cron-auth.ts
       - name: Guard CRON_SECRET access
         run: |
