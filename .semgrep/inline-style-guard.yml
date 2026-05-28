@@ -1,0 +1,25 @@
+rules:
+  # F-01: Flag new inline style={{}} usage in JSX.
+  # Inline styles require CSP 'unsafe-inline' in style-src, which weakens
+  # the Content Security Policy. New code should use Tailwind classes or
+  # CSS Modules. Existing inline styles are tracked for incremental removal.
+  - id: inline-style-guard
+    pattern: "style={$X}"
+    message: >
+      F-01: Inline `style={{}}` requires CSP `style-src 'unsafe-inline'`.
+      Use Tailwind classes or CSS Modules instead. See the audit for the
+      migration roadmap toward removing 'unsafe-inline'.
+    severity: WARNING
+    languages: [typescript, javascript]
+    paths:
+      include:
+        - "src/"
+      exclude:
+        - "src/components/ui/"
+        - "src/components/__tests__/"
+    metadata:
+      category: best-practice
+      technology:
+        - react
+      references:
+        - https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP

@@ -104,27 +104,6 @@ const eslintConfig = defineConfig([
     },
   },
   {
-    // F-01: Discourage inline style={{}} props to work toward removing
-    // 'unsafe-inline' from the CSP style-src directive. New code should use
-    // Tailwind classes or CSS Modules. Existing violations are warned (not
-    // errored) to allow incremental migration.
-    files: ["src/**/*.{ts,tsx}"],
-    rules: {
-      "react/forbid-dom-props": [
-        "warn",
-        {
-          forbid: [
-            {
-              propName: "style",
-              message:
-                "F-01: Inline style={{}} requires CSP 'unsafe-inline'. Use Tailwind classes or CSS Modules instead.",
-            },
-          ],
-        },
-      ],
-    },
-  },
-  {
     // S-17: Prevent scripts/** paths from being imported into Worker bundle.
     // Files under scripts/ are meant for local/CI use only and may contain
     // service-role keys or Node-only APIs that must never reach the browser.
