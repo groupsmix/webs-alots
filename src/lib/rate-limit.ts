@@ -796,6 +796,21 @@ export const perClinicLimiter = createRateLimiter({
   max: 10_000,
 });
 
+/**
+ * AUDIT-24 / S0-07-03: Per-user API rate cap — 100 req / 60s per user_id.
+ * Applied in `withAuth` once the authenticated user is resolved, supplementing
+ * the per-IP limiter. Backed by the same distributed backend (KV / Supabase)
+ * so the limit is authoritative across the Workers fleet rather than
+ * per-isolate. `failClosed: false` keeps it best-effort: a backend outage
+ * falls back to the in-memory limiter instead of locking authenticated users
+ * out, since the per-IP limiter remains the hard control.
+ */
+export const perUserLimiter = createRateLimiter({
+  windowMs: 60_000,
+  max: 100,
+  failClosed: false,
+});
+
 export interface RateLimitRule {
   /** URL prefix to match */
   prefix: string;

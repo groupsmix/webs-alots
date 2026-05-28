@@ -16,6 +16,14 @@ vi.mock("@/lib/tenant-context", () => ({
   logTenantContext: vi.fn(),
 }));
 
+// Per-user rate limiter is backed by the shared distributed limiter. Mock it
+// so tests can drive the allow/deny decision deterministically and assert the
+// user-scoped key. Defaults to "allowed" so unrelated tests are unaffected.
+const perUserLimiterCheck = vi.fn().mockResolvedValue(true);
+vi.mock("@/lib/rate-limit", () => ({
+  perUserLimiter: { check: (...args: unknown[]) => perUserLimiterCheck(...args) },
+}));
+
 function createMockRequest(initialHeaders?: Record<string, string>): {
   headers: Map<string, string>;
   method: string;
@@ -343,6 +351,53 @@ describe("withAuth", () => {
       expect(response.status).toBe(200);
       expect(setTenantContextMock).not.toHaveBeenCalled();
       expect(handler).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  // AUDIT-24 / S0-07-03: Per-user rate limiting is enforced via the shared
+  // distributed limiter, keyed by user id so the cap is authoritative across
+  // the Workers fleet rather than per-isolate.
+  describe("per-user rate limiting", () => {
+    beforeEach(() => {
+      perUserLimiterCheck.mockReset();
+      perUserLimiterCheck.mockResolvedValue(true);
+    });
+
+    it("checks the limiter with a user-scoped key and allows the request", async () => {
+      const mockSupabase = createMockSupabase(
+        { id: "user-1" },
+        { id: "profile-1", role: "clinic_admin", clinic_id: "clinic-1" },
+      );
+      vi.mocked(createClient).mockResolvedValue(mockSupabase as never);
+
+      const handler = vi
+        .fn()
+        .mockResolvedValue(new Response(JSON.stringify({ ok: true }), { status: 200 }));
+      const wrappedHandler = withAuth(handler, ["clinic_admin"]);
+
+      await wrappedHandler(createMockRequest() as never);
+
+      expect(perUserLimiterCheck).toHaveBeenCalledWith("user:profile-1");
+      expect(handler).toHaveBeenCalledTimes(1);
+    });
+
+    it("returns 429 when the per-user limiter denies the request", async () => {
+      const mockSupabase = createMockSupabase(
+        { id: "user-1" },
+        { id: "profile-1", role: "clinic_admin", clinic_id: "clinic-1" },
+      );
+      vi.mocked(createClient).mockResolvedValue(mockSupabase as never);
+      perUserLimiterCheck.mockResolvedValue(false);
+
+      const handler = vi.fn();
+      const wrappedHandler = withAuth(handler, ["clinic_admin"]);
+
+      const response = await wrappedHandler(createMockRequest() as never);
+      const body = await response.json();
+
+      expect(response.status).toBe(429);
+      expect(body.code).toBe("USER_RATE_LIMIT");
+      expect(handler).not.toHaveBeenCalled();
     });
   });
 });

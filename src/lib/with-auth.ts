@@ -19,71 +19,12 @@ import type { User } from "@supabase/supabase-js";
 import { NextResponse, type NextRequest } from "next/server";
 import { logger } from "@/lib/logger";
 import { verifyProfileHeader, PROFILE_HEADER_NAMES } from "@/lib/profile-header-hmac";
+import { perUserLimiter } from "@/lib/rate-limit";
 import { createClient } from "@/lib/supabase-server";
 import { getTenant } from "@/lib/tenant";
 import { setTenantContext, logTenantContext } from "@/lib/tenant-context";
 import type { UserRole } from "@/lib/types/database";
 import type { Database } from "@/lib/types/database";
-
-// ── AUDIT-24: Per-user rate limiting ─────────────────────────────────
-// Lightweight in-memory sliding window per authenticated user ID.
-// Supplements the per-IP middleware limits to catch authenticated abuse.
-const USER_RATE_WINDOW_MS = 60_000; // 1 minute
-const USER_RATE_MAX = 100; // max requests per window per user
-const USER_RATE_MAX_KEYS = 10_000; // prevent unbounded memory growth
-
-interface UserRateEntry {
-  count: number;
-  resetAt: number;
-}
-
-const userRateBuckets = new Map<string, UserRateEntry>();
-
-/**
- * P-01 (perf audit): O(n) eviction. The previous implementation built an
- * array of all entries and sorted by `resetAt` whenever the map filled up,
- * costing O(n log n) on the Worker CPU budget for every overflowed
- * request. We now do a single pass:
- *   1. Drop every already-expired entry (cheap; common case).
- *   2. If we are still over the soft cap, drop a 25 % slice using
- *      Map insertion order — `Map` iterates in insertion order, so the
- *      first entries are also the oldest by creation time. This is a
- *      good-enough approximation of LRU for a defensive cap that exists
- *      only to bound memory; the rate-limit window itself is 1 minute.
- */
-function evictUserRateBuckets(now: number): void {
-  for (const [key, entry] of userRateBuckets) {
-    if (entry.resetAt <= now) {
-      userRateBuckets.delete(key);
-    }
-  }
-
-  if (userRateBuckets.size < USER_RATE_MAX_KEYS) return;
-
-  const dropTarget = Math.floor(USER_RATE_MAX_KEYS / 4);
-  let dropped = 0;
-  for (const key of userRateBuckets.keys()) {
-    if (dropped >= dropTarget) break;
-    userRateBuckets.delete(key);
-    dropped++;
-  }
-}
-
-function checkUserRateLimit(userId: string): boolean {
-  const now = Date.now();
-  const entry = userRateBuckets.get(userId);
-
-  if (!entry || now > entry.resetAt) {
-    if (userRateBuckets.size >= USER_RATE_MAX_KEYS) {
-      evictUserRateBuckets(now);
-    }
-    userRateBuckets.set(userId, { count: 1, resetAt: now + USER_RATE_WINDOW_MS });
-    return true;
-  }
-
-  entry.count++;
-  return entry.count <= USER_RATE_MAX;
-}
 
 export interface AuthContext {
   supabase: SupabaseClient<Database>;
@@ -243,12 +184,11 @@ export function withAuth(
       });
 
       // AUDIT-24 / S0-07-03: Per-user rate limiting for authenticated API
-      // requests. Best-effort in-memory check (100 req/min per user) that
-      // supplements the authoritative IP-based middleware limits. On a
-      // Workers fleet each isolate has its own map, so the effective limit
-      // is `100 × num_isolates`. This is acceptable because the IP-based
-      // KV-backed limiter is the authoritative control.
-      if (!checkUserRateLimit(profile.id)) {
+      // requests (100 req/min per user). Backed by the shared distributed
+      // limiter (KV / Supabase) so the cap is authoritative across the
+      // Workers fleet instead of being per-isolate. Falls back to in-memory
+      // only when no distributed backend is configured (dev / single host).
+      if (!(await perUserLimiter.check(`user:${profile.id}`))) {
         return NextResponse.json(
           { error: "Too many requests. Please slow down.", code: "USER_RATE_LIMIT" },
           { status: 429 },
