@@ -170,6 +170,11 @@ jobs:
           # acknowledgement env var to pass the security-posture startup
           # health check (enforceFlagAcknowledgements in src/lib/env.ts).
           PHONE_AUTH_ACK: "true"
+          # AV_SCAN_URL and AV_SCAN_REQUIRED are required in production
+          # mode. AV scanning is not available in CI (no ClamAV), so
+          # provide placeholder values to satisfy the startup health check.
+          AV_SCAN_URL: http://localhost:9999/scan
+          AV_SCAN_REQUIRED: "false"
 
       - name: Upload Playwright report
         # F-19: Pin to SHA for supply-chain hardening
