@@ -180,7 +180,26 @@ A sealed **break-glass super_admin** account exists for emergency access when no
 
 ---
 
-## 8. Related Documents
+## 8. Top-10 Alert Playbook (A94-2)
+
+The following are the most critical alerts an on-call engineer will encounter, listed in priority order. Each entry references the relevant SLO or system component.
+
+| #   | Alert Name                                    | Source           | Severity | Runbook                                                                                                                                                                           |
+| --- | --------------------------------------------- | ---------------- | -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | **API error budget > 75% consumed in 3 days** | SLO burn-rate    | SEV-1    | Check Cloudflare dashboard for 5xx spike. Identify failing route via Sentry. If DB-related, check Supabase connection count. Roll back last deploy if error started post-deploy.  |
+| 2   | **API error budget > 50% consumed in 7 days** | SLO burn-rate    | SEV-2    | Investigate top error in Sentry. Check for slow queries in Supabase logs. Review recent PRs for regressions.                                                                      |
+| 3   | **API p95 latency > 800ms (booking)**         | SLO latency      | SEV-2    | Check Supabase query performance. Verify KV rate-limit backend is responsive. Check for cache stampede (A75-2). Consider enabling circuit breaker if external dependency is slow. |
+| 4   | **Worker CPU time exhausted**                 | Cloudflare       | SEV-1    | Likely a hot loop or unbound AI call. Check `wrangler tail` for long-running requests. Verify circuit breaker is tripping for slow OpenAI calls (A74-2).                          |
+| 5   | **Database connection pool exhausted**        | Supabase         | SEV-1    | Check for connection leaks (unclosed clients). Verify connection pooler (PgBouncer) is healthy. May need to restart the pooler or scale the plan.                                 |
+| 6   | **Rate limiter KV/DO backend unreachable**    | Internal         | SEV-2    | System falls back to in-memory rate limiting (per-isolate). Check Cloudflare KV status page. If persistent, verify KV namespace binding in `wrangler.toml`.                       |
+| 7   | **Webhook processing failure > 5%**           | SLO availability | SEV-2    | Check WhatsApp/Stripe webhook logs. Verify signature validation. Check tenant resolution for webhook payloads.                                                                    |
+| 8   | **PHI encryption key rotation failure**       | Cron/backup      | SEV-2    | Verify R2 bucket access. Check encryption key in KV. Manual rotation: see `docs/backup-recovery-runbook.md`.                                                                      |
+| 9   | **CSP violation spike**                       | Sentry CSP       | SEV-3    | Check CSP report endpoint for new violation patterns. May indicate XSS attempt or new third-party script. Review recent frontend deploys.                                         |
+| 10  | **Auth rate-limit 429 spike**                 | Cloudflare       | SEV-3    | Likely brute-force attempt. Verify the rate limiter is correctly identifying IPs via CF-Connecting-IP. Check for credential stuffing patterns in logs.                            |
+
+---
+
+## 9. Related Documents
 
 - [SLO Document](./slo.md)
 - [Incident Response Runbook](./incident-response.md)

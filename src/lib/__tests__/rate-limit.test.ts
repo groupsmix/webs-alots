@@ -82,6 +82,20 @@ describe("extractClientIp", () => {
     const req = createMockRequest({ "x-forwarded-for": "" });
     expect(extractClientIp(req as never)).toBe("unknown");
   });
+
+  /**
+   * A88-1: Regression — CF-Connecting-IP MUST win over a spoofed
+   * X-Forwarded-For header. A refactor that checks XFF first would
+   * let an attacker bypass per-IP rate limits.
+   */
+  it("A88-1: CF-Connecting-IP always wins over spoofed XFF", () => {
+    const req = createMockRequest({
+      "cf-connecting-ip": "198.51.100.1",
+      "x-forwarded-for": "10.0.0.99, 192.168.1.1",
+      "x-real-ip": "172.16.0.5",
+    });
+    expect(extractClientIp(req as never)).toBe("198.51.100.1");
+  });
 });
 
 describe("createRateLimiter (in-memory)", () => {

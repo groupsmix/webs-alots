@@ -107,7 +107,36 @@ function redactPhi(obj: Record<string, unknown>): Record<string, unknown> {
   return result;
 }
 
+// ── A93-2: Sampling for high-volume log messages ──
+// Prevents log-flood costs during traffic spikes. Only `warn` and `info`
+// messages are eligible for sampling — `error` is never dropped.
+const _sampleCounters = new Map<string, { count: number; lastReset: number }>();
+const SAMPLE_WINDOW_MS = 60_000;
+const SAMPLE_THRESHOLD = 50;
+const SAMPLE_RATE = 10; // after threshold, emit 1 in N
+
+function shouldSample(level: LogLevel, message: string): boolean {
+  if (level === "error" || level === "debug") return true;
+
+  const key = `${level}:${message}`;
+  const now = Date.now();
+  let entry = _sampleCounters.get(key);
+
+  if (!entry || now - entry.lastReset > SAMPLE_WINDOW_MS) {
+    entry = { count: 0, lastReset: now };
+    _sampleCounters.set(key, entry);
+  }
+
+  entry.count++;
+
+  if (entry.count <= SAMPLE_THRESHOLD) return true;
+  return entry.count % SAMPLE_RATE === 0;
+}
+
 function emit(level: LogLevel, message: string, meta?: LogMeta): void {
+  // A93-2: Drop sampled-out messages early
+  if (!shouldSample(level, message)) return;
+
   const { context, clinicId, traceId, error, ...extra } = meta ?? {};
   const payload: Record<string, unknown> = {
     level,
