@@ -762,6 +762,25 @@ export const globalPageLimiter = createRateLimiter({
   max: 120,
 });
 
+/**
+ * S0-11-02: CSP report endpoint — 60 req / 60s per IP.
+ * Matches the route-local limiter for defense-in-depth via middleware.
+ */
+export const cspReportLimiter = createRateLimiter({
+  windowMs: 60_000,
+  max: 60,
+});
+
+/**
+ * A39-04: Per-clinic global rate cap — 10 000 req / 60s per clinic_id.
+ * Prevents a malicious clinic admin from accumulating API calls across
+ * multiple authenticated sessions. Keyed by clinic_id, not IP.
+ */
+export const perClinicLimiter = createRateLimiter({
+  windowMs: 60_000,
+  max: 10_000,
+});
+
 export interface RateLimitRule {
   /** URL prefix to match */
   prefix: string;
@@ -828,6 +847,8 @@ export const rateLimitRules: RateLimitRule[] = [
     max: 100,
   },
   { prefix: "/api/chat", limiter: chatLimiter, windowMs: 60_000, max: 15 },
+  // S0-11-02: CSP report — defense-in-depth alongside route-local limiter
+  { prefix: "/api/csp-report", limiter: cspReportLimiter, windowMs: 60_000, max: 60 },
   { prefix: "/api/webhooks", limiter: webhookLimiter, windowMs: 60_000, max: 100 },
   { prefix: "/api/branding", limiter: brandingLimiter, windowMs: 60_000, max: 20 },
   { prefix: "/api/notifications", limiter: apiMutationLimiter, windowMs: 60_000, max: 30 },

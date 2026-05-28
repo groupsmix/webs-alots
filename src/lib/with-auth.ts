@@ -278,7 +278,7 @@ export function withAuth(
         }
       }
 
-      return handler(request, {
+      const response = await handler(request, {
         supabase,
         user,
         profile: {
@@ -287,6 +287,11 @@ export function withAuth(
           clinic_id: profile.clinic_id ?? null,
         },
       });
+      // A53-02: Prevent Cloudflare / browser from caching PHI responses.
+      if (!response.headers.has("Cache-Control")) {
+        response.headers.set("Cache-Control", "private, no-store");
+      }
+      return response;
     } catch (err) {
       logger.error("Authentication failed", { context: "with-auth", error: err });
       return NextResponse.json({ error: "Authentication failed" }, { status: 500 });
@@ -405,7 +410,7 @@ export function withAuthAnyRole(handler: AuthenticatedHandler, options: WithAuth
         role: profile.role,
       });
 
-      return handler(request, {
+      const response = await handler(request, {
         supabase,
         user,
         profile: {
@@ -414,6 +419,11 @@ export function withAuthAnyRole(handler: AuthenticatedHandler, options: WithAuth
           clinic_id: profile.clinic_id ?? null,
         },
       });
+      // A53-02: Prevent Cloudflare / browser from caching PHI responses.
+      if (!response.headers.has("Cache-Control")) {
+        response.headers.set("Cache-Control", "private, no-store");
+      }
+      return response;
     } catch (err) {
       logger.error("Authentication failed in withAuthAnyRole", {
         context: "with-auth",

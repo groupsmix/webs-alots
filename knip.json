@@ -29,6 +29,8 @@
     "extract-locales.{ts,mjs}"
   ],
   "ignore": ["src/lib/types/database.ts", ".open-next/worker.js"],
+  "ignoreBinaries": ["supabase"],
+  "ignoreUnresolved": [".open-next/worker.js"],
   "ignoreDependencies": [
     "eslint-plugin-jsx-a11y",
     "tailwindcss",

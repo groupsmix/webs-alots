@@ -1,5 +1,10 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { rateLimitRules, extractClientIp, globalPageLimiter } from "@/lib/rate-limit";
+import {
+  rateLimitRules,
+  extractClientIp,
+  globalPageLimiter,
+  perClinicLimiter,
+} from "@/lib/rate-limit";
 import type { CspHeaderValues } from "./security-headers";
 
 /**
@@ -76,6 +81,28 @@ export async function applyRateLimit(
       const response = withSecurityHeaders(
         NextResponse.json(
           { error: "Too many requests. Please try again later.", code: "RATE_LIMIT_EXCEEDED" },
+          { status: 429 },
+        ),
+        csp,
+      );
+      response.headers.set("Retry-After", "60");
+      return { response };
+    }
+  }
+
+  // A39-04: Per-clinic global rate cap. Keyed by subdomain (tenant) so a
+  // single clinic cannot accumulate unlimited API traffic across sessions.
+  // Uses hostname as the clinic key since clinic_id isn't resolved yet at
+  // the rate-limiting stage.
+  if (pathname.startsWith("/api/") && hostname) {
+    const clinicAllowed = await perClinicLimiter.check(`clinic:${hostname}`);
+    if (!clinicAllowed) {
+      const response = withSecurityHeaders(
+        NextResponse.json(
+          {
+            error: "Clinic rate limit exceeded. Please try again later.",
+            code: "CLINIC_RATE_LIMIT_EXCEEDED",
+          },
           { status: 429 },
         ),
         csp,

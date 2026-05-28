@@ -118,6 +118,50 @@ When service is restored:
 2. Verify RLS policies intact
 3. Run post-incident health check
 
+### 3.1.1 Supabase Region Outage — Vendor-Exit Playbook (A248-02)
+
+**Scenario:** Supabase's primary region (eu-central-1) is unavailable for >4 hours, or Supabase announces extended downtime.
+
+**Assessment:**
+
+1. Confirm scope: region outage vs global outage vs project-level issue
+2. Check Supabase status page (status.supabase.com) for ETA
+3. Evaluate if failover is warranted (>4h outage or no ETA)
+
+**Failover Options (in order of preference):**
+
+1. **Supabase read replica (if Pro plan PITR enabled):**
+   - Promote read replica to primary via Supabase Dashboard
+   - Update `SUPABASE_URL` and `SUPABASE_ANON_KEY` in Cloudflare Workers env
+   - Re-deploy via `wrangler deploy`
+   - Caveat: Read replica may have up to 1 minute of replication lag
+
+2. **Neon PostgreSQL (cold standby):**
+   - Restore from latest nightly R2 backup (see `docs/bcp.md`)
+   - Create Neon project, import backup
+   - Update connection strings in Workers env
+   - Caveat: RLS policies and auth.users must be manually verified
+
+3. **Self-hosted PostgreSQL:**
+   - Provision a Hetzner/OVH VPS in EU
+   - Restore from R2 backup
+   - Update connection strings
+   - Caveat: No Supabase Auth — must use JWT verification only
+
+**Recovery (after Supabase restores):**
+
+1. Compare data between failover and primary: identify any writes during outage
+2. Merge/reconcile conflicts manually
+3. Switch connection strings back to Supabase
+4. Re-deploy and verify RLS policies
+
+**RPO/RTO Posture (A74-02):**
+
+- **Current RPO:** 24 hours (nightly R2 backup)
+- **With Supabase Pro PITR:** ~1 minute (continuous WAL archiving)
+- **Target RTO:** 1 hour for read-only mode, 4 hours for full read-write failover
+- **Recommendation:** Enable Supabase Pro PITR to reduce RPO from 24h to ~1min
+
 ### 3.2 R2 Down
 
 **Symptoms:**
@@ -299,6 +343,68 @@ When service is restored:
 1. Document gap and reason
 2. Implement fix to prevent future gaps
 3. If data integrity compromised, notify compliance team
+
+### 3.9 Cloudflare "Under Attack Mode" (A40-02)
+
+**When to activate:**
+
+- Sustained L7 DDoS — request volume exceeds 10× normal baseline for >5 minutes
+- Origin CPU/memory saturation despite Cloudflare caching
+- Rate-limiting rules are overwhelmed (>50% of requests returning 429)
+
+**Steps:**
+
+1. **Activate:** Cloudflare Dashboard → Security → Settings → Security Level → "I'm Under Attack!"
+   - This forces all visitors through a JavaScript interstitial (5-second challenge)
+   - API clients using `fetch()` will fail — notify integration partners
+2. **Notify team:** Post in `#incidents` Slack channel with activation time
+3. **Monitor:** Watch Analytics → Security Events for attack profile
+4. **Scope WAF rules:** If attack uses a specific User-Agent, ASN, or path pattern:
+   - Create a targeted WAF Custom Rule (Security → WAF → Custom Rules)
+   - Example: Block requests from ASN 12345 to `/api/booking`
+5. **Deactivate:** Once attack subsides (15-min sustained drop), switch Security Level back to "Medium"
+6. **Post-mortem:** Document attack vector, duration, and WAF rules created
+
+**Caution:**
+
+- Under Attack Mode breaks WebSocket connections
+- WhatsApp/Stripe webhook callbacks may be blocked — add their source IPs to the IP Access Rules allowlist _before_ activating
+- Do NOT leave Under Attack Mode on permanently — it degrades UX for legitimate users
+
+### 3.10 Brand Impersonation (A151-01)
+
+**Symptoms:**
+
+- Reports of phishing emails impersonating Oltigo Health
+- Fraudulent domains (e.g., `oltig0.com`, `oltigo-health.com`)
+- Fake social media profiles using Oltigo branding
+- Users reporting suspicious appointment confirmations they didn't make
+
+**Assessment:**
+
+1. Collect evidence: screenshots, email headers (full `Received:` chain), domain WHOIS
+2. Verify the impersonating domain is NOT one of ours (check Cloudflare DNS zones)
+3. Determine if patients have been phished (credential compromise)
+
+**Containment:**
+
+1. If credential compromise suspected: force password reset for affected users via Supabase Dashboard → Auth → Users
+2. Add the impersonating domain to `_dmarc` reject policy if it spoofs our `From:` domain
+3. Post an in-app notification warning patients about the phishing campaign
+
+**Takedown:**
+
+1. **Domain registrar abuse:** File abuse report with the registrar (WHOIS → Registrar Abuse Contact)
+2. **Google Safe Browsing:** Submit at https://safebrowsing.google.com/safebrowsing/report_phish/
+3. **DMARC report monitoring:** Check `rua` aggregate reports for unauthorized senders
+4. **Social media:** Report fake profiles on each platform (Facebook, Instagram, LinkedIn)
+5. **Moroccan CERT:** Report to ma-CERT (https://www.macert.ma/) for Moroccan-hosted infrastructure
+
+**Recovery:**
+
+1. Notify affected patients via verified channels (in-app + WhatsApp from verified WABA)
+2. Document incident in post-mortem (Section 4)
+3. Consider adding lookalike domain monitoring (e.g., dnstwist) to CI
 
 ---
 

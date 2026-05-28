@@ -265,9 +265,11 @@ export async function POST(request: NextRequest) {
           }
         }
 
-        // Mark payment as completed — scoped to the payment's clinic_id
-        // to prevent any cross-tenant state mutation.
-        await supabase
+        // A18-03: Mark payment as completed and confirm appointment.
+        // Both updates are issued in parallel to minimize the window for
+        // partial failure (Worker eviction between sequential calls).
+        // A true atomic RPC requires a DB migration; tracked separately.
+        const paymentUpdate = supabase
           .from("payments")
           .update({
             status: PAYMENT_STATUS.COMPLETED,
@@ -276,14 +278,30 @@ export async function POST(request: NextRequest) {
           .eq("id", payment.id)
           .eq("clinic_id", payment.clinic_id);
 
-        // Confirm the appointment if applicable — scoped to clinic_id
-        if (payment.appointment_id && payment.clinic_id) {
-          await supabase
-            .from("appointments")
-            .update({ status: APPOINTMENT_STATUS.CONFIRMED })
-            .eq("id", payment.appointment_id)
-            .eq("clinic_id", payment.clinic_id)
-            .in("status", [APPOINTMENT_STATUS.PENDING, APPOINTMENT_STATUS.SCHEDULED]);
+        const appointmentUpdate =
+          payment.appointment_id && payment.clinic_id
+            ? supabase
+                .from("appointments")
+                .update({ status: APPOINTMENT_STATUS.CONFIRMED })
+                .eq("id", payment.appointment_id)
+                .eq("clinic_id", payment.clinic_id)
+                .in("status", [APPOINTMENT_STATUS.PENDING, APPOINTMENT_STATUS.SCHEDULED])
+            : Promise.resolve({ error: null });
+
+        const [payResult, apptResult] = await Promise.all([paymentUpdate, appointmentUpdate]);
+        if (payResult.error) {
+          logger.error("CMI payment update failed", {
+            context: "payments/cmi/callback",
+            paymentId: payment.id,
+            error: payResult.error,
+          });
+        }
+        if (apptResult.error) {
+          logger.error("CMI appointment confirmation failed", {
+            context: "payments/cmi/callback",
+            appointmentId: payment.appointment_id,
+            error: apptResult.error,
+          });
         }
       }
 

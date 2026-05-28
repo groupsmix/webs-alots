@@ -38,7 +38,12 @@ const registerLimiter = createRateLimiter({ windowMs: 60 * 60 * 1000, max: 2, fa
 // ---------------------------------------------------------------------------
 // Slack webhook for registration alerts (R-12 fix)
 // ---------------------------------------------------------------------------
-const SLACK_WEBHOOK_URL = process.env.SLACK_REGISTRATION_ALERTS_WEBHOOK_URL;
+// S0-02-04: Validate Slack webhook URL to prevent SSRF via operator mis-paste.
+const _rawSlackUrl = process.env.SLACK_REGISTRATION_ALERTS_WEBHOOK_URL;
+const SLACK_WEBHOOK_URL =
+  _rawSlackUrl && /^https:\/\/hooks\.slack\.com\/services\//.test(_rawSlackUrl)
+    ? _rawSlackUrl
+    : undefined;
 
 /**
  * Send an alert to Slack when a new clinic registers.

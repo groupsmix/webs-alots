@@ -7,7 +7,7 @@
  */
 
 export { normalizeText, safeText, safeName } from "./primitives";
-export { isoDate, timeHHMM } from "./primitives";
+export { isoDate, timeHHMM, phoneNumber } from "./primitives";
 
 export {
   bookingCancelSchema,
