@@ -242,11 +242,12 @@ export function withAuth(
         role: profile.role,
       });
 
-      // AUDIT-24: Per-user rate limiting for authenticated API requests.
-      // The middleware applies per-IP limits, but authenticated abuse from
-      // compromised accounts or distributed IPs requires user-keyed limits.
-      // This is a lightweight in-memory check (100 req/min per user) that
-      // supplements the IP-based middleware limits.
+      // AUDIT-24 / S0-07-03: Per-user rate limiting for authenticated API
+      // requests. Best-effort in-memory check (100 req/min per user) that
+      // supplements the authoritative IP-based middleware limits. On a
+      // Workers fleet each isolate has its own map, so the effective limit
+      // is `100 × num_isolates`. This is acceptable because the IP-based
+      // KV-backed limiter is the authoritative control.
       if (!checkUserRateLimit(profile.id)) {
         return NextResponse.json(
           { error: "Too many requests. Please slow down.", code: "USER_RATE_LIMIT" },

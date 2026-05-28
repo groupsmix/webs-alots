@@ -371,7 +371,22 @@ When service is restored:
 - WhatsApp/Stripe webhook callbacks may be blocked — add their source IPs to the IP Access Rules allowlist _before_ activating
 - Do NOT leave Under Attack Mode on permanently — it degrades UX for legitimate users
 
-### 3.10 Brand Impersonation (A151-01)
+### 3.10 Credential Stuffing / Impossible Travel (A154-03)
+
+**Symptoms:**
+
+- Spike in failed login attempts from geographically dispersed IPs
+- Successful logins from impossible-travel locations (e.g., Morocco → Europe in minutes)
+- Account lockouts triggered for multiple users simultaneously
+
+**Mitigation:**
+
+1. Cloudflare Bot Management: enable on `/api/auth/*` endpoints to score requests and block automated credential stuffing.
+2. Monitor Sentry for `USER_RATE_LIMIT` / `ACCOUNT_LOCKOUT` errors — a burst indicates an active attack.
+3. If active attack confirmed, temporarily lower `loginLimiter` thresholds in `src/lib/rate-limit.ts`.
+4. Consider enabling Cloudflare → Security → WAF → "Bot Fight Mode" for the `/api/auth/` path prefix.
+
+### 3.11 Brand Impersonation (A151-01)
 
 **Symptoms:**
 

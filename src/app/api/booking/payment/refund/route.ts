@@ -11,6 +11,10 @@ const ADMIN_ROLES: UserRole[] = ["super_admin", "clinic_admin"];
  * POST /api/booking/payment/refund
  *
  * Refund a completed payment (full or partial).
+ * Auth: clinic_admin + super_admin only (ADMIN_ROLES).
+ * A169-02: For refunds >5 000 MAD consider adding a two-person approval
+ * workflow (e.g. a separate `refund_approvals` table requiring a second
+ * admin to confirm before the refund executes).
  */
 export const POST = withAuthValidation(
   paymentRefundSchema,

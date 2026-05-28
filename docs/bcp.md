@@ -35,6 +35,12 @@ become unavailable.
 
 **RTO:** < 2 hours | **RPO:** < 24 hours (nightly backup)
 
+> **A74-02 — PITR posture:** Supabase Pro includes Point-in-Time Recovery
+> (PITR) via WAL archiving, reducing effective RPO to minutes. Verify the
+> plan tier includes PITR and confirm WAL retention in the Supabase
+> dashboard. If the plan does not include PITR, the nightly `pg_dump`
+> backup (RPO 24 h) is the authoritative recovery point.
+
 ### 2.2 Patient Notifications
 
 | Scenario                       | Impact                     | Fallback                                           |
