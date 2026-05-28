@@ -123,9 +123,18 @@ async function importOldEncryptionKey(): Promise<CryptoKey | null> {
 
 /**
  * Check if PHI encryption is configured and available.
+ *
+ * FP-12: Validates key length and hex format in addition to presence.
+ * Without this, a malformed key causes `importEncryptionKey` to return
+ * null, and the caller proceeds assuming encryption is on — resulting
+ * in files uploaded unencrypted.
  */
 export function isEncryptionConfigured(): boolean {
-  return !!process.env.PHI_ENCRYPTION_KEY;
+  const hexKey = process.env.PHI_ENCRYPTION_KEY;
+  if (!hexKey) return false;
+  if (hexKey.length !== 64) return false;
+  if (!/^[0-9a-fA-F]+$/.test(hexKey)) return false;
+  return true;
 }
 
 // ── Encrypt / Decrypt ──

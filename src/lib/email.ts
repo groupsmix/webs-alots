@@ -147,6 +147,30 @@ async function sendViaHttpRelay(payload: EmailPayload): Promise<EmailSendResult>
   // to avoid issues with TLS certificate validation on non-standard ports.
   const baseUrl = port === "443" ? `https://${host}` : `https://${host}:${port}`;
 
+  // TF-04: Allowlist the HTTP relay base URL to prevent operator-controlled
+  // redirection of transactional email (and credentials) to a rogue host.
+  // Only enforced for the modern EMAIL_RELAY_HOST env var — the legacy
+  // SMTP_HOST path is a backwards-compat fallback for existing deployments
+  // and will be removed in a future migration.
+  if (process.env.EMAIL_RELAY_HOST) {
+    const allowedHosts = [
+      "api.mailgun.net",
+      "api.eu.mailgun.net",
+      "api.postmarkapp.com",
+      "api.resend.com",
+    ];
+    const hostLower = host.toLowerCase().split("/")[0];
+    if (
+      !allowedHosts.some((allowed) => hostLower === allowed || hostLower.endsWith("." + allowed))
+    ) {
+      logger.error("EMAIL_RELAY_HOST is not in the allowed hosts list", {
+        context: "email",
+        host: hostLower,
+      });
+      return { success: false, error: "EMAIL_RELAY_HOST is not an allowed email provider host" };
+    }
+  }
+
   try {
     const auth = btoa(`${user}:${pass}`);
     const response = await fetch(`${baseUrl}/messages`, {

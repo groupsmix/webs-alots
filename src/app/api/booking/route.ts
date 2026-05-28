@@ -93,6 +93,11 @@ interface BookingTokenResult {
  * Returns true for the first matching secret (constant-time per attempt).
  */
 async function verifyHmac(secret: string, payload: string, signature: string): Promise<boolean> {
+  // FP-24: Cap signature length to prevent CPU amplification via
+  // oversized attacker-supplied signatures (bespoke loop runs
+  // Math.max(expected, actual) iterations).
+  if (signature.length > 128) return false;
+
   const encoder = new TextEncoder();
   // W8-A1-02: Cap signature to 64 hex chars (SHA-256 output width). A longer
   // input is definitively invalid and the constant-time loop over 64 K chars

@@ -23,9 +23,11 @@ export function normalizeText(value: string): string {
   return (
     value
       .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, "")
-      // IV-05: Strip bidi override characters to prevent text spoofing.
+      // IV-01/IV-05: Strip bidi override characters to prevent text spoofing.
       .replace(/[\u202A-\u202E\u2066-\u2069\u200E\u200F]/g, "")
-      .normalize("NFC")
+      // A14-05: NFKC normalization (compatibility decomposition + canonical
+      // composition) — prevents visually identical but byte-different strings
+      .normalize("NFKC")
   );
 }
 

@@ -65,6 +65,9 @@ export function generateSubdomain(clinicName: string): string {
   const base = slugify(clinicName);
   const buf = new Uint8Array(4);
   crypto.getRandomValues(buf);
-  const suffix = ((buf[0] << 16) | (buf[1] << 8) | buf[2]).toString(36).slice(0, 6);
+  const suffix = ((buf[0] << 16) | (buf[1] << 8) | buf[2])
+    .toString(36)
+    .padStart(5, "0")
+    .slice(0, 6);
   return `${base}-${suffix}`;
 }
