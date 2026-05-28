@@ -28,6 +28,7 @@
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import { NextRequest } from "next/server";
 import { logger } from "@/lib/logger";
+import { createDORateLimiter, shouldUseDO } from "@/lib/rate-limit-do";
 
 /**
  * Extract the real client IP from a request (Issue 55).
@@ -576,8 +577,14 @@ function createMemoryRateLimiter(options: RateLimiterOptions): RateLimiter {
 // ── Factory ──
 
 export function createRateLimiter(options: RateLimiterOptions): RateLimiter {
-  // Priority: KV > Supabase > Memory
-  // KV provides best consistency for distributed rate limiting
+  // H-03: Priority: DO > KV > Supabase > Memory
+  // DO provides strongest consistency (single-instance atomic counters).
+  // KV provides good eventual consistency across edge locations.
+
+  if (shouldUseDO()) {
+    return createDORateLimiter(options);
+  }
+
   if (shouldUseKV()) {
     return createKVRateLimiter(options);
   }
@@ -591,7 +598,7 @@ export function createRateLimiter(options: RateLimiterOptions): RateLimiter {
       "Rate limiter falling back to in-memory backend. " +
         "This is unsuitable for production serverless deployments — " +
         "counters reset on cold starts and are not shared across isolates. " +
-        "Set RATE_LIMIT_BACKEND=kv or configure NEXT_PUBLIC_SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY.",
+        "Set RATE_LIMIT_BACKEND=do, RATE_LIMIT_BACKEND=kv, or configure NEXT_PUBLIC_SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY.",
       { context: "rate-limit" },
     );
   }
