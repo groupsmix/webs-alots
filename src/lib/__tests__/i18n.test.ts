@@ -1,12 +1,24 @@
 import { describe, it, expect, afterEach, vi } from "vitest";
 import { t } from "../i18n";
 
-// Keys chosen from the committed locale files:
-//   accounting.expenses → translated in en/fr/ar
-//   about.aProposDeNotre → present in fr, empty in en and ar
+// Mock en and ar locale modules so we have a synthetic empty key for
+// fallback tests. The real locale files now have 100% coverage.
+vi.mock("../../locales/en.json", async (importOriginal) => {
+  const real = (await importOriginal()) as { default: Record<string, string> };
+  return { default: { ...real.default, "_test.frOnly": "" } };
+});
+vi.mock("../../locales/ar.json", async (importOriginal) => {
+  const real = (await importOriginal()) as { default: Record<string, string> };
+  return { default: { ...real.default, "_test.frOnly": "" } };
+});
+vi.mock("../../locales/fr.json", async (importOriginal) => {
+  const real = (await importOriginal()) as { default: Record<string, string> };
+  return { default: { ...real.default, "_test.frOnly": "Valeur de test FR" } };
+});
+
 const TRANSLATED_KEY = "accounting.expenses";
-const FR_ONLY_KEY = "about.aProposDeNotre";
-const FR_ONLY_VALUE = "À propos de notre cabinet";
+const FR_ONLY_KEY = "_test.frOnly";
+const FR_ONLY_VALUE = "Valeur de test FR";
 
 describe("t() translation", () => {
   afterEach(() => {
