@@ -28,6 +28,7 @@
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import { NextRequest } from "next/server";
 import { logger } from "@/lib/logger";
+import { createDORateLimiter, shouldUseDO } from "@/lib/rate-limit-do";
 
 /**
  * Extract the real client IP from a request (Issue 55).
@@ -107,6 +108,16 @@ export function extractClientIp(request: NextRequest): string {
     return realIp;
   }
 
+  // FP-04: In production without CF-Connecting-IP, all spoofable headers
+  // failed. Return "unknown" which groups all unidentified requests into
+  // a single bucket — effectively fail-closed for rate limiting since
+  // the shared bucket fills quickly under abuse.
+  if (isProduction) {
+    logger.error(
+      "Rate limiter: no trusted IP source available in production (CF-Connecting-IP, XFF, X-Real-IP all absent)",
+      { context: "rate-limit" },
+    );
+  }
   return "unknown";
 }
 
@@ -576,8 +587,14 @@ function createMemoryRateLimiter(options: RateLimiterOptions): RateLimiter {
 // ── Factory ──
 
 export function createRateLimiter(options: RateLimiterOptions): RateLimiter {
-  // Priority: KV > Supabase > Memory
-  // KV provides best consistency for distributed rate limiting
+  // H-03: Priority: DO > KV > Supabase > Memory
+  // DO provides strongest consistency (single-instance atomic counters).
+  // KV provides good eventual consistency across edge locations.
+
+  if (shouldUseDO()) {
+    return createDORateLimiter(options);
+  }
+
   if (shouldUseKV()) {
     return createKVRateLimiter(options);
   }
@@ -591,7 +608,7 @@ export function createRateLimiter(options: RateLimiterOptions): RateLimiter {
       "Rate limiter falling back to in-memory backend. " +
         "This is unsuitable for production serverless deployments — " +
         "counters reset on cold starts and are not shared across isolates. " +
-        "Set RATE_LIMIT_BACKEND=kv or configure NEXT_PUBLIC_SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY.",
+        "Set RATE_LIMIT_BACKEND=do, RATE_LIMIT_BACKEND=kv, or configure NEXT_PUBLIC_SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY.",
       { context: "rate-limit" },
     );
   }
@@ -794,6 +811,21 @@ const cspReportLimiter = createRateLimiter({
 export const perClinicLimiter = createRateLimiter({
   windowMs: 60_000,
   max: 10_000,
+});
+
+/**
+ * AUDIT-24 / S0-07-03: Per-user API rate cap — 100 req / 60s per user_id.
+ * Applied in `withAuth` once the authenticated user is resolved, supplementing
+ * the per-IP limiter. Backed by the same distributed backend (KV / Supabase)
+ * so the limit is authoritative across the Workers fleet rather than
+ * per-isolate. `failClosed: false` keeps it best-effort: a backend outage
+ * falls back to the in-memory limiter instead of locking authenticated users
+ * out, since the per-IP limiter remains the hard control.
+ */
+export const perUserLimiter = createRateLimiter({
+  windowMs: 60_000,
+  max: 100,
+  failClosed: false,
 });
 
 export interface RateLimitRule {

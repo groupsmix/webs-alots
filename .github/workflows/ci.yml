@@ -39,6 +39,17 @@ jobs:
       - name: Check for vulnerable dependencies
         run: npm audit --omit=dev --audit-level=high
 
+      # W8-CI-03: Warn (non-blocking) on critical CVEs in devdeps.
+      # A compromised devdep can hijack the CI runner. This step is
+      # informational — it exits 0 regardless so CI is not broken
+      # by unfixed upstream devdep CVEs, but the output is visible.
+      - name: Check devdeps for critical vulnerabilities
+        run: npm audit --audit-level=critical || true
+
+      # W8-A-02: Verify every /api/cron/ route calls verifyCronSecret
+      - name: Check cron auth guard
+        run: npx tsx scripts/check-cron-auth.ts
+
       - name: Check cron mapping
         run: npx tsx scripts/check-cron-mapping.ts
 
@@ -61,6 +72,41 @@ jobs:
             echo "::error::ESLint warning baseline increased from $MAIN_BASELINE to $PR_BASELINE — ratchet must only go down"
             exit 1
           fi
+
+      # [003]: i18n translation-coverage ratchet. Counts keys that are
+      # non-empty in fr.json but empty/missing in en/ar (these silently
+      # fall back to French at runtime). Fails if any locale's count rises
+      # above .i18n-coverage-baseline.json — stops the gap from growing
+      # while the backlog is translated by humans.
+      - name: Run i18n coverage ratchet
+        run: node scripts/check-i18n-coverage.mjs
+
+      # Prevent raising the i18n coverage baseline in PRs (mirror of the
+      # ESLint ratchet guard above): a PR may lower counts, never raise them.
+      - name: Guard i18n coverage baseline ratchet
+        if: github.event_name == 'pull_request'
+        run: |
+          git fetch origin "${{ github.event.pull_request.base.ref }}" --depth=1 2>/dev/null || true
+          node -e '
+            const fs = require("fs");
+            const { execSync } = require("child_process");
+            const base = "${{ github.event.pull_request.base.ref }}";
+            const pr = JSON.parse(fs.readFileSync(".i18n-coverage-baseline.json", "utf8"));
+            let main;
+            try {
+              main = JSON.parse(execSync(`git show origin/${base}:.i18n-coverage-baseline.json`, { encoding: "utf8" }));
+            } catch {
+              process.exit(0); // file is new on this branch
+            }
+            let failed = false;
+            for (const locale of Object.keys(pr)) {
+              if (main[locale] !== undefined && pr[locale] > main[locale]) {
+                console.error(`::error::i18n baseline for "${locale}" increased from ${main[locale]} to ${pr[locale]} — ratchet must only go down`);
+                failed = true;
+              }
+            }
+            if (failed) process.exit(1);
+          '
 
       # R-08: Ban direct process.env.CRON_SECRET access outside cron-auth.ts
       - name: Guard CRON_SECRET access
@@ -100,6 +146,24 @@ jobs:
           fi
           echo "No seed credentials found outside fixtures."
 
+      # [003]: Translation completeness ratchet — fail if new FR keys are
+      # added without paired non-empty EN/AR translations. The baseline
+      # in .translation-empty-baseline must only go DOWN.
+      - name: Guard translation completeness
+        run: node scripts/check-translations.mjs
+
+      # [003]: Prevent increasing the translation empty baseline in PRs.
+      - name: Guard translation baseline ratchet
+        if: github.event_name == 'pull_request'
+        run: |
+          PR_BASELINE=$(cat .translation-empty-baseline | tr -d '[:space:]')
+          git fetch origin "${{ github.event.pull_request.base.ref }}" --depth=1 2>/dev/null || true
+          MAIN_BASELINE=$(git show "origin/${{ github.event.pull_request.base.ref }}:.translation-empty-baseline" 2>/dev/null | tr -d '[:space:]' || echo "$PR_BASELINE")
+          if [ "$PR_BASELINE" -gt "$MAIN_BASELINE" ]; then
+            echo "::error::Translation empty baseline increased from $MAIN_BASELINE to $PR_BASELINE — ratchet must only go down"
+            exit 1
+          fi
+
       # FR-103: Ensure Prettier formatting is enforced in CI.
       # lint-staged runs prettier on staged files locally; this catches
       # any files that slipped through without the pre-commit hook.
@@ -138,6 +202,18 @@ jobs:
               echo "::error::Statement coverage ${ACTUAL_STMTS}% dropped below floor ${FLOOR_STMTS}%"
               exit 1
             fi
+          fi
+
+      # [004]: Advisory coverage ratchet bump — reports whether the floor
+      # should be raised after a successful test run. Non-blocking; devs
+      # should run `node scripts/ratchet-coverage.mjs` locally and commit
+      # the updated .vitest-coverage-floor.json.
+      - name: Coverage ratchet advisory
+        if: always()
+        continue-on-error: true
+        run: |
+          if [ -f coverage/lcov.info ]; then
+            node scripts/ratchet-coverage.mjs 2>&1 || true
           fi
 
       # CI-02: Fail-closed bundle budget check.

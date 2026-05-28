@@ -4,7 +4,7 @@
 > **Source:** 12 audit reports covering A1–A214 + AI + Applicability A171–A196 + CEO A246–A250 + SEASONS S0–S1 + Cleanup FR-01–FR-40.
 > **What is in this file:** ONLY items that are not yet fixed — open findings, gaps, recommendations, and action items. Anything marked `Pass` / `N/A` / already-resolved in the source reports has been filtered out.
 > **Severity legend:** Critical / High / Medium / Low / Partial = open. Pass / N/A = removed.
-> **Cleanup audit (FR-\*):** See `audit-webs-alots-2026-05-28.md` for the full FR-01–FR-40 register. Completed: FR-01–07, FR-21, FR-24, FR-27, FR-29–36. Open: FR-03 (partial), FR-09, FR-13–16, FR-22, FR-28, FR-40.
+> **Cleanup audit (FR-\*):** FR-01–FR-40 register — Completed: FR-01–07, FR-21, FR-24, FR-27, FR-29–36. Open: FR-03 (partial), FR-09, FR-13–16, FR-22, FR-28, FR-40.
 
 ## Table of Contents
 

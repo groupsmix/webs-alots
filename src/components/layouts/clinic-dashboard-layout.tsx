@@ -5,6 +5,7 @@ import type { LucideIcon } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
+import { OltigoMonogram } from "@/components/brand/oltigo-mark";
 import { FeatureGate } from "@/components/feature-gate";
 import { MobileTabBar } from "@/components/layouts/mobile-tab-bar";
 import type { MobileTabItem } from "@/components/layouts/mobile-tab-bar";
@@ -58,7 +59,7 @@ function SidebarContent({
               onClick={onNavClick}
               className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors ${
                 isActive
-                  ? `bg-${config.accentColor}/10 text-${config.accentColor} font-medium`
+                  ? "bg-primary/10 text-primary font-medium"
                   : "text-muted-foreground hover:bg-muted hover:text-foreground"
               }`}
             >
@@ -84,7 +85,6 @@ export function ClinicDashboardLayout({
 }) {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
-  const IconComponent = config.icon;
   const shortTitle = config.shortTitle ?? config.title;
 
   const content = config.featureKey ? (
@@ -107,7 +107,7 @@ export function ClinicDashboardLayout({
           <Menu className="h-5 w-5" />
         </button>
         <div className="flex items-center gap-2">
-          <IconComponent className={`h-4 w-4 text-${config.accentColor}`} />
+          <OltigoMonogram size="sm" />
           <h2 className="text-sm font-semibold">{shortTitle}</h2>
         </div>
       </div>
@@ -120,7 +120,7 @@ export function ClinicDashboardLayout({
           <aside className="absolute left-0 top-0 bottom-0 w-64 bg-card p-4 flex flex-col shadow-xl">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
-                <IconComponent className={`h-5 w-5 text-${config.accentColor}`} />
+                <OltigoMonogram size="sm" />
                 <h2 className="text-lg font-semibold">{config.title}</h2>
               </div>
               <button
@@ -143,11 +143,7 @@ export function ClinicDashboardLayout({
       {/* Desktop sidebar */}
       <aside className="hidden w-64 border-r bg-card p-4 md:flex md:flex-col">
         <div className="flex items-center gap-2 mb-6">
-          <div
-            className={`h-8 w-8 rounded-lg bg-${config.accentColor} flex items-center justify-center`}
-          >
-            <IconComponent className="h-4 w-4 text-white" />
-          </div>
+          <OltigoMonogram size="sm" />
           <h2 className="text-lg font-semibold">{config.title}</h2>
         </div>
         <SidebarContent config={config} pathname={pathname} />

@@ -1,5 +1,3 @@
-"use client";
-
 import { ChevronRight, Home } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";

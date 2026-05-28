@@ -123,11 +123,54 @@ async function sendViaHttpRelay(payload: EmailPayload): Promise<EmailSendResult>
       error: "EMAIL_RELAY_HOST, EMAIL_RELAY_USER, and EMAIL_RELAY_PASS must all be configured",
     };
   }
+  // TF-04: Validate relay host against allowlist to prevent exfiltration
+  // via a compromised EMAIL_RELAY_HOST env var. Only enforced in production.
+  // nosemgrep: env-access — NODE_ENV is a standard runtime guard, not a secret
+  if (process.env.NODE_ENV === "production") {
+    const ALLOWED_RELAY_HOSTS = ["api.mailgun.net", "api.eu.mailgun.net", "api.postmarkapp.com"];
+    const hostRoot = host.split("/")[0].toLowerCase();
+    if (
+      !ALLOWED_RELAY_HOSTS.some(
+        (allowed) => hostRoot === allowed || hostRoot.endsWith(`.${allowed}`),
+      )
+    ) {
+      return {
+        success: false,
+        error: `EMAIL_RELAY_HOST '${hostRoot}' is not in the allowed relay host list`,
+      };
+    }
+  }
+
   const from = payload.from || process.env.EMAIL_FROM || "noreply@oltigo.com";
 
   // Build the HTTPS endpoint. For standard HTTPS (port 443), omit the port
   // to avoid issues with TLS certificate validation on non-standard ports.
   const baseUrl = port === "443" ? `https://${host}` : `https://${host}:${port}`;
+
+  // TF-04: Allowlist the HTTP relay base URL to prevent operator-controlled
+  // redirection of transactional email (and credentials) to a rogue host.
+  // Only enforced for the modern EMAIL_RELAY_HOST env var — the legacy
+  // SMTP_HOST path is a backwards-compat fallback for existing deployments
+  // and will be removed in a future migration.
+  // nosemgrep: semgrep.env-access — relay host check for allowlist enforcement
+  if (process.env.EMAIL_RELAY_HOST) {
+    const allowedHosts = [
+      "api.mailgun.net",
+      "api.eu.mailgun.net",
+      "api.postmarkapp.com",
+      "api.resend.com",
+    ];
+    const hostLower = host.toLowerCase().split("/")[0];
+    if (
+      !allowedHosts.some((allowed) => hostLower === allowed || hostLower.endsWith("." + allowed))
+    ) {
+      logger.error("EMAIL_RELAY_HOST is not in the allowed hosts list", {
+        context: "email",
+        host: hostLower,
+      });
+      return { success: false, error: "EMAIL_RELAY_HOST is not an allowed email provider host" };
+    }
+  }
 
   try {
     const auth = btoa(`${user}:${pass}`);

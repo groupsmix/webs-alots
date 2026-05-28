@@ -241,6 +241,15 @@ const ENV_RULES: EnvRule[] = [
       "AV scanner endpoint (e.g. ClamAV REST) for upload virus scanning (required in production)",
     group: "security",
   },
+  // W8-S-01: AV_SCAN_REQUIRED controls fail-open vs fail-closed when the AV
+  // service is down. Required in production so operators make an explicit choice.
+  {
+    name: "AV_SCAN_REQUIRED",
+    required: process.env.NODE_ENV === "production",
+    description:
+      "Set to 'true' to fail-closed when AV scan is unavailable (required in production)",
+    group: "security",
+  },
 
   // ── Cron ───────────────────────────────────────────────────────────
   {

@@ -7,12 +7,7 @@
 export function HairlineRule({ className = "" }: { className?: string }) {
   return (
     <hr
-      className={className}
-      style={{
-        border: "none",
-        borderTop: "1px solid var(--rule)",
-        margin: 0,
-      }}
+      className={`border-none border-t border-t-[var(--rule)] m-0 ${className}`}
       aria-hidden="true"
     />
   );

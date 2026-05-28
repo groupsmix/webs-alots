@@ -6,43 +6,15 @@
  */
 export function ManifestoSection() {
   return (
-    <section
-      style={{
-        backgroundColor: "var(--bone)",
-        paddingBlock: "var(--space-9)",
-      }}
-    >
-      <div
-        className="mx-auto w-full"
-        style={{
-          maxWidth: "var(--container-max)",
-          paddingInline: "var(--gutter-desktop)",
-        }}
-      >
+    <section className="bg-[var(--bone)] py-[var(--space-9)]">
+      <div className="mx-auto w-full max-w-[var(--container-max)] px-[var(--gutter-desktop)]">
         {/* eslint-disable i18next/no-literal-string */}
-        <div style={{ maxWidth: 720 }}>
-          <h2
-            style={{
-              fontFamily: "var(--font-sans-landing)",
-              fontSize: "var(--text-h1)",
-              lineHeight: "var(--lh-h1)",
-              letterSpacing: "var(--ls-h1)",
-              fontWeight: 500,
-              color: "var(--ink)",
-            }}
-          >
+        <div className="max-w-[720px]">
+          <h2 className="font-[var(--font-sans-landing)] text-[length:var(--text-h1)] leading-[var(--lh-h1)] tracking-[var(--ls-h1)] font-medium text-[var(--ink)]">
             Tout ce dont votre cabinet a besoin.
           </h2>
 
-          <p
-            style={{
-              marginTop: "var(--space-5)",
-              fontFamily: "var(--font-sans-landing)",
-              fontSize: "var(--text-body-lg)",
-              lineHeight: "var(--lh-body-lg)",
-              color: "var(--ink-70)",
-            }}
-          >
+          <p className="mt-[var(--space-5)] font-[var(--font-sans-landing)] text-[length:var(--text-body-lg)] leading-[var(--lh-body-lg)] text-[var(--ink-70)]">
             Des outils simples et puissants pour vous concentrer sur l&apos;essentiel&nbsp;: vos
             patients.
           </p>
