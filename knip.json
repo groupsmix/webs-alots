@@ -22,7 +22,7 @@
   ],
   "ignore": ["src/lib/types/database.ts", "src/config/clinic.config.ts"],
   "ignoreBinaries": ["supabase"],
-  "ignoreUnresolved": [],
+  "ignoreUnresolved": [".open-next/worker.js"],
   "ignoreDependencies": [
     "eslint-plugin-jsx-a11y",
     "tailwindcss",
