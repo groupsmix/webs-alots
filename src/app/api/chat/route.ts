@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { resolveAIConfig } from "@/lib/ai/config";
+import { resolveAIConfig, AI_RESPONSE_DISCLAIMER } from "@/lib/ai/config";
 import { validateAIOutput } from "@/lib/ai/validate-output";
 import { getAIDisclaimer } from "@/lib/ai-disclaimer";
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -269,6 +269,7 @@ export const POST = withValidation(chatRequestSchema, async (body, request: Next
         );
         return apiSuccess({
           message: { role: "assistant" as const, content },
+          ...AI_RESPONSE_DISCLAIMER,
         });
       }
     } else {
@@ -402,6 +403,7 @@ export const POST = withValidation(chatRequestSchema, async (body, request: Next
       "Content-Type": "text/event-stream",
       "Cache-Control": "no-cache",
       Connection: "keep-alive",
+      "X-AI-Generated": "true",
       "X-AI-Disclaimer": getAIDisclaimer(),
     },
   });

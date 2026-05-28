@@ -13,7 +13,7 @@
  */
 
 import { type NextRequest } from "next/server";
-import { resolveAIConfig } from "@/lib/ai/config";
+import { resolveAIConfig, AI_RESPONSE_DISCLAIMER } from "@/lib/ai/config";
 import { sanitizeUntrustedText } from "@/lib/ai/sanitize";
 import { validateAIOutput } from "@/lib/ai/validate-output";
 import { apiSuccess, apiError, apiRateLimited, apiInternalError } from "@/lib/api-response";
@@ -280,12 +280,13 @@ export const POST = withAuthValidation(
         });
     }
 
-    return apiSuccess<DrugCheckResponse>({
+    return apiSuccess<DrugCheckResponse & typeof AI_RESPONSE_DISCLAIMER>({
       overallSeverity: localResult.overallSeverity,
       alerts: localResult.alerts,
       dangerousCount: localResult.dangerousCount,
       cautionCount: localResult.cautionCount,
       aiEnhanced,
+      ...AI_RESPONSE_DISCLAIMER,
     });
   },
   ["doctor", "clinic_admin"],
