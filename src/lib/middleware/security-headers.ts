@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { logger } from "@/lib/logger";
 
 /** OWASP-recommended HSTS max-age: 2 years (63 072 000 seconds). */
 const HSTS_VALUE = "max-age=63072000; includeSubDomains; preload";
@@ -227,6 +228,9 @@ export function withSecurityHeaders(response: NextResponse, csp: CspHeaderValues
     response.headers.set("Content-Security-Policy-Report-Only", csp.reportOnly);
     response.headers.delete("Content-Security-Policy");
   } else {
+    logger.error("CSP misconfiguration: both enforce and reportOnly are empty", {
+      context: "security-headers/withSecurityHeaders",
+    });
     response.headers.delete("Content-Security-Policy");
     response.headers.delete("Content-Security-Policy-Report-Only");
   }
@@ -273,6 +277,9 @@ export function applyAllSecurityHeaders(
     response.headers.set("Content-Security-Policy-Report-Only", csp.reportOnly);
     response.headers.delete("Content-Security-Policy");
   } else {
+    logger.error("CSP misconfiguration: both enforce and reportOnly are empty", {
+      context: "security-headers/applyAllSecurityHeaders",
+    });
     response.headers.delete("Content-Security-Policy");
     response.headers.delete("Content-Security-Policy-Report-Only");
   }

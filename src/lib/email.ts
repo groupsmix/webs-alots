@@ -123,6 +123,19 @@ async function sendViaHttpRelay(payload: EmailPayload): Promise<EmailSendResult>
       error: "EMAIL_RELAY_HOST, EMAIL_RELAY_USER, and EMAIL_RELAY_PASS must all be configured",
     };
   }
+  // TF-04: Validate relay host against allowlist to prevent exfiltration
+  // via a compromised MAILGUN_BASE_URL env var.
+  const ALLOWED_RELAY_HOSTS = ["api.mailgun.net", "api.eu.mailgun.net", "api.postmarkapp.com"];
+  const hostRoot = host.split("/")[0].toLowerCase();
+  if (
+    !ALLOWED_RELAY_HOSTS.some((allowed) => hostRoot === allowed || hostRoot.endsWith(`.${allowed}`))
+  ) {
+    return {
+      success: false,
+      error: `EMAIL_RELAY_HOST '${hostRoot}' is not in the allowed relay host list`,
+    };
+  }
+
   const from = payload.from || process.env.EMAIL_FROM || "noreply@oltigo.com";
 
   // Build the HTTPS endpoint. For standard HTTPS (port 443), omit the port
