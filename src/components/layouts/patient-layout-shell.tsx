@@ -20,6 +20,7 @@ import {
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
+import { OltigoMonogram } from "@/components/brand/oltigo-mark";
 import { MobileMenuOverlay } from "@/components/layouts/mobile-menu-overlay";
 import { MobileTabBar } from "@/components/layouts/mobile-tab-bar";
 import type { MobileTabItem } from "@/components/layouts/mobile-tab-bar";
@@ -81,9 +82,7 @@ export default function PatientLayoutShell({ children }: { children: React.React
       {/* Desktop Sidebar */}
       <aside className="hidden w-64 border-r bg-card p-4 md:flex md:flex-col">
         <div className="flex items-center gap-2 mb-6">
-          <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
-            <Heart className="h-4 w-4 text-primary-foreground" />
-          </div>
+          <OltigoMonogram size="sm" />
           <h2 className="text-lg font-semibold">{t(locale, "patientNav.title")}</h2>
         </div>
         <nav className="space-y-1 flex-1">
@@ -115,9 +114,7 @@ export default function PatientLayoutShell({ children }: { children: React.React
       <div className="flex flex-1 flex-col">
         <header className="flex items-center justify-between border-b p-3 md:hidden">
           <div className="flex items-center gap-2">
-            <div className="h-7 w-7 rounded-lg bg-primary flex items-center justify-center">
-              <Heart className="h-3.5 w-3.5 text-primary-foreground" />
-            </div>
+            <OltigoMonogram size="sm" />
             <span className="font-semibold text-sm">{t(locale, "patientNav.title")}</span>
           </div>
           <Button
@@ -135,9 +132,7 @@ export default function PatientLayoutShell({ children }: { children: React.React
           <MobileMenuOverlay onClose={() => setMobileMenuOpen(false)}>
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-2">
-                <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
-                  <Heart className="h-4 w-4 text-primary-foreground" />
-                </div>
+                <OltigoMonogram size="sm" />
                 <h2 className="text-lg font-semibold">{t(locale, "patientNav.title")}</h2>
               </div>
               <Button
