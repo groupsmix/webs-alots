@@ -1,7 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
-
-// We need to re-import the module fresh for each test since it memoizes
-// the parsed origins. We'll test the public API by manipulating env vars.
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 
 function createMockRequest(origin?: string): { headers: { get: (name: string) => string | null } } {
   return {
@@ -15,30 +12,31 @@ function createMockRequest(origin?: string): { headers: { get: (name: string) =>
 }
 
 describe("CORS module", () => {
-  const originalEnv = { ...process.env };
-
-  beforeEach(() => {
-    delete process.env.ALLOWED_API_ORIGINS;
-    // Reset the memoized _parsedOrigins by re-importing the module
-  });
+  const originalEnv = process.env.ALLOWED_API_ORIGINS;
 
   afterEach(() => {
-    process.env = { ...originalEnv };
+    if (originalEnv !== undefined) {
+      process.env.ALLOWED_API_ORIGINS = originalEnv;
+    } else {
+      delete process.env.ALLOWED_API_ORIGINS;
+    }
+    vi.resetModules();
   });
 
-  // Since the module memoizes, we test the core logic patterns
-  describe("CORS allowlist logic", () => {
-    it("denies all origins when env var is unset", async () => {
+  describe("deny-by-default when env var is unset", () => {
+    beforeEach(() => {
       delete process.env.ALLOWED_API_ORIGINS;
-      // Re-import to reset memoized state
+      vi.resetModules();
+    });
+
+    it("omits Access-Control-Allow-Origin when no origins configured", async () => {
       const mod = await import("../cors");
       const req = createMockRequest("https://evil.com");
       const headers = mod.getCorsHeaders(req as never);
-      // When no origins configured, Access-Control-Allow-Origin should be absent
       expect(headers["Access-Control-Allow-Origin"]).toBeUndefined();
     });
 
-    it("includes standard CORS method and header entries", async () => {
+    it("still includes standard CORS method and header entries", async () => {
       const mod = await import("../cors");
       const req = createMockRequest();
       const headers = mod.getCorsHeaders(req as never);
@@ -46,12 +44,89 @@ describe("CORS module", () => {
       expect(headers["Access-Control-Allow-Headers"]).toBe("Content-Type, Authorization");
       expect(headers["Access-Control-Max-Age"]).toBe("86400");
     });
+  });
 
-    it("handlePreflight returns 204 status", async () => {
+  describe("wildcard origin (dev mode)", () => {
+    beforeEach(() => {
+      process.env.ALLOWED_API_ORIGINS = "*";
+      vi.resetModules();
+    });
+
+    it("returns * for any origin when wildcard is configured", async () => {
+      const mod = await import("../cors");
+      const req = createMockRequest("https://anything.com");
+      const headers = mod.getCorsHeaders(req as never);
+      expect(headers["Access-Control-Allow-Origin"]).toBe("*");
+    });
+
+    it("does not add Vary header when wildcard is used", async () => {
+      const mod = await import("../cors");
+      const req = createMockRequest("https://test.com");
+      const headers = mod.getCorsHeaders(req as never);
+      expect(headers["Vary"]).toBeUndefined();
+    });
+  });
+
+  describe("explicit allowlist", () => {
+    beforeEach(() => {
+      process.env.ALLOWED_API_ORIGINS = "https://app.oltigo.com,https://admin.oltigo.com";
+      vi.resetModules();
+    });
+
+    it("allows matching origin", async () => {
+      const mod = await import("../cors");
+      const req = createMockRequest("https://app.oltigo.com");
+      const headers = mod.getCorsHeaders(req as never);
+      expect(headers["Access-Control-Allow-Origin"]).toBe("https://app.oltigo.com");
+    });
+
+    it("adds Vary header for specific origins", async () => {
+      const mod = await import("../cors");
+      const req = createMockRequest("https://app.oltigo.com");
+      const headers = mod.getCorsHeaders(req as never);
+      expect(headers["Vary"]).toBe("Origin");
+    });
+
+    it("blocks non-matching origin", async () => {
+      const mod = await import("../cors");
+      const req = createMockRequest("https://evil.com");
+      const headers = mod.getCorsHeaders(req as never);
+      expect(headers["Access-Control-Allow-Origin"]).toBeUndefined();
+    });
+
+    it("case-insensitive origin matching", async () => {
+      const mod = await import("../cors");
+      const req = createMockRequest("https://APP.OLTIGO.COM");
+      const headers = mod.getCorsHeaders(req as never);
+      expect(headers["Access-Control-Allow-Origin"]).toBe("https://app.oltigo.com");
+    });
+
+    it("blocks when no origin header present in request", async () => {
+      const mod = await import("../cors");
+      const req = createMockRequest();
+      const headers = mod.getCorsHeaders(req as never);
+      expect(headers["Access-Control-Allow-Origin"]).toBeUndefined();
+    });
+  });
+
+  describe("handlePreflight", () => {
+    beforeEach(() => {
+      delete process.env.ALLOWED_API_ORIGINS;
+      vi.resetModules();
+    });
+
+    it("returns 204 status for OPTIONS preflight", async () => {
       const mod = await import("../cors");
       const req = createMockRequest();
       const response = mod.handlePreflight(req as never);
       expect(response.status).toBe(204);
+    });
+
+    it("returns null body for preflight", async () => {
+      const mod = await import("../cors");
+      const req = createMockRequest();
+      const response = mod.handlePreflight(req as never);
+      expect(response.body).toBeNull();
     });
   });
 });

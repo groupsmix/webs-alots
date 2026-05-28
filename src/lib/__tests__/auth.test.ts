@@ -1,8 +1,23 @@
 import { headers } from "next/headers";
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { loginLimiter, accountLockoutLimiter } from "@/lib/rate-limit";
+import {
+  loginLimiter,
+  accountLockoutLimiter,
+  otpSendLimiter,
+  passwordResetLimiter,
+} from "@/lib/rate-limit";
 import { createClient } from "@/lib/supabase-server";
-import { signInWithPassword, signOut, getUserProfile, requireAuth, requireRole } from "../auth";
+import {
+  signInWithPassword,
+  signOut,
+  getUserProfile,
+  requireAuth,
+  requireRole,
+  signInWithOTP,
+  verifyOTP,
+  registerPatient,
+  resetPassword,
+} from "../auth";
 
 vi.mock("next/headers", () => ({
   headers: vi.fn(),
@@ -34,6 +49,14 @@ vi.mock("@/lib/logger", () => ({
   },
 }));
 
+vi.mock("@/lib/audit-log", () => ({
+  logAuthEvent: vi.fn().mockResolvedValue(undefined),
+}));
+
+vi.mock("@/lib/seed-guard", () => ({
+  isSeedUserBlocked: vi.fn().mockReturnValue(false),
+}));
+
 function createMockHeaders(values: Record<string, string> = {}) {
   return {
     get: vi.fn((name: string) => values[name] ?? null),
@@ -42,18 +65,29 @@ function createMockHeaders(values: Record<string, string> = {}) {
 
 function createMockSupabase({
   signInError,
+  signInData,
   signOutError,
   user,
   profile,
+  otpError,
+  verifyOtpError,
+  resetError,
+  mfaLevel,
 }: {
   signInError?: { message: string } | null;
+  signInData?: { user: { id: string } } | null;
   signOutError?: Error | null;
   user?: { id: string } | null;
   profile?: Record<string, unknown> | null;
+  otpError?: { message: string } | null;
+  verifyOtpError?: { message: string } | null;
+  resetError?: { message: string } | null;
+  mfaLevel?: { currentLevel: string; nextLevel: string } | null;
 } = {}) {
   const supabase = {
     auth: {
       signInWithPassword: vi.fn().mockResolvedValue({
+        data: signInData ?? (signInError ? null : { user: user ?? null }),
         error: signInError ?? null,
       }),
       signOut: signOutError
@@ -62,6 +96,20 @@ function createMockSupabase({
       getUser: vi.fn().mockResolvedValue({
         data: { user: user ?? null },
       }),
+      signInWithOtp: vi.fn().mockResolvedValue({
+        error: otpError ?? null,
+      }),
+      verifyOtp: vi.fn().mockResolvedValue({
+        error: verifyOtpError ?? null,
+      }),
+      resetPasswordForEmail: vi.fn().mockResolvedValue({
+        error: resetError ?? null,
+      }),
+      mfa: {
+        getAuthenticatorAssuranceLevel: vi.fn().mockResolvedValue({
+          data: mfaLevel ?? { currentLevel: "aal1", nextLevel: "aal1" },
+        }),
+      },
     },
     from: vi.fn().mockReturnValue({
       select: vi.fn().mockReturnValue({
@@ -125,6 +173,333 @@ describe("signInWithPassword", () => {
     expect(mockSupabase.auth.signInWithPassword).toHaveBeenCalledWith({
       email: "test@example.com",
       password: "password",
+    });
+  });
+
+  it("returns mfa_required when MFA is needed", async () => {
+    vi.mocked(loginLimiter.check).mockResolvedValue(true);
+    vi.mocked(accountLockoutLimiter.check).mockResolvedValue(true);
+
+    const mockSupabase = createMockSupabase({
+      signInData: { user: { id: "user-1" } },
+      user: { id: "user-1" },
+      mfaLevel: { currentLevel: "aal1", nextLevel: "aal2" },
+    });
+    vi.mocked(createClient).mockResolvedValue(mockSupabase as never);
+
+    const result = await signInWithPassword("test@example.com", "password");
+
+    expect(result.error).toBe("mfa_required");
+  });
+
+  it("blocks seed user login in production", async () => {
+    vi.mocked(loginLimiter.check).mockResolvedValue(true);
+    vi.mocked(accountLockoutLimiter.check).mockResolvedValue(true);
+
+    const { isSeedUserBlocked } = await import("@/lib/seed-guard");
+    vi.mocked(isSeedUserBlocked).mockReturnValue(true);
+
+    const mockSupabase = createMockSupabase({
+      signInData: { user: { id: "a0000000-0000-0000-0000-000000000001" } },
+      user: { id: "a0000000-0000-0000-0000-000000000001" },
+    });
+    vi.mocked(createClient).mockResolvedValue(mockSupabase as never);
+
+    const result = await signInWithPassword("seed@example.com", "password");
+
+    expect(result.error).toBe("auth.invalidCredentials");
+    expect(mockSupabase.auth.signOut).toHaveBeenCalled();
+  });
+
+  it("redirects to role dashboard on successful login", async () => {
+    vi.mocked(loginLimiter.check).mockResolvedValue(true);
+    vi.mocked(accountLockoutLimiter.check).mockResolvedValue(true);
+
+    const { isSeedUserBlocked } = await import("@/lib/seed-guard");
+    vi.mocked(isSeedUserBlocked).mockReturnValue(false);
+
+    const mockProfile = {
+      id: "user-1",
+      auth_id: "auth-1",
+      clinic_id: "clinic-1",
+      role: "clinic_admin",
+      name: "Admin",
+      phone: null,
+      email: "admin@test.com",
+      avatar_url: null,
+      is_active: true,
+      metadata: {},
+    };
+
+    const mockSupabase = createMockSupabase({
+      signInData: { user: { id: "auth-1" } },
+      user: { id: "auth-1" },
+      profile: mockProfile,
+    });
+    vi.mocked(createClient).mockResolvedValue(mockSupabase as never);
+
+    await expect(signInWithPassword("admin@test.com", "pass")).rejects.toThrow(
+      "REDIRECT:/admin/dashboard",
+    );
+  });
+
+  it("redirects to patient dashboard when no profile found", async () => {
+    vi.mocked(loginLimiter.check).mockResolvedValue(true);
+    vi.mocked(accountLockoutLimiter.check).mockResolvedValue(true);
+
+    const { isSeedUserBlocked } = await import("@/lib/seed-guard");
+    vi.mocked(isSeedUserBlocked).mockReturnValue(false);
+
+    const mockSupabase = createMockSupabase({
+      signInData: { user: { id: "auth-1" } },
+      user: null,
+      profile: null,
+    });
+    vi.mocked(createClient).mockResolvedValue(mockSupabase as never);
+
+    await expect(signInWithPassword("new@test.com", "pass")).rejects.toThrow(
+      "REDIRECT:/patient/dashboard",
+    );
+  });
+
+  it("uses cf-connecting-ip for rate limiting, not x-forwarded-for", async () => {
+    vi.mocked(headers).mockResolvedValue(
+      createMockHeaders({
+        "cf-connecting-ip": "10.0.0.1",
+        "x-forwarded-for": "spoofed.ip",
+      }) as never,
+    );
+    vi.mocked(loginLimiter.check).mockResolvedValue(false);
+
+    await signInWithPassword("test@test.com", "pass");
+
+    expect(loginLimiter.check).toHaveBeenCalledWith("login:ip:10.0.0.1");
+  });
+
+  it("falls back to 'unknown' IP when cf-connecting-ip is absent", async () => {
+    vi.mocked(headers).mockResolvedValue(createMockHeaders({}) as never);
+    vi.mocked(loginLimiter.check).mockResolvedValue(false);
+
+    await signInWithPassword("test@test.com", "pass");
+
+    expect(loginLimiter.check).toHaveBeenCalledWith("login:ip:unknown");
+  });
+});
+
+describe("signInWithOTP", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(headers).mockResolvedValue(createMockHeaders() as never);
+  });
+
+  it("returns error when phone auth is disabled", async () => {
+    const original = process.env.NEXT_PUBLIC_PHONE_AUTH_ENABLED;
+    delete process.env.NEXT_PUBLIC_PHONE_AUTH_ENABLED;
+
+    const result = await signInWithOTP("+212600000000");
+
+    expect(result.error).toBe("auth.phoneDisabled");
+    process.env.NEXT_PUBLIC_PHONE_AUTH_ENABLED = original;
+  });
+
+  it("returns error when OTP rate limit is hit", async () => {
+    const original = process.env.NEXT_PUBLIC_PHONE_AUTH_ENABLED;
+    process.env.NEXT_PUBLIC_PHONE_AUTH_ENABLED = "true";
+    vi.mocked(otpSendLimiter.check).mockResolvedValue(false);
+
+    const result = await signInWithOTP("+212600000000");
+
+    expect(result.error).toBe("auth.rateLimitOtp");
+    process.env.NEXT_PUBLIC_PHONE_AUTH_ENABLED = original;
+  });
+
+  it("returns error from Supabase on OTP failure", async () => {
+    const original = process.env.NEXT_PUBLIC_PHONE_AUTH_ENABLED;
+    process.env.NEXT_PUBLIC_PHONE_AUTH_ENABLED = "true";
+    vi.mocked(otpSendLimiter.check).mockResolvedValue(true);
+
+    const mockSupabase = createMockSupabase({ otpError: { message: "Phone not valid" } });
+    vi.mocked(createClient).mockResolvedValue(mockSupabase as never);
+
+    const result = await signInWithOTP("+212600000000");
+
+    expect(result.error).toBe("Phone not valid");
+    process.env.NEXT_PUBLIC_PHONE_AUTH_ENABLED = original;
+  });
+
+  it("returns null error on OTP success", async () => {
+    const original = process.env.NEXT_PUBLIC_PHONE_AUTH_ENABLED;
+    process.env.NEXT_PUBLIC_PHONE_AUTH_ENABLED = "true";
+    vi.mocked(otpSendLimiter.check).mockResolvedValue(true);
+
+    const mockSupabase = createMockSupabase();
+    vi.mocked(createClient).mockResolvedValue(mockSupabase as never);
+
+    const result = await signInWithOTP("+212600000000");
+
+    expect(result.error).toBeNull();
+    process.env.NEXT_PUBLIC_PHONE_AUTH_ENABLED = original;
+  });
+});
+
+describe("verifyOTP", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(headers).mockResolvedValue(createMockHeaders() as never);
+  });
+
+  it("returns error when phone auth is disabled", async () => {
+    const original = process.env.NEXT_PUBLIC_PHONE_AUTH_ENABLED;
+    delete process.env.NEXT_PUBLIC_PHONE_AUTH_ENABLED;
+
+    const result = await verifyOTP("+212600000000", "123456");
+
+    expect(result.error).toBe("auth.phoneDisabled");
+    process.env.NEXT_PUBLIC_PHONE_AUTH_ENABLED = original;
+  });
+
+  it("returns Supabase error on invalid OTP", async () => {
+    const original = process.env.NEXT_PUBLIC_PHONE_AUTH_ENABLED;
+    process.env.NEXT_PUBLIC_PHONE_AUTH_ENABLED = "true";
+
+    const mockSupabase = createMockSupabase({ verifyOtpError: { message: "Invalid OTP" } });
+    vi.mocked(createClient).mockResolvedValue(mockSupabase as never);
+
+    const result = await verifyOTP("+212600000000", "000000");
+
+    expect(result.error).toBe("Invalid OTP");
+    process.env.NEXT_PUBLIC_PHONE_AUTH_ENABLED = original;
+  });
+
+  it("redirects to role dashboard on successful verify", async () => {
+    const original = process.env.NEXT_PUBLIC_PHONE_AUTH_ENABLED;
+    process.env.NEXT_PUBLIC_PHONE_AUTH_ENABLED = "true";
+
+    const mockProfile = {
+      id: "u-1",
+      auth_id: "a-1",
+      clinic_id: "c-1",
+      role: "doctor",
+      name: "Dr Test",
+      phone: "+212600000000",
+      email: null,
+      avatar_url: null,
+      is_active: true,
+      metadata: {},
+    };
+    const mockSupabase = createMockSupabase({
+      user: { id: "a-1" },
+      profile: mockProfile,
+    });
+    vi.mocked(createClient).mockResolvedValue(mockSupabase as never);
+
+    await expect(verifyOTP("+212600000000", "123456")).rejects.toThrow(
+      "REDIRECT:/doctor/dashboard",
+    );
+    process.env.NEXT_PUBLIC_PHONE_AUTH_ENABLED = original;
+  });
+});
+
+describe("registerPatient", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(headers).mockResolvedValue(createMockHeaders() as never);
+  });
+
+  it("returns error when phone auth is disabled", async () => {
+    const original = process.env.NEXT_PUBLIC_PHONE_AUTH_ENABLED;
+    delete process.env.NEXT_PUBLIC_PHONE_AUTH_ENABLED;
+
+    const result = await registerPatient({ phone: "+212600000000", name: "Patient" });
+
+    expect(result.error).toBe("auth.phoneDisabled");
+    process.env.NEXT_PUBLIC_PHONE_AUTH_ENABLED = original;
+  });
+
+  it("returns error when OTP rate limit is hit", async () => {
+    const original = process.env.NEXT_PUBLIC_PHONE_AUTH_ENABLED;
+    process.env.NEXT_PUBLIC_PHONE_AUTH_ENABLED = "true";
+    vi.mocked(otpSendLimiter.check).mockResolvedValue(false);
+
+    const result = await registerPatient({ phone: "+212600000000", name: "Patient" });
+
+    expect(result.error).toBe("auth.rateLimitOtp");
+    process.env.NEXT_PUBLIC_PHONE_AUTH_ENABLED = original;
+  });
+
+  it("passes patient metadata in OTP options", async () => {
+    const original = process.env.NEXT_PUBLIC_PHONE_AUTH_ENABLED;
+    process.env.NEXT_PUBLIC_PHONE_AUTH_ENABLED = "true";
+    vi.mocked(otpSendLimiter.check).mockResolvedValue(true);
+
+    const mockSupabase = createMockSupabase();
+    vi.mocked(createClient).mockResolvedValue(mockSupabase as never);
+
+    await registerPatient({
+      phone: "+212600000000",
+      name: "Test Patient",
+      email: "p@test.com",
+      age: 30,
+      gender: "male",
+      insurance: "CNSS",
+    });
+
+    expect(mockSupabase.auth.signInWithOtp).toHaveBeenCalledWith({
+      phone: "+212600000000",
+      options: {
+        data: {
+          name: "Test Patient",
+          phone: "+212600000000",
+          email: "p@test.com",
+          age: 30,
+          gender: "male",
+          insurance: "CNSS",
+        },
+      },
+    });
+    process.env.NEXT_PUBLIC_PHONE_AUTH_ENABLED = original;
+  });
+});
+
+describe("resetPassword", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(headers).mockResolvedValue(
+      createMockHeaders({ "cf-connecting-ip": "10.0.0.1" }) as never,
+    );
+  });
+
+  it("returns error when rate limit is exceeded", async () => {
+    vi.mocked(passwordResetLimiter.check).mockResolvedValue(false);
+
+    const result = await resetPassword("test@test.com", "https://app.com/reset");
+
+    expect(result.error).toBe("auth.rateLimitGeneric");
+  });
+
+  it("returns null error even when email does not exist (prevents enumeration)", async () => {
+    vi.mocked(passwordResetLimiter.check).mockResolvedValue(true);
+
+    const mockSupabase = createMockSupabase({
+      resetError: { message: "User not found" },
+    });
+    vi.mocked(createClient).mockResolvedValue(mockSupabase as never);
+
+    const result = await resetPassword("nonexistent@test.com", "https://app.com/reset");
+
+    expect(result.error).toBeNull();
+  });
+
+  it("normalizes email and passes redirectTo", async () => {
+    vi.mocked(passwordResetLimiter.check).mockResolvedValue(true);
+
+    const mockSupabase = createMockSupabase();
+    vi.mocked(createClient).mockResolvedValue(mockSupabase as never);
+
+    await resetPassword("  Test@Example.COM  ", "https://app.com/reset");
+
+    expect(mockSupabase.auth.resetPasswordForEmail).toHaveBeenCalledWith("test@example.com", {
+      redirectTo: "https://app.com/reset",
     });
   });
 });
@@ -210,6 +585,26 @@ describe("requireAuth", () => {
 
     await expect(requireAuth()).rejects.toThrow("REDIRECT:/login");
   });
+
+  it("returns profile when authenticated", async () => {
+    const mockProfile = {
+      id: "user-1",
+      auth_id: "auth-1",
+      clinic_id: "clinic-1",
+      role: "patient" as const,
+      name: "Test",
+      phone: null,
+      email: "test@test.com",
+      avatar_url: null,
+      is_active: true,
+      metadata: {},
+    };
+    const mockSupabase = createMockSupabase({ user: { id: "auth-1" }, profile: mockProfile });
+    vi.mocked(createClient).mockResolvedValue(mockSupabase as never);
+
+    const result = await requireAuth();
+    expect(result).toEqual(mockProfile);
+  });
 });
 
 describe("requireRole", () => {
@@ -236,5 +631,25 @@ describe("requireRole", () => {
     await expect(requireRole("clinic_admin", "super_admin")).rejects.toThrow(
       "REDIRECT:/patient/dashboard",
     );
+  });
+
+  it("returns profile when user has allowed role", async () => {
+    const mockProfile = {
+      id: "user-1",
+      auth_id: "auth-1",
+      clinic_id: "clinic-1",
+      role: "doctor" as const,
+      name: "Dr Test",
+      phone: null,
+      email: null,
+      avatar_url: null,
+      is_active: true,
+      metadata: {},
+    };
+    const mockSupabase = createMockSupabase({ user: { id: "auth-1" }, profile: mockProfile });
+    vi.mocked(createClient).mockResolvedValue(mockSupabase as never);
+
+    const result = await requireRole("doctor", "clinic_admin");
+    expect(result).toEqual(mockProfile);
   });
 });
