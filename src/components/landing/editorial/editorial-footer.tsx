@@ -47,74 +47,36 @@ const COLUMNS = [
  */
 export function EditorialFooter() {
   return (
-    <footer style={{ backgroundColor: "var(--bone)" }}>
-      <div
-        className="mx-auto w-full"
-        style={{
-          maxWidth: "var(--container-max)",
-          paddingInline: "var(--gutter-desktop)",
-        }}
-      >
+    <footer className="bg-[var(--bone)]">
+      <div className="mx-auto w-full max-w-[var(--container-max)] px-[var(--gutter-desktop)]">
         <HairlineRule />
 
         {/* eslint-disable i18next/no-literal-string */}
-        <div
-          className="grid grid-cols-2 gap-8 md:grid-cols-4 lg:grid-cols-5"
-          style={{ paddingBlock: "var(--space-8)" }}
-        >
+        <div className="grid grid-cols-2 gap-8 md:grid-cols-4 lg:grid-cols-5 py-[var(--space-8)]">
           {/* Brand column */}
           <div className="col-span-2 md:col-span-4 lg:col-span-1">
             <Link
               href="/"
-              style={{
-                fontFamily: "var(--font-sans-landing)",
-                fontSize: "var(--text-small)",
-                fontWeight: 700,
-                letterSpacing: "-0.02em",
-                color: "var(--ink)",
-                textDecoration: "none",
-              }}
+              className="font-[var(--font-sans-landing)] text-[length:var(--text-small)] font-bold tracking-[-0.02em] text-[var(--ink)] no-underline"
             >
               oltig<span style={{ color: "var(--oltigo-green)" }}>o</span>
             </Link>
-            <p
-              style={{
-                marginTop: "var(--space-3)",
-                fontFamily: "var(--font-sans-landing)",
-                fontSize: "var(--text-body)",
-                lineHeight: "var(--lh-body)",
-                color: "var(--ink-70)",
-                maxWidth: 240,
-              }}
-            >
+            <p className="mt-[var(--space-3)] font-[var(--font-sans-landing)] text-[length:var(--text-body)] leading-[var(--lh-body)] text-[var(--ink-70)] max-w-[240px]">
               La plateforme complète pour gérer votre cabinet médical au Maroc.
             </p>
           </div>
 
           {COLUMNS.map((col) => (
             <div key={col.heading}>
-              <span
-                style={{
-                  fontFamily: "var(--font-sans-landing)",
-                  fontSize: "var(--text-small)",
-                  fontWeight: 500,
-                  color: "var(--ink)",
-                }}
-              >
+              <span className="font-[var(--font-sans-landing)] text-[length:var(--text-small)] font-medium text-[var(--ink)]">
                 {col.heading}
               </span>
-              <ul className="mt-3 flex flex-col gap-2" style={{ listStyle: "none", padding: 0 }}>
+              <ul className="mt-3 flex flex-col gap-2 list-none p-0">
                 {col.links.map((link) => (
                   <li key={link.label}>
                     <Link
                       href={link.href}
-                      style={{
-                        fontFamily: "var(--font-sans-landing)",
-                        fontSize: "var(--text-body)",
-                        lineHeight: "var(--lh-body)",
-                        color: "var(--ink-70)",
-                        textDecoration: "none",
-                      }}
+                      className="font-[var(--font-sans-landing)] text-[length:var(--text-body)] leading-[var(--lh-body)] text-[var(--ink-70)] no-underline"
                     >
                       {link.label}
                     </Link>
@@ -128,17 +90,7 @@ export function EditorialFooter() {
         <HairlineRule />
 
         {/* Bottom row */}
-        <div
-          className="flex flex-wrap items-center justify-between gap-4"
-          style={{
-            paddingBlock: "var(--space-5)",
-            fontFamily: "var(--font-mono-landing)",
-            fontSize: "var(--text-mono)",
-            lineHeight: "var(--lh-mono)",
-            letterSpacing: "var(--ls-mono)",
-            color: "var(--ink-60)",
-          }}
-        >
+        <div className="flex flex-wrap items-center justify-between gap-4 py-[var(--space-5)] font-[var(--font-mono-landing)] text-[length:var(--text-mono)] leading-[var(--lh-mono)] tracking-[var(--ls-mono)] text-[var(--ink-60)]">
           <span>© {new Date().getFullYear()} Oltigo Health. Tous droits réservés.</span>
           <span>X · LinkedIn · GitHub</span>
         </div>

@@ -27,75 +27,25 @@ const PRODUCTS = [
  */
 export function ProductSection() {
   return (
-    <section
-      id="product"
-      style={{
-        backgroundColor: "var(--bone)",
-        paddingBlock: "var(--space-9)",
-      }}
-    >
-      <div
-        className="mx-auto w-full"
-        style={{
-          maxWidth: "var(--container-max)",
-          paddingInline: "var(--gutter-desktop)",
-        }}
-      >
+    <section id="product" className="bg-[var(--bone)] py-[var(--space-9)]">
+      <div className="mx-auto w-full max-w-[var(--container-max)] px-[var(--gutter-desktop)]">
         {/* eslint-disable i18next/no-literal-string */}
         {PRODUCTS.map((product, i) => (
           <div key={product.label}>
             {i > 0 && <HairlineRule />}
-            <div
-              className="grid gap-8 md:grid-cols-2 md:items-center"
-              style={{ paddingBlock: "var(--space-7)" }}
-            >
+            <div className="grid gap-8 md:grid-cols-2 md:items-center py-[var(--space-7)]">
               <div>
-                <h3
-                  style={{
-                    fontFamily: "var(--font-sans-landing)",
-                    fontSize: "var(--text-h3)",
-                    lineHeight: "var(--lh-h3)",
-                    letterSpacing: "var(--ls-h3)",
-                    fontWeight: 500,
-                    color: "var(--ink)",
-                  }}
-                >
+                <h3 className="font-[var(--font-sans-landing)] text-[length:var(--text-h3)] leading-[var(--lh-h3)] tracking-[var(--ls-h3)] font-medium text-[var(--ink)]">
                   {product.label}
                 </h3>
-                <p
-                  style={{
-                    marginTop: "var(--space-3)",
-                    fontFamily: "var(--font-sans-landing)",
-                    fontSize: "var(--text-body)",
-                    lineHeight: "var(--lh-body)",
-                    color: "var(--ink-70)",
-                  }}
-                >
+                <p className="mt-[var(--space-3)] font-[var(--font-sans-landing)] text-[length:var(--text-body)] leading-[var(--lh-body)] text-[var(--ink-70)]">
                   {product.description}
                 </p>
               </div>
 
               {/* Screenshot placeholder — replace with real product PNGs */}
-              <div
-                style={{
-                  aspectRatio: "16 / 10",
-                  borderRadius: "var(--radius-landing)",
-                  border: "1px solid var(--rule)",
-                  backgroundColor: "var(--bone)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
-                <span
-                  style={{
-                    fontFamily: "var(--font-mono-landing)",
-                    fontSize: "var(--text-mono)",
-                    color: "var(--ink-60)",
-                    textTransform: "uppercase",
-                    letterSpacing: "var(--ls-mono)",
-                  }}
-                >
+              <div className="aspect-[16/10] rounded-[var(--radius-landing)] border border-[var(--rule)] bg-[var(--bone)] flex items-center justify-center">
+                <span className="font-[var(--font-mono-landing)] text-[length:var(--text-mono)] text-[var(--ink-60)] uppercase tracking-[var(--ls-mono)]">
                   Capture {product.label}
                 </span>
               </div>

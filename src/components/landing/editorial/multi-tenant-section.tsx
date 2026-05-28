@@ -8,66 +8,28 @@ import { HairlineRule } from "./hairline-rule";
  */
 export function MultiTenantSection() {
   return (
-    <section
-      style={{
-        backgroundColor: "var(--bone)",
-        paddingBlock: "var(--space-9)",
-      }}
-    >
-      <div
-        className="mx-auto w-full"
-        style={{
-          maxWidth: "var(--container-max)",
-          paddingInline: "var(--gutter-desktop)",
-        }}
-      >
+    <section className="bg-[var(--bone)] py-[var(--space-9)]">
+      <div className="mx-auto w-full max-w-[var(--container-max)] px-[var(--gutter-desktop)]">
         {/* eslint-disable i18next/no-literal-string */}
-        <div style={{ maxWidth: 720 }}>
-          <h2
-            style={{
-              fontFamily: "var(--font-sans-landing)",
-              fontSize: "var(--text-h2)",
-              lineHeight: "var(--lh-h2)",
-              letterSpacing: "var(--ls-h2)",
-              fontWeight: 500,
-              color: "var(--ink)",
-            }}
-          >
+        <div className="max-w-[720px]">
+          <h2 className="font-[var(--font-sans-landing)] text-[length:var(--text-h2)] leading-[var(--lh-h2)] tracking-[var(--ls-h2)] font-medium text-[var(--ink)]">
             Un sous-domaine par cabinet. Aucune donnée n&apos;est partagée entre cabinets.
           </h2>
 
-          <p
-            style={{
-              marginTop: "var(--space-5)",
-              fontFamily: "var(--font-sans-landing)",
-              fontSize: "var(--text-body)",
-              lineHeight: "var(--lh-body)",
-              color: "var(--ink-70)",
-            }}
-          >
+          <p className="mt-[var(--space-5)] font-[var(--font-sans-landing)] text-[length:var(--text-body)] leading-[var(--lh-body)] text-[var(--ink-70)]">
             Chaque cabinet dispose de son propre espace isolé. Les données patients, rendez-vous et
             configurations sont strictement cloisonnées par Row Level Security et chiffrement par
             fichier.
           </p>
         </div>
 
-        <div style={{ marginTop: "var(--space-7)" }}>
+        <div className="mt-[var(--space-7)]">
           <HairlineRule />
-          <div
-            className="flex flex-wrap items-center gap-4"
-            style={{
-              paddingBlock: "var(--space-4)",
-              fontFamily: "var(--font-mono-landing)",
-              fontSize: "var(--text-mono)",
-              lineHeight: "var(--lh-mono)",
-              letterSpacing: "var(--ls-mono)",
-              color: "var(--ink-60)",
-            }}
-          >
+          <div className="flex flex-wrap items-center gap-4 py-[var(--space-4)] font-[var(--font-mono-landing)] text-[length:var(--text-mono)] leading-[var(--lh-mono)] tracking-[var(--ls-mono)] text-[var(--ink-60)]">
             <span>cabinet-a.oltigo.com</span>
-            <span style={{ color: "var(--rule)" }}>│</span>
+            <span className="text-[var(--rule)]">│</span>
             <span>cabinet-b.oltigo.com</span>
-            <span style={{ color: "var(--rule)" }}>│</span>
+            <span className="text-[var(--rule)]">│</span>
             <span>cabinet-c.oltigo.com</span>
           </div>
           <HairlineRule />
